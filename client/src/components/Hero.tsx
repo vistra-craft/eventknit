@@ -1,13 +1,13 @@
-import { Heart, Share2, MapPin, Calendar, Eye, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { MapPin, Calendar, Eye, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getActiveFeaturedEvents, type ActiveFeaturedEvent } from "@/lib/featured-event-api";
+import { getFocalPointStyle } from "./EventImage";
 
 export const Hero = () => {
   const navigate = useNavigate();
-  const [isFavorited, setIsFavorited] = useState(false);
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [featuredEvents, setFeaturedEvents] = useState<ActiveFeaturedEvent[]>([]);
@@ -119,7 +119,7 @@ export const Hero = () => {
           style={{
             backgroundImage: currentEvent.image ? `url(${currentEvent.image})` : undefined,
             backgroundSize: 'cover',
-            backgroundPosition: 'center'
+            backgroundPosition: getFocalPointStyle(currentEvent.imageFocalX, currentEvent.imageFocalY)
           }}
         />
 
@@ -218,27 +218,6 @@ export const Hero = () => {
                 {currentEvent.type === 'EVENT' ? 'Get Tickets' : (currentEvent.linkText || 'Learn More')}
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
-              {currentEvent.type === 'EVENT' && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsFavorited(!isFavorited)}
-                    className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 border-0 ${
-                      isFavorited ? 'text-destructive' : 'text-white'
-                    }`}
-                  >
-                    <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 text-white border-0"
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </Button>
-                </>
-              )}
             </div>
           </div>
 

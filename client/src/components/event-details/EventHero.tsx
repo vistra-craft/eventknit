@@ -1,4 +1,6 @@
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar, MapPin, Globe, Video } from "lucide-react";
+import { getVenueType } from "@/types/event";
+import { EventImage } from "@/components/EventImage";
 
 interface EventHeroProps {
   title: string;
@@ -8,20 +10,31 @@ interface EventHeroProps {
   venue?: string | null;
   location: string;
   image?: string | null;
+  imageFocalX?: number | null;
+  imageFocalY?: number | null;
+  isOnline?: boolean;
+  onlineLink?: string | null;
 }
 
-export const EventHero = ({ title, category, date, time, venue, location, image }: EventHeroProps) => {
+export const EventHero = ({ title, category, date, time, venue, location, image, imageFocalX, imageFocalY, isOnline, onlineLink }: EventHeroProps) => {
+  const venueType = getVenueType({ isOnline, venue, onlineLink });
+
   return (
     <div className="animate-in fade-in duration-700">
       <section className="rounded-2xl overflow-hidden">
         <div className="relative h-80 md:h-96 bg-muted rounded-t-2xl rounded-b-2xl">
-          {image ? (
-            <img src={image} alt={title} className="h-full w-full object-cover rounded-t-2xl rounded-b-2xl" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm rounded-t-2xl rounded-b-2xl">
-              Event image coming soon
-            </div>
-          )}
+          <EventImage
+            src={image}
+            alt={title}
+            focalX={imageFocalX}
+            focalY={imageFocalY}
+            className="h-full w-full rounded-t-2xl rounded-b-2xl"
+            fallback={
+              <div className="flex h-full w-full items-center justify-center text-muted-foreground text-sm rounded-t-2xl rounded-b-2xl bg-muted">
+                Event image coming soon
+              </div>
+            }
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent rounded-t-2xl rounded-b-2xl" />
           <div className="absolute bottom-4 left-4 right-4 text-white space-y-1">
             {category && (
@@ -43,14 +56,26 @@ export const EventHero = ({ title, category, date, time, venue, location, image 
           </div>
           <div className="flex items-start gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted/60 text-primary">
-              <MapPin className="h-4 w-4" />
+              {venueType === 'online' ? (
+                <Globe className="h-4 w-4" />
+              ) : venueType === 'hybrid' ? (
+                <Video className="h-4 w-4" />
+              ) : (
+                <MapPin className="h-4 w-4" />
+              )}
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide">Location</p>
-              <p className="font-medium text-foreground">
-                {venue ? `${venue}, ` : ""}
-                {location}
+              <p className="text-xs font-semibold uppercase tracking-wide">
+                {venueType === 'online' ? 'Online Event' : venueType === 'hybrid' ? 'Hybrid Event' : 'Location'}
               </p>
+              <p className="font-medium text-foreground">
+                {venueType === 'online'
+                  ? 'Virtual — link available after registration'
+                  : `${venue ? `${venue}, ` : ''}${location}`}
+              </p>
+              {venueType === 'hybrid' && (
+                <p className="text-xs text-muted-foreground mt-0.5">Also available online</p>
+              )}
             </div>
           </div>
         </div>

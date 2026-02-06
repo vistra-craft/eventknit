@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2 } from "lucide-react";
+import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2, Radio, ChevronUp, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -13,8 +13,32 @@ import AdminLayout from "../AdminLayout";
 import {
   getAllFeaturedEvents,
   deleteFeaturedEvent,
+  updateFeaturedEvent,
   type FeaturedEventData,
 } from "../../../lib/featured-event-api";
+
+/**
+ * Check if a featured event is currently live on the hero section
+ */
+const isEventLive = (event: FeaturedEventData): boolean => {
+  if (!event.isActive) return false;
+
+  const now = new Date();
+
+  // Check display start date
+  if (event.displayStartDate) {
+    const startDate = new Date(event.displayStartDate);
+    if (now < startDate) return false;
+  }
+
+  // Check display end date
+  if (event.displayEndDate) {
+    const endDate = new Date(event.displayEndDate);
+    if (now > endDate) return false;
+  }
+
+  return true;
+};
 
 const FeaturedEventsPage = () => {
   const navigate = useNavigate();
@@ -27,6 +51,7 @@ const FeaturedEventsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [reordering, setReordering] = useState<string | null>(null);
 
   const fetchFeaturedEvents = useCallback(async () => {
     try {
@@ -49,7 +74,7 @@ const FeaturedEventsPage = () => {
     fetchFeaturedEvents();
   }, [fetchFeaturedEvents]);
 
-  const filteredEvents = featuredEvents.filter(event => {
+  const filteredEvents = [...featuredEvents].sort((a, b) => a.displayOrder - b.displayOrder).filter(event => {
     // Handle both EVENT and IMAGE types
     const isEventType = event.type === 'EVENT';
     const title = isEventType 
@@ -71,6 +96,67 @@ const FeaturedEventsPage = () => {
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
+
+  // Sort events by display order for reordering
+  const sortedEvents = [...featuredEvents].sort((a, b) => a.displayOrder - b.displayOrder);
+
+  const handleMoveUp = async (event: FeaturedEventData) => {
+    const currentIndex = sortedEvents.findIndex((e) => e.id === event.id);
+    if (currentIndex <= 0) return;
+
+    const prevEvent = sortedEvents[currentIndex - 1];
+    setReordering(event.id);
+
+    try {
+      // Swap display orders
+      await Promise.all([
+        updateFeaturedEvent(event.id, { displayOrder: prevEvent.displayOrder }),
+        updateFeaturedEvent(prevEvent.id, { displayOrder: event.displayOrder }),
+      ]);
+      await fetchFeaturedEvents();
+      toast({
+        title: "Reordered",
+        description: "Display order updated",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reorder",
+        variant: "destructive",
+      });
+    } finally {
+      setReordering(null);
+    }
+  };
+
+  const handleMoveDown = async (event: FeaturedEventData) => {
+    const currentIndex = sortedEvents.findIndex((e) => e.id === event.id);
+    if (currentIndex >= sortedEvents.length - 1) return;
+
+    const nextEvent = sortedEvents[currentIndex + 1];
+    setReordering(event.id);
+
+    try {
+      // Swap display orders
+      await Promise.all([
+        updateFeaturedEvent(event.id, { displayOrder: nextEvent.displayOrder }),
+        updateFeaturedEvent(nextEvent.id, { displayOrder: event.displayOrder }),
+      ]);
+      await fetchFeaturedEvents();
+      toast({
+        title: "Reordered",
+        description: "Display order updated",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reorder",
+        variant: "destructive",
+      });
+    } finally {
+      setReordering(null);
+    }
+  };
 
   const handleDeleteClick = (id: string) => {
     setDeletingId(id);
@@ -115,8 +201,14 @@ const FeaturedEventsPage = () => {
             <p className="text-muted-foreground">Manage events featured on the platform homepage hero section</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              {filteredEvents.length} of {featuredEvents.length} featured events
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>{filteredEvents.length} of {featuredEvents.length} featured events</span>
+              {featuredEvents.filter(isEventLive).length > 0 && (
+                <Badge className="bg-success text-white text-xs">
+                  <Radio className="h-3 w-3 mr-1" />
+                  {featuredEvents.filter(isEventLive).length} Live
+                </Badge>
+              )}
             </div>
             <Button onClick={() => navigate("/admin/events/featured/create")}>
               <Plus className="h-4 w-4 mr-2" />
@@ -195,6 +287,12 @@ const FeaturedEventsPage = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="font-semibold text-foreground truncate">{displayTitle}</h3>
+                          {isEventLive(featuredEvent) && (
+                            <Badge className="bg-success text-white text-xs animate-pulse">
+                              <Radio className="h-3 w-3 mr-1" />
+                              LIVE
+                            </Badge>
+                          )}
                           <Badge className="bg-warning/10 text-warning border-warning/20 text-xs">
                             <Star className="h-3 w-3 mr-1" />
                             Featured
@@ -251,8 +349,31 @@ const FeaturedEventsPage = () => {
                       </div>
                       
                       <div className="flex items-center gap-2 ml-4">
-                        <Button 
-                          variant="outline" 
+                        {/* Reorder buttons */}
+                        <div className="flex flex-col gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleMoveUp(featuredEvent)}
+                            disabled={reordering !== null || sortedEvents.findIndex(e => e.id === featuredEvent.id) === 0}
+                            title="Move up"
+                          >
+                            <ChevronUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleMoveDown(featuredEvent)}
+                            disabled={reordering !== null || sortedEvents.findIndex(e => e.id === featuredEvent.id) === sortedEvents.length - 1}
+                            title="Move down"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => {
                             if (featuredEvent.eventId) {
@@ -264,16 +385,16 @@ const FeaturedEventsPage = () => {
                           <Eye className="h-4 w-4 mr-1" />
                           Preview
                         </Button>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => navigate(`/admin/events/featured/${featuredEvent.id}/edit`)}
                         >
                           <Edit className="h-4 w-4 mr-1" />
                           Edit
                         </Button>
-                        <Button 
-                          variant="destructive" 
+                        <Button
+                          variant="destructive"
                           size="sm"
                           onClick={() => handleDeleteClick(featuredEvent.id)}
                         >

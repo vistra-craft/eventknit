@@ -18,6 +18,23 @@ export interface CreateRefundData {
   notes?: string;
 }
 
+export interface RefundTier {
+  daysBeforeEvent: number;
+  refundPercentage: number;
+}
+
+export interface RefundEligibility {
+  eligible: boolean;
+  refundPercentage: number;
+  refundAmount: number;
+  currency: string;
+  message: string;
+  policyType: string;
+  policyText?: string;
+  daysUntilEvent: number;
+  deadline?: Date;
+}
+
 export interface ProcessRefundData {
   refundReference?: string; // External refund reference (e.g., Paystack refund reference)
   metadata?: Record<string, unknown>;
@@ -417,16 +434,10 @@ export class RefundService {
   }
 
   /**
-   * Request a refund as an attendee
+   * Check refund eligibility for a registration
+   * Supports multiple refund policy types: no_refunds, full_refund, partial_refund, tiered, custom
    */
-  static async requestRefundAttendee(
-    registrationId: string,
-    userId: string,
-    data: { refundReason: string },
-    ipAddress?: string,
-    userAgent?: string,
-  ) {
-    // 1. Get registration and event details
+  static async getRefundEligibility(registrationId: string, userId?: string): Promise<RefundEligibility> {
     const registration = await prisma.eventRegistration.findUnique({
       where: { id: registrationId },
       include: {
@@ -436,6 +447,278 @@ export class RefundService {
             title: true,
             startDate: true,
             refundSLA: true,
+            refundPolicy: true,
+            refundPolicyText: true,
+            refundTiers: true,
+            autoRefundEnabled: true,
+          },
+        },
+        paymentTransaction: {
+          select: {
+            id: true,
+            amount: true,
+            currency: true,
+          },
+        },
+        refund: {
+          select: { id: true, status: true },
+        },
+      },
+    });
+
+    if (!registration) {
+      throw new NotFoundError('Registration not found');
+    }
+
+    if (userId && registration.attendeeId !== userId) {
+      throw new AuthorizationError('You can only check refunds for your own registrations');
+    }
+
+    // Check if refund already exists
+    if (registration.refund) {
+      return {
+        eligible: false,
+        refundPercentage: 0,
+        refundAmount: 0,
+        currency: registration.paymentTransaction?.currency || 'NGN',
+        message: `A refund request already exists for this registration (Status: ${registration.refund.status})`,
+        policyType: 'existing_refund',
+        daysUntilEvent: 0,
+      };
+    }
+
+    if (!registration.paymentTransaction) {
+      return {
+        eligible: false,
+        refundPercentage: 0,
+        refundAmount: 0,
+        currency: 'NGN',
+        message: 'No payment transaction found for this registration',
+        policyType: 'no_payment',
+        daysUntilEvent: 0,
+      };
+    }
+
+    const event = registration.event;
+    const transactionAmount = Number(registration.paymentTransaction.amount);
+    const currency = registration.paymentTransaction.currency;
+    const now = new Date();
+    const eventStartDate = new Date(event.startDate);
+    const msUntilEvent = eventStartDate.getTime() - now.getTime();
+    const daysUntilEvent = Math.floor(msUntilEvent / (24 * 60 * 60 * 1000));
+
+    const refundPolicy = event.refundPolicy || 'no_refunds';
+    const refundSLA = event.refundSLA || 0;
+
+    // Policy: no_refunds
+    if (refundPolicy === 'no_refunds' || refundSLA === 0) {
+      return {
+        eligible: false,
+        refundPercentage: 0,
+        refundAmount: 0,
+        currency,
+        message: 'Refunds are not allowed for this event',
+        policyType: 'no_refunds',
+        policyText: event.refundPolicyText || undefined,
+        daysUntilEvent,
+      };
+    }
+
+    // Check if past the refund deadline
+    if (daysUntilEvent < 0) {
+      return {
+        eligible: false,
+        refundPercentage: 0,
+        refundAmount: 0,
+        currency,
+        message: 'This event has already started or passed',
+        policyType: refundPolicy,
+        policyText: event.refundPolicyText || undefined,
+        daysUntilEvent,
+      };
+    }
+
+    // Policy: full_refund
+    if (refundPolicy === 'full_refund') {
+      if (daysUntilEvent < refundSLA) {
+        const deadline = new Date(eventStartDate.getTime() - refundSLA * 24 * 60 * 60 * 1000);
+        return {
+          eligible: false,
+          refundPercentage: 0,
+          refundAmount: 0,
+          currency,
+          message: `Refund deadline has passed. Full refunds are available up to ${refundSLA} days before the event.`,
+          policyType: 'full_refund',
+          policyText: event.refundPolicyText || undefined,
+          daysUntilEvent,
+          deadline,
+        };
+      }
+      return {
+        eligible: true,
+        refundPercentage: 100,
+        refundAmount: transactionAmount,
+        currency,
+        message: 'You are eligible for a full refund',
+        policyType: 'full_refund',
+        policyText: event.refundPolicyText || undefined,
+        daysUntilEvent,
+        deadline: new Date(eventStartDate.getTime() - refundSLA * 24 * 60 * 60 * 1000),
+      };
+    }
+
+    // Policy: tiered
+    if (refundPolicy === 'tiered' && event.refundTiers) {
+      const tiers = event.refundTiers as unknown as RefundTier[];
+      if (!Array.isArray(tiers) || tiers.length === 0) {
+        return {
+          eligible: false,
+          refundPercentage: 0,
+          refundAmount: 0,
+          currency,
+          message: 'Refund policy is not properly configured',
+          policyType: 'tiered',
+          daysUntilEvent,
+        };
+      }
+
+      // Sort tiers by daysBeforeEvent descending to find the applicable tier
+      const sortedTiers = [...tiers].sort((a, b) => b.daysBeforeEvent - a.daysBeforeEvent);
+
+      // Find the applicable tier
+      let applicableTier: RefundTier | null = null;
+      for (const tier of sortedTiers) {
+        if (daysUntilEvent >= tier.daysBeforeEvent) {
+          applicableTier = tier;
+          break;
+        }
+      }
+
+      if (!applicableTier) {
+        // No tier applies - within the final window (no refund)
+        const lowestTier = sortedTiers[sortedTiers.length - 1];
+        return {
+          eligible: false,
+          refundPercentage: 0,
+          refundAmount: 0,
+          currency,
+          message: `Refund deadline has passed. The last refund window was ${lowestTier.daysBeforeEvent} days before the event.`,
+          policyType: 'tiered',
+          policyText: event.refundPolicyText || undefined,
+          daysUntilEvent,
+        };
+      }
+
+      const refundAmount = Math.round(transactionAmount * applicableTier.refundPercentage) / 100;
+      return {
+        eligible: true,
+        refundPercentage: applicableTier.refundPercentage,
+        refundAmount,
+        currency,
+        message: applicableTier.refundPercentage === 100
+          ? 'You are eligible for a full refund'
+          : `You are eligible for a ${applicableTier.refundPercentage}% refund (${currency} ${refundAmount.toLocaleString()})`,
+        policyType: 'tiered',
+        policyText: event.refundPolicyText || undefined,
+        daysUntilEvent,
+      };
+    }
+
+    // Policy: partial_refund (fixed percentage)
+    if (refundPolicy === 'partial_refund') {
+      if (daysUntilEvent < refundSLA) {
+        return {
+          eligible: false,
+          refundPercentage: 0,
+          refundAmount: 0,
+          currency,
+          message: `Refund deadline has passed. Refunds are available up to ${refundSLA} days before the event.`,
+          policyType: 'partial_refund',
+          policyText: event.refundPolicyText || undefined,
+          daysUntilEvent,
+          deadline: new Date(eventStartDate.getTime() - refundSLA * 24 * 60 * 60 * 1000),
+        };
+      }
+      // Default partial refund is 50% - can be configured via custom policy text
+      const partialPercentage = 50;
+      const refundAmount = Math.round(transactionAmount * partialPercentage) / 100;
+      return {
+        eligible: true,
+        refundPercentage: partialPercentage,
+        refundAmount,
+        currency,
+        message: `You are eligible for a ${partialPercentage}% refund (${currency} ${refundAmount.toLocaleString()})`,
+        policyType: 'partial_refund',
+        policyText: event.refundPolicyText || undefined,
+        daysUntilEvent,
+        deadline: new Date(eventStartDate.getTime() - refundSLA * 24 * 60 * 60 * 1000),
+      };
+    }
+
+    // Policy: custom - just check SLA deadline, percentage handled manually
+    if (refundPolicy === 'custom') {
+      if (daysUntilEvent < refundSLA) {
+        return {
+          eligible: false,
+          refundPercentage: 0,
+          refundAmount: 0,
+          currency,
+          message: event.refundPolicyText || `Refund deadline has passed (${refundSLA} days before event)`,
+          policyType: 'custom',
+          policyText: event.refundPolicyText || undefined,
+          daysUntilEvent,
+        };
+      }
+      return {
+        eligible: true,
+        refundPercentage: 100, // Custom policy determines actual amount
+        refundAmount: transactionAmount,
+        currency,
+        message: event.refundPolicyText || 'You may be eligible for a refund. Please contact the organizer.',
+        policyType: 'custom',
+        policyText: event.refundPolicyText || undefined,
+        daysUntilEvent,
+      };
+    }
+
+    // Fallback
+    return {
+      eligible: false,
+      refundPercentage: 0,
+      refundAmount: 0,
+      currency,
+      message: 'Unable to determine refund eligibility',
+      policyType: refundPolicy,
+      daysUntilEvent,
+    };
+  }
+
+  /**
+   * Request a refund as an attendee
+   * Uses configurable refund policies to determine eligibility and amount
+   */
+  static async requestRefundAttendee(
+    registrationId: string,
+    userId: string,
+    data: { refundReason: string },
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // 1. Check refund eligibility
+    const eligibility = await this.getRefundEligibility(registrationId, userId);
+
+    if (!eligibility.eligible) {
+      throw new ValidationError(eligibility.message);
+    }
+
+    // 2. Get registration details for creating refund
+    const registration = await prisma.eventRegistration.findUnique({
+      where: { id: registrationId },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
             autoRefundEnabled: true,
             organizerId: true,
           },
@@ -450,61 +733,41 @@ export class RefundService {
       },
     });
 
-    if (!registration) {
-      throw new NotFoundError('Registration not found');
+    if (!registration || !registration.paymentTransaction) {
+      throw new NotFoundError('Registration or payment not found');
     }
 
-    if (registration.attendeeId !== userId) {
-      throw new AuthorizationError('You can only request refunds for your own registrations');
-    }
+    // 3. Determine refund type based on percentage
+    const refundType: 'full' | 'partial' = eligibility.refundPercentage === 100 ? 'full' : 'partial';
 
-    if (!registration.paymentTransaction) {
-      throw new ValidationError('No payment transaction found for this registration');
-    }
-
-    const event = registration.event;
-    const now = new Date();
-
-    // 2. Validate refund policy (SLA)
-    const refundSLA = event.refundSLA || 0;
-    if (refundSLA === 0) {
-      throw new ValidationError('Refunds are not allowed for this event');
-    }
-
-    const eventStartDate = new Date(event.startDate);
-    const deadline = new Date(eventStartDate.getTime() - refundSLA * 24 * 60 * 60 * 1000);
-
-    if (now > deadline) {
-      throw new ValidationError(
-        `Refund request deadline has passed. Refunds are only allowed up to ${refundSLA} days before the event.`,
-      );
-    }
-
-    // 3. Create refund request
+    // 4. Create refund request with calculated amount
     const refund = await this.createRefund(
       {
         transactionId: registration.paymentTransaction.id,
+        refundAmount: eligibility.refundAmount,
         refundReason: data.refundReason,
-        refundType: 'full',
+        refundType,
+        notes: `Auto-calculated: ${eligibility.refundPercentage}% refund based on ${eligibility.policyType} policy`,
       },
       userId,
       ipAddress,
       userAgent,
     );
 
-    // 4. Handle Auto-Refund
-    if (event.autoRefundEnabled) {
+    // 5. Handle Auto-Refund if enabled
+    if (registration.event.autoRefundEnabled) {
       logger.info(`Auto-refund triggered for refund ${refund.id} (registration: ${registrationId})`);
       try {
-        // Auto-process refund (marks it as processing and calls Paystack)
         await this.processRefund(refund.id, {}, 'SYSTEM', ipAddress, userAgent);
       } catch (error) {
         logger.error(`Auto-refund failed for refund ${refund.id}:`, error);
-        // We still created the refund request, it will just need manual intervention from organizer/admin
       }
     }
 
-    return refund;
+    return {
+      ...refund,
+      eligibility,
+    };
   }
 
   /**

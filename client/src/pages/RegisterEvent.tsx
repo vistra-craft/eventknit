@@ -904,15 +904,15 @@ const EventRegistration = () => {
                                 {discounted && ticket.originalPrice ? (
                                   <div className="flex flex-col items-end">
                                     <span className="text-xs text-muted-foreground line-through">
-                                      {currency}{ticket.originalPrice}
+                                      {currency} {ticket.originalPrice}
                                     </span>
                                     <span className="font-bold text-lg text-primary">
-                                      {currency}{ticket.price}
+                                      {currency} {ticket.price}
                                     </span>
                                   </div>
                                 ) : (
                                   <p className="font-bold text-lg text-primary">
-                                    {currency}{ticket.price}
+                                    {currency} {ticket.price}
                                   </p>
                                 )}
                               </div>
@@ -996,7 +996,7 @@ const EventRegistration = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-base font-semibold">Total Price</span>
                           <span className="text-xl font-bold text-primary">
-                            {event.currency || '$'}
+                            {event.currency || '$'}{' '}
                             {event.ticketTypes?.reduce((sum, ticket) => {
                               const qty = selectedTickets[ticket.name] || 0;
                               return sum + (ticket.price * qty);
@@ -1043,7 +1043,7 @@ const EventRegistration = () => {
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-semibold text-success">
-                                -${appliedDiscount.amount.toFixed(2)}
+                                -{event.currency || '$'} {appliedDiscount.amount.toFixed(2)}
                               </span>
                               <Button type="button" variant="ghost" size="sm" onClick={handleRemovePromoCode}>
                                 <X className="w-4 h-4" />
@@ -1262,7 +1262,7 @@ const EventRegistration = () => {
                           </span>
                           {!event?.isFree && event?.price !== 0 && (
                             <span className="font-semibold text-foreground">
-                              • {event.currency || '$'}
+                              • {event.currency || '$'}{' '}
                               {event.ticketTypes?.reduce((sum, ticket) => {
                                 const qty = selectedTickets[ticket.name] || 0;
                                 return sum + (ticket.price * qty);

@@ -11,6 +11,7 @@ import {
   ChevronRight,
   LogOut,
   Crown,
+  Megaphone,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -62,9 +63,9 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Event Drafts", href: "/organizer/events/drafts" },
       ]
     },
-    { 
-      id: "analytics", 
-      label: "Analytics", 
+    {
+      id: "analytics",
+      label: "Analytics",
       icon: TrendingUp,
       group: "main",
       children: [
@@ -72,6 +73,15 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Event Performance", href: "/organizer/analytics/events" },
         { name: "Attendee Insights", href: "/organizer/analytics/attendees" },
         { name: "Revenue Reports", href: "/organizer/analytics/revenue" },
+      ]
+    },
+    {
+      id: "marketing",
+      label: "Marketing",
+      icon: Megaphone,
+      group: "main",
+      children: [
+        { name: "Promo Codes", href: "/organizer/marketing/promo-codes" },
       ]
     },
     {

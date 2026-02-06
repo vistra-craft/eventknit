@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { EventController } from '../controllers/event.controller.js';
 import { SeatSelectionController } from '../controllers/seat-map.controller.js';
-import { validate, validateParams } from '../middleware/validation.middleware.js';
+import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
 import { authenticate, requireMinRole } from '../middleware/auth.middleware.js';
 import { eventValidations } from '../validations/event.validations.js';
 import { reserveSeatsSchema } from '../validations/venue.validations.js';
@@ -236,6 +236,41 @@ router.get(
   '/registrations/:registrationId/seats',
   validateParams(Joi.object({ registrationId: Joi.string().uuid().required() })),
   SeatSelectionController.getSeatSelection,
+);
+
+/**
+ * @route   POST /api/v1/events/:id/seats/best-available
+ * @desc    Find best available seats based on criteria
+ * @access  Public
+ */
+router.post(
+  '/:id/seats/best-available',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  validate(Joi.object({
+    quantity: Joi.number().integer().min(1).max(10).default(1),
+    preferredSeatTypes: Joi.array().items(Joi.string().valid('STANDARD', 'VIP', 'PREMIUM', 'ACCESSIBLE', 'COMPANION')).optional(),
+    preferredSections: Joi.array().items(Joi.string()).optional(),
+    maxPrice: Joi.number().positive().optional(),
+    minPrice: Joi.number().min(0).optional(),
+    keepTogether: Joi.boolean().default(true),
+    prioritizeValue: Joi.boolean().default(false),
+  })),
+  SeatSelectionController.getBestAvailableSeats,
+);
+
+/**
+ * @route   GET /api/v1/events/:id/seats/recommendations
+ * @desc    Get seat recommendations with pricing
+ * @access  Public
+ */
+router.get(
+  '/:id/seats/recommendations',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  validateQuery(Joi.object({
+    budget: Joi.number().positive().optional(),
+    quantity: Joi.number().integer().min(1).max(10).default(1),
+  })),
+  SeatSelectionController.getSeatRecommendations,
 );
 
 export default router;

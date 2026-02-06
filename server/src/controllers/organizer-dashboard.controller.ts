@@ -694,6 +694,41 @@ export class OrganizerDashboardController {
     }
   }
 
+  static async getCheckoutAnalytics(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const filters = {
+        eventId: req.query.eventId as string | undefined,
+        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
+        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
+      };
+
+      const analytics = await OrganizerAnalyticsService.getCheckoutAnalytics(req.user.id, filters);
+      res.status(200).json({ success: true, data: analytics });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getAbandonmentAnalysis(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const eventId = req.query.eventId as string | undefined;
+      const analytics = await OrganizerAnalyticsService.getAbandonmentAnalysis(req.user.id, eventId);
+      res.status(200).json({ success: true, data: analytics });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Advanced Promo Codes
   static async createPromoCodeVariant(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {

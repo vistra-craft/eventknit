@@ -19,6 +19,7 @@ export interface InitializePaymentData {
   currency?: string;
   gateway?: GatewayType; // Optional: specify gateway, defaults to default gateway
   metadata?: Record<string, unknown>;
+  idempotencyKey?: string; // Optional: unique key to prevent duplicate payments
 }
 
 export interface PaymentVerificationResult {
@@ -74,8 +75,52 @@ export class PaymentService {
 
   /**
    * Initialize payment with selected gateway (Paystack, Stripe, etc.)
+   * Supports idempotency keys to prevent duplicate payments
    */
   async initializePayment(data: InitializePaymentData) {
+    // Generate or use provided idempotency key
+    // Format: registrationId-amount-timestamp or provided key
+    const idempotencyKey = data.idempotencyKey ||
+      `${data.registrationId}-${data.amount}-${Date.now()}`;
+
+    // Check for existing payment with same idempotency key
+    const existingTransaction = await prisma.eventPaymentTransaction.findUnique({
+      where: { idempotencyKey },
+    });
+
+    if (existingTransaction) {
+      // If payment succeeded, return the existing successful payment
+      if (existingTransaction.paymentStatus === 'success') {
+        logger.info(`Idempotent payment request: returning existing successful payment for key ${idempotencyKey}`);
+        return {
+          authorizationUrl: null, // Already paid
+          accessCode: null,
+          reference: existingTransaction.gatewayReference,
+          gateway: existingTransaction.gateway,
+          status: 'ALREADY_PAID',
+          message: 'Payment already completed',
+        };
+      }
+
+      // If payment is pending, return the existing pending payment URL
+      if (existingTransaction.paymentStatus === 'pending') {
+        logger.info(`Idempotent payment request: returning existing pending payment for key ${idempotencyKey}`);
+        // Note: We could potentially fetch the authorization URL from the gateway
+        // For now, we'll return the reference so client can verify or retry
+        return {
+          authorizationUrl: null,
+          accessCode: null,
+          reference: existingTransaction.gatewayReference,
+          gateway: existingTransaction.gateway,
+          status: 'PENDING',
+          message: 'Payment is already pending. Please complete or verify your payment.',
+        };
+      }
+
+      // If payment failed, allow retry but log the idempotency key reuse
+      logger.info(`Idempotent payment retry: previous payment failed for key ${idempotencyKey}`);
+    }
+
     // Get registration to verify it exists and is pending
     const registration = await prisma.eventRegistration.findUnique({
       where: { id: data.registrationId },
@@ -131,6 +176,7 @@ export class PaymentService {
           registrationId: data.registrationId,
           eventId: registration.eventId,
           eventTitle: registration.event.title,
+          idempotencyKey, // Include idempotency key for tracking
           ...data.metadata,
         },
         callbackUrl: `${config.frontend.url}/payment/callback?reference=${reference}&gateway=${gatewayType}`,
@@ -284,9 +330,19 @@ export class PaymentService {
 
   /**
    * Handle payment webhook from payment gateway
+   * Implements idempotency by tracking processed webhook events
    */
-  async handleWebhook(event: string, data: Record<string, unknown>, gatewayType?: GatewayType) {
+  async handleWebhook(event: string, data: Record<string, unknown>, gatewayType?: GatewayType): Promise<{ status: string; message?: string } | void> {
+    // Extract webhook event ID for idempotency (defined outside try for catch block access)
+    // Paystack: data.id, Stripe: id at top level or data.object.id
+    const webhookEventId = (data.id as string) || (data.data as Record<string, unknown>)?.id as string;
+
     try {
+
+      if (!webhookEventId) {
+        logger.warn('[PaymentService.handleWebhook] No webhook event ID found in payload - proceeding without idempotency check');
+      }
+
       // Determine gateway type
       let gateway: any;
       let detectedGatewayType: GatewayType;
@@ -306,6 +362,40 @@ export class PaymentService {
           detectedGatewayType = 'PAYSTACK';
         }
         gateway = this.gatewayManager.getGateway(detectedGatewayType);
+      }
+
+      // IDEMPOTENCY CHECK: Prevent duplicate webhook processing
+      // Payment providers may send the same webhook multiple times (retry logic)
+      if (webhookEventId) {
+        const existingEvent = await prisma.paymentWebhookEvent.findUnique({
+          where: { gatewayEventId: webhookEventId },
+        });
+
+        if (existingEvent) {
+          logger.info(`[PaymentService.handleWebhook] Duplicate webhook event detected, skipping: ${webhookEventId}`);
+          return { status: 'DUPLICATE', message: 'Webhook already processed' };
+        }
+
+        // Record webhook event BEFORE processing (optimistic locking)
+        // If another process is processing the same event, this will fail with unique constraint
+        try {
+          await prisma.paymentWebhookEvent.create({
+            data: {
+              gatewayEventId: webhookEventId,
+              gateway: detectedGatewayType,
+              eventType: event,
+              payload: { event, data } as Prisma.InputJsonValue,
+              status: 'PROCESSING',
+            },
+          });
+        } catch (createError) {
+          // Unique constraint violation means another process is handling this event
+          if ((createError as any).code === 'P2002') {
+            logger.info(`[PaymentService.handleWebhook] Race condition: webhook event being processed by another instance: ${webhookEventId}`);
+            return { status: 'DUPLICATE', message: 'Webhook being processed by another instance' };
+          }
+          throw createError;
+        }
       }
 
       // Process webhook through gateway
@@ -383,8 +473,76 @@ export class PaymentService {
             eventId: registration.eventId,
             attendeeEmail: registration.attendee.email,
           });
-          // Alert admin - log as critical error
-          logger.warn(`CRITICAL: Payment amount mismatch detected. Reference: ${reference}, Expected: ${expectedAmount}, Paid: ${paidAmount}`);
+
+          // FIX: Silent payment failure - notify user and admin about the mismatch
+          // Update registration to indicate payment issue
+          await prisma.eventRegistration.update({
+            where: { id: registration.id },
+            data: {
+              paymentStatus: 'AMOUNT_MISMATCH',
+            },
+          });
+
+          // Notify the attendee about the payment issue
+          try {
+            await NotificationService.sendNotification({
+              userId: registration.attendeeId,
+              type: NotificationType.PAYMENT_FAILED,
+              title: `Payment Issue: ${registration.event.title}`,
+              message: `There was an issue with your payment for "${registration.event.title}". The amount paid (${paidAmount}) does not match the expected amount (${expectedAmount}). Please contact support for assistance. Reference: ${reference}`,
+              priority: NotificationPriority.HIGH,
+              eventId: registration.eventId,
+              registrationId: registration.id,
+              data: {
+                expectedAmount,
+                paidAmount,
+                difference: amountDifference,
+                reference,
+                issueType: 'AMOUNT_MISMATCH',
+              },
+            });
+          } catch (notifyError) {
+            logger.error('Failed to send payment mismatch notification to attendee:', notifyError);
+          }
+
+          // Notify the organizer about the payment mismatch
+          try {
+            await NotificationService.sendNotification({
+              userId: registration.event.organizerId,
+              type: NotificationType.PAYMENT_FAILED,
+              title: `Payment Mismatch Alert: ${registration.event.title}`,
+              message: `A payment amount mismatch was detected for "${registration.event.title}". Expected: ${expectedAmount}, Paid: ${paidAmount}. Attendee: ${registration.attendee.email}. Reference: ${reference}. Please review and take appropriate action.`,
+              priority: NotificationPriority.HIGH,
+              eventId: registration.eventId,
+              registrationId: registration.id,
+              relatedUserId: registration.attendeeId,
+              data: {
+                expectedAmount,
+                paidAmount,
+                difference: amountDifference,
+                reference,
+                attendeeEmail: registration.attendee.email,
+                issueType: 'AMOUNT_MISMATCH',
+              },
+            });
+          } catch (notifyError) {
+            logger.error('Failed to send payment mismatch notification to organizer:', notifyError);
+          }
+
+          logger.warn(`CRITICAL: Payment amount mismatch detected. Reference: ${reference}, Expected: ${expectedAmount}, Paid: ${paidAmount}. Notifications sent to user and organizer.`);
+
+          // Update webhook event status if available
+          if (webhookEventId) {
+            await prisma.paymentWebhookEvent.update({
+              where: { gatewayEventId: webhookEventId },
+              data: {
+                status: 'PROCESSED',
+                reference,
+                registrationId: registration.id,
+              },
+            });
+          }
+
           return;
         }
 
@@ -430,6 +588,10 @@ export class PaymentService {
           // Get gateway transaction ID from verification
           const gatewayVerification = await gateway.verifyPayment({ reference });
 
+          // Extract idempotency key from metadata (passed through during payment initialization)
+          const paymentMetadata = verification.metadata || data.metadata || data;
+          const idempotencyKey = (paymentMetadata as Record<string, unknown>)?.idempotencyKey as string | undefined;
+
           // Create payment transaction record
           const paymentTransaction = await tx.eventPaymentTransaction.create({
             data: {
@@ -450,6 +612,7 @@ export class PaymentService {
                 ? `${registration.attendee.firstName} ${registration.attendee.lastName}`
                 : null,
               gatewayMetadata: data as Prisma.InputJsonValue,
+              idempotencyKey: idempotencyKey || null, // Store idempotency key for tracking
             },
           });
 
@@ -508,8 +671,9 @@ export class PaymentService {
         // Send ticket email
         logger.debug(`[PaymentService.handleWebhook] Starting ticket email sending for registration ${registration.id}`);
         try {
-          // Ensure required fields are present before sending email
-          if (registration.event.organizer.firstName && registration.event.organizer.lastName) {
+          // Ensure organizer has a name (either personal name or organization name)
+          const hasOrganizerName = (registration.event.organizer.firstName && registration.event.organizer.lastName) || registration.event.organizer.organizationName;
+          if (hasOrganizerName) {
             logger.debug('[PaymentService.handleWebhook] Organizer info present, preparing ticket email data');
 
             // Transform registration data to match TicketEmailData interface
@@ -619,7 +783,7 @@ export class PaymentService {
               });
             }
           } else {
-            logger.warn(`Cannot send ticket email: organizer name missing for registration: ${registration.id}`);
+            logger.warn(`Cannot send ticket email: organizer name (firstName/lastName or organizationName) missing for registration: ${registration.id}`);
           }
         } catch (error) {
           logger.error('Failed to send ticket email:', error);
@@ -685,6 +849,18 @@ export class PaymentService {
         }
 
         logger.info(`Payment completed: ${reference} for registration: ${registration.id}`);
+
+        // Update webhook event status to PROCESSED
+        if (webhookEventId) {
+          await prisma.paymentWebhookEvent.update({
+            where: { gatewayEventId: webhookEventId },
+            data: {
+              status: 'PROCESSED',
+              reference,
+              registrationId: registration.id,
+            },
+          });
+        }
       }
 
       // Handle payment failure events
@@ -759,12 +935,51 @@ export class PaymentService {
             }
 
             logger.info(`Payment failed: ${reference} for registration: ${registration.id}`);
+
+            // Update webhook event status to PROCESSED for payment failure
+            if (webhookEventId) {
+              await prisma.paymentWebhookEvent.update({
+                where: { gatewayEventId: webhookEventId },
+                data: {
+                  status: 'PROCESSED',
+                  reference,
+                  registrationId: registration.id,
+                },
+              });
+            }
           } else {
             logger.warn(`Payment failed webhook: Registration not found for reference: ${reference}`);
           }
         }
       }
+
+      // Mark any unprocessed webhook events as ignored (for events we don't handle)
+      if (webhookEventId) {
+        const webhookEvent = await prisma.paymentWebhookEvent.findUnique({
+          where: { gatewayEventId: webhookEventId },
+        });
+        if (webhookEvent && webhookEvent.status === 'PROCESSING') {
+          await prisma.paymentWebhookEvent.update({
+            where: { gatewayEventId: webhookEventId },
+            data: { status: 'IGNORED' },
+          });
+        }
+      }
     } catch (error) {
+      // Update webhook event status to FAILED on error
+      if (webhookEventId) {
+        try {
+          await prisma.paymentWebhookEvent.update({
+            where: { gatewayEventId: webhookEventId },
+            data: {
+              status: 'FAILED',
+              errorMessage: error instanceof Error ? error.message : String(error),
+            },
+          });
+        } catch (updateError) {
+          logger.error('Failed to update webhook event status:', updateError);
+        }
+      }
       logger.error('Failed to handle payment webhook:', error);
       throw error;
     }

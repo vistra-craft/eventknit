@@ -1,6 +1,30 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { SeatType, SeatStatus } from '@prisma/client';
+
+export interface SeatPricingContext {
+  eventId: string;
+  seatId: string;
+  seatType: SeatType;
+  sectionId?: string;
+  basePrice: number;
+  currentTime: Date;
+  eventDate: Date;
+  totalSeats: number;
+  soldSeats: number;
+}
+
+export interface CalculatedSeatPrice {
+  basePrice: number;
+  finalPrice: number;
+  adjustments: Array<{
+    ruleName: string;
+    type: string;
+    amount: number;
+  }>;
+  surgeMultiplier?: number;
+}
 
 export class DynamicPricingService {
   /**
@@ -363,6 +387,288 @@ export class DynamicPricingService {
       return { success: true };
     } catch (error) {
       logger.error('Error deleting pricing rule:', error);
+      throw error;
+    }
+  }
+
+  // ==================== SEAT-BASED DYNAMIC PRICING ====================
+
+  /**
+   * Calculate dynamic price for a specific seat
+   */
+  static async calculateSeatPrice(context: SeatPricingContext): Promise<CalculatedSeatPrice> {
+    try {
+      let currentPrice = context.basePrice;
+      const adjustments: CalculatedSeatPrice['adjustments'] = [];
+
+      // Get active pricing rules for event
+      const rules = await prisma.dynamicPricingRule.findMany({
+        where: {
+          eventId: context.eventId,
+          isActive: true,
+        },
+        orderBy: { priority: 'desc' },
+      });
+
+      const now = context.currentTime;
+      const msPerDay = 24 * 60 * 60 * 1000;
+      const daysUntilEvent = Math.floor((context.eventDate.getTime() - now.getTime()) / msPerDay);
+      const soldPercentage = context.totalSeats > 0
+        ? (context.soldSeats / context.totalSeats) * 100
+        : 0;
+
+      // Apply seat type premium
+      const seatTypePremiums: Record<string, number> = {
+        'VIP': 1.5,
+        'PREMIUM': 1.25,
+        'ACCESSIBLE': 1.0,
+        'COMPANION': 1.0,
+        'STANDARD': 1.0,
+      };
+      const seatMultiplier = seatTypePremiums[context.seatType] || 1.0;
+      if (seatMultiplier !== 1.0) {
+        const premiumAmount = currentPrice * (seatMultiplier - 1);
+        currentPrice = currentPrice * seatMultiplier;
+        adjustments.push({
+          ruleName: `${context.seatType} Seat Premium`,
+          type: 'TIER',
+          amount: premiumAmount,
+        });
+      }
+
+      // Apply time-based pricing rules
+      for (const rule of rules.filter(r => r.type === 'time_based')) {
+        if (rule.startDate && rule.endDate && now >= rule.startDate && now <= rule.endDate) {
+          if (rule.discountType === 'PERCENTAGE' && rule.discountValue) {
+            const discount = currentPrice * (Number(rule.discountValue) / 100);
+            currentPrice = currentPrice - discount;
+            adjustments.push({
+              ruleName: rule.name,
+              type: 'TIME',
+              amount: -discount,
+            });
+          }
+          break;
+        }
+      }
+
+      // Apply early bird discount (30+ days out)
+      if (daysUntilEvent >= 30 && !adjustments.some(a => a.type === 'TIME')) {
+        const earlyBirdDiscount = currentPrice * 0.15;
+        currentPrice = currentPrice - earlyBirdDiscount;
+        adjustments.push({
+          ruleName: 'Early Bird Discount',
+          type: 'TIME',
+          amount: -earlyBirdDiscount,
+        });
+      }
+
+      // Apply demand-based surge pricing
+      let surgeMultiplier: number | undefined;
+      for (const rule of rules.filter(r => r.type === 'demand_based')) {
+        if (rule.demandThreshold && soldPercentage >= rule.demandThreshold && rule.priceMultiplier) {
+          const multiplier = Number(rule.priceMultiplier);
+          const surgeAmount = currentPrice * (multiplier - 1);
+          currentPrice = currentPrice * multiplier;
+          surgeMultiplier = multiplier;
+          adjustments.push({
+            ruleName: rule.name,
+            type: 'DEMAND',
+            amount: surgeAmount,
+          });
+          break;
+        }
+      }
+
+      // Default surge pricing if no rules matched but demand is high
+      if (!surgeMultiplier && soldPercentage >= 80) {
+        const defaultSurge = 1 + ((soldPercentage - 80) / 100); // Up to 1.2x at 100%
+        if (defaultSurge > 1) {
+          const surgeAmount = currentPrice * (defaultSurge - 1);
+          currentPrice = currentPrice * defaultSurge;
+          surgeMultiplier = defaultSurge;
+          adjustments.push({
+            ruleName: 'High Demand Premium',
+            type: 'DEMAND',
+            amount: surgeAmount,
+          });
+        }
+      }
+
+      return {
+        basePrice: context.basePrice,
+        finalPrice: Math.max(0, Math.round(currentPrice * 100) / 100),
+        adjustments,
+        surgeMultiplier,
+      };
+    } catch (error) {
+      logger.error('Error calculating seat price:', error);
+      return {
+        basePrice: context.basePrice,
+        finalPrice: context.basePrice,
+        adjustments: [],
+      };
+    }
+  }
+
+  /**
+   * Update all seat prices for an event based on current demand
+   */
+  static async updateEventSeatPrices(eventId: string): Promise<{ updated: number }> {
+    try {
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          seatMap: {
+            include: {
+              seats: {
+                where: { status: SeatStatus.AVAILABLE },
+              },
+            },
+          },
+        },
+      });
+
+      if (!event || !event.seatMap) {
+        return { updated: 0 };
+      }
+
+      const totalSeats = await prisma.seat.count({
+        where: { seatMapId: event.seatMap.id },
+      });
+
+      const soldSeats = await prisma.seat.count({
+        where: {
+          seatMapId: event.seatMap.id,
+          status: { in: [SeatStatus.BOOKED, SeatStatus.RESERVED] },
+        },
+      });
+
+      let updated = 0;
+
+      for (const seat of event.seatMap.seats) {
+        const context: SeatPricingContext = {
+          eventId,
+          seatId: seat.id,
+          seatType: seat.seatType,
+          sectionId: seat.sectionId || undefined,
+          basePrice: Number(seat.basePrice || 0),
+          currentTime: new Date(),
+          eventDate: event.startDate,
+          totalSeats,
+          soldSeats,
+        };
+
+        const calculated = await this.calculateSeatPrice(context);
+
+        if (calculated.finalPrice !== Number(seat.currentPrice)) {
+          await prisma.seat.update({
+            where: { id: seat.id },
+            data: { currentPrice: calculated.finalPrice },
+          });
+          updated++;
+        }
+      }
+
+      logger.info(`Updated ${updated} seat prices for event ${eventId}`);
+      return { updated };
+    } catch (error) {
+      logger.error('Error updating event seat prices:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get seat pricing analytics for event
+   */
+  static async getSeatPricingAnalytics(eventId: string, organizerId: string) {
+    try {
+      const event = await prisma.event.findFirst({
+        where: { id: eventId, organizerId, deletedAt: null },
+        include: {
+          seatMap: {
+            include: {
+              seats: true,
+            },
+          },
+        },
+      });
+
+      if (!event || !event.seatMap) {
+        throw new NotFoundError('Event or seat map not found');
+      }
+
+      const seats = event.seatMap.seats;
+      const availableSeats = seats.filter(s => s.status === SeatStatus.AVAILABLE);
+      const soldSeats = seats.filter(s => s.status === SeatStatus.BOOKED);
+      const reservedSeats = seats.filter(s => s.status === SeatStatus.RESERVED);
+
+      // Revenue calculations
+      const potentialRevenue = availableSeats.reduce(
+        (sum, s) => sum + Number(s.currentPrice || s.basePrice || 0),
+        0,
+      );
+      const basePotentialRevenue = availableSeats.reduce(
+        (sum, s) => sum + Number(s.basePrice || 0),
+        0,
+      );
+      const actualRevenue = soldSeats.reduce(
+        (sum, s) => sum + Number(s.currentPrice || s.basePrice || 0),
+        0,
+      );
+
+      // Price by seat type
+      const bySeatType: Record<string, any> = {};
+      for (const seat of seats) {
+        if (!bySeatType[seat.seatType]) {
+          bySeatType[seat.seatType] = {
+            total: 0,
+            available: 0,
+            sold: 0,
+            avgBasePrice: 0,
+            avgCurrentPrice: 0,
+            totalBasePrice: 0,
+            totalCurrentPrice: 0,
+          };
+        }
+        const stats = bySeatType[seat.seatType];
+        stats.total++;
+        stats.totalBasePrice += Number(seat.basePrice || 0);
+        stats.totalCurrentPrice += Number(seat.currentPrice || seat.basePrice || 0);
+        if (seat.status === SeatStatus.AVAILABLE) stats.available++;
+        if (seat.status === SeatStatus.BOOKED) stats.sold++;
+      }
+
+      for (const type in bySeatType) {
+        const stats = bySeatType[type];
+        stats.avgBasePrice = stats.total > 0 ? Math.round(stats.totalBasePrice / stats.total) : 0;
+        stats.avgCurrentPrice = stats.total > 0 ? Math.round(stats.totalCurrentPrice / stats.total) : 0;
+        stats.priceUplift = stats.avgBasePrice > 0
+          ? Math.round(((stats.avgCurrentPrice - stats.avgBasePrice) / stats.avgBasePrice) * 10000) / 100
+          : 0;
+      }
+
+      return {
+        summary: {
+          totalSeats: seats.length,
+          availableSeats: availableSeats.length,
+          soldSeats: soldSeats.length,
+          reservedSeats: reservedSeats.length,
+          soldPercentage: Math.round((soldSeats.length / seats.length) * 10000) / 100,
+        },
+        revenue: {
+          actual: actualRevenue,
+          potentialAtCurrentPrices: potentialRevenue,
+          potentialAtBasePrices: basePotentialRevenue,
+          dynamicPricingUplift: potentialRevenue - basePotentialRevenue,
+          upliftPercentage: basePotentialRevenue > 0
+            ? Math.round(((potentialRevenue - basePotentialRevenue) / basePotentialRevenue) * 10000) / 100
+            : 0,
+        },
+        bySeatType,
+      };
+    } catch (error) {
+      logger.error('Error getting seat pricing analytics:', error);
       throw error;
     }
   }

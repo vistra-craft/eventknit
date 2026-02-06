@@ -43,6 +43,7 @@ import {
   verifyCustomDomainSchema,
 } from '../validations/white-label.validations.js';
 import { AdminSecurityController } from '../controllers/admin-security.controller.js';
+import { AdminPlatformAnalyticsController } from '../controllers/admin-platform-analytics.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { requireMinRole } from '../middleware/auth.middleware.js';
 import { adminSecurityCheck } from '../middleware/admin-security.middleware.js';
@@ -947,6 +948,83 @@ router.delete(
   '/security/allowed-ips/:ip',
   requireMinRole(UserRole.SUPERADMIN),
   AdminSecurityController.removeAllowedIP,
+);
+
+// ========== Platform Analytics (Admin) ==========
+
+/**
+ * @route   GET /api/v1/admin/platform-analytics/gmv
+ * @desc    Get platform GMV (Gross Merchandise Value) analytics
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/platform-analytics/gmv',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    currency: Joi.string().optional(),
+  })),
+  AdminPlatformAnalyticsController.getGMVAnalytics,
+);
+
+/**
+ * @route   GET /api/v1/admin/platform-analytics/fees
+ * @desc    Get platform fees collected analytics
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/platform-analytics/fees',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    currency: Joi.string().optional(),
+  })),
+  AdminPlatformAnalyticsController.getPlatformFeesAnalytics,
+);
+
+/**
+ * @route   GET /api/v1/admin/platform-analytics/gateway-health
+ * @desc    Get payment gateway health metrics
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/platform-analytics/gateway-health',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    currency: Joi.string().optional(),
+  })),
+  AdminPlatformAnalyticsController.getPaymentGatewayHealth,
+);
+
+/**
+ * @route   GET /api/v1/admin/platform-analytics/refund-trends
+ * @desc    Get refund trends analytics
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/platform-analytics/refund-trends',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    currency: Joi.string().optional(),
+  })),
+  AdminPlatformAnalyticsController.getRefundTrends,
+);
+
+/**
+ * @route   GET /api/v1/admin/platform-analytics/dashboard
+ * @desc    Get complete platform dashboard analytics
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/platform-analytics/dashboard',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+    currency: Joi.string().optional(),
+  })),
+  AdminPlatformAnalyticsController.getDashboardAnalytics,
 );
 
 export default router;

@@ -66,18 +66,30 @@ export interface ManualCheckOutResult extends CheckOutResult {
 export class WorkstationService {
   /**
    * Detect code type (QR code or backup code)
+   * Now supports three formats:
+   * - SIGNED: New Ed25519 signed format (header.payload.signature)
+   * - LEGACY_QR: Legacy HMAC format (registrationId|eventId|email|timestamp|signature)
+   * - BACKUP_CODE: Alphanumeric backup code
    */
   private static detectCodeType(code: string): 'QR_CODE' | 'BACKUP_CODE' {
-    // QR codes contain pipe separators
-    if (code.includes('|')) {
+    const format = TicketSecurityService.detectTicketFormat(code);
+    // Map to existing type for backward compatibility
+    if (format === 'SIGNED' || format === 'LEGACY') {
       return 'QR_CODE';
     }
-    // Backup codes are alphanumeric, typically 10 characters
     return 'BACKUP_CODE';
   }
 
   /**
+   * Get detailed ticket format for signature verification
+   */
+  private static getTicketFormat(code: string): 'SIGNED' | 'LEGACY' | 'BACKUP' {
+    return TicketSecurityService.detectTicketFormat(code);
+  }
+
+  /**
    * Parse QR code and extract registration ID
+   * Supports both signed (Ed25519) and legacy (HMAC) formats
    */
   private static parseQRCode(ticketData: string): {
     registrationId: string;
@@ -85,20 +97,42 @@ export class WorkstationService {
     email: string;
     timestamp: number;
     signature?: string;
+    format: 'SIGNED' | 'LEGACY';
   } | null {
-    const verification = TicketSecurityService.verifyTicketSignature(ticketData);
-    
-    if (!verification.isValid || !verification.registrationId || !verification.eventId) {
-      return null;
+    const format = this.getTicketFormat(ticketData);
+
+    if (format === 'SIGNED') {
+      // Parse new Ed25519 signed format
+      const payload = TicketSecurityService.verifySignedTicket(ticketData);
+      if (!payload) {
+        return null;
+      }
+      return {
+        registrationId: payload.rid,
+        eventId: payload.eid,
+        email: payload.sub,
+        timestamp: payload.iat,
+        format: 'SIGNED',
+      };
+    } else if (format === 'LEGACY') {
+      // Parse legacy HMAC format
+      const verification = TicketSecurityService.verifyTicketSignature(ticketData);
+
+      if (!verification.isValid || !verification.registrationId || !verification.eventId) {
+        return null;
+      }
+
+      return {
+        registrationId: verification.registrationId,
+        eventId: verification.eventId,
+        email: verification.email || '',
+        timestamp: verification.timestamp || 0,
+        signature: verification.signature,
+        format: 'LEGACY',
+      };
     }
 
-    return {
-      registrationId: verification.registrationId,
-      eventId: verification.eventId,
-      email: verification.email || '',
-      timestamp: verification.timestamp || 0,
-      signature: verification.signature,
-    };
+    return null;
   }
 
   /**

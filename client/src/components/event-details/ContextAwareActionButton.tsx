@@ -41,7 +41,7 @@ export const ContextAwareActionButton = ({
     if (event.ticketTypes && event.ticketTypes.length === 1) {
       const price = event.ticketTypes[0].price;
       return {
-        label: `Get Tickets - ${currency}${price}`,
+        label: `Get Tickets - ${currency} ${price}`,
         icon: <Ticket className="mr-2 h-5 w-5" />,
         variant: 'default' as const,
         disabled: false,
@@ -50,7 +50,7 @@ export const ContextAwareActionButton = ({
 
     if (event.price && typeof event.price === 'number') {
       return {
-        label: `Get Tickets - ${currency}${event.price}`,
+        label: `Get Tickets - ${currency} ${event.price}`,
         icon: <Ticket className="mr-2 h-5 w-5" />,
         variant: 'default' as const,
         disabled: false,

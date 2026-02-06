@@ -61,6 +61,8 @@ export interface ActiveFeaturedEvent {
   eventId: string | null;
   title: string;
   image: string;
+  imageFocalX?: number | null;
+  imageFocalY?: number | null;
   category: string;
   date: string | null;
   time: string;

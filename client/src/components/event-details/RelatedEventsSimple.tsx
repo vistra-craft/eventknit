@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getEvents, EventStatus, EventType } from "@/lib/event-api";
 import type { EventData } from "@/types/event";
 import { Loader } from "@/components/ui/loader";
+import { EventImage } from "@/components/EventImage";
 
 interface RelatedEventsSimpleProps {
   currentEventId?: string;
@@ -108,17 +109,13 @@ export const RelatedEventsSimple = ({
           >
             {/* Event Image */}
             <div className="relative h-48 overflow-hidden">
-              {event.image ? (
-                <img 
-                  src={event.image} 
-                  alt={event.title} 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                />
-              ) : (
-                <div className="w-full h-full bg-muted flex items-center justify-center">
-                  <span className="text-muted-foreground text-sm">No image</span>
-                </div>
-              )}
+              <EventImage
+                src={event.image}
+                alt={event.title}
+                focalX={event.imageFocalX}
+                focalY={event.imageFocalY}
+                className="w-full h-full group-hover:scale-105 transition-transform duration-300"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               {event.category && (
                 <div className="absolute top-3 left-3">

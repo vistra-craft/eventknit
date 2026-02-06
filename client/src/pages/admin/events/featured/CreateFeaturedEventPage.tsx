@@ -15,6 +15,7 @@ import {
   type FeaturedItemType,
 } from "@/lib/featured-event-api";
 import { getEvents, EventStatus } from "@/lib/event-api";
+import { HeroPreview } from "@/components/admin/HeroPreview";
 
 const CreateFeaturedEventPage = () => {
   const navigate = useNavigate();
@@ -305,9 +306,41 @@ const CreateFeaturedEventPage = () => {
     }
   };
 
+  // Get preview data based on current form state
+  const getPreviewData = () => {
+    if (itemType === "EVENT" && selectedEvent) {
+      return {
+        type: "EVENT" as const,
+        title: formData.customTitle || selectedEvent.title,
+        image: imagePreview || formData.customImage || selectedEvent.image || "",
+        category: formData.customCategory || selectedEvent.category,
+        date: selectedEvent.startDate,
+        time: undefined,
+        venue: undefined,
+        location: undefined,
+        description: undefined,
+        linkText: undefined,
+      };
+    }
+    return {
+      type: "IMAGE" as const,
+      title: formData.title || "",
+      image: imagePreview || formData.imageUrl || "",
+      category: undefined,
+      date: undefined,
+      time: undefined,
+      venue: undefined,
+      location: undefined,
+      description: formData.description,
+      linkText: formData.linkText,
+    };
+  };
+
+  const previewData = getPreviewData();
+
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button
@@ -325,8 +358,9 @@ const CreateFeaturedEventPage = () => {
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
               <div>
                 <Label htmlFor="itemType">Type *</Label>
                 <Select 
@@ -486,41 +520,6 @@ const CreateFeaturedEventPage = () => {
                   onChange={(e) => setFormData({ ...formData, customCategory: e.target.value })}
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="displayStartDate">Display Start Date (optional)</Label>
-                  <Input
-                    id="displayStartDate"
-                    type="date"
-                    value={formData.displayStartDate}
-                    onChange={(e) => setFormData({ ...formData, displayStartDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="displayEndDate">Display End Date (optional)</Label>
-                  <Input
-                    id="displayEndDate"
-                    type="date"
-                    value={formData.displayEndDate}
-                    onChange={(e) => setFormData({ ...formData, displayEndDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="displayOrder">Display Order</Label>
-                <Input
-                  id="displayOrder"
-                  type="number"
-                  value={formData.displayOrder}
-                  onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Lower numbers appear first in the hero section
-                </p>
-              </div>
-
               </>)}
 
               {itemType === "IMAGE" && (
@@ -720,6 +719,16 @@ const CreateFeaturedEventPage = () => {
             </Button>
           </div>
         </form>
+
+          {/* Preview Panel */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-6 space-y-4">
+              <div className="rounded-lg border border-border bg-card p-4">
+                <HeroPreview {...previewData} />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </AdminLayout>
   );

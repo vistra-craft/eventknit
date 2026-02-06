@@ -47,25 +47,27 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen lg:min-h-0 lg:h-screen bg-background flex flex-col lg:overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Main layout area (sidebar + header + page content) */}
-      <div className="max-w-7xl w-full mx-auto flex flex-1 lg:h-full min-h-0 overflow-hidden">
-        {/* Sidebar - fixed height, no scroll propagation */}
-        <div className="hidden lg:flex w-64 flex-shrink-0 h-full overflow-hidden">
-          <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
+      <div className="max-w-7xl w-full mx-auto flex flex-1">
+        {/* Sidebar - fixed within the max-w container */}
+        <div className="hidden lg:block lg:w-64 lg:flex-shrink-0">
+          <div className="lg:fixed lg:w-64 lg:h-screen lg:overflow-hidden">
+            <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
+          </div>
         </div>
 
         {/* Main Content - scrollable area */}
-        <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
-          {/* Header - fixed */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          {/* Header */}
           <div className="px-4 sm:px-6 flex-shrink-0">
             <AdminHeader
               onMenuToggle={isMobile ? handleMobileMenuClick : undefined}
             />
           </div>
 
-          {/* Page Content - scrollable */}
-          <main className="flex-1 min-h-0 px-4 sm:px-6 pt-6 pb-6 overflow-y-auto scrollbar-hide">
+          {/* Page Content */}
+          <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
             {children}
           </main>
         </div>

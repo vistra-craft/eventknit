@@ -256,6 +256,16 @@ router.get(
   validateQuery(organizerDashboardValidations.marketingAnalyticsQuery),
   OrganizerDashboardController.getMarketingAnalytics,
 );
+router.get(
+  '/analytics/checkout',
+  validateQuery(organizerDashboardValidations.checkoutAnalyticsQuery),
+  OrganizerDashboardController.getCheckoutAnalytics,
+);
+router.get(
+  '/analytics/abandonment',
+  validateQuery(organizerDashboardValidations.abandonmentAnalyticsQuery),
+  OrganizerDashboardController.getAbandonmentAnalysis,
+);
 
 // Advanced Promo Codes
 router.post(

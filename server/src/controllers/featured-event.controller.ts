@@ -142,10 +142,14 @@ export class FeaturedEventController {
 
   /**
    * Get active featured events (public)
+   * Includes caching headers to reduce server load for homepage hero section
    */
   static async getActiveFeaturedEvents(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const featuredEvents = await FeaturedEventService.getActiveFeaturedEvents();
+
+      // Cache for 60 seconds on CDN/proxies, allow stale content for 5 minutes while revalidating
+      res.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
 
       res.status(200).json({
         success: true,

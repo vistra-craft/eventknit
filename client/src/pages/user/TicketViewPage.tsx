@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Download, Calendar, MapPin, Ticket as TicketIcon, CheckCircle2 } from "lucide-react";
+import { Download, Calendar, MapPin, Globe, Ticket as TicketIcon, CheckCircle2 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,8 @@ type TicketEventDetails = {
   endTime?: string;
   location?: string;
   venue?: string;
+  isOnline?: boolean;
+  onlineLink?: string;
 };
 
 type TicketLocationState = {
@@ -267,6 +269,26 @@ const TicketViewPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Online Event Link — only visible to ticket holders */}
+                {eventData?.isOnline && eventData?.onlineLink && (
+                  <div className="col-span-full">
+                    <div className="flex items-start gap-3 p-4 rounded-xl border border-primary/20 bg-primary/5">
+                      <Globe className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold mb-1">Online Event Link</p>
+                        <a
+                          href={eventData.onlineLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline break-all"
+                        >
+                          {eventData.onlineLink}
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

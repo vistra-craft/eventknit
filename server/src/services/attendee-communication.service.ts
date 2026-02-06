@@ -363,7 +363,7 @@ export class AttendeeCommunicationService {
   /**
    * Get segment recipients (for email campaigns)
    */
-  static async getSegmentRecipients(segmentId: string, organizerId: string): Promise<Array<{ email: string; firstName?: string; lastName?: string }>> {
+  static async getSegmentRecipients(segmentId: string, organizerId: string): Promise<Array<{ id: string; email: string; firstName?: string; lastName?: string }>> {
     try {
       const segment = await prisma.attendeeSegment.findFirst({
         where: {
@@ -375,6 +375,7 @@ export class AttendeeCommunicationService {
             include: {
               user: {
                 select: {
+                  id: true,
                   email: true,
                   firstName: true,
                   lastName: true,
@@ -390,6 +391,7 @@ export class AttendeeCommunicationService {
       }
 
       return segment.members.map(m => ({
+        id: m.user.id,
         email: m.user.email,
         firstName: m.user.firstName || undefined,
         lastName: m.user.lastName || undefined,
@@ -403,7 +405,7 @@ export class AttendeeCommunicationService {
   /**
    * Get tagged users recipients (for email campaigns)
    */
-  static async getTaggedUsersRecipients(tagId: string, organizerId: string): Promise<Array<{ email: string; firstName?: string; lastName?: string }>> {
+  static async getTaggedUsersRecipients(tagId: string, organizerId: string): Promise<Array<{ id: string; email: string; firstName?: string; lastName?: string }>> {
     try {
       const tag = await prisma.attendeeTag.findFirst({
         where: {
@@ -415,6 +417,7 @@ export class AttendeeCommunicationService {
             include: {
               user: {
                 select: {
+                  id: true,
                   email: true,
                   firstName: true,
                   lastName: true,
@@ -430,6 +433,7 @@ export class AttendeeCommunicationService {
       }
 
       return tag.taggedUsers.map(tu => ({
+        id: tu.user.id,
         email: tu.user.email,
         firstName: tu.user.firstName || undefined,
         lastName: tu.user.lastName || undefined,
@@ -443,7 +447,7 @@ export class AttendeeCommunicationService {
   /**
    * Get event registrations recipients (for email campaigns)
    */
-  static async getEventRegistrationsRecipients(eventId: string, organizerId: string): Promise<Array<{ email: string; firstName?: string; lastName?: string }>> {
+  static async getEventRegistrationsRecipients(eventId: string, organizerId: string): Promise<Array<{ id: string; email: string; firstName?: string; lastName?: string }>> {
     try {
       const event = await prisma.event.findFirst({
         where: {
@@ -465,6 +469,7 @@ export class AttendeeCommunicationService {
         include: {
           attendee: {
             select: {
+              id: true,
               email: true,
               firstName: true,
               lastName: true,
@@ -475,6 +480,7 @@ export class AttendeeCommunicationService {
       });
 
       return registrations.map(r => ({
+        id: r.attendee.id,
         email: r.attendee.email,
         firstName: r.attendee.firstName || undefined,
         lastName: r.attendee.lastName || undefined,
@@ -482,6 +488,390 @@ export class AttendeeCommunicationService {
     } catch (error) {
       logger.error('Error getting event registrations recipients:', error);
       return [];
+    }
+  }
+
+  /**
+   * Send event cancellation emails to all confirmed attendees
+   */
+  static async sendEventCancellationEmails(
+    eventId: string,
+    data: {
+      cancellationReason?: string;
+      refundInfo?: {
+        amount: string;
+        status: 'processing' | 'completed' | 'pending' | 'not_applicable';
+      };
+    },
+  ) {
+    try {
+      // Get event details
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: {
+          id: true,
+          title: true,
+          startDate: true,
+          venue: true,
+          location: true,
+          organizer: {
+            select: {
+              organizationName: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!event) {
+        logger.error(`Cannot send cancellation emails: Event ${eventId} not found`);
+        return { sent: 0, failed: 0, errors: [] as string[] };
+      }
+
+      // Get all confirmed registrations
+      const registrations = await prisma.eventRegistration.findMany({
+        where: {
+          eventId,
+          status: 'CONFIRMED',
+        },
+        include: {
+          attendee: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+        distinct: ['attendeeId'],
+      });
+
+      const results = {
+        sent: 0,
+        failed: 0,
+        errors: [] as string[],
+      };
+
+      const eventDate = event.startDate
+        ? new Intl.DateTimeFormat('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+        }).format(new Date(event.startDate))
+        : 'TBD';
+
+      const eventLocation = event.venue || event.location;
+
+      // Send emails to each attendee
+      for (const registration of registrations) {
+        try {
+          const attendeeName = registration.attendee.firstName
+            ? `${registration.attendee.firstName}${registration.attendee.lastName ? ` ${registration.attendee.lastName}` : ''}`
+            : undefined;
+
+          await emailService.sendEventCancellationEmail(registration.attendee.email, {
+            attendeeName: attendeeName || 'there',
+            eventTitle: event.title,
+            eventDate,
+            eventLocation,
+            cancellationReason: data.cancellationReason,
+            refundAmount: data.refundInfo?.amount,
+            refundStatus: data.refundInfo?.status,
+            organizerName: event.organizer.organizationName || undefined,
+            supportEmail: event.organizer.email,
+          });
+
+          // Also send in-app notification
+          await NotificationService.sendNotification({
+            userId: registration.attendee.id,
+            type: NotificationType.EVENT_CANCELLED,
+            title: `Event Cancelled: ${event.title}`,
+            message: `The event "${event.title}" scheduled for ${eventDate} has been cancelled.${data.cancellationReason ? ` Reason: ${data.cancellationReason}` : ''}`,
+            priority: NotificationPriority.HIGH,
+            eventId,
+            registrationId: registration.id,
+            data: {
+              reason: data.cancellationReason,
+              refundInfo: data.refundInfo,
+            },
+          });
+
+          results.sent++;
+        } catch (error: any) {
+          results.failed++;
+          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error.message}`);
+          logger.error(`Error sending cancellation email to ${registration.attendee.email}:`, error);
+        }
+      }
+
+      logger.info(
+        `Event cancellation emails sent for ${eventId}: ${results.sent} sent, ${results.failed} failed`,
+      );
+
+      return results;
+    } catch (error) {
+      logger.error('Error sending event cancellation emails:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send event postponement emails to all confirmed attendees
+   */
+  static async sendEventPostponementEmails(
+    eventId: string,
+    data: {
+      originalDate: Date | string;
+      newDate: Date | string;
+      originalLocation?: string;
+      newLocation?: string;
+      postponementReason?: string;
+      refundOption?: boolean;
+    },
+  ) {
+    try {
+      // Get event details
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: {
+          id: true,
+          title: true,
+          venue: true,
+          location: true,
+          organizer: {
+            select: {
+              organizationName: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!event) {
+        logger.error(`Cannot send postponement emails: Event ${eventId} not found`);
+        return { sent: 0, failed: 0, errors: [] as string[] };
+      }
+
+      // Get all confirmed registrations
+      const registrations = await prisma.eventRegistration.findMany({
+        where: {
+          eventId,
+          status: 'CONFIRMED',
+        },
+        include: {
+          attendee: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+        distinct: ['attendeeId'],
+      });
+
+      const results = {
+        sent: 0,
+        failed: 0,
+        errors: [] as string[],
+      };
+
+      const dateFormatter = new Intl.DateTimeFormat('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+      });
+
+      const originalDateStr = dateFormatter.format(
+        typeof data.originalDate === 'string' ? new Date(data.originalDate) : data.originalDate,
+      );
+      const newDateStr = dateFormatter.format(
+        typeof data.newDate === 'string' ? new Date(data.newDate) : data.newDate,
+      );
+
+      // Send emails to each attendee
+      for (const registration of registrations) {
+        try {
+          const attendeeName = registration.attendee.firstName
+            ? `${registration.attendee.firstName}${registration.attendee.lastName ? ` ${registration.attendee.lastName}` : ''}`
+            : undefined;
+
+          await emailService.sendEventPostponementEmail(registration.attendee.email, {
+            attendeeName: attendeeName || 'there',
+            eventTitle: event.title,
+            originalDate: originalDateStr,
+            newDate: newDateStr,
+            originalLocation: data.originalLocation,
+            newLocation: data.newLocation || event.venue || event.location,
+            postponementReason: data.postponementReason,
+            organizerName: event.organizer.organizationName || undefined,
+            supportEmail: event.organizer.email,
+            refundOption: data.refundOption,
+          });
+
+          // Also send in-app notification
+          await NotificationService.sendNotification({
+            userId: registration.attendee.id,
+            type: NotificationType.EVENT_UPDATE,
+            title: `Event Rescheduled: ${event.title}`,
+            message: `The event "${event.title}" has been rescheduled from ${originalDateStr} to ${newDateStr}. Your ticket remains valid.`,
+            priority: NotificationPriority.HIGH,
+            eventId,
+            registrationId: registration.id,
+            data: {
+              originalDate: originalDateStr,
+              newDate: newDateStr,
+              reason: data.postponementReason,
+            },
+          });
+
+          results.sent++;
+        } catch (error: any) {
+          results.failed++;
+          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error.message}`);
+          logger.error(`Error sending postponement email to ${registration.attendee.email}:`, error);
+        }
+      }
+
+      logger.info(
+        `Event postponement emails sent for ${eventId}: ${results.sent} sent, ${results.failed} failed`,
+      );
+
+      return results;
+    } catch (error) {
+      logger.error('Error sending event postponement emails:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send event update emails to all confirmed attendees
+   */
+  static async sendEventUpdateEmails(
+    eventId: string,
+    data: {
+      updateType: 'location' | 'time' | 'details' | 'general';
+      updateSummary: string;
+    },
+  ) {
+    try {
+      // Get event details
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: {
+          id: true,
+          title: true,
+          startDate: true,
+          venue: true,
+          location: true,
+          organizer: {
+            select: {
+              organizationName: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!event) {
+        logger.error(`Cannot send update emails: Event ${eventId} not found`);
+        return { sent: 0, failed: 0, errors: [] as string[] };
+      }
+
+      // Get all confirmed registrations
+      const registrations = await prisma.eventRegistration.findMany({
+        where: {
+          eventId,
+          status: 'CONFIRMED',
+        },
+        include: {
+          attendee: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+        distinct: ['attendeeId'],
+      });
+
+      const results = {
+        sent: 0,
+        failed: 0,
+        errors: [] as string[],
+      };
+
+      const eventDate = event.startDate
+        ? new Intl.DateTimeFormat('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+        }).format(new Date(event.startDate))
+        : 'TBD';
+
+      const eventLocation = event.venue || event.location;
+
+      // Send emails to each attendee
+      for (const registration of registrations) {
+        try {
+          const attendeeName = registration.attendee.firstName
+            ? `${registration.attendee.firstName}${registration.attendee.lastName ? ` ${registration.attendee.lastName}` : ''}`
+            : undefined;
+
+          await emailService.sendEventUpdateEmail(registration.attendee.email, {
+            attendeeName: attendeeName || 'there',
+            eventTitle: event.title,
+            eventDate,
+            eventLocation,
+            updateType: data.updateType,
+            updateSummary: data.updateSummary,
+            organizerName: event.organizer.organizationName || undefined,
+            supportEmail: event.organizer.email,
+          });
+
+          // Also send in-app notification
+          await NotificationService.sendNotification({
+            userId: registration.attendee.id,
+            type: NotificationType.EVENT_UPDATE,
+            title: `Event Update: ${event.title}`,
+            message: data.updateSummary,
+            priority: NotificationPriority.MEDIUM,
+            eventId,
+            registrationId: registration.id,
+            data: {
+              updateType: data.updateType,
+            },
+          });
+
+          results.sent++;
+        } catch (error: any) {
+          results.failed++;
+          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error.message}`);
+          logger.error(`Error sending update email to ${registration.attendee.email}:`, error);
+        }
+      }
+
+      logger.info(
+        `Event update emails sent for ${eventId}: ${results.sent} sent, ${results.failed} failed`,
+      );
+
+      return results;
+    } catch (error) {
+      logger.error('Error sending event update emails:', error);
+      throw error;
     }
   }
 }

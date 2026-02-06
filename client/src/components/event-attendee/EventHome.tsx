@@ -1,15 +1,23 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   MapPin,
   Clock,
   Globe,
-  Mic2,
   Building2,
   CalendarDays,
   Heart,
   BadgeCheck,
   ExternalLink,
+  ChevronRight,
+  Twitter,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Youtube,
+  Github,
+  Globe2,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,13 +41,12 @@ interface EventHomeProps {
   availableTabs: TabConfig[];
 }
 
-// Quick action button config
+// Quick action config - minimalist card style (like Exhibitors)
 const quickActionConfig = {
-  speakers: { label: 'Speakers', icon: Mic2, color: 'bg-primary hover:bg-primary/90' },
-  exhibitors: { label: 'Exhibitors', icon: Building2, color: 'bg-primary hover:bg-primary/90' },
-  agenda: { label: 'Agenda', icon: CalendarDays, color: 'bg-primary hover:bg-primary/90' },
-  'my-event': { label: 'My Event', icon: Heart, color: 'bg-primary hover:bg-primary/90' },
-  'my-badge': { label: 'My Badge', icon: BadgeCheck, color: 'bg-primary hover:bg-primary/90' },
+  agenda: { label: 'Agenda', icon: CalendarDays, description: 'View schedule' },
+  exhibitors: { label: 'Exhibitors', icon: Building2, description: 'Browse booths' },
+  'my-event': { label: 'My Event', icon: Heart, description: 'Your registration' },
+  'my-badge': { label: 'My Badge', icon: BadgeCheck, description: 'View ticket' },
 };
 
 // Sponsor tier order for display
@@ -58,12 +65,26 @@ const sponsorTierLabels: Record<Sponsor['level'], string> = {
   community: 'Community Partner',
 };
 
+// Social link icon and label mapping
+const socialPlatformConfig: Record<string, { icon: React.ElementType; label: string }> = {
+  twitter: { icon: Twitter, label: 'Twitter' },
+  x: { icon: Twitter, label: 'X (Twitter)' },
+  facebook: { icon: Facebook, label: 'Facebook' },
+  instagram: { icon: Instagram, label: 'Instagram' },
+  linkedin: { icon: Linkedin, label: 'LinkedIn' },
+  youtube: { icon: Youtube, label: 'YouTube' },
+  github: { icon: Github, label: 'GitHub' },
+  website: { icon: Globe2, label: 'Website' },
+};
+
 export const EventHome: React.FC<EventHomeProps> = ({
   event,
   user,
   onNavigate,
   availableTabs,
 }) => {
+  const navigate = useNavigate();
+
   // Group sponsors by tier
   const sponsorsByTier = React.useMemo(() => {
     if (!event.sponsors || event.sponsors.length === 0) return {};
@@ -175,7 +196,13 @@ export const EventHome: React.FC<EventHomeProps> = ({
             <Card variant="github" className="sticky top-24 overflow-hidden">
               {/* Edit link */}
               <div className="absolute top-3 right-3">
-                <Button variant="link" size="sm" className="text-xs text-muted-foreground">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-primary"
+                  onClick={() => navigate('/user/profile')}
+                  title="Edit Profile"
+                >
                   Edit
                 </Button>
               </div>
@@ -201,33 +228,34 @@ export const EventHome: React.FC<EventHomeProps> = ({
 
           {/* Main Content Area */}
           <div className="lg:col-span-3 space-y-8">
-            {/* Quick Action Buttons */}
-            <Card variant="github" className="overflow-hidden">
-              <div className="bg-primary text-white text-center py-3">
-                <span className="font-medium">
-                  {event.hashtag ? `#${event.hashtag}` : event.title}
-                </span>
-              </div>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {quickActionTabs.map((tab) => {
-                    const config = quickActionConfig[tab.key as keyof typeof quickActionConfig];
-                    if (!config) return null;
+            {/* Quick Actions - Minimalist card-based navigation */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {quickActionTabs.map((tab) => {
+                const config = quickActionConfig[tab.key as keyof typeof quickActionConfig];
+                if (!config) return null;
 
-                    return (
-                      <Button
-                        key={tab.key}
-                        onClick={() => onNavigate(tab.key as 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge')}
-                        className={`h-14 ${config.color} text-white font-medium rounded-lg`}
-                      >
-                        <config.icon className="w-5 h-5 mr-2" />
-                        {config.label}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+                return (
+                  <Card
+                    key={tab.key}
+                    variant="github"
+                    className="group cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
+                    onClick={() => onNavigate(tab.key as 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge')}
+                  >
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
+                        <config.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
+                          {config.label}
+                        </p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/50 transition-colors" />
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
 
             {/* Sponsors Section */}
             {event.sponsors && event.sponsors.length > 0 && (
@@ -278,10 +306,6 @@ export const EventHome: React.FC<EventHomeProps> = ({
             <Card variant="github">
               <CardContent className="p-6 space-y-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-foreground mb-4">
-                    {event.title}
-                  </h2>
-
                   {/* Date & Time */}
                   <div className="space-y-3 text-sm text-muted-foreground">
                     <div className="flex items-start gap-3">
@@ -325,6 +349,13 @@ export const EventHome: React.FC<EventHomeProps> = ({
                   <div className="flex items-center gap-3 pt-4 border-t border-border">
                     {Object.entries(event.socialLinks).map(([platform, url]) => {
                       if (!url) return null;
+                      const platformKey = platform.toLowerCase();
+                      const config = socialPlatformConfig[platformKey] || {
+                        icon: ExternalLink,
+                        label: platform.charAt(0).toUpperCase() + platform.slice(1),
+                      };
+                      const PlatformIcon = config.icon;
+
                       return (
                         <a
                           key={platform}
@@ -332,8 +363,9 @@ export const EventHome: React.FC<EventHomeProps> = ({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-muted-foreground hover:text-primary transition-colors"
+                          title={config.label}
                         >
-                          <ExternalLink className="w-4 h-4" />
+                          <PlatformIcon className="w-4 h-4" />
                         </a>
                       );
                     })}

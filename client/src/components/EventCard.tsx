@@ -1,12 +1,16 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock } from "lucide-react";
+import { Calendar, MapPin, Clock, Globe } from "lucide-react";
+import { getVenueType } from "@/types/event";
+import { EventImage } from "./EventImage";
 
 interface EventCardProps {
   id: string;
   title: string;
   image: string;
+  imageFocalX?: number | null;
+  imageFocalY?: number | null;
   startDate: string;
   endDate?: string;
   startTime?: string;
@@ -16,12 +20,16 @@ interface EventCardProps {
   price: string;
   currency?: string;
   category: string;
+  isOnline?: boolean;
+  onlineLink?: string | null;
 }
 
 export const EventCard: React.FC<EventCardProps> = ({
   id,
   title,
   image,
+  imageFocalX,
+  imageFocalY,
   startDate,
   endDate,
   startTime,
@@ -31,8 +39,11 @@ export const EventCard: React.FC<EventCardProps> = ({
   price,
   currency,
   category,
+  isOnline,
+  onlineLink,
 }) => {
   const navigate = useNavigate();
+  const venueType = getVenueType({ isOnline, venue, onlineLink });
   const handleCardClick = () => {
     navigate(`/event/${id}`);
   };
@@ -88,13 +99,13 @@ export const EventCard: React.FC<EventCardProps> = ({
     >
       {/* Event Image */}
       <div className="relative overflow-hidden h-64 rounded-lg">
-        {image ? (
-          <img src={image} alt={title} className="w-full h-full object-cover object-top transition-transform duration-300" />
-        ) : (
-          <div className="w-full h-full bg-muted flex items-center justify-center">
-            <span className="text-muted-foreground text-sm">No image</span>
-          </div>
-        )}
+        <EventImage
+          src={image}
+          alt={title}
+          focalX={imageFocalX}
+          focalY={imageFocalY}
+          className="w-full h-full transition-transform duration-300"
+        />
         {/* Category Badge */}
         <div className="absolute top-4 left-4">
           <span className="px-3 py-1 bg-muted/80 text-foreground backdrop-blur-sm rounded-full text-xs">
@@ -126,19 +137,17 @@ export const EventCard: React.FC<EventCardProps> = ({
 
         {/* Location */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <MapPin className="w-4 h-4" />
-          <span className="truncate">{venue ? `${venue}, ${location}` : location}</span>
-        </div>
-
-        {/* Price */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>{price === 'Free' || price === '0' || !price
-            ? 'Free'
-            : price === 'See tickets'
-              ? 'See tickets'
-              : currency
-                ? `From ${currency}${price}`
-                : `From ${price}`}</span>
+          {venueType === 'online' ? (
+            <>
+              <Globe className="w-4 h-4" />
+              <span>Online Event</span>
+            </>
+          ) : (
+            <>
+              <MapPin className="w-4 h-4" />
+              <span className="truncate">{venue ? `${venue}, ${location}` : location}</span>
+            </>
+          )}
         </div>
       </div>
     </Card>

@@ -17,15 +17,11 @@ const SUPERVISOR_CREDENTIALS = {
  */
 export const ensureSuperAdmin = async (): Promise<void> => {
   try {
-    logger.info('🔍 Checking for super admin user...');
-
-    // Check if superuser already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: SUPERVISOR_CREDENTIALS.email },
     });
 
     if (existingUser) {
-      // Update to SUPERADMIN if not already
       if (existingUser.role !== UserRole.SUPERADMIN) {
         await prisma.user.update({
           where: { id: existingUser.id },
@@ -36,17 +32,12 @@ export const ensureSuperAdmin = async (): Promise<void> => {
             emailVerifiedAt: new Date(),
           },
         });
-        logger.info('✅ Updated existing user to SUPERADMIN role');
-      } else {
-        logger.info('✅ Super admin already exists');
+        logger.info('Super admin role updated');
       }
       return;
     }
 
-    // Create new superuser
-    logger.info('📝 Creating super admin user...');
     const hashedPassword = await hashPassword(SUPERVISOR_CREDENTIALS.password);
-
     await prisma.user.create({
       data: {
         email: SUPERVISOR_CREDENTIALS.email,
@@ -60,13 +51,8 @@ export const ensureSuperAdmin = async (): Promise<void> => {
       },
     });
 
-    logger.info('✅ Super admin created successfully');
-    logger.info(`   Email: ${SUPERVISOR_CREDENTIALS.email}`);
-    logger.info(`   Password: ${SUPERVISOR_CREDENTIALS.password}`);
+    logger.info('Super admin created');
   } catch (error) {
-    // Log error but don't fail server startup
-    logger.error('⚠️  Failed to ensure super admin exists:', error);
-    logger.warn('   Server will continue, but super admin may not be available');
+    logger.error('Failed to ensure super admin:', error);
   }
 };
-

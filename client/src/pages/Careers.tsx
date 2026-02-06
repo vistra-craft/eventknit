@@ -81,21 +81,23 @@ const Careers = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* Hero */}
-      <div className="pt-24 pb-16 px-6">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
-            No CV. No cover letter. Just your story.
-          </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            We're looking for people who are excited about events, growth, and building something real.
-            Drop your email and we'll send you a simple prompt to get started.
-          </p>
+      {/* Content wrapper */}
+      <div className="flex-1 flex flex-col justify-center">
+        {/* Hero */}
+        <div className="pt-24 pb-16 px-6">
+          <div className="max-w-2xl mx-auto text-center">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
+              Tell us your story. That's all we need.
+            </h1>
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              We're looking for people who are excited about events, growth, and building something real.
+              Drop your email and we'll send you a simple prompt to get started.
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Email Capture */}
-      <div className="py-12 px-6">
+        {/* Email Capture */}
+        <div className="py-12 px-6">
         <div className="max-w-md mx-auto">
           <form onSubmit={handleSubmit} className="flex gap-3">
             <Input
@@ -130,7 +132,7 @@ const Careers = () => {
       </div>
 
       {/* Areas we're growing */}
-      <div className="py-12 border-y border-border bg-muted/20">
+        <div className="py-12 border-y border-border bg-muted/20">
         <div className="container mx-auto px-6">
           <p className="text-sm font-medium text-muted-foreground text-center mb-8">
             Areas we're growing
@@ -150,6 +152,7 @@ const Careers = () => {
             ))}
           </div>
         </div>
+      </div>
       </div>
 
       <Footer />

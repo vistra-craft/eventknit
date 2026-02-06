@@ -55,6 +55,8 @@ tags:
     description: Offline data synchronization for mobile devices
   - name: Careers
     description: Career inquiry management for job applicants
+  - name: Cart
+    description: Shopping cart and ticket reservation system
 
 components:
   securitySchemes:
@@ -1415,6 +1417,173 @@ components:
           enum: [keep_first, keep_latest, keep_both]
           nullable: true
 
+    # Cart Schemas
+    CartStatus:
+      type: string
+      enum: [ACTIVE, RESERVED, COMPLETED, EXPIRED, ABANDONED]
+      description: Current status of the shopping cart
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the cart item
+        cartId:
+          type: string
+          format: uuid
+          description: ID of the parent cart
+        eventId:
+          type: string
+          format: uuid
+          description: ID of the event for this ticket
+        ticketType:
+          type: string
+          description: Name of the ticket type (e.g., General Admission, VIP)
+        quantity:
+          type: integer
+          minimum: 1
+          description: Number of tickets
+        unitPrice:
+          type: number
+          format: decimal
+          description: Price per ticket
+        seatIds:
+          type: array
+          items:
+            type: string
+          description: IDs of selected seats (for assigned seating)
+        promoCodeId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Applied promo code ID
+        discountAmount:
+          type: number
+          format: decimal
+          nullable: true
+          description: Discount amount from promo code
+        inventoryLocked:
+          type: boolean
+          description: Whether inventory has been locked for this item
+        event:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            title:
+              type: string
+            startDate:
+              type: string
+              format: date-time
+            image:
+              type: string
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CartReservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the cart
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the authenticated user (null for guests)
+        sessionId:
+          type: string
+          description: Session identifier for guest users
+        status:
+          $ref: '#/components/schemas/CartStatus'
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the cart reservation expires
+        reservedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the cart was moved to RESERVED status
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the cart was completed (payment successful)
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+          description: Items in the cart
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CartStats:
+      type: object
+      properties:
+        activeCarts:
+          type: integer
+          description: Number of active carts
+        reservedCarts:
+          type: integer
+          description: Number of reserved carts awaiting payment
+        expiringInMinutes:
+          type: integer
+          description: Number of carts expiring in the next 5 minutes
+        totalItemsInCarts:
+          type: integer
+          description: Total items across all active carts
+
+    AddCartItemRequest:
+      type: object
+      required:
+        - eventId
+        - ticketType
+        - quantity
+        - unitPrice
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: ID of the event
+        ticketType:
+          type: string
+          description: Name of the ticket type
+        quantity:
+          type: integer
+          minimum: 1
+          description: Number of tickets to add
+        unitPrice:
+          type: number
+          format: decimal
+          description: Price per ticket
+        seatIds:
+          type: array
+          items:
+            type: string
+          description: IDs of selected seats (optional, for assigned seating)
+        promoCodeId:
+          type: string
+          format: uuid
+          description: Promo code ID to apply (optional)
+        discountAmount:
+          type: number
+          format: decimal
+          description: Discount amount (optional)
+
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid
@@ -1517,7 +1686,7 @@ paths:
       tags:
         - Authentication
       summary: Request registration verification code
-      description: Request a verification code for email-only registration (passwordless)
+      description: Request a 6-digit verification code for email-based registration
       operationId: requestRegistrationCode
       requestBody:
         required: true
@@ -1531,6 +1700,11 @@ paths:
                 email:
                   type: string
                   format: email
+                role:
+                  type: string
+                  enum: [ATTENDEE, ORGANIZER]
+                  default: ATTENDEE
+                  description: User role for the new account
       responses:
         '200':
           description: Verification code sent successfully
@@ -1546,7 +1720,7 @@ paths:
       tags:
         - Authentication
       summary: Verify registration code and create account
-      description: Verify the registration code and complete account creation
+      description: Verify the registration code and complete account creation. Password is required and must contain at least one letter and one number.
       operationId: verifyRegistrationCode
       requestBody:
         required: true
@@ -1557,6 +1731,7 @@ paths:
               required:
                 - email
                 - code
+                - password
                 - firstName
                 - lastName
               properties:
@@ -1565,6 +1740,11 @@ paths:
                   format: email
                 code:
                   type: string
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: Must contain at least one letter and one number
                 firstName:
                   type: string
                 lastName:
@@ -1704,7 +1884,7 @@ paths:
       tags:
         - Authentication
       summary: Google OAuth login/registration
-      description: Authenticate user with Google OAuth token
+      description: Authenticate user with a Google OAuth token (ID token or access token from popup OAuth flow)
       operationId: googleAuth
       requestBody:
         required: true
@@ -1713,11 +1893,16 @@ paths:
             schema:
               type: object
               required:
-                - idToken
+                - token
               properties:
-                idToken:
+                token:
                   type: string
-                  description: Google ID token
+                  description: Google OAuth token (ID token or access token)
+                tokenType:
+                  type: string
+                  enum: [id_token, access_token]
+                  default: id_token
+                  description: Type of token being sent
       responses:
         '200':
           description: Google authentication successful
@@ -1779,19 +1964,18 @@ paths:
       tags:
         - Authentication
       summary: Refresh access token
-      description: Get a new access token using refresh token
+      description: |
+        Get a new access token using the refresh token stored in an HttpOnly cookie.
+        The refresh token is automatically sent via the `refreshToken` cookie set during login.
+        The old refresh token is revoked and a new one is issued (token rotation).
       operationId: refreshToken
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - refreshToken
-              properties:
-                refreshToken:
-                  type: string
+      parameters:
+        - name: refreshToken
+          in: cookie
+          required: true
+          schema:
+            type: string
+          description: HttpOnly cookie containing the refresh token (set automatically by login/register)
       responses:
         '200':
           description: Token refreshed successfully
@@ -1807,6 +1991,10 @@ paths:
                         properties:
                           accessToken:
                             type: string
+                          refreshToken:
+                            type: string
+                          expiresIn:
+                            type: integer
 
   /auth/logout:
     post:
@@ -1986,6 +2174,287 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/password/setup:
+    post:
+      tags:
+        - Authentication
+      summary: Setup initial password
+      description: Set password for users who registered without one (e.g., via OAuth or guest invitation). Only works if the user does not already have a password set.
+      operationId: setupPassword
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: Must contain at least one letter and one number
+      responses:
+        '200':
+          description: Password set successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Password already set or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/verify-email:
+    get:
+      tags:
+        - Authentication
+      summary: Verify email with token link
+      description: Verify user email using a token from an email link
+      operationId: verifyEmail
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Email verification token from the link
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify-email/request:
+    post:
+      tags:
+        - Authentication
+      summary: Request email verification code
+      description: Send a 6-digit verification code to the user's email for email verification
+      operationId: requestEmailVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Verification code sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Email already verified or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify-email/confirm:
+    post:
+      tags:
+        - Authentication
+      summary: Confirm email verification with code
+      description: Verify user's email using the 6-digit code sent via email
+      operationId: confirmEmailVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - code
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
+                  description: 6-digit verification code
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/create-account:
+    post:
+      tags:
+        - Authentication
+      summary: Create account from invitation
+      description: Create a full account from an invitation token (for guest users who were added to events without an account)
+      operationId: createAccountFromInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                  description: Invitation token from the email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: Must contain at least one letter and one number
+      responses:
+        '200':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: Invalid or expired invitation token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/resend-invitation:
+    post:
+      tags:
+        - Authentication
+      summary: Resend account invitation
+      description: Resend the account invitation email for users who haven't set up their password yet
+      operationId: resendAccountInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Invitation email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/magic-link/request:
+    post:
+      tags:
+        - Authentication
+      summary: Request magic link login
+      description: Send a magic link to the user's email for passwordless login
+      operationId: requestMagicLink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Magic link sent to email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/magic-link/verify:
+    get:
+      tags:
+        - Authentication
+      summary: Verify magic link token
+      description: Verify the magic link token from the email and auto-login the user
+      operationId: verifyMagicLink
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Magic link token from the email
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # ==================== EVENTS ====================
   /events:
@@ -3103,7 +3572,7 @@ paths:
                             format: uuid
                           backupCode:
                             type: string
-                            description: Backup code for manual entry (format: WLT-{regId8}-{timestamp36})
+                            description: "Backup code for manual entry (format: WLT-{regId8}-{timestamp36})"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '400':
@@ -5544,12 +6013,312 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
+  # ==================== WORKSTATION SCANNING ====================
+  /workstation/scan:
+    post:
+      tags:
+        - Service Point
+      summary: Scan ticket for entry (check-in)
+      description: |
+        Scan a QR code or backup code to check in an attendee.
+        Supports Ed25519 signed tickets, legacy HMAC tickets, and backup codes.
+        Rate limited to 100 scans per minute per user, 200 per minute per IP.
+      operationId: scanTicket
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - eventId
+              properties:
+                code:
+                  type: string
+                  description: QR code content or backup code
+                  example: "eyJhbGciOiJFZERTQSIsInR5cCI6IlRLVCJ9.eyJyaWQiOiIxMjM0NSIsImVpZCI6ImV2dF8xMjMifQ.signature"
+                eventId:
+                  type: string
+                  description: Event ID to validate against
+                  example: "evt_xyz789"
+                checkpointId:
+                  type: string
+                  description: Optional checkpoint/facility ID
+                  example: "checkpoint_main_entrance"
+                location:
+                  type: object
+                  description: Optional GPS coordinates
+                  properties:
+                    lat:
+                      type: number
+                      example: -1.2921
+                    lng:
+                      type: number
+                      example: 36.8219
+      responses:
+        '200':
+          description: Scan successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      scanId:
+                        type: string
+                      registrationId:
+                        type: string
+                      attendeeName:
+                        type: string
+                      ticketType:
+                        type: string
+                      scanType:
+                        type: string
+                        enum: [CHECK_IN, MANUAL_CHECK_IN]
+                      scannedAt:
+                        type: string
+                        format: date-time
+                      isReEntry:
+                        type: boolean
+                      signatureValid:
+                        type: boolean
+                      codeType:
+                        type: string
+                        enum: [QR_CODE, BACKUP_CODE]
+        '400':
+          description: Invalid ticket or scan error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  code:
+                    type: string
+                    enum: [INVALID_SIGNATURE, WRONG_EVENT, INVALID_TICKET, ALREADY_SCANNED, REENTRY_NOT_ALLOWED, CHECKOUT_REQUIRED, MAX_REENTRIES_EXCEEDED, VENUE_AT_CAPACITY, EXPIRED, RESTRICTED]
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Rate limit exceeded
+
+  /workstation/scan-out:
+    post:
+      tags:
+        - Service Point
+      summary: Scan ticket for exit (check-out)
+      description: |
+        Scan a QR code or backup code to check out an attendee.
+        Validates that attendee is currently inside the venue.
+        Rate limited to 100 scans per minute per user, 200 per minute per IP.
+      operationId: scanOut
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - eventId
+              properties:
+                code:
+                  type: string
+                  description: QR code content or backup code
+                eventId:
+                  type: string
+                  description: Event ID
+                checkpointId:
+                  type: string
+                  description: Optional checkpoint/facility ID
+                location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+      responses:
+        '200':
+          description: Check-out successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      registrationId:
+                        type: string
+                      checkedOutAt:
+                        type: string
+                        format: date-time
+                      attendeeName:
+                        type: string
+                      ticketType:
+                        type: string
+        '400':
+          description: Check-out error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  code:
+                    type: string
+                    enum: [NOT_CHECKED_IN, INVALID_TICKET, WRONG_EVENT]
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Rate limit exceeded
+
+  /workstation/manual-check-in:
+    post:
+      tags:
+        - Service Point
+      summary: Manual check-in by search term
+      description: |
+        Check in an attendee by email or name search.
+        Requires ADMIN_STAFF role or higher.
+        Rate limited to 100 requests per minute.
+      operationId: manualCheckIn
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - eventId
+                - searchTerm
+              properties:
+                eventId:
+                  type: string
+                searchTerm:
+                  type: string
+                  description: Email or name to search
+                facility:
+                  type: string
+                  description: Optional facility/checkpoint name
+      responses:
+        '200':
+          description: Manual check-in successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      registrationId:
+                        type: string
+                      attendeeName:
+                        type: string
+                      ticketType:
+                        type: string
+                      scanType:
+                        type: string
+                        example: MANUAL_CHECK_IN
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /workstation/manual-check-out:
+    post:
+      tags:
+        - Service Point
+      summary: Manual check-out by search term
+      description: |
+        Check out an attendee by email or name search.
+        Requires ADMIN_STAFF role or higher.
+        Validates that attendee is currently inside the venue.
+      operationId: manualCheckOut
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - eventId
+                - searchTerm
+              properties:
+                eventId:
+                  type: string
+                searchTerm:
+                  type: string
+                  description: Email or name to search
+                facility:
+                  type: string
+                  description: Optional facility/checkpoint name
+      responses:
+        '200':
+          description: Manual check-out successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      registrationId:
+                        type: string
+                      checkedOutAt:
+                        type: string
+                        format: date-time
+                      attendeeName:
+                        type: string
+                      ticketType:
+                        type: string
+        '400':
+          description: Check-out error (e.g., attendee not checked in)
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== OFFLINE SYNC ====================
   /offline/scans/batch:
     post:
       tags:
         - Offline Sync
       summary: Upload batch of scans from mobile device
-      description: Process multiple scans queued offline and detect conflicts
+      description: Process multiple scans queued offline and detect conflicts. Supports both check-in and check-out scan types.
       requestBody:
         required: true
         content:
@@ -7465,6 +8234,409 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '404':
           $ref: '#/components/responses/NotFoundError'
+
+  # ==================== CART ====================
+  /cart:
+    get:
+      tags:
+        - Cart
+      summary: Get current cart
+      description: |
+        Retrieves the current user's active shopping cart.
+        Supports both authenticated users (via JWT) and guest users (via session cookie or X-Cart-Session header).
+        Returns null if no active cart exists.
+      operationId: getCart
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users (alternative to cookie)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+                      message:
+                        type: string
+                        example: No active cart
+              examples:
+                activeCart:
+                  summary: Active cart with items
+                  value:
+                    success: true
+                    data:
+                      cart:
+                        id: "550e8400-e29b-41d4-a716-446655440000"
+                        sessionId: "session-123"
+                        status: "ACTIVE"
+                        expiresAt: "2024-12-01T10:30:00Z"
+                        items:
+                          - id: "item-1"
+                            eventId: "evt-1"
+                            ticketType: "General Admission"
+                            quantity: 2
+                            unitPrice: 50.00
+                            inventoryLocked: false
+                noCart:
+                  summary: No active cart
+                  value:
+                    success: true
+                    data:
+                      cart: null
+                      message: "No active cart"
+
+    post:
+      tags:
+        - Cart
+      summary: Create a new cart
+      description: |
+        Creates a new shopping cart. If an active cart already exists for the session/user,
+        returns the existing cart instead of creating a new one.
+
+        Cart expires after 8 minutes of inactivity.
+      operationId: createCart
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users (alternative to cookie)
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fingerprint:
+                  type: string
+                  description: Browser fingerprint for fraud detection
+      responses:
+        '201':
+          description: Cart created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+
+    delete:
+      tags:
+        - Cart
+      summary: Abandon cart
+      description: |
+        Abandons the current cart and releases any locked inventory.
+        Clears the cart session cookie.
+      operationId: abandonCart
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart abandoned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Cart abandoned successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /cart/items:
+    post:
+      tags:
+        - Cart
+      summary: Add item to cart
+      description: |
+        Adds a ticket item to the shopping cart. Creates a new cart if none exists.
+
+        Validates:
+        - Event exists and has available capacity
+        - Quantity doesn't exceed max tickets per user
+        - Cart hasn't expired
+      operationId: addCartItem
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+            example:
+              eventId: "550e8400-e29b-41d4-a716-446655440000"
+              ticketType: "General Admission"
+              quantity: 2
+              unitPrice: 50.00
+      responses:
+        '200':
+          description: Item added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+        '400':
+          description: Validation error (missing fields, not enough inventory, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    success: false
+                    message: "eventId, ticketType, quantity, and unitPrice are required"
+                notEnoughInventory:
+                  summary: Not enough tickets available
+                  value:
+                    success: false
+                    message: "Not enough tickets available"
+                maxTicketsExceeded:
+                  summary: Exceeds max tickets per user
+                  value:
+                    success: false
+                    message: "Cannot add more than 10 tickets per event"
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cart/items/{itemId}:
+    patch:
+      tags:
+        - Cart
+      summary: Update item quantity
+      description: Updates the quantity of an existing cart item
+      operationId: updateCartItem
+      security: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Cart item ID
+          schema:
+            type: string
+            format: uuid
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: New quantity
+            example:
+              quantity: 3
+      responses:
+        '200':
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Cart
+      summary: Remove item from cart
+      description: Removes an item from the shopping cart
+      operationId: removeCartItem
+      security: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Cart item ID
+          schema:
+            type: string
+            format: uuid
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /cart/reserve:
+    post:
+      tags:
+        - Cart
+      summary: Reserve cart for payment
+      description: |
+        Transitions the cart to RESERVED status and locks inventory.
+
+        This should be called before initiating payment to ensure tickets are held
+        during the payment process. Inventory is locked using serializable transactions
+        to prevent overselling.
+
+        Reserved carts expire after 8 minutes if payment is not completed.
+      operationId: reserveCart
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart reserved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+              example:
+                success: true
+                data:
+                  cart:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "RESERVED"
+                    reservedAt: "2024-12-01T10:22:00Z"
+                    expiresAt: "2024-12-01T10:30:00Z"
+                    items:
+                      - id: "item-1"
+                        inventoryLocked: true
+        '400':
+          description: Cart is empty or already reserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /cart/stats:
+    get:
+      tags:
+        - Cart
+      summary: Get cart statistics
+      description: |
+        Returns aggregate statistics about shopping carts.
+        Useful for monitoring cart abandonment and system health.
+
+        Note: This endpoint should be restricted to admin users in production.
+      operationId: getCartStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      stats:
+                        $ref: '#/components/schemas/CartStats'
+              example:
+                success: true
+                data:
+                  stats:
+                    activeCarts: 45
+                    reservedCarts: 12
+                    expiringInMinutes: 3
+                    totalItemsInCarts: 128
 
 security:
   - BearerAuth: []

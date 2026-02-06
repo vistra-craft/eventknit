@@ -16,6 +16,8 @@ import { TicketService } from './ticket.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
 import { EventCollaborationService } from './event-collaboration.service.js';
+import { RefundService } from './refund.service.js';
+import { AttendeeCommunicationService } from './attendee-communication.service.js';
 
 export interface CreateEventData {
   title: string;
@@ -39,15 +41,22 @@ export interface CreateEventData {
   price?: number | string;
   ticketTypes?: Array<{
     name: string;
+    description?: string;
     price: number | string;
     originalPrice?: number | string;
     discountLabel?: string;
     quantity?: number | string;
+    maxPerPerson?: number;
+    minPerOrder?: number;
     features?: string[];
     isComplementary?: boolean;
     requiresInvitation?: boolean;
     availableFrom?: string;
     availableUntil?: string;
+    earlyBirdQuantity?: number;
+    salesChannel?: 'online' | 'door' | 'both';
+    isHidden?: boolean;
+    nameLocked?: boolean; // Ticket is tied to specific attendee name, cannot be transferred
   }>;
   capacity?: number | string;
   image?: string;
@@ -80,6 +89,15 @@ export interface CreateEventData {
   }>;
   generateRegistrationCode?: boolean; // Auto-generate registration code (default: true)
   timezone?: string;
+  // Service fee configuration
+  serviceFeeType?: 'percentage' | 'fixed' | 'none';
+  serviceFeeValue?: number | string;
+  serviceFeePassToAttendee?: boolean;
+  // Refund policy configuration
+  refundPolicy?: 'no_refunds' | 'full_refund' | 'partial_refund' | 'tiered' | 'custom';
+  refundDeadlineDays?: number;
+  refundPolicyText?: string;
+  refundTiers?: Array<{ daysBeforeEvent: number; refundPercentage: number }>;
 }
 
 export interface UpdateEventData extends Partial<CreateEventData> {
@@ -284,6 +302,28 @@ export class EventService {
         if ('availableUntil' in ticket && ticket.availableUntil) {
           ticketData.availableUntil = ticket.availableUntil;
         }
+        // New ticket fields
+        if ('description' in ticket && ticket.description) {
+          ticketData.description = ticket.description;
+        }
+        if ('maxPerPerson' in ticket && ticket.maxPerPerson !== undefined) {
+          ticketData.maxPerPerson = Number(ticket.maxPerPerson);
+        }
+        if ('minPerOrder' in ticket && ticket.minPerOrder !== undefined) {
+          ticketData.minPerOrder = Number(ticket.minPerOrder);
+        }
+        if ('earlyBirdQuantity' in ticket && ticket.earlyBirdQuantity !== undefined) {
+          ticketData.earlyBirdQuantity = Number(ticket.earlyBirdQuantity);
+        }
+        if ('salesChannel' in ticket && ticket.salesChannel) {
+          ticketData.salesChannel = ticket.salesChannel;
+        }
+        if ('isHidden' in ticket && ticket.isHidden !== undefined) {
+          ticketData.isHidden = ticket.isHidden;
+        }
+        if ('nameLocked' in ticket && ticket.nameLocked !== undefined) {
+          ticketData.nameLocked = ticket.nameLocked;
+        }
 
         return ticketData;
       }) as Prisma.InputJsonValue;
@@ -330,6 +370,15 @@ export class EventService {
         faqs: data.faqs || undefined,
         registrationFields: data.registrationFields || undefined,
         registrationCode: data.generateRegistrationCode !== false ? this.generateRegistrationCode() : null,
+        // Service fee configuration
+        serviceFeeType: data.serviceFeeType || null,
+        serviceFeeValue: data.serviceFeeValue ? new Decimal(Number(data.serviceFeeValue)) : null,
+        serviceFeePassToAttendee: data.serviceFeePassToAttendee ?? true,
+        // Refund policy configuration
+        refundPolicy: data.refundPolicy || null,
+        refundSLA: data.refundDeadlineDays ?? 0,
+        refundPolicyText: data.refundPolicyText?.trim() || null,
+        refundTiers: data.refundTiers ? (data.refundTiers as Prisma.InputJsonValue) : undefined,
         organizerId,
         createdBy: organizerId,
       },
@@ -566,7 +615,7 @@ export class EventService {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    // Get event
+    // Get event with original dates for postponement detection
     const event = await prisma.event.findFirst({
       where: {
         id: eventId,
@@ -576,12 +625,21 @@ export class EventService {
         id: true,
         organizerId: true,
         status: true,
+        startDate: true,
+        endDate: true,
+        venue: true,
+        location: true,
       },
     });
 
     if (!event) {
       throw new NotFoundError('Event not found');
     }
+
+    // Store original values for change detection
+    const originalStartDate = event.startDate;
+    const originalVenue = event.venue;
+    const originalLocation = event.location;
 
     // Verify organizer owns the event (unless admin)
     if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
@@ -682,6 +740,17 @@ export class EventService {
     if (data.faqs !== undefined) updateData.faqs = data.faqs;
     if (data.registrationFields !== undefined) updateData.registrationFields = data.registrationFields;
 
+    // Service fee configuration
+    if (data.serviceFeeType !== undefined) updateData.serviceFeeType = data.serviceFeeType || null;
+    if (data.serviceFeeValue !== undefined) updateData.serviceFeeValue = data.serviceFeeValue ? new Decimal(Number(data.serviceFeeValue)) : null;
+    if (data.serviceFeePassToAttendee !== undefined) updateData.serviceFeePassToAttendee = data.serviceFeePassToAttendee;
+
+    // Refund policy configuration
+    if (data.refundPolicy !== undefined) updateData.refundPolicy = data.refundPolicy || null;
+    if (data.refundDeadlineDays !== undefined) updateData.refundSLA = data.refundDeadlineDays;
+    if (data.refundPolicyText !== undefined) updateData.refundPolicyText = data.refundPolicyText?.trim() || null;
+    if (data.refundTiers !== undefined) updateData.refundTiers = data.refundTiers ? (data.refundTiers as Prisma.InputJsonValue) : Prisma.DbNull;
+
     // Validate ticket types data integrity before processing
     if (data.ticketTypes !== undefined && Array.isArray(data.ticketTypes)) {
       for (const ticket of data.ticketTypes) {
@@ -746,6 +815,28 @@ export class EventService {
           if ('availableUntil' in ticket && ticket.availableUntil) {
             ticketData.availableUntil = ticket.availableUntil;
           }
+          // New ticket fields
+          if ('description' in ticket && ticket.description) {
+            ticketData.description = ticket.description;
+          }
+          if ('maxPerPerson' in ticket && ticket.maxPerPerson !== undefined) {
+            ticketData.maxPerPerson = Number(ticket.maxPerPerson);
+          }
+          if ('minPerOrder' in ticket && ticket.minPerOrder !== undefined) {
+            ticketData.minPerOrder = Number(ticket.minPerOrder);
+          }
+          if ('earlyBirdQuantity' in ticket && ticket.earlyBirdQuantity !== undefined) {
+            ticketData.earlyBirdQuantity = Number(ticket.earlyBirdQuantity);
+          }
+          if ('salesChannel' in ticket && ticket.salesChannel) {
+            ticketData.salesChannel = ticket.salesChannel;
+          }
+          if ('isHidden' in ticket && ticket.isHidden !== undefined) {
+            ticketData.isHidden = ticket.isHidden;
+          }
+          if ('nameLocked' in ticket && ticket.nameLocked !== undefined) {
+            ticketData.nameLocked = ticket.nameLocked;
+          }
 
           return ticketData;
         }) as Prisma.InputJsonValue;
@@ -808,22 +899,53 @@ export class EventService {
     if (event.status === EventStatus.APPROVED && changes.length > 0) {
       try {
         const changesText = changes.join(', ');
-        const isTimeChange = changes.includes('date/time');
-        const isVenueChange = changes.includes('venue/location');
 
-        // Notify registered attendees
-        await NotificationService.sendEventNotification(
-          eventId,
-          isTimeChange ? NotificationType.EVENT_TIME_CHANGED : isVenueChange ? NotificationType.EVENT_VENUE_CHANGED : NotificationType.EVENT_UPDATE,
-          `Event Updated: ${updatedEvent.title}`,
-          `The event "${updatedEvent.title}" has been updated. Changes: ${changesText}.${isTimeChange ? ' Please check the new date and time.' : ''}${isVenueChange ? ' Please check the new venue/location.' : ''}`,
-          'attendees',
-          undefined,
-          NotificationPriority.MEDIUM,
-          { changes },
-        );
+        // Check if date was actually changed (postponement)
+        const newStartDate = data.startDate ? new Date(data.startDate) : null;
+        const dateWasChanged = newStartDate && originalStartDate &&
+          newStartDate.getTime() !== new Date(originalStartDate).getTime();
 
-        // Notify assigned staff
+        // Check if venue/location changed
+        const venueChanged = (data.venue !== undefined && data.venue !== originalVenue) ||
+          (data.location !== undefined && data.location !== originalLocation);
+
+        if (dateWasChanged) {
+          // Send detailed postponement emails
+          try {
+            await AttendeeCommunicationService.sendEventPostponementEmails(eventId, {
+              originalDate: originalStartDate,
+              newDate: newStartDate,
+              originalLocation: originalVenue || originalLocation,
+              newLocation: data.venue || data.location || updatedEvent.venue || updatedEvent.location,
+              postponementReason: undefined, // Could be added as parameter in future
+              refundOption: true, // Allow refunds for those who can't attend new date
+            });
+          } catch (emailError) {
+            logger.error('Failed to send postponement emails:', emailError);
+          }
+        } else if (venueChanged) {
+          // Send venue update emails
+          try {
+            await AttendeeCommunicationService.sendEventUpdateEmails(eventId, {
+              updateType: 'location',
+              updateSummary: `The venue has been changed from "${originalVenue || originalLocation}" to "${data.venue || data.location || updatedEvent.venue || updatedEvent.location}".`,
+            });
+          } catch (emailError) {
+            logger.error('Failed to send venue update emails:', emailError);
+          }
+        } else if (changes.length > 0) {
+          // Send general update emails for other changes
+          try {
+            await AttendeeCommunicationService.sendEventUpdateEmails(eventId, {
+              updateType: 'general',
+              updateSummary: `The following aspects of the event have been updated: ${changesText}. Please check the event page for details.`,
+            });
+          } catch (emailError) {
+            logger.error('Failed to send event update emails:', emailError);
+          }
+        }
+
+        // Notify assigned staff (in-app only)
         await NotificationService.sendEventNotification(
           eventId,
           NotificationType.EVENT_UPDATE_FOR_STAFF,
@@ -962,6 +1084,7 @@ export class EventService {
         availableSlots: true,
         registrationDeadline: true,
         startDate: true,
+        maxTicketsPerUser: true, // Purchase limit per user (anti-scalping)
       },
     });
 
@@ -996,6 +1119,59 @@ export class EventService {
 
     if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
       throw new ConflictError('You are already registered for this event');
+    }
+
+    // Calculate requested ticket quantity for purchase limit validation
+    const requestedQuantity = data.tickets?.reduce((sum, t) => sum + (t.quantity || 1), 0)
+      || data.quantity
+      || 1;
+
+    // Check purchase limit per user (anti-scalping measure)
+    // Count user's existing confirmed tickets for this event
+    const existingTicketCount = await prisma.ticketLineItem.aggregate({
+      where: {
+        registration: {
+          eventId,
+          attendeeId,
+          status: {
+            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          },
+        },
+      },
+      _sum: {
+        quantity: true,
+      },
+    });
+
+    // Also count legacy registrations without ticket line items
+    const legacyRegistrations = await prisma.eventRegistration.findMany({
+      where: {
+        eventId,
+        attendeeId,
+        status: {
+          in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+        },
+        ticketLineItems: {
+          none: {},
+        },
+      },
+      select: {
+        quantity: true,
+      },
+    });
+
+    const existingTotal = (existingTicketCount._sum.quantity || 0) +
+      legacyRegistrations.reduce((sum, r) => sum + r.quantity, 0);
+
+    const maxPerUser = event.maxTicketsPerUser || 10; // Default to 10 if not set
+
+    if (existingTotal + requestedQuantity > maxPerUser) {
+      const remaining = Math.max(0, maxPerUser - existingTotal);
+      throw new ValidationError(
+        remaining === 0
+          ? `You have reached the maximum ticket limit of ${maxPerUser} tickets per person for this event.`
+          : `You can only purchase ${remaining} more ticket${remaining === 1 ? '' : 's'} for this event (limit: ${maxPerUser} per person).`,
+      );
     }
 
     // Process tickets: Support both new tickets array and legacy ticketType/quantity
@@ -1158,65 +1334,6 @@ export class EventService {
 
     const finalAmount = totalAmount.minus(discountAmount);
 
-    // Enforce overall event capacity BEFORE creating registration (Eventbrite-style)
-    if (event.capacity !== null && event.capacity > 0) {
-      // Count existing active tickets for this event
-      const existingTicketsForEvent = await prisma.ticketLineItem.count({
-        where: {
-          registration: {
-            eventId,
-            status: {
-              in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
-            },
-          },
-        },
-      });
-
-      const projectedTotalTickets = existingTicketsForEvent + totalQuantity;
-      if (projectedTotalTickets > event.capacity) {
-        throw new ValidationError('Event capacity exceeded. Not enough tickets remaining for this registration.');
-      }
-    }
-
-    // Check capacity (using total quantity from all ticket types)
-    if (event.capacity !== null && totalQuantity > 0) {
-      // Count total tickets (not registrations) for capacity check
-      const existingTickets = await prisma.ticketLineItem.aggregate({
-        where: {
-          registration: {
-            eventId,
-            status: {
-              in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
-            },
-          },
-        },
-        _sum: {
-          quantity: true,
-        },
-      });
-
-      // Also count legacy registrations without ticket line items
-      const legacyRegistrations = await prisma.eventRegistration.count({
-        where: {
-          eventId,
-          status: {
-            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
-          },
-          ticketLineItems: {
-            none: {},
-          },
-        },
-      });
-
-      const existingTotalTickets = (existingTickets._sum.quantity || 0) + legacyRegistrations;
-
-      if (existingTotalTickets + totalQuantity > event.capacity) {
-        throw new ValidationError(
-          `Event is sold out or insufficient capacity. Only ${event.capacity - existingTotalTickets} tickets remaining.`,
-        );
-      }
-    }
-
     // Generate backup ticket code
     const backupCode = TicketService.generateBackupTicketCode();
 
@@ -1231,68 +1348,159 @@ export class EventService {
     const legacyTicketType = ticketSelections.length > 0 ? ticketSelections[0].ticketType : (data.ticketType || null);
     const legacyQuantity = totalQuantity || (data.quantity || 1);
 
-    // Create registration first (need registration.id for QR code generation)
-    const registration = await prisma.eventRegistration.create({
-      data: {
-        eventId,
-        attendeeId,
-        ticketType: legacyTicketType, // Backward compatibility
-        quantity: legacyQuantity, // Backward compatibility
-        // Store as Decimal(10,2)
-        totalAmount: finalAmount,
-        registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
-        backupCode,
-        status: registrationStatus,
-        paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
-        invitationId: data.invitationId || null,
-        // Create ticket line items for multiple ticket types
-        ticketLineItems: ticketLineItems.length > 0 ? {
-          create: ticketLineItems.map(item => ({
-            ticketType: item.ticketType,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.totalPrice,
-          })),
-        } : undefined,
-      },
-      include: {
-        ticketLineItems: true, // Include ticket line items for multiple ticket types
-        event: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            startDate: true,
-            endDate: true,
-            startTime: true,
-            endTime: true,
-            venue: true,
-            location: true,
-            address: true,
-            isOnline: true,
-            onlineLink: true,
-            image: true,
-            organizer: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                organizationName: true,
-                email: true,
+    // ATOMIC REGISTRATION: Wrap capacity check + registration creation + slot update in transaction
+    // This prevents race conditions that could cause overselling (CRITICAL FIX)
+    // Uses Serializable isolation level to ensure no concurrent reads/writes can interleave
+    const registration = await prisma.$transaction(async (tx) => {
+      // Lock the event row using FOR UPDATE to prevent concurrent modifications
+      // This ensures only one registration can proceed at a time for this event
+      const lockedEvent = await tx.$queryRaw<Array<{
+        id: string;
+        capacity: number | null;
+        availableSlots: number | null;
+      }>>`
+        SELECT id, capacity, "availableSlots"
+        FROM "Event"
+        WHERE id = ${eventId}
+        FOR UPDATE
+      `;
+
+      if (!lockedEvent || lockedEvent.length === 0) {
+        throw new NotFoundError('Event not found');
+      }
+
+      const eventData = lockedEvent[0];
+
+      // Enforce overall event capacity INSIDE the transaction (atomic check)
+      if (eventData.capacity !== null && eventData.capacity > 0) {
+        // Count existing active tickets for this event
+        const existingTickets = await tx.ticketLineItem.aggregate({
+          where: {
+            registration: {
+              eventId,
+              status: {
+                in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
               },
             },
           },
+          _sum: {
+            quantity: true,
+          },
+        });
+
+        // Also count legacy registrations without ticket line items
+        const legacyRegistrations = await tx.eventRegistration.count({
+          where: {
+            eventId,
+            status: {
+              in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+            },
+            ticketLineItems: {
+              none: {},
+            },
+          },
+        });
+
+        const existingTotalTickets = (existingTickets._sum.quantity || 0) + legacyRegistrations;
+
+        if (existingTotalTickets + totalQuantity > eventData.capacity) {
+          const remaining = eventData.capacity - existingTotalTickets;
+          throw new ValidationError(
+            remaining <= 0
+              ? 'Event is sold out. No tickets remaining.'
+              : `Insufficient capacity. Only ${remaining} ticket${remaining === 1 ? '' : 's'} remaining.`,
+          );
+        }
+      }
+
+      // Create registration atomically within the transaction
+      const newRegistration = await tx.eventRegistration.create({
+        data: {
+          eventId,
+          attendeeId,
+          ticketType: legacyTicketType, // Backward compatibility
+          quantity: legacyQuantity, // Backward compatibility
+          // Store as Decimal(10,2)
+          totalAmount: finalAmount,
+          registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
+          backupCode,
+          status: registrationStatus,
+          paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
+          invitationId: data.invitationId || null,
+          // Fraud detection fields (captured at registration time)
+          ipAddress: ipAddress || null,
+          userAgent: userAgent || null,
+          // Create ticket line items for multiple ticket types
+          ticketLineItems: ticketLineItems.length > 0 ? {
+            create: ticketLineItems.map(item => ({
+              ticketType: item.ticketType,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              totalPrice: item.totalPrice,
+            })),
+          } : undefined,
         },
-        attendee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            companyAffiliation: true,
+        include: {
+          ticketLineItems: true, // Include ticket line items for multiple ticket types
+          event: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              startDate: true,
+              endDate: true,
+              startTime: true,
+              endTime: true,
+              venue: true,
+              location: true,
+              address: true,
+              isOnline: true,
+              onlineLink: true,
+              image: true,
+              organizer: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  organizationName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          attendee: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              companyAffiliation: true,
+            },
           },
         },
-      },
+      });
+
+      // Update available slots atomically within the same transaction
+      if (eventData.capacity !== null && totalQuantity > 0) {
+        const currentSlots = eventData.availableSlots ?? eventData.capacity;
+        const newAvailableSlots = Math.max(0, currentSlots - totalQuantity);
+
+        await tx.event.update({
+          where: { id: eventId },
+          data: {
+            availableSlots: newAvailableSlots,
+          },
+        });
+
+        logger.debug(`[registerForEvent] Updated availableSlots from ${currentSlots} to ${newAvailableSlots} for event ${eventId}`);
+      }
+
+      return newRegistration;
+    }, {
+      // Use Serializable isolation to prevent phantom reads and ensure consistency
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      // Timeout after 10 seconds to prevent deadlocks
+      timeout: 10000,
     });
 
     // Generate QR code immediately at registration time (like Eventbrite/vf-ticket)
@@ -1359,138 +1567,135 @@ export class EventService {
       // Registration still succeeds - consent can be created/updated later
     }
 
-    // Update available slots if capacity exists (using totalQuantity)
-    let newAvailableSlots: number | null = null;
-    if (event.capacity !== null && totalQuantity > 0) {
-      newAvailableSlots = (event.availableSlots || event.capacity) - totalQuantity;
-      await prisma.event.update({
+    // Check for capacity milestones and notify organizer
+    // Note: Available slots are now updated atomically inside the transaction above
+    if (event.capacity !== null && event.capacity > 0 && totalQuantity > 0) {
+      // Fetch the updated event to get current available slots after the transaction
+      const updatedEvent = await prisma.event.findUnique({
         where: { id: eventId },
-        data: {
-          availableSlots: Math.max(0, newAvailableSlots),
-        },
+        select: { availableSlots: true, capacity: true },
       });
 
-      // Check for capacity milestones and notify organizer
-      if (event.capacity > 0 && newAvailableSlots >= 0) {
-        const currentRegistrations = event.capacity - newAvailableSlots;
-        const capacityPercentage = (currentRegistrations / event.capacity) * 100;
+      const newAvailableSlots = updatedEvent?.availableSlots ?? 0;
+      const currentRegistrations = event.capacity - newAvailableSlots;
+      const capacityPercentage = (currentRegistrations / event.capacity) * 100;
 
-        try {
-          // Get event with organizer info
-          const eventWithOrganizer = await prisma.event.findUnique({
-            where: { id: eventId },
-            select: {
-              organizerId: true,
-              title: true,
-            },
-          });
+      // Send milestone notifications if capacity thresholds are reached
+      try {
+        // Get event with organizer info
+        const eventWithOrganizer = await prisma.event.findUnique({
+          where: { id: eventId },
+          select: {
+            organizerId: true,
+            title: true,
+          },
+        });
 
-          if (eventWithOrganizer) {
-            // 50% milestone
-            if (capacityPercentage >= 50 && capacityPercentage < 75) {
-              // Check if 50% notification already sent
-              const existingNotification = await prisma.notification.findFirst({
-                where: {
-                  eventId,
-                  type: NotificationType.REGISTRATION_MILESTONE_50,
-                  createdAt: {
-                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
-                  },
+        if (eventWithOrganizer) {
+          // 50% milestone
+          if (capacityPercentage >= 50 && capacityPercentage < 75) {
+            // Check if 50% notification already sent
+            const existingNotification = await prisma.notification.findFirst({
+              where: {
+                eventId,
+                type: NotificationType.REGISTRATION_MILESTONE_50,
+                createdAt: {
+                  gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
+                },
+              },
+            });
+
+            if (!existingNotification) {
+              await NotificationService.sendNotification({
+                userId: eventWithOrganizer.organizerId,
+                type: NotificationType.REGISTRATION_MILESTONE_50,
+                title: `50% Capacity Reached: ${eventWithOrganizer.title}`,
+                message: `Great news! Your event "${eventWithOrganizer.title}" has reached 50% capacity (${currentRegistrations}/${event.capacity} registrations).`,
+                priority: NotificationPriority.MEDIUM,
+                eventId,
+                data: {
+                  currentRegistrations,
+                  capacity: event.capacity,
+                  percentage: 50,
                 },
               });
-
-              if (!existingNotification) {
-                await NotificationService.sendNotification({
-                  userId: eventWithOrganizer.organizerId,
-                  type: NotificationType.REGISTRATION_MILESTONE_50,
-                  title: `50% Capacity Reached: ${eventWithOrganizer.title}`,
-                  message: `Great news! Your event "${eventWithOrganizer.title}" has reached 50% capacity (${currentRegistrations}/${event.capacity} registrations).`,
-                  priority: NotificationPriority.MEDIUM,
-                  eventId,
-                  data: {
-                    currentRegistrations,
-                    capacity: event.capacity,
-                    percentage: 50,
-                  },
-                });
-              }
-            }
-
-            // 75% milestone
-            if (capacityPercentage >= 75 && capacityPercentage < 100) {
-              // Check if 75% notification already sent
-              const existingNotification = await prisma.notification.findFirst({
-                where: {
-                  eventId,
-                  type: NotificationType.REGISTRATION_MILESTONE_75,
-                  createdAt: {
-                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
-                  },
-                },
-              });
-
-              if (!existingNotification) {
-                await NotificationService.sendNotification({
-                  userId: eventWithOrganizer.organizerId,
-                  type: NotificationType.REGISTRATION_MILESTONE_75,
-                  title: `75% Capacity Reached: ${eventWithOrganizer.title}`,
-                  message: `Excellent! Your event "${eventWithOrganizer.title}" has reached 75% capacity (${currentRegistrations}/${event.capacity} registrations).`,
-                  priority: NotificationPriority.MEDIUM,
-                  eventId,
-                  data: {
-                    currentRegistrations,
-                    capacity: event.capacity,
-                    percentage: 75,
-                  },
-                });
-              }
-            }
-
-            // 100% capacity reached
-            if (newAvailableSlots === 0) {
-              // Check if 100% notification already sent
-              const existingNotification = await prisma.notification.findFirst({
-                where: {
-                  eventId,
-                  type: NotificationType.REGISTRATION_MILESTONE_100,
-                  createdAt: {
-                    gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
-                  },
-                },
-              });
-
-              if (!existingNotification) {
-                await NotificationService.sendNotification({
-                  userId: eventWithOrganizer.organizerId,
-                  type: NotificationType.REGISTRATION_MILESTONE_100,
-                  title: `Event Sold Out: ${eventWithOrganizer.title}`,
-                  message: `Congratulations! Your event "${eventWithOrganizer.title}" is now sold out (${currentRegistrations}/${event.capacity} registrations).`,
-                  priority: NotificationPriority.HIGH,
-                  eventId,
-                  data: {
-                    currentRegistrations,
-                    capacity: event.capacity,
-                    percentage: 100,
-                  },
-                });
-
-                // Also notify attendees that event is full (for waitlist)
-                await NotificationService.sendEventNotification(
-                  eventId,
-                  NotificationType.CAPACITY_FULL,
-                  `Event Sold Out: ${eventWithOrganizer.title}`,
-                  `The event "${eventWithOrganizer.title}" has reached full capacity. If you haven't registered yet, you can join the waitlist to be notified if spots become available.`,
-                  'attendees',
-                  undefined,
-                  NotificationPriority.MEDIUM,
-                );
-              }
             }
           }
-        } catch (error) {
-          // Log error but don't fail registration
-          logger.error('Failed to send capacity milestone notifications:', error);
+
+          // 75% milestone
+          if (capacityPercentage >= 75 && capacityPercentage < 100) {
+            // Check if 75% notification already sent
+            const existingNotification = await prisma.notification.findFirst({
+              where: {
+                eventId,
+                type: NotificationType.REGISTRATION_MILESTONE_75,
+                createdAt: {
+                  gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
+                },
+              },
+            });
+
+            if (!existingNotification) {
+              await NotificationService.sendNotification({
+                userId: eventWithOrganizer.organizerId,
+                type: NotificationType.REGISTRATION_MILESTONE_75,
+                title: `75% Capacity Reached: ${eventWithOrganizer.title}`,
+                message: `Excellent! Your event "${eventWithOrganizer.title}" has reached 75% capacity (${currentRegistrations}/${event.capacity} registrations).`,
+                priority: NotificationPriority.MEDIUM,
+                eventId,
+                data: {
+                  currentRegistrations,
+                  capacity: event.capacity,
+                  percentage: 75,
+                },
+              });
+            }
+          }
+
+          // 100% capacity reached
+          if (newAvailableSlots === 0) {
+            // Check if 100% notification already sent
+            const existingNotification = await prisma.notification.findFirst({
+              where: {
+                eventId,
+                type: NotificationType.REGISTRATION_MILESTONE_100,
+                createdAt: {
+                  gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Within last 24 hours
+                },
+              },
+            });
+
+            if (!existingNotification) {
+              await NotificationService.sendNotification({
+                userId: eventWithOrganizer.organizerId,
+                type: NotificationType.REGISTRATION_MILESTONE_100,
+                title: `Event Sold Out: ${eventWithOrganizer.title}`,
+                message: `Congratulations! Your event "${eventWithOrganizer.title}" is now sold out (${currentRegistrations}/${event.capacity} registrations).`,
+                priority: NotificationPriority.HIGH,
+                eventId,
+                data: {
+                  currentRegistrations,
+                  capacity: event.capacity,
+                  percentage: 100,
+                },
+              });
+
+              // Also notify attendees that event is full (for waitlist)
+              await NotificationService.sendEventNotification(
+                eventId,
+                NotificationType.CAPACITY_FULL,
+                `Event Sold Out: ${eventWithOrganizer.title}`,
+                `The event "${eventWithOrganizer.title}" has reached full capacity. If you haven't registered yet, you can join the waitlist to be notified if spots become available.`,
+                'attendees',
+                undefined,
+                NotificationPriority.MEDIUM,
+              );
+            }
+          }
         }
+      } catch (error) {
+        // Log error but don't fail registration
+        logger.error('Failed to send capacity milestone notifications:', error);
       }
     }
 
@@ -1545,12 +1750,12 @@ export class EventService {
           logger.debug('[registerForEvent] Authenticated user - ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
 
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
-            ticketLineItems = (lineItems as any[]).map((item: {
+            ticketLineItems = (lineItems as Array<{
               ticketType: string;
               quantity: number;
-              unitPrice: number;
-              totalPrice: number;
-            }) => ({
+              unitPrice: unknown;
+              totalPrice: unknown;
+            }>).map((item) => ({
               ticketType: item.ticketType,
               quantity: item.quantity,
               unitPrice: Number(item.unitPrice),
@@ -1925,20 +2130,102 @@ export class EventService {
 
     logger.info(`Event cancelled: ${eventId} by organizer: ${organizerId}`);
 
-    // Send notifications
+    // Process auto-refunds for all paid registrations
+    const refundStats = { requested: 0, processed: 0, failed: 0 };
     try {
-      // Notify all registered attendees
-      await NotificationService.sendEventNotification(
-        eventId,
-        NotificationType.EVENT_CANCELLED,
-        `Event Cancelled: ${cancelledEvent.title}`,
-        `The event "${cancelledEvent.title}" has been cancelled.${reason ? `\n\nReason: ${reason}` : ''}\n\nIf you paid for this event, you will receive a full refund.`,
-        'attendees',
-        undefined,
-        NotificationPriority.HIGH,
-        { reason: reason || null },
-      );
+      // Get all confirmed registrations with payment transactions
+      const paidRegistrations = await prisma.eventRegistration.findMany({
+        where: {
+          eventId,
+          status: RegistrationStatus.CONFIRMED,
+          paymentTransaction: {
+            isNot: null,
+          },
+        },
+        include: {
+          paymentTransaction: {
+            include: {
+              refund: true, // Check if refund already exists
+            },
+          },
+          attendee: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
 
+      logger.info(`Found ${paidRegistrations.length} paid registrations for event cancellation refunds`);
+
+      // Process refunds for each paid registration that doesn't already have a refund
+      for (const registration of paidRegistrations) {
+        if (!registration.paymentTransaction) continue;
+        if (registration.paymentTransaction.refund) {
+          logger.info(`Skipping refund for registration ${registration.id} - refund already exists`);
+          continue;
+        }
+        if (registration.paymentTransaction.paymentStatus !== 'success') {
+          logger.info(`Skipping refund for registration ${registration.id} - payment status is ${registration.paymentTransaction.paymentStatus}`);
+          continue;
+        }
+
+        try {
+          // Create refund request
+          const refund = await RefundService.createRefund(
+            {
+              transactionId: registration.paymentTransaction.id,
+              refundReason: `Event cancelled${reason ? `: ${reason}` : ''}`,
+              refundType: 'full',
+              notes: 'Auto-refund triggered by event cancellation',
+            },
+            organizerId,
+            ipAddress,
+            userAgent,
+          );
+          refundStats.requested++;
+
+          // Auto-process the refund
+          try {
+            await RefundService.processRefund(refund.id, {}, 'SYSTEM', ipAddress, userAgent);
+            refundStats.processed++;
+            logger.info(`Auto-refund processed for registration ${registration.id}, refund ID: ${refund.id}`);
+          } catch (processError) {
+            // Refund request created but processing failed - will need manual intervention
+            refundStats.failed++;
+            logger.error(`Failed to process auto-refund for registration ${registration.id}:`, processError);
+          }
+        } catch (refundError) {
+          refundStats.failed++;
+          logger.error(`Failed to create refund for registration ${registration.id}:`, refundError);
+        }
+      }
+
+      logger.info(
+        `Event cancellation refund summary for ${eventId}: ` +
+        `${refundStats.requested} requested, ${refundStats.processed} processed, ${refundStats.failed} failed`,
+      );
+    } catch (error) {
+      logger.error('Failed to process event cancellation refunds:', error);
+    }
+
+    // Send cancellation emails to all attendees
+    try {
+      await AttendeeCommunicationService.sendEventCancellationEmails(eventId, {
+        cancellationReason: reason,
+        refundInfo: refundStats.requested > 0
+          ? {
+            amount: 'Full refund',
+            status: refundStats.processed > 0 ? 'processing' : 'pending',
+          }
+          : undefined,
+      });
+    } catch (error) {
+      logger.error('Failed to send event cancellation emails:', error);
+    }
+
+    // Send in-app notifications
+    try {
       // Notify assigned staff
       await NotificationService.sendEventNotification(
         eventId,
@@ -1950,6 +2237,19 @@ export class EventService {
         NotificationPriority.MEDIUM,
         { reason: reason || null },
       );
+
+      // Notify organizer with refund summary
+      if (refundStats.requested > 0) {
+        await NotificationService.sendNotification({
+          userId: organizerId,
+          type: NotificationType.EVENT_CANCELLED,
+          title: `Refund Summary: ${cancelledEvent.title}`,
+          message: `Event "${cancelledEvent.title}" has been cancelled.\n\nRefund Summary:\n- ${refundStats.requested} refund(s) requested\n- ${refundStats.processed} processing\n- ${refundStats.failed} failed (may need manual intervention)`,
+          priority: NotificationPriority.HIGH,
+          eventId,
+          data: { refundStats },
+        });
+      }
     } catch (error) {
       // Log error but don't fail the cancellation
       logger.error('Failed to send event cancellation notifications:', error);
@@ -2061,6 +2361,111 @@ export class EventService {
     });
 
     logger.info(`Event recalled: ${eventId} by admin: ${adminId} - Action: ${action}`);
+
+    // Process auto-refunds if event is being cancelled
+    const refundStats = { requested: 0, processed: 0, failed: 0 };
+    if (action === 'CANCELLED') {
+      try {
+        // Get all confirmed registrations with payment transactions
+        const paidRegistrations = await prisma.eventRegistration.findMany({
+          where: {
+            eventId,
+            status: RegistrationStatus.CONFIRMED,
+            paymentTransaction: {
+              isNot: null,
+            },
+          },
+          include: {
+            paymentTransaction: {
+              include: {
+                refund: true,
+              },
+            },
+            attendee: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        });
+
+        logger.info(`Found ${paidRegistrations.length} paid registrations for admin event cancellation refunds`);
+
+        // Process refunds for each paid registration that doesn't already have a refund
+        for (const registration of paidRegistrations) {
+          if (!registration.paymentTransaction) continue;
+          if (registration.paymentTransaction.refund) {
+            logger.info(`Skipping refund for registration ${registration.id} - refund already exists`);
+            continue;
+          }
+          if (registration.paymentTransaction.paymentStatus !== 'success') {
+            logger.info(`Skipping refund for registration ${registration.id} - payment status is ${registration.paymentTransaction.paymentStatus}`);
+            continue;
+          }
+
+          try {
+            const refund = await RefundService.createRefund(
+              {
+                transactionId: registration.paymentTransaction.id,
+                refundReason: `Event recalled/cancelled by admin${reason ? `: ${reason}` : ''}`,
+                refundType: 'full',
+                notes: 'Auto-refund triggered by admin event recall',
+              },
+              adminId,
+              ipAddress,
+              userAgent,
+            );
+            refundStats.requested++;
+
+            // Auto-process the refund
+            try {
+              await RefundService.processRefund(refund.id, {}, 'SYSTEM', ipAddress, userAgent);
+              refundStats.processed++;
+              logger.info(`Auto-refund processed for registration ${registration.id}, refund ID: ${refund.id}`);
+            } catch (processError) {
+              refundStats.failed++;
+              logger.error(`Failed to process auto-refund for registration ${registration.id}:`, processError);
+            }
+          } catch (refundError) {
+            refundStats.failed++;
+            logger.error(`Failed to create refund for registration ${registration.id}:`, refundError);
+          }
+        }
+
+        logger.info(
+          `Admin event cancellation refund summary for ${eventId}: ` +
+          `${refundStats.requested} requested, ${refundStats.processed} processed, ${refundStats.failed} failed`,
+        );
+
+        // Send cancellation emails to all attendees
+        try {
+          await AttendeeCommunicationService.sendEventCancellationEmails(eventId, {
+            cancellationReason: reason ? `${reason} (Cancelled by platform)` : 'Cancelled by platform',
+            refundInfo: refundStats.requested > 0
+              ? {
+                amount: 'Full refund',
+                status: refundStats.processed > 0 ? 'processing' : 'pending',
+              }
+              : undefined,
+          });
+        } catch (emailError) {
+          logger.error('Failed to send admin event cancellation emails:', emailError);
+        }
+
+        // Notify organizer
+        await NotificationService.sendNotification({
+          userId: recalledEvent.organizer.id,
+          type: NotificationType.EVENT_CANCELLED,
+          title: `Event Recalled: ${recalledEvent.title}`,
+          message: `Your event "${recalledEvent.title}" has been cancelled by the platform.${reason ? `\n\nReason: ${reason}` : ''}\n\nRefund Summary:\n- ${refundStats.requested} refund(s) requested\n- ${refundStats.processed} processing\n- ${refundStats.failed} failed`,
+          priority: NotificationPriority.HIGH,
+          eventId,
+          data: { reason, refundStats },
+        });
+      } catch (error) {
+        logger.error('Failed to process admin event cancellation refunds:', error);
+      }
+    }
 
     return recalledEvent;
   }
@@ -3311,12 +3716,12 @@ export class EventService {
           logger.debug('[registerForEvent] ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
 
           if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
-            ticketLineItems = (lineItems as any[]).map((item: {
+            ticketLineItems = (lineItems as Array<{
               ticketType: string;
               quantity: number;
-              unitPrice: number;
-              totalPrice: number;
-            }) => ({
+              unitPrice: unknown;
+              totalPrice: unknown;
+            }>).map((item) => ({
               ticketType: item.ticketType,
               quantity: item.quantity,
               unitPrice: Number(item.unitPrice),

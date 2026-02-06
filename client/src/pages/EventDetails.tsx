@@ -260,7 +260,7 @@ const EventDetails = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Hero, Organizer, About, Important Info, Refund Policy, Venue, Tags */}
             <div className="lg:col-span-2 space-y-6">
-              <EventHero 
+              <EventHero
                 title={event.title}
                 category={event.category}
                 date={event.date || new Date(event.startDate).toLocaleDateString()}
@@ -268,6 +268,8 @@ const EventDetails = () => {
                 venue={event.venue}
                 location={event.location}
                 image={event.image}
+                isOnline={event.isOnline}
+                onlineLink={event.onlineLink}
               />
 
 
@@ -295,13 +297,6 @@ const EventDetails = () => {
                 <Card className="border border-border bg-background rounded-2xl shadow-sm p-6">
                   <div className="space-y-3">
                     {(() => {
-                      // Debug logging
-                      console.log('Event object:', event);
-                      console.log('Event.agenda:', event.agenda);
-                      console.log('Event.agenda type:', typeof event.agenda);
-                      console.log('Event.agenda is array?', Array.isArray(event.agenda));
-                      console.log('Event.agenda length:', event.agenda?.length);
-                      
                       // Handle different data formats
                       let agendaData = event.agenda;
                       
@@ -392,10 +387,12 @@ const EventDetails = () => {
               )}
 
               {/* Venue Information */}
-              <VenueSection 
+              <VenueSection
                 venue={event.venue}
                 location={event.location}
                 coordinates={event.coordinates}
+                isOnline={event.isOnline}
+                onlineLink={event.onlineLink}
               />
               
               <EventTags 
@@ -525,43 +522,6 @@ const EventDetails = () => {
                     </Button>
                   </div>
 
-                  {/* Event Stats */}
-                  <div className="pt-4 border-t space-y-2 text-sm">
-                    {(() => {
-                      // Debug logging
-                      console.log('Event capacity:', event.capacity);
-                      console.log('Event availableSlots:', event.availableSlots);
-                      console.log('Event registrationCount:', event.registrationCount);
-                      
-                      // Always show capacity if it exists (this is the total, not available)
-                      const capacity = event.capacity;
-                      const registered = event.registrationCount || 0;
-                      const available = event.availableSlots;
-                      
-                      return (
-                        <>
-                          {capacity !== null && capacity !== undefined && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Capacity:</span>
-                              <span className="font-medium">{capacity} attendees</span>
-                            </div>
-                          )}
-                          {registered !== undefined && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Registered:</span>
-                              <span className="font-medium">{registered}</span>
-                            </div>
-                          )}
-                          {available !== null && available !== undefined && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Available:</span>
-                              <span className="font-medium text-primary">{available} spots</span>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
                 </div>
               </Card>
 

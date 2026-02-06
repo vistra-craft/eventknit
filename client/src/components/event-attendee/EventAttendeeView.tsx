@@ -175,6 +175,7 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
                 size="icon"
                 onClick={() => navigate('/user/dashboard')}
                 className="rounded-full"
+                title="Back to Dashboard"
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
@@ -204,13 +205,13 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
 
             {/* Right - Icons & Profile */}
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex">
+              <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex" title="Search">
                 <Search className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex">
+              <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex" title="Messages">
                 <MessageCircle className="w-5 h-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-full">
+              <Button variant="ghost" size="icon" className="rounded-full" title="Notifications">
                 <Bell className="w-5 h-5" />
               </Button>
               <Avatar
@@ -220,6 +221,7 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
                 size="sm"
                 className="cursor-pointer"
                 onClick={() => navigate('/user/profile')}
+                title="Profile"
               />
             </div>
           </div>

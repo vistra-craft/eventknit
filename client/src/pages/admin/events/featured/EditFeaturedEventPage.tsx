@@ -12,7 +12,9 @@ import {
   getFeaturedEventById,
   updateFeaturedEvent,
   type UpdateFeaturedEventData,
+  type FeaturedEventData,
 } from "@/lib/featured-event-api";
+import { HeroPreview } from "@/components/admin/HeroPreview";
 
 const EditFeaturedEventPage = () => {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ const EditFeaturedEventPage = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [originalData, setOriginalData] = useState<FeaturedEventData | null>(null);
   const [formData, setFormData] = useState<UpdateFeaturedEventData>({
     customTitle: "",
     customImage: "",
@@ -48,6 +51,7 @@ const EditFeaturedEventPage = () => {
       try {
         setFetching(true);
         const featuredEvent = await getFeaturedEventById(id);
+        setOriginalData(featuredEvent);
         setFormData({
           customTitle: featuredEvent.customTitle || "",
           customImage: featuredEvent.customImage || "",
@@ -172,9 +176,43 @@ const EditFeaturedEventPage = () => {
     );
   }
 
+  // Get preview data
+  const getPreviewData = () => {
+    if (!originalData) {
+      return {
+        type: "EVENT" as const,
+        title: formData.customTitle || "Loading...",
+        image: imagePreview || formData.customImage || "",
+        category: formData.customCategory,
+      };
+    }
+
+    const isEventType = originalData.type === "EVENT";
+    if (isEventType) {
+      return {
+        type: "EVENT" as const,
+        title: formData.customTitle || originalData.event?.title || "",
+        image: imagePreview || formData.customImage || originalData.event?.image || "",
+        category: formData.customCategory || originalData.event?.category,
+        date: originalData.event?.startDate,
+        venue: originalData.event?.venue,
+        location: originalData.event?.location,
+      };
+    }
+    return {
+      type: "IMAGE" as const,
+      title: originalData.title || "",
+      image: imagePreview || formData.customImage || originalData.imageUrl || "",
+      description: originalData.description,
+      linkText: originalData.linkText,
+    };
+  };
+
+  const previewData = getPreviewData();
+
   return (
     <AdminLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button
@@ -192,8 +230,9 @@ const EditFeaturedEventPage = () => {
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
           <div>
             <Label htmlFor="customTitle">Custom Title (optional)</Label>
             <Input
@@ -382,6 +421,16 @@ const EditFeaturedEventPage = () => {
             </Button>
           </div>
         </form>
+
+          {/* Preview Panel */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-6 space-y-4">
+              <div className="rounded-lg border border-border bg-card p-4">
+                <HeroPreview {...previewData} />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </AdminLayout>
   );

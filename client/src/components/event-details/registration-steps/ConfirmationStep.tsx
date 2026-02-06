@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, Calendar, MapPin, Mail, Download, Share2 } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Globe, Mail, Download, Share2 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { useNavigate } from 'react-router-dom';
 import type { EventData } from '@/types/event';
@@ -142,10 +142,17 @@ export const ConfirmationStep = ({
                   {event.time || event.startTime}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                <span>{event.venue || event.location}</span>
-              </div>
+              {event.isOnline ? (
+                <div className="flex items-center gap-2">
+                  <Globe className="w-4 h-4" />
+                  <span>Online Event — link in your email &amp; ticket</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  <span>{event.venue || event.location}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

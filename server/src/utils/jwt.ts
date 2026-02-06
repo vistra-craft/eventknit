@@ -69,3 +69,60 @@ export const parseExpiresIn = (expiresIn: string): number => {
   }
 };
 
+// ============================================
+// Unsubscribe Token Functions (for email marketing)
+// ============================================
+
+export interface UnsubscribeTokenPayload {
+  userId: string;
+  email: string;
+  eventId?: string; // Optional: for event-specific unsubscribe
+  campaignId?: string; // Optional: for tracking which campaign
+  type: 'marketing' | 'event_updates' | 'all';
+}
+
+/**
+ * Generate unsubscribe token for email marketing
+ * Token expires in 30 days (users should be able to unsubscribe anytime)
+ */
+export const generateUnsubscribeToken = (payload: UnsubscribeTokenPayload): string => {
+  return jwt.sign(
+    { ...payload, purpose: 'unsubscribe' },
+    config.jwt.secret,
+    { expiresIn: '30d' } as jwt.SignOptions,
+  );
+};
+
+/**
+ * Verify unsubscribe token
+ * Returns the payload if valid, throws error if invalid/expired
+ */
+export const verifyUnsubscribeToken = (token: string): UnsubscribeTokenPayload => {
+  try {
+    const decoded = jwt.verify(token, config.jwt.secret) as UnsubscribeTokenPayload & { purpose: string };
+    if (decoded.purpose !== 'unsubscribe') {
+      throw new Error('Invalid token purpose');
+    }
+    return {
+      userId: decoded.userId,
+      email: decoded.email,
+      eventId: decoded.eventId,
+      campaignId: decoded.campaignId,
+      type: decoded.type,
+    };
+  } catch {
+    throw new Error('Invalid or expired unsubscribe token');
+  }
+};
+
+/**
+ * Generate unsubscribe URL for email marketing
+ */
+export const generateUnsubscribeUrl = (
+  baseUrl: string,
+  payload: UnsubscribeTokenPayload,
+): string => {
+  const token = generateUnsubscribeToken(payload);
+  return `${baseUrl}/unsubscribe?token=${encodeURIComponent(token)}`;
+};
+

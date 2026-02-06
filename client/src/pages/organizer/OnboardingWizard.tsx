@@ -14,11 +14,54 @@ import Logo from '@/components/Logo';
 
 type OnboardingStep = 1 | 2 | 3;
 
+const ONBOARDING_STORAGE_KEY = 'eventknit_onboarding_draft';
+
+interface OnboardingDraft {
+  formData: {
+    eventTypes: string[];
+    organizationType: string;
+    eventsPerYear: string;
+    isRecurringSeries: boolean;
+  };
+  currentStep: OnboardingStep;
+  timestamp: number;
+}
+
+function loadOnboardingDraft(): OnboardingDraft | null {
+  try {
+    const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+    if (!raw) return null;
+    const draft: OnboardingDraft = JSON.parse(raw);
+    // Expire after 7 days
+    if (Date.now() - draft.timestamp > 7 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      return null;
+    }
+    return draft;
+  } catch {
+    return null;
+  }
+}
+
+function saveOnboardingDraft(formData: OnboardingDraft['formData'], currentStep: OnboardingStep) {
+  try {
+    const draft: OnboardingDraft = { formData, currentStep, timestamp: Date.now() };
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(draft));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+function clearOnboardingDraft() {
+  localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+}
+
 const OnboardingWizard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { state: { user }, dispatch } = useAuthContext();
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(1);
+  const draft = loadOnboardingDraft();
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(draft?.currentStep ?? 1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [eventCreatedMessage, setEventCreatedMessage] = useState<string | null>(null);
@@ -56,12 +99,17 @@ const OnboardingWizard = () => {
     fetchVerification();
   }, [eventCreatedMessage]);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => draft?.formData ?? {
     eventTypes: [] as string[],
     organizationType: '',
     eventsPerYear: '',
     isRecurringSeries: false,
   });
+
+  // Persist draft to localStorage whenever form data or step changes
+  useEffect(() => {
+    saveOnboardingDraft(formData, currentStep);
+  }, [formData, currentStep]);
 
   const handleUpdatePreferences = (data: Partial<typeof formData>) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -94,8 +142,9 @@ const OnboardingWizard = () => {
         const { completeOnboarding } = await import('@/lib/organizer-api');
         const response = await completeOnboarding(formData);
         if (response.success && response.data && user) {
-          dispatch({ 
-            type: 'UPDATE_USER', 
+          clearOnboardingDraft();
+          dispatch({
+            type: 'UPDATE_USER',
             payload: { ...user, onboardingCompleted: true }
           });
         }
@@ -117,9 +166,10 @@ const OnboardingWizard = () => {
       const response = await completeOnboarding(formData);
 
       if (response.success && response.data && user) {
+        clearOnboardingDraft();
         // Update user context with completed onboarding
-        dispatch({ 
-          type: 'UPDATE_USER', 
+        dispatch({
+          type: 'UPDATE_USER',
           payload: { ...user, onboardingCompleted: true }
         });
 

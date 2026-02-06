@@ -164,10 +164,10 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-8">
+    <div className="container mx-auto px-4 sm:px-6 py-6 max-w-4xl">
       {/* Date Tabs - Only show for multi-day events */}
       {eventDates.length > 1 && (
-        <div className="mb-8">
+        <div className="mb-5">
           <div className="flex items-center gap-2 overflow-x-auto pb-2">
             {eventDates.map((date) => {
               const formatted = formatDateTab(date);
@@ -177,42 +177,43 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
                 <Button
                   key={date}
                   variant={isActive ? 'default' : 'outline'}
+                  size="sm"
                   className={cn(
-                    'flex flex-col items-center min-w-[80px] h-auto py-3 px-4',
+                    'flex flex-col items-center min-w-[60px] h-auto py-2 px-3',
                     isActive && 'bg-primary text-primary-foreground'
                   )}
                   onClick={() => setSelectedDate(date)}
                 >
-                  <span className="text-xs font-medium uppercase">{formatted.day}</span>
-                  <span className="text-2xl font-bold">{formatted.date}</span>
-                  <span className="text-xs">{formatted.month}</span>
+                  <span className="text-[10px] font-medium uppercase">{formatted.day}</span>
+                  <span className="text-lg font-bold">{formatted.date}</span>
+                  <span className="text-[10px]">{formatted.month}</span>
                 </Button>
               );
             })}
           </div>
           {selectedDate && (
-            <p className="text-sm text-muted-foreground mt-3">
+            <p className="text-xs text-muted-foreground mt-2">
               {formatFullDate(selectedDate)}
             </p>
           )}
         </div>
       )}
 
-      {/* Agenda Timeline */}
-      <div className="space-y-6">
+      {/* Agenda Timeline - Compact */}
+      <div className="space-y-4">
         {Object.entries(groupedAgenda).map(([time, items]) => (
           <div key={time} className="relative">
             {/* Time Header */}
-            <div className="flex items-center gap-4 mb-4">
-              <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-full">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span className="font-semibold text-foreground">{time}</span>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-full">
+                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="font-semibold text-foreground text-sm">{time}</span>
               </div>
               <div className="flex-1 h-px bg-border" />
             </div>
 
             {/* Sessions */}
-            <div className="space-y-4 pl-4 border-l-2 border-muted ml-4">
+            <div className="space-y-2 pl-3 border-l-2 border-muted ml-3">
               {items.map((item, idx) => {
                 const type = item.type || inferSessionType(item.title, item.description);
                 const config = sessionTypeConfig[type] || sessionTypeConfig.session;
@@ -221,33 +222,33 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
                 const speakers = getSpeakerNames(item);
 
                 return (
-                  <Card key={item.id || idx} variant="github" className="hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 transition-all">
-                    <CardContent className="p-5">
-                      <div className="flex items-start gap-4">
+                  <Card key={item.id || idx} variant="github" className="hover:shadow-md hover:border-primary/30 transition-all">
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
                         {/* Type Icon */}
-                        <div className={cn('p-2 rounded-lg', config.bgColor)}>
-                          <TypeIcon className={cn('w-5 h-5', config.color)} />
+                        <div className={cn('p-1.5 rounded-md', config.bgColor)}>
+                          <TypeIcon className={cn('w-4 h-4', config.color)} />
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-4 mb-2">
+                          <div className="flex items-start justify-between gap-3 mb-1">
                             <div>
-                              <h3 className="font-semibold text-foreground">
+                              <h3 className="font-medium text-foreground text-sm">
                                 {item.title}
                               </h3>
                               {speakers && (
-                                <p className="text-sm text-primary mt-0.5">
+                                <p className="text-xs text-muted-foreground">
                                   {speakers}
                                 </p>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <Badge variant="secondary" className="text-xs">
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                                 {type.charAt(0).toUpperCase() + type.slice(1)}
                               </Badge>
                               {duration && (
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-[10px] text-muted-foreground">
                                   {duration}
                                 </span>
                               )}
@@ -255,14 +256,14 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
                           </div>
 
                           {item.description && (
-                            <p className="text-sm text-muted-foreground mb-3">
+                            <p className="text-xs text-muted-foreground mb-1.5 line-clamp-2">
                               {item.description}
                             </p>
                           )}
 
                           {item.location && (
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <MapPin className="w-3 h-3" />
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <MapPin className="w-2.5 h-2.5" />
                               <span>{item.location}</span>
                             </div>
                           )}

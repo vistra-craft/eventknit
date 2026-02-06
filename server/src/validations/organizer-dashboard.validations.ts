@@ -266,6 +266,24 @@ export const organizerDashboardValidations = {
     }),
   }),
 
+  checkoutAnalyticsQuery: Joi.object({
+    eventId: Joi.string().uuid().optional().messages({
+      'string.guid': 'Event ID must be a valid UUID',
+    }),
+    startDate: Joi.date().iso().optional().messages({
+      'date.format': 'Start date must be a valid ISO date',
+    }),
+    endDate: Joi.date().iso().optional().messages({
+      'date.format': 'End date must be a valid ISO date',
+    }),
+  }),
+
+  abandonmentAnalyticsQuery: Joi.object({
+    eventId: Joi.string().uuid().optional().messages({
+      'string.guid': 'Event ID must be a valid UUID',
+    }),
+  }),
+
   // Common pagination query
   paginationQuery: Joi.object({
     page: Joi.number().integer().min(1).optional().messages({

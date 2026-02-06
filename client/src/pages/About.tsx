@@ -34,21 +34,23 @@ const About = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* Hero */}
-      <div className="pt-24 pb-16 px-6">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
-            Event management that just works
-          </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            EventKnit helps organizers create, sell, and manage events — and helps attendees
-            discover what's happening. Fast, secure, and built for everyone.
-          </p>
+      {/* Content wrapper */}
+      <div className="flex-1 flex flex-col justify-center">
+        {/* Hero */}
+        <div className="pt-24 pb-16 px-6">
+          <div className="max-w-2xl mx-auto text-center">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4 tracking-tight">
+              Event management that just works
+            </h1>
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              EventKnit helps organizers create, sell, and manage events, and helps attendees
+              discover what's happening. Fast, secure, and built for everyone.
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Features */}
-      <div className="py-12 border-y border-border bg-muted/20">
+        {/* Features */}
+        <div className="py-12 border-y border-border bg-muted/20">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
             {features.map((feature, index) => (
@@ -65,8 +67,8 @@ const About = () => {
       </div>
 
       {/* CTA */}
-      <div className="py-16 px-6">
-        <div className="max-w-md mx-auto text-center">
+        <div className="py-16 px-6">
+          <div className="max-w-md mx-auto text-center">
           <h2 className="text-xl font-semibold text-foreground mb-3">Ready to get started?</h2>
           <p className="text-sm text-muted-foreground mb-6">
             Create your first event or browse what's happening near you.
@@ -81,6 +83,7 @@ const About = () => {
             </Button>
           </div>
         </div>
+      </div>
       </div>
 
       <Footer />

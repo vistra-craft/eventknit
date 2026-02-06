@@ -71,8 +71,11 @@ export interface CreateEventData {
   currency?: string; // Currency code (e.g., 'KES', 'USD')
   ticketTypes?: Array<{
     name: string;
+    description?: string;
     price: number;
     quantity?: number;
+    maxPerPerson?: number;
+    minPerOrder?: number;
     features?: string[];
     originalPrice?: number;
     discountLabel?: string;
@@ -80,26 +83,69 @@ export interface CreateEventData {
     requiresInvitation?: boolean;
     availableFrom?: string;
     availableUntil?: string;
+    earlyBirdQuantity?: number;
+    salesChannel?: 'online' | 'door' | 'both';
+    isHidden?: boolean;
   }>;
+  // Service fee configuration
+  serviceFeeType?: 'percentage' | 'fixed' | 'none';
+  serviceFeeValue?: number;
+  serviceFeePassToAttendee?: boolean;
+  // Refund policy
+  refundPolicy?: 'no_refunds' | 'full_refund' | 'partial_refund' | 'custom';
+  refundDeadlineDays?: number;
+  refundPolicyText?: string;
   capacity?: number;
   image?: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
   images?: string[];
   type?: EventType;
   requirements?: string[];
   ageRestriction?: string;
   duration?: string;
-  speakers?: Array<{ name: string; title: string; bio: string; image?: string }>;
-  sponsors?: Array<{ name: string; level: string; logo: string }>;
+  speakers?: Array<{
+    id?: string;
+    name: string;
+    title?: string;
+    bio?: string;
+    image?: string;
+    company?: string;
+    website?: string;
+    linkedin?: string;
+    twitter?: string;
+  }>;
+  sponsors?: Array<{
+    id?: string;
+    name: string;
+    level?: string;
+    logo?: string;
+    website?: string;
+    description?: string;
+  }>;
   faqs?: Array<{ question: string; answer: string }>;
   socialLinks?: Record<string, string>;
-  exhibitors?: Array<{ name: string; description?: string; logo?: string; contactEmail?: string; booth?: string }>;
+  exhibitors?: Array<{
+    id?: string;
+    name: string;
+    description?: string;
+    logo?: string;
+    contactEmail?: string;
+    booth?: string;
+    website?: string;
+    category?: string;
+  }>;
   agenda?: Array<{
+    id?: string;
     title: string;
     description?: string;
     date?: string; // Optional date for multi-day events (defaults to event start date)
-    startTime: string;
-    endTime: string;
-    speakers?: string[]; // IDs of speakers
+    startTime?: string;
+    endTime?: string;
+    sessionType?: string; // keynote, workshop, panel, breakout, networking, break, lunch, registration, other
+    room?: string; // Room or track name
+    speakerIds?: string[]; // IDs of speakers assigned to this session
+    speakers?: string[]; // Legacy: speaker names (for backwards compatibility)
   }>;
   registrationFields?: Array<{
     id: string;
@@ -252,17 +298,7 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/events?${queryString}` : '/events';
 
-  console.log('[event-api] Making API call to:', endpoint);
-  console.log('[event-api] Filters received:', filters);
-
   const response = await apiGet<EventsListResponse>(endpoint);
-
-  console.log('[event-api] API Response:', {
-    success: response.success,
-    eventCount: response.data?.events?.length || 0,
-    total: response.data?.total || 0,
-    events: response.data?.events?.map(e => ({ id: e.id, title: e.title, status: e.status, type: e.type })) || []
-  });
 
   // Transform backend events to frontend format
   if (response.success && response.data) {
@@ -289,10 +325,6 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
         : event.exhibitors,
     }));
     response.data.events = transformEventsData(normalizedEvents);
-    console.log('[event-api] After transformation:', {
-      eventCount: response.data.events.length,
-      events: response.data.events.map(e => ({ id: e.id, title: e.title, status: e.status, type: e.type }))
-    });
   }
 
   return response;

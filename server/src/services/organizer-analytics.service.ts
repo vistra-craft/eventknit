@@ -549,7 +549,7 @@ export class OrganizerAnalyticsService {
     }
 
     // Simple linear regression for forecasting
-    const sorted = transactions.sort((a, b) => 
+    const sorted = transactions.sort((a, b) =>
       new Date(a.paymentDate || a.createdAt).getTime() - new Date(b.paymentDate || b.createdAt).getTime(),
     );
 
@@ -563,5 +563,334 @@ export class OrganizerAnalyticsService {
       next90Days: avgDailyRevenue * 90,
       confidence: transactions.length > 10 ? 'medium' : 'low',
     };
+  }
+
+  /**
+   * Get checkout analytics (abandonment rate, conversion funnel, popular tickets)
+   */
+  static async getCheckoutAnalytics(organizerId: string, filters?: {
+    eventId?: string;
+    startDate?: Date;
+    endDate?: Date;
+  }) {
+    try {
+      const eventWhere: any = {
+        organizerId,
+        deletedAt: null,
+      };
+
+      if (filters?.eventId) {
+        eventWhere.id = filters.eventId;
+      }
+
+      const dateFilter: any = {};
+      if (filters?.startDate) {
+        dateFilter.gte = filters.startDate;
+      }
+      if (filters?.endDate) {
+        dateFilter.lte = filters.endDate;
+      }
+
+      // Get all registrations for analysis
+      const registrations = await prisma.eventRegistration.findMany({
+        where: {
+          event: eventWhere,
+          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+        },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              ticketTypes: true,
+            },
+          },
+          ticketLineItems: true,
+          paymentTransaction: {
+            select: {
+              id: true,
+              paymentStatus: true,
+              paymentDate: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Checkout funnel analysis
+      const totalStarted = registrations.length;
+      const pendingPayment = registrations.filter(r => r.paymentStatus === 'PENDING').length;
+      const completedPayment = registrations.filter(r => r.paymentStatus === 'COMPLETED' || r.paymentStatus === 'success').length;
+      const failedPayment = registrations.filter(r => r.paymentStatus === 'FAILED').length;
+      const cancelledOrAbandoned = registrations.filter(r =>
+        r.status === 'CANCELLED' || (r.paymentStatus === 'PENDING' && r.cancelledAt),
+      ).length;
+
+      // Abandonment rate (registrations started but not completed within 24 hours)
+      const cutoff = new Date();
+      cutoff.setHours(cutoff.getHours() - 24);
+      const abandonedRegistrations = registrations.filter(r =>
+        r.paymentStatus === 'PENDING' &&
+        r.createdAt < cutoff &&
+        !r.cancelledAt,
+      );
+      const abandonmentRate = totalStarted > 0
+        ? (abandonedRegistrations.length / totalStarted) * 100
+        : 0;
+
+      // Conversion rate
+      const conversionRate = totalStarted > 0
+        ? (completedPayment / totalStarted) * 100
+        : 0;
+
+      // Average time to complete checkout (for completed registrations)
+      const completedWithTransaction = registrations.filter(r =>
+        r.paymentTransaction &&
+        r.paymentTransaction.paymentDate,
+      );
+
+      const avgCheckoutTime = completedWithTransaction.length > 0
+        ? completedWithTransaction.reduce((sum, r) => {
+          const start = new Date(r.createdAt).getTime();
+          const end = new Date(r.paymentTransaction!.paymentDate!).getTime();
+          return sum + (end - start);
+        }, 0) / completedWithTransaction.length / 1000 / 60 // Convert to minutes
+        : 0;
+
+      // Popular ticket types
+      const ticketTypeStats: Record<string, { name: string; sold: number; revenue: number; eventCount: number }> = {};
+
+      for (const reg of registrations.filter(r => r.paymentStatus === 'COMPLETED' || r.paymentStatus === 'success')) {
+        for (const item of reg.ticketLineItems) {
+          const key = `${reg.eventId}-${item.ticketType}`;
+          if (!ticketTypeStats[key]) {
+            ticketTypeStats[key] = {
+              name: item.ticketType,
+              sold: 0,
+              revenue: 0,
+              eventCount: 1,
+            };
+          }
+          ticketTypeStats[key].sold += item.quantity;
+          ticketTypeStats[key].revenue += Number(item.totalPrice);
+        }
+      }
+
+      const popularTicketTypes = Object.values(ticketTypeStats)
+        .sort((a, b) => b.sold - a.sold)
+        .slice(0, 10);
+
+      // Checkout trends over time
+      const checkoutsByDay = this.calculateTrends(registrations, 'createdAt');
+      const completedByDay = this.calculateTrends(
+        registrations.filter(r => r.paymentStatus === 'COMPLETED' || r.paymentStatus === 'success'),
+        'createdAt',
+      );
+
+      // Payment method distribution
+      const paymentTransactions = await prisma.eventPaymentTransaction.findMany({
+        where: {
+          event: eventWhere,
+          paymentStatus: 'success',
+          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+        },
+        select: {
+          paymentMethod: true,
+          amount: true,
+        },
+      });
+
+      const paymentMethodStats = paymentTransactions.reduce((acc: any, t) => {
+        const method = t.paymentMethod || 'unknown';
+        if (!acc[method]) {
+          acc[method] = { method, count: 0, total: 0 };
+        }
+        acc[method].count++;
+        acc[method].total += Number(t.amount);
+        return acc;
+      }, {});
+
+      // Peak checkout times (by hour)
+      const checkoutByHour = registrations.reduce((acc: number[], reg) => {
+        const hour = new Date(reg.createdAt).getHours();
+        acc[hour] = (acc[hour] || 0) + 1;
+        return acc;
+      }, new Array(24).fill(0));
+
+      const peakHours = checkoutByHour
+        .map((count, hour) => ({ hour, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      // Promo code usage in checkout
+      const promoUsage = await prisma.promoCodeRedemption.findMany({
+        where: {
+          registration: {
+            event: eventWhere,
+          },
+          ...(Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {}),
+        },
+        include: {
+          promoCode: {
+            select: {
+              code: true,
+              discountType: true,
+              discountValue: true,
+            },
+          },
+        },
+      });
+
+      const promoImpact = {
+        totalRedemptions: promoUsage.length,
+        totalDiscount: promoUsage.reduce((sum, p) => sum + Number(p.discountAmount), 0),
+        uniqueCodes: new Set(promoUsage.map(p => p.promoCode.code)).size,
+        conversionWithPromo: promoUsage.length > 0 && totalStarted > 0
+          ? (promoUsage.length / totalStarted) * 100
+          : 0,
+      };
+
+      return {
+        summary: {
+          totalCheckoutsStarted: totalStarted,
+          completedPayments: completedPayment,
+          pendingPayments: pendingPayment,
+          failedPayments: failedPayment,
+          abandonedCheckouts: abandonedRegistrations.length,
+          abandonmentRate: Math.round(abandonmentRate * 100) / 100,
+          conversionRate: Math.round(conversionRate * 100) / 100,
+          avgCheckoutTimeMinutes: Math.round(avgCheckoutTime * 100) / 100,
+        },
+        funnel: {
+          started: totalStarted,
+          pendingPayment,
+          completed: completedPayment,
+          failed: failedPayment,
+          cancelled: cancelledOrAbandoned,
+          abandoned: abandonedRegistrations.length,
+        },
+        popularTicketTypes,
+        paymentMethods: Object.values(paymentMethodStats),
+        peakCheckoutHours: peakHours,
+        promoCodeImpact: promoImpact,
+        trends: {
+          checkoutsStarted: checkoutsByDay,
+          checkoutsCompleted: completedByDay,
+        },
+      };
+    } catch (error) {
+      logger.error('Error getting checkout analytics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get detailed abandonment analysis
+   */
+  static async getAbandonmentAnalysis(organizerId: string, eventId?: string) {
+    try {
+      const eventWhere: any = {
+        organizerId,
+        deletedAt: null,
+      };
+
+      if (eventId) {
+        eventWhere.id = eventId;
+      }
+
+      // Get abandoned registrations (pending payment older than 1 hour)
+      const cutoff = new Date();
+      cutoff.setHours(cutoff.getHours() - 1);
+
+      const abandonedRegistrations = await prisma.eventRegistration.findMany({
+        where: {
+          event: eventWhere,
+          paymentStatus: 'PENDING',
+          createdAt: { lt: cutoff },
+          cancelledAt: null,
+        },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          ticketLineItems: true,
+          attendee: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Calculate potential lost revenue
+      const potentialRevenue = abandonedRegistrations.reduce((sum, reg) =>
+        sum + Number(reg.totalAmount || 0), 0);
+
+      // Group by time abandoned
+      const now = new Date();
+      const abandonmentByAge = {
+        lessThan24h: 0,
+        between24hAnd48h: 0,
+        between48hAnd7d: 0,
+        moreThan7d: 0,
+      };
+
+      for (const reg of abandonedRegistrations) {
+        const ageHours = (now.getTime() - new Date(reg.createdAt).getTime()) / (1000 * 60 * 60);
+        if (ageHours < 24) abandonmentByAge.lessThan24h++;
+        else if (ageHours < 48) abandonmentByAge.between24hAnd48h++;
+        else if (ageHours < 168) abandonmentByAge.between48hAnd7d++;
+        else abandonmentByAge.moreThan7d++;
+      }
+
+      // Top abandoned ticket types
+      const ticketTypeAbandonment: Record<string, number> = {};
+      for (const reg of abandonedRegistrations) {
+        for (const item of reg.ticketLineItems) {
+          ticketTypeAbandonment[item.ticketType] = (ticketTypeAbandonment[item.ticketType] || 0) + item.quantity;
+        }
+      }
+
+      const topAbandonedTicketTypes = Object.entries(ticketTypeAbandonment)
+        .map(([type, count]) => ({ ticketType: type, abandonedCount: count }))
+        .sort((a, b) => b.abandonedCount - a.abandonedCount)
+        .slice(0, 5);
+
+      // Recovery opportunities (recent abandonments that might be recoverable)
+      const recoverableRegistrations = abandonedRegistrations
+        .filter(reg => {
+          const ageHours = (now.getTime() - new Date(reg.createdAt).getTime()) / (1000 * 60 * 60);
+          return ageHours < 24 && reg.attendee?.email;
+        })
+        .map(reg => ({
+          id: reg.id,
+          email: reg.attendee?.email,
+          firstName: reg.attendee?.firstName,
+          eventTitle: reg.event.title,
+          amount: Number(reg.totalAmount || 0),
+          createdAt: reg.createdAt,
+        }));
+
+      return {
+        summary: {
+          totalAbandoned: abandonedRegistrations.length,
+          potentialLostRevenue: potentialRevenue,
+          recoverableCount: recoverableRegistrations.length,
+        },
+        abandonmentByAge,
+        topAbandonedTicketTypes,
+        recoverableRegistrations: recoverableRegistrations.slice(0, 50),
+      };
+    } catch (error) {
+      logger.error('Error getting abandonment analysis:', error);
+      throw error;
+    }
   }
 }

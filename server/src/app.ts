@@ -7,7 +7,7 @@ import YAML from 'yamljs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { config } from './config/index.js';
-import { stream, logger } from './utils/logger.js';
+import { stream } from './utils/logger.js';
 import authRoutes from './routes/auth.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import organizerRoutes from './routes/organizer.routes.js';
@@ -52,6 +52,10 @@ import attendeeImportRoutes from './routes/attendee-import.routes.js';
 import servicePointRegistrationRoutes from './routes/service-point-registration.routes.js';
 import mobileRoutes from './routes/mobile.routes.js';
 import careerRoutes from './routes/career.routes.js';
+import unsubscribeRoutes from './routes/unsubscribe.routes.js';
+import gdprRoutes from './routes/gdpr.routes.js';
+import creditRoutes from './routes/credit.routes.js';
+import cartRoutes from './routes/cart.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -104,11 +108,19 @@ app.use(
   }),
 );
 
-// Logging
+// HTTP request logging - skip successful static/health checks to reduce noise
+const morganSkip = (_req: express.Request, _res: express.Response) => {
+  if (config.env === 'development') {
+    // In dev, skip logging for health checks and successful favicon requests
+    return _req.url === '/health' || _req.url === '/favicon.ico';
+  }
+  return false;
+};
+
 if (config.env === 'development') {
-  app.use(morgan('dev', { stream }));
+  app.use(morgan('dev', { stream, skip: morganSkip }));
 } else {
-  app.use(morgan('combined', { stream }));
+  app.use(morgan('combined', { stream, skip: morganSkip }));
 }
 
 // Body parsing middleware
@@ -116,13 +128,6 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Global rate limiter
-// Log environment on startup
-logger.info('[App] Starting server with environment:', {
-  configEnv: config.env,
-  nodeEnv: process.env.NODE_ENV,
-  willSkipRateLimit: config.env === 'development' || config.env === 'test' || process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test',
-});
-
 app.use('/api', rateLimiter);
 
 // Swagger API Documentation
@@ -212,6 +217,10 @@ app.use('/api/v1/events', attendeeImportRoutes);
 app.use('/api/v1/events', servicePointRegistrationRoutes);
 app.use('/api/v1/mobile', mobileRoutes);
 app.use('/api/v1/careers', careerRoutes);
+app.use('/api/v1/unsubscribe', unsubscribeRoutes); // Public route for email unsubscribe (no auth required)
+app.use('/api/v1/gdpr', gdprRoutes); // GDPR data export and account deletion
+app.use('/api/v1/credits', creditRoutes); // Credit/Voucher system
+app.use('/api/v1/cart', cartRoutes); // Cart reservation system
 
 // Error handler middleware (must be last)
 app.use(errorHandler);
