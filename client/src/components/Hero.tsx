@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getActiveFeaturedEvents, type ActiveFeaturedEvent } from "@/lib/featured-event-api";
-import { getFocalPointStyle } from "./EventImage";
+import { getFocalPointStyle } from "@/lib/image-utils";
 
 export const Hero = () => {
   const navigate = useNavigate();

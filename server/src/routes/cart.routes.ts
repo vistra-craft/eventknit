@@ -166,7 +166,7 @@ router.patch(
     try {
       const sessionId = getSessionId(req, res);
       const userId = req.user?.id;
-      const { itemId } = req.params;
+      const itemId = req.params.itemId as string;
       const { quantity } = req.body;
 
       const cart = await CartService.getCart(undefined, sessionId, userId);
@@ -206,7 +206,7 @@ router.delete(
     try {
       const sessionId = getSessionId(req, res);
       const userId = req.user?.id;
-      const { itemId } = req.params;
+      const itemId = req.params.itemId as string;
 
       const cart = await CartService.getCart(undefined, sessionId, userId);
       if (!cart) {

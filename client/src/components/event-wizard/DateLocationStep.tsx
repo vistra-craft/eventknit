@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Globe, Calendar, X, MapPin } from 'lucide-react';
-import { StepComponentProps, TIMEZONES, getCurrentTimezone, getTimezoneLabel } from './types';
+import type { StepComponentProps } from './types';
+import { TIMEZONES, getCurrentTimezone, getTimezoneLabel } from './types';
 
 interface DateLocationStepProps extends StepComponentProps {
   eventType: string;

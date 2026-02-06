@@ -19,7 +19,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
 import DashboardNavbar from "./DashboardNavbar";
@@ -27,9 +26,12 @@ import RoleSwitcher from "@/components/RoleSwitcher";
 import BackButton from "@/components/BackButton";
 import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
+import { AvatarUpload } from "@/components/profile/AvatarUpload";
+import { useUploadAvatar } from "@/hooks/useUploadAvatar";
 
 const UserProfilePage = () => {
   const { user, refreshProfile } = useAuth();
+  const uploadAvatarMutation = useUploadAvatar();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -37,6 +39,9 @@ const UserProfilePage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Avatar upload state
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Profile form state
   const [profileData, setProfileData] = useState({
@@ -227,6 +232,18 @@ const UserProfilePage = () => {
     }
   };
 
+  // Handle avatar change
+  const handleAvatarChange = async (file: File) => {
+    if (file && file.size > 0) {
+      setIsUploadingAvatar(true);
+
+      try {
+        await uploadAvatarMutation.mutateAsync(file);
+      } finally {
+        setIsUploadingAvatar(false);
+      }
+    }
+  };
 
   if (!user) {
     return (
@@ -296,24 +313,13 @@ const UserProfilePage = () => {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {/* Profile Picture */}
-                    <div className="flex items-center space-x-6">
-                      <Avatar
-                        src="/api/placeholder/96/96"
-                        name={profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : undefined}
-                        alt="Profile"
-                        size="xl"
-                        className="h-24 w-24"
-                      />
-                      <div className="space-y-2">
-                        <Button variant="outline" size="sm" disabled>
-                          Change Photo
-                        </Button>
-                        <p className="text-sm text-muted-foreground">
-                          JPG, PNG or GIF. Max size 2MB. (Coming soon)
-                        </p>
-                      </div>
-                    </div>
+                    {/* Avatar Upload */}
+                    <AvatarUpload
+                      currentAvatar={user?.avatar || null}
+                      onAvatarChange={handleAvatarChange}
+                      isUploading={isUploadingAvatar || uploadAvatarMutation.isPending}
+                      userName={`${profileData.firstName} ${profileData.lastName}`.trim()}
+                    />
 
                     {/* Form Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

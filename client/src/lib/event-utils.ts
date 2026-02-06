@@ -80,11 +80,39 @@ export interface BackendEvent {
   requirements?: string[];
   ageRestriction?: string | null;
   duration?: string | null;
-  speakers?: Array<{ name: string; title: string; bio: string; image?: string }> | null;
-  sponsors?: Array<{ name: string; level: string; logo: string }> | null;
+  speakers?: Array<{
+    id?: string;
+    name: string;
+    title?: string;
+    bio?: string;
+    image?: string;
+    company?: string;
+    website?: string;
+    linkedin?: string;
+    twitter?: string;
+  }> | null;
+  sponsors?: Array<{
+    id?: string;
+    name: string;
+    level?: string;
+    logo?: string;
+    website?: string;
+    description?: string;
+  }> | null;
   exhibitors?: Array<{ name: string; description?: string; logo?: string; contactEmail?: string; booth?: string }> | null;
   timezone?: string | null;
-  agenda?: Array<{ title: string; description?: string; startTime: string; endTime: string; speakers?: string[] }> | null;
+  agenda?: Array<{
+    id?: string;
+    title: string;
+    description?: string;
+    date?: string;
+    startTime?: string;
+    endTime?: string;
+    sessionType?: string;
+    room?: string;
+    speakerIds?: string[];
+    speakers?: string[];
+  }> | null;
   socialLinks?: Record<string, string> | null;
   faqs?: Array<{ question: string; answer: string }> | null;
   registrationFields?: Array<{

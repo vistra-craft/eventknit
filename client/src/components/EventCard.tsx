@@ -36,8 +36,6 @@ export const EventCard: React.FC<EventCardProps> = ({
   endTime,
   venue,
   location,
-  price,
-  currency,
   category,
   isOnline,
   onlineLink,

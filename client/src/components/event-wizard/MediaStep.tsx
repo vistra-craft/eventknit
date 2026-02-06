@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Upload, Camera, X, Plus, CheckCircle } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
-import { StepComponentProps } from './types';
+import type { StepComponentProps } from './types';
 import { FocalPointPicker } from './FocalPointPicker';
 
 interface FAQ {
@@ -20,7 +20,7 @@ interface MediaStepProps extends StepComponentProps {
   setImagePreview: (url: string | null) => void;
   isUploadingImage: boolean;
   setIsUploadingImage: (v: boolean) => void;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   tags: string[];
   newTag: string;

@@ -2,7 +2,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import type { StepComponentProps, TicketType } from "./types";
-import { DEFAULT_CURRENCY } from "./types";
 
 interface ReviewStepProps extends StepComponentProps {
   ticketTypes: TicketType[];

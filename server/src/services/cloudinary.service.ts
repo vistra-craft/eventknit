@@ -137,3 +137,66 @@ export const extractPublicIdFromUrl = (url: string): string | null => {
     return null;
   }
 };
+
+/**
+ * Upload raw buffer to Cloudinary (for PDFs and other non-image files)
+ */
+export const uploadBuffer = async (
+  buffer: Buffer,
+  options: {
+    folder?: string;
+    public_id?: string;
+    resource_type?: 'raw' | 'image' | 'video' | 'auto';
+    format?: string;
+  } = {},
+): Promise<UploadResult> => {
+  configureCloudinary();
+
+  if (!cloudinaryConfigured) {
+    throw new Error(
+      'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.',
+    );
+  }
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: options.folder,
+        public_id: options.public_id,
+        resource_type: options.resource_type || 'raw',
+        format: options.format,
+      },
+      (error, result) => {
+        if (error) {
+          logger.error('Cloudinary upload error:', error);
+          reject(new Error(`Failed to upload file: ${error.message}`));
+          return;
+        }
+
+        if (!result) {
+          reject(new Error('Upload failed: No result from Cloudinary'));
+          return;
+        }
+
+        resolve({
+          url: result.url,
+          publicId: result.public_id,
+          secureUrl: result.secure_url,
+        });
+      },
+    );
+
+    const stream = Readable.from(buffer);
+    stream.pipe(uploadStream);
+  });
+};
+
+/**
+ * CloudinaryService object for class-style imports
+ */
+export const CloudinaryService = {
+  uploadImage: uploadImageToCloudinary,
+  uploadBuffer,
+  deleteImage: deleteImageFromCloudinary,
+  extractPublicId: extractPublicIdFromUrl,
+};

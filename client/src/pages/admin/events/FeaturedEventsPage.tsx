@@ -118,7 +118,7 @@ const FeaturedEventsPage = () => {
         title: "Reordered",
         description: "Display order updated",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to reorder",
@@ -147,7 +147,7 @@ const FeaturedEventsPage = () => {
         title: "Reordered",
         description: "Display order updated",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to reorder",

@@ -22,7 +22,7 @@ export function RegistrationDetailsStep({
   setUseDragAndDrop,
 }: RegistrationDetailsStepProps) {
   const addRegistrationField = () => {
-    const newField = {
+    const newField: RegistrationField = {
       id: `field_${Date.now()}`,
       name: `field_${Date.now()}`,
       type: "text",
@@ -128,7 +128,7 @@ export function RegistrationDetailsStep({
                   </div>
                   <div className="space-y-2">
                     <Label>Field Type</Label>
-                    <Select value={field.type} onValueChange={(value) => updateRegistrationField(index, { type: value })}>
+                    <Select value={field.type} onValueChange={(value) => updateRegistrationField(index, { type: value as RegistrationField['type'] })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

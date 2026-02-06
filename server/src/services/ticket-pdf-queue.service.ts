@@ -261,7 +261,7 @@ export class TicketPdfQueueService {
       format: 'pdf',
     });
 
-    return uploadResult.secure_url;
+    return uploadResult.secureUrl;
   }
 
   /**

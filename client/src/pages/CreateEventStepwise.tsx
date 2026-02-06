@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -20,7 +20,6 @@ import {
   AlertCircle,
   Save,
   Eye,
-  Globe,
   MapPin,
   Clock,
   Shield,
@@ -363,7 +362,7 @@ export default function CreateEventStepwise() {
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
     { id: 1, name: "", type: "paid", price: "", quantity: "100", maxPerPerson: 10, salesChannel: 'both' }
   ]);
-  const [tags, setTags] = useState<Tag[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
   const [requirements, setRequirements] = useState<string[]>([]);
   const [newRequirement, setNewRequirement] = useState("");
@@ -391,6 +390,8 @@ export default function CreateEventStepwise() {
       price: "",
       totalSlots: 0,
       image: "",
+      imageFocalX: 50,
+      imageFocalY: 50,
       requirements: "",
       ageRestriction: "",
       isOnline: false,
@@ -737,8 +738,6 @@ export default function CreateEventStepwise() {
           if (transformedEvent.requirements) {
             if (Array.isArray(transformedEvent.requirements)) {
               setRequirements(transformedEvent.requirements);
-            } else if (typeof transformedEvent.requirements === 'string' && transformedEvent.requirements.trim()) {
-              setRequirements(transformedEvent.requirements.split(/[,\n]/).map((r: string) => r.trim()).filter(Boolean));
             }
           }
 
@@ -912,7 +911,7 @@ export default function CreateEventStepwise() {
             const mappedFields: RegistrationField[] = templateData.registrationFields.map((field: RegistrationFieldData) => ({
               id: field.id || `field-${Date.now()}-${Math.random()}`,
               name: field.name || field.id || '',
-              type: field.type || "text",
+              type: (field.type || "text") as RegistrationField['type'],
               label: field.label || field.name || "",
               required: field.required || false,
               placeholder: field.placeholder || "",
@@ -1242,22 +1241,6 @@ export default function CreateEventStepwise() {
     setEventData((prev) => ({ ...prev, [field]: processedValue }));
   };
 
-  const addTicketType = () => {
-    setTicketTypes([...ticketTypes, { 
-      id: Date.now(), 
-      name: "", 
-      type: "paid", 
-      price: "", 
-      quantity: "",
-      isComplementary: false,
-      requiresInvitation: false,
-    }]);
-  };
-
-  const removeTicketType = (id: number) => {
-    setTicketTypes(ticketTypes.filter(ticket => ticket.id !== id));
-  };
-
   const addTag = () => {
     const trimmedTag = newTag.trim();
     if (trimmedTag && !tags.includes(trimmedTag)) {
@@ -1291,30 +1274,6 @@ export default function CreateEventStepwise() {
     setFaqs(updatedFaqs);
   };
 
-
-  const addRegistrationField = () => {
-    const newField = {
-      id: `field_${Date.now()}`,
-      name: `field_${Date.now()}`,
-      type: "text",
-      label: "",
-      required: false,
-      placeholder: "",
-    };
-    setRegistrationFields((prev) => [...prev, newField]);
-  };
-
-  const updateRegistrationField = (index: number, updates: Partial<RegistrationField>) => {
-    setRegistrationFields((prev) =>
-      prev.map((field, i) => (i === index ? { ...field, ...updates } : field))
-    );
-  };
-
-  const removeRegistrationField = (index: number) => {
-    if (registrationFields.length > 3) {
-      setRegistrationFields((prev) => prev.filter((_, i) => i !== index));
-    }
-  };
 
   const handleFaqChange = (index: number, field: 'question' | 'answer', value: string) => {
     const updatedFaqs = [...faqs];

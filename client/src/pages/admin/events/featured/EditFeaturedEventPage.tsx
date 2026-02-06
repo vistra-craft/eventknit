@@ -193,9 +193,9 @@ const EditFeaturedEventPage = () => {
         type: "EVENT" as const,
         title: formData.customTitle || originalData.event?.title || "",
         image: imagePreview || formData.customImage || originalData.event?.image || "",
-        category: formData.customCategory || originalData.event?.category,
+        category: formData.customCategory || originalData.event?.category || undefined,
         date: originalData.event?.startDate,
-        venue: originalData.event?.venue,
+        venue: originalData.event?.venue || undefined,
         location: originalData.event?.location,
       };
     }
@@ -203,8 +203,8 @@ const EditFeaturedEventPage = () => {
       type: "IMAGE" as const,
       title: originalData.title || "",
       image: imagePreview || formData.customImage || originalData.imageUrl || "",
-      description: originalData.description,
-      linkText: originalData.linkText,
+      description: originalData.description || undefined,
+      linkText: originalData.linkText || undefined,
     };
   };
 
