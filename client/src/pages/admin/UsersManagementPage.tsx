@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Users, Shield, UserCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AdminLayout from "./AdminLayout";
 import StaffManagementContent from "./StaffManagementContent";
 import OrganizersContent from "./OrganizersContent";
 import AttendeesPage from "./AttendeesPage";
@@ -11,7 +10,6 @@ const UsersManagementPage = () => {
   const [activeTab, setActiveTab] = useState("staff");
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -64,7 +62,6 @@ const UsersManagementPage = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

@@ -1,8 +1,6 @@
-import OrganizerLayout from '../OrganizerLayout';
 
 const TestAnalytics = () => {
   return (
-    <OrganizerLayout>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="space-y-8">
@@ -36,7 +34,6 @@ const TestAnalytics = () => {
           </div>
         </div>
       </div>
-    </OrganizerLayout>
   );
 };
 

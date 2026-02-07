@@ -9,7 +9,6 @@ import { Badge } from "../../../components/ui/badge";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { ConfirmationDialog } from "../../../components/ui/confirmation-dialog";
 import { useToast } from "../../../hooks/useToast";
-import AdminLayout from "../AdminLayout";
 import {
   getAllFeaturedEvents,
   deleteFeaturedEvent,
@@ -192,7 +191,6 @@ const FeaturedEventsPage = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -436,7 +434,6 @@ const FeaturedEventsPage = () => {
         />
 
       </div>
-    </AdminLayout>
   );
 };
 

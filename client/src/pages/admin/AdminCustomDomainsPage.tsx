@@ -14,7 +14,6 @@ import {
   type CreateCustomDomainData,
 } from '@/lib/white-label-api';
 import { Plus, Trash2, Globe, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
-import AdminLayout from './AdminLayout';
 import {
   Dialog,
   DialogContent,
@@ -165,16 +164,13 @@ const AdminCustomDomainsPage = () => {
 
   if (isLoading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">Loading custom domains...</div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -381,7 +377,6 @@ const AdminCustomDomainsPage = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

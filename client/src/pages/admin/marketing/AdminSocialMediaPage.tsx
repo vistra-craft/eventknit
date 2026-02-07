@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import AdminLayout from "../AdminLayout";
 import { useToast } from "@/hooks/useToast";
 import EmptyState from "@/components/EmptyState";
 import {
@@ -370,7 +369,6 @@ const AdminSocialMediaPage = () => {
   const totalImpressions = apiMetrics?.totalImpressions || socialPosts.reduce((sum, post) => sum + post.impressions, 0);
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -735,7 +733,6 @@ const AdminSocialMediaPage = () => {
         </Card>
       )}
       </div>
-    </AdminLayout>
   );
 };
 

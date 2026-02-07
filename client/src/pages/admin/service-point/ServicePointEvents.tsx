@@ -22,7 +22,6 @@ import {
   FileText,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
-import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus, type EventData } from "@/lib/event-api";
 
 type EventStatusFilter = "all" | "live" | "upcoming" | "completed";
@@ -163,7 +162,6 @@ const ServicePointEvents: React.FC = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -400,7 +398,6 @@ const ServicePointEvents: React.FC = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

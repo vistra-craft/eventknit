@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import OrganizerLayout from "./OrganizerLayout";
 import {
   FileText,
   Plus,
@@ -166,7 +165,6 @@ const EventDraftsManagement = () => {
   };
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -318,7 +316,6 @@ const EventDraftsManagement = () => {
           </Dialog>
         )}
       </div>
-    </OrganizerLayout>
   );
 };
 

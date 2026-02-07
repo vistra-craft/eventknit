@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import EmptyState from "@/components/EmptyState";
-import AdminLayout from "../AdminLayout";
 import { 
   Megaphone, 
   Mail, 
@@ -194,7 +193,6 @@ const AdminCampaignsPage = () => {
   const avgOpenRate = campaigns.filter(c => c.openRate > 0).reduce((sum, campaign) => sum + campaign.openRate, 0) / campaigns.filter(c => c.openRate > 0).length;
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -420,7 +418,6 @@ const AdminCampaignsPage = () => {
         />
       )}
       </div>
-    </AdminLayout>
   );
 };
 

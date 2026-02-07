@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/useToast";
-import AdminLayout from "../../AdminLayout";
 import {
   createFeaturedEvent,
   type CreateFeaturedEventData,
@@ -339,7 +338,6 @@ const CreateFeaturedEventPage = () => {
   const previewData = getPreviewData();
 
   return (
-    <AdminLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -730,7 +728,6 @@ const CreateFeaturedEventPage = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

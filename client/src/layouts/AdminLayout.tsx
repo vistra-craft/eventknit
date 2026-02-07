@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from "react";
-import AdminSidebar from "./AdminSidebar";
-import AdminHeader from "./AdminHeader";
+import { Routes, Route, Outlet } from 'react-router-dom';
+import { Suspense } from 'react';
+import AdminSidebar from "../pages/admin/AdminSidebar";
+import AdminHeader from "../pages/admin/AdminHeader";
+import { adminRoutes } from '../routes/adminRoutes';
+import { ProtectedRoute } from '../components/ProtectedRoute';
 
-interface AdminLayoutProps {
-  children: React.ReactNode;
-}
+/**
+ * Loading spinner component for suspense fallback
+ */
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+      <p className="mt-4 text-muted-foreground">Loading...</p>
+    </div>
+  </div>
+);
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
+const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed, will be set by useEffect
   const [isMobile, setIsMobile] = useState(false);
 
@@ -15,7 +27,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     const checkIsMobile = () => {
       const isMobileSize = window.innerWidth < 1024; // lg breakpoint
       setIsMobile(isMobileSize);
-      
+
       // Auto-manage sidebar based on screen size
       if (isMobileSize) {
         // On mobile, always close sidebar
@@ -25,10 +37,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         setSidebarOpen(true);
       }
     };
-    
+
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
-    
+
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
@@ -68,7 +80,26 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
           {/* Page Content */}
           <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
-            {children}
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                {adminRoutes.map((route, index) => (
+                  <Route
+                    key={index}
+                    path={route.path}
+                    element={
+                      route.allowedRoles ? (
+                        <ProtectedRoute allowedRoles={route.allowedRoles}>
+                          {route.element}
+                        </ProtectedRoute>
+                      ) : (
+                        route.element
+                      )
+                    }
+                  />
+                ))}
+              </Routes>
+              <Outlet />
+            </Suspense>
           </main>
         </div>
       </div>
@@ -88,4 +119,3 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 };
 
 export default AdminLayout;
-

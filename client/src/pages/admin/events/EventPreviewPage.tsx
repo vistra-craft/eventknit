@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
-import AdminLayout from "../AdminLayout";
 import { getEventById, type EventData } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
 
@@ -51,20 +50,17 @@ const EventPreviewPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading event details...</p>
           </div>
         </div>
-      </AdminLayout>
     );
   }
 
   if (!event) {
     return (
-      <AdminLayout>
         <div className="text-center py-12">
           <p className="text-muted-foreground">Event not found</p>
           <Button
@@ -75,12 +71,10 @@ const EventPreviewPage = () => {
             Back to Events
           </Button>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -200,7 +194,6 @@ const EventPreviewPage = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

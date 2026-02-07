@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import {
   Building2,
@@ -370,7 +369,6 @@ const PartnershipTemplateBuilder = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
@@ -537,7 +535,6 @@ const PartnershipTemplateBuilder = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

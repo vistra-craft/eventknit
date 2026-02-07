@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
-import AdminLayout from "../AdminLayout";
 
 interface MaintenanceTask {
   id: string;
@@ -165,7 +164,6 @@ const MaintenancePage = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -389,7 +387,6 @@ const MaintenancePage = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

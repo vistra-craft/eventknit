@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/useToast";
-import AdminLayout from "../AdminLayout";
 
 const EditTransactionPage = () => {
   const navigate = useNavigate();
@@ -62,7 +61,6 @@ const EditTransactionPage = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -365,7 +363,6 @@ const EditTransactionPage = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

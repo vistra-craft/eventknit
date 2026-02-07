@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import AdminLayout from "../AdminLayout";
 import {
   Megaphone,
   Mail,
@@ -324,7 +323,6 @@ const AdminMarketingOverview = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
@@ -638,7 +636,6 @@ const AdminMarketingOverview = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

@@ -8,7 +8,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import OrganizerLayout from "./OrganizerLayout";
 import { Tag, Plus, Trash2, Users, Mail, X } from "lucide-react";
 import {
   createTag,
@@ -227,7 +226,6 @@ const AttendeeTagsManagement = () => {
   };
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -457,7 +455,6 @@ const AttendeeTagsManagement = () => {
           </>
         )}
       </div>
-    </OrganizerLayout>
   );
 };
 

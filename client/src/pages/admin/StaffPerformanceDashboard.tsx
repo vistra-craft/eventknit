@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/useToast';
-import AdminLayout from './AdminLayout';
 
 const StaffPerformanceDashboard = () => {
   const navigate = useNavigate();
@@ -89,16 +88,13 @@ const StaffPerformanceDashboard = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <Loader size="lg" />
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className={`space-y-4 md:space-y-6 ${isMobile ? 'p-4' : 'p-0'}`}>
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -341,7 +337,6 @@ const StaffPerformanceDashboard = () => {
           </>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

@@ -1,4 +1,3 @@
-import AdminLayout from "./AdminLayout";
 import AdminEnhancedDashboard from "./AdminEnhancedDashboard";
 import TellerDashboard from "./TellerDashboard";
 import MarketerDashboard from "./MarketerDashboard";
@@ -25,11 +24,7 @@ const AdminDashboard = () => {
     dashboardContent = <AdminEnhancedDashboard />;
   }
 
-  return (
-    <AdminLayout>
-      {dashboardContent}
-    </AdminLayout>
-  );
+  return dashboardContent;
 };
 
 export default AdminDashboard;

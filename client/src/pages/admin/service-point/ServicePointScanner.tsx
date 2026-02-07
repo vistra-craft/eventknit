@@ -37,7 +37,6 @@ import {
   Zap,
   ZapOff
 } from "lucide-react";
-import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { useToast } from "../../../hooks/useToast";
 import { useIsMobile } from "../../../hooks/useMobile";
@@ -875,16 +874,13 @@ const ServicePointScanner: React.FC = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-muted-foreground">Loading...</div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -1474,7 +1470,6 @@ const ServicePointScanner: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
   );
 };
 

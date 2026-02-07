@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import AdminLayout from "../AdminLayout";
 import { getUserById, type User } from "@/lib/admin-api";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 import { useToast } from "@/hooks/useToast";
@@ -60,20 +59,17 @@ const OrganizerPreviewPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading organizer details...</p>
           </div>
         </div>
-      </AdminLayout>
     );
   }
 
   if (!organizer) {
     return (
-      <AdminLayout>
         <div className="text-center py-12">
           <p className="text-muted-foreground">Organizer not found</p>
           <Button
@@ -84,12 +80,10 @@ const OrganizerPreviewPage = () => {
             Back to Organizers
           </Button>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -184,7 +178,6 @@ const OrganizerPreviewPage = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

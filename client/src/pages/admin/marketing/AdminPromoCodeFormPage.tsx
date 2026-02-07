@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import AdminLayout from "../AdminLayout";
 import {
   ArrowLeft,
   Plus,
@@ -160,17 +159,14 @@ const AdminPromoCodeFormPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center py-12">
           <Loader size="lg" />
           <span className="ml-2 text-muted-foreground">Loading...</span>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -564,7 +560,6 @@ const AdminPromoCodeFormPage = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

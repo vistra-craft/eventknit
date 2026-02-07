@@ -25,7 +25,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "@/components/ui/loader";
-import AdminLayout from "../AdminLayout";
 import { getEventById } from "@/lib/event-api";
 import { getEventRegistrations } from "@/lib/organizer-api";
 import { updateOrganizerDataAccess } from "@/lib/admin-api";
@@ -426,18 +425,16 @@ const EventDetailsPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center py-12">
           <Loader size="lg" className="h-8 w-8" />
           <span className="ml-2 text-muted-foreground">Loading event details...</span>
         </div>
-      </AdminLayout>
     );
   }
 
   if (error || !eventData) {
     return (
-      <AdminLayout>
+      <>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error || 'Event not found'}</AlertDescription>
@@ -445,7 +442,7 @@ const EventDetailsPage = () => {
         <Button onClick={() => navigate("/admin/events")} className="mt-4">
           Back to Events
         </Button>
-      </AdminLayout>
+      </>
     );
   }
 
@@ -547,7 +544,6 @@ const EventDetailsPage = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1762,7 +1758,6 @@ const EventDetailsPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
   );
 };
 

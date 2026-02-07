@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "@/components/ui/loader";
 import { AlertCircle } from "lucide-react";
-import OrganizerLayout from "../OrganizerLayout";
 import {
   BarChart3,
   TrendingUp,
@@ -300,28 +299,23 @@ const AnalyticsOverview = () => {
 
   if (loading) {
     return (
-      <OrganizerLayout>
         <div className="flex items-center justify-center py-12">
           <Loader size="lg" />
           <span className="ml-2 text-muted-foreground">Loading analytics...</span>
         </div>
-      </OrganizerLayout>
     );
   }
 
   if (error) {
     return (
-      <OrganizerLayout>
         <Alert variant="destructive" className="m-6">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      </OrganizerLayout>
     );
   }
 
   return (
-    <OrganizerLayout>
       <div className="py-8">
         <div className="space-y-8">
         {/* Header */}
@@ -671,7 +665,6 @@ const AnalyticsOverview = () => {
         </Tabs>
         </div>
       </div>
-    </OrganizerLayout>
   );
 };
 

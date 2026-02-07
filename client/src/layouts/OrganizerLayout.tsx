@@ -1,12 +1,24 @@
 import React, { useState, useEffect } from "react";
-import OrganizerSidebar from "./OrganizerSidebar";
-import OrganizerHeader from "./OrganizerHeader";
+import { Routes, Route, Outlet } from 'react-router-dom';
+import { Suspense } from 'react';
+import OrganizerSidebar from "../pages/organizer/OrganizerSidebar";
+import OrganizerHeader from "../pages/organizer/OrganizerHeader";
+import { organizerRoutes } from '../routes/organizerRoutes';
+import { ProtectedRoute } from '../components/ProtectedRoute';
 
-interface OrganizerLayoutProps {
-  children: React.ReactNode;
-}
+/**
+ * Loading spinner component for suspense fallback
+ */
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+      <p className="mt-4 text-muted-foreground">Loading...</p>
+    </div>
+  </div>
+);
 
-const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
+const OrganizerLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed, will be set by useEffect
   const [isMobile, setIsMobile] = useState(false);
 
@@ -66,7 +78,26 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
 
           {/* Page Content */}
           <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
-            {children}
+            <Suspense fallback={<LoadingSpinner />}>
+              <Routes>
+                {organizerRoutes.map((route, index) => (
+                  <Route
+                    key={index}
+                    path={route.path}
+                    element={
+                      route.allowedRoles ? (
+                        <ProtectedRoute allowedRoles={route.allowedRoles}>
+                          {route.element}
+                        </ProtectedRoute>
+                      ) : (
+                        route.element
+                      )
+                    }
+                  />
+                ))}
+              </Routes>
+              <Outlet />
+            </Suspense>
           </main>
         </div>
       </div>

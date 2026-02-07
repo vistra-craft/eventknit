@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import OrganizerLayout from "./OrganizerLayout";
 import { 
   FileText, 
   Plus, 
@@ -432,7 +431,6 @@ const EventTemplates = () => {
   const filteredTemplates = templates.filter(template => template.type === activeTab);
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -771,7 +769,6 @@ const EventTemplates = () => {
           </div>
         )}
       </div>
-    </OrganizerLayout>
   );
 };
 

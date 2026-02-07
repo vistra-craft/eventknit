@@ -23,7 +23,6 @@ import {
   X,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
-import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -559,20 +558,17 @@ const ServicePointPrint: React.FC = () => {
 
   if (isLoading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-96">
           <div className="flex flex-col items-center gap-4">
             <Loader size="lg" />
             <p className="text-muted-foreground">Loading print center...</p>
           </div>
         </div>
-      </AdminLayout>
     );
   }
 
   if (!eventId) {
     return (
-      <AdminLayout>
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <BackButton to="/admin/service-point" label="Back" />
@@ -596,12 +592,10 @@ const ServicePointPrint: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1077,7 +1071,6 @@ const ServicePointPrint: React.FC = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

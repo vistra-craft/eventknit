@@ -37,7 +37,6 @@ import {
   Building2,
   X,
 } from "lucide-react";
-import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -364,7 +363,6 @@ const FacilityZones: React.FC = () => {
 
   if (!eventId) {
     return (
-      <AdminLayout>
         <div className="p-8">
           <div className="text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
@@ -374,12 +372,10 @@ const FacilityZones: React.FC = () => {
             </p>
           </div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -872,7 +868,6 @@ const FacilityZones: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
   );
 };
 

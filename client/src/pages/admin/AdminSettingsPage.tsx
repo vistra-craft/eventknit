@@ -20,7 +20,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import AdminLayout from "./AdminLayout";
 import { useToast } from "@/hooks/useToast";
 import { getSettings, setSettings, type SystemSetting } from "@/lib/system-settings-api";
 import { SettingsSection, SettingsField, ThemeSelector, LanguageSelector, TimezoneSelector, DateFormatSelector } from "@/components/settings";
@@ -778,16 +777,13 @@ const AdminSettingsPage = () => {
 
   if (isLoading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -881,7 +877,6 @@ const AdminSettingsPage = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

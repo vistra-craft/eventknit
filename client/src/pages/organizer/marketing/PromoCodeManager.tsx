@@ -33,7 +33,6 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { getPromoCodes, createPromoCode, updatePromoCode, deletePromoCode, type PromoCode, type CreatePromoCodeData } from '@/lib/promo-code-api';
 import { useToast } from '@/hooks/useToast';
-import AdminLayout from '@/pages/admin/AdminLayout';
 
 const PromoCodeManager = () => {
   const { toast } = useToast();
@@ -234,7 +233,6 @@ const PromoCodeManager = () => {
   });
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -577,7 +575,6 @@ const PromoCodeManager = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
   );
 };
 

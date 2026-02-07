@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import AdminLayout from "./AdminLayout";
 import {
   getUserById,
   suspendUser,
@@ -323,19 +322,16 @@ const OrganizerDetailsPage = () => {
   // Loading state
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-96">
           <Loader />
           <span className="ml-2 text-muted-foreground">Loading organizer details...</span>
         </div>
-      </AdminLayout>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <AdminLayout>
         <div className="space-y-6">
           <BackButton to="/admin/users/organizers" label="Back to Organizers" />
           <Alert variant="destructive">
@@ -343,12 +339,10 @@ const OrganizerDetailsPage = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -724,7 +718,6 @@ const OrganizerDetailsPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
   );
 };
 

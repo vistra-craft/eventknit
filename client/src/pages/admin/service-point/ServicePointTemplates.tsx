@@ -35,7 +35,6 @@ import {
   X,
   Award
 } from "lucide-react";
-import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/useToast";
 import DraggableBadgeElement from "@/components/service-point/DraggableBadgeElement";
@@ -497,16 +496,13 @@ const ServicePointTemplates: React.FC = () => {
 
   if (isLoading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-muted-foreground">Loading templates...</div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1205,7 +1201,6 @@ const ServicePointTemplates: React.FC = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

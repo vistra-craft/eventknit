@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import AdminLayout from "../AdminLayout";
 import { 
   Mail, 
   Users,
@@ -270,7 +269,6 @@ const AdminEmailMarketingPage = () => {
   const avgClickRate = emailCampaigns.filter(c => c.clickRate > 0).reduce((sum, campaign) => sum + campaign.clickRate, 0) / emailCampaigns.filter(c => c.clickRate > 0).length;
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
@@ -619,7 +617,6 @@ const AdminEmailMarketingPage = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

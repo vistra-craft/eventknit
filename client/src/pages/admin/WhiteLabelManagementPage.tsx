@@ -24,7 +24,6 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
-import AdminLayout from './AdminLayout';
 import {
   Dialog,
   DialogContent,
@@ -150,7 +149,6 @@ const WhiteLabelManagementPage = () => {
   const pendingCount = brandings.filter(b => b.status === 'PENDING_APPROVAL').length;
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -605,7 +603,6 @@ const WhiteLabelManagementPage = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
   );
 };
 

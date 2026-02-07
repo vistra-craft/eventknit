@@ -24,7 +24,6 @@ import {
   RefreshCw,
   MoreHorizontal
 } from "lucide-react";
-import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { getEventScans, type TicketScanRecord, type ScanHistoryFilters, ScanType } from "../../../lib/workstation-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
@@ -380,7 +379,6 @@ const ServicePointHistory: React.FC = () => {
   ];
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -795,7 +793,6 @@ const ServicePointHistory: React.FC = () => {
           </>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

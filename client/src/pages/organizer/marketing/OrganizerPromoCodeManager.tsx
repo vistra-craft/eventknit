@@ -35,7 +35,6 @@ import { Loader } from "@/components/ui/loader";
 import { getPromoCodes, createPromoCode, updatePromoCode, deletePromoCode, type PromoCode, type CreatePromoCodeData } from '@/lib/promo-code-api';
 import { getOrganizerEvents } from '@/lib/organizer-api';
 import { useToast } from '@/hooks/useToast';
-import OrganizerLayout from '../OrganizerLayout';
 
 interface OrganizerEvent {
   id: string;
@@ -265,7 +264,6 @@ const OrganizerPromoCodeManager = () => {
   const totalUsed = promoCodes.reduce((sum, c) => sum + c.usedCount, 0);
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -692,7 +690,6 @@ const OrganizerPromoCodeManager = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </OrganizerLayout>
   );
 };
 

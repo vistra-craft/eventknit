@@ -26,7 +26,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import AdminLayout from "./AdminLayout";
 import { getRoles, type RoleInfo } from "@/lib/admin-api";
 import { usePermissions } from "@/hooks/usePermissions";
 import { UserRole as UserRoleEnum } from "@/types/auth";
@@ -223,7 +222,6 @@ const UserRolesPage = () => {
   /* eslint-enable @typescript-eslint/no-unused-vars */
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -434,7 +432,6 @@ const UserRolesPage = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

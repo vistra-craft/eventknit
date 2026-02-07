@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import OrganizerLayout from "./OrganizerLayout";
 import EnhancedDashboard from "./EnhancedDashboard";
 import OrganizerTellerDashboard from "./OrganizerTellerDashboard";
 import OrganizerStaffDashboard from "./OrganizerStaffDashboard";
@@ -85,11 +84,7 @@ const OrganizerDashboard = () => {
     dashboardContent = <EnhancedDashboard tier={accessTier} />;
   }
 
-  return (
-    <OrganizerLayout>
-      {dashboardContent}
-    </OrganizerLayout>
-  );
+  return dashboardContent;
 };
 
 export default OrganizerDashboard;

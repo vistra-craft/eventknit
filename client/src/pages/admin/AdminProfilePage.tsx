@@ -23,7 +23,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
-import AdminLayout from "./AdminLayout";
 import RoleSwitcher from "@/components/RoleSwitcher";
 import { UserRole, UserStatus } from "@/types/auth";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
@@ -262,17 +261,14 @@ const AdminProfilePage = () => {
 
   if (!user) {
     return (
-      <AdminLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center min-h-screen">
+        <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -665,7 +661,6 @@ const AdminProfilePage = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

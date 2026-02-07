@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import AdminLayout from "../AdminLayout";
 import { getPaymentTransactions, syncPaymentsFromPaystack, type PaymentTransaction } from "@/lib/financial-api";
 import { useToast } from "@/hooks/useToast";
 
@@ -129,7 +128,6 @@ const PaymentTransactionsPage = () => {
   });
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -279,7 +277,6 @@ const PaymentTransactionsPage = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

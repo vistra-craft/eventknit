@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/useToast";
-import AdminLayout from "../AdminLayout";
 import { createWage, updateWage, getWageById } from "@/lib/platform-finance-api";
 
 const EditWagePage = () => {
@@ -172,16 +171,13 @@ const EditWagePage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader size="lg" />
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -423,7 +419,6 @@ const EditWagePage = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

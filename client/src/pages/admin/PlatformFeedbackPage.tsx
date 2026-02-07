@@ -32,7 +32,6 @@ import {
   Minus,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
-import AdminLayout from "./AdminLayout";
 import {
   getAllFeedback,
   getFeedbackAnalytics,
@@ -198,16 +197,13 @@ const PlatformFeedbackPage: React.FC = () => {
 
   if (loading && !analytics) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader size="lg" />
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -784,7 +780,6 @@ const PlatformFeedbackPage: React.FC = () => {
         </DialogContent>
       </Dialog>
       </div>
-    </AdminLayout>
   );
 };
 
