@@ -80,9 +80,38 @@ export class TicketService {
 
   /**
    * Generate ticket data string for QR code
-   * Format: registrationId|eventId|email|timestamp|signature
+   *
+   * When USE_SIGNED_TICKETS=true:
+   *   Returns Ed25519 signed token (header.payload.signature)
+   *   Enables offline verification on mobile devices
+   *
+   * When USE_SIGNED_TICKETS=false (legacy):
+   *   Returns HMAC format (registrationId|eventId|email|timestamp|signature)
+   *
+   * @param registrationId - The registration ID
+   * @param eventId - The event ID
+   * @param attendeeEmail - Attendee email
+   * @param ticketType - Optional ticket type for display
+   * @returns Ticket data string for QR code
    */
-  static generateTicketData(registrationId: string, eventId: string, attendeeEmail: string): string {
+  static generateTicketData(
+    registrationId: string,
+    eventId: string,
+    attendeeEmail: string,
+    ticketType?: string,
+  ): string {
+    // Check if new signed ticket format is enabled
+    if (TicketSecurityService.isSignedTicketsEnabled()) {
+      // New Ed25519 signed format (enables offline verification)
+      return TicketSecurityService.generateSignedTicket(
+        registrationId,
+        eventId,
+        attendeeEmail,
+        ticketType,
+      );
+    }
+
+    // Legacy HMAC format
     // Format: registrationId|eventId|email|timestamp
     const timestamp = Date.now();
     const payload = `${registrationId}|${eventId}|${attendeeEmail}|${timestamp}`;

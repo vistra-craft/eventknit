@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import {
   User,
@@ -13,8 +13,6 @@ import {
   EyeOff,
   Key,
   Mail,
-  Camera,
-  X,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +20,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Avatar } from "@/components/ui/avatar";
 import OrganizerLayout from "./OrganizerLayout";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
@@ -39,6 +36,8 @@ import {
 } from "@/lib/user-preferences-api";
 import { SettingsSection, ThemeSelector } from "@/components/settings";
 import VerificationForm from "@/components/verification/VerificationForm";
+import { AvatarUpload } from "@/components/profile/AvatarUpload";
+import { useUploadAvatar } from "@/hooks/useUploadAvatar";
 
 interface OrganizerSettingsData {
   // Profile Settings
@@ -75,6 +74,7 @@ interface OrganizerSettingsData {
 const OrganizerSettingsPage = () => {
   const location = useLocation();
   const { user, refreshProfile } = useAuth();
+  const uploadAvatarMutation = useUploadAvatar();
   const { theme: currentTheme, setTheme: setThemeContext } = useTheme();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
@@ -95,9 +95,7 @@ const OrganizerSettingsPage = () => {
   
   // Avatar upload state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
   
   // Determine active tab from URL
   const getActiveTabFromUrl = useCallback(() => {
@@ -366,10 +364,6 @@ const OrganizerSettingsPage = () => {
           if (response.success) {
             // Clear avatar upload state
             setAvatarFile(null);
-            setAvatarPreview(null);
-            if (avatarInputRef.current) {
-              avatarInputRef.current.value = '';
-            }
             // Refresh user profile in context
             await refreshProfile();
             setSaveStatus("success");
@@ -520,117 +514,30 @@ const OrganizerSettingsPage = () => {
     }
   };
 
-  // Handle avatar file selection
-  const handleAvatarSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsUploadingAvatar(true);
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Error",
-        description: "Please upload an image file",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Error",
-        description: "Image size must be less than 5MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAvatarFile(file);
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setAvatarPreview(reader.result as string);
-      setIsUploadingAvatar(false);
-    };
-    reader.onerror = () => {
-      toast({
-        title: "Error",
-        description: "Failed to read image file",
-        variant: "destructive",
-      });
-      setAvatarFile(null);
-      setAvatarPreview(null);
-      setIsUploadingAvatar(false);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Remove avatar selection
-  const handleRemoveAvatar = () => {
-    setAvatarFile(null);
-    setAvatarPreview(null);
-    if (avatarInputRef.current) {
-      avatarInputRef.current.value = '';
+  // Handle avatar change
+  const handleAvatarChange = async (file: File) => {
+    if (file && file.size > 0) {
+      setAvatarFile(file);
+      setIsUploadingAvatar(true);
+      
+      try {
+        await uploadAvatarMutation.mutateAsync(file);
+        setAvatarFile(null);
+      } finally {
+        setIsUploadingAvatar(false);
+      }
     }
   };
 
   const renderProfileSettings = () => (
     <div className="space-y-6">
-      {/* Profile Picture */}
-      <div className="flex items-center space-x-6">
-        <div className="relative">
-          <Avatar
-            src={avatarPreview || settings.avatar || undefined}
-            name={`${settings.firstName} ${settings.lastName}`}
-            alt="Profile"
-            size="xl"
-            className="h-24 w-24"
-          />
-          {avatarPreview && (
-            <button
-              onClick={handleRemoveAvatar}
-              className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition-colors"
-              aria-label="Remove selected avatar"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-        <div className="space-y-2">
-          <input
-            ref={avatarInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarSelect}
-            className="hidden"
-            id="avatar-upload"
-          />
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => avatarInputRef.current?.click()}
-            disabled={isUploadingAvatar}
-          >
-            {isUploadingAvatar ? (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Camera className="h-4 w-4 mr-2" />
-                {avatarPreview ? 'Change Photo' : 'Upload Photo'}
-              </>
-            )}
-          </Button>
-          <p className="text-sm text-muted-foreground">
-            JPG, PNG or GIF. Max size 5MB.
-          </p>
-        </div>
-      </div>
+      {/* Avatar Upload */}
+      <AvatarUpload
+        currentAvatar={settings.avatar || null}
+        onAvatarChange={handleAvatarChange}
+        isUploading={isUploadingAvatar || uploadAvatarMutation.isPending}
+        userName={`${settings.firstName} ${settings.lastName}`.trim()}
+      />
 
       {/* Personal Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useEvents } from "@/hooks/useEvents";
 import { EventStatus, EventType, type EventFilters } from "@/lib/event-api";
 import type { SearchFilters } from "./EventSearchFilter";
+import { getVenueType } from "@/types/event";
 
 interface EventGridProps {
   filters?: SearchFilters;
@@ -26,19 +27,9 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
     if (filters.search) fetchFilters.search = filters.search;
     if (filters.category && filters.category !== 'all') fetchFilters.category = filters.category;
 
-    console.log('[EventGrid] Fetching events with filters:', fetchFilters);
     fetchEvents(fetchFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.search, filters.category]); // Removed fetchEvents from deps to prevent loops
-
-  // Debug: Log events when they change
-  useEffect(() => {
-    if (fetchedEvents && fetchedEvents.length > 0) {
-      console.log('EventGrid: Fetched events:', fetchedEvents.length, fetchedEvents.map(e => ({ id: e.id, title: e.title, status: e.status, type: e.type })));
-    } else if (fetchedEvents && fetchedEvents.length === 0) {
-      console.log('EventGrid: No events found');
-    }
-  }, [fetchedEvents]);
 
   // Apply client-side filters
   const filteredEvents = useMemo(() => {
@@ -55,11 +46,12 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
         }
       }
 
-      // 2. Event Type Filter
+      // 2. Event Type Filter (online / in-person / hybrid)
       if (filters.eventType && filters.eventType !== 'all') {
-        if (filters.eventType === 'online' && !event.isOnline) return false;
-        if (filters.eventType === 'in-person' && event.isOnline) return false;
-        // Hybrid logic could be added here if supported
+        const venueType = getVenueType(event);
+        if (filters.eventType === 'online' && venueType !== 'online') return false;
+        if (filters.eventType === 'in-person' && venueType !== 'in-person') return false;
+        if (filters.eventType === 'hybrid' && venueType !== 'hybrid') return false;
       }
 
       // 3. Price Filter
@@ -195,6 +187,8 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
                   price={price}
                   currency={currency}
                   category={event.category || ''}
+                  isOnline={event.isOnline}
+                  onlineLink={event.onlineLink}
                 />
               );
             })

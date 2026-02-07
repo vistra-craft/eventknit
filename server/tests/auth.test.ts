@@ -897,7 +897,8 @@ describe('Authentication System', () => {
       }
       const response = await request(app)
         .post('/api/v1/auth/refresh')
-        .send({ refreshToken })
+        .set('Cookie', `refreshToken=${refreshToken}`)
+        .send()
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -912,7 +913,8 @@ describe('Authentication System', () => {
       }
       const response = await request(app)
         .post('/api/v1/auth/refresh')
-        .send({ refreshToken: 'invalid-token' })
+        .set('Cookie', 'refreshToken=invalid-token')
+        .send()
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -959,7 +961,8 @@ describe('Authentication System', () => {
 
       const response = await request(app)
         .post('/api/v1/auth/refresh')
-        .send({ refreshToken: refreshTokenString })
+        .set('Cookie', `refreshToken=${refreshTokenString}`)
+        .send()
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -1009,7 +1012,8 @@ describe('Authentication System', () => {
       // DEACTIVATED users can refresh tokens
       const response = await request(app)
         .post('/api/v1/auth/refresh')
-        .send({ refreshToken })
+        .set('Cookie', `refreshToken=${refreshToken}`)
+        .send()
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -1062,7 +1066,8 @@ describe('Authentication System', () => {
 
       const response = await request(app)
         .post('/api/v1/auth/refresh')
-        .send({ refreshToken: expiredToken })
+        .set('Cookie', `refreshToken=${expiredToken}`)
+        .send()
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -1088,14 +1093,15 @@ describe('Authentication System', () => {
 
         const response = await request(app)
           .post('/api/v1/auth/refresh')
-          .send({ refreshToken })
+          .set('Cookie', `refreshToken=${refreshToken}`)
+          .send()
           .expect(401);
 
         expect(response.body.success).toBe(false);
       }
     });
 
-    it('should fail with missing refresh token', async () => {
+    it('should fail with missing refresh token (no cookie)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -1103,7 +1109,7 @@ describe('Authentication System', () => {
 
       const response = await request(app)
         .post('/api/v1/auth/refresh')
-        .send({})
+        .send()
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -1163,7 +1169,8 @@ describe('Authentication System', () => {
       const response = await request(app)
         .post('/api/v1/auth/logout')
         .set('Authorization', `Bearer ${accessToken}`)
-        .send({ refreshToken })
+        .set('Cookie', `refreshToken=${refreshToken}`)
+        .send()
         .expect(200);
 
       expect(response.body.success).toBe(true);

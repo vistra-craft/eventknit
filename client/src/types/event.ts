@@ -46,6 +46,7 @@ export interface EventData {
   location: string; // normalized to non-null string by transformers
   coordinates?: { lat: number; lng: number } | null;
   isOnline?: boolean;
+  onlineLink?: string | null;
 
   // Pricing
   isFree?: boolean;
@@ -63,6 +64,7 @@ export interface EventData {
     requiresInvitation?: boolean;
     availableFrom?: string | null;
     availableUntil?: string | null;
+    earlyBirdQuantity?: number | null;
   }> | null;
 
   timezone?: string | null;
@@ -73,6 +75,8 @@ export interface EventData {
 
   // Media
   image?: string | null;
+  imageFocalX?: number | null; // Focal point X position (0-100)
+  imageFocalY?: number | null; // Focal point Y position (0-100)
   images?: string[];
 
   // Event details
@@ -83,18 +87,48 @@ export interface EventData {
   duration?: string | null;
 
   // Additional content
-  speakers?: Array<{ name: string; title: string; bio: string; image?: string }> | null;
-  sponsors?: Array<{ name: string; level: string; logo: string }> | null;
+  speakers?: Array<{
+    id?: string;
+    name: string;
+    title?: string;
+    bio?: string;
+    image?: string;
+    company?: string;
+    website?: string;
+    linkedin?: string;
+    twitter?: string;
+  }> | null;
+  sponsors?: Array<{
+    id?: string;
+    name: string;
+    level?: string;
+    logo?: string;
+    website?: string;
+    description?: string;
+  }> | null;
   faqs?: Array<{ question: string; answer: string }> | null;
   socialLinks?: Record<string, string> | null;
-  exhibitors?: Array<{ name: string; description?: string; logo?: string; contactEmail?: string; booth?: string }> | null;
+  exhibitors?: Array<{
+    id?: string;
+    name: string;
+    description?: string;
+    logo?: string;
+    contactEmail?: string;
+    booth?: string;
+    website?: string;
+    category?: string;
+  }> | null;
   agenda?: Array<{
+    id?: string;
     title: string;
     description?: string;
     date?: string; // Optional date for multi-day events (defaults to event start date)
-    startTime: string;
-    endTime: string;
-    speakers?: string[]; // IDs of speakers
+    startTime?: string;
+    endTime?: string;
+    sessionType?: string; // keynote, workshop, panel, breakout, networking, break, lunch, registration, other
+    room?: string; // Room or track name
+    speakerIds?: string[]; // IDs of speakers assigned to this session
+    speakers?: string[]; // Legacy: speaker names (for backwards compatibility)
   }> | null;
   registrationFields?: RegistrationField[] | null;
 
@@ -140,5 +174,18 @@ export interface PaymentSummary {
   tax: number;
   total: number;
   currency: string;
+}
+
+export type VenueType = 'in-person' | 'online' | 'hybrid';
+
+/** Derive venue type from event data: hybrid = isOnline + has venue */
+export function getVenueType(event: {
+  isOnline?: boolean;
+  venue?: string | null;
+  onlineLink?: string | null;
+}): VenueType {
+  if (event.isOnline && event.venue) return 'hybrid';
+  if (event.isOnline) return 'online';
+  return 'in-person';
 }
 

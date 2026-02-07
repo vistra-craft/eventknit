@@ -5,8 +5,38 @@ import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { extractErrorMessage } from '@/lib/utils/error';
 
-// OAuth only supports ORGANIZER and ATTENDEE registration
 type OAuthRole = 'ORGANIZER' | 'ATTENDEE';
+
+interface AppleSignInResponse {
+  authorization: {
+    code: string;
+    id_token: string;
+  };
+  user?: {
+    name?: {
+      firstName?: string;
+      lastName?: string;
+    };
+  };
+}
+
+interface AppleIDAuth {
+  init: (config: {
+    clientId: string;
+    scope: string;
+    redirectURI: string;
+    usePopup: boolean;
+  }) => void;
+  signIn: () => Promise<AppleSignInResponse>;
+}
+
+function getAppleAuth(): AppleIDAuth | undefined {
+  return (window as unknown as { AppleID?: { auth: AppleIDAuth } }).AppleID?.auth;
+}
+
+function isAppleLoaded(): boolean {
+  return !!(window as unknown as { AppleID?: unknown }).AppleID;
+}
 
 interface UseAppleAuthOptions {
   role: OAuthRole;
@@ -15,7 +45,7 @@ interface UseAppleAuthOptions {
 }
 
 interface UseAppleAuthReturn {
-  signUpWithApple: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }
@@ -24,7 +54,7 @@ interface UseAppleAuthReturn {
  * Hook for Apple OAuth authentication
  *
  * @example
- * const { signUpWithApple, isLoading, error } = useAppleAuth({
+ * const { signInWithApple, isLoading, error } = useAppleAuth({
  *   role: 'ATTENDEE',
  *   onSuccess: () => console.log('Success!'),
  * });
@@ -36,94 +66,90 @@ export function useAppleAuth(options: UseAppleAuthOptions): UseAppleAuthReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const signUpWithApple = async () => {
+  const signInWithApple = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Load Apple JS SDK if not already loaded
-      if (!window.AppleID) {
+      // Load Apple Sign-In script if not already loaded
+      if (!isAppleLoaded()) {
         const script = document.createElement('script');
         script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
         script.async = true;
         script.defer = true;
         document.body.appendChild(script);
-
-        // Wait for Apple SDK to load
         await new Promise((resolve) => {
-          const checkApple = setInterval(() => {
-            if (window.AppleID) {
-              clearInterval(checkApple);
-              resolve(true);
-            }
-          }, 100);
+          script.onload = resolve;
         });
       }
 
-      // Initialize Apple Sign In
-      if (window.AppleID) {
-        window.AppleID.auth.init({
-          clientId: import.meta.env.VITE_APPLE_CLIENT_ID || '',
-          scope: 'name email',
-          redirectURI: window.location.origin,
-          state: role,
-          usePopup: true,
-        });
+      const clientId = import.meta.env.VITE_APPLE_CLIENT_ID || '';
+      if (!clientId) {
+        const errorMsg = 'Apple Sign-In not configured';
+        setError(errorMsg);
+        setIsLoading(false);
+        onError?.(errorMsg);
+        return;
+      }
 
-        // Trigger Apple Sign In
-        const response = await window.AppleID.auth.signIn();
+      const appleIDAuth = getAppleAuth();
+      if (!appleIDAuth) {
+        const errorMsg = 'Apple Sign-In failed to load';
+        setError(errorMsg);
+        setIsLoading(false);
+        onError?.(errorMsg);
+        return;
+      }
 
-        if (response.authorization) {
-          try {
-            const result = await appleAuth(
-              response.authorization.code,
-              response.authorization.id_token,
-              role,
-              response.user // Optional: includes name on first sign in
-            );
+      // Initialize Apple Sign-In
+      appleIDAuth.init({
+        clientId,
+        scope: 'name email',
+        redirectURI: window.location.origin,
+        usePopup: true,
+      });
 
-            if (result.success && result.data) {
-              setAccessToken(result.data.accessToken);
-              dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
+      // Trigger Apple Sign-In popup
+      const response = await appleIDAuth.signIn();
 
-              // Handle successful authentication
-              onSuccess?.();
+      const result = await appleAuth(
+        response.authorization.code,
+        response.authorization.id_token,
+        role,
+        response.user ? { name: response.user.name } : undefined
+      );
 
-              // Navigate based on role
-              const userRole = result.data.user.role;
-              if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_STAFF' || userRole === 'ORGANIZER_TELLER') {
-                const needsOnboarding = result.data.user &&
-                  typeof (result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted === "boolean"
-                    ? !(result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
-                    : true;
-                navigate(needsOnboarding ? '/organizer/onboarding' : '/organizer/dashboard');
-              } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN_STAFF' || userRole === 'MARKETER' || userRole === 'SUPPORT' || userRole === 'TELLER') {
-                navigate('/admin/dashboard');
-              } else {
-                navigate('/user/dashboard');
-              }
-            }
-          } catch (err) {
-            const errorMsg = extractErrorMessage(err, 'Apple sign in failed. Please try again.');
-            setError(errorMsg);
-            setIsLoading(false);
-            onError?.(errorMsg);
-          }
+      if (result.success && result.data) {
+        setAccessToken(result.data.accessToken);
+        dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
+
+        onSuccess?.();
+
+        // Navigate based on role
+        const userRole = result.data.user.role;
+        if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_STAFF' || userRole === 'ORGANIZER_TELLER') {
+          const needsOnboarding = result.data.user &&
+            typeof (result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted === 'boolean'
+              ? !(result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
+              : true;
+          navigate(needsOnboarding ? '/organizer/onboarding' : '/organizer/dashboard');
+        } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN_STAFF' || userRole === 'MARKETER' || userRole === 'SUPPORT' || userRole === 'TELLER') {
+          navigate('/admin/dashboard');
         } else {
-          // User cancelled login
-          setIsLoading(false);
+          navigate('/user/dashboard');
         }
       }
     } catch (err) {
       const errorMsg = extractErrorMessage(err, 'Apple sign in failed. Please try again.');
       setError(errorMsg);
-      setIsLoading(false);
       onError?.(errorMsg);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return {
-    signUpWithApple,
+    signInWithApple,
     isLoading,
     error,
   };

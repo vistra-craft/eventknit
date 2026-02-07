@@ -282,9 +282,41 @@ describe('AuthService - Registration Flow', () => {
 
     beforeEach(() => {
       (passwordUtils.hashPassword as jest.Mock).mockResolvedValue('hashed-password');
+      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(0);
       (jwtUtils.generateAccessToken as jest.Mock).mockReturnValue(mockTokens.accessToken);
       (jwtUtils.generateRefreshToken as jest.Mock).mockReturnValue(mockTokens.refreshToken);
       (jwtUtils.parseExpiresIn as jest.Mock).mockReturnValue(mockTokens.expiresIn);
+    });
+
+    it('should reject breached password during registration', async () => {
+      // Arrange
+      prisma.emailVerification.findFirst.mockResolvedValue(mockVerification);
+      prisma.user.findUnique.mockResolvedValue(null);
+      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(5000);
+
+      // Act & Assert
+      await expect(
+        AuthService.verifyRegistrationCode(
+          mockEmail,
+          mockCode,
+          'breached-password',
+          mockFirstName,
+          mockLastName,
+        ),
+      ).rejects.toThrow(ValidationError);
+
+      await expect(
+        AuthService.verifyRegistrationCode(
+          mockEmail,
+          mockCode,
+          'breached-password',
+          mockFirstName,
+          mockLastName,
+        ),
+      ).rejects.toThrow(/data breaches/);
+
+      // Should not create user
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
     it('should verify code and create new user with ATTENDEE role', async () => {
@@ -978,6 +1010,24 @@ describe('AuthService - Registration Flow', () => {
       );
     });
 
+    it('should store IP address when provided', async () => {
+      // Arrange
+      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.passwordReset.create.mockResolvedValue({} as any);
+      (emailService.sendPasswordResetEmail as jest.Mock).mockResolvedValue(undefined);
+
+      // Act
+      await AuthService.forgotPassword(mockEmail, '192.168.1.100');
+
+      // Assert
+      expect(prisma.passwordReset.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          userId: mockUser.id,
+          ipAddress: '192.168.1.100',
+        }),
+      });
+    });
+
     it('should not reveal if user does not exist', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(null);
@@ -1023,6 +1073,7 @@ describe('AuthService - Registration Flow', () => {
 
     beforeEach(() => {
       (passwordUtils.hashPassword as jest.Mock).mockResolvedValue('new-hashed-password');
+      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(0);
     });
 
     it('should reset password with valid token', async () => {
@@ -1031,6 +1082,7 @@ describe('AuthService - Registration Flow', () => {
       (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
       prisma.user.update.mockResolvedValue({} as any);
       prisma.passwordReset.update.mockResolvedValue({} as any);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
 
       // Act
       await AuthService.resetPassword(mockToken, mockNewPassword);
@@ -1040,8 +1092,67 @@ describe('AuthService - Registration Flow', () => {
         where: { token: mockToken },
         include: { user: true },
       });
+      expect(passwordUtils.checkPasswordBreach).toHaveBeenCalledWith(mockNewPassword);
       expect(passwordUtils.hashPassword).toHaveBeenCalledWith(mockNewPassword);
       expect(prisma.$transaction).toHaveBeenCalled();
+    });
+
+    it('should revoke all user tokens after password reset', async () => {
+      // Arrange
+      prisma.passwordReset.findUnique.mockResolvedValue(mockReset as any);
+      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 2 });
+
+      // Act
+      await AuthService.resetPassword(mockToken, mockNewPassword);
+
+      // Assert
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: {
+          userId: mockReset.userId,
+          revoked: false,
+          expiresAt: { gt: expect.any(Date) },
+        },
+        data: {
+          revoked: true,
+          revokedAt: expect.any(Date),
+          revokedReason: 'password_change',
+        },
+      });
+    });
+
+    it('should reject breached password during password reset', async () => {
+      // Arrange
+      prisma.passwordReset.findUnique.mockResolvedValue(mockReset as any);
+      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(50000);
+
+      // Act & Assert
+      await expect(
+        AuthService.resetPassword(mockToken, 'breached-password'),
+      ).rejects.toThrow(ValidationError);
+
+      await expect(
+        AuthService.resetPassword(mockToken, 'breached-password'),
+      ).rejects.toThrow(/data breaches/);
+
+      // Should not execute transaction
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should accept ipAddress parameter for audit logging', async () => {
+      // Arrange
+      prisma.passwordReset.findUnique.mockResolvedValue(mockReset as any);
+      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
+
+      // Act - should not throw when ipAddress is provided
+      await AuthService.resetPassword(mockToken, mockNewPassword, '10.0.0.1');
+
+      // Assert
+      expect(prisma.passwordReset.findUnique).toHaveBeenCalledWith({
+        where: { token: mockToken },
+        include: { user: true },
+      });
     });
 
     it('should throw error for invalid token', async () => {
@@ -1109,12 +1220,14 @@ describe('AuthService - Registration Flow', () => {
     beforeEach(() => {
       (passwordUtils.hashPassword as jest.Mock).mockResolvedValue('new-hashed-password');
       (passwordUtils.comparePassword as jest.Mock).mockResolvedValue(true);
+      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(0);
     });
 
     it('should change password with valid current password', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.user.update.mockResolvedValue({} as any);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 2 });
 
       // Act
       await AuthService.changePassword(mockUserId, mockCurrentPassword, mockNewPassword);
@@ -1127,6 +1240,7 @@ describe('AuthService - Registration Flow', () => {
         mockCurrentPassword,
         mockUser.password,
       );
+      expect(passwordUtils.checkPasswordBreach).toHaveBeenCalledWith(mockNewPassword);
       expect(passwordUtils.hashPassword).toHaveBeenCalledWith(mockNewPassword);
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: mockUserId },
@@ -1134,6 +1248,48 @@ describe('AuthService - Registration Flow', () => {
           password: 'new-hashed-password',
         },
       });
+    });
+
+    it('should revoke all user tokens after password change', async () => {
+      // Arrange
+      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.update.mockResolvedValue({} as any);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 3 });
+
+      // Act
+      await AuthService.changePassword(mockUserId, mockCurrentPassword, mockNewPassword);
+
+      // Assert - should revoke all active refresh tokens
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: {
+          userId: mockUserId,
+          revoked: false,
+          expiresAt: { gt: expect.any(Date) },
+        },
+        data: {
+          revoked: true,
+          revokedAt: expect.any(Date),
+          revokedReason: 'password_change',
+        },
+      });
+    });
+
+    it('should reject breached password during password change', async () => {
+      // Arrange
+      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(12000);
+
+      // Act & Assert
+      await expect(
+        AuthService.changePassword(mockUserId, mockCurrentPassword, 'breached-password'),
+      ).rejects.toThrow(ValidationError);
+
+      await expect(
+        AuthService.changePassword(mockUserId, mockCurrentPassword, 'breached-password'),
+      ).rejects.toThrow(/data breaches/);
+
+      // Should not update password
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
 
     it('should throw error for wrong current password', async () => {
@@ -1173,6 +1329,7 @@ describe('AuthService - Registration Flow', () => {
       };
       prisma.user.findUnique.mockResolvedValue(userWithoutPassword as any);
       prisma.user.update.mockResolvedValue({} as any);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
 
       // Act
       await AuthService.changePassword(mockUserId, '', mockNewPassword);
@@ -1187,6 +1344,18 @@ describe('AuthService - Registration Flow', () => {
       });
       // Should not compare password when user has none
       expect(passwordUtils.comparePassword).not.toHaveBeenCalled();
+      // Should still revoke tokens
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: {
+          userId: mockUserId,
+          revoked: false,
+          expiresAt: { gt: expect.any(Date) },
+        },
+        data: expect.objectContaining({
+          revoked: true,
+          revokedReason: 'password_change',
+        }),
+      });
     });
   });
 
@@ -1201,12 +1370,14 @@ describe('AuthService - Registration Flow', () => {
 
     beforeEach(() => {
       (passwordUtils.hashPassword as jest.Mock).mockResolvedValue('new-hashed-password');
+      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(0);
     });
 
     it('should set initial password for user without password', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.user.update.mockResolvedValue({} as any);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
 
       // Act
       await AuthService.setPassword(mockUserId, mockNewPassword);
@@ -1215,6 +1386,7 @@ describe('AuthService - Registration Flow', () => {
       expect(prisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: mockUserId },
       });
+      expect(passwordUtils.checkPasswordBreach).toHaveBeenCalledWith(mockNewPassword);
       expect(passwordUtils.hashPassword).toHaveBeenCalledWith(mockNewPassword);
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: mockUserId },
@@ -1222,6 +1394,48 @@ describe('AuthService - Registration Flow', () => {
           password: 'new-hashed-password',
         },
       });
+    });
+
+    it('should revoke all user tokens after setting password', async () => {
+      // Arrange
+      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      prisma.user.update.mockResolvedValue({} as any);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 1 });
+
+      // Act
+      await AuthService.setPassword(mockUserId, mockNewPassword);
+
+      // Assert
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: {
+          userId: mockUserId,
+          revoked: false,
+          expiresAt: { gt: expect.any(Date) },
+        },
+        data: {
+          revoked: true,
+          revokedAt: expect.any(Date),
+          revokedReason: 'password_change',
+        },
+      });
+    });
+
+    it('should reject breached password during password setup', async () => {
+      // Arrange
+      prisma.user.findUnique.mockResolvedValue(mockUser as any);
+      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(8000);
+
+      // Act & Assert
+      await expect(
+        AuthService.setPassword(mockUserId, 'breached-password'),
+      ).rejects.toThrow(ValidationError);
+
+      await expect(
+        AuthService.setPassword(mockUserId, 'breached-password'),
+      ).rejects.toThrow(/data breaches/);
+
+      // Should not update password
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
 
     it('should throw error if user not found', async () => {

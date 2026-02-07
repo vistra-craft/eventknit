@@ -408,7 +408,7 @@ export const RegistrationStep = ({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total:</span>
               <span className="font-bold text-primary">
-                {event.currency || '$'}{totalPrice.toFixed(2)}
+                {event.currency || '$'} {totalPrice.toFixed(2)}
               </span>
             </div>
           </div>

@@ -1,17 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void;
-          prompt: () => void;
-        };
-      };
-    };
-  }
-}
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,13 +7,16 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { useAuth } from '@/hooks/useAuth';
+import { setAccessToken } from '@/lib/api';
+import { useAuthContext } from '@/hooks/useAuthContext';
 import BackButton from '@/components/BackButton';
 import Logo from '@/components/Logo';
-import { requestEmailOAuthCode, verifyEmailOAuthCode, googleAuth } from '@/lib/auth-api';
+import { requestEmailOAuthCode, verifyEmailOAuthCode, googleAuth, appleAuth } from '@/lib/auth-api';
 import loginImage from '@/assets/login.jpeg';
 
 const SignIn = () => {
   const { login, isLoading, error: authError, clearError, isAuthenticated } = useAuth();
+  const { dispatch } = useAuthContext();
   const [showPassword, setShowPassword] = useState(false);
   const [emailOAuthEmail, setEmailOAuthEmail] = useState('');
   const [emailOAuthCode, setEmailOAuthCode] = useState('');
@@ -82,7 +72,9 @@ const SignIn = () => {
   const handleGoogleSignIn = async () => {
     clearError();
     try {
-      if (!window.google?.accounts) {
+      const win = window as unknown as { google?: { accounts: { oauth2: { initTokenClient: (config: { client_id: string; scope: string; callback: (r: { access_token: string; error?: string }) => void; error_callback?: (e: { type: string }) => void }) => { requestAccessToken: () => void } } } } };
+      // Load Google Sign-In script if not already loaded
+      if (!win.google?.accounts) {
         const script = document.createElement('script');
         script.src = 'https://accounts.google.com/gsi/client';
         script.async = true;
@@ -95,23 +87,93 @@ const SignIn = () => {
         console.error('Google Client ID not configured');
         return;
       }
-      window.google?.accounts.id.initialize({
+      const tokenClient = win.google!.accounts.oauth2.initTokenClient({
         client_id: clientId,
-        callback: async (response: { credential: string }) => {
+        scope: 'email profile',
+        callback: async (response) => {
+          if (response.error || !response.access_token) return;
           try {
-            const result = await googleAuth(response.credential, 'id_token');
-            window.location.href = result.data.user.role === 'ORGANIZER' ? '/organizer/dashboard' : '/dashboard';
+            const result = await googleAuth(response.access_token, 'access_token');
+            if (result.success && result.data) {
+              setAccessToken(result.data.accessToken);
+              dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
+              const userRole = result.data.user.role;
+              if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_STAFF' || userRole === 'ORGANIZER_TELLER') {
+                window.location.href = '/organizer/dashboard';
+              } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN_STAFF' || userRole === 'MARKETER' || userRole === 'SUPPORT' || userRole === 'TELLER') {
+                window.location.href = '/admin/dashboard';
+              } else {
+                window.location.href = '/user/dashboard';
+              }
+            }
           } catch (error: unknown) {
             console.error('Google login error:', error);
           }
         },
+        error_callback: (err) => {
+          if (err.type !== 'popup_closed') {
+            console.error('Google sign in error:', err);
+          }
+        },
       });
-      window.google?.accounts.id.prompt();
+      tokenClient.requestAccessToken();
     } catch (error: unknown) {
       console.error('Google sign in error:', error);
     }
   };
 
+
+  const handleAppleSignIn = async () => {
+    clearError();
+    try {
+      const win = window as unknown as { AppleID?: { auth: { init: (config: { clientId: string; scope: string; redirectURI: string; usePopup: boolean }) => void; signIn: () => Promise<{ authorization: { code: string; id_token: string }; user?: { name?: { firstName?: string; lastName?: string } } }> } } };
+      // Load Apple Sign-In script if not already loaded
+      if (!win.AppleID) {
+        const script = document.createElement('script');
+        script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
+        script.async = true;
+        script.defer = true;
+        document.body.appendChild(script);
+        await new Promise((resolve) => { script.onload = resolve; });
+      }
+      const clientId = import.meta.env.VITE_APPLE_CLIENT_ID || '';
+      if (!clientId) {
+        console.error('Apple Client ID not configured');
+        return;
+      }
+      win.AppleID?.auth.init({
+        clientId,
+        scope: 'name email',
+        redirectURI: window.location.origin,
+        usePopup: true,
+      });
+      const response = await win.AppleID!.auth.signIn();
+      try {
+        const result = await appleAuth(
+          response.authorization.code,
+          response.authorization.id_token,
+          undefined,
+          response.user ? { name: response.user.name } : undefined
+        );
+        if (result.success && result.data) {
+          setAccessToken(result.data.accessToken);
+          dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
+          const userRole = result.data.user.role;
+          if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_STAFF' || userRole === 'ORGANIZER_TELLER') {
+            window.location.href = '/organizer/dashboard';
+          } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN_STAFF' || userRole === 'MARKETER' || userRole === 'SUPPORT' || userRole === 'TELLER') {
+            window.location.href = '/admin/dashboard';
+          } else {
+            window.location.href = '/user/dashboard';
+          }
+        }
+      } catch (error: unknown) {
+        console.error('Apple login error:', error);
+      }
+    } catch (error: unknown) {
+      console.error('Apple sign in error:', error);
+    }
+  };
 
   const handleEmailOAuthRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,8 +202,18 @@ const SignIn = () => {
 
     try {
       const result = await verifyEmailOAuthCode(emailOAuthEmail, emailOAuthCode);
-      // Handle successful login/registration - navigate to appropriate dashboard
-      window.location.href = result.data.user.role === 'ORGANIZER' ? '/organizer/dashboard' : '/dashboard';
+      if (result.success && result.data) {
+        setAccessToken(result.data.accessToken);
+        dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
+        const userRole = result.data.user.role;
+        if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_STAFF' || userRole === 'ORGANIZER_TELLER') {
+          window.location.href = '/organizer/dashboard';
+        } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN_STAFF' || userRole === 'MARKETER' || userRole === 'SUPPORT' || userRole === 'TELLER') {
+          window.location.href = '/admin/dashboard';
+        } else {
+          window.location.href = '/user/dashboard';
+        }
+      }
     } catch (error: unknown) {
       console.error('Email OAuth verification error:', error);
       clearError();
@@ -149,32 +221,34 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-muted/10 flex flex-col">
+    <div className="bg-background min-h-screen flex items-center justify-center">
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-5xl mx-auto">
-          <div className="bg-card-surface rounded-2xl shadow-md overflow-hidden flex flex-col lg:flex-row min-h-[420px]">
+      <div className="p-4 w-full">
+        <div className="w-full max-w-4xl mx-auto">
+          <div className="bg-card-surface rounded-2xl shadow-md overflow-hidden flex flex-col lg:flex-row">
           {/* Left Panel - Image with Overlay */}
-          <div className="hidden lg:flex lg:w-1/2 relative">
-            <img
-              src={loginImage}
-              alt="Welcome to EventKnit"
-              className="w-full h-full object-cover"
-            />
-            {/* Overlay Text - Centered */}
-            <div className="absolute inset-0 flex items-center justify-center p-8 bg-black/30">
-              <div className="text-center">
-                <h2 className="text-white text-3xl font-bold mb-2">Your Event Management Hub</h2>
-                <p className="text-white/90 text-lg">Sign in to manage your events and ticketing</p>
+          <div className="hidden lg:block lg:w-1/2 relative">
+            <div className="absolute inset-0">
+              <img
+                src={loginImage}
+                alt="Welcome to EventKnit"
+                className="w-full h-full object-cover"
+              />
+              {/* Overlay Text - Centered */}
+              <div className="absolute inset-0 flex items-center justify-center p-8 bg-black/30">
+                <div className="text-center">
+                  <h2 className="text-white text-3xl font-bold mb-2">Your Event Management Hub</h2>
+                  <p className="text-white/90 text-lg">Sign in to manage your events and ticketing</p>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Right Panel - Sign In Form */}
-          <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-8">
+          <div className="w-full lg:w-1/2 p-5 lg:p-6">
             <div className="w-full max-w-md mx-auto">
               {/* Header */}
-              <div className="mb-6">
+              <div className="mb-4">
                 <div className="flex items-center justify-between gap-4 mb-4">
                   <BackButton to="/" label="Back to home" />
                   <Logo />
@@ -184,7 +258,7 @@ const SignIn = () => {
               </div>
 
               {/* Social Login Buttons - Side by Side */}
-              <div className="mb-6 flex gap-3">
+              <div className="mb-4 flex gap-3">
                 <Button
                   variant="outline"
                   className="flex-1 h-11"
@@ -200,10 +274,22 @@ const SignIn = () => {
                   </svg>
                   Google
                 </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 h-11"
+                  onClick={handleAppleSignIn}
+                  disabled={isLoading}
+                  type="button"
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                  </svg>
+                  Apple
+                </Button>
               </div>
 
               {/* Divider */}
-              <div className="relative mb-6">
+              <div className="relative mb-4">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
@@ -213,7 +299,7 @@ const SignIn = () => {
               </div>
 
               {/* Sign In Form */}
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {/* OAuth Options - Hidden by default, can be shown if needed */}
                 {(showEmailOAuthForm || emailOAuthCodeSent) && (
                   <div className="space-y-3">
@@ -310,7 +396,7 @@ const SignIn = () => {
                 )}
 
                 {/* Main Sign In Form */}
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
                   {authError && (
                     <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
                       {authError}
@@ -404,7 +490,7 @@ const SignIn = () => {
                 </form>
 
                 {/* Sign up link */}
-                <div className="text-center pt-2">
+                <div className="text-center pt-1">
                   <p className="text-sm text-muted-foreground">
                     Don't have an account?{' '}
                     <Button

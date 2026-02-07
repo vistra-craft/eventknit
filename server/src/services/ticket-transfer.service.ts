@@ -33,6 +33,7 @@ export class TicketTransferService {
               allowTransfers: true,
               venue: true,
               location: true,
+              ticketTypes: true, // Include ticket types to check for name-locked
             },
           },
         },
@@ -58,6 +59,18 @@ export class TicketTransferService {
       // Check if event has started
       if (registration.event.startDate < new Date()) {
         throw new ValidationError('Cannot transfer tickets for events that have already started');
+      }
+
+      // Check if ticket is name-locked
+      if (registration.ticketType && registration.event.ticketTypes) {
+        const ticketTypes = registration.event.ticketTypes as Array<{
+          name: string;
+          nameLocked?: boolean;
+        }>;
+        const ticketType = ticketTypes.find(tt => tt.name === registration.ticketType);
+        if (ticketType?.nameLocked) {
+          throw new ValidationError('This ticket is name-locked and cannot be transferred. The ticket is tied to the original purchaser\'s identity.');
+        }
       }
 
       // Validate recipient

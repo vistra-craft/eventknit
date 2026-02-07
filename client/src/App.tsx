@@ -70,6 +70,7 @@ import AttendeeCommunication from "./pages/organizer/AttendeeCommunication";
 import FinancialManagement from "./pages/organizer/FinancialManagement";
 import EventCollaboration from "./pages/organizer/EventCollaboration";
 import AffiliateProgram from "./pages/organizer/AffiliateProgram";
+import OrganizerPromoCodeManager from "./pages/organizer/marketing/OrganizerPromoCodeManager";
 // Admin Dashboard imports
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminMarketingPage from "./pages/admin/AdminMarketingPage";
@@ -170,6 +171,7 @@ import MagicLinkVerify from "./pages/auth/MagicLinkVerify";
 import CreateAccount from "./pages/auth/CreateAccount";
 import OrganizerRegistration from "./pages/auth/OrganizerRegistration";
 import AttendeeRegistration from "./pages/auth/AttendeeRegistration";
+import SignUp from "./pages/auth/SignUp";
 
 // Wrapper component to provide role view context with user role
 // This needs to be inside BrowserRouter and AuthProvider
@@ -258,6 +260,8 @@ const App = () => (
       <Route path="/organizer/attendees/communication" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><AttendeeCommunication /></ProtectedRoute>} />
       {/* Event Collaboration Routes */}
       <Route path="/organizer/event/:eventId/collaboration" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><EventCollaboration /></ProtectedRoute>} />
+      {/* Marketing Routes */}
+      <Route path="/organizer/marketing/promo-codes" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><OrganizerPromoCodeManager /></ProtectedRoute>} />
       {/* Admin Dashboard Routes - Protected, admin roles only */}
       <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER, UserRole.SUPPORT, UserRole.TELLER]}><AdminDashboard /></ProtectedRoute>} />
       {/* Admin Events Routes */}
@@ -359,8 +363,8 @@ const App = () => (
       <Route path="/support" element={<Support />} />
       {/* Auth Routes */}
       <Route path="/auth/signin" element={<SignIn />} />
-      <Route path="/auth/signup" element={<AttendeeRegistration />} />
-      <Route path="/auth/register" element={<AttendeeRegistration />} />
+      <Route path="/auth/signup" element={<SignUp />} />
+      <Route path="/auth/register" element={<SignUp />} />
       {/* Role-specific registration routes */}
       <Route path="/auth/register/organizer" element={<OrganizerRegistration />} />
       <Route path="/auth/register/attendee" element={<AttendeeRegistration />} />

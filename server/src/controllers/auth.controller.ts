@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { prisma } from '../config/database.js';
+import { TicketSecurityService } from '../services/ticket-security.service.js';
 
 export class AuthController {
   /**
@@ -117,8 +118,8 @@ export class AuthController {
    */
   static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Try to get refresh token from cookie first, then from body
-      const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+      // Only accept refresh token from HttpOnly cookie (not request body)
+      const refreshToken = req.cookies?.refreshToken;
 
       if (!refreshToken) {
         res.status(401).json({
@@ -159,7 +160,7 @@ export class AuthController {
    */
   static async logout(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+      const refreshToken = req.cookies?.refreshToken;
 
       if (refreshToken) {
         await AuthService.logout(refreshToken);
@@ -208,7 +209,8 @@ export class AuthController {
    */
   static async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await AuthService.forgotPassword(req.body.email);
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      await AuthService.forgotPassword(req.body.email, ipAddress);
 
       // Always return success (don't reveal if email exists)
       res.status(200).json({
@@ -225,7 +227,8 @@ export class AuthController {
    */
   static async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await AuthService.resetPassword(req.body.token, req.body.password);
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      await AuthService.resetPassword(req.body.token, req.body.password, ipAddress);
 
       res.status(200).json({
         success: true,
@@ -264,6 +267,7 @@ export class AuthController {
           organizationName: true,
           businessEmail: true,
           kycStatus: true,
+          onboardingCompleted: true,
           lastLoginAt: true,
           createdAt: true,
           updatedAt: true,
@@ -625,6 +629,28 @@ export class AuthController {
           accessToken: result.accessToken,
           refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
           expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get Ed25519 public key for ticket signature verification
+   * Mobile apps use this to verify ticket signatures offline
+   */
+  static async getPublicKey(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const publicKey = TicketSecurityService.getPublicKey();
+
+      res.status(200).json({
+        success: true,
+        data: {
+          publicKey,
+          algorithm: 'Ed25519',
+          format: 'hex',
+          usage: 'ticket-verification',
         },
       });
     } catch (error) {

@@ -17,7 +17,18 @@ export class TicketResaleService {
       // Verify registration belongs to user
       const registration = await prisma.eventRegistration.findUnique({
         where: { id: registrationId },
-        include: { event: true },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              startDate: true,
+              endDate: true,
+              currency: true,
+              ticketTypes: true, // Include ticket types to check for name-locked
+            },
+          },
+        },
       });
 
       if (!registration) {
@@ -26,6 +37,18 @@ export class TicketResaleService {
 
       if (registration.attendeeId !== userId) {
         throw new ValidationError('You can only resell your own tickets');
+      }
+
+      // Check if ticket is name-locked
+      if (registration.ticketType && registration.event.ticketTypes) {
+        const ticketTypes = registration.event.ticketTypes as Array<{
+          name: string;
+          nameLocked?: boolean;
+        }>;
+        const ticketType = ticketTypes.find(tt => tt.name === registration.ticketType);
+        if (ticketType?.nameLocked) {
+          throw new ValidationError('This ticket is name-locked and cannot be resold. The ticket is tied to the original purchaser\'s identity.');
+        }
       }
 
       // Check if already listed

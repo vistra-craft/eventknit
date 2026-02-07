@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { TicketService } from '../services/ticket.service.js';
+import { RefundService } from '../services/refund.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { AuthorizationError, NotFoundError } from '../utils/errors.js';
 import { prisma } from '../config/database.js';
@@ -268,6 +269,83 @@ export class TicketController {
       res.status(200).json({
         success: true,
         message: 'Ticket email has been resent successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Check refund eligibility for a registration
+   * Returns refund policy info and eligibility status
+   */
+  static async checkRefundEligibility(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const registrationId = req.params.registrationId as string;
+
+      const eligibility = await RefundService.getRefundEligibility(registrationId, req.user.id);
+
+      res.status(200).json({
+        success: true,
+        data: eligibility,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Request a refund for a registration
+   * Uses configurable refund policies
+   */
+  static async requestRefund(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const registrationId = req.params.registrationId as string;
+      const { refundReason } = req.body;
+
+      if (!refundReason || typeof refundReason !== 'string' || refundReason.trim().length < 10) {
+        res.status(400).json({
+          success: false,
+          message: 'Please provide a valid refund reason (at least 10 characters)',
+        });
+        return;
+      }
+
+      const ipAddress = (typeof req.headers['x-forwarded-for'] === 'string'
+        ? req.headers['x-forwarded-for'].split(',')[0]?.trim()
+        : req.ip) || undefined;
+      const userAgent = req.headers['user-agent'];
+
+      const refund = await RefundService.requestRefundAttendee(
+        registrationId,
+        req.user.id,
+        { refundReason: refundReason.trim() },
+        ipAddress,
+        userAgent,
+      );
+
+      logger.info(`Refund requested for registration: ${registrationId} by user: ${req.user.id}`);
+
+      res.status(201).json({
+        success: true,
+        message: 'Refund request submitted successfully',
+        data: refund,
       });
     } catch (error) {
       next(error);

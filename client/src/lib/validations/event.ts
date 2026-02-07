@@ -41,7 +41,7 @@ export type Speaker = z.infer<typeof speakerSchema>;
 // Sponsor Schema
 export const sponsorSchema = z.object({
   name: requiredString('Sponsor name'),
-  level: z.enum(['gold', 'silver', 'bronze'], {
+  level: z.enum(['gold', 'silver', 'bronze', 'platinum', 'title', 'presenting', 'partner'], {
     message: 'Sponsor level is required',
   }),
   logo: z.string().optional(), // URL to logo image

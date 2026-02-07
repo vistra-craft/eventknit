@@ -4,30 +4,25 @@ import { PaymentTimeoutJob } from './payment-timeout.job.js';
 import { BulkMessageSchedulerJob } from './bulk-message-scheduler.job.js';
 import { EventReminderJob } from './event-reminder.job.js';
 import { SMSSessionCleanupJob } from './sms-session-cleanup.job.js';
+import { PostEventSurveyJob } from './post-event-survey.job.js';
+import { EmailDigestJob } from './email-digest.job.js';
+import { CartCleanupJob } from './cart-cleanup.job.js';
 
 /**
  * Initialize all scheduled jobs
  */
 export function initializeJobs(): void {
   try {
-    logger.info('Initializing scheduled jobs...');
-    
-    // Start token cleanup job
     TokenCleanupJob.start();
-    
-    // Start payment timeout job
     PaymentTimeoutJob.start();
-    
-    // Start bulk message scheduler job
     BulkMessageSchedulerJob.start();
-    
-    // Start event reminder job
     EventReminderJob.start();
-    
-    // Start SMS session cleanup job
     SMSSessionCleanupJob.start();
-    
-    logger.info('✅ All scheduled jobs initialized');
+    PostEventSurveyJob.start();
+    EmailDigestJob.start();
+    CartCleanupJob.start();
+
+    logger.info('Scheduled jobs initialized (8 jobs)');
   } catch (error) {
     logger.error('Failed to initialize scheduled jobs:', error);
     throw error;
@@ -39,15 +34,16 @@ export function initializeJobs(): void {
  */
 export function stopJobs(): void {
   try {
-    logger.info('Stopping scheduled jobs...');
-    
     TokenCleanupJob.stop();
     PaymentTimeoutJob.stop();
     BulkMessageSchedulerJob.stop();
     EventReminderJob.stop();
     SMSSessionCleanupJob.stop();
-    
-    logger.info('✅ All scheduled jobs stopped');
+    PostEventSurveyJob.stop();
+    EmailDigestJob.stop();
+    CartCleanupJob.stop();
+
+    logger.info('Scheduled jobs stopped');
   } catch (error) {
     logger.error('Error stopping scheduled jobs:', error);
   }
@@ -59,4 +55,7 @@ export { PaymentTimeoutJob } from './payment-timeout.job.js';
 export { BulkMessageSchedulerJob } from './bulk-message-scheduler.job.js';
 export { EventReminderJob } from './event-reminder.job.js';
 export { SMSSessionCleanupJob } from './sms-session-cleanup.job.js';
+export { PostEventSurveyJob } from './post-event-survey.job.js';
+export { EmailDigestJob } from './email-digest.job.js';
+export { CartCleanupJob } from './cart-cleanup.job.js';
 

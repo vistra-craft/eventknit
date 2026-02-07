@@ -48,6 +48,21 @@ export const authRateLimiter = rateLimit({
 });
 
 /**
+ * IP-based rate limiter for auth endpoints.
+ * Limits total failed auth requests from a single IP across all accounts.
+ * Prevents credential stuffing attacks that spread attempts across many users.
+ */
+export const ipAuthRateLimiter = rateLimit({
+  windowMs: config.rateLimit.authWindowMs,
+  max: 20, // 20 failed requests per window across all accounts
+  message: 'Too many authentication attempts from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  skip: skipRateLimit,
+});
+
+/**
  * Rate limiter for guest event registration
  * Limits: 5 registrations per hour per IP (configurable)
  */

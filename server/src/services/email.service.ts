@@ -648,6 +648,595 @@ class EmailService {
       html,
     });
   }
+
+  /**
+   * Send event cancellation email to attendee
+   */
+  async sendEventCancellationEmail(
+    recipientEmail: string,
+    data: {
+      attendeeName: string;
+      eventTitle: string;
+      eventDate: string;
+      eventLocation?: string;
+      cancellationReason?: string;
+      refundAmount?: string;
+      refundStatus?: 'processing' | 'completed' | 'pending' | 'not_applicable';
+      organizerName?: string;
+      supportEmail?: string;
+    },
+  ) {
+    const refundSection = data.refundAmount && data.refundStatus !== 'not_applicable' ? `
+              <div style="background: #e8f5e9; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                <h3 style="margin: 0 0 10px 0; color: #2e7d32;">💰 Refund Information</h3>
+                <p style="margin: 5px 0; color: #333;"><strong>Refund Amount:</strong> ${data.refundAmount}</p>
+                <p style="margin: 5px 0; color: #666;">
+                  ${data.refundStatus === 'processing'
+    ? 'Your refund is being processed and will be credited to your account within 3-5 business days.'
+    : data.refundStatus === 'completed'
+      ? 'Your refund has been processed and credited to your account.'
+      : 'Your refund request is pending and will be processed shortly.'}
+                </p>
+              </div>
+    ` : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Event Cancelled</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Event Cancelled</h1>
+          </div>
+
+          <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Hi ${data.attendeeName || 'there'},</p>
+
+            <p style="color: #666;">
+              We're sorry to inform you that the following event has been <strong>cancelled</strong>:
+            </p>
+
+            <div style="background: #f5f5f5; border-left: 4px solid #f44336; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+              <h2 style="margin: 0 0 10px 0; color: #333;">${data.eventTitle}</h2>
+              <p style="margin: 5px 0; color: #666;">📅 ${data.eventDate}</p>
+              ${data.eventLocation ? `<p style="margin: 5px 0; color: #666;">📍 ${data.eventLocation}</p>` : ''}
+            </div>
+
+            ${data.cancellationReason ? `
+            <div style="background: #fff3e0; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #e65100;">Reason for Cancellation</h3>
+              <p style="margin: 0; color: #666;">${data.cancellationReason}</p>
+            </div>
+            ` : ''}
+
+            ${refundSection}
+
+            <p style="color: #666; font-size: 14px;">
+              We apologize for any inconvenience this may cause. If you have any questions, please contact
+              ${data.organizerName ? `${data.organizerName} or ` : ''}our support team${data.supportEmail ? ` at <a href="mailto:${data.supportEmail}" style="color: #4a6cf7;">${data.supportEmail}</a>` : ''}.
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 11px; color: #999; text-align: center;">
+              This is an automated message from EventKnit. Please do not reply to this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: `⚠️ Event Cancelled: ${data.eventTitle}`,
+      html,
+      isCritical: true, // Cancellation emails are critical
+    });
+  }
+
+  /**
+   * Send event postponement email to attendee
+   */
+  async sendEventPostponementEmail(
+    recipientEmail: string,
+    data: {
+      attendeeName: string;
+      eventTitle: string;
+      originalDate: string;
+      newDate: string;
+      originalLocation?: string;
+      newLocation?: string;
+      postponementReason?: string;
+      organizerName?: string;
+      supportEmail?: string;
+      refundOption?: boolean; // Whether refund is offered for those who can't attend new date
+    },
+  ) {
+    const locationChanged = data.originalLocation && data.newLocation && data.originalLocation !== data.newLocation;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Event Rescheduled</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Event Rescheduled</h1>
+          </div>
+
+          <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Hi ${data.attendeeName || 'there'},</p>
+
+            <p style="color: #666;">
+              The following event has been <strong>rescheduled</strong> to a new date:
+            </p>
+
+            <div style="background: #f5f5f5; border-left: 4px solid #ff9800; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+              <h2 style="margin: 0 0 15px 0; color: #333;">${data.eventTitle}</h2>
+
+              <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                  <p style="margin: 0 0 5px 0; color: #999; font-size: 12px; text-transform: uppercase;">Original Date</p>
+                  <p style="margin: 0; color: #666; text-decoration: line-through;">${data.originalDate}</p>
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                  <p style="margin: 0 0 5px 0; color: #2e7d32; font-size: 12px; text-transform: uppercase;">New Date</p>
+                  <p style="margin: 0; color: #2e7d32; font-weight: bold;">📅 ${data.newDate}</p>
+                </div>
+              </div>
+
+              ${locationChanged ? `
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
+              <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                  <p style="margin: 0 0 5px 0; color: #999; font-size: 12px; text-transform: uppercase;">Original Location</p>
+                  <p style="margin: 0; color: #666; text-decoration: line-through;">${data.originalLocation}</p>
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                  <p style="margin: 0 0 5px 0; color: #2e7d32; font-size: 12px; text-transform: uppercase;">New Location</p>
+                  <p style="margin: 0; color: #2e7d32; font-weight: bold;">📍 ${data.newLocation}</p>
+                </div>
+              </div>
+              ` : data.newLocation ? `
+              <p style="margin: 10px 0 0 0; color: #666;">📍 ${data.newLocation}</p>
+              ` : ''}
+            </div>
+
+            ${data.postponementReason ? `
+            <div style="background: #fff3e0; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #e65100;">Reason for Rescheduling</h3>
+              <p style="margin: 0; color: #666;">${data.postponementReason}</p>
+            </div>
+            ` : ''}
+
+            <div style="background: #e3f2fd; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: #1565c0;">🎟️ Your Ticket</h3>
+              <p style="margin: 0; color: #666;">
+                Your existing ticket remains valid for the new date. No action is required on your part.
+              </p>
+              ${data.refundOption ? `
+              <p style="margin: 10px 0 0 0; color: #666; font-size: 13px;">
+                If you are unable to attend on the new date, you may request a refund by contacting the event organizer.
+              </p>
+              ` : ''}
+            </div>
+
+            <p style="color: #666; font-size: 14px;">
+              We apologize for any inconvenience. If you have any questions, please contact
+              ${data.organizerName ? `${data.organizerName} or ` : ''}our support team${data.supportEmail ? ` at <a href="mailto:${data.supportEmail}" style="color: #4a6cf7;">${data.supportEmail}</a>` : ''}.
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 11px; color: #999; text-align: center;">
+              This is an automated message from EventKnit. Please do not reply to this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: `📅 Event Rescheduled: ${data.eventTitle}`,
+      html,
+      isCritical: true, // Postponement emails are critical
+    });
+  }
+
+  /**
+   * Send event update notification email to attendee
+   */
+  async sendEventUpdateEmail(
+    recipientEmail: string,
+    data: {
+      attendeeName: string;
+      eventTitle: string;
+      eventDate: string;
+      eventLocation?: string;
+      updateType: 'location' | 'time' | 'details' | 'general';
+      updateSummary: string;
+      organizerName?: string;
+      supportEmail?: string;
+    },
+  ) {
+    const updateTypeLabels = {
+      location: 'Venue Update',
+      time: 'Time Update',
+      details: 'Event Details Update',
+      general: 'Event Update',
+    };
+
+    const updateTypeColors = {
+      location: '#9c27b0',
+      time: '#2196f3',
+      details: '#009688',
+      general: '#607d8b',
+    };
+
+    const color = updateTypeColors[data.updateType] || updateTypeColors.general;
+    const label = updateTypeLabels[data.updateType] || updateTypeLabels.general;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Event Update</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, ${color} 0%, ${color}dd 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">${label}</h1>
+          </div>
+
+          <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Hi ${data.attendeeName || 'there'},</p>
+
+            <p style="color: #666;">
+              There's an update for the following event you're registered for:
+            </p>
+
+            <div style="background: #f5f5f5; border-left: 4px solid ${color}; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+              <h2 style="margin: 0 0 10px 0; color: #333;">${data.eventTitle}</h2>
+              <p style="margin: 5px 0; color: #666;">📅 ${data.eventDate}</p>
+              ${data.eventLocation ? `<p style="margin: 5px 0; color: #666;">📍 ${data.eventLocation}</p>` : ''}
+            </div>
+
+            <div style="background: #f3e5f5; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <h3 style="margin: 0 0 10px 0; color: ${color};">What's Changed</h3>
+              <p style="margin: 0; color: #666;">${data.updateSummary}</p>
+            </div>
+
+            <p style="color: #666; font-size: 14px;">
+              Your ticket remains valid. If you have any questions, please contact
+              ${data.organizerName ? `${data.organizerName} or ` : ''}our support team${data.supportEmail ? ` at <a href="mailto:${data.supportEmail}" style="color: #4a6cf7;">${data.supportEmail}</a>` : ''}.
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 11px; color: #999; text-align: center;">
+              This is an automated message from EventKnit. Please do not reply to this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: `📢 ${label}: ${data.eventTitle}`,
+      html,
+    });
+  }
+
+  /**
+   * Send post-event survey email to attendee
+   */
+  async sendPostEventSurveyEmail(
+    recipientEmail: string,
+    data: {
+      attendeeName: string;
+      eventTitle: string;
+      eventDate: string;
+      surveyUrl: string;
+      organizerName?: string;
+    },
+  ) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Share Your Feedback</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">How Was Your Experience?</h1>
+          </div>
+
+          <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Hi ${data.attendeeName || 'there'},</p>
+
+            <p style="color: #666;">
+              Thank you for attending <strong>${data.eventTitle}</strong> on ${data.eventDate}!
+            </p>
+
+            <p style="color: #666;">
+              We'd love to hear about your experience. Your feedback helps us and the organizers create even better events in the future.
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.surveyUrl}" style="display: inline-block; background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                Share Your Feedback
+              </a>
+            </div>
+
+            <div style="background: #f5f5f5; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0; color: #333; font-weight: bold;">Quick questions we'll ask:</p>
+              <ul style="margin: 0; padding-left: 20px; color: #666;">
+                <li>How would you rate the overall experience?</li>
+                <li>What did you enjoy most?</li>
+                <li>What could be improved?</li>
+                <li>Would you recommend this event to others?</li>
+              </ul>
+              <p style="margin: 15px 0 0 0; color: #999; font-size: 12px;">
+                ⏱️ Takes less than 2 minutes to complete
+              </p>
+            </div>
+
+            <p style="color: #666; font-size: 14px;">
+              Your feedback is valuable and will be shared with ${data.organizerName || 'the event organizer'} to help them improve future events.
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 11px; color: #999; text-align: center;">
+              This is an automated message from EventKnit. Please do not reply to this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: `📝 Share your feedback: ${data.eventTitle}`,
+      html,
+    });
+  }
+
+  /**
+   * Send data export ready email
+   */
+  async sendDataExportReadyEmail(
+    recipientEmail: string,
+    data: {
+      userName: string;
+      downloadUrl: string;
+      expiresAt: string;
+    },
+  ) {
+    const expiryDate = new Date(data.expiresAt).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Your Data Export is Ready</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Your Data Export is Ready</h1>
+          </div>
+
+          <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Hi ${data.userName},</p>
+
+            <p style="color: #666;">
+              Your data export has been prepared and is ready for download. This export contains all personal data associated with your EventKnit account.
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.downloadUrl}" style="display: inline-block; background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: bold;">
+                Download Your Data
+              </a>
+            </div>
+
+            <div style="background: #fff3e0; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #e65100; font-weight: bold;">
+                ⚠️ This link expires on ${expiryDate}
+              </p>
+              <p style="margin: 10px 0 0 0; color: #666; font-size: 13px;">
+                Please download your data before this date. After expiry, you'll need to request a new export.
+              </p>
+            </div>
+
+            <div style="background: #f5f5f5; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0 0 10px 0; color: #333; font-weight: bold;">What's included in your export:</p>
+              <ul style="margin: 0; padding-left: 20px; color: #666;">
+                <li>Your profile information</li>
+                <li>Event registrations and tickets</li>
+                <li>Payment history</li>
+                <li>Notification history</li>
+                <li>Ticket transfers</li>
+                <li>Your preferences and settings</li>
+              </ul>
+            </div>
+
+            <p style="color: #666; font-size: 14px;">
+              This data export is provided in compliance with GDPR Article 20 (Right to Data Portability).
+              If you have any questions, please contact our support team.
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 11px; color: #999; text-align: center;">
+              This is an automated message from EventKnit. Please do not reply to this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: '📦 Your EventKnit Data Export is Ready',
+      html,
+      isCritical: true,
+    });
+  }
+
+  /**
+   * Send account deletion confirmation email
+   */
+  async sendAccountDeletionConfirmationEmail(
+    recipientEmail: string,
+    data: {
+      userName: string;
+    },
+  ) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Account Deleted</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #607d8b 0%, #455a64 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Account Deleted</h1>
+          </div>
+
+          <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Hi ${data.userName},</p>
+
+            <p style="color: #666;">
+              Your EventKnit account has been successfully deleted as requested. We're sorry to see you go.
+            </p>
+
+            <div style="background: #f5f5f5; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 0 0 15px 0; color: #333; font-weight: bold;">What this means:</p>
+              <ul style="margin: 0; padding-left: 20px; color: #666;">
+                <li>Your personal information has been anonymized</li>
+                <li>You will no longer receive emails from us</li>
+                <li>Any pending registrations have been cancelled</li>
+                <li>Your login credentials have been removed</li>
+              </ul>
+            </div>
+
+            <div style="background: #e3f2fd; border-radius: 8px; padding: 15px; margin: 20px 0;">
+              <p style="margin: 0; color: #1565c0; font-weight: bold;">
+                Note: For legal and financial compliance
+              </p>
+              <p style="margin: 10px 0 0 0; color: #666; font-size: 13px;">
+                Transaction records have been retained in anonymized form as required by law. These records cannot be linked back to you personally.
+              </p>
+            </div>
+
+            <p style="color: #666; font-size: 14px;">
+              If you ever want to use EventKnit again in the future, you're welcome to create a new account.
+              Thank you for being part of our community.
+            </p>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 11px; color: #999; text-align: center;">
+              This is the final automated message from EventKnit for this account.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: 'Your EventKnit Account Has Been Deleted',
+      html,
+      isCritical: true,
+    });
+  }
+
+  /**
+   * Send email digest
+   */
+  async sendDigestEmail(
+    recipientEmail: string,
+    data: {
+      userName: string;
+      digestType: string;
+      periodLabel: string;
+      itemCount: number;
+      itemsHtml: string;
+    },
+  ) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${data.digestType} Digest</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Your ${data.digestType} Update</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">
+              ${data.itemCount} notification${data.itemCount !== 1 ? 's' : ''} ${data.periodLabel}
+            </p>
+          </div>
+
+          <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Hi ${data.userName},</p>
+
+            <p style="color: #666;">
+              Here's a summary of what you might have missed ${data.periodLabel}:
+            </p>
+
+            ${data.itemsHtml}
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/dashboard"
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+                View All Updates
+              </a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 12px; color: #888; text-align: center;">
+              You're receiving this because you've opted in to ${data.digestType.toLowerCase()} digests.
+              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/settings/notifications" style="color: #667eea;">
+                Manage preferences
+              </a>
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: `Your ${data.digestType} EventKnit Digest - ${data.itemCount} Update${data.itemCount !== 1 ? 's' : ''}`,
+      html,
+    });
+  }
 }
 
 export const emailService = new EmailService();

@@ -54,7 +54,7 @@ export const logger = winston.createLogger({
 
 export const stream = {
   write: (message: string) => {
-    logger.info(message.trim());
+    logger.http(message.trim());
   },
 };
 
@@ -66,12 +66,3 @@ process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception:', error);
   process.exit(1);
 });
-
-
-
-
-
-
-
-
-

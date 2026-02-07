@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Calendar,
   Users,
@@ -11,12 +10,15 @@ import {
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import { EventImage } from "./EventImage";
 
 interface EventCardProps {
   event: {
     id: string;
     title: string;
     image: string;
+    imageFocalX?: number | null;
+    imageFocalY?: number | null;
     date: string;
     time: string;
     venue: string;
@@ -40,8 +42,7 @@ interface EventCardProps {
 }
 
 const OrganizerEventCard = ({ event }: EventCardProps) => {
-  const [imageError, setImageError] = useState(false);
-  
+
   // Use real event data for metrics
   const metrics = {
     attendees: typeof event.attendees === 'number' ? event.attendees : 0,
@@ -87,24 +88,24 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
   return (
     <Card className="group cursor-pointer border border-border bg-card-surface rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
       {/* Event Image */}
-      {event.image && !imageError ? (
-        <div className="relative w-full h-48 overflow-hidden bg-muted">
-          <img
-            src={event.image}
-            alt={event.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={() => setImageError(true)}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-        </div>
-      ) : (
-        <div className="w-full h-48 bg-muted flex items-center justify-center">
-          <div className="text-center text-muted-foreground">
-            <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No image</p>
-          </div>
-        </div>
-      )}
+      <div className="relative w-full h-48 overflow-hidden bg-muted">
+        <EventImage
+          src={event.image}
+          alt={event.title}
+          focalX={event.imageFocalX}
+          focalY={event.imageFocalY}
+          className="w-full h-full group-hover:scale-105 transition-transform duration-300"
+          fallback={
+            <div className="w-full h-48 bg-muted flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No image</p>
+              </div>
+            </div>
+          }
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+      </div>
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-medium text-foreground">

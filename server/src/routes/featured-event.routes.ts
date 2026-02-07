@@ -9,8 +9,16 @@ const router = Router();
 
 /**
  * Wrapper for multer middleware to handle errors
+ * Only processes multipart/form-data requests, skips JSON requests
  */
 const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
+  // Skip multer for JSON requests - only process multipart/form-data
+  const contentType = req.get('content-type') || '';
+  if (!contentType.includes('multipart/form-data')) {
+    // For JSON requests, just proceed to the controller
+    return next();
+  }
+
   uploadSingleImage(req, res, (err: unknown) => {
     if (err instanceof (multer as any).MulterError || (err as any).code?.startsWith('LIMIT_')) {
       const multerErr = err as any;

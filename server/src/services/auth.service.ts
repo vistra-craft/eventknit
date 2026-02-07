@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { prisma } from '../config/database.js';
-import { hashPassword, comparePassword } from '../utils/password.js';
+import { hashPassword, comparePassword, checkPasswordBreach } from '../utils/password.js';
 import { logger } from '../utils/logger.js';
 import {
   generateAccessToken,
@@ -224,6 +224,14 @@ export class AuthService {
       if (existingUser.status === UserStatus.ACTIVE) {
         throw new ConflictError('User with this email already exists');
       }
+    }
+
+    // Check password against known breaches
+    const breachCount = await checkPasswordBreach(password);
+    if (breachCount > 0) {
+      throw new ValidationError(
+        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+      );
     }
 
     // Hash password
@@ -791,7 +799,7 @@ export class AuthService {
   /**
    * Request password reset
    */
-  static async forgotPassword(email: string): Promise<void> {
+  static async forgotPassword(email: string, ipAddress?: string): Promise<void> {
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -810,6 +818,7 @@ export class AuthService {
         userId: user.id,
         token,
         expiresAt,
+        ipAddress,
       },
     });
 
@@ -825,7 +834,7 @@ export class AuthService {
   /**
    * Reset password with token
    */
-  static async resetPassword(token: string, newPassword: string): Promise<void> {
+  static async resetPassword(token: string, newPassword: string, ipAddress?: string): Promise<void> {
     const reset = await prisma.passwordReset.findUnique({
       where: { token },
       include: { user: true },
@@ -841,6 +850,31 @@ export class AuthService {
 
     if (reset.expiresAt < new Date()) {
       throw new ValidationError('Reset token has expired');
+    }
+
+    // Log if reset is being used from a different IP than the one that requested it
+    if (reset.ipAddress && ipAddress && reset.ipAddress !== ipAddress) {
+      logger.warn(`Password reset token used from different IP. Requested from: ${reset.ipAddress}, Used from: ${ipAddress}, User: ${reset.user.email}`);
+      await createAuditLog({
+        userId: reset.userId,
+        action: AuditActions.SUSPICIOUS_ACTIVITY,
+        entity: 'PasswordReset',
+        entityId: reset.id,
+        metadata: {
+          reason: 'Password reset used from different IP',
+          requestedFrom: reset.ipAddress,
+          usedFrom: ipAddress,
+        },
+        ipAddress,
+      });
+    }
+
+    // Check password against known breaches
+    const breachCount = await checkPasswordBreach(newPassword);
+    if (breachCount > 0) {
+      throw new ValidationError(
+        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+      );
     }
 
     // Hash new password
@@ -864,6 +898,9 @@ export class AuthService {
         },
       }),
     ]);
+
+    // Revoke all existing refresh tokens (force re-login on all devices)
+    await this.revokeAllUserTokens(reset.userId, 'password_change');
   }
 
   /**
@@ -926,6 +963,24 @@ export class AuthService {
   }
 
   /**
+   * Revoke all active refresh tokens for a user
+   */
+  private static async revokeAllUserTokens(userId: string, reason: string): Promise<void> {
+    await prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        revoked: false,
+        expiresAt: { gt: new Date() },
+      },
+      data: {
+        revoked: true,
+        revokedAt: new Date(),
+        revokedReason: reason,
+      },
+    });
+  }
+
+  /**
    * Save refresh token to database
    */
   private static async saveRefreshToken(
@@ -972,19 +1027,27 @@ export class AuthService {
       throw new NotFoundError('User not found');
     }
 
+    // Check password against known breaches
+    const breachCount = await checkPasswordBreach(newPassword);
+    if (breachCount > 0) {
+      throw new ValidationError(
+        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+      );
+    }
+
     // If user has no password, allow setting initial password (currentPassword can be empty)
     if (!user.password) {
-      // For initial password setup, we can skip current password verification
-      // But we should validate that currentPassword is provided (even if empty string)
-      // In practice, frontend should call setPassword for initial setup
       const hashedPassword = await hashPassword(newPassword);
-      
+
       await prisma.user.update({
         where: { id: userId },
         data: {
           password: hashedPassword,
         },
       });
+
+      // Revoke all existing refresh tokens (force re-login on other devices)
+      await this.revokeAllUserTokens(userId, 'password_change');
 
       logger.info(`Initial password set for user: ${user.email}`);
       return;
@@ -1007,6 +1070,9 @@ export class AuthService {
       },
     });
 
+    // Revoke all existing refresh tokens (force re-login on other devices)
+    await this.revokeAllUserTokens(userId, 'password_change');
+
     logger.info(`Password changed for user: ${user.email}`);
   }
 
@@ -1027,6 +1093,14 @@ export class AuthService {
       throw new ValidationError('Password already set. Use change password to update it.');
     }
 
+    // Check password against known breaches
+    const breachCount = await checkPasswordBreach(newPassword);
+    if (breachCount > 0) {
+      throw new ValidationError(
+        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+      );
+    }
+
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
 
@@ -1037,6 +1111,9 @@ export class AuthService {
         password: hashedPassword,
       },
     });
+
+    // Revoke all existing refresh tokens (force re-login on other devices)
+    await this.revokeAllUserTokens(userId, 'password_change');
 
     logger.info(`Password set for user: ${user.email}`);
   }
@@ -1091,6 +1168,14 @@ export class AuthService {
     // Validate password
     if (!password || password.length < 8) {
       throw new ValidationError('Password must be at least 8 characters long');
+    }
+
+    // Check password against known breaches
+    const breachCount = await checkPasswordBreach(password);
+    if (breachCount > 0) {
+      throw new ValidationError(
+        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+      );
     }
 
     // Hash password

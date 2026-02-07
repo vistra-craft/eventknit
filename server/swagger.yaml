@@ -55,6 +55,8 @@ tags:
     description: Offline data synchronization for mobile devices
   - name: Careers
     description: Career inquiry management for job applicants
+  - name: Cart
+    description: Shopping cart and ticket reservation system
 
 components:
   securitySchemes:
@@ -514,6 +516,185 @@ components:
           format: date-time
           nullable: true
         addedAt:
+          type: string
+          format: date-time
+
+    # Payment Plan Schemas
+    PaymentPlan:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        planName:
+          type: string
+          example: "Monthly Payment Plan"
+        totalAmount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          example: "NGN"
+        installmentCount:
+          type: integer
+          minimum: 2
+        installmentAmount:
+          type: number
+          format: decimal
+        frequency:
+          type: string
+          enum: [MONTHLY, WEEKLY, BIWEEKLY, CUSTOM]
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [ACTIVE, COMPLETED, CANCELLED, DEFAULTED]
+        autoPaymentEnabled:
+          type: boolean
+        paymentMethod:
+          type: string
+          nullable: true
+        installments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentInstallment'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PaymentInstallment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        planId:
+          type: string
+          format: uuid
+        installmentNumber:
+          type: integer
+          minimum: 1
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [PENDING, PAID, OVERDUE, CANCELLED]
+        paidAmount:
+          type: number
+          format: decimal
+          nullable: true
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        paymentTransactionId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoiceNumber:
+          type: string
+          example: "INV-2024-0001"
+        transactionId:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        totalAmount:
+          type: number
+          format: decimal
+        subtotal:
+          type: number
+          format: decimal
+        taxAmount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          example: "NGN"
+        status:
+          type: string
+          enum: [DRAFT, PENDING, SENT, PAID, OVERDUE, CANCELLED]
+        billToName:
+          type: string
+        billToEmail:
+          type: string
+          format: email
+        billToAddress:
+          type: string
+          nullable: true
+        issueDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        sentTo:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              description:
+                type: string
+              quantity:
+                type: integer
+              unitPrice:
+                type: number
+                format: decimal
+              totalPrice:
+                type: number
+                format: decimal
+        event:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
           type: string
           format: date-time
 
@@ -1236,6 +1417,173 @@ components:
           enum: [keep_first, keep_latest, keep_both]
           nullable: true
 
+    # Cart Schemas
+    CartStatus:
+      type: string
+      enum: [ACTIVE, RESERVED, COMPLETED, EXPIRED, ABANDONED]
+      description: Current status of the shopping cart
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the cart item
+        cartId:
+          type: string
+          format: uuid
+          description: ID of the parent cart
+        eventId:
+          type: string
+          format: uuid
+          description: ID of the event for this ticket
+        ticketType:
+          type: string
+          description: Name of the ticket type (e.g., General Admission, VIP)
+        quantity:
+          type: integer
+          minimum: 1
+          description: Number of tickets
+        unitPrice:
+          type: number
+          format: decimal
+          description: Price per ticket
+        seatIds:
+          type: array
+          items:
+            type: string
+          description: IDs of selected seats (for assigned seating)
+        promoCodeId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Applied promo code ID
+        discountAmount:
+          type: number
+          format: decimal
+          nullable: true
+          description: Discount amount from promo code
+        inventoryLocked:
+          type: boolean
+          description: Whether inventory has been locked for this item
+        event:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            title:
+              type: string
+            startDate:
+              type: string
+              format: date-time
+            image:
+              type: string
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CartReservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the cart
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the authenticated user (null for guests)
+        sessionId:
+          type: string
+          description: Session identifier for guest users
+        status:
+          $ref: '#/components/schemas/CartStatus'
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the cart reservation expires
+        reservedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the cart was moved to RESERVED status
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the cart was completed (payment successful)
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+          description: Items in the cart
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CartStats:
+      type: object
+      properties:
+        activeCarts:
+          type: integer
+          description: Number of active carts
+        reservedCarts:
+          type: integer
+          description: Number of reserved carts awaiting payment
+        expiringInMinutes:
+          type: integer
+          description: Number of carts expiring in the next 5 minutes
+        totalItemsInCarts:
+          type: integer
+          description: Total items across all active carts
+
+    AddCartItemRequest:
+      type: object
+      required:
+        - eventId
+        - ticketType
+        - quantity
+        - unitPrice
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: ID of the event
+        ticketType:
+          type: string
+          description: Name of the ticket type
+        quantity:
+          type: integer
+          minimum: 1
+          description: Number of tickets to add
+        unitPrice:
+          type: number
+          format: decimal
+          description: Price per ticket
+        seatIds:
+          type: array
+          items:
+            type: string
+          description: IDs of selected seats (optional, for assigned seating)
+        promoCodeId:
+          type: string
+          format: uuid
+          description: Promo code ID to apply (optional)
+        discountAmount:
+          type: number
+          format: decimal
+          description: Discount amount (optional)
+
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid
@@ -1338,7 +1686,7 @@ paths:
       tags:
         - Authentication
       summary: Request registration verification code
-      description: Request a verification code for email-only registration (passwordless)
+      description: Request a 6-digit verification code for email-based registration
       operationId: requestRegistrationCode
       requestBody:
         required: true
@@ -1352,6 +1700,11 @@ paths:
                 email:
                   type: string
                   format: email
+                role:
+                  type: string
+                  enum: [ATTENDEE, ORGANIZER]
+                  default: ATTENDEE
+                  description: User role for the new account
       responses:
         '200':
           description: Verification code sent successfully
@@ -1367,7 +1720,7 @@ paths:
       tags:
         - Authentication
       summary: Verify registration code and create account
-      description: Verify the registration code and complete account creation
+      description: Verify the registration code and complete account creation. Password is required and must contain at least one letter and one number.
       operationId: verifyRegistrationCode
       requestBody:
         required: true
@@ -1378,6 +1731,7 @@ paths:
               required:
                 - email
                 - code
+                - password
                 - firstName
                 - lastName
               properties:
@@ -1386,6 +1740,11 @@ paths:
                   format: email
                 code:
                   type: string
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: Must contain at least one letter and one number
                 firstName:
                   type: string
                 lastName:
@@ -1525,7 +1884,7 @@ paths:
       tags:
         - Authentication
       summary: Google OAuth login/registration
-      description: Authenticate user with Google OAuth token
+      description: Authenticate user with a Google OAuth token (ID token or access token from popup OAuth flow)
       operationId: googleAuth
       requestBody:
         required: true
@@ -1534,11 +1893,16 @@ paths:
             schema:
               type: object
               required:
-                - idToken
+                - token
               properties:
-                idToken:
+                token:
                   type: string
-                  description: Google ID token
+                  description: Google OAuth token (ID token or access token)
+                tokenType:
+                  type: string
+                  enum: [id_token, access_token]
+                  default: id_token
+                  description: Type of token being sent
       responses:
         '200':
           description: Google authentication successful
@@ -1600,19 +1964,18 @@ paths:
       tags:
         - Authentication
       summary: Refresh access token
-      description: Get a new access token using refresh token
+      description: |
+        Get a new access token using the refresh token stored in an HttpOnly cookie.
+        The refresh token is automatically sent via the `refreshToken` cookie set during login.
+        The old refresh token is revoked and a new one is issued (token rotation).
       operationId: refreshToken
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - refreshToken
-              properties:
-                refreshToken:
-                  type: string
+      parameters:
+        - name: refreshToken
+          in: cookie
+          required: true
+          schema:
+            type: string
+          description: HttpOnly cookie containing the refresh token (set automatically by login/register)
       responses:
         '200':
           description: Token refreshed successfully
@@ -1628,6 +1991,10 @@ paths:
                         properties:
                           accessToken:
                             type: string
+                          refreshToken:
+                            type: string
+                          expiresIn:
+                            type: integer
 
   /auth/logout:
     post:
@@ -1807,6 +2174,287 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/password/setup:
+    post:
+      tags:
+        - Authentication
+      summary: Setup initial password
+      description: Set password for users who registered without one (e.g., via OAuth or guest invitation). Only works if the user does not already have a password set.
+      operationId: setupPassword
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: Must contain at least one letter and one number
+      responses:
+        '200':
+          description: Password set successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Password already set or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/verify-email:
+    get:
+      tags:
+        - Authentication
+      summary: Verify email with token link
+      description: Verify user email using a token from an email link
+      operationId: verifyEmail
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Email verification token from the link
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify-email/request:
+    post:
+      tags:
+        - Authentication
+      summary: Request email verification code
+      description: Send a 6-digit verification code to the user's email for email verification
+      operationId: requestEmailVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Verification code sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Email already verified or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify-email/confirm:
+    post:
+      tags:
+        - Authentication
+      summary: Confirm email verification with code
+      description: Verify user's email using the 6-digit code sent via email
+      operationId: confirmEmailVerification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - code
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
+                  description: 6-digit verification code
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid or expired code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/create-account:
+    post:
+      tags:
+        - Authentication
+      summary: Create account from invitation
+      description: Create a full account from an invitation token (for guest users who were added to events without an account)
+      operationId: createAccountFromInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                  description: Invitation token from the email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  description: Must contain at least one letter and one number
+      responses:
+        '200':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: Invalid or expired invitation token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/resend-invitation:
+    post:
+      tags:
+        - Authentication
+      summary: Resend account invitation
+      description: Resend the account invitation email for users who haven't set up their password yet
+      operationId: resendAccountInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Invitation email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/magic-link/request:
+    post:
+      tags:
+        - Authentication
+      summary: Request magic link login
+      description: Send a magic link to the user's email for passwordless login
+      operationId: requestMagicLink
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Magic link sent to email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/magic-link/verify:
+    get:
+      tags:
+        - Authentication
+      summary: Verify magic link token
+      description: Verify the magic link token from the email and auto-login the user
+      operationId: verifyMagicLink
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Magic link token from the email
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   # ==================== EVENTS ====================
   /events:
@@ -2924,7 +3572,7 @@ paths:
                             format: uuid
                           backupCode:
                             type: string
-                            description: Backup code for manual entry (format: WLT-{regId8}-{timestamp36})
+                            description: "Backup code for manual entry (format: WLT-{regId8}-{timestamp36})"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '400':
@@ -5365,12 +6013,312 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
+  # ==================== WORKSTATION SCANNING ====================
+  /workstation/scan:
+    post:
+      tags:
+        - Service Point
+      summary: Scan ticket for entry (check-in)
+      description: |
+        Scan a QR code or backup code to check in an attendee.
+        Supports Ed25519 signed tickets, legacy HMAC tickets, and backup codes.
+        Rate limited to 100 scans per minute per user, 200 per minute per IP.
+      operationId: scanTicket
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - eventId
+              properties:
+                code:
+                  type: string
+                  description: QR code content or backup code
+                  example: "eyJhbGciOiJFZERTQSIsInR5cCI6IlRLVCJ9.eyJyaWQiOiIxMjM0NSIsImVpZCI6ImV2dF8xMjMifQ.signature"
+                eventId:
+                  type: string
+                  description: Event ID to validate against
+                  example: "evt_xyz789"
+                checkpointId:
+                  type: string
+                  description: Optional checkpoint/facility ID
+                  example: "checkpoint_main_entrance"
+                location:
+                  type: object
+                  description: Optional GPS coordinates
+                  properties:
+                    lat:
+                      type: number
+                      example: -1.2921
+                    lng:
+                      type: number
+                      example: 36.8219
+      responses:
+        '200':
+          description: Scan successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      scanId:
+                        type: string
+                      registrationId:
+                        type: string
+                      attendeeName:
+                        type: string
+                      ticketType:
+                        type: string
+                      scanType:
+                        type: string
+                        enum: [CHECK_IN, MANUAL_CHECK_IN]
+                      scannedAt:
+                        type: string
+                        format: date-time
+                      isReEntry:
+                        type: boolean
+                      signatureValid:
+                        type: boolean
+                      codeType:
+                        type: string
+                        enum: [QR_CODE, BACKUP_CODE]
+        '400':
+          description: Invalid ticket or scan error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  code:
+                    type: string
+                    enum: [INVALID_SIGNATURE, WRONG_EVENT, INVALID_TICKET, ALREADY_SCANNED, REENTRY_NOT_ALLOWED, CHECKOUT_REQUIRED, MAX_REENTRIES_EXCEEDED, VENUE_AT_CAPACITY, EXPIRED, RESTRICTED]
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Rate limit exceeded
+
+  /workstation/scan-out:
+    post:
+      tags:
+        - Service Point
+      summary: Scan ticket for exit (check-out)
+      description: |
+        Scan a QR code or backup code to check out an attendee.
+        Validates that attendee is currently inside the venue.
+        Rate limited to 100 scans per minute per user, 200 per minute per IP.
+      operationId: scanOut
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - eventId
+              properties:
+                code:
+                  type: string
+                  description: QR code content or backup code
+                eventId:
+                  type: string
+                  description: Event ID
+                checkpointId:
+                  type: string
+                  description: Optional checkpoint/facility ID
+                location:
+                  type: object
+                  properties:
+                    lat:
+                      type: number
+                    lng:
+                      type: number
+      responses:
+        '200':
+          description: Check-out successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      registrationId:
+                        type: string
+                      checkedOutAt:
+                        type: string
+                        format: date-time
+                      attendeeName:
+                        type: string
+                      ticketType:
+                        type: string
+        '400':
+          description: Check-out error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  code:
+                    type: string
+                    enum: [NOT_CHECKED_IN, INVALID_TICKET, WRONG_EVENT]
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Rate limit exceeded
+
+  /workstation/manual-check-in:
+    post:
+      tags:
+        - Service Point
+      summary: Manual check-in by search term
+      description: |
+        Check in an attendee by email or name search.
+        Requires ADMIN_STAFF role or higher.
+        Rate limited to 100 requests per minute.
+      operationId: manualCheckIn
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - eventId
+                - searchTerm
+              properties:
+                eventId:
+                  type: string
+                searchTerm:
+                  type: string
+                  description: Email or name to search
+                facility:
+                  type: string
+                  description: Optional facility/checkpoint name
+      responses:
+        '200':
+          description: Manual check-in successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      registrationId:
+                        type: string
+                      attendeeName:
+                        type: string
+                      ticketType:
+                        type: string
+                      scanType:
+                        type: string
+                        example: MANUAL_CHECK_IN
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /workstation/manual-check-out:
+    post:
+      tags:
+        - Service Point
+      summary: Manual check-out by search term
+      description: |
+        Check out an attendee by email or name search.
+        Requires ADMIN_STAFF role or higher.
+        Validates that attendee is currently inside the venue.
+      operationId: manualCheckOut
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - eventId
+                - searchTerm
+              properties:
+                eventId:
+                  type: string
+                searchTerm:
+                  type: string
+                  description: Email or name to search
+                facility:
+                  type: string
+                  description: Optional facility/checkpoint name
+      responses:
+        '200':
+          description: Manual check-out successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      registrationId:
+                        type: string
+                      checkedOutAt:
+                        type: string
+                        format: date-time
+                      attendeeName:
+                        type: string
+                      ticketType:
+                        type: string
+        '400':
+          description: Check-out error (e.g., attendee not checked in)
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== OFFLINE SYNC ====================
   /offline/scans/batch:
     post:
       tags:
         - Offline Sync
       summary: Upload batch of scans from mobile device
-      description: Process multiple scans queued offline and detect conflicts
+      description: Process multiple scans queued offline and detect conflicts. Supports both check-in and check-out scan types.
       requestBody:
         required: true
         content:
@@ -5989,6 +6937,1706 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
+
+  # ==================== SERVICE POINT REGISTRATION ====================
+  /events/{eventId}/service-point/initiate:
+    post:
+      tags:
+        - Service Point
+      summary: Initiate service point registration
+      description: |
+        Start registration process by sending OTP to attendee's phone.
+        Rate limited to 30 requests per minute per user.
+        Requires TELLER role or higher.
+      operationId: initiateServicePointRegistration
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Event ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phoneNumber
+              properties:
+                phoneNumber:
+                  type: string
+                  example: "+254712345678"
+                  description: Attendee phone number (E.164 format)
+                facilityId:
+                  type: string
+                  format: uuid
+                  description: Optional facility/service point ID
+      responses:
+        '200':
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      sessionId:
+                        type: string
+                        format: uuid
+                        description: Session ID for subsequent operations
+                      otpSent:
+                        type: boolean
+                        example: true
+                      expiresAt:
+                        type: string
+                        format: date-time
+                        description: OTP expiration time
+                      message:
+                        type: string
+                        example: "OTP sent to attendee phone"
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          description: Too many registration requests
+
+  /events/{eventId}/service-point/verify:
+    post:
+      tags:
+        - Service Point
+      summary: Verify OTP code
+      description: |
+        Verify the OTP code provided by the attendee.
+        Rate limited to 10 attempts per minute per session.
+        Requires TELLER role or higher.
+      operationId: verifyServicePointOTP
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - otp
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                  description: Session ID from initiate response
+                otp:
+                  type: string
+                  pattern: "^[0-9]{4}$"
+                  description: 4-digit OTP code
+      responses:
+        '200':
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      verified:
+                        type: boolean
+                        example: true
+                      sessionId:
+                        type: string
+                      phoneNumber:
+                        type: string
+                      message:
+                        type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Too many verification attempts
+
+  /events/{eventId}/service-point/complete:
+    post:
+      tags:
+        - Service Point
+      summary: Complete registration
+      description: |
+        Complete registration with attendee details after OTP verification.
+        Requires TELLER role or higher.
+      operationId: completeServicePointRegistration
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+              properties:
+                sessionId:
+                  type: string
+                  format: uuid
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                company:
+                  type: string
+                industry:
+                  type: string
+                jobTitle:
+                  type: string
+                ticketTypeId:
+                  type: string
+                  format: uuid
+                registrationData:
+                  type: object
+                  description: Additional custom registration fields
+      responses:
+        '201':
+          description: Registration completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      registrationId:
+                        type: string
+                      attendeeName:
+                        type: string
+                      email:
+                        type: string
+                      ticketType:
+                        type: string
+                      backupCode:
+                        type: string
+                        description: Backup code for ticket retrieval
+                      qrCodeDataUrl:
+                        type: string
+                        description: Base64 encoded QR code image
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /events/{eventId}/service-point/session/{sessionId}:
+    get:
+      tags:
+        - Service Point
+      summary: Get session status
+      description: Get the current status of a registration session
+      operationId: getServicePointSessionStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      status:
+                        type: string
+                        enum: [pending_otp, verified, completed, cancelled, expired]
+                      verified:
+                        type: boolean
+                      phoneNumber:
+                        type: string
+                      expiresAt:
+                        type: string
+                        format: date-time
+                      createdAt:
+                        type: string
+                        format: date-time
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Cancel session
+      description: Cancel an incomplete registration session
+      operationId: cancelServicePointSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Session cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: "Session cancelled successfully"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /events/{eventId}/service-point/kiosk-config:
+    get:
+      tags:
+        - Service Point
+      summary: Get kiosk configuration
+      description: |
+        Get kiosk display configuration for self-service registration.
+        This is a public endpoint - no authentication required.
+      operationId: getKioskConfig
+      security: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Kiosk configuration retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      eventCode:
+                        type: string
+                      eventTitle:
+                        type: string
+                      ussdShortCode:
+                        type: string
+                        example: "*384*123#"
+                      smsKeyword:
+                        type: string
+                      instructions:
+                        type: array
+                        items:
+                          type: string
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /events/{eventId}/service-point/stats:
+    get:
+      tags:
+        - Service Point
+      summary: Get service point statistics
+      description: Get registration statistics for the service point
+      operationId: getServicePointStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Statistics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      totalSessions:
+                        type: integer
+                      completedRegistrations:
+                        type: integer
+                      pendingVerification:
+                        type: integer
+                      verifiedPendingCompletion:
+                        type: integer
+                      cancelledSessions:
+                        type: integer
+                      expiredSessions:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /events/{eventId}/service-point/check-phone/{phoneNumber}:
+    get:
+      tags:
+        - Service Point
+      summary: Check for active session
+      description: Check if there's an active session for a phone number
+      operationId: checkActiveSession
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: phoneNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Phone number to check (URL encoded)
+      responses:
+        '200':
+          description: Check completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  hasActiveSession:
+                    type: boolean
+                  data:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: string
+                      status:
+                        type: string
+                      verified:
+                        type: boolean
+                      expiresAt:
+                        type: string
+                        format: date-time
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== ATTENDEE IMPORT ====================
+  /events/{id}/import/template:
+    get:
+      tags:
+        - Events
+      summary: Download import template
+      description: Download CSV template for bulk attendee import
+      operationId: downloadImportTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Event ID
+      responses:
+        '200':
+          description: CSV template file
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /events/{id}/import/validate:
+    post:
+      tags:
+        - Events
+      summary: Validate import file
+      description: |
+        Validate CSV/Excel file without importing.
+        Returns validation errors and preview of data.
+      operationId: validateImportFile
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or Excel file (max 5MB)
+      responses:
+        '200':
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      isValid:
+                        type: boolean
+                      totalRows:
+                        type: integer
+                      validRows:
+                        type: integer
+                      errorRows:
+                        type: integer
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            row:
+                              type: integer
+                            field:
+                              type: string
+                            value:
+                              type: string
+                            message:
+                              type: string
+                      preview:
+                        type: array
+                        items:
+                          type: object
+                        description: First 10 rows for preview
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /events/{id}/import:
+    post:
+      tags:
+        - Events
+      summary: Execute attendee import
+      description: |
+        Import attendees from CSV/Excel file.
+        Creates user accounts and registrations.
+      operationId: executeImport
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                sendWelcomeEmails:
+                  type: boolean
+                  default: false
+                  description: Send welcome emails to imported attendees
+                skipDuplicates:
+                  type: boolean
+                  default: true
+                  description: Skip already registered attendees
+                defaultTicketType:
+                  type: string
+                  description: Default ticket type for rows without ticketType
+      responses:
+        '201':
+          description: Import completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      importId:
+                        type: string
+                      totalRows:
+                        type: integer
+                      successCount:
+                        type: integer
+                      errorCount:
+                        type: integer
+                      errors:
+                        type: array
+                        items:
+                          type: object
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /events/{id}/imports:
+    get:
+      tags:
+        - Events
+      summary: Get import history
+      description: Get history of bulk imports for an event
+      operationId: getImportHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Import history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      imports:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            fileName:
+                              type: string
+                            totalRows:
+                              type: integer
+                            successCount:
+                              type: integer
+                            errorCount:
+                              type: integer
+                            status:
+                              type: string
+                              enum: [PENDING, PROCESSING, COMPLETED, FAILED]
+                            createdAt:
+                              type: string
+                              format: date-time
+                            completedAt:
+                              type: string
+                              format: date-time
+                      total:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /events/{id}/imports/{importId}:
+    get:
+      tags:
+        - Events
+      summary: Get import details
+      description: Get detailed information about a specific import
+      operationId: getImportDetails
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: importId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Import details retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      eventId:
+                        type: string
+                      fileName:
+                        type: string
+                      totalRows:
+                        type: integer
+                      successCount:
+                        type: integer
+                      errorCount:
+                        type: integer
+                      status:
+                        type: string
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                      createdAt:
+                        type: string
+                        format: date-time
+                      completedAt:
+                        type: string
+                        format: date-time
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /events/{id}/attendees/register:
+    post:
+      tags:
+        - Events
+      summary: Quick register attendee
+      description: |
+        Quick register a single attendee (walk-in registration).
+        Creates user account and registration in one step.
+      operationId: quickRegister
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phoneNumber:
+                  type: string
+                ticketType:
+                  type: string
+                registrationData:
+                  type: object
+      responses:
+        '201':
+          description: Attendee registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      registrationId:
+                        type: string
+                      attendeeName:
+                        type: string
+                      email:
+                        type: string
+                      ticketType:
+                        type: string
+                      backupCode:
+                        type: string
+                      qrCodeDataUrl:
+                        type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /events/{id}/attendees/export:
+    get:
+      tags:
+        - Events
+      summary: Export attendees
+      description: Export all attendees to CSV file
+      operationId: exportAttendees
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: CSV export file
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== PAYMENT PLANS ====================
+  /user/dashboard/payment-plans:
+    get:
+      tags:
+        - Financial
+      summary: Get user's payment plans
+      description: Get all payment plans for the authenticated user
+      operationId: getUserPaymentPlans
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, COMPLETED, CANCELLED, DEFAULTED]
+          description: Filter by plan status
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by event
+      responses:
+        '200':
+          description: Payment plans retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentPlan'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Financial
+      summary: Create payment plan
+      description: Create a new payment plan for a registration
+      operationId: createPaymentPlan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registrationId
+                - planName
+                - installmentCount
+                - frequency
+                - startDate
+              properties:
+                registrationId:
+                  type: string
+                  format: uuid
+                planName:
+                  type: string
+                  example: "Monthly Payment Plan"
+                installmentCount:
+                  type: integer
+                  minimum: 2
+                  maximum: 12
+                frequency:
+                  type: string
+                  enum: [MONTHLY, WEEKLY, BIWEEKLY, CUSTOM]
+                startDate:
+                  type: string
+                  format: date
+                autoPaymentEnabled:
+                  type: boolean
+                  default: true
+                paymentMethod:
+                  type: string
+      responses:
+        '201':
+          description: Payment plan created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/PaymentPlan'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/payment-plans/registration/{registrationId}:
+    get:
+      tags:
+        - Financial
+      summary: Get payment plan by registration
+      description: Get payment plan details for a specific registration
+      operationId: getPaymentPlanByRegistration
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment plan retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/PaymentPlan'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/payment-plans/installments/{installmentId}/pay:
+    post:
+      tags:
+        - Financial
+      summary: Pay installment
+      description: Process payment for a specific installment
+      operationId: processInstallmentPayment
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: installmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  format: decimal
+                transactionId:
+                  type: string
+                gateway:
+                  type: string
+                gatewayReference:
+                  type: string
+      responses:
+        '200':
+          description: Payment processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/PaymentInstallment'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/payment-plans/overdue:
+    get:
+      tags:
+        - Financial
+      summary: Get overdue installments
+      description: Get all overdue installments for the authenticated user
+      operationId: getOverdueInstallments
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Overdue installments retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentInstallment'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/dashboard/payment-plans/{planId}/cancel:
+    post:
+      tags:
+        - Financial
+      summary: Cancel payment plan
+      description: Cancel an active payment plan
+      operationId: cancelPaymentPlan
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment plan cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== INVOICES ====================
+  /user/dashboard/invoices:
+    get:
+      tags:
+        - Financial
+      summary: Get user's invoices
+      description: Get all invoices for the authenticated user
+      operationId: getUserInvoices
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, PENDING, SENT, PAID, OVERDUE, CANCELLED]
+          description: Filter by invoice status
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by event
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Invoices retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      invoices:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Invoice'
+                      pagination:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/dashboard/invoices/{invoiceId}:
+    get:
+      tags:
+        - Financial
+      summary: Get invoice by ID
+      description: Get detailed invoice by ID
+      operationId: getInvoiceById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invoice retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Invoice'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/invoices/number/{invoiceNumber}:
+    get:
+      tags:
+        - Financial
+      summary: Get invoice by number
+      description: Get invoice by invoice number
+      operationId: getInvoiceByNumber
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: invoiceNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Invoice number (e.g., INV-2024-0001)
+      responses:
+        '200':
+          description: Invoice retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Invoice'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/invoices/{invoiceId}/html:
+    get:
+      tags:
+        - Financial
+      summary: Generate invoice HTML
+      description: Generate HTML version of the invoice for viewing
+      operationId: generateInvoiceHTML
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invoice HTML generated
+          content:
+            text/html:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/invoices/{invoiceId}/download:
+    get:
+      tags:
+        - Financial
+      summary: Download invoice PDF
+      description: Download invoice as PDF file
+      operationId: downloadInvoice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invoice PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== CART ====================
+  /cart:
+    get:
+      tags:
+        - Cart
+      summary: Get current cart
+      description: |
+        Retrieves the current user's active shopping cart.
+        Supports both authenticated users (via JWT) and guest users (via session cookie or X-Cart-Session header).
+        Returns null if no active cart exists.
+      operationId: getCart
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users (alternative to cookie)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+                      message:
+                        type: string
+                        example: No active cart
+              examples:
+                activeCart:
+                  summary: Active cart with items
+                  value:
+                    success: true
+                    data:
+                      cart:
+                        id: "550e8400-e29b-41d4-a716-446655440000"
+                        sessionId: "session-123"
+                        status: "ACTIVE"
+                        expiresAt: "2024-12-01T10:30:00Z"
+                        items:
+                          - id: "item-1"
+                            eventId: "evt-1"
+                            ticketType: "General Admission"
+                            quantity: 2
+                            unitPrice: 50.00
+                            inventoryLocked: false
+                noCart:
+                  summary: No active cart
+                  value:
+                    success: true
+                    data:
+                      cart: null
+                      message: "No active cart"
+
+    post:
+      tags:
+        - Cart
+      summary: Create a new cart
+      description: |
+        Creates a new shopping cart. If an active cart already exists for the session/user,
+        returns the existing cart instead of creating a new one.
+
+        Cart expires after 8 minutes of inactivity.
+      operationId: createCart
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users (alternative to cookie)
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fingerprint:
+                  type: string
+                  description: Browser fingerprint for fraud detection
+      responses:
+        '201':
+          description: Cart created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+
+    delete:
+      tags:
+        - Cart
+      summary: Abandon cart
+      description: |
+        Abandons the current cart and releases any locked inventory.
+        Clears the cart session cookie.
+      operationId: abandonCart
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart abandoned successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Cart abandoned successfully
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /cart/items:
+    post:
+      tags:
+        - Cart
+      summary: Add item to cart
+      description: |
+        Adds a ticket item to the shopping cart. Creates a new cart if none exists.
+
+        Validates:
+        - Event exists and has available capacity
+        - Quantity doesn't exceed max tickets per user
+        - Cart hasn't expired
+      operationId: addCartItem
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+            example:
+              eventId: "550e8400-e29b-41d4-a716-446655440000"
+              ticketType: "General Admission"
+              quantity: 2
+              unitPrice: 50.00
+      responses:
+        '200':
+          description: Item added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+        '400':
+          description: Validation error (missing fields, not enough inventory, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    success: false
+                    message: "eventId, ticketType, quantity, and unitPrice are required"
+                notEnoughInventory:
+                  summary: Not enough tickets available
+                  value:
+                    success: false
+                    message: "Not enough tickets available"
+                maxTicketsExceeded:
+                  summary: Exceeds max tickets per user
+                  value:
+                    success: false
+                    message: "Cannot add more than 10 tickets per event"
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /cart/items/{itemId}:
+    patch:
+      tags:
+        - Cart
+      summary: Update item quantity
+      description: Updates the quantity of an existing cart item
+      operationId: updateCartItem
+      security: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Cart item ID
+          schema:
+            type: string
+            format: uuid
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+                  description: New quantity
+            example:
+              quantity: 3
+      responses:
+        '200':
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Cart
+      summary: Remove item from cart
+      description: Removes an item from the shopping cart
+      operationId: removeCartItem
+      security: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Cart item ID
+          schema:
+            type: string
+            format: uuid
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Item removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /cart/reserve:
+    post:
+      tags:
+        - Cart
+      summary: Reserve cart for payment
+      description: |
+        Transitions the cart to RESERVED status and locks inventory.
+
+        This should be called before initiating payment to ensure tickets are held
+        during the payment process. Inventory is locked using serializable transactions
+        to prevent overselling.
+
+        Reserved carts expire after 8 minutes if payment is not completed.
+      operationId: reserveCart
+      security: []
+      parameters:
+        - name: X-Cart-Session
+          in: header
+          description: Session ID for guest users
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cart reserved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      cart:
+                        $ref: '#/components/schemas/CartReservation'
+              example:
+                success: true
+                data:
+                  cart:
+                    id: "550e8400-e29b-41d4-a716-446655440000"
+                    status: "RESERVED"
+                    reservedAt: "2024-12-01T10:22:00Z"
+                    expiresAt: "2024-12-01T10:30:00Z"
+                    items:
+                      - id: "item-1"
+                        inventoryLocked: true
+        '400':
+          description: Cart is empty or already reserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /cart/stats:
+    get:
+      tags:
+        - Cart
+      summary: Get cart statistics
+      description: |
+        Returns aggregate statistics about shopping carts.
+        Useful for monitoring cart abandonment and system health.
+
+        Note: This endpoint should be restricted to admin users in production.
+      operationId: getCartStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      stats:
+                        $ref: '#/components/schemas/CartStats'
+              example:
+                success: true
+                data:
+                  stats:
+                    activeCarts: 45
+                    reservedCarts: 12
+                    expiringInMinutes: 3
+                    totalItemsInCarts: 128
 
 security:
   - BearerAuth: []

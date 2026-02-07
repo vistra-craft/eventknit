@@ -134,6 +134,71 @@ export class SeatMapController {
  */
 export class SeatSelectionController {
   /**
+   * Get best available seats
+   * POST /api/v1/events/:eventId/seats/best-available
+   */
+  static async getBestAvailableSeats(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const eventId = req.params.eventId as string;
+      const {
+        quantity = 1,
+        preferredSeatTypes,
+        preferredSections,
+        maxPrice,
+        minPrice,
+        keepTogether = true,
+        prioritizeValue = false,
+      } = req.body;
+
+      const result = await SeatSelectionService.findBestAvailableSeats(eventId, {
+        quantity: parseInt(quantity, 10) || 1,
+        preferredSeatTypes,
+        preferredSections,
+        maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
+        minPrice: minPrice ? parseFloat(minPrice) : undefined,
+        keepTogether,
+        prioritizeValue,
+      });
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get seat recommendations
+   * GET /api/v1/events/:eventId/seats/recommendations
+   */
+  static async getSeatRecommendations(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const eventId = req.params.eventId as string;
+      const budget = req.query.budget ? parseFloat(req.query.budget as string) : undefined;
+      const quantity = req.query.quantity ? parseInt(req.query.quantity as string, 10) : 1;
+
+      const result = await SeatSelectionService.getSeatRecommendations(eventId, budget, quantity);
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get seat map availability (public)
    * GET /api/v1/events/:eventId/seat-map
    */

@@ -20,7 +20,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
@@ -28,10 +27,13 @@ import AdminLayout from "./AdminLayout";
 import RoleSwitcher from "@/components/RoleSwitcher";
 import { UserRole, UserStatus } from "@/types/auth";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
+import { AvatarUpload } from "@/components/profile/AvatarUpload";
+import { useUploadAvatar } from "@/hooks/useUploadAvatar";
 
 const AdminProfilePage = () => {
 
   const { user, refreshProfile } = useAuth();
+  const uploadAvatarMutation = useUploadAvatar();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -229,6 +231,9 @@ const AdminProfilePage = () => {
     }
   };
 
+  const handleAvatarChange = async (file: File) => {
+    await uploadAvatarMutation.mutateAsync(file);
+  };
 
   const getStatusBadge = (status: UserStatus) => {
     const statusMap: Record<UserStatus, string> = {
@@ -318,23 +323,12 @@ const AdminProfilePage = () => {
                 ) : (
                   <div className="space-y-6">
                     {/* Profile Picture */}
-                    <div className="flex items-center space-x-6">
-                      <Avatar
-                        src="/api/placeholder/96/96"
-                        name={profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : undefined}
-                        alt="Profile"
-                        size="xl"
-                        className="h-24 w-24"
-                      />
-                      <div className="space-y-2">
-                        <Button variant="outline" size="sm" disabled>
-                          Change Photo
-                        </Button>
-                        <p className="text-sm text-muted-foreground">
-                          JPG, PNG or GIF. Max size 2MB. (Coming soon)
-                        </p>
-                      </div>
-                    </div>
+                    <AvatarUpload
+                      currentAvatar={user?.avatar}
+                      onAvatarChange={handleAvatarChange}
+                      isUploading={uploadAvatarMutation.isPending}
+                      userName={profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : "Admin"}
+                    />
 
                     {/* Form Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

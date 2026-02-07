@@ -7,7 +7,25 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
-import { SeatStatus } from '@prisma/client';
+import { SeatStatus, SeatType } from '@prisma/client';
+import { DynamicPricingService, SeatPricingContext } from './dynamic-pricing.service.js';
+
+export interface BestSeatCriteria {
+  quantity: number;
+  preferredSeatTypes?: SeatType[];
+  preferredSections?: string[];
+  maxPrice?: number;
+  minPrice?: number;
+  keepTogether?: boolean; // Try to keep seats adjacent
+  prioritizeValue?: boolean; // Prioritize price-to-quality ratio
+}
+
+export interface SeatScore {
+  seat: any;
+  score: number;
+  reasons: string[];
+  dynamicPrice?: number;
+}
 
 export class SeatSelectionService {
   /**
@@ -390,6 +408,384 @@ export class SeatSelectionService {
       return { cleaned: expiredReservations.length };
     } catch (error) {
       logger.error('Error cleaning up expired reservations:', error);
+      throw error;
+    }
+  }
+
+  // ==================== BEST AVAILABLE SEAT ALGORITHM ====================
+
+  /**
+   * Find the best available seats based on criteria
+   */
+  static async findBestAvailableSeats(
+    eventId: string,
+    criteria: BestSeatCriteria,
+  ): Promise<{ seats: SeatScore[]; totalPrice: number }> {
+    try {
+      const seatMap = await prisma.seatMap.findUnique({
+        where: { eventId },
+        include: {
+          event: {
+            select: {
+              startDate: true,
+            },
+          },
+          seats: {
+            where: {
+              status: SeatStatus.AVAILABLE,
+            },
+            include: {
+              reservations: {
+                where: {
+                  status: { in: ['reserved', 'confirmed'] },
+                  OR: [
+                    { reservedUntil: null },
+                    { reservedUntil: { gt: new Date() } },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!seatMap) {
+        throw new NotFoundError('Seat map not found');
+      }
+
+      // Filter out seats with active reservations
+      let availableSeats = seatMap.seats.filter(s => s.reservations.length === 0);
+
+      // Get inventory stats for dynamic pricing
+      const totalSeats = await prisma.seat.count({
+        where: { seatMapId: seatMap.id },
+      });
+      const soldSeats = await prisma.seat.count({
+        where: {
+          seatMapId: seatMap.id,
+          status: { in: [SeatStatus.BOOKED, SeatStatus.RESERVED] },
+        },
+      });
+
+      // Apply filters
+      if (criteria.preferredSeatTypes && criteria.preferredSeatTypes.length > 0) {
+        const preferred = availableSeats.filter(s =>
+          criteria.preferredSeatTypes!.includes(s.seatType),
+        );
+        // Only filter if we have enough seats, otherwise include all
+        if (preferred.length >= criteria.quantity) {
+          availableSeats = preferred;
+        }
+      }
+
+      if (criteria.preferredSections && criteria.preferredSections.length > 0) {
+        const preferred = availableSeats.filter(s =>
+          s.sectionId && criteria.preferredSections!.includes(s.sectionId),
+        );
+        if (preferred.length >= criteria.quantity) {
+          availableSeats = preferred;
+        }
+      }
+
+      // Calculate dynamic prices and scores for each seat
+      const scoredSeats: SeatScore[] = [];
+
+      for (const seat of availableSeats) {
+        const context: SeatPricingContext = {
+          eventId,
+          seatId: seat.id,
+          seatType: seat.seatType,
+          sectionId: seat.sectionId || undefined,
+          basePrice: Number(seat.basePrice || seat.currentPrice || 0),
+          currentTime: new Date(),
+          eventDate: seatMap.event.startDate,
+          totalSeats,
+          soldSeats,
+        };
+
+        const pricing = await DynamicPricingService.calculateSeatPrice(context);
+        const dynamicPrice = pricing.finalPrice;
+
+        // Apply price filters
+        if (criteria.maxPrice !== undefined && dynamicPrice > criteria.maxPrice) {
+          continue;
+        }
+        if (criteria.minPrice !== undefined && dynamicPrice < criteria.minPrice) {
+          continue;
+        }
+
+        const { score, reasons } = this.calculateSeatScore(seat, criteria, dynamicPrice);
+
+        scoredSeats.push({
+          seat: {
+            id: seat.id,
+            seatIdentifier: seat.seatIdentifier,
+            sectionId: seat.sectionId,
+            rowLabel: seat.rowLabel,
+            seatLabel: seat.seatLabel,
+            seatType: seat.seatType,
+            x: seat.x,
+            y: seat.y,
+            basePrice: Number(seat.basePrice),
+          },
+          score,
+          reasons,
+          dynamicPrice,
+        });
+      }
+
+      // Sort by score (highest first)
+      scoredSeats.sort((a, b) => b.score - a.score);
+
+      // If keeping together, find adjacent seats
+      let selectedSeats: SeatScore[];
+      if (criteria.keepTogether && criteria.quantity > 1) {
+        selectedSeats = this.findAdjacentSeats(scoredSeats, criteria.quantity);
+      } else {
+        selectedSeats = scoredSeats.slice(0, criteria.quantity);
+      }
+
+      const totalPrice = selectedSeats.reduce((sum, s) => sum + (s.dynamicPrice || 0), 0);
+
+      return {
+        seats: selectedSeats,
+        totalPrice: Math.round(totalPrice * 100) / 100,
+      };
+    } catch (error) {
+      logger.error('Error finding best available seats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate score for a seat based on criteria
+   */
+  private static calculateSeatScore(
+    seat: any,
+    criteria: BestSeatCriteria,
+    dynamicPrice: number,
+  ): { score: number; reasons: string[] } {
+    let score = 50; // Base score
+    const reasons: string[] = [];
+
+    // Seat type scoring
+    const seatTypeScores: Record<string, number> = {
+      'VIP': 30,
+      'PREMIUM': 20,
+      'STANDARD': 10,
+      'ACCESSIBLE': 15,
+      'COMPANION': 5,
+    };
+    const typeScore = seatTypeScores[seat.seatType] || 10;
+    score += typeScore;
+    reasons.push(`${seat.seatType} seat (+${typeScore})`);
+
+    // Preferred seat type bonus
+    if (criteria.preferredSeatTypes?.includes(seat.seatType)) {
+      score += 20;
+      reasons.push('Preferred seat type (+20)');
+    }
+
+    // Preferred section bonus
+    if (criteria.preferredSections?.includes(seat.sectionId)) {
+      score += 15;
+      reasons.push('Preferred section (+15)');
+    }
+
+    // Position scoring (center is usually better)
+    // Assumes x coordinate, with center around 50
+    if (seat.x !== null && seat.x !== undefined) {
+      const centerDistance = Math.abs(50 - (seat.x || 50));
+      const positionScore = Math.max(0, 10 - centerDistance / 5);
+      score += positionScore;
+      if (positionScore > 5) {
+        reasons.push(`Good center position (+${Math.round(positionScore)})`);
+      }
+    }
+
+    // Row scoring (lower row numbers typically closer to stage)
+    if (seat.rowLabel) {
+      const rowNum = parseInt(seat.rowLabel.replace(/\D/g, ''), 10);
+      if (!isNaN(rowNum) && rowNum <= 5) {
+        score += 15 - rowNum * 2;
+        reasons.push(`Front row bonus (+${15 - rowNum * 2})`);
+      }
+    }
+
+    // Value scoring (if prioritizing value)
+    if (criteria.prioritizeValue && dynamicPrice > 0) {
+      const basePrice = Number(seat.basePrice) || dynamicPrice;
+      const valueRatio = basePrice / dynamicPrice;
+      if (valueRatio > 1) {
+        // Price is below base - good value
+        const valueScore = Math.min(20, (valueRatio - 1) * 50);
+        score += valueScore;
+        reasons.push(`Good value (+${Math.round(valueScore)})`);
+      }
+    }
+
+    return { score: Math.round(score), reasons };
+  }
+
+  /**
+   * Find adjacent seats (for groups)
+   */
+  private static findAdjacentSeats(
+    scoredSeats: SeatScore[],
+    quantity: number,
+  ): SeatScore[] {
+    if (scoredSeats.length < quantity) {
+      return scoredSeats.slice(0, quantity);
+    }
+
+    // Group seats by section and row
+    const byRowSection: Map<string, SeatScore[]> = new Map();
+    for (const scoredSeat of scoredSeats) {
+      const key = `${scoredSeat.seat.sectionId}-${scoredSeat.seat.rowLabel}`;
+      if (!byRowSection.has(key)) {
+        byRowSection.set(key, []);
+      }
+      byRowSection.get(key)!.push(scoredSeat);
+    }
+
+    // Find best consecutive group in each row
+    let bestGroup: SeatScore[] = [];
+    let bestGroupScore = -Infinity;
+
+    for (const [_, rowSeats] of byRowSection) {
+      if (rowSeats.length < quantity) continue;
+
+      // Sort by seat label/position
+      rowSeats.sort((a, b) => {
+        const aNum = parseInt(a.seat.seatLabel?.replace(/\D/g, '') || '0', 10);
+        const bNum = parseInt(b.seat.seatLabel?.replace(/\D/g, '') || '0', 10);
+        return aNum - bNum;
+      });
+
+      // Find consecutive groups
+      for (let i = 0; i <= rowSeats.length - quantity; i++) {
+        const group = rowSeats.slice(i, i + quantity);
+
+        // Check if consecutive (seat numbers should be sequential)
+        let isConsecutive = true;
+        for (let j = 1; j < group.length; j++) {
+          const prevNum = parseInt(group[j - 1].seat.seatLabel?.replace(/\D/g, '') || '0', 10);
+          const currNum = parseInt(group[j].seat.seatLabel?.replace(/\D/g, '') || '0', 10);
+          if (currNum !== prevNum + 1) {
+            isConsecutive = false;
+            break;
+          }
+        }
+
+        if (isConsecutive) {
+          const groupScore = group.reduce((sum, s) => sum + s.score, 0) / group.length;
+          if (groupScore > bestGroupScore) {
+            bestGroupScore = groupScore;
+            bestGroup = group;
+          }
+        }
+      }
+    }
+
+    // If no consecutive group found, return top scored seats
+    if (bestGroup.length === 0) {
+      return scoredSeats.slice(0, quantity);
+    }
+
+    return bestGroup;
+  }
+
+  /**
+   * Get seat recommendations with dynamic pricing
+   */
+  static async getSeatRecommendations(
+    eventId: string,
+    budget?: number,
+    quantity: number = 1,
+  ) {
+    try {
+      const seatMap = await prisma.seatMap.findUnique({
+        where: { eventId },
+        include: {
+          event: {
+            select: { startDate: true },
+          },
+          seats: {
+            where: { status: SeatStatus.AVAILABLE },
+          },
+        },
+      });
+
+      if (!seatMap) {
+        throw new NotFoundError('Seat map not found');
+      }
+
+      // Get inventory stats
+      const totalSeats = await prisma.seat.count({
+        where: { seatMapId: seatMap.id },
+      });
+      const soldSeats = await prisma.seat.count({
+        where: {
+          seatMapId: seatMap.id,
+          status: { in: [SeatStatus.BOOKED, SeatStatus.RESERVED] },
+        },
+      });
+
+      const recommendations = {
+        bestValue: await this.findBestAvailableSeats(eventId, {
+          quantity,
+          prioritizeValue: true,
+          maxPrice: budget,
+          keepTogether: quantity > 1,
+        }),
+        premium: await this.findBestAvailableSeats(eventId, {
+          quantity,
+          preferredSeatTypes: [SeatType.VIP, SeatType.PREMIUM],
+          keepTogether: quantity > 1,
+        }),
+        budget: budget ? await this.findBestAvailableSeats(eventId, {
+          quantity,
+          maxPrice: budget * 0.7, // 70% of budget for budget option
+          keepTogether: quantity > 1,
+        }) : null,
+      };
+
+      // Price stats
+      const prices = await Promise.all(
+        seatMap.seats.slice(0, 50).map(async (seat) => {
+          const context: SeatPricingContext = {
+            eventId,
+            seatId: seat.id,
+            seatType: seat.seatType,
+            sectionId: seat.sectionId || undefined,
+            basePrice: Number(seat.basePrice || 0),
+            currentTime: new Date(),
+            eventDate: seatMap.event.startDate,
+            totalSeats,
+            soldSeats,
+          };
+          const pricing = await DynamicPricingService.calculateSeatPrice(context);
+          return pricing.finalPrice;
+        }),
+      );
+
+      const priceStats = {
+        min: Math.min(...prices),
+        max: Math.max(...prices),
+        avg: Math.round(prices.reduce((a, b) => a + b, 0) / prices.length),
+      };
+
+      return {
+        recommendations,
+        priceStats,
+        availability: {
+          total: totalSeats,
+          available: seatMap.seats.length,
+          soldPercentage: Math.round((soldSeats / totalSeats) * 100),
+        },
+      };
+    } catch (error) {
+      logger.error('Error getting seat recommendations:', error);
       throw error;
     }
   }

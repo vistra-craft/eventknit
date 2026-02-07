@@ -100,15 +100,15 @@ export const TicketSelectionStep = ({
                   {discounted && ticket.originalPrice ? (
                     <div className="flex flex-col items-end">
                       <span className="text-xs text-muted-foreground line-through">
-                        {currency}{ticket.originalPrice}
+                        {currency} {ticket.originalPrice}
                       </span>
                       <span className="font-bold text-lg text-primary">
-                        {currency}{ticket.price}
+                        {currency} {ticket.price}
                       </span>
                     </div>
                   ) : (
                     <p className="font-bold text-lg text-primary">
-                      {currency}{ticket.price}
+                      {currency} {ticket.price}
                     </p>
                   )}
                 </div>
@@ -195,7 +195,7 @@ export const TicketSelectionStep = ({
         <div className="flex justify-between items-center mb-4">
           <span className="text-lg font-semibold">Total</span>
           <span className="text-2xl font-bold text-primary">
-            {currency}{totalPrice.toFixed(2)}
+            {currency} {totalPrice.toFixed(2)}
           </span>
         </div>
 

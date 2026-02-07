@@ -1,16 +1,26 @@
 import crypto from 'crypto';
 import { logger } from '../utils/logger.js';
+import { Ed25519CryptoService, TicketPayload } from './ed25519-crypto.service.js';
 
 /**
  * TicketSecurityService
- * 
+ *
  * Centralized cryptographic operations for ticket security.
  * Handles signature generation and verification for QR codes and backup codes.
+ *
+ * Supports two formats:
+ * - LEGACY: registrationId|eventId|email|timestamp|signature (HMAC-SHA256)
+ * - SIGNED: header.payload.signature (Ed25519, JWT-like)
+ *
+ * The SIGNED format enables offline verification on mobile devices.
  */
 export class TicketSecurityService {
   private static readonly SECRET_KEY_ENV = 'TICKET_SECRET_KEY';
   private static readonly SIGNATURE_LENGTH = 16; // 16-character hex string (truncated from 64-char hash)
   private static readonly HMAC_ALGORITHM = 'sha256';
+
+  // Feature flag to enable new signed ticket format
+  private static readonly USE_SIGNED_TICKETS = process.env.USE_SIGNED_TICKETS === 'true';
 
   /**
    * Get the secret key from environment variables
@@ -186,6 +196,104 @@ export class TicketSecurityService {
     } catch (error) {
       logger.error('Failed to verify backup code signature:', error);
       return false;
+    }
+  }
+
+  // ============================================================================
+  // NEW: Ed25519 Signed Ticket Methods (for offline-capable verification)
+  // ============================================================================
+
+  /**
+   * Check if signed tickets are enabled
+   */
+  static isSignedTicketsEnabled(): boolean {
+    return this.USE_SIGNED_TICKETS;
+  }
+
+  /**
+   * Generate a signed ticket token (Ed25519)
+   * Format: header.payload.signature (JWT-like)
+   *
+   * @param registrationId - The registration ID
+   * @param eventId - The event ID
+   * @param attendeeEmail - Attendee email
+   * @param ticketType - Optional ticket type (e.g., "VIP", "General")
+   * @param expiresIn - Optional expiration in seconds (default: event end + 24h)
+   * @returns Signed ticket token string
+   */
+  static generateSignedTicket(
+    registrationId: string,
+    eventId: string,
+    attendeeEmail: string,
+    ticketType?: string,
+    expiresIn?: number,
+  ): string {
+    const now = Math.floor(Date.now() / 1000);
+    const payload: TicketPayload = {
+      rid: registrationId,
+      eid: eventId,
+      sub: attendeeEmail,
+      tkt: ticketType,
+      iat: now,
+      exp: expiresIn ? now + expiresIn : undefined,
+    };
+
+    return Ed25519CryptoService.createSignedTicket(payload);
+  }
+
+  /**
+   * Verify a signed ticket token
+   * @param token - The signed ticket token
+   * @returns Parsed payload if valid, null if invalid
+   */
+  static verifySignedTicket(token: string): TicketPayload | null {
+    const payload = Ed25519CryptoService.parseSignedTicket(token);
+
+    if (!payload) {
+      return null;
+    }
+
+    // Check expiration if present
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      logger.debug('Signed ticket has expired');
+      return null;
+    }
+
+    return payload;
+  }
+
+  /**
+   * Detect ticket format type
+   */
+  static detectTicketFormat(code: string): 'SIGNED' | 'LEGACY' | 'BACKUP' {
+    if (Ed25519CryptoService.isSignedTicketFormat(code)) {
+      return 'SIGNED';
+    }
+    if (code.includes('|')) {
+      return 'LEGACY';
+    }
+    return 'BACKUP';
+  }
+
+  /**
+   * Get the public key for mobile app distribution
+   */
+  static getPublicKey(): string {
+    return Ed25519CryptoService.getPublicKey();
+  }
+
+  /**
+   * Initialize Ed25519 keys (call at server startup)
+   */
+  static initializeEd25519Keys(): void {
+    try {
+      Ed25519CryptoService.initializeKeys();
+      logger.info('Ed25519 crypto service initialized');
+    } catch (error) {
+      logger.error('Failed to initialize Ed25519 keys:', error);
+      if (process.env.NODE_ENV === 'production') {
+        throw error;
+      }
     }
   }
 }

@@ -60,5 +60,19 @@ router.get('/:registrationId/download', TicketController.downloadTicketPDF);
  */
 router.post('/:registrationId/resend', resendTicketRateLimiter, TicketController.resendTicketEmail);
 
+/**
+ * @route   GET /api/v1/tickets/:registrationId/refund-eligibility
+ * @desc    Check refund eligibility for a registration
+ * @access  Private (User can only check their own registrations)
+ */
+router.get('/:registrationId/refund-eligibility', TicketController.checkRefundEligibility);
+
+/**
+ * @route   POST /api/v1/tickets/:registrationId/request-refund
+ * @desc    Request a refund for a registration
+ * @access  Private (User can only request refunds for their own registrations)
+ */
+router.post('/:registrationId/request-refund', TicketController.requestRefund);
+
 export default router;
 

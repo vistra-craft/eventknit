@@ -4,13 +4,16 @@ import { AuthController } from '../controllers/auth.controller.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { authValidations } from '../validations/auth.validations.js';
-import { authRateLimiter } from '../middleware/rateLimiter.middleware.js';
+import { authRateLimiter, ipAuthRateLimiter } from '../middleware/rateLimiter.middleware.js';
 import cookieParser from 'cookie-parser';
 
 const router = Router();
 
 // Use cookie parser for refresh tokens
 router.use(cookieParser());
+
+// Apply IP-based rate limiting to all auth routes (credential stuffing protection)
+router.use(ipAuthRateLimiter);
 
 /**
  * @route   POST /api/v1/auth/register-code/request
@@ -232,6 +235,14 @@ router.get(
   authRateLimiter,
   AuthController.verifyMagicLink,
 );
+
+/**
+ * @route   GET /api/v1/auth/public-key
+ * @desc    Get Ed25519 public key for ticket signature verification
+ * @access  Public
+ * @note    Mobile apps use this to verify ticket signatures offline
+ */
+router.get('/public-key', AuthController.getPublicKey);
 
 // Protected routes
 router.use(authenticate);

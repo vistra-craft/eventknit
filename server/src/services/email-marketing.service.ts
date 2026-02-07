@@ -3,6 +3,8 @@ import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { emailService } from './email.service.js';
 import { AttendeeCommunicationService } from './attendee-communication.service.js';
+import { generateUnsubscribeUrl, UnsubscribeTokenPayload } from '../utils/jwt.js';
+import { config } from '../config/index.js';
 
 export class EmailMarketingService {
   /**
@@ -166,7 +168,7 @@ export class EmailMarketingService {
       });
 
       // Get recipients based on recipient type
-      let recipients: Array<{ email: string; firstName?: string; lastName?: string }> = [];
+      let recipients: Array<{ id: string; email: string; firstName?: string; lastName?: string }> = [];
 
       if (campaign.recipientType === 'all') {
         // Get all organizer's event registrations
@@ -180,6 +182,7 @@ export class EmailMarketingService {
           include: {
             attendee: {
               select: {
+                id: true,
                 email: true,
                 firstName: true,
                 lastName: true,
@@ -190,6 +193,7 @@ export class EmailMarketingService {
         });
 
         recipients = registrations.map(r => ({
+          id: r.attendee.id,
           email: r.attendee.email,
           firstName: r.attendee.firstName || undefined,
           lastName: r.attendee.lastName || undefined,
@@ -209,11 +213,37 @@ export class EmailMarketingService {
 
       for (const recipient of recipients) {
         try {
+          // Generate personalized unsubscribe link for this recipient
+          // CAN-SPAM and GDPR require unsubscribe links in marketing emails
+          const unsubscribePayload: UnsubscribeTokenPayload = {
+            userId: recipient.id,
+            email: recipient.email,
+            eventId: campaign.eventId || undefined,
+            campaignId: campaign.id,
+            type: 'marketing',
+          };
+          const unsubscribeUrl = generateUnsubscribeUrl(config.frontend.url, unsubscribePayload);
+
+          // Add unsubscribe footer to HTML content
+          const unsubscribeFooter = `
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
+              <p>You're receiving this email because you registered for events or subscribed to updates.</p>
+              <p>
+                <a href="${unsubscribeUrl}" style="color: #4f46e5; text-decoration: underline;">Unsubscribe from marketing emails</a>
+                &nbsp;|&nbsp;
+                <a href="${config.frontend.url}/settings/notifications" style="color: #4f46e5; text-decoration: underline;">Manage email preferences</a>
+              </p>
+            </div>
+          `;
+
+          // Add unsubscribe link to plain text version
+          const unsubscribeText = `\n\n---\nYou're receiving this email because you registered for events or subscribed to updates.\nUnsubscribe: ${unsubscribeUrl}\nManage preferences: ${config.frontend.url}/settings/notifications`;
+
           await emailService.sendEmail({
             to: recipient.email,
             subject: campaign.subject,
-            html: campaign.content,
-            text: campaign.plainText || undefined,
+            html: campaign.content + unsubscribeFooter,
+            text: (campaign.plainText || '') + unsubscribeText,
           });
 
           sentCount++;

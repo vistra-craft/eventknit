@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { Prisma } from '@prisma/client';
+import { Prisma, FacilityType } from '@prisma/client';
 
 export interface FacilityData {
   name: string;
@@ -11,6 +11,8 @@ export interface FacilityData {
   isActive?: boolean;
   allowCheckIn?: boolean;
   allowCheckOut?: boolean;
+  allowRegistration?: boolean;
+  facilityType?: FacilityType;
   sortOrder?: number;
 }
 
@@ -34,6 +36,8 @@ export interface FacilityWithStats {
   isActive: boolean;
   allowCheckIn: boolean;
   allowCheckOut: boolean;
+  allowRegistration: boolean;
+  facilityType: FacilityType;
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;
@@ -87,6 +91,8 @@ export class FacilityService {
         isActive: data.isActive ?? true,
         allowCheckIn: data.allowCheckIn ?? true,
         allowCheckOut: data.allowCheckOut ?? true,
+        allowRegistration: data.allowRegistration ?? false,
+        facilityType: data.facilityType ?? FacilityType.CHECK_IN,
         sortOrder: data.sortOrder ?? (maxSortOrder._max.sortOrder ?? 0) + 1,
       },
     });
@@ -231,6 +237,8 @@ export class FacilityService {
         isActive: data.isActive,
         allowCheckIn: data.allowCheckIn,
         allowCheckOut: data.allowCheckOut,
+        allowRegistration: data.allowRegistration,
+        facilityType: data.facilityType,
         sortOrder: data.sortOrder,
       },
     });
@@ -385,5 +393,57 @@ export class FacilityService {
     }
 
     return facilities;
+  }
+
+  /**
+   * Get facilities that allow registration for an event
+   */
+  static async getRegistrationFacilities(eventId: string): Promise<FacilityWithStats[]> {
+    const facilities = await prisma.eventFacility.findMany({
+      where: {
+        eventId,
+        isActive: true,
+        allowRegistration: true,
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    const facilitiesWithStats = await Promise.all(
+      facilities.map(async (facility) => {
+        const stats = await this.getFacilityStats(facility.id);
+        return {
+          ...facility,
+          stats,
+        };
+      }),
+    );
+
+    return facilitiesWithStats;
+  }
+
+  /**
+   * Get facilities by type for an event
+   */
+  static async getFacilitiesByType(eventId: string, facilityType: FacilityType): Promise<FacilityWithStats[]> {
+    const facilities = await prisma.eventFacility.findMany({
+      where: {
+        eventId,
+        isActive: true,
+        facilityType,
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    const facilitiesWithStats = await Promise.all(
+      facilities.map(async (facility) => {
+        const stats = await this.getFacilityStats(facility.id);
+        return {
+          ...facility,
+          stats,
+        };
+      }),
+    );
+
+    return facilitiesWithStats;
   }
 }

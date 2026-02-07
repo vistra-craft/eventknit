@@ -2,6 +2,7 @@ import { prisma } from '../config/database.js';
 import { smsService } from './sms.service.js';
 import { AuthService } from './auth.service.js';
 import { EventService } from './event.service.js';
+import { ServicePointRegistrationService } from './service-point-registration.service.js';
 import { ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { Prisma, UserRole } from '@prisma/client';
@@ -91,6 +92,19 @@ export class USSDSMSService {
       if (this.looksLikeEventCode(message)) {
         await this.startEventCodeRegistration(phoneNumber, message);
         return;
+      }
+
+      // Check if this is a 4-digit OTP for service point registration
+      if (/^\d{4}$/.test(message)) {
+        const response = await ServicePointRegistrationService.handleSMSResponse(phoneNumber, message);
+        if (response !== 'No pending registration found for this number.') {
+          await smsService.sendSMS({
+            to: phoneNumber,
+            message: response,
+          });
+          return;
+        }
+        // If no service point session found, continue to check regular SMS sessions
       }
 
       // Check for existing session
