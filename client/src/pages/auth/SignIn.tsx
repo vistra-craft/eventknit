@@ -29,19 +29,23 @@ const SignIn = () => {
   });
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Clear loading state when component mounts or when navigating to login
-  // This ensures the form is immediately accessible after logout
-  // NOTE: Do NOT reset formData here - it interferes with browser password autofill
+  // Load remembered email on component mount
   useEffect(() => {
     // Always clear loading state and error when component mounts
-    // This ensures fresh state when navigating back to login page
     clearError();
 
-    // Reset OAuth form state only (not main login form - browser handles that)
+    // Reset OAuth form state only
     setEmailOAuthEmail('');
     setEmailOAuthCode('');
     setEmailOAuthCodeSent(false);
     setShowEmailOAuthForm(false);
+
+    // Load remembered email if exists
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setFormData(prev => ({ ...prev, email: rememberedEmail }));
+      setRememberMe(true); // Check the remember me box if email is remembered
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount - clearError is stable from useAuth
 
@@ -61,6 +65,13 @@ const SignIn = () => {
     clearError();
 
     try {
+      // Save or clear email based on rememberMe checkbox
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', formData.email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+
       await login(formData.email, formData.password, rememberMe);
       // Navigation is handled by the useAuth hook
     } catch (error) {
@@ -451,7 +462,14 @@ const SignIn = () => {
                       <Checkbox
                         id="remember"
                         checked={rememberMe}
-                        onCheckedChange={(checked) => setRememberMe(checked === true)}
+                        onCheckedChange={(checked) => {
+                          const isChecked = checked === true;
+                          setRememberMe(isChecked);
+                          // Clear remembered email immediately when unchecking
+                          if (!isChecked) {
+                            localStorage.removeItem('rememberedEmail');
+                          }
+                        }}
                       />
                       <Label
                         htmlFor="remember"

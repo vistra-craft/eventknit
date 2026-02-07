@@ -125,20 +125,23 @@ export const useAuth = () => {
   const logout = useCallback(() => {
     // 1. Clear token immediately (prevents any API calls from using it)
     removeAccessToken();
-    
+
     // 2. Clear role view from localStorage
     localStorage.removeItem('activeViewRole');
-    
-    // 3. Dispatch logout immediately to clear state (synchronous)
+
+    // 3. Note: We keep rememberedEmail in localStorage so "Remember me" persists across sessions
+    // User can uncheck "Remember me" on next login to clear it
+
+    // 4. Dispatch logout immediately to clear state (synchronous)
     dispatch({ type: 'AUTH_LOGOUT' });
-    
-    // 4. Dispatch custom event to notify components immediately
+
+    // 5. Dispatch custom event to notify components immediately
     window.dispatchEvent(new Event('tokenChange'));
-    
-    // 5. Navigate immediately (no setTimeout delay - like pos/vf-ticket)
+
+    // 6. Navigate immediately (no setTimeout delay - like pos/vf-ticket)
     navigate('/', { replace: true });
-    
-    // 6. Fire-and-forget server-side token invalidation (optional security enhancement)
+
+    // 7. Fire-and-forget server-side token invalidation (optional security enhancement)
     // Don't wait for this - it's non-blocking for better UX
     authApi.logout().catch((error) => {
       // Silently fail - client is already logged out
