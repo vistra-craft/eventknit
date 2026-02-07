@@ -61,7 +61,7 @@ const AdminLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Main layout area (sidebar + header + page content) */}
-      <div className="max-w-7xl w-full mx-auto flex flex-1">
+      <div className="w-full flex flex-1">
         {/* Sidebar - fixed within the max-w container */}
         <div className="hidden lg:block lg:w-64 lg:flex-shrink-0">
           <div className="lg:fixed lg:w-64 lg:h-screen lg:overflow-hidden">

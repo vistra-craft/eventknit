@@ -63,7 +63,7 @@ const UserLayout = () => {
       <main className="pt-16 flex-1">
         {/* Success Message */}
         {successMessage && (
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4 max-w-7xl">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
             <div className="bg-success-light border border-success/20 rounded-lg p-4 mb-6">
               <div className="flex">
                 <div className="text-success">{successMessage}</div>

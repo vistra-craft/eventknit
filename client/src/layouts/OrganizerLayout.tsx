@@ -61,7 +61,7 @@ const OrganizerLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden lg:h-screen lg:overflow-hidden">
       {/* Main layout area (sidebar + header + page content) */}
-      <div className="max-w-7xl w-full mx-auto flex flex-1 lg:h-full lg:overflow-hidden">
+      <div className="w-full flex flex-1 lg:h-full lg:overflow-hidden">
         {/* Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0 lg:sticky lg:top-0 lg:self-start lg:h-screen lg:overflow-hidden">
           <OrganizerSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
