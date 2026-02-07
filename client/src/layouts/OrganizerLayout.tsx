@@ -7,13 +7,23 @@ import { organizerRoutes } from '../routes/organizerRoutes';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
 /**
- * Loading spinner component for suspense fallback
+ * Loading component for suspense fallback
+ * Minimal inline loader - no full-screen spinner
  */
-const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-      <p className="mt-4 text-muted-foreground">Loading...</p>
+const LoadingFallback = () => (
+  <div className="p-6">
+    <div className="space-y-6 animate-pulse">
+      {/* Page title skeleton */}
+      <div className="space-y-2">
+        <div className="h-8 w-48 bg-muted rounded"></div>
+        <div className="h-4 w-96 bg-muted rounded"></div>
+      </div>
+      {/* Content skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-32 bg-muted rounded-xl"></div>
+        ))}
+      </div>
     </div>
   </div>
 );
@@ -78,7 +88,7 @@ const OrganizerLayout: React.FC = () => {
 
           {/* Page Content */}
           <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
-            <Suspense fallback={<LoadingSpinner />}>
+            <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 {organizerRoutes.map((route, index) => (
                   <Route

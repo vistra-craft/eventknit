@@ -1,3 +1,13 @@
+/**
+ * Admin Layout
+ * Following industry standards (GridArc, Smart Purchase, Vercel, Linear)
+ * - Brand accent line at top
+ * - Clean fixed sidebar
+ * - Backdrop blur header
+ * - Scrollable main content
+ * - Max-width constraint on content area
+ */
+
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense } from 'react';
@@ -7,22 +17,32 @@ import { adminRoutes } from '../routes/adminRoutes';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
 /**
- * Loading spinner component for suspense fallback
+ * Loading component for suspense fallback
+ * Minimal inline loader - no full-screen spinner
  */
-const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-      <p className="mt-4 text-muted-foreground">Loading...</p>
+const LoadingFallback = () => (
+  <div className="p-6">
+    <div className="space-y-6 animate-pulse">
+      {/* Page title skeleton */}
+      <div className="space-y-2">
+        <div className="h-8 w-48 bg-muted rounded"></div>
+        <div className="h-4 w-96 bg-muted rounded"></div>
+      </div>
+      {/* Content skeleton */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-32 bg-muted rounded-xl"></div>
+        ))}
+      </div>
     </div>
   </div>
 );
 
 const AdminLayout: React.FC = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed, will be set by useEffect
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Check if screen is mobile on mount and resize, auto-manage sidebar
+  // Check if screen is mobile on mount and resize
   useEffect(() => {
     const checkIsMobile = () => {
       const isMobileSize = window.innerWidth < 1024; // lg breakpoint
@@ -30,10 +50,8 @@ const AdminLayout: React.FC = () => {
 
       // Auto-manage sidebar based on screen size
       if (isMobileSize) {
-        // On mobile, always close sidebar
         setSidebarOpen(false);
       } else {
-        // On desktop, always open sidebar
         setSidebarOpen(true);
       }
     };
@@ -59,61 +77,63 @@ const AdminLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Main layout area (sidebar + header + page content) */}
-      <div className="w-full flex flex-1">
-        {/* Sidebar - fixed within the max-w container */}
-        <div className="hidden lg:block lg:w-64 lg:flex-shrink-0">
-          <div className="lg:fixed lg:w-64 lg:h-screen lg:overflow-hidden">
-            <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
-          </div>
+    <div className="h-screen min-h-full flex flex-col bg-background">
+      {/* Brand accent line - At very top for visual polish */}
+      <div className="flex-shrink-0 h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/60"></div>
+
+      <div className="flex flex-1 min-h-0">
+        {/* Desktop Sidebar - hidden on mobile */}
+        <div className="hidden lg:block">
+          <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={false} />
         </div>
 
-        {/* Main Content - scrollable area */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          {/* Header */}
-          <div className="px-4 sm:px-6 flex-shrink-0">
-            <AdminHeader
-              onMenuToggle={isMobile ? handleMobileMenuClick : undefined}
-            />
-          </div>
+        {/* Main content area */}
+        <div className="flex flex-col flex-1 min-w-0">
+          {/* Top Navigation */}
+          <AdminHeader onMenuToggle={isMobile ? handleMobileMenuClick : undefined} />
 
-          {/* Page Content */}
-          <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
-            <Suspense fallback={<LoadingSpinner />}>
-              <Routes>
-                {adminRoutes.map((route, index) => (
-                  <Route
-                    key={index}
-                    path={route.path}
-                    element={
-                      route.allowedRoles ? (
-                        <ProtectedRoute allowedRoles={route.allowedRoles}>
-                          {route.element}
-                        </ProtectedRoute>
-                      ) : (
-                        route.element
-                      )
-                    }
-                  />
-                ))}
-              </Routes>
-              <Outlet />
-            </Suspense>
+          {/* Scrollable main content */}
+          <main className="flex-1 overflow-auto">
+            <div className="p-6 max-w-[1600px] mx-auto">
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  {adminRoutes.map((route, index) => (
+                    <Route
+                      key={index}
+                      path={route.path}
+                      element={
+                        route.allowedRoles ? (
+                          <ProtectedRoute allowedRoles={route.allowedRoles}>
+                            {route.element}
+                          </ProtectedRoute>
+                        ) : (
+                          route.element
+                        )
+                      }
+                    />
+                  ))}
+                </Routes>
+                <Outlet />
+              </Suspense>
+            </div>
           </main>
         </div>
       </div>
 
       {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div className="lg:hidden fixed inset-0 z-50">
-          <div className="fixed inset-0 bg-black/50" onClick={handleSidebarToggle}></div>
-          <div className="fixed left-0 top-0 h-full w-64 z-50">
+      {sidebarOpen && isMobile && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={handleSidebarToggle}
+          />
+          {/* Sidebar */}
+          <div className="fixed inset-y-0 left-0 w-64 bg-sidebar border-r border-sidebar-border shadow-xl animate-slide-in-left">
             <AdminSidebar isOpen={sidebarOpen} onToggle={handleSidebarToggle} isMobile={isMobile} />
           </div>
         </div>
       )}
-
     </div>
   );
 };

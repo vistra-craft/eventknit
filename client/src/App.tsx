@@ -51,67 +51,32 @@ const App = () => (
       {/* User Routes - Migrated to UserLayout (Phase 4) */}
       <Route path="/user/*" element={
         <ProtectedRoute>
-          <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-background">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-4 text-muted-foreground">Loading...</p>
-              </div>
-            </div>
-          }>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
             <UserLayout />
           </Suspense>
         </ProtectedRoute>
       } />
       {/* Organizer Routes - Migrated to OrganizerLayout (Phase 5) */}
       <Route path="/organizer/*" element={
-        <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading...</p>
-            </div>
-          </div>
-        }>
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <OrganizerLayout />
         </Suspense>
       } />
       {/* Admin Routes - Migrated to AdminLayout (Phase 6) */}
       <Route path="/admin/*" element={
-        <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading...</p>
-            </div>
-          </div>
-        }>
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <AdminLayout />
         </Suspense>
       } />
       {/* Auth Routes - Migrated to AuthLayout (Phase 2) */}
       <Route path="/auth/*" element={
-        <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading...</p>
-            </div>
-          </div>
-        }>
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <AuthLayout />
         </Suspense>
       } />
       {/* Public Routes - Catch-all for homepage, events, info pages, support, 404 (Phase 3) */}
       <Route path="/*" element={
-        <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center bg-background">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading...</p>
-            </div>
-          </div>
-        }>
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <PublicLayout />
         </Suspense>
       } />

@@ -9,13 +9,17 @@ import { Suspense } from 'react';
 import { authRoutes } from '../routes/authRoutes';
 
 /**
- * Loading spinner component for suspense fallback
+ * Loading fallback component for suspense
+ * Minimal inline loader - no full-screen spinner
  */
-const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-      <p className="mt-4 text-muted-foreground">Loading...</p>
+const LoadingFallback = () => (
+  <div className="p-6">
+    <div className="space-y-6 animate-pulse">
+      <div className="space-y-2">
+        <div className="h-8 w-48 bg-muted rounded"></div>
+        <div className="h-4 w-96 bg-muted rounded"></div>
+      </div>
+      <div className="h-64 bg-muted rounded-xl"></div>
     </div>
   </div>
 );
@@ -27,7 +31,7 @@ const LoadingSpinner = () => (
 const AuthLayout = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Suspense fallback={<LoadingSpinner />}>
+      <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {authRoutes.map((route, index) => (
             <Route key={index} path={route.path} element={route.element} />
