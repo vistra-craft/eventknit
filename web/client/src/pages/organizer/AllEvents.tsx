@@ -1,0 +1,482 @@
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Users,
+  DollarSign,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Edit,
+  MapPin,
+  TrendingUp,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Badge } from "../../components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
+import { Pagination } from "../../components/ui/pagination";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import { Loader } from "../../components/ui/loader";
+import { getOrganizerEvents, type OrganizerDashboardEvent } from "../../lib/organizer-api";
+import OrganizerEventCard from "../../components/OrganizerEventCard";
+
+const AllEvents = () => {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [allEvents, setAllEvents] = useState<OrganizerDashboardEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<OrganizerDashboardEvent | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(25);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  // Fetch events from API
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const filters: {
+          status?: string;
+          search?: string;
+          page?: number;
+          limit?: number;
+        } = {};
+        
+        if (statusFilter !== "all") {
+          filters.status = statusFilter.toUpperCase();
+        }
+        
+        if (searchTerm) {
+          filters.search = searchTerm;
+        }
+
+        filters.page = page;
+        filters.limit = limit;
+
+        const response = await getOrganizerEvents(filters);
+
+        if (response.success && response.data) {
+          // Backend already transforms events to OrganizerDashboardEvent format
+          setAllEvents(response.data.events as unknown as OrganizerDashboardEvent[]);
+          if (response.data.totalPages !== undefined) {
+            setTotalPages(response.data.totalPages);
+          }
+          if (response.data.total !== undefined) {
+            setTotal(response.data.total);
+          }
+        } else {
+          throw new Error(response.message || 'Failed to fetch events');
+        }
+      } catch (err: unknown) {
+        const errorMessage = err && typeof err === 'object' && 'message' in err
+          ? (err.message as string)
+          : 'Failed to load events. Please try again.';
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [searchTerm, statusFilter, page, limit]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // Events are already filtered by API
+  const filteredEvents = allEvents;
+
+  // Calculate stats from real data (using total from API when available)
+  const totalEvents = total || allEvents.length;
+  const activeEvents = allEvents.filter(e => e.status === "active" || e.status === "approved").length;
+  const upcomingEvents = allEvents.filter(e => e.status === "upcoming").length;
+  const totalRevenue = allEvents.reduce((sum, e) => sum + (typeof e.revenue === 'number' ? e.revenue : 0), 0);
+  const totalAttendees = allEvents.reduce((sum, e) => sum + (typeof e.attendees === 'number' ? e.attendees : 0), 0);
+
+  const stats = [
+    {
+      title: "Total Events",
+      value: totalEvents.toString(),
+      icon: Calendar,
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
+    },
+    {
+      title: "Active Events",
+      value: activeEvents.toString(),
+      icon: CheckCircle,
+      color: "text-success",
+      bgColor: "bg-success-light",
+      borderColor: "border-success/20",
+    },
+    {
+      title: "Upcoming Events",
+      value: upcomingEvents.toString(),
+      icon: Clock,
+      color: "text-warning",
+      bgColor: "bg-warning/10",
+      borderColor: "border-warning/20",
+    },
+    {
+      title: "Total Attendees",
+      value: totalAttendees.toLocaleString(),
+      icon: Users,
+      color: "text-primary",
+      bgColor: "bg-primary/10",
+      borderColor: "border-primary/20",
+    },
+    {
+      title: "Total Revenue",
+      value: `$${totalRevenue.toLocaleString()}`,
+      icon: DollarSign,
+      color: "text-success",
+      bgColor: "bg-success-light",
+      borderColor: "border-success/20",
+    },
+  ];
+
+  return (
+    <div className="space-y-8">
+      
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-page-title mb-2">All Events</h1>
+          <p className="text-page-subtitle">
+            Manage and view all your events in one place.
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {allEvents.length} of {total || allEvents.length} events
+          </div>
+          <Select value={limit.toString()} onValueChange={(value) => {
+            setLimit(parseInt(value, 10));
+            setPage(1);
+          }}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Link
+            to="/organizer/events/create"
+            className="bg-primary hover:bg-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center w-full sm:w-auto justify-center"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Event
+          </Link>
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+        {stats.map((stat, index) => (
+          <div
+            key={index}
+            className={`bg-card rounded-xl border ${stat.borderColor} p-4 shadow-sm hover:shadow-md transition-shadow duration-200`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="text-xs font-medium text-muted-foreground mb-1">
+                  {stat.title}
+                </p>
+                <p className="text-lg font-semibold text-foreground mb-1">
+                  {stat.value}
+                </p>
+              </div>
+              <div
+                className={`w-8 h-8 rounded-lg ${stat.bgColor} flex items-center justify-center`}
+              >
+                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Search and Filter */}
+      <div className="bg-card rounded-xl shadow-sm border border-border p-6 mb-8">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search events by title, location, or category..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
+            >
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="completed">Completed</option>
+            </select>
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              More Filters
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Events Grid */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-semibold text-foreground">
+            Events ({filteredEvents.length})
+          </h2>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <Loader size="lg" className="mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading events...</p>
+          </div>
+        ) : filteredEvents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredEvents.map((event) => {
+              // Transform event data to match OrganizerEventCard interface
+              const cardEvent = {
+                id: event.id,
+                title: event.title,
+                image: event.image || '',
+                date: event.date,
+                time: event.time || '',
+                venue: event.venue || '',
+                location: event.location,
+                organizer: event.organizer || '',
+                price: event.price || '',
+                category: event.category || '',
+                description: event.description || '',
+                fullDescription: event.fullDescription || event.description || '',
+                duration: event.duration || '',
+                ageRestriction: event.ageRestriction || '',
+                attendees: typeof event.attendees === 'number' ? event.attendees : 0,
+                capacity: typeof event.capacity === 'number' ? event.capacity : 0,
+                revenue: typeof event.revenue === 'number' ? event.revenue : 0,
+                views: typeof event.views === 'number' ? event.views : 0,
+                conversion: event.conversion || 0,
+                speakers: typeof event.speakers === 'number' ? event.speakers : 0,
+                exhibitors: typeof event.exhibitors === 'number' ? event.exhibitors : 0,
+                sponsors: typeof event.sponsors === 'number' ? event.sponsors : 0,
+              };
+
+              return (
+                <OrganizerEventCard key={event.id} event={cardEvent} />
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No events found</h3>
+            <p className="text-muted-foreground mb-4">
+              {searchTerm || statusFilter !== "all" 
+                ? "Try adjusting your search or filter criteria."
+                : "Get started by creating your first event."
+              }
+            </p>
+            <Link
+              to="/organizer/events/create"
+              className="bg-primary hover:bg-primary/80 text-primary-foreground px-4 py-2 rounded-lg font-medium transition-colors duration-200 inline-flex items-center"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Event
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={(newPage) => {
+              setPage(newPage);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        </div>
+      )}
+
+      {/* Event Preview Dialog */}
+      <Dialog 
+        open={!!previewEvent} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewEvent(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Event Preview</DialogTitle>
+            <DialogDescription>
+              Preview event details
+            </DialogDescription>
+          </DialogHeader>
+          {previewEvent && (
+            <div className="space-y-6">
+              {previewEvent.image && (
+                <div className="relative rounded-lg overflow-hidden">
+                  <img
+                    src={previewEvent.image}
+                    alt={previewEvent.title}
+                    className="w-full h-64 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                  <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
+                    <Badge className="bg-success/50/90 text-white">
+                      {previewEvent.status || 'Active'}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+              {!previewEvent.image && (
+                <div>
+                  <h2 className="text-lg font-semibold mb-2">{previewEvent.title}</h2>
+                  <Badge className="bg-success/50/90 text-white">
+                    {previewEvent.status || 'Active'}
+                  </Badge>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{previewEvent.date}</p>
+                    {previewEvent.time && (
+                      <p className="text-sm text-muted-foreground">{previewEvent.time}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">{previewEvent.venue || previewEvent.location}</p>
+                    {previewEvent.venue && previewEvent.location && (
+                      <p className="text-sm text-muted-foreground">{previewEvent.location}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <p className="font-medium">
+                    {typeof previewEvent.attendees === 'number' ? previewEvent.attendees : 0} / 
+                    {typeof previewEvent.capacity === 'number' ? previewEvent.capacity : '∞'} registered
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <p className="font-medium">
+                    {(() => {
+                      const conversion = typeof previewEvent.conversion === 'string' 
+                        ? parseFloat(previewEvent.conversion) 
+                        : (typeof previewEvent.conversion === 'number' ? previewEvent.conversion : 0);
+                      return `${conversion.toFixed(1)}% conversion`;
+                    })()}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">by {previewEvent.organizer}</p>
+                <div className="flex gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {previewEvent.category}
+                  </Badge>
+                  {previewEvent.price && (
+                    <Badge variant="outline" className="text-xs">
+                      {previewEvent.price}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {previewEvent.description && (
+                <div>
+                  <h3 className="font-semibold mb-2">Description</h3>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{previewEvent.description}</p>
+                </div>
+              )}
+
+              {/* Event Metrics */}
+              <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Speakers</p>
+                  <p className="text-lg font-semibold">{typeof previewEvent.speakers === 'number' ? previewEvent.speakers : 0}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Exhibitors</p>
+                  <p className="text-lg font-semibold">{typeof previewEvent.exhibitors === 'number' ? previewEvent.exhibitors : 0}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Revenue</p>
+                  <p className="text-lg font-semibold">
+                    ${typeof previewEvent.revenue === 'number' ? previewEvent.revenue.toLocaleString() : '0'}
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setPreviewEvent(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setPreviewEvent(null);
+                  navigate(`/organizer/event/${previewEvent.id}`);
+                }}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Manage Event
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AllEvents;

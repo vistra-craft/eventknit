@@ -1,0 +1,74 @@
+services:
+  - type: web
+    name: eventknit-server
+    env: node
+    plan: starter # or free, starter, standard, pro
+    buildCommand: npm install && npm run prisma:generate && npm run build && npm run prisma:migrate:deploy
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      # Database - Use Render PostgreSQL or external
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eventknit-db
+          property: connectionString
+      # JWT Secrets - Generate strong secrets
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      # CORS - Set to your Netlify domain (supports multiple origins separated by commas)
+      - key: CORS_ORIGIN
+        value: "https://eventknit.netlify.app,http://localhost:5173" # Netlify production + localhost for testing
+      - key: CORS_CREDENTIALS
+        value: "true"
+      # Frontend URL - Set to your Netlify domain
+      - key: FRONTEND_URL
+        value: "https://eventknit.netlify.app"
+      # Email Configuration
+      - key: SMTP_HOST
+        sync: false # Set manually
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_SECURE
+        value: "false"
+      - key: SMTP_USER
+        sync: false # Set manually
+      - key: SMTP_PASSWORD
+        sync: false # Set manually
+      - key: EMAIL_FROM
+        sync: false # Set manually
+      # Paystack Configuration
+      - key: PAYSTACK_SECRET_KEY
+        sync: false # Set manually
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false # Set manually
+      # Rate Limiting
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX
+        value: "100"
+      - key: AUTH_RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: AUTH_RATE_LIMIT_MAX
+        value: "5"
+      - key: GUEST_REGISTRATION_WINDOW_MS
+        value: "3600000"
+      - key: GUEST_REGISTRATION_MAX
+        value: "10"
+      - key: GUEST_PAYMENT_WINDOW_MS
+        value: "3600000"
+      - key: GUEST_PAYMENT_MAX
+        value: "10"
+
+databases:
+  - name: eventknit-db
+    databaseName: eventknit
+    user: eventknit
+    plan: starter # or free, starter, standard, pro
+

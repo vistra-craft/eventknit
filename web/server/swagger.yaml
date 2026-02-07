@@ -1,0 +1,5994 @@
+openapi: 3.0.3
+info:
+  title: EventKnit API
+  description: |
+    EventKnit is a comprehensive ticketing platform API that enables event management, ticket sales, payments, and real-time communications.
+
+    ## Authentication
+    Most endpoints require JWT authentication. Include the access token in the Authorization header:
+    ```
+    Authorization: Bearer <your_access_token>
+    ```
+
+    ## Base URL
+    All API routes are prefixed with `/api/v1`
+
+    ## Rate Limiting
+    API requests are rate-limited to prevent abuse. Rate limits vary by endpoint type.
+  version: 1.0.0
+  contact:
+    name: EventKnit Support
+    email: support@eventknit.com
+  license:
+    name: ISC
+
+servers:
+  - url: http://localhost:3001/api/v1
+    description: Development server
+  - url: https://api.eventknit.com/api/v1
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: Events
+    description: Event management operations
+  - name: Tickets
+    description: Ticket management and operations
+  - name: Payments
+    description: Payment processing endpoints
+  - name: Users
+    description: User profile and preference management
+  - name: Organizers
+    description: Organizer-specific operations
+  - name: Admin
+    description: Administrative operations
+  - name: Notifications
+    description: Notification management
+  - name: Analytics
+    description: Analytics and reporting
+  - name: Financial
+    description: Financial management and reporting
+  - name: Service Point
+    description: Service point operations including badge templates, workstation, and facility management
+  - name: Offline Sync
+    description: Offline data synchronization for mobile devices
+  - name: Careers
+    description: Career inquiry management for job applicants
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token obtained from login/registration
+
+  schemas:
+    # Common Response Schemas
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation completed successfully
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: An error occurred
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 100
+        totalPages:
+          type: integer
+          example: 5
+
+    # Career Inquiry Schemas
+    CareerInquiry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+        email:
+          type: string
+          format: email
+          description: Candidate's email address
+        firstName:
+          type: string
+          nullable: true
+          description: Candidate's first name (if provided)
+        status:
+          type: string
+          enum: [PENDING, CONTACTED, RESPONDED, REVIEWING, REJECTED, HIRED]
+          description: Current status of the inquiry
+        emailSentAt:
+          type: string
+          format: date-time
+          description: When the auto-reply email was sent
+        respondedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the candidate responded
+        notes:
+          type: string
+          nullable: true
+          description: Internal notes from recruitment team
+        reviewedBy:
+          type: string
+          format: uuid
+          nullable: true
+          description: User ID of the reviewer
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the inquiry was reviewed
+        source:
+          type: string
+          nullable: true
+          description: Where the candidate found us
+        createdAt:
+          type: string
+          format: date-time
+          description: When the inquiry was submitted
+        updatedAt:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    # User Schemas
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phoneNumber:
+          type: string
+        role:
+          type: string
+          enum: [SUPERADMIN, ADMIN, ADMIN_STAFF, MARKETER, SUPPORT, TELLER, ORGANIZER, ORGANIZER_STAFF, ORGANIZER_TELLER, ATTENDEE]
+        emailVerified:
+          type: boolean
+        profileImage:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        isSuspended:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token (expires in 15 minutes)
+        refreshToken:
+          type: string
+          description: JWT refresh token (expires in 7 days)
+        user:
+          $ref: '#/components/schemas/User'
+
+    # Event Schemas
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        shortDescription:
+          type: string
+        category:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        location:
+          type: object
+          properties:
+            address:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            country:
+              type: string
+            latitude:
+              type: number
+            longitude:
+              type: number
+        eventType:
+          type: string
+          enum: [PHYSICAL, VIRTUAL, HYBRID]
+        status:
+          type: string
+          enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, CANCELLED, COMPLETED]
+        isPublished:
+          type: boolean
+        capacity:
+          type: integer
+        coverImage:
+          type: string
+        organizerId:
+          type: string
+          format: uuid
+        organizer:
+          $ref: '#/components/schemas/User'
+        tickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketType'
+        registrationCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TicketType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          default: USD
+        quantity:
+          type: integer
+        available:
+          type: integer
+        eventId:
+          type: string
+          format: uuid
+        isFree:
+          type: boolean
+        salesStartDate:
+          type: string
+          format: date-time
+        salesEndDate:
+          type: string
+          format: date-time
+
+    Registration:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+        ticketTypeId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+        totalAmount:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, CANCELLED, CHECKED_IN]
+        attendeeInfo:
+          type: object
+          properties:
+            firstName:
+              type: string
+            lastName:
+              type: string
+            email:
+              type: string
+            phoneNumber:
+              type: string
+        paymentStatus:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED, REFUNDED]
+        qrCode:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        paymentMethod:
+          type: string
+          enum: [PAYSTACK, STRIPE, MPESA, CASH]
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED, REFUNDED]
+        transactionReference:
+          type: string
+        metadata:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    TicketTransfer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        fromUserId:
+          type: string
+          format: uuid
+        toUserId:
+          type: string
+          format: uuid
+          nullable: true
+        toEmail:
+          type: string
+          format: email
+          nullable: true
+        transferToken:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, ACCEPTED, CANCELLED, EXPIRED]
+        message:
+          type: string
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    TicketResale:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        sellerUserId:
+          type: string
+          format: uuid
+        buyerUserId:
+          type: string
+          format: uuid
+          nullable: true
+        originalPrice:
+          type: number
+          format: decimal
+        resalePrice:
+          type: number
+          format: decimal
+        platformFee:
+          type: number
+          format: decimal
+          description: 10% platform fee
+        sellerPayout:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [LISTED, SOLD, CANCELLED]
+        notes:
+          type: string
+          nullable: true
+        listedAt:
+          type: string
+          format: date-time
+        soldAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    DigitalWallet:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        autoAddTickets:
+          type: boolean
+          description: Automatically add new tickets
+        backupEnabled:
+          type: boolean
+          description: Enable backup codes
+        lastSyncedAt:
+          type: string
+          format: date-time
+          nullable: true
+        walletTickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WalletTicket'
+
+    WalletTicket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        walletId:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        backupCode:
+          type: string
+          description: Manual entry code (format WLT-{regId8}-{timestamp36})
+        isActive:
+          type: boolean
+        passData:
+          type: object
+          nullable: true
+          description: Apple/Google pass data
+        lastAccessedAt:
+          type: string
+          format: date-time
+          nullable: true
+        addedAt:
+          type: string
+          format: date-time
+
+    # Badge Template Schemas
+    BadgeElement:
+      type: object
+      required:
+        - id
+        - type
+        - content
+        - x
+        - y
+        - width
+        - height
+        - zIndex
+      properties:
+        id:
+          type: string
+          description: Unique element identifier
+        type:
+          type: string
+          enum: [text, image, qr, shape, logo, barcode, ribbon]
+          description: Element type
+        content:
+          type: string
+          description: Element content (can include template variables like {{fullName}})
+        x:
+          type: number
+          description: X position in millimeters
+        y:
+          type: number
+          description: Y position in millimeters
+        width:
+          type: number
+          description: Width in millimeters
+        height:
+          type: number
+          description: Height in millimeters
+        fontSize:
+          type: number
+          nullable: true
+          description: Font size for text elements
+        fontFamily:
+          type: string
+          nullable: true
+          description: Font family for text elements
+        fontWeight:
+          type: string
+          enum: [normal, bold, light]
+          nullable: true
+        textAlign:
+          type: string
+          enum: [left, center, right]
+          nullable: true
+        color:
+          type: string
+          nullable: true
+          description: Text or foreground color (hex format)
+        backgroundColor:
+          type: string
+          nullable: true
+          description: Background color (hex format)
+        borderRadius:
+          type: number
+          nullable: true
+          description: Border radius in pixels
+        opacity:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+        rotation:
+          type: number
+          nullable: true
+          description: Rotation angle in degrees
+        zIndex:
+          type: integer
+          description: Layer order (higher = on top)
+        isVisible:
+          type: boolean
+          nullable: true
+        isLocked:
+          type: boolean
+          nullable: true
+        ribbonIcon:
+          type: string
+          enum: [crown, star, check-circle, award, badge, none]
+          nullable: true
+          description: Icon for ribbon elements
+        ribbonGradient:
+          type: string
+          nullable: true
+          description: CSS gradient string for ribbon background
+
+    BadgeTemplate:
+      type: object
+      required:
+        - id
+        - name
+        - width
+        - height
+        - sizePreset
+        - orientation
+        - backgroundColor
+        - elements
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Template name
+        description:
+          type: string
+          nullable: true
+          description: Template description
+        width:
+          type: number
+          description: Badge width in millimeters
+          example: 101.6
+        height:
+          type: number
+          description: Badge height in millimeters
+          example: 76.2
+        sizePreset:
+          type: string
+          enum: [4x3, 3.5x2.25, 4x6, A6, custom]
+          description: Preset badge size
+        orientation:
+          type: string
+          enum: [portrait, landscape]
+        backgroundColor:
+          type: string
+          description: Background color (hex format)
+          example: "#ffffff"
+        backgroundImage:
+          type: string
+          nullable: true
+          description: URL to background image (Cloudinary)
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/BadgeElement'
+        isDefault:
+          type: boolean
+          description: Whether this is the default template
+        isActive:
+          type: boolean
+          description: Whether the template is active
+        organizerId:
+          type: string
+          format: uuid
+          nullable: true
+        eventId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FacilityZone:
+      type: object
+      required:
+        - id
+        - eventId
+        - name
+        - code
+        - currentOccupancy
+        - isActive
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Zone display name
+          example: "VIP Lounge"
+        code:
+          type: string
+          description: Unique zone code (max 10 chars)
+          example: "VIP"
+        description:
+          type: string
+          nullable: true
+          description: Zone description
+        maxCapacity:
+          type: integer
+          nullable: true
+          description: Maximum simultaneous occupancy (null = unlimited)
+          example: 100
+        currentOccupancy:
+          type: integer
+          description: Current number of people in zone
+          example: 25
+        accessStart:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zone opening time
+        accessEnd:
+          type: string
+          format: date-time
+          nullable: true
+          description: Zone closing time
+        isActive:
+          type: boolean
+          description: Whether the zone is active
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FacilityZoneMapping:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        facilityId:
+          type: string
+          format: uuid
+        zoneId:
+          type: string
+          format: uuid
+        facility:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+
+    AttendeeZoneAccess:
+      type: object
+      required:
+        - id
+        - registrationId
+        - zoneId
+        - grantedBy
+        - isActive
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        zoneId:
+          type: string
+          format: uuid
+        grantedAt:
+          type: string
+          format: date-time
+        grantedBy:
+          type: string
+          format: uuid
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        isActive:
+          type: boolean
+        accessCount:
+          type: integer
+          description: Number of times accessed
+        lastAccessAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ZoneCapacityInfo:
+      type: object
+      properties:
+        currentOccupancy:
+          type: integer
+          example: 75
+        maxCapacity:
+          type: integer
+          nullable: true
+          example: 100
+        availableCapacity:
+          type: integer
+          nullable: true
+          example: 25
+        isFull:
+          type: boolean
+          example: false
+        percentFull:
+          type: integer
+          description: Percentage of capacity used (0-100)
+          example: 75
+
+    FacilityMovement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        fromZoneId:
+          type: string
+          format: uuid
+          nullable: true
+        toZoneId:
+          type: string
+          format: uuid
+        movementType:
+          type: string
+          enum: [entry, zone_change, exit]
+        sequenceNumber:
+          type: integer
+          description: Movement sequence (1, 2, 3...)
+        scannedAt:
+          type: string
+          format: date-time
+        scannedBy:
+          type: string
+          format: uuid
+
+    Printer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          description: User-friendly printer name
+        driver:
+          type: string
+          enum: [cups, windows, printnode]
+          description: Printer driver type
+        deviceId:
+          type: string
+          description: System printer name or cloud ID
+        host:
+          type: string
+          nullable: true
+          description: Network printer host
+        port:
+          type: integer
+          nullable: true
+          description: Network printer port
+        apiKey:
+          type: string
+          nullable: true
+          description: PrintNode API key for cloud printing
+        supportedSizes:
+          type: array
+          items:
+            type: string
+          description: Supported paper sizes
+        paperSize:
+          type: string
+          description: Default paper size
+        orientation:
+          type: string
+          enum: [portrait, landscape]
+          description: Default orientation
+        isOnline:
+          type: boolean
+          description: Current online status
+        isActive:
+          type: boolean
+          description: Whether printer is active (not soft-deleted)
+        lastChecked:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+
+    PrinterConfig:
+      type: object
+      required:
+        - name
+        - driver
+        - deviceId
+      properties:
+        name:
+          type: string
+          description: User-friendly printer name
+          minLength: 1
+          maxLength: 100
+        driver:
+          type: string
+          enum: [cups, windows, printnode]
+          description: Printer driver type
+        deviceId:
+          type: string
+          description: System printer name or cloud ID
+        host:
+          type: string
+          description: Network printer host
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          description: Network printer port
+        apiKey:
+          type: string
+          description: PrintNode API key (required for PrintNode driver)
+        supportedSizes:
+          type: array
+          items:
+            type: string
+          default: ['4x3', 'A6']
+          description: Supported paper sizes
+        paperSize:
+          type: string
+          default: '4x3'
+          description: Default paper size
+        orientation:
+          type: string
+          enum: [portrait, landscape]
+          default: landscape
+          description: Default orientation
+        eventId:
+          type: string
+          format: uuid
+          description: Link printer to specific event (optional)
+
+    PrinterStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        isOnline:
+          type: boolean
+          description: Whether printer is currently online
+        driver:
+          type: string
+          enum: [cups, windows, printnode]
+        lastChecked:
+          type: string
+          format: date-time
+          nullable: true
+
+    PrintJob:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        printerId:
+          type: string
+          format: uuid
+        templateId:
+          type: string
+          format: uuid
+        registrationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, printing, completed, failed, cancelled]
+          description: Current job status
+        priority:
+          type: integer
+          description: Higher priority jobs print first
+        copies:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Number of copies to print
+        pdfUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: Generated PDF URL (Cloudinary)
+        sentToPrinter:
+          type: string
+          format: date-time
+          nullable: true
+          description: When job was sent to printer
+        printedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When job completed printing
+        retryCount:
+          type: integer
+          description: Number of retry attempts
+        maxRetries:
+          type: integer
+          default: 3
+          description: Maximum retry attempts
+        errorMessage:
+          type: string
+          nullable: true
+          description: Error message if job failed
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: string
+          format: uuid
+
+    # Offline Sync Schemas
+    OfflineEventData:
+      type: object
+      properties:
+        event:
+          type: object
+          properties:
+            id:
+              type: string
+            title:
+              type: string
+            startDate:
+              type: string
+              format: date-time
+            endDate:
+              type: string
+              format: date-time
+        attendees:
+          type: array
+          items:
+            type: object
+            properties:
+              registrationId:
+                type: string
+              fullName:
+                type: string
+              email:
+                type: string
+                format: email
+              ticketType:
+                type: string
+                nullable: true
+              photo:
+                type: string
+                nullable: true
+              qrCode:
+                type: string
+                nullable: true
+              backupCode:
+                type: string
+                nullable: true
+              isCurrentlyInside:
+                type: boolean
+              lastCheckInAt:
+                type: string
+                format: date-time
+                nullable: true
+              authorizedZones:
+                type: array
+                items:
+                  type: string
+                description: Array of zone IDs the attendee can access
+        zones:
+          type: array
+          items:
+            type: object
+            properties:
+              zoneId:
+                type: string
+              name:
+                type: string
+              code:
+                type: string
+              maxCapacity:
+                type: integer
+                nullable: true
+              currentOccupancy:
+                type: integer
+              accessStart:
+                type: string
+                format: date-time
+                nullable: true
+              accessEnd:
+                type: string
+                format: date-time
+                nullable: true
+              isActive:
+                type: boolean
+
+    OfflineScanInput:
+      type: object
+      required:
+        - id
+        - registrationId
+        - checkpointId
+        - qrCode
+        - scannedAt
+        - scannedBy
+      properties:
+        id:
+          type: string
+          description: Mobile-generated scan ID
+        registrationId:
+          type: string
+        checkpointId:
+          type: string
+        qrCode:
+          type: string
+        codeType:
+          type: string
+          enum: [ticket, backup]
+          default: ticket
+        signatureValid:
+          type: boolean
+          default: true
+        scannedAt:
+          type: string
+          format: date-time
+        scannedBy:
+          type: string
+          description: User ID of staff member
+        deviceInfo:
+          type: object
+          nullable: true
+          description: JSON object with device metadata
+
+    BatchScanResult:
+      type: object
+      properties:
+        successCount:
+          type: integer
+          description: Number of scans successfully processed
+        failureCount:
+          type: integer
+          description: Number of scans that failed
+        conflicts:
+          type: array
+          items:
+            type: object
+            properties:
+              mobileId:
+                type: string
+                description: ID from mobile device
+              serverId:
+                type: string
+                nullable: true
+                description: ID of existing scan on server
+              reason:
+                type: string
+                enum: [duplicate_scan, processing_error]
+              details:
+                type: object
+                description: Additional conflict information
+
+    SyncStatus:
+      type: object
+      properties:
+        totalAttendees:
+          type: integer
+          description: Total confirmed registrations for event
+        totalScans:
+          type: integer
+          description: Total scans recorded
+        userScansToday:
+          type: integer
+          description: Scans by this user today
+        lastUpdated:
+          type: string
+          format: date-time
+
+    ScanConflict:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Conflict ID (format conflict-scanId1-scanId2)
+        mobileId:
+          type: string
+          description: Later scan ID (assumed from mobile)
+        serverId:
+          type: string
+          description: Earlier scan ID (assumed from server)
+        registrationId:
+          type: string
+        checkpointId:
+          type: string
+        mobileScanTime:
+          type: string
+          format: date-time
+        serverScanTime:
+          type: string
+          format: date-time
+        timeDifferenceMs:
+          type: integer
+          description: Time difference in milliseconds
+        status:
+          type: string
+          enum: [pending, resolved]
+        resolution:
+          type: string
+          enum: [keep_first, keep_latest, keep_both]
+          nullable: true
+
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Unauthorized access
+
+    ForbiddenError:
+      description: User does not have permission to access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: You do not have permission to perform this action
+
+    NotFoundError:
+      description: The requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Resource not found
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            message: Validation failed
+            errors:
+              - field: email
+                message: Valid email is required
+
+paths:
+  # ==================== AUTHENTICATION ====================
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Create a new user account with email and password
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - firstName
+                - lastName
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phoneNumber:
+                  type: string
+                role:
+                  type: string
+                  enum: [ATTENDEE, ORGANIZER]
+                  default: ATTENDEE
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/register-code/request:
+    post:
+      tags:
+        - Authentication
+      summary: Request registration verification code
+      description: Request a verification code for email-only registration (passwordless)
+      operationId: requestRegistrationCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Verification code sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/register-code/verify:
+    post:
+      tags:
+        - Authentication
+      summary: Verify registration code and create account
+      description: Verify the registration code and complete account creation
+      operationId: verifyRegistrationCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - code
+                - firstName
+                - lastName
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phoneNumber:
+                  type: string
+                role:
+                  type: string
+                  enum: [ATTENDEE, ORGANIZER]
+      responses:
+        '201':
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user with email and password
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/email-oauth/request:
+    post:
+      tags:
+        - Authentication
+      summary: Request Email OAuth code
+      description: Request a code-based passwordless login/registration
+      operationId: requestEmailOAuthCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: OAuth code sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/email-oauth/verify:
+    post:
+      tags:
+        - Authentication
+      summary: Verify Email OAuth code
+      description: Verify OAuth code and authenticate user (creates account if new, logs in if existing)
+      operationId: verifyEmailOAuthCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - code
+              properties:
+                email:
+                  type: string
+                  format: email
+                code:
+                  type: string
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phoneNumber:
+                  type: string
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+
+  /auth/google:
+    post:
+      tags:
+        - Authentication
+      summary: Google OAuth login/registration
+      description: Authenticate user with Google OAuth token
+      operationId: googleAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idToken
+              properties:
+                idToken:
+                  type: string
+                  description: Google ID token
+      responses:
+        '200':
+          description: Google authentication successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+
+  /auth/apple:
+    post:
+      tags:
+        - Authentication
+      summary: Apple Sign In OAuth login/registration
+      description: Authenticate user with Apple Sign In
+      operationId: appleAuth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - identityToken
+              properties:
+                identityToken:
+                  type: string
+                  description: Apple identity token
+                authorizationCode:
+                  type: string
+                user:
+                  type: object
+                  properties:
+                    firstName:
+                      type: string
+                    lastName:
+                      type: string
+                    email:
+                      type: string
+      responses:
+        '200':
+          description: Apple authentication successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthTokens'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get a new access token using refresh token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          accessToken:
+                            type: string
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      description: Invalidate current session
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      description: Retrieve the authenticated user's profile information
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/profile:
+    put:
+      tags:
+        - Authentication
+      summary: Update user profile
+      description: Update the authenticated user's profile information
+      operationId: updateProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                phoneNumber:
+                  type: string
+                profileImage:
+                  type: string
+                  format: binary
+                bio:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/password/reset-request:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Send password reset email to user
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Password reset email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/password/reset-confirm:
+    post:
+      tags:
+        - Authentication
+      summary: Confirm password reset
+      description: Reset password using reset token
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - newPassword
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /auth/password/change:
+    post:
+      tags:
+        - Authentication
+      summary: Change password
+      description: Change password for authenticated user
+      operationId: changePassword
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currentPassword
+                - newPassword
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== EVENTS ====================
+  /events:
+    get:
+      tags:
+        - Events
+      summary: Get all events
+      description: Retrieve a list of all public events with optional filters
+      operationId: getEvents
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, CANCELLED, COMPLETED]
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: eventType
+          in: query
+          schema:
+            type: string
+            enum: [PHYSICAL, VIRTUAL, HYBRID]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          events:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Event'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationMeta'
+
+    post:
+      tags:
+        - Events
+      summary: Create a new event
+      description: Create a new event (requires ORGANIZER role or higher)
+      operationId: createEvent
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - description
+                - startDate
+                - endDate
+                - category
+                - eventType
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                shortDescription:
+                  type: string
+                category:
+                  type: string
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                location:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                    city:
+                      type: string
+                    state:
+                      type: string
+                    country:
+                      type: string
+                eventType:
+                  type: string
+                  enum: [PHYSICAL, VIRTUAL, HYBRID]
+                capacity:
+                  type: integer
+                coverImage:
+                  type: string
+                tickets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: string
+                      price:
+                        type: number
+                      quantity:
+                        type: integer
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /events/{id}:
+    get:
+      tags:
+        - Events
+      summary: Get event by ID
+      description: Retrieve detailed information about a specific event
+      operationId: getEventById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Event'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Events
+      summary: Update event
+      description: Update an existing event (requires ORGANIZER role or higher)
+      operationId: updateEvent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                capacity:
+                  type: integer
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Events
+      summary: Delete event
+      description: Delete an event (requires ORGANIZER role or higher)
+      operationId: deleteEvent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /events/{id}/register:
+    post:
+      tags:
+        - Events
+      summary: Register for an event
+      description: Register for an event as an authenticated user
+      operationId: registerForEvent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ticketTypeId
+                - quantity
+              properties:
+                ticketTypeId:
+                  type: string
+                  format: uuid
+                quantity:
+                  type: integer
+                  minimum: 1
+                attendeeInfo:
+                  type: object
+                  properties:
+                    firstName:
+                      type: string
+                    lastName:
+                      type: string
+                    email:
+                      type: string
+                    phoneNumber:
+                      type: string
+      responses:
+        '201':
+          description: Registration created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Registration'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /events/{id}/register-guest:
+    post:
+      tags:
+        - Events
+      summary: Register for an event as guest
+      description: Register for an event without authentication (public endpoint)
+      operationId: registerAsGuest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ticketTypeId
+                - quantity
+                - attendeeInfo
+              properties:
+                ticketTypeId:
+                  type: string
+                  format: uuid
+                quantity:
+                  type: integer
+                  minimum: 1
+                attendeeInfo:
+                  type: object
+                  required:
+                    - firstName
+                    - lastName
+                    - email
+                  properties:
+                    firstName:
+                      type: string
+                    lastName:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    phoneNumber:
+                      type: string
+      responses:
+        '201':
+          description: Guest registration created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Registration'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /events/{id}/registrations:
+    get:
+      tags:
+        - Events
+      summary: Get event registrations
+      description: Get all registrations for an event (requires ORGANIZER role or higher)
+      operationId: getEventRegistrations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, CONFIRMED, CANCELLED, CHECKED_IN]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Registrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          registrations:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Registration'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /events/{id}/approve:
+    post:
+      tags:
+        - Events
+      summary: Approve event
+      description: Approve a pending event (requires ADMIN_STAFF role or higher)
+      operationId: approveEvent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Event approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /events/{id}/reject:
+    post:
+      tags:
+        - Events
+      summary: Reject event
+      description: Reject a pending event (requires ADMIN_STAFF role or higher)
+      operationId: rejectEvent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Event rejected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ==================== TICKETS ====================
+  /tickets/{registrationId}:
+    get:
+      tags:
+        - Tickets
+      summary: Get ticket by registration ID
+      description: Retrieve ticket information for a specific registration
+      operationId: getTicket
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ticket retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Registration'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /tickets/{registrationId}/view:
+    get:
+      tags:
+        - Tickets
+      summary: Get ticket publicly
+      description: View ticket information with email verification (public endpoint)
+      operationId: getTicketPublic
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Ticket retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Registration'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /tickets/{registrationId}/download:
+    get:
+      tags:
+        - Tickets
+      summary: Download ticket as PDF
+      description: Download ticket in PDF format
+      operationId: downloadTicketPDF
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: PDF generated successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /tickets/{registrationId}/resend:
+    post:
+      tags:
+        - Tickets
+      summary: Resend ticket email
+      description: Resend ticket confirmation email (rate limited to 3 per hour)
+      operationId: resendTicketEmail
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ticket email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ==================== TICKET TRANSFERS ====================
+  /user/dashboard/transfers/{registrationId}:
+    post:
+      tags:
+        - Tickets
+      summary: Initiate ticket transfer
+      description: Transfer ticket to another user by userId or email
+      operationId: initiateTransfer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                toUserId:
+                  type: string
+                  format: uuid
+                  description: Transfer to existing user by ID
+                toEmail:
+                  type: string
+                  format: email
+                  description: Transfer to user by email (creates account if needed)
+                message:
+                  type: string
+                  description: Optional message to recipient
+              oneOf:
+                - required: [toUserId]
+                - required: [toEmail]
+      responses:
+        '201':
+          description: Transfer initiated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          transferToken:
+                            type: string
+                          status:
+                            type: string
+                            enum: [PENDING, ACCEPTED, CANCELLED, EXPIRED]
+                          expiresAt:
+                            type: string
+                            format: date-time
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /user/dashboard/transfers/accept/{transferToken}:
+    post:
+      tags:
+        - Tickets
+      summary: Accept ticket transfer
+      description: Accept a pending ticket transfer offer
+      operationId: acceptTransfer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: transferToken
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transfer accepted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          newRegistrationId:
+                            type: string
+                            format: uuid
+                          status:
+                            type: string
+                            example: ACCEPTED
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/transfers/{transferId}/cancel:
+    post:
+      tags:
+        - Tickets
+      summary: Cancel ticket transfer
+      description: Cancel a pending ticket transfer
+      operationId: cancelTransfer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: transferId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Transfer cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/transfers:
+    get:
+      tags:
+        - Tickets
+      summary: Get transfer history
+      description: Get user's ticket transfer history (sent and received)
+      operationId: getTransferHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [sent, received, all]
+            default: all
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, ACCEPTED, CANCELLED, EXPIRED]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Transfer history retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          transfers:
+                            type: array
+                            items:
+                              type: object
+                          pagination:
+                            $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== TICKET RESALE ====================
+  /user/dashboard/resale/list:
+    post:
+      tags:
+        - Tickets
+      summary: List ticket for resale
+      description: List a ticket on the resale marketplace (10% platform fee)
+      operationId: listTicketForResale
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registrationId
+                - resalePrice
+              properties:
+                registrationId:
+                  type: string
+                  format: uuid
+                resalePrice:
+                  type: number
+                  format: decimal
+                  description: Resale price in event currency
+                notes:
+                  type: string
+                  description: Optional notes about the ticket
+      responses:
+        '201':
+          description: Ticket listed for resale successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          resalePrice:
+                            type: number
+                          platformFee:
+                            type: number
+                            description: 10% platform fee
+                          sellerPayout:
+                            type: number
+                            description: Amount seller receives (resalePrice - platformFee)
+                          status:
+                            type: string
+                            enum: [LISTED, SOLD, CANCELLED]
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /user/dashboard/resale/marketplace:
+    get:
+      tags:
+        - Tickets
+      summary: Browse resale marketplace
+      description: Get all available tickets on the resale marketplace
+      operationId: getMarketplaceTickets
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by event
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Marketplace tickets retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          tickets:
+                            type: array
+                            items:
+                              type: object
+                          pagination:
+                            $ref: '#/components/schemas/PaginationMeta'
+
+  /user/dashboard/resale/my-listings:
+    get:
+      tags:
+        - Tickets
+      summary: Get user's resale listings
+      description: Get all resale listings for authenticated user
+      operationId: getUserResales
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [LISTED, SOLD, CANCELLED]
+      responses:
+        '200':
+          description: User resales retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/dashboard/resale/{resaleId}/purchase:
+    post:
+      tags:
+        - Tickets
+      summary: Purchase resale ticket
+      description: Purchase a ticket from the resale marketplace
+      operationId: purchaseResaleTicket
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: resaleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resale ticket purchased successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          newRegistrationId:
+                            type: string
+                            format: uuid
+                          paymentUrl:
+                            type: string
+                            description: URL to complete payment
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/resale/{resaleId}/cancel:
+    post:
+      tags:
+        - Tickets
+      summary: Cancel resale listing
+      description: Cancel a ticket resale listing
+      operationId: cancelResale
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: resaleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resale listing cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== DIGITAL WALLET ====================
+  /user/dashboard/wallet:
+    get:
+      tags:
+        - Tickets
+      summary: Get digital wallet
+      description: Get user's digital wallet with all stored tickets
+      operationId: getWallet
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Wallet retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          userId:
+                            type: string
+                            format: uuid
+                          autoAddTickets:
+                            type: boolean
+                          backupEnabled:
+                            type: boolean
+                          walletTickets:
+                            type: array
+                            items:
+                              type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/dashboard/wallet/add:
+    post:
+      tags:
+        - Tickets
+      summary: Add ticket to wallet
+      description: Add a registration ticket to digital wallet
+      operationId: addTicketToWallet
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registrationId
+              properties:
+                registrationId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Ticket added to wallet successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          backupCode:
+                            type: string
+                            description: Backup code for manual entry (format: WLT-{regId8}-{timestamp36})
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /user/dashboard/wallet/{registrationId}:
+    delete:
+      tags:
+        - Tickets
+      summary: Remove ticket from wallet
+      description: Remove a ticket from digital wallet
+      operationId: removeTicketFromWallet
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ticket removed from wallet successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/wallet/preferences:
+    put:
+      tags:
+        - Tickets
+      summary: Update wallet preferences
+      description: Update digital wallet preferences
+      operationId: updateWalletPreferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                autoAddTickets:
+                  type: boolean
+                  description: Automatically add new tickets to wallet
+                backupEnabled:
+                  type: boolean
+                  description: Enable backup codes
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/dashboard/wallet/{registrationId}/apple-pass:
+    get:
+      tags:
+        - Tickets
+      summary: Generate Apple Wallet pass
+      description: Generate Apple Wallet pass (PKPass format) for ticket
+      operationId: generateAppleWalletPass
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Apple Wallet pass generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          passData:
+                            type: object
+                            description: Apple PassKit formatted data
+                          downloadUrl:
+                            type: string
+                            description: URL to download .pkpass file
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /user/dashboard/wallet/{registrationId}/google-pass:
+    get:
+      tags:
+        - Tickets
+      summary: Generate Google Pay pass
+      description: Generate Google Pay pass for ticket
+      operationId: generateGooglePayPass
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Google Pay pass generated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          passData:
+                            type: object
+                            description: Google Pay formatted data
+                          saveUrl:
+                            type: string
+                            description: URL to add pass to Google Pay
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== PAYMENTS ====================
+  /payments/initialize:
+    post:
+      tags:
+        - Payments
+      summary: Initialize payment
+      description: Initialize payment for a registration (authenticated users)
+      operationId: initializePayment
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registrationId
+              properties:
+                registrationId:
+                  type: string
+                  format: uuid
+                paymentMethod:
+                  type: string
+                  enum: [PAYSTACK, STRIPE, MPESA]
+                  default: PAYSTACK
+      responses:
+        '200':
+          description: Payment initialized successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          paymentUrl:
+                            type: string
+                          reference:
+                            type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /payments/initialize-guest:
+    post:
+      tags:
+        - Payments
+      summary: Initialize payment for guest
+      description: Initialize payment for a guest registration (public endpoint, rate limited)
+      operationId: initializeGuestPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registrationId
+              properties:
+                registrationId:
+                  type: string
+                  format: uuid
+                paymentMethod:
+                  type: string
+                  enum: [PAYSTACK, STRIPE, MPESA]
+                  default: PAYSTACK
+      responses:
+        '200':
+          description: Payment initialized successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          paymentUrl:
+                            type: string
+                          reference:
+                            type: string
+
+  /payments/verify:
+    get:
+      tags:
+        - Payments
+      summary: Verify payment
+      description: Verify payment status (callback endpoint)
+      operationId: verifyPayment
+      parameters:
+        - name: reference
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment verified successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Payment'
+
+  /payments/webhook:
+    post:
+      tags:
+        - Payments
+      summary: Payment webhook
+      description: Webhook endpoint for payment provider callbacks (Paystack, Stripe, etc.)
+      operationId: handleWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Webhook processed successfully
+
+  /payments/status/{registrationId}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment status
+      description: Get payment status for a registration
+      operationId: getPaymentStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== USER ====================
+  /user/me/preferences:
+    get:
+      tags:
+        - Users
+      summary: Get user preferences
+      description: Get current user's preferences
+      operationId: getPreferences
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Preferences retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    put:
+      tags:
+        - Users
+      summary: Update user preferences
+      description: Update current user's preferences
+      operationId: updatePreferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Preferences updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/dashboard/stats:
+    get:
+      tags:
+        - Users
+      summary: Get user dashboard stats
+      description: Get statistics for user dashboard
+      operationId: getDashboardStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          upcomingEvents:
+                            type: integer
+                          pastEvents:
+                            type: integer
+                          totalTickets:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /user/role-switch/become-organizer:
+    post:
+      tags:
+        - Users
+      summary: Switch to organizer role
+      description: Switch from ATTENDEE to ORGANIZER role
+      operationId: becomeOrganizer
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Role switched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /user/role-switch/become-attendee:
+    post:
+      tags:
+        - Users
+      summary: Switch to attendee role
+      description: Switch from ORGANIZER to ATTENDEE role (requires no active events)
+      operationId: becomeAttendee
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Role switched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ==================== ORGANIZER ====================
+  /organizer/dashboard/stats:
+    get:
+      tags:
+        - Organizers
+      summary: Get organizer dashboard stats
+      description: Get statistics for organizer dashboard
+      operationId: getOrganizerDashboardStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          totalEvents:
+                            type: integer
+                          upcomingEvents:
+                            type: integer
+                          totalRevenue:
+                            type: number
+                          totalTicketsSold:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /organizer/events:
+    get:
+      tags:
+        - Organizers
+      summary: Get organizer events
+      description: Get all events created by the organizer
+      operationId: getOrganizerEvents
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Events retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          events:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Event'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /organizer/staff:
+    get:
+      tags:
+        - Organizers
+      summary: Get all staff members
+      description: Get all staff members for the organizer
+      operationId: getStaff
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Staff retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+    post:
+      tags:
+        - Organizers
+      summary: Create staff member
+      description: Create a new staff member
+      operationId: createStaff
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - firstName
+                - lastName
+                - role
+              properties:
+                email:
+                  type: string
+                  format: email
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                role:
+                  type: string
+                  enum: [ORGANIZER_STAFF, ORGANIZER_TELLER]
+                phoneNumber:
+                  type: string
+      responses:
+        '201':
+          description: Staff created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ==================== ADMIN ====================
+  /admin/users:
+    get:
+      tags:
+        - Admin
+      summary: Get all users
+      description: Get all users with filters (requires ADMIN_STAFF role or higher)
+      operationId: getUsers
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          users:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/User'
+                          pagination:
+                            $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+    post:
+      tags:
+        - Admin
+      summary: Create a new user
+      description: Create a new user (requires ADMIN_STAFF role or higher)
+      operationId: createUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - firstName
+                - lastName
+                - role
+              properties:
+                email:
+                  type: string
+                  format: email
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                role:
+                  type: string
+                  enum: [ADMIN_STAFF, MARKETER, SUPPORT, TELLER, ORGANIZER, ATTENDEE]
+                phoneNumber:
+                  type: string
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/dashboard/stats:
+    get:
+      tags:
+        - Admin
+      summary: Get admin dashboard stats
+      description: Get statistics for admin dashboard
+      operationId: getAdminDashboardStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          totalUsers:
+                            type: integer
+                          totalEvents:
+                            type: integer
+                          totalRevenue:
+                            type: number
+                          activeOrganizers:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/users/{id}/suspend:
+    post:
+      tags:
+        - Admin
+      summary: Suspend user
+      description: Suspend a user account (punitive action)
+      operationId: suspendUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: User suspended successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/users/{id}/activate:
+    post:
+      tags:
+        - Admin
+      summary: Activate user
+      description: Activate a suspended/deactivated user account
+      operationId: activateUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User activated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  # ==================== SERVICE POINT - BADGE TEMPLATES ====================
+  /badge-templates:
+    get:
+      tags:
+        - Service Point
+      summary: Get badge templates
+      description: Retrieve badge templates with optional filters
+      operationId: getBadgeTemplates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizerId
+          in: query
+          schema:
+            type: string
+          description: Filter by organizer ID
+        - name: eventId
+          in: query
+          schema:
+            type: string
+          description: Filter by event ID
+        - name: isDefault
+          in: query
+          schema:
+            type: boolean
+          description: Filter by default status
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+          description: Filter by active status
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name or description
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          templates:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/BadgeTemplate'
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          limit:
+                            type: integer
+                          totalPages:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Service Point
+      summary: Create badge template
+      description: Create a new badge template
+      operationId: createBadgeTemplate
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                width:
+                  type: number
+                  default: 101.6
+                height:
+                  type: number
+                  default: 76.2
+                sizePreset:
+                  type: string
+                  enum: [4x3, 3.5x2.25, 4x6, A6, custom]
+                  default: 4x3
+                orientation:
+                  type: string
+                  enum: [portrait, landscape]
+                  default: landscape
+                backgroundColor:
+                  type: string
+                  default: "#ffffff"
+                elements:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BadgeElement'
+                  default: []
+                isDefault:
+                  type: boolean
+                  default: false
+                organizerId:
+                  type: string
+                eventId:
+                  type: string
+      responses:
+        '201':
+          description: Template created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /badge-templates/default:
+    get:
+      tags:
+        - Service Point
+      summary: Get default template
+      description: Get the default badge template for a scope
+      operationId: getDefaultBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizerId
+          in: query
+          schema:
+            type: string
+        - name: eventId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Default template retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /badge-templates/{id}:
+    get:
+      tags:
+        - Service Point
+      summary: Get badge template by ID
+      description: Retrieve a specific badge template
+      operationId: getBadgeTemplateById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Template ID
+      responses:
+        '200':
+          description: Template retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Service Point
+      summary: Update badge template
+      description: Update an existing badge template
+      operationId: updateBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                width:
+                  type: number
+                height:
+                  type: number
+                sizePreset:
+                  type: string
+                orientation:
+                  type: string
+                backgroundColor:
+                  type: string
+                backgroundImage:
+                  type: string
+                elements:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BadgeElement'
+                isDefault:
+                  type: boolean
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          description: Template updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Delete badge template
+      description: Soft delete a badge template (sets isActive to false)
+      operationId: deleteBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /badge-templates/{id}/duplicate:
+    post:
+      tags:
+        - Service Point
+      summary: Duplicate badge template
+      description: Create a copy of an existing badge template
+      operationId: duplicateBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name for the duplicated template (defaults to "{original name} (Copy)")
+      responses:
+        '201':
+          description: Template duplicated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /badge-templates/{id}/set-default:
+    post:
+      tags:
+        - Service Point
+      summary: Set template as default
+      description: Set a badge template as the default for its scope
+      operationId: setDefaultBadgeTemplate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Template set as default successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /badge-templates/{id}/background:
+    post:
+      tags:
+        - Service Point
+      summary: Upload background image
+      description: Upload a background image for a badge template
+      operationId: uploadBadgeTemplateBackground
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Image file (PNG, JPEG, WebP, max 5MB)
+      responses:
+        '200':
+          description: Background image uploaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Remove background image
+      description: Remove the background image from a badge template
+      operationId: removeBadgeTemplateBackground
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Background image removed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          template:
+                            $ref: '#/components/schemas/BadgeTemplate'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== Facility Zone Management ====================
+  /zones:
+    post:
+      tags:
+        - Service Point
+      summary: Create facility zone
+      description: Create a new access control zone for facilities
+      operationId: createFacilityZone
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - eventId
+                - name
+                - code
+              properties:
+                eventId:
+                  type: string
+                  format: uuid
+                name:
+                  type: string
+                  example: "VIP Lounge"
+                code:
+                  type: string
+                  example: "VIP"
+                description:
+                  type: string
+                maxCapacity:
+                  type: integer
+                  example: 100
+                accessStart:
+                  type: string
+                  format: date-time
+                accessEnd:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Zone created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          zone:
+                            $ref: '#/components/schemas/FacilityZone'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /events/{eventId}/zones:
+    get:
+      tags:
+        - Service Point
+      summary: Get event zones
+      description: Get all facility zones for an event
+      operationId: getEventZones
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeInactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - name: includeCount
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Zones retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          zones:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/FacilityZone'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /zones/{zoneId}:
+    get:
+      tags:
+        - Service Point
+      summary: Get zone by ID
+      description: Get a single facility zone with details
+      operationId: getFacilityZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeRelations
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Zone retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          zone:
+                            $ref: '#/components/schemas/FacilityZone'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    put:
+      tags:
+        - Service Point
+      summary: Update zone
+      description: Update facility zone configuration
+      operationId: updateFacilityZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                code:
+                  type: string
+                description:
+                  type: string
+                maxCapacity:
+                  type: integer
+                  nullable: true
+                accessStart:
+                  type: string
+                  format: date-time
+                  nullable: true
+                accessEnd:
+                  type: string
+                  format: date-time
+                  nullable: true
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          description: Zone updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          zone:
+                            $ref: '#/components/schemas/FacilityZone'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Delete zone
+      description: Delete a facility zone
+      operationId: deleteFacilityZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Zone deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /zones/{zoneId}/facilities/{facilityId}:
+    post:
+      tags:
+        - Service Point
+      summary: Assign facility to zone
+      description: Link a facility to an access control zone
+      operationId: assignFacilityToZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: facilityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '201':
+          description: Facility assigned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          mapping:
+                            $ref: '#/components/schemas/FacilityZoneMapping'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Remove facility from zone
+      description: Unlink a facility from an access control zone
+      operationId: removeFacilityFromZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: facilityId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Facility removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /zones/{zoneId}/attendees/bulk-assign:
+    post:
+      tags:
+        - Service Point
+      summary: Bulk assign attendees to zone
+      description: Grant zone access to multiple attendees at once
+      operationId: bulkAssignAttendeesToZone
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - registrationIds
+              properties:
+                registrationIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  example: ["reg-1", "reg-2", "reg-3"]
+                expiresAt:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Attendees assigned successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          successCount:
+                            type: integer
+                          failureCount:
+                            type: integer
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /zones/{zoneId}/attendees:
+    get:
+      tags:
+        - Service Point
+      summary: Get zone attendees
+      description: Get all attendees with access to a zone
+      operationId: getZoneAttendees
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Attendees retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          attendees:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/AttendeeZoneAccess'
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /zones/{zoneId}/attendees/{registrationId}:
+    delete:
+      tags:
+        - Service Point
+      summary: Revoke zone access
+      description: Remove attendee's access to a zone
+      operationId: revokeZoneAccess
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Access revoked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /zones/{zoneId}/access/check/{registrationId}:
+    get:
+      tags:
+        - Service Point
+      summary: Validate zone access
+      description: Check if an attendee can access a zone
+      operationId: validateZoneAccess
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Access validation result
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          validation:
+                            type: object
+                            properties:
+                              allowed:
+                                type: boolean
+                              reason:
+                                type: string
+                              access:
+                                $ref: '#/components/schemas/AttendeeZoneAccess'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /zones/{zoneId}/capacity:
+    get:
+      tags:
+        - Service Point
+      summary: Check zone capacity
+      description: Get current zone occupancy and capacity information
+      operationId: checkZoneCapacity
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: zoneId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Capacity information retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          capacity:
+                            $ref: '#/components/schemas/ZoneCapacityInfo'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /events/{eventId}/movements:
+    get:
+      tags:
+        - Service Point
+      summary: Get event movements
+      description: Get attendee movement history for an event
+      operationId: getEventMovements
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: zoneId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Movements retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          movements:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/FacilityMovement'
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /registrations/{registrationId}/movements:
+    get:
+      tags:
+        - Service Point
+      summary: Get attendee movements
+      description: Get movement history for a specific attendee
+      operationId: getAttendeeMovements
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Movements retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          movements:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/FacilityMovement'
+                          total:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== Printer Management ====================
+
+  /printers/discover:
+    get:
+      tags:
+        - Service Point
+      summary: Discover available printers
+      description: Auto-detect printers on the system using CUPS (Mac/Linux) or Windows print server
+      parameters:
+        - name: driver
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [cups, windows]
+          description: Printer driver to use for discovery
+      responses:
+        '200':
+          description: Printers discovered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printers:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                deviceId:
+                                  type: string
+                                driver:
+                                  type: string
+                                isAvailable:
+                                  type: boolean
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /printers:
+    post:
+      tags:
+        - Service Point
+      summary: Register a printer
+      description: Register a new printer for badge printing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterConfig'
+      responses:
+        '201':
+          description: Printer registered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printer:
+                            $ref: '#/components/schemas/Printer'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    get:
+      tags:
+        - Service Point
+      summary: Get all printers
+      description: Retrieve all registered printers with optional filtering
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: string
+          description: Filter printers by event ID
+        - name: includeInactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include soft-deleted printers
+      responses:
+        '200':
+          description: Printers retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printers:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Printer'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /printers/{printerId}:
+    get:
+      tags:
+        - Service Point
+      summary: Get printer by ID
+      description: Retrieve a specific printer's details
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Printer retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printer:
+                            $ref: '#/components/schemas/Printer'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    put:
+      tags:
+        - Service Point
+      summary: Update printer configuration
+      description: Update an existing printer's settings
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterConfig'
+      responses:
+        '200':
+          description: Printer updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printer:
+                            $ref: '#/components/schemas/Printer'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    delete:
+      tags:
+        - Service Point
+      summary: Delete printer
+      description: Soft delete a printer (sets isActive to false, preserves print job history)
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Printer deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /printers/{printerId}/status:
+    get:
+      tags:
+        - Service Point
+      summary: Check printer status
+      description: Check if printer is online and update status in database
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Printer status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          status:
+                            $ref: '#/components/schemas/PrinterStatus'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /printers/{printerId}/test:
+    post:
+      tags:
+        - Service Point
+      summary: Test printer
+      description: Send a test page to verify printer connectivity
+      parameters:
+        - name: printerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Test page sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== Print Job Management ====================
+
+  /print-jobs:
+    post:
+      tags:
+        - Service Point
+      summary: Create print job
+      description: Create a new badge print job for an attendee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - printerId
+                - templateId
+                - registrationId
+              properties:
+                printerId:
+                  type: string
+                  description: ID of the printer to use
+                templateId:
+                  type: string
+                  description: ID of the badge template
+                registrationId:
+                  type: string
+                  description: ID of the event registration
+                copies:
+                  type: integer
+                  default: 1
+                  minimum: 1
+                  maximum: 10
+                priority:
+                  type: integer
+                  default: 0
+                  description: Higher priority jobs print first
+      responses:
+        '201':
+          description: Print job created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          printJob:
+                            $ref: '#/components/schemas/PrintJob'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    get:
+      tags:
+        - Service Point
+      summary: Get print jobs
+      description: Retrieve print jobs with optional filtering
+      parameters:
+        - name: printerId
+          in: query
+          schema:
+            type: string
+          description: Filter by printer ID
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [queued, printing, completed, failed, cancelled]
+          description: Filter by job status
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Print jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          jobs:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PrintJob'
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          limit:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /print-jobs/bulk:
+    post:
+      tags:
+        - Service Point
+      summary: Bulk create print jobs
+      description: Create multiple print jobs for multiple attendees
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - printerId
+                - templateId
+                - registrationIds
+              properties:
+                printerId:
+                  type: string
+                  description: ID of the printer to use
+                templateId:
+                  type: string
+                  description: ID of the badge template
+                registrationIds:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of registration IDs
+                copies:
+                  type: integer
+                  default: 1
+                  minimum: 1
+                  maximum: 10
+                priority:
+                  type: integer
+                  default: 0
+      responses:
+        '200':
+          description: Bulk print jobs created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          successCount:
+                            type: integer
+                          failureCount:
+                            type: integer
+                          total:
+                            type: integer
+                          jobs:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/PrintJob'
+                          errors:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                registrationId:
+                                  type: string
+                                error:
+                                  type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /print-jobs/{jobId}/cancel:
+    post:
+      tags:
+        - Service Point
+      summary: Cancel print job
+      description: Cancel a queued or printing job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Print job cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== OFFLINE SYNC ====================
+  /offline/events/{eventId}/data:
+    get:
+      tags:
+        - Offline Sync
+      summary: Download event data for offline use
+      description: Bulk download attendees, zones, and facilities for offline caching on mobile devices
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Event data retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OfflineEventData'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /offline/scans/batch:
+    post:
+      tags:
+        - Offline Sync
+      summary: Upload batch of scans from mobile device
+      description: Process multiple scans queued offline and detect conflicts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scans
+              properties:
+                scans:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/OfflineScanInput'
+      responses:
+        '200':
+          description: Batch scan processing completed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BatchScanResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /offline/scans/status/{eventId}:
+    get:
+      tags:
+        - Offline Sync
+      summary: Get sync status for mobile device
+      description: Retrieve pending scan counts and last sync time
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Sync status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SyncStatus'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /offline/scans/conflicts/{eventId}:
+    get:
+      tags:
+        - Offline Sync
+      summary: Get scan conflicts for event
+      description: Detect duplicate scans within a time window
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+        - name: timeWindow
+          in: query
+          schema:
+            type: integer
+            default: 5
+          description: Time window in minutes for conflict detection
+      responses:
+        '200':
+          description: Conflicts detected successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          conflicts:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ScanConflict'
+                          count:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /offline/scans/conflicts/{conflictId}/resolve:
+    post:
+      tags:
+        - Offline Sync
+      summary: Resolve scan conflict
+      description: Apply resolution strategy to duplicate scans
+      parameters:
+        - name: conflictId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the conflict (format conflict-scanId1-scanId2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - resolution
+              properties:
+                resolution:
+                  type: string
+                  enum: [keep_first, keep_latest, keep_both]
+                  description: Strategy for resolving the conflict
+      responses:
+        '200':
+          description: Conflict resolved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== VENUE CAPACITY ====================
+  /capacity/events/{eventId}:
+    get:
+      tags:
+        - Venue Capacity
+      summary: Get venue capacity status
+      description: Returns current occupancy, max capacity, and percentage filled
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Capacity status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      eventId:
+                        type: string
+                      maxCapacity:
+                        type: integer
+                        nullable: true
+                      currentOccupancy:
+                        type: integer
+                      availableCapacity:
+                        type: integer
+                        nullable: true
+                      percentageFilled:
+                        type: number
+                      isAtCapacity:
+                        type: boolean
+                      thresholdBreached:
+                        type: integer
+                        nullable: true
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    put:
+      tags:
+        - Venue Capacity
+      summary: Set venue maximum capacity
+      description: Configure the maximum capacity for a venue (admin only)
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxCapacity:
+                  type: integer
+                  nullable: true
+                  description: Maximum capacity (null for unlimited)
+      responses:
+        '200':
+          description: Capacity updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/overview:
+    get:
+      tags:
+        - Venue Capacity
+      summary: Get comprehensive capacity overview
+      description: Returns venue capacity and all zone capacities with summary stats
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Capacity overview retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      venue:
+                        type: object
+                        description: Venue capacity status
+                      zones:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            zoneId:
+                              type: string
+                            zoneName:
+                              type: string
+                            maxCapacity:
+                              type: integer
+                              nullable: true
+                            currentOccupancy:
+                              type: integer
+                            percentageFilled:
+                              type: number
+                            isAtCapacity:
+                              type: boolean
+                      summary:
+                        type: object
+                        properties:
+                          totalZones:
+                            type: integer
+                          zonesAtCapacity:
+                            type: integer
+                          totalZoneCapacity:
+                            type: integer
+                            nullable: true
+                          totalZoneOccupancy:
+                            type: integer
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/zones:
+    get:
+      tags:
+        - Venue Capacity
+      summary: Get zone capacity statuses
+      description: Returns capacity status for all active zones
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Zone capacities retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        zoneId:
+                          type: string
+                        zoneName:
+                          type: string
+                        zoneCode:
+                          type: string
+                        maxCapacity:
+                          type: integer
+                          nullable: true
+                        currentOccupancy:
+                          type: integer
+                        availableCapacity:
+                          type: integer
+                          nullable: true
+                        percentageFilled:
+                          type: number
+                        isAtCapacity:
+                          type: boolean
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/can-check-in:
+    get:
+      tags:
+        - Venue Capacity
+      summary: Check if venue can accept check-ins
+      description: Quick check to see if venue has capacity for more attendees
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+        - name: count
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Number of people to check in
+      responses:
+        '200':
+          description: Check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      canCheckIn:
+                        type: boolean
+                      requestedCount:
+                        type: integer
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/reset:
+    post:
+      tags:
+        - Venue Capacity
+      summary: Reset occupancy counters
+      description: Reset all venue and zone occupancy counters to zero (admin only)
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Occupancy reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /capacity/events/{eventId}/recalculate:
+    post:
+      tags:
+        - Venue Capacity
+      summary: Recalculate occupancy from records
+      description: Recalculate occupancy counters from check-in data (admin only)
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the event
+      responses:
+        '200':
+          description: Occupancy recalculated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      venueOccupancy:
+                        type: integer
+                      zoneOccupancies:
+                        type: object
+                        additionalProperties:
+                          type: integer
+                  message:
+                    type: string
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  # Career Inquiry Endpoints
+  /careers:
+    post:
+      tags:
+        - Careers
+      summary: Submit career inquiry
+      description: |
+        Submit a career inquiry by providing an email address.
+        An automated email will be sent with instructions for the candidate to share their story.
+        Rate limited to one submission per email per 24 hours.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: candidate@example.com
+                  description: Candidate's email address
+                source:
+                  type: string
+                  maxLength: 100
+                  example: linkedin
+                  description: Optional tracking source
+      responses:
+        '201':
+          description: Career inquiry submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Thank you for your interest! Check your email for next steps.
+                  data:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        example: candidate@example.com
+        '400':
+          description: Invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Careers
+      summary: List career inquiries (Admin)
+      description: Get all career inquiries with pagination and filtering. Requires admin privileges.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, CONTACTED, RESPONDED, REVIEWING, REJECTED, HIRED]
+          description: Filter by inquiry status
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Items per page
+      responses:
+        '200':
+          description: List of career inquiries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      inquiries:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CareerInquiry'
+                      pagination:
+                        $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /careers/{id}:
+    patch:
+      tags:
+        - Careers
+      summary: Update career inquiry (Admin)
+      description: Update the status and notes of a career inquiry. Requires admin privileges.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Career inquiry ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [PENDING, CONTACTED, RESPONDED, REVIEWING, REJECTED, HIRED]
+                  description: New inquiry status
+                notes:
+                  type: string
+                  maxLength: 5000
+                  description: Internal notes about the candidate
+      responses:
+        '200':
+          description: Inquiry updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Inquiry updated successfully
+                  data:
+                    $ref: '#/components/schemas/CareerInquiry'
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+security:
+  - BearerAuth: []

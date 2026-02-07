@@ -1,0 +1,609 @@
+/* React Resizable styles for draggable badge elements - must be first */
+@import 'react-resizable/css/styles.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   EventKnit Color System - Centralized Color Definitions
+   ============================================================================
+   Change colors here to update them across the entire application.
+   All colors use HSL format for consistency.
+   ============================================================================ */
+
+@layer base {
+  :root {
+    /* ========================================================================
+       BASE COLOR TOKENS - Single source of truth (X/Twitter Inspired)
+       Change these values to update colors everywhere
+       ======================================================================== */
+
+    /* BLUE - Primary Brand Color (X/Twitter Blue) */
+    --color-blue: 204 88% 53%;        /* #1D9BF0 - Main brand color */
+    --color-blue-hover: 204 88% 48%;  /* Darker on hover */
+    --color-blue-glow: 204 88% 63%;   /* Brighter for glows */
+    --color-blue-dark: 204 88% 43%;   /* Darker variant */
+    --color-blue-light: 204 88% 95%;  /* Light tint for backgrounds */
+
+    /* GRAY SCALE - Neutral grays (X/Twitter style) */
+    --color-gray-50: 210 20% 98%;     /* #F9FAFB - Lightest background */
+    --color-gray-100: 210 17% 95%;    /* #EFF3F4 - Borders, dividers (light) */
+    --color-gray-200: 210 14% 89%;    /* #E1E8ED - Subtle borders */
+    --color-gray-300: 210 12% 80%;    /* #CFD9DE - Disabled states */
+    --color-gray-400: 210 10% 60%;    /* #8899A6 - Placeholder text */
+    --color-gray-500: 210 10% 40%;    /* #536471 - Secondary text (light mode) */
+    --color-gray-600: 210 8% 45%;     /* #71767B - Secondary text (dark mode) */
+    --color-gray-700: 210 8% 25%;     /* #3D4144 - Stronger text */
+    --color-gray-800: 210 8% 18%;     /* #2F3336 - Borders (dark mode) */
+    --color-gray-900: 210 15% 8%;     /* #0F1419 - Near black text */
+
+    /* BLACK & WHITE */
+    --color-black: 0 0% 0%;           /* #000000 - Pure black */
+    --color-white: 0 0% 100%;         /* #FFFFFF - Pure white */
+    --color-off-white: 210 20% 99%;   /* #FCFCFD - Soft off-white, easy on eyes */
+
+    /* DESTRUCTIVE - Red for errors/warnings */
+    --color-destructive: 0 84% 60%;   /* #EF4444 */
+
+    /* SUCCESS - Green for positive states */
+    --color-success: 142 76% 36%;     /* #16a34a - Available, success, completed */
+    --color-success-light: 142 76% 95%; /* Light tint for backgrounds */
+    --color-success-dark: 142 76% 30%; /* Darker for hover */
+
+    /* ========================================================================
+       SEMANTIC COLOR VARIABLES - Built from base tokens
+       ======================================================================== */
+
+    /* Backgrounds */
+    --background: var(--color-gray-50);
+    --foreground: var(--color-gray-900);
+    --surface: var(--color-gray-50);
+
+    /* Primary (X/Twitter Blue) */
+    --primary: var(--color-blue);
+    --primary-foreground: var(--color-white);
+    --primary-glow: var(--color-blue-glow);
+    --primary-dark: var(--color-blue-dark);
+    --primary-hover: var(--color-blue-hover);
+
+    /* Accent (Blue for X/Twitter style) */
+    --accent: var(--color-blue);
+    --accent-foreground: var(--color-white);
+    --accent-light: var(--color-blue-light);
+    /* DEPRECATED: accent-coral renamed - keeping for backward compatibility */
+    --accent-coral: var(--color-blue);
+
+    /* Success */
+    --success: var(--color-success);
+    --success-foreground: var(--color-white);
+    --success-light: var(--color-success-light);
+
+    /* Navigation & Sidebar */
+    --nav-hover: var(--color-blue);
+    --sidebar-item-hover: var(--color-blue-light);
+    --sidebar-item-hover-text: var(--color-blue);
+
+    /* EventKnit Brand */
+    --eventknit-brand: var(--color-blue);
+    --eventknit-brand-foreground: var(--color-white);
+
+    /* Cards */
+    --card-surface: var(--color-off-white);
+    --card-border: var(--color-gray-100);
+    --card-hover: var(--color-blue);
+
+    /* Secondary */
+    --secondary: var(--color-blue-light);
+    --secondary-foreground: var(--color-gray-900);
+
+    /* Muted */
+    --muted: var(--color-gray-100);
+    --muted-foreground: var(--color-gray-500);
+
+    /* Destructive */
+    --destructive: var(--color-destructive);
+    --destructive-foreground: var(--color-white);
+
+    /* Borders & Inputs */
+    --border: var(--color-gray-100);
+    --input: var(--color-off-white);
+    --ring: var(--color-blue);
+
+    /* Sidebar */
+    --sidebar-background: var(--color-off-white);
+    --sidebar-foreground: var(--color-gray-900);
+    --sidebar-primary: var(--color-blue);
+    --sidebar-primary-foreground: var(--color-white);
+    --sidebar-accent: var(--color-gray-50);
+    --sidebar-accent-foreground: var(--color-gray-900);
+    --sidebar-border: var(--color-gray-100);
+    --sidebar-ring: var(--color-blue);
+
+    /* Footer - Dark footer (always dark regardless of theme) */
+    --footer-background: 220 13% 18%;       /* #1E2328 - Dark charcoal (Eventbrite-style) */
+    --footer-foreground: 210 17% 91%;       /* #E7E9EA - Light text */
+    --footer-foreground-muted: 210 8% 55%;  /* #8899A6 - Secondary text */
+    --footer-border: 220 10% 25%;           /* #363D44 - Subtle dividers */
+    --footer-link-hover: var(--color-blue);
+
+    /* ========================================================================
+       GRADIENTS - Built from base color tokens
+       ======================================================================== */
+
+    /* Primary Brand Gradient - Used in buttons and cards */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--color-blue)) 0%, hsl(var(--color-blue-dark)) 100%);
+
+    /* Card Gradient - Used in card components */
+    --gradient-card: linear-gradient(145deg, hsl(var(--color-off-white)) 0%, hsl(var(--color-gray-50)) 100%);
+
+    /* ========================================================================
+       GLASS EFFECTS - Light Theme
+       ======================================================================== */
+    --glass-bg: hsl(var(--color-off-white) / 0.95);
+    --glass-border: hsl(var(--color-gray-200) / 0.5);
+
+    /* ========================================================================
+       SHADOWS & GLOWS - Light Theme
+       ======================================================================== */
+    --shadow-primary: 0 20px 40px -12px hsl(var(--color-blue) / 0.3);
+    --shadow-card: 0 1px 3px 0 hsl(var(--color-gray-900) / 0.1), 0 1px 2px -1px hsl(var(--color-gray-900) / 0.1);
+    --shadow-card-hover: 0 10px 15px -3px hsl(var(--color-gray-900) / 0.1), 0 4px 6px -4px hsl(var(--color-gray-900) / 0.1);
+    --shadow-glow: 0 0 40px hsl(var(--color-blue-glow) / 0.4);
+    --shadow-elevated: 0 20px 25px -5px hsl(var(--color-gray-900) / 0.1), 0 8px 10px -6px hsl(var(--color-gray-900) / 0.1);
+
+    /* ========================================================================
+       TRANSITIONS
+       ======================================================================== */
+    --transition-smooth: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    --transition-spring: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* ========================================================================
+       CHART COLORS - For Recharts and other chart libraries
+       ======================================================================== */
+    --chart-1: 142 76% 36%;             /* Green - primary chart color */
+    --chart-2: 142 71% 45%;             /* Green - secondary chart color */
+    --chart-3: 204 88% 53%;             /* Blue - accent chart color */
+    --chart-4: 262 83% 58%;             /* Purple - accent chart color */
+    --chart-5: 24 95% 53%;              /* Orange - accent chart color */
+
+    /* ========================================================================
+       SHADCN COMPONENT COLORS - Light Theme
+       ======================================================================== */
+    --card: var(--card-surface);
+    --card-foreground: var(--foreground);
+
+    --popover: var(--surface);
+    --popover-foreground: var(--foreground);
+
+    --secondary: var(--color-blue-light);
+    --secondary-foreground: var(--color-gray-900);
+
+    --muted: var(--color-gray-100);
+    --muted-foreground: var(--color-gray-500);
+
+    --accent: var(--color-blue);
+    --accent-foreground: var(--color-white);
+
+    --destructive: var(--color-destructive);
+    --destructive-foreground: var(--color-white);
+
+    --border: var(--color-gray-100);
+    --input: var(--color-off-white);
+    --ring: var(--primary);
+
+    --radius: 0.5rem;
+  }
+
+  /* ========================================================================
+     DARK MODE - Override base tokens for dark theme (X/Twitter Inspired)
+     ======================================================================== */
+  .dark {
+    /* ========================================================================
+       X/TWITTER DARK MODE - Deep neutral dark background
+       ======================================================================== */
+
+    /* Base Color Overrides for Dark Mode - Enhanced for visibility */
+    --color-blue: 204 88% 58%;        /* Brighter blue for better visibility on dark */
+    --color-blue-hover: 204 88% 53%;  /* Hover state */
+    --color-blue-glow: 204 88% 68%;   /* Even brighter for glows */
+    --color-blue-dark: 204 88% 48%;   /* Darker variant */
+    --color-blue-light: 204 50% 20%;  /* Dark tint for backgrounds */
+    --color-destructive: 0 72% 58%;   /* More visible red for errors */
+    --color-success: 142 71% 45%;     /* Brighter green for dark mode */
+    --color-success-light: 142 50% 20%; /* Dark tint for backgrounds */
+    --color-success-dark: 142 71% 40%; /* Darker for hover */
+
+    /* Dark mode grays */
+    --color-gray-50: 0 0% 10%;        /* #1a1a1a - Main background */
+    --color-gray-100: 0 0% 13%;       /* #212121 - Elevated surfaces */
+    --color-gray-200: 0 0% 18%;       /* #2e2e2e - Borders, dividers */
+    --color-gray-300: 0 0% 25%;       /* #404040 - Stronger borders */
+    --color-gray-400: 0 0% 40%;       /* #666666 - Disabled text */
+    --color-gray-500: 0 0% 55%;       /* #8c8c8c - Placeholder text */
+    --color-gray-600: 0 0% 65%;       /* #a6a6a6 - Secondary text */
+    --color-gray-700: 0 0% 80%;       /* #cccccc - Primary text */
+    --color-gray-800: 0 0% 90%;       /* #e6e6e6 - High emphasis text */
+    --color-gray-900: 0 0% 95%;       /* #f2f2f2 - Maximum contrast text */
+
+    /* Backgrounds - Deep dark */
+    --background: 0 0% 10%;           /* #1a1a1a - Deep neutral dark */
+    --foreground: 0 0% 95%;           /* High contrast text */
+    --surface: 0 0% 13%;              /* Slightly lighter for surfaces */
+
+    /* Primary (X/Twitter Blue) - Enhanced */
+    --primary: var(--color-blue);
+    --primary-foreground: var(--color-white);
+    --primary-glow: var(--color-blue-glow);
+    --primary-dark: var(--color-blue-dark);
+    --primary-hover: var(--color-blue-hover);
+
+    /* Accent (Blue) - Enhanced */
+    --accent: var(--color-blue);
+    --accent-foreground: var(--color-white);
+    --accent-light: var(--color-blue-light);
+    /* DEPRECATED: accent-coral renamed - keeping for backward compatibility */
+    --accent-coral: var(--color-blue);
+
+    /* Success - Dark Mode */
+    --success: var(--color-success);
+    --success-foreground: var(--color-white);
+    --success-light: var(--color-success-light);
+
+    /* Navigation & Sidebar - Dark Mode */
+    --nav-hover: var(--color-blue);
+    --sidebar-item-hover: var(--color-blue-light);
+    --sidebar-item-hover-text: var(--color-blue);
+
+    /* EventKnit Brand */
+    --eventknit-brand: var(--color-blue);
+    --eventknit-brand-foreground: var(--color-white);
+
+    /* Cards - Subtle elevation on dark background */
+    --card-surface: 0 0% 13%;         /* Slightly lighter than background */
+    --card-border: 0 0% 20%;          /* Subtle borders */
+    --card-hover: var(--color-blue);
+
+    /* Gradients - Dark Theme */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--color-blue)) 0%, hsl(var(--color-blue-dark)) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 13%) 0%, hsl(0 0% 10%) 100%);
+
+    /* Glass Effects - Dark Theme */
+    --glass-bg: hsl(0 0% 10% / 0.9);
+    --glass-border: hsl(var(--color-blue) / 0.3);
+
+    /* Shadows & Glows - Dark Theme */
+    --shadow-primary: 0 20px 40px -12px hsl(var(--color-blue) / 0.4);
+    --shadow-card: 0 4px 16px -4px hsl(var(--color-black) / 0.5);
+    --shadow-card-hover: 0 8px 24px -8px hsl(var(--color-blue) / 0.3);
+    --shadow-glow: 0 0 40px hsl(var(--color-blue-glow) / 0.5);
+    --shadow-elevated: 0 20px 40px -12px hsl(var(--color-blue) / 0.3);
+
+    /* Chart Colors - Dark Theme (slightly brighter for visibility) */
+    --chart-1: 142 71% 50%;             /* Green - brighter for dark mode */
+    --chart-2: 142 71% 55%;             /* Green - secondary chart color */
+    --chart-3: 204 88% 58%;             /* Blue - accent chart color */
+    --chart-4: 262 83% 63%;             /* Purple - accent chart color */
+    --chart-5: 24 95% 58%;              /* Orange - accent chart color */
+
+    /* ShadCN Component Colors - Dark Theme */
+    --card: 0 0% 13%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 13%;
+    --popover-foreground: 0 0% 95%;
+
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;     /* Secondary text - good contrast */
+
+    --accent: var(--color-blue);
+    --accent-foreground: var(--color-white);
+
+    /* Destructive */
+    --destructive: var(--color-destructive);
+    --destructive-foreground: var(--color-white);
+
+    /* Borders & Inputs */
+    --border: 0 0% 20%;               /* Subtle borders */
+    --input: 0 0% 13%;                /* Input backgrounds */
+    --ring: var(--color-blue);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: var(--color-blue);
+    --sidebar-primary-foreground: var(--color-white);
+    --sidebar-accent: 0 0% 18%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: var(--color-blue);
+
+    /* Footer - Keep same dark style in dark mode for consistency */
+    --footer-background: 220 13% 18%;       /* #1E2328 - Same as light mode */
+    --footer-foreground: 210 17% 91%;       /* #E7E9EA */
+    --footer-foreground-muted: 210 8% 55%;  /* #8899A6 */
+    --footer-border: 220 10% 25%;           /* #363D44 */
+    --footer-link-hover: var(--color-blue);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-variation-settings: normal;
+  }
+
+  /* Typography Scale */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  h1 {
+    @apply text-4xl lg:text-5xl;
+  }
+
+  h2 {
+    @apply text-3xl lg:text-4xl;
+  }
+
+  h3 {
+    @apply text-2xl lg:text-3xl;
+  }
+
+  h4 {
+    @apply text-xl lg:text-2xl;
+  }
+
+  h5 {
+    @apply text-lg lg:text-xl;
+  }
+
+  h6 {
+    @apply text-base lg:text-lg;
+  }
+
+  p {
+    @apply text-base leading-relaxed;
+  }
+
+  small {
+    @apply text-sm;
+  }
+
+  /* Button Typography */
+  button {
+    @apply font-medium;
+  }
+
+  /* Input Typography */
+  input,
+  textarea,
+  select {
+    @apply font-normal;
+  }
+}
+
+@layer utilities {
+
+  /* ========================================================================
+     UNIFIED PAGE TYPOGRAPHY - Use these for consistent text across pages
+     ======================================================================== */
+
+  /* Page Titles - Main heading on each page (24px) */
+  .text-page-title {
+    @apply text-2xl font-bold text-foreground;
+  }
+
+  /* Page Subtitle - Description below page title (14px) */
+  .text-page-subtitle {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Section Header - Section titles within a page (18px) */
+  .text-section-header {
+    @apply text-lg font-semibold text-foreground;
+  }
+
+  /* Card Title - Title inside cards (16px) */
+  .text-card-title {
+    @apply text-base font-semibold text-foreground;
+  }
+
+  /* Card Description - Description inside cards (14px) */
+  .text-card-description {
+    @apply text-sm text-muted-foreground;
+  }
+
+  /* Form Label - Labels for form inputs (14px) */
+  .text-form-label {
+    @apply text-sm font-medium text-foreground;
+  }
+
+  /* Metadata - Small info like dates, counts (12px) */
+  .text-metadata {
+    @apply text-xs text-muted-foreground;
+  }
+
+  /* ========================================================================
+     LEGACY TYPOGRAPHY UTILITIES - Keeping for backward compatibility
+     ======================================================================== */
+
+  .text-display {
+    @apply text-6xl font-bold tracking-tight;
+  }
+
+  .text-heading-1 {
+    @apply text-5xl font-semibold tracking-tight;
+  }
+
+  .text-heading-2 {
+    @apply text-4xl font-semibold tracking-tight;
+  }
+
+  .text-heading-3 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+
+  .text-heading-4 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  .text-heading-5 {
+    @apply text-xl font-semibold tracking-tight;
+  }
+
+  .text-heading-6 {
+    @apply text-lg font-semibold tracking-tight;
+  }
+
+  .text-body-large {
+    @apply text-lg leading-relaxed;
+  }
+
+  .text-body {
+    @apply text-base leading-relaxed;
+  }
+
+  .text-body-small {
+    @apply text-sm leading-relaxed;
+  }
+
+  .text-caption {
+    @apply text-xs leading-normal;
+  }
+
+  .text-label {
+    @apply text-sm font-medium;
+  }
+
+  .text-button {
+    @apply text-sm font-medium;
+  }
+
+  .text-button-large {
+    @apply text-base font-medium;
+  }
+
+  /* ========================================================================
+     COLOR UTILITIES - Semantic color classes
+     ======================================================================== */
+
+  .text-success {
+    @apply text-[hsl(var(--success))];
+  }
+
+  .bg-success {
+    @apply bg-[hsl(var(--success))];
+  }
+
+  .bg-success-light {
+    @apply bg-[hsl(var(--success-light))];
+  }
+
+  .border-success {
+    @apply border-[hsl(var(--success))];
+  }
+
+  /* Animation Utilities */
+  @keyframes scroll {
+    0% {
+      transform: translateX(0);
+    }
+
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  @keyframes fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-scroll {
+    animation: scroll 30s linear infinite;
+  }
+
+  .animate-scroll:hover {
+    animation-play-state: paused;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.6s ease-out forwards;
+  }
+
+  /* Hide scrollbar utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari and Opera */
+  }
+
+  /* Custom blue gradient scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--color-gray-100));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(204 88% 53%) 0%, hsl(204 88% 43%) 100%);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(204 88% 58%) 0%, hsl(204 88% 48%) 100%);
+    background-clip: padding-box;
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(204 88% 53%) hsl(var(--color-gray-100));
+  }
+
+  /* Dark mode scrollbar */
+  .dark ::-webkit-scrollbar-track {
+    background: hsl(0 0% 15%);
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(204 88% 58%) 0%, hsl(204 88% 48%) 100%);
+  }
+
+  .dark * {
+    scrollbar-color: hsl(204 88% 58%) hsl(0 0% 15%);
+  }
+}

@@ -1,0 +1,167 @@
+import { useLocation } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+import DashboardNavbar from "./DashboardNavbar";
+import DashboardHome from "./DashboardHome";
+import DashboardSpeakers from "./DashboardSpeakers";
+import DashboardExhibitors from "./DashboardExhibitors";
+import DashboardSponsors from "./DashboardSponsors";
+import DashboardAgenda from "./DashboardAgenda";
+import DashboardMyEvent from "./DashboardMyEvent";
+import DashboardMyBadge from "./DashboardMyBadge";
+// TODO: Uncomment when abstracts backend is implemented
+// import DashboardAbstracts from "./DashboardAbstracts";
+import DashboardAttendees from "./DashboardAttendees";
+import AttendeeDiscovery from "./AttendeeDiscovery";
+import NotificationsCenter from "./NotificationsCenter";
+import PersonalAnalytics from "./PersonalAnalytics";
+import PersonalizedRecommendations from "./PersonalizedRecommendations";
+import TicketTransfer from "./TicketTransfer";
+// TODO: Uncomment when reviews/feedback system is reimplemented
+// import EventReviews from "./EventReviews";
+import EventCollections from "./EventCollections";
+import InterestManagement from "./InterestManagement";
+import AdvancedSearch from "./AdvancedSearch";
+import DirectMessaging from "./DirectMessaging";
+import SocialNetworking from "./SocialNetworking";
+import TicketResale from "./TicketResale";
+import DigitalWallet from "./DigitalWallet";
+import EventCalendarIntegration from "./EventCalendarIntegration";
+import PersonalEventFeed from "./PersonalEventFeed";
+import EventUpdatesSubscription from "./EventUpdatesSubscription";
+import PaymentPlans from "./PaymentPlans";
+import Invoices from "./Invoices";
+import MyTickets from "./MyTickets";
+import SavedEvents from "./SavedEvents";
+
+const UserDashboard = () => {
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const activeSection = searchParams.get("section") || "home";
+  const { user: authUser } = useAuth();
+
+  // Get user data from auth context
+  const user = authUser ? {
+    name: `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() || authUser.email || 'User',
+    email: authUser.email || '',
+    initials: authUser.firstName && authUser.lastName 
+      ? `${authUser.firstName[0]}${authUser.lastName[0]}`.toUpperCase()
+      : (authUser.email ? authUser.email[0].toUpperCase() : 'U'),
+  } : {
+    name: 'User',
+    email: '',
+    initials: 'U',
+  };
+
+  // Get event data from navigation state (for specific event views)
+  const registration = location.state?.registration;
+  const eventData = location.state?.eventData;
+
+  // Show success message if available
+  const successMessage = location.state?.message;
+
+  // No longer check for specific event sections - using simplified structure
+
+  const renderSection = () => {
+    switch (activeSection) {
+      case "my-events":
+        return (
+          <DashboardMyEvent eventData={eventData} registration={registration} user={user} />
+        );
+      case "tickets":
+        return <MyTickets />;
+      case "saved":
+        return <SavedEvents />;
+      case "speakers":
+        return <DashboardSpeakers eventData={eventData} />;
+      case "exhibitors":
+        return <DashboardExhibitors eventData={eventData} />;
+      case "sponsors":
+        return <DashboardSponsors eventData={eventData} />;
+      case "attendees":
+        return <DashboardAttendees />;
+      case "agenda":
+        return <DashboardAgenda eventData={eventData} user={user} />;
+      case "my-badge":
+        return (
+          <DashboardMyBadge
+            eventData={eventData}
+            user={user}
+            registration={registration}
+          />
+        );
+      case "networking":
+        return <AttendeeDiscovery eventData={eventData} />;
+      case "notifications":
+        return <NotificationsCenter eventData={eventData} />;
+      case "analytics":
+        return <PersonalAnalytics eventData={eventData} user={user} />;
+      case "recommendations":
+        return <PersonalizedRecommendations />;
+      case "ticket-transfer":
+        return <TicketTransfer />;
+      // TODO: Uncomment when reviews/feedback system is reimplemented
+      // case "reviews":
+      //   return <EventReviews />;
+      case "collections":
+        return <EventCollections />;
+      case "interests":
+        return <InterestManagement />;
+      case "search":
+        return <AdvancedSearch />;
+      case "messages":
+        return <DirectMessaging />;
+      case "social":
+        return <SocialNetworking />;
+      case "ticket-resale":
+        return <TicketResale />;
+      case "wallet":
+        return <DigitalWallet />;
+      case "calendar":
+        return <EventCalendarIntegration />;
+      case "feed":
+        return <PersonalEventFeed />;
+      case "subscriptions":
+        return <EventUpdatesSubscription />;
+      case "payment-plans":
+        return <PaymentPlans />;
+      case "invoices":
+        return <Invoices />;
+      // TODO: Uncomment when abstracts backend is implemented
+      // case "abstracts":
+      //   return <DashboardAbstracts eventData={eventData} user={user} registration={registration} />;
+      default:
+        return (
+          <DashboardHome
+            eventData={eventData}
+            user={user}
+            registration={registration}
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <DashboardNavbar 
+        user={user} 
+        activeSection={activeSection}
+        eventTitle={eventData?.title}
+      />
+      <main className="pt-16 flex-1">
+        {/* Success Message */}
+        {successMessage && (
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4 max-w-7xl">
+            <div className="bg-success-light border border-success/20 rounded-lg p-4 mb-6">
+              <div className="flex">
+                <div className="text-success">{successMessage}</div>
+              </div>
+            </div>
+          </div>
+        )}
+        {renderSection()}
+      </main>
+    </div>
+  );
+};
+
+export default UserDashboard;
