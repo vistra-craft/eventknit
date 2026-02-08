@@ -87,7 +87,7 @@ const AdminLayout: React.FC = () => {
           <AdminHeader onMenuToggle={isMobile ? handleMobileMenuClick : undefined} />
 
           {/* Scrollable main content */}
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto scrollbar-hide">
             <div className="p-6 max-w-[1600px] mx-auto">
               <Suspense fallback={<LoadingFallback />}>
                 <Routes>
