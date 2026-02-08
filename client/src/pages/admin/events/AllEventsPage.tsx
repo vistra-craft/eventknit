@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus, CheckCircle, Clock, TrendingUp, Activity } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -302,6 +302,43 @@ const AllEventsPage = () => {
     );
   }
 
+  // Calculate stats from current data
+  const totalEvents = total;
+  const activeEvents = events.filter(e => e.status === "active").length;
+  const pendingEvents = events.filter(e => e.status === "pending").length;
+  const totalAttendees = events.reduce((sum, e) => sum + (e.attendees || 0), 0);
+
+  const stats = [
+    {
+      title: "Total Events",
+      value: totalEvents.toLocaleString(),
+      icon: Calendar,
+      gradient: 'from-blue-500 to-blue-600',
+      description: "All events in the system"
+    },
+    {
+      title: "Active Events",
+      value: activeEvents.toLocaleString(),
+      icon: CheckCircle,
+      gradient: 'from-emerald-500 to-emerald-600',
+      description: "Currently running"
+    },
+    {
+      title: "Pending Approval",
+      value: pendingEvents.toLocaleString(),
+      icon: Clock,
+      gradient: 'from-amber-500 to-orange-500',
+      description: "Awaiting review"
+    },
+    {
+      title: "Total Attendees",
+      value: totalAttendees.toLocaleString(),
+      icon: Users,
+      gradient: 'from-indigo-500 to-indigo-600',
+      description: "Registered participants"
+    },
+  ];
+
   return (
       <div className="space-y-6">
         {/* Header */}
@@ -344,6 +381,40 @@ const AllEventsPage = () => {
             </Button>
           </div>
         </div>
+
+        {/* Stats Cards - Sticky at top */}
+        <section className="sticky top-0 z-10 bg-background pb-2 pt-2" aria-labelledby="stats-heading">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {stats.map((stat, index) => (
+              <div
+                key={index}
+                className="group relative overflow-hidden rounded-2xl border border-border/40 bg-card shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
+              >
+                {/* Content */}
+                <div className="p-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {stat.title}
+                      </p>
+                      <p className="mt-2 text-2xl font-bold text-foreground">
+                        {stat.value}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {stat.description}
+                      </p>
+                    </div>
+
+                    {/* Gradient Icon Badge */}
+                    <div className={`flex-shrink-0 w-12 h-12 bg-gradient-to-r ${stat.gradient} rounded-xl flex items-center justify-center shadow-lg`}>
+                      <stat.icon className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Filters */}
         <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">

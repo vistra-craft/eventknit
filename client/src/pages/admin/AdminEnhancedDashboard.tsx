@@ -146,7 +146,7 @@ const AdminEnhancedDashboard = () => {
                   return (
                     <div
                       key={index}
-                      className="group relative overflow-hidden rounded-2xl border border-border/50 bg-white dark:bg-gray-800 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
+                      className="group relative overflow-hidden rounded-2xl border border-border/40 bg-card shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
                     >
                       {/* Content */}
                       <div className="p-6">
@@ -189,7 +189,7 @@ const AdminEnhancedDashboard = () => {
         {!statsLoading && (
           <>
 
-            <section className="space-y-6 border-t border-border/50 pt-8">
+            <section className="space-y-6 border-t border-border/40 pt-8">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-section-header uppercase tracking-wide flex items-center gap-2">
@@ -201,7 +201,7 @@ const AdminEnhancedDashboard = () => {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 sm:items-end">
-                  <div className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card p-1 text-xs shadow-sm">
+                  <div className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-card p-1 text-xs shadow-sm">
                     {[
                       { id: "monthly", label: "Monthly" },
                       { id: "quarterly", label: "Quarterly" },
@@ -229,7 +229,7 @@ const AdminEnhancedDashboard = () => {
 
                   {growthPeriod === "monthly" && growthData && (
                     <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                      <SelectTrigger className="mt-1 w-full sm:w-44 h-9 text-xs border-border/50">
+                      <SelectTrigger className="mt-1 w-full sm:w-44 h-9 text-xs border-border/40">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -245,7 +245,7 @@ const AdminEnhancedDashboard = () => {
 
                   {growthPeriod === "yearly" && growthData && (
                     <Select value={selectedYear} onValueChange={setSelectedYear}>
-                      <SelectTrigger className="mt-1 w-full sm:w-44 h-9 text-xs border-border/50">
+                      <SelectTrigger className="mt-1 w-full sm:w-44 h-9 text-xs border-border/40">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -267,7 +267,7 @@ const AdminEnhancedDashboard = () => {
                 {growthLoading ? (
                   <ChartCardSkeleton title="Organizer Growth" />
                 ) : (
-                  <div className="group rounded-2xl border border-border/50 bg-white dark:bg-gray-800 p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
+                  <div className="group rounded-2xl border border-border/40 bg-card p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -304,7 +304,7 @@ const AdminEnhancedDashboard = () => {
                 {growthLoading ? (
                   <ChartCardSkeleton title="Events Created" />
                 ) : (
-                  <div className="group rounded-2xl border border-border/50 bg-white dark:bg-gray-800 p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
+                  <div className="group rounded-2xl border border-border/40 bg-card p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -340,7 +340,7 @@ const AdminEnhancedDashboard = () => {
                 {growthLoading ? (
                   <ChartCardSkeleton title="Platform Revenue" />
                 ) : (
-                  <div className="group rounded-2xl border border-border/50 bg-white dark:bg-gray-800 p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
+                  <div className="group rounded-2xl border border-border/40 bg-card p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -376,7 +376,7 @@ const AdminEnhancedDashboard = () => {
                 {growthLoading ? (
                   <ChartCardSkeleton title="Attendees / Users" />
                 ) : (
-                  <div className="group rounded-2xl border border-border/50 bg-white dark:bg-gray-800 p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
+                  <div className="group rounded-2xl border border-border/40 bg-card p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">

@@ -132,7 +132,7 @@ export function SkeletonMetricCard({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-2xl border border-border/50 bg-white dark:bg-gray-800 shadow-lg p-6',
+        'group relative overflow-hidden rounded-2xl border border-border/40 bg-card shadow-lg p-6',
         className
       )}
     >
@@ -164,7 +164,7 @@ export function SkeletonChart({
   className,
 }: SkeletonChartProps) {
   return (
-    <div className={cn('group rounded-2xl border border-border/50 bg-white dark:bg-gray-800 p-6 shadow-lg', className)}>
+    <div className={cn('group rounded-2xl border border-border/40 bg-card p-6 shadow-lg', className)}>
       <div className="flex items-center justify-between mb-4">
         <div className="space-y-2">
           <Skeleton className="h-5 w-36" animation="shimmer" />
