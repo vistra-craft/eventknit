@@ -428,6 +428,51 @@ export const getAttendees = async (filters?: {
 };
 
 /**
+ * User Stats Response
+ */
+export interface UserStatsResponse {
+  success: boolean;
+  data: {
+    stats: {
+      totalStaff: {
+        value: string;
+        change: string;
+        changeType: 'positive' | 'negative';
+      };
+      totalOrganizers: {
+        value: string;
+        change: string;
+        changeType: 'positive' | 'negative';
+      };
+      totalAttendees: {
+        value: string;
+        change: string;
+        changeType: 'positive' | 'negative';
+      };
+      activeUsers: {
+        value: string;
+        change: string;
+        changeType: 'positive' | 'negative';
+      };
+    };
+    meta: {
+      timeRange: string;
+      periodStart: string;
+      periodEnd: string;
+    };
+  };
+}
+
+/**
+ * Get user statistics
+ */
+export const getUsersStats = async (
+  timeRange: '7d' | '30d' | '90d' | '1y' = '30d'
+): Promise<UserStatsResponse> => {
+  return apiGet<UserStatsResponse>(`/admin/users/stats?timeRange=${timeRange}`);
+};
+
+/**
  * Get all users with filters
  */
 export const getUsers = async (filters?: {
@@ -443,7 +488,7 @@ export const getUsers = async (filters?: {
   if (filters?.search) params.append('search', filters.search);
   if (filters?.page) params.append('page', filters.page.toString());
   if (filters?.limit) params.append('limit', filters.limit.toString());
-  
+
   const queryString = params.toString();
   return apiGet<GetUsersResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`);
 };

@@ -1133,6 +1133,144 @@ export class AdminService {
   }
 
   /**
+   * Get user statistics (staff, organizers, attendees, active users)
+   */
+  static async getUsersStats(timeRange: '7d' | '30d' | '90d' | '1y' = '30d') {
+    // Calculate date range
+    const now = new Date();
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - days);
+
+    // Get previous period for comparison
+    const prevStartDate = new Date(startDate);
+    prevStartDate.setDate(prevStartDate.getDate() - days);
+
+    // Total Staff (all admin roles)
+    const [totalStaff, totalStaffPrev] = await Promise.all([
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: {
+            in: ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+          },
+        },
+      }),
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: {
+            in: ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+          },
+          createdAt: { lt: startDate },
+        },
+      }),
+    ]);
+
+    // Total Organizers
+    const [totalOrganizers, totalOrganizersPrev] = await Promise.all([
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: {
+            in: ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'],
+          },
+        },
+      }),
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: {
+            in: ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'],
+          },
+          createdAt: { lt: startDate },
+        },
+      }),
+    ]);
+
+    // Total Attendees
+    const [totalAttendees, totalAttendeesPrev] = await Promise.all([
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: 'ATTENDEE',
+        },
+      }),
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: 'ATTENDEE',
+          createdAt: { lt: startDate },
+        },
+      }),
+    ]);
+
+    // Active Users (across all types)
+    const [activeUsers, activeUsersPrev] = await Promise.all([
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
+        },
+      }),
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          status: 'ACTIVE',
+          createdAt: { lt: startDate },
+        },
+      }),
+    ]);
+
+    // Calculate percentage changes
+    const calculateChange = (current: number, previous: number): { value: string; changeType: 'positive' | 'negative' } => {
+      if (previous === 0) {
+        return { value: current > 0 ? '+100%' : '0%', changeType: current > 0 ? 'positive' : 'positive' };
+      }
+      const change = ((current - previous) / previous) * 100;
+      return {
+        value: `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`,
+        changeType: change >= 0 ? 'positive' : 'negative',
+      };
+    };
+
+    const staffChange = calculateChange(totalStaff, totalStaffPrev);
+    const organizersChange = calculateChange(totalOrganizers, totalOrganizersPrev);
+    const attendeesChange = calculateChange(totalAttendees, totalAttendeesPrev);
+    const activeUsersChange = calculateChange(activeUsers, activeUsersPrev);
+
+    return {
+      stats: {
+        totalStaff: {
+          value: totalStaff.toLocaleString(),
+          change: staffChange.value,
+          changeType: staffChange.changeType,
+        },
+        totalOrganizers: {
+          value: totalOrganizers.toLocaleString(),
+          change: organizersChange.value,
+          changeType: organizersChange.changeType,
+        },
+        totalAttendees: {
+          value: totalAttendees.toLocaleString(),
+          change: attendeesChange.value,
+          changeType: attendeesChange.changeType,
+        },
+        activeUsers: {
+          value: activeUsers.toLocaleString(),
+          change: activeUsersChange.value,
+          changeType: activeUsersChange.changeType,
+        },
+      },
+      meta: {
+        timeRange,
+        periodStart: startDate.toISOString(),
+        periodEnd: now.toISOString(),
+      },
+    };
+  }
+
+  /**
    * Get recent events for admin dashboard
    */
   static async getRecentEvents(limit: number = 10) {
