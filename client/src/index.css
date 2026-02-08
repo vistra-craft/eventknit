@@ -606,4 +606,128 @@
   .dark * {
     scrollbar-color: hsl(204 88% 58%) hsl(0 0% 15%);
   }
+
+  /* ============================================================================
+   * Industry-Standard Skeleton Loading System
+   * Supports: pulse, shimmer, wave animations
+   * Based on GridArc/Smart Purchase quality standards
+   * ============================================================================ */
+
+  /* Base skeleton styles */
+  .skeleton-base {
+    position: relative;
+    overflow: hidden;
+    background-color: hsl(var(--muted));
+    /* Prevent layout shift */
+    min-height: 1px;
+  }
+
+  /* Static skeleton (no animation) */
+  .skeleton-static {
+    background-color: hsl(var(--muted));
+  }
+
+  /* Pulse Animation - Modern, subtle (shadcn/ui style) */
+  .skeleton-pulse {
+    animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes skeleton-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  /* Shimmer Animation - Classic sweep effect (Facebook/Meta style) */
+  .skeleton-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.04) 20%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.04) 80%,
+      transparent 100%
+    );
+    animation: skeleton-shimmer 1.5s infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Light mode shimmer adjustment */
+  :root .skeleton-shimmer::after {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(0, 0, 0, 0.03) 20%,
+      rgba(0, 0, 0, 0.06) 50%,
+      rgba(0, 0, 0, 0.03) 80%,
+      transparent 100%
+    );
+  }
+
+  /* Wave Animation - Growing effect (Stripe style) */
+  .skeleton-wave {
+    animation: skeleton-wave 1.6s ease-in-out infinite;
+    transform-origin: bottom;
+  }
+
+  @keyframes skeleton-wave {
+    0%, 100% {
+      transform: scaleY(1);
+      opacity: 0.7;
+    }
+    50% {
+      transform: scaleY(0.92);
+      opacity: 1;
+    }
+  }
+
+  /* Stagger animation helper for grouped skeletons */
+  .skeleton-stagger > * {
+    animation-fill-mode: both;
+  }
+
+  .skeleton-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .skeleton-stagger > *:nth-child(2) { animation-delay: 75ms; }
+  .skeleton-stagger > *:nth-child(3) { animation-delay: 150ms; }
+  .skeleton-stagger > *:nth-child(4) { animation-delay: 225ms; }
+  .skeleton-stagger > *:nth-child(5) { animation-delay: 300ms; }
+
+  /* Skeleton group with fade-in on load */
+  .skeleton-group {
+    animation: skeleton-fade-in 0.3s ease-out;
+  }
+
+  @keyframes skeleton-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

@@ -23,15 +23,6 @@ export function BasicInfoStep({
 }: BasicInfoStepProps) {
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Basic Event Information
-        </h2>
-        <p className="text-muted-foreground">
-          Let's start with the essential details about your event.
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="eventName">Event Title *</Label>

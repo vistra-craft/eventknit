@@ -196,13 +196,6 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">Build Your Event Agenda</h2>
-        <p className="text-muted-foreground">
-          Create a detailed schedule and manage speakers, exhibitors, and sponsors.
-        </p>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-4 mb-8">
           <TabsTrigger value="schedule" className="flex items-center gap-2">

@@ -7,21 +7,20 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense } from 'react';
 import { authRoutes } from '../routes/authRoutes';
+import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
 
 /**
  * Loading fallback component for suspense
- * Minimal inline loader - no full-screen spinner
+ * Professional skeleton loader for auth pages
  */
 const LoadingFallback = () => (
-  <div className="p-6">
-    <div className="space-y-6 animate-pulse">
-      <div className="space-y-2">
-        <div className="h-8 w-48 bg-muted rounded"></div>
-        <div className="h-4 w-96 bg-muted rounded"></div>
-      </div>
-      <div className="h-64 bg-muted rounded-xl"></div>
+  <SkeletonGroup className="p-6 space-y-6">
+    <div className="space-y-2">
+      <Skeleton className="h-8 w-48" animation="shimmer" />
+      <Skeleton className="h-4 w-96" animation="shimmer" style={{ animationDelay: '50ms' }} />
     </div>
-  </div>
+    <Skeleton variant="rounded" className="h-64 w-full" animation="pulse" />
+  </SkeletonGroup>
 );
 
 /**

@@ -1,227 +1,94 @@
 /**
- * Elegant Dashboard Skeleton Loaders
- * Inspired by production-grade patterns for smooth loading UX
+ * Professional Dashboard Skeleton Loaders
+ * Mimics the exact layout of AdminEnhancedDashboard
+ * Based on GridArc/Smart Purchase quality standards
  */
 
 import React from 'react';
-
-/**
- * Shimmer animation effect
- */
-const shimmerStyle = `
-  @keyframes shimmer {
-    0% {
-      background-position: -1000px 0;
-    }
-    100% {
-      background-position: 1000px 0;
-    }
-  }
-
-  @keyframes chartLine {
-    0%, 100% { transform: scaleX(0); opacity: 0.3; }
-    50% { transform: scaleX(1); opacity: 1; }
-  }
-
-  @keyframes pulse-soft {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-`;
+import {
+  Skeleton,
+  SkeletonMetricCard,
+  SkeletonChart,
+  SkeletonGroup
+} from '../ui/Skeleton';
+import { Activity } from 'lucide-react';
 
 /**
  * Stats Card Skeleton Loader
+ * Uses the centralized SkeletonMetricCard component
  */
 export const StatsCardSkeleton: React.FC = () => {
-  return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card-surface to-card p-5 shadow-sm">
-      <style>{shimmerStyle}</style>
-
-      {/* Shimmer overlay */}
-      <div
-        className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/5 to-transparent"
-        style={{
-          animation: 'shimmer 2s infinite'
-        }}
-      />
-
-      <div className="relative">
-        {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          {/* Icon placeholder */}
-          <div className="h-12 w-12 rounded-xl bg-muted/50 animate-pulse" />
-          {/* Badge placeholder */}
-          <div className="h-6 w-16 rounded-full bg-muted/50 animate-pulse" />
-        </div>
-
-        {/* Content */}
-        <div className="space-y-2">
-          {/* Value placeholder */}
-          <div className="h-8 w-28 rounded-lg bg-muted/50 animate-pulse" />
-          {/* Title placeholder */}
-          <div className="h-4 w-32 rounded bg-muted/40 animate-pulse" />
-        </div>
-      </div>
-    </div>
-  );
+  return <SkeletonMetricCard />;
 };
 
 /**
- * Chart Card Skeleton Loader with animated lines
+ * Chart Card Skeleton Loader with animated bars
+ * Matches the exact styling from AdminEnhancedDashboard
  */
-export const ChartCardSkeleton: React.FC<{ title?: string }> = ({ title = "Chart Loading..." }) => {
-  return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card-surface to-card p-5 shadow-sm">
-      <style>{shimmerStyle}</style>
-
-      {/* Shimmer overlay */}
-      <div
-        className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary/5 to-transparent"
-        style={{
-          animation: 'shimmer 2.5s infinite'
-        }}
-      />
-
-      <div className="relative">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="space-y-2">
-            {/* Title skeleton */}
-            <div className="h-5 w-40 rounded-lg bg-muted/50 animate-pulse" />
-            {/* Subtitle skeleton */}
-            <div className="h-3 w-56 rounded bg-muted/40 animate-pulse" />
-          </div>
-          {/* Icon placeholder */}
-          <div className="h-10 w-10 rounded-lg bg-muted/50 animate-pulse" />
-        </div>
-
-        {/* Chart area with animated lines */}
-        <div className="h-56 w-full rounded-lg bg-muted/20 relative overflow-hidden">
-          {/* Animated chart lines */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full h-full relative">
-              {/* Line 1 */}
-              <div
-                className="absolute top-1/4 left-0 w-full h-0.5 bg-primary/40 rounded-full"
-                style={{
-                  animation: 'chartLine 2s ease-in-out infinite'
-                }}
-              />
-              {/* Line 2 */}
-              <div
-                className="absolute top-1/2 left-0 w-full h-0.5 bg-primary/30 rounded-full"
-                style={{
-                  animation: 'chartLine 2.5s ease-in-out infinite',
-                  animationDelay: '0.3s'
-                }}
-              />
-              {/* Line 3 */}
-              <div
-                className="absolute top-3/4 left-0 w-full h-0.5 bg-primary/20 rounded-full"
-                style={{
-                  animation: 'chartLine 3s ease-in-out infinite',
-                  animationDelay: '0.6s'
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Animated data points */}
-          <div className="absolute inset-0">
-            {[0, 20, 40, 60, 80, 100].map((position, index) => (
-              <div
-                key={index}
-                className="absolute w-2 h-2 rounded-full bg-primary/50"
-                style={{
-                  left: `${position}%`,
-                  top: `${15 + Math.random() * 70}%`,
-                  animation: 'pulse-soft 2s ease-in-out infinite',
-                  animationDelay: `${index * 0.2}s`
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Grid lines */}
-          <div className="absolute inset-0 flex flex-col justify-between py-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-px bg-border/30" />
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/**
- * Quick Action Card Skeleton
- */
-export const QuickActionSkeleton: React.FC = () => {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-card-surface p-4 animate-pulse">
-      {/* Icon */}
-      <div className="h-10 w-10 rounded-lg bg-muted/50" />
-      {/* Content */}
-      <div className="flex-1 space-y-2">
-        <div className="h-4 w-24 rounded bg-muted/50" />
-        <div className="h-3 w-16 rounded bg-muted/40" />
-      </div>
-    </div>
-  );
-};
-
-/**
- * Progress Bar Loader with shimmer
- */
-export const ProgressBarLoader: React.FC<{ className?: string }> = ({ className = '' }) => {
-  return (
-    <div className={`relative w-full h-1 bg-muted/30 rounded-full overflow-hidden ${className}`}>
-      <style>{shimmerStyle}</style>
-
-      {/* Animated progress bar */}
-      <div
-        className="absolute top-0 left-0 h-full w-full bg-gradient-to-r from-transparent via-primary to-transparent"
-        style={{
-          animation: 'shimmer 1.5s ease-in-out infinite'
-        }}
-      />
-    </div>
-  );
+export const ChartCardSkeleton: React.FC<{ height?: number; title?: string }> = ({
+  height = 224,
+  title
+}) => {
+  return <SkeletonChart height={height} />;
 };
 
 /**
  * Full Dashboard Skeleton Loader
+ * Mimics the exact layout of AdminEnhancedDashboard (no quick actions)
  */
 export const DashboardSkeleton: React.FC = () => {
   return (
-    <div className="space-y-8">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCardSkeleton />
-        <StatsCardSkeleton />
-        <StatsCardSkeleton />
-        <StatsCardSkeleton />
-      </div>
+    <SkeletonGroup className="space-y-6">
+      {/* Key Metrics Section - Exactly matches AdminEnhancedDashboard */}
+      <section aria-labelledby="stats-heading">
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <h2
+              id="stats-heading"
+              className="text-section-header uppercase tracking-wide"
+            >
+              <Skeleton className="h-5 w-32" animation="shimmer" />
+            </h2>
+            <Skeleton className="h-3 w-64 mt-1" animation="shimmer" style={{ animationDelay: '50ms' }} />
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Activity className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
+            <span className="font-medium">Live</span>
+          </div>
+        </div>
 
-      {/* Progress indicator */}
-      <ProgressBarLoader />
+        {/* Stats Cards Grid - 4 columns */}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+        </div>
+      </section>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <QuickActionSkeleton />
-        <QuickActionSkeleton />
-        <QuickActionSkeleton />
-        <QuickActionSkeleton />
-      </div>
+      {/* Growth Insights Section - Exactly matches AdminEnhancedDashboard */}
+      <section className="space-y-6 border-t border-border/50 pt-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-section-header uppercase tracking-wide flex items-center gap-2">
+              <Skeleton className="h-5 w-40" animation="shimmer" />
+            </h2>
+            <Skeleton className="h-3 w-72 mt-1" animation="shimmer" style={{ animationDelay: '50ms' }} />
+          </div>
+          <div className="flex flex-col gap-2 sm:items-end">
+            {/* Period selector skeleton */}
+            <Skeleton variant="rounded" className="h-9 w-full sm:w-80 rounded-full" animation="pulse" />
+          </div>
+        </div>
 
-      {/* Charts Grid - 2 columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ChartCardSkeleton title="Organizer Growth" />
-        <ChartCardSkeleton title="Events Created" />
-        <ChartCardSkeleton title="Platform Revenue" />
-        <ChartCardSkeleton title="Attendees / Users" />
-      </div>
-    </div>
+        {/* Charts Grid - 2 columns on large screens */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartCardSkeleton height={224} />
+          <ChartCardSkeleton height={224} />
+          <ChartCardSkeleton height={224} />
+          <ChartCardSkeleton height={224} />
+        </div>
+      </section>
+    </SkeletonGroup>
   );
 };

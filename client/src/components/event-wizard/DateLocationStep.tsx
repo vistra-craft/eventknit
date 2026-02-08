@@ -29,15 +29,6 @@ export function DateLocationStep({
 
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Date, Time & Location
-        </h2>
-        <p className="text-muted-foreground">
-          When and where will your event take place?
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="date">Event Date *</Label>

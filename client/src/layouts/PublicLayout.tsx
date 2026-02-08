@@ -7,16 +7,25 @@
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense } from 'react';
 import { publicRoutes } from '../routes/publicRoutes';
+import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
 
 /**
- * Loading spinner component for suspense fallback
+ * Loading fallback component for suspense
+ * Professional skeleton loader for public pages
  */
-const LoadingSpinner = () => (
-  <div className="min-h-screen flex items-center justify-center bg-background">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-      <p className="mt-4 text-muted-foreground">Loading...</p>
-    </div>
+const LoadingFallback = () => (
+  <div className="min-h-screen bg-background">
+    <SkeletonGroup className="p-6 space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-64" animation="shimmer" />
+        <Skeleton className="h-5 w-96" animation="shimmer" style={{ animationDelay: '50ms' }} />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Skeleton key={i} variant="rounded" className="h-64" animation="pulse" />
+        ))}
+      </div>
+    </SkeletonGroup>
   </div>
 );
 
@@ -28,7 +37,7 @@ const LoadingSpinner = () => (
 const PublicLayout = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Suspense fallback={<LoadingSpinner />}>
+      <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {publicRoutes.map((route, index) => (
             <Route key={index} path={route.path} element={route.element} />

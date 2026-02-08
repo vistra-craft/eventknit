@@ -6,6 +6,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/auth';
+import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '@/components/ui/Skeleton';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -24,18 +25,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Show loading state while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="space-y-6 animate-pulse">
-          <div className="space-y-2">
-            <div className="h-8 w-48 bg-muted rounded"></div>
-            <div className="h-4 w-96 bg-muted rounded"></div>
-          </div>
+      <div className="min-h-screen bg-background">
+        <SkeletonGroup className="p-6 space-y-6">
+          <SkeletonPageHeader showActions={false} />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-32 bg-muted rounded-xl"></div>
+              <SkeletonMetricCard key={i} />
             ))}
           </div>
-        </div>
+        </SkeletonGroup>
       </div>
     );
   }
