@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus, CheckCircle, Clock, TrendingUp, Activity } from "lucide-react";
-import { Card, CardContent } from "../../../components/ui/card";
+import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus, CheckCircle, Clock, TrendingUp, Activity, DollarSign } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "../../../components/ui/select";
@@ -10,9 +10,10 @@ import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
+import { RichTextContent } from "../../../components/ui/RichTextContent";
 import { Pagination } from "../../../components/ui/pagination";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, EventStatus } from "../../../lib/event-api";
+import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
 import { getCategoriesByGroup } from "@/lib/event-categories";
 import { bulkUpdateOrganizerDataAccess, getAdminStaffEvents } from "../../../lib/admin-api";
 import { useToast } from "@/hooks/useToast";
@@ -62,11 +63,50 @@ const AllEventsPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [assignedEventIds, setAssignedEventIds] = useState<Set<string>>(new Set());
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+  const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const { toast } = useToast();
 
   const handlePreviewEvent = (eventId: string) => {
-    navigate(`/admin/events/${eventId}/preview`);
+    setPreviewEventId(eventId);
+    setPreviewModalOpen(true);
   };
+
+  // Fetch event details for preview modal
+  useEffect(() => {
+    const fetchPreviewEvent = async () => {
+      if (!previewEventId || !previewModalOpen) return;
+
+      try {
+        setPreviewLoading(true);
+        const response = await getEventById(previewEventId);
+        if (response.success && response.data?.event) {
+          setPreviewEventData(response.data.event);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load event details",
+            variant: "destructive",
+          });
+          setPreviewModalOpen(false);
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to load event details";
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
+        setPreviewModalOpen(false);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewEvent();
+  }, [previewEventId, previewModalOpen, toast]);
 
   // Fetch assigned events for staff members
   useEffect(() => {
@@ -782,6 +822,217 @@ const AllEventsPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Event Preview Modal */}
+        <Dialog open={previewModalOpen} onOpenChange={(open) => {
+          setPreviewModalOpen(open);
+          if (!open) {
+            setPreviewEventData(null);
+            setPreviewEventId(null);
+          }
+        }}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            {previewLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <Loader size="lg" className="h-8 w-8 mx-auto mb-4" />
+                  <p className="text-sm text-muted-foreground">Loading event details...</p>
+                </div>
+              </div>
+            ) : !previewEventData ? (
+              <div className="text-center py-12">
+                <AlertCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground">Event not found</p>
+              </div>
+            ) : (
+              <>
+                <DialogHeader className="space-y-3">
+                  <div className="flex items-start gap-4">
+                    <EventThumbnail
+                      src={previewEventData.image}
+                      alt={previewEventData.title}
+                      category={previewEventData.category || ''}
+                      size="lg"
+                      className="flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <DialogTitle className="text-xl font-bold text-foreground mb-3">
+                        {previewEventData.title}
+                      </DialogTitle>
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        {previewEventData.status && (
+                          <Badge className={`text-xs ${getStatusBadge(
+                            previewEventData.status === 'APPROVED' ? 'active' :
+                            previewEventData.status === 'REJECTED' ? 'declined' :
+                            previewEventData.status === 'CANCELLED' ? 'cancelled' :
+                            previewEventData.status === 'PENDING' ? 'pending' : 'pending'
+                          )}`}>
+                            {previewEventData.status}
+                          </Badge>
+                        )}
+                        {previewEventData.type && (
+                          <Badge className={`text-xs ${getTypeBadge(previewEventData.type === 'PUBLIC' ? 'public' : 'private')}`}>
+                            {previewEventData.type}
+                          </Badge>
+                        )}
+                        {previewEventData.category && (
+                          <Badge variant="outline" className="text-xs">
+                            {previewEventData.category}
+                          </Badge>
+                        )}
+                        <Badge className={`text-xs ${getPriceBadge(previewEventData.isFree ? 'free' : 'paid')}`}>
+                          {previewEventData.isFree ? 'Free Event' : 'Paid Event'}
+                        </Badge>
+                      </div>
+                      {previewEventData.organizer && (
+                        <DialogDescription className="text-sm">
+                          Organized by <span className="font-medium text-foreground">
+                            {previewEventData.organizer.organizationName ||
+                             `${previewEventData.organizer.firstName || ''} ${previewEventData.organizer.lastName || ''}`.trim() ||
+                             'Unknown Organizer'}
+                          </span>
+                        </DialogDescription>
+                      )}
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                <div className="space-y-6 py-4">
+                  {/* Description Section */}
+                  {previewEventData.description && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Description</h3>
+                      <div className="rounded-lg bg-muted/30 p-4 border border-border/40">
+                        <RichTextContent
+                          content={previewEventData.description}
+                          className="text-sm text-foreground leading-relaxed"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Event Details Grid */}
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Event Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {previewEventData.startDate && (
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
+                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Start Date</p>
+                            <p className="text-sm font-semibold text-foreground mt-1">
+                              {new Date(previewEventData.startDate).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </p>
+                            {previewEventData.startTime && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{previewEventData.startTime}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {previewEventData.endDate && (
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
+                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">End Date</p>
+                            <p className="text-sm font-semibold text-foreground mt-1">
+                              {new Date(previewEventData.endDate).toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })}
+                            </p>
+                            {previewEventData.endTime && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{previewEventData.endTime}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {(previewEventData.location || previewEventData.venue) && (
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
+                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                            <MapPin className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Location</p>
+                            <p className="text-sm font-semibold text-foreground mt-1 break-words">
+                              {previewEventData.location || previewEventData.venue}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
+                        <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                          <Users className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Attendance</p>
+                          <p className="text-sm font-semibold text-foreground mt-1">
+                            {previewEventData.attendees || 0}
+                            {previewEventData.capacity && ` / ${previewEventData.capacity}`}
+                            {' '}
+                            {previewEventData.capacity ? 'registered' : 'attendees'}
+                          </p>
+                          {previewEventData.capacity && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {Math.round(((previewEventData.attendees || 0) / previewEventData.capacity) * 100)}% capacity
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {previewEventData.price !== undefined && (
+                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
+                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
+                            <DollarSign className="h-5 w-5 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Price</p>
+                            <p className="text-sm font-semibold text-foreground mt-1">
+                              {previewEventData.isFree ? "Free Event" : `$${previewEventData.price}`}
+                            </p>
+                            {!previewEventData.isFree && (
+                              <p className="text-xs text-muted-foreground mt-0.5">Per ticket</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setPreviewModalOpen(false)}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={() => window.open(`/event/${previewEventId}`, '_blank')}
+                    className="gap-2"
+                  >
+                    <Eye className="h-4 w-4" />
+                    View Public Page
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* Bulk Update Dialog */}
         <Dialog open={bulkUpdateDialogOpen} onOpenChange={setBulkUpdateDialogOpen}>
