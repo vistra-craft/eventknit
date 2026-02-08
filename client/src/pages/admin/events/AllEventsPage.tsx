@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -334,6 +334,14 @@ const AllEventsPage = () => {
                 <SelectItem value="100">100</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              onClick={() => navigate('/admin/events/create')}
+              size="default"
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Event
+            </Button>
           </div>
         </div>
 
