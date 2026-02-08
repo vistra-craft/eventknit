@@ -9,6 +9,7 @@ import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Clock, AlertCircle } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Card } from "@/components/ui/card";
@@ -284,11 +285,10 @@ const EventDetails = () => {
               {/* About Section */}
               <section>
                 <h2 className="text-3xl font-bold mb-4">About This Event</h2>
-                <div className="prose prose-lg max-w-none text-muted-foreground">
-                  <p className="leading-relaxed whitespace-pre-line">
-                    {event.fullDescription || event.description || 'No description available.'}
-                  </p>
-                </div>
+                <RichTextContent
+                  content={event.fullDescription || event.description || '<p>No description available.</p>'}
+                  className="prose-lg text-muted-foreground leading-relaxed"
+                />
               </section>
 
               {/* Event Agenda Summary */}

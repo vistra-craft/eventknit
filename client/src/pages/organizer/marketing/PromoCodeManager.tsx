@@ -29,6 +29,9 @@ import {
   Percent,
   DollarSign,
   Search,
+  RefreshCw,
+  AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { getPromoCodes, createPromoCode, updatePromoCode, deletePromoCode, type PromoCode, type CreatePromoCodeData } from '@/lib/promo-code-api';
@@ -42,6 +45,7 @@ const PromoCodeManager = () => {
   const [editingCode, setEditingCode] = useState<PromoCode | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
+  const [codeValidation, setCodeValidation] = useState<{ valid: boolean; error?: string }>({ valid: true });
 
   // Form state
   const [formData, setFormData] = useState<CreatePromoCodeData>({
@@ -63,6 +67,97 @@ const PromoCodeManager = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Debug: Log when modal opens
+  useEffect(() => {
+    if (showCreateModal) {
+      console.log('🎯 Create Promo Code Modal Mounted!');
+      console.log('📝 Current form data:', formData);
+      console.log('✅ Code validation:', codeValidation);
+      console.log('✏️ Editing mode:', !!editingCode);
+    }
+  }, [showCreateModal, formData.code, codeValidation, editingCode]);
+
+  // Generate meaningful promo code based on discount context
+  const generatePromoCode = (): string => {
+    const timestamp = Date.now().toString().slice(-4);
+    const { discountValue, discountType } = formData;
+
+    // Strategy 1: Context-aware based on discount
+    if (discountValue > 0) {
+      if (discountType === 'PERCENTAGE') {
+        if (discountValue >= 50) return `MEGA${discountValue}-${timestamp}`;
+        if (discountValue >= 25) return `SAVE${discountValue}-${timestamp}`;
+        return `OFF${discountValue}-${timestamp}`;
+      } else {
+        // Fixed amount
+        return `CASH${Math.round(discountValue)}-${timestamp}`;
+      }
+    }
+
+    // Strategy 2: Seasonal/Purpose-based for new codes
+    const seasonalPrefixes = [
+      'WELCOME',
+      'LAUNCH',
+      'VIP',
+      'EARLYBIRD',
+      'SPECIAL',
+      'EXCLUSIVE',
+      'FLASH',
+      'LIMITED',
+    ];
+    const prefix = seasonalPrefixes[Math.floor(Math.random() * seasonalPrefixes.length)];
+    const suffix = Math.floor(1000 + Math.random() * 9000); // 4-digit number
+    return `${prefix}${suffix}`;
+  };
+
+  // Validate promo code
+  const validatePromoCode = (code: string): { valid: boolean; error?: string } => {
+    if (!code) {
+      return { valid: false, error: 'Code is required' };
+    }
+
+    if (code.length < 4) {
+      return { valid: false, error: 'Code must be at least 4 characters' };
+    }
+
+    if (code.length > 20) {
+      return { valid: false, error: 'Code must be 20 characters or less' };
+    }
+
+    // Only allow uppercase letters, numbers, hyphens, and underscores
+    if (!/^[A-Z0-9-_]+$/.test(code)) {
+      return { valid: false, error: 'Only letters, numbers, hyphens (-), and underscores (_) allowed' };
+    }
+
+    // Check for duplicate in existing codes (case-insensitive)
+    const isDuplicate = promoCodes.some(
+      (existing) => existing.code.toUpperCase() === code.toUpperCase() && existing.id !== editingCode?.id
+    );
+    if (isDuplicate) {
+      return { valid: false, error: 'This code already exists' };
+    }
+
+    return { valid: true };
+  };
+
+  // Handle code input change with validation
+  const handleCodeChange = (value: string) => {
+    const upperValue = value.toUpperCase();
+    setFormData({ ...formData, code: upperValue });
+
+    // Validate on change
+    const validation = validatePromoCode(upperValue);
+    setCodeValidation(validation);
+  };
+
+  // Generate and set a new code
+  const handleGenerateCode = () => {
+    const generated = generatePromoCode();
+    setFormData({ ...formData, code: generated });
+    const validation = validatePromoCode(generated);
+    setCodeValidation(validation);
+  };
+
   const fetchPromoCodes = async () => {
     setLoading(true);
     try {
@@ -82,6 +177,17 @@ const PromoCodeManager = () => {
   };
 
   const handleCreate = async () => {
+    // Validate code before submission
+    const validation = validatePromoCode(formData.code);
+    if (!validation.valid) {
+      toast({
+        title: 'Invalid Code',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       const response = await createPromoCode({
         ...formData,
@@ -182,9 +288,10 @@ const PromoCodeManager = () => {
     });
   };
 
-  const resetForm = () => {
+  const resetForm = (initialCode?: string) => {
+    const code = initialCode || '';
     setFormData({
-      code: '',
+      code,
       eventId: undefined,
       discountType: 'PERCENTAGE',
       discountValue: 0,
@@ -196,6 +303,11 @@ const PromoCodeManager = () => {
       validFrom: new Date().toISOString().slice(0, 16),
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     });
+    if (code) {
+      setCodeValidation(validatePromoCode(code));
+    } else {
+      setCodeValidation({ valid: true });
+    }
   };
 
   const openEditModal = (code: PromoCode) => {
@@ -242,8 +354,14 @@ const PromoCodeManager = () => {
             </p>
           </div>
           <Button onClick={() => {
-            resetForm();
             setEditingCode(null);
+            // Generate a code first
+            const seasonalPrefixes = ['WELCOME', 'LAUNCH', 'VIP', 'EARLYBIRD', 'SPECIAL', 'EXCLUSIVE', 'FLASH', 'LIMITED'];
+            const prefix = seasonalPrefixes[Math.floor(Math.random() * seasonalPrefixes.length)];
+            const suffix = Math.floor(1000 + Math.random() * 9000);
+            const generated = `${prefix}${suffix}`;
+            // Reset form with the generated code
+            resetForm(generated);
             setShowCreateModal(true);
           }}>
             <Plus className="w-4 h-4 mr-2" />
@@ -408,17 +526,56 @@ const PromoCodeManager = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Code *</Label>
-                  <Input
-                    placeholder="SUMMER2024"
-                    value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value.toUpperCase() })
-                    }
-                    disabled={!!editingCode}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Code cannot be changed after creation
-                  </p>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <Input
+                          placeholder="e.g., SUMMER2024, WELCOME10"
+                          value={formData.code}
+                          onChange={(e) => handleCodeChange(e.target.value)}
+                          disabled={!!editingCode}
+                          className={!codeValidation.valid && formData.code ? 'border-destructive' : ''}
+                        />
+                        {!editingCode && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {formData.code.length}/20
+                          </div>
+                        )}
+                      </div>
+                      {!editingCode && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={handleGenerateCode}
+                          title="Generate code"
+                          className="flex-shrink-0"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    {!codeValidation.valid && formData.code && (
+                      <div className="flex items-center gap-1 text-xs text-destructive">
+                        <AlertCircle className="h-3 w-3" />
+                        <span>{codeValidation.error}</span>
+                      </div>
+                    )}
+
+                    {codeValidation.valid && formData.code && (
+                      <div className="flex items-center gap-1 text-xs text-success">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Code is available</span>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-muted-foreground">
+                      {editingCode
+                        ? 'Code cannot be changed after creation'
+                        : 'Click the sparkle button to auto-generate or enter your own'}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -567,6 +724,7 @@ const PromoCodeManager = () => {
                 <Button
                   onClick={editingCode ? handleUpdate : handleCreate}
                   className="flex-1"
+                  disabled={!codeValidation.valid || !formData.code}
                 >
                   {editingCode ? 'Update' : 'Create'} Promo Code
                 </Button>

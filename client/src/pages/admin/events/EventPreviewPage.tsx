@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import { getEventById, type EventData } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
 
@@ -123,7 +124,10 @@ const EventPreviewPage = () => {
                     <Badge className="ml-2 mb-2">{event.status}</Badge>
                   )}
                   {event.description && (
-                    <p className="text-sm text-muted-foreground mt-3">{event.description}</p>
+                    <RichTextContent
+                      content={event.description}
+                      className="text-sm text-muted-foreground mt-3"
+                    />
                   )}
                 </div>
               </div>

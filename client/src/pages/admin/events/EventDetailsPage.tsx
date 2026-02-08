@@ -25,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "@/components/ui/loader";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import { getEventById } from "@/lib/event-api";
 import { getEventRegistrations } from "@/lib/organizer-api";
 import { updateOrganizerDataAccess } from "@/lib/admin-api";
@@ -676,12 +677,18 @@ const EventDetailsPage = () => {
                     
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Description</label>
-                      <p className="text-sm text-foreground mt-1">{eventData.description}</p>
+                      <RichTextContent
+                        content={eventData.description || '<p>No description available.</p>'}
+                        className="text-sm mt-1"
+                      />
                     </div>
 
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Full Description</label>
-                      <p className="text-sm text-foreground mt-1">{eventData.fullDescription}</p>
+                      <RichTextContent
+                        content={eventData.fullDescription || '<p>No full description available.</p>'}
+                        className="text-sm mt-1"
+                      />
                     </div>
 
                     {eventData.requirements && eventData.requirements.length > 0 && (
