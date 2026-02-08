@@ -1,4 +1,4 @@
-# Payment & Disbursement System
+# Payment & Disbursement System with rationale
 
 This document covers the full lifecycle of money on the EventKnit platform: how attendees pay for tickets, how the platform calculates its fees, how organizers receive their funds, and how refunds flow back. It serves as both a **technical reference** for engineers and a **stakeholder guide** for understanding the financial operations.
 
