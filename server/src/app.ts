@@ -56,6 +56,7 @@ import unsubscribeRoutes from './routes/unsubscribe.routes.js';
 import gdprRoutes from './routes/gdpr.routes.js';
 import creditRoutes from './routes/credit.routes.js';
 import cartRoutes from './routes/cart.routes.js';
+import configurationRoutes from './routes/configuration.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -221,6 +222,7 @@ app.use('/api/v1/unsubscribe', unsubscribeRoutes); // Public route for email uns
 app.use('/api/v1/gdpr', gdprRoutes); // GDPR data export and account deletion
 app.use('/api/v1/credits', creditRoutes); // Credit/Voucher system
 app.use('/api/v1/cart', cartRoutes); // Cart reservation system
+app.use('/api/v1/configuration', configurationRoutes); // System configuration (mailTrap, maintenance mode)
 
 // Error handler middleware (must be last)
 app.use(errorHandler);

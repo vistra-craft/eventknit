@@ -1,6 +1,8 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
+import { prisma } from '../config/database.js';
+import { parseMailTrapConfig, type MailTrapConfig } from '../types/configuration.types.js';
 
 export interface EmailAttachment {
   filename: string;
@@ -75,7 +77,42 @@ class EmailService {
   }
 
   /**
-   * Send email with retry logic and exponential backoff
+   * Get mailTrap configuration from database
+   * Caches the result for 5 minutes to avoid excessive DB queries
+   */
+  private mailTrapCache: { config: MailTrapConfig | null; timestamp: number } | null = null;
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+  private async getMailTrapConfig(): Promise<MailTrapConfig | null> {
+    // Check cache first
+    if (this.mailTrapCache && Date.now() - this.mailTrapCache.timestamp < this.CACHE_TTL_MS) {
+      return this.mailTrapCache.config;
+    }
+
+    try {
+      // Get the first (and should be only) configuration record
+      const configuration = await prisma.configuration.findFirst({
+        select: { mailTrap: true },
+      });
+
+      if (!configuration) {
+        this.mailTrapCache = { config: null, timestamp: Date.now() };
+        return null;
+      }
+
+      const mailTrapConfig = parseMailTrapConfig(configuration.mailTrap);
+      this.mailTrapCache = { config: mailTrapConfig, timestamp: Date.now() };
+      return mailTrapConfig;
+    } catch (error) {
+      logger.error('Failed to fetch mailTrap configuration', error);
+      return null;
+    }
+  }
+
+  /**
+   * Send email with retry logic, exponential backoff, and mailTrap support
+   * If mailTrap is enabled in configuration, all emails are redirected
+   * to the configured test addresses instead of the actual recipients.
    */
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
     const maxRetries = options.retries ?? (options.isCritical ? this.CRITICAL_MAX_RETRIES : this.DEFAULT_MAX_RETRIES);
@@ -85,13 +122,53 @@ class EmailService {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       attempts++;
       try {
-        const mailOptions: nodemailer.SendMailOptions = {
+        let mailOptions: nodemailer.SendMailOptions = {
           from: config.email.from,
           to: options.to,
           subject: options.subject,
           html: options.html,
           text: options.text,
         };
+
+        // Check if mailTrap is enabled
+        const mailTrapConfig = await this.getMailTrapConfig();
+        if (mailTrapConfig && mailTrapConfig.trap === true) {
+          const originalTo = mailOptions.to;
+          const originalCc = mailOptions.cc;
+          const originalBcc = mailOptions.bcc;
+
+          // Build a note about the original recipients
+          const originalRecipients = [
+            originalTo ? `To: ${Array.isArray(originalTo) ? originalTo.join(', ') : originalTo}` : null,
+            originalCc ? `Cc: ${Array.isArray(originalCc) ? originalCc.join(', ') : originalCc}` : null,
+            originalBcc ? `Bcc: ${Array.isArray(originalBcc) ? originalBcc.join(', ') : originalBcc}` : null,
+          ]
+            .filter(Boolean)
+            .join('\n');
+
+          // Prepend original recipient info to the email body
+          const mailTrapNotice = `
+            <div style="background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+              <h3 style="color: #856404; margin: 0 0 10px 0;">📧 MailTrap Active - Test Environment</h3>
+              <p style="margin: 0; color: #856404; font-family: monospace; white-space: pre-wrap;">${originalRecipients}</p>
+              <p style="margin: 10px 0 0 0; color: #856404; font-size: 12px;">
+                This email was intercepted by MailTrap. In production, it would have been sent to the addresses above.
+              </p>
+            </div>
+          `;
+
+          // Redirect emails to test addresses
+          mailOptions = {
+            ...mailOptions,
+            to: mailTrapConfig.toAddress.length > 0 ? mailTrapConfig.toAddress : options.to,
+            cc: mailTrapConfig.ccAddress.length > 0 ? mailTrapConfig.ccAddress : undefined,
+            bcc: undefined, // Clear BCC for test emails
+            subject: `[MailTrap] ${mailOptions.subject}`,
+            html: mailTrapNotice + (mailOptions.html || ''),
+          };
+
+          logger.info(`MailTrap active - Redirecting email from "${originalTo}" to "${mailTrapConfig.toAddress.join(', ')}"`);
+        }
 
         // Add attachments if provided
         if (options.attachments && options.attachments.length > 0) {
