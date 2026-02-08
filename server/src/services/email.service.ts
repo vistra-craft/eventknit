@@ -1237,6 +1237,195 @@ class EmailService {
       html,
     });
   }
+  /**
+   * Send payout initiated notification email to organizer
+   */
+  async sendPayoutInitiatedEmail(
+    recipientEmail: string,
+    data: {
+      organizerName: string;
+      eventTitle: string;
+      amount: string;
+      currency: string;
+      paymentMethod: string;
+      bankName?: string;
+      accountNumber?: string;
+      disbursementNumber: string;
+      dashboardUrl: string;
+    },
+  ) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Payout Initiated</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Payout Initiated</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">
+              Your funds are on the way
+            </p>
+          </div>
+
+          <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Hi ${data.organizerName},</p>
+
+            <p style="color: #666;">
+              Your payout for <strong>${data.eventTitle}</strong> has been initiated. Here are the details:
+            </p>
+
+            <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Amount</td>
+                  <td style="padding: 8px 0; text-align: right; font-weight: bold; font-size: 18px; color: #333;">${data.amount}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; border-top: 1px solid #eee;">Payment Method</td>
+                  <td style="padding: 8px 0; text-align: right; color: #333; border-top: 1px solid #eee;">${data.paymentMethod.replace('_', ' ')}</td>
+                </tr>
+                ${data.bankName ? `
+                <tr>
+                  <td style="padding: 8px 0; color: #666; border-top: 1px solid #eee;">Bank</td>
+                  <td style="padding: 8px 0; text-align: right; color: #333; border-top: 1px solid #eee;">${data.bankName}</td>
+                </tr>` : ''}
+                ${data.accountNumber ? `
+                <tr>
+                  <td style="padding: 8px 0; color: #666; border-top: 1px solid #eee;">Account</td>
+                  <td style="padding: 8px 0; text-align: right; color: #333; border-top: 1px solid #eee;">${data.accountNumber}</td>
+                </tr>` : ''}
+                <tr>
+                  <td style="padding: 8px 0; color: #666; border-top: 1px solid #eee;">Reference</td>
+                  <td style="padding: 8px 0; text-align: right; color: #333; border-top: 1px solid #eee;">${data.disbursementNumber}</td>
+                </tr>
+              </table>
+            </div>
+
+            <p style="color: #666; font-size: 14px;">
+              Payouts are typically processed within 1-3 business days. You'll receive another email once the payout is completed.
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.dashboardUrl}"
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+                View Payout Details
+              </a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 12px; color: #888; text-align: center;">
+              This is an automated payout processed after your event ended.
+              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/organizer/payouts" style="color: #667eea;">
+                Manage payout preferences
+              </a>
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: `Payout Initiated: ${data.amount} for "${data.eventTitle}" - ${data.disbursementNumber}`,
+      html,
+    });
+  }
+
+  /**
+   * Send payout completed notification email to organizer
+   */
+  async sendPayoutCompletedEmail(
+    recipientEmail: string,
+    data: {
+      organizerName: string;
+      eventTitle: string;
+      amount: string;
+      currency: string;
+      paymentReference?: string;
+      disbursementNumber: string;
+      completedAt: string;
+      dashboardUrl: string;
+    },
+  ) {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Payout Completed</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0;">Payout Completed</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">
+              Your funds have been sent
+            </p>
+          </div>
+
+          <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+            <p style="font-size: 16px;">Hi ${data.organizerName},</p>
+
+            <p style="color: #666;">
+              Great news! Your payout for <strong>${data.eventTitle}</strong> has been completed and the funds have been sent to your bank account.
+            </p>
+
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Amount</td>
+                  <td style="padding: 8px 0; text-align: right; font-weight: bold; font-size: 18px; color: #166534;">${data.amount}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; border-top: 1px solid #dcfce7;">Completed</td>
+                  <td style="padding: 8px 0; text-align: right; color: #333; border-top: 1px solid #dcfce7;">${data.completedAt}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; border-top: 1px solid #dcfce7;">Reference</td>
+                  <td style="padding: 8px 0; text-align: right; color: #333; border-top: 1px solid #dcfce7;">${data.disbursementNumber}</td>
+                </tr>
+                ${data.paymentReference ? `
+                <tr>
+                  <td style="padding: 8px 0; color: #666; border-top: 1px solid #dcfce7;">Payment Ref</td>
+                  <td style="padding: 8px 0; text-align: right; color: #333; border-top: 1px solid #dcfce7;">${data.paymentReference}</td>
+                </tr>` : ''}
+              </table>
+            </div>
+
+            <p style="color: #666; font-size: 14px;">
+              Please allow 1-2 business days for the funds to appear in your bank account depending on your bank's processing times.
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.dashboardUrl}"
+                 style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
+                View Payout History
+              </a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+            <p style="font-size: 12px; color: #888; text-align: center;">
+              This is an automated email from EventKnit.
+              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/organizer/payouts" style="color: #667eea;">
+                Manage payout preferences
+              </a>
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: recipientEmail,
+      subject: `Payout Completed: ${data.amount} for "${data.eventTitle}"`,
+      html,
+    });
+  }
 }
 
 export const emailService = new EmailService();

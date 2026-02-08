@@ -1,21 +1,17 @@
 // Finance module exports
-// TODO: Implement finance dashboard components
-
-// Placeholder exports removed - files don't exist yet:
-// - FinanceDashboard
-// - EventFinanceDashboard
-// - PaymentTransactionsPage
-// - DisbursementsPage
-// - RefundsPage
-// - ReconciliationPage
-// - ExpensesPage
-// - IncomeStatementPage
-// - IncomePage
-// - WagesPage
-// - TransactionsPage
-// - EditTransactionPage
-// - EditExpensePage
-// - EditIncomePage
-// - EditWagePage
-
-export {};
+export { default as FinanceDashboard } from './FinanceDashboard';
+export { default as EventFinanceDashboard } from './EventFinanceDashboard';
+export { default as PaymentTransactionsPage } from './PaymentTransactionsPage';
+export { default as DisbursementsPage } from './DisbursementsPage';
+export { default as RefundsPage } from './RefundsPage';
+export { default as ReconciliationPage } from './ReconciliationPage';
+export { default as ExpensesPage } from './ExpensesPage';
+export { default as IncomePage } from './IncomePage';
+export { default as WagesPage } from './WagesPage';
+export { default as TransactionsPage } from './TransactionsPage';
+export { default as IncomeStatementPage } from './IncomeStatementPage';
+export { default as EditTransactionPage } from './EditTransactionPage';
+export { default as EditExpensePage } from './EditExpensePage';
+export { default as EditIncomePage } from './EditIncomePage';
+export { default as EditWagePage } from './EditWagePage';
+export { default as AdminFinancialManagement } from './AdminFinancialManagement';

@@ -68,6 +68,7 @@ import AttendeeSegmentation from "./pages/organizer/AttendeeSegmentation";
 import AttendeeTagsManagement from "./pages/organizer/AttendeeTagsManagement";
 import AttendeeCommunication from "./pages/organizer/AttendeeCommunication";
 import FinancialManagement from "./pages/organizer/FinancialManagement";
+import PayoutManagement from "./pages/organizer/PayoutManagement";
 import EventCollaboration from "./pages/organizer/EventCollaboration";
 import AffiliateProgram from "./pages/organizer/AffiliateProgram";
 import OrganizerPromoCodeManager from "./pages/organizer/marketing/OrganizerPromoCodeManager";
@@ -134,24 +135,24 @@ import PlatformFeedbackPage from "./pages/admin/PlatformFeedbackPage";
 import WhiteLabelManagementPage from "./pages/admin/WhiteLabelManagementPage";
 import AdminCustomDomainsPage from "./pages/admin/AdminCustomDomainsPage";
 // Admin Finance imports
-// TODO: Uncomment when finance components are implemented
-// import {
-//   FinanceDashboard,
-//   EventFinanceDashboard,
-//   PaymentTransactionsPage,
-//   DisbursementsPage,
-//   RefundsPage,
-//   ReconciliationPage,
-//   ExpensesPage,
-//   IncomePage,
-//   WagesPage,
-//   TransactionsPage,
-//   EditTransactionPage,
-//   EditExpensePage,
-//   EditIncomePage,
-//   EditWagePage,
-//   IncomeStatementPage
-// } from "./pages/admin/finance";
+import {
+  FinanceDashboard,
+  EventFinanceDashboard,
+  PaymentTransactionsPage,
+  DisbursementsPage,
+  RefundsPage,
+  ReconciliationPage,
+  ExpensesPage,
+  IncomePage,
+  WagesPage,
+  TransactionsPage,
+  EditTransactionPage,
+  EditExpensePage,
+  EditIncomePage,
+  EditWagePage,
+  IncomeStatementPage
+} from "./pages/admin/finance";
+import PlatformFeeConfigPage from "./pages/admin/finance/PlatformFeeConfigPage";
 import NotFound from "./pages/NotFound";
 import Support from "./pages/Support";
 // Admin Service Point imports
@@ -262,6 +263,9 @@ const App = () => (
       <Route path="/organizer/event/:eventId/collaboration" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><EventCollaboration /></ProtectedRoute>} />
       {/* Marketing Routes */}
       <Route path="/organizer/marketing/promo-codes" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><OrganizerPromoCodeManager /></ProtectedRoute>} />
+      {/* Finance Routes */}
+      <Route path="/organizer/financial-management" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.SUPERADMIN]}><FinancialManagement /></ProtectedRoute>} />
+      <Route path="/organizer/payouts" element={<ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.SUPERADMIN]}><PayoutManagement /></ProtectedRoute>} />
       {/* Admin Dashboard Routes - Protected, admin roles only */}
       <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER, UserRole.SUPPORT, UserRole.TELLER]}><AdminDashboard /></ProtectedRoute>} />
       {/* Admin Events Routes */}
@@ -318,8 +322,8 @@ const App = () => (
       {/* Admin Branding Routes */}
       <Route path="/admin/white-label" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><WhiteLabelManagementPage /></ProtectedRoute>} />
       <Route path="/admin/custom-domains" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><AdminCustomDomainsPage /></ProtectedRoute>} />
-      {/* Admin Finance Routes - TODO: Uncomment when finance components are implemented */}
-      {/* <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><FinanceDashboard /></ProtectedRoute>} />
+      {/* Admin Finance Routes */}
+      <Route path="/admin/finance" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><FinanceDashboard /></ProtectedRoute>} />
       <Route path="/admin/finance/events" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><EventFinanceDashboard /></ProtectedRoute>} />
       <Route path="/admin/finance/payments" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><PaymentTransactionsPage /></ProtectedRoute>} />
       <Route path="/admin/finance/disbursements" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><DisbursementsPage /></ProtectedRoute>} />
@@ -329,12 +333,13 @@ const App = () => (
       <Route path="/admin/finance/income" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><IncomePage /></ProtectedRoute>} />
       <Route path="/admin/finance/wages" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><WagesPage /></ProtectedRoute>} />
       <Route path="/admin/finance/transactions" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]}><TransactionsPage /></ProtectedRoute>} />
-      <Route path="/admin/finance/income-statement" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><IncomeStatementPage /></ProtectedRoute>} /> */}
+      <Route path="/admin/finance/income-statement" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><IncomeStatementPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/platform-fees" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><PlatformFeeConfigPage /></ProtectedRoute>} />
       {/* Admin Finance Edit Routes */}
-      {/* <Route path="/admin/finance/transactions/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><EditTransactionPage /></ProtectedRoute>} />
+      <Route path="/admin/finance/transactions/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><EditTransactionPage /></ProtectedRoute>} />
       <Route path="/admin/finance/expenses/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><EditExpensePage /></ProtectedRoute>} />
       <Route path="/admin/finance/income/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}><EditIncomePage /></ProtectedRoute>} />
-      <Route path="/admin/finance/wages/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><EditWagePage /></ProtectedRoute>} /> */}
+      <Route path="/admin/finance/wages/edit/:id" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN]}><EditWagePage /></ProtectedRoute>} />
       {/* Admin Marketing Routes */}
       <Route path="/admin/marketing" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminMarketingPage /></ProtectedRoute>} />
       <Route path="/admin/marketing/campaigns" element={<ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER]}><AdminCampaignsPage /></ProtectedRoute>} />

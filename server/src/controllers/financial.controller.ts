@@ -528,39 +528,44 @@ export class FinancialController {
         return;
       }
 
-      const { organizerId, eventId, status, startDate, endDate } = req.query;
-
-      let disbursements;
+      const { organizerId, eventId, status, startDate, endDate, search, page, limit } = req.query;
 
       if (organizerId && req.user.role === UserRole.ORGANIZER && req.user.id !== organizerId) {
-        // Organizers can only see their own disbursements
         throw new AuthorizationError('Access denied');
       }
 
       if (organizerId) {
-        disbursements = await DisbursementService.getOrganizerDisbursements(organizerId as string, {
+        const disbursements = await DisbursementService.getOrganizerDisbursements(organizerId as string, {
           eventId: eventId as string | undefined,
           status: status as string | undefined,
           startDate: startDate ? new Date(startDate as string) : undefined,
           endDate: endDate ? new Date(endDate as string) : undefined,
         });
+        res.status(200).json({ success: true, data: disbursements });
       } else if (eventId) {
-        disbursements = await DisbursementService.getEventDisbursements(
+        const disbursements = await DisbursementService.getEventDisbursements(
           eventId as string,
           req.user.role === UserRole.ORGANIZER ? req.user.id : undefined,
         );
+        res.status(200).json({ success: true, data: disbursements });
       } else {
-        res.status(400).json({
-          success: false,
-          message: 'Either organizerId or eventId is required',
+        // Admin: return all disbursements (paginated)
+        const result = await DisbursementService.getAllDisbursements({
+          status: status as string | undefined,
+          startDate: startDate ? new Date(startDate as string) : undefined,
+          endDate: endDate ? new Date(endDate as string) : undefined,
+          search: search as string | undefined,
+          page: page ? parseInt(page as string, 10) : 1,
+          limit: limit ? parseInt(limit as string, 10) : 20,
         });
-        return;
+        res.status(200).json({
+          success: true,
+          data: {
+            disbursements: result.disbursements,
+            pagination: result.pagination,
+          },
+        });
       }
-
-      res.status(200).json({
-        success: true,
-        data: disbursements,
-      });
     } catch (error) {
       next(error);
     }
@@ -706,29 +711,22 @@ export class FinancialController {
 
       const { organizerId } = req.query;
 
-      if (!organizerId) {
-        res.status(400).json({
-          success: false,
-          message: 'Organizer ID is required',
-        });
-        return;
+      if (organizerId) {
+        // Organizers can only see their own summary
+        if (req.user.role === UserRole.ORGANIZER && req.user.id !== organizerId) {
+          res.status(403).json({
+            success: false,
+            message: 'Access denied',
+          });
+          return;
+        }
+        const summary = await DisbursementService.getOrganizerDisbursementSummary(organizerId as string);
+        res.status(200).json({ success: true, data: summary });
+      } else {
+        // Admin: platform-wide summary
+        const summary = await DisbursementService.getPlatformDisbursementSummary();
+        res.status(200).json({ success: true, data: summary });
       }
-
-      // Organizers can only see their own summary
-      if (req.user.role === UserRole.ORGANIZER && req.user.id !== organizerId) {
-        res.status(403).json({
-          success: false,
-          message: 'Access denied',
-        });
-        return;
-      }
-
-      const summary = await DisbursementService.getOrganizerDisbursementSummary(organizerId as string);
-
-      res.status(200).json({
-        success: true,
-        data: summary,
-      });
     } catch (error) {
       next(error);
     }
@@ -782,24 +780,29 @@ export class FinancialController {
         return;
       }
 
-      const { eventId, status } = req.query;
+      const { eventId, status, search, page, limit } = req.query;
 
-      if (!eventId) {
-        res.status(400).json({
-          success: false,
-          message: 'Event ID is required',
+      if (eventId) {
+        const refunds = await RefundService.getEventRefunds(eventId as string, {
+          status: status as string | undefined,
         });
-        return;
+        res.status(200).json({ success: true, data: refunds });
+      } else {
+        // Admin: return all refunds (paginated)
+        const result = await RefundService.getAllRefunds({
+          status: status as string | undefined,
+          search: search as string | undefined,
+          page: page ? parseInt(page as string, 10) : 1,
+          limit: limit ? parseInt(limit as string, 10) : 20,
+        });
+        res.status(200).json({
+          success: true,
+          data: {
+            refunds: result.refunds,
+            pagination: result.pagination,
+          },
+        });
       }
-
-      const refunds = await RefundService.getEventRefunds(eventId as string, {
-        status: status as string | undefined,
-      });
-
-      res.status(200).json({
-        success: true,
-        data: refunds,
-      });
     } catch (error) {
       next(error);
     }
@@ -944,20 +947,14 @@ export class FinancialController {
 
       const { eventId } = req.query;
 
-      if (!eventId) {
-        res.status(400).json({
-          success: false,
-          message: 'Event ID is required',
-        });
-        return;
+      if (eventId) {
+        const summary = await RefundService.getEventRefundSummary(eventId as string);
+        res.status(200).json({ success: true, data: summary });
+      } else {
+        // Admin: platform-wide refund summary
+        const summary = await RefundService.getPlatformRefundSummary();
+        res.status(200).json({ success: true, data: summary });
       }
-
-      const summary = await RefundService.getEventRefundSummary(eventId as string);
-
-      res.status(200).json({
-        success: true,
-        data: summary,
-      });
     } catch (error) {
       next(error);
     }

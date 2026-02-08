@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { EVENT_CATEGORIES } from '@/lib/event-categories';
 import { MapPin, Globe, Users } from 'lucide-react';
 import type { StepComponentProps } from './types';
 
@@ -177,8 +178,8 @@ export function BasicInfoStep({
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              {eventCategories.map((category) => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
+              {EVENT_CATEGORIES.map((category) => (
+                <SelectItem key={category.value} value={category.value}>{category.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>

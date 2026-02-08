@@ -25,10 +25,12 @@ import {
   Shield,
   Layout,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  X
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
+import { EVENT_CATEGORIES } from '@/lib/event-categories';
 import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData, type BackendEvent } from '@/lib/event-utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -153,6 +155,7 @@ export default function CreateEventStepwise() {
   // Verification state
   const [loadingVerification, setLoadingVerification] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
+  const [kycBannerDismissed, setKycBannerDismissed] = useState(false);
 
   useEffect(() => {
     const fetchVerification = async () => {
@@ -478,11 +481,9 @@ export default function CreateEventStepwise() {
     },
   ]);
 
-  const eventCategories = [
-    "Technology", "Business", "Arts", "Music", "Sports", "Education", 
-    "Health", "Food", "Travel", "Networking", "Workshop", "Conference", 
-    "Wellness", "Entertainment", "Community", "Charity"
-  ];
+  // Use standardized categories from event-categories.ts to ensure consistency
+  // between event creation and event search filtering
+  const eventCategories = EVENT_CATEGORIES.map(cat => cat.value);
 
   // Save draft to localStorage
   // const _saveDraft = () => {
@@ -2000,13 +2001,47 @@ export default function CreateEventStepwise() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/organizer/verification', { 
-                  state: { redirectAfterVerification: location.pathname } 
+                onClick={() => navigate('/organizer/verification', {
+                  state: { redirectAfterVerification: location.pathname }
                 })}
                 className="border-primary text-primary hover:bg-primary/10"
               >
                 Verify Identity
               </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* KYC Verification Banner - Shows when identity is verified but KYC is not approved */}
+        {!loadingVerification && !isEditMode && !kycBannerDismissed && hasPaidTickets() && verificationStatus?.identityVerified && verificationStatus?.kycStatus !== 'APPROVED' && (
+          <Alert className="mb-4 border-amber-500 bg-amber-500/5">
+            <Shield className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-amber-700">
+                <strong>KYC Required:</strong> Complete your KYC verification to receive payouts from ticket sales. You can continue creating your event{verificationStatus?.kycStatus === 'PENDING' ? ' — your KYC submission is under review.' : '.'}
+              </span>
+              <div className="flex items-center gap-2">
+                {verificationStatus?.kycStatus !== 'PENDING' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/organizer/kyc', {
+                      state: { redirectAfterVerification: location.pathname }
+                    })}
+                    className="border-amber-500 text-amber-700 hover:bg-amber-500/10"
+                  >
+                    Complete KYC
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setKycBannerDismissed(true)}
+                  className="text-amber-600 hover:bg-amber-500/10 h-8 w-8 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}

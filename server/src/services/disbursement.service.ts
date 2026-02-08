@@ -3,8 +3,10 @@ import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError, AuthorizationError } from '../utils/errors.js';
 import { generateDisbursementNumber } from '../utils/transaction-helpers.js';
 import { PlatformFeeService } from './platform-fee.service.js';
+import { NotificationService } from './notification.service.js';
+import { emailService } from './email.service.js';
 import { Decimal } from '@prisma/client/runtime/library';
-import { Prisma } from '@prisma/client';
+import { Prisma, NotificationType, NotificationPriority } from '@prisma/client';
 import { createAuditLog, AuditActions } from '../utils/audit.js';
 
 export interface CreateDisbursementData {
@@ -32,7 +34,7 @@ export class DisbursementService {
    */
   static async createDisbursement(
     data: CreateDisbursementData,
-    createdBy: string,
+    createdBy: string | null,
     ipAddress?: string,
     userAgent?: string,
   ) {
@@ -54,13 +56,14 @@ export class DisbursementService {
       throw new AuthorizationError('Event does not belong to this organizer');
     }
 
-    // Eventbrite-style: Verify organizer has identity verification to receive payouts
+    // Eventbrite-style: Verify organizer has identity verification and KYC approval to receive payouts
     const organizer = await prisma.user.findUnique({
       where: { id: data.organizerId },
       select: {
         id: true,
         isIdentityVerified: true,
         verificationLevel: true,
+        kycStatus: true,
       },
     });
 
@@ -71,6 +74,12 @@ export class DisbursementService {
     if (!organizer.isIdentityVerified) {
       throw new ValidationError(
         'Identity verification is required to receive payouts. Please verify your identity in your profile settings to receive funds from ticket sales.',
+      );
+    }
+
+    if (organizer.kycStatus !== 'APPROVED') {
+      throw new ValidationError(
+        'KYC verification must be approved before payouts can be processed. Please complete KYC verification in your organizer settings.',
       );
     }
 
@@ -137,7 +146,7 @@ export class DisbursementService {
           status: 'pending',
           scheduledDate: data.scheduledDate || null,
           notes: data.notes,
-          createdBy,
+          createdBy: createdBy || undefined,
         },
       });
 
@@ -156,9 +165,10 @@ export class DisbursementService {
     });
 
     // Audit log
+    const isAutomated = !createdBy;
     await createAuditLog({
-      userId: createdBy,
-      action: AuditActions.DISBURSEMENT_CREATED,
+      userId: createdBy || data.organizerId,
+      action: isAutomated ? AuditActions.DISBURSEMENT_AUTO_CREATED : AuditActions.DISBURSEMENT_CREATED,
       entity: 'OrganizerDisbursement',
       entityId: disbursement.id,
       metadata: {
@@ -168,6 +178,7 @@ export class DisbursementService {
         totalAmount: totalAmount.toString(),
         feeCount: feesToInclude.length,
         scheduledDate: data.scheduledDate?.toISOString(),
+        automated: isAutomated,
       },
       ipAddress,
       userAgent,
@@ -370,6 +381,7 @@ export class DisbursementService {
             id: true,
             isIdentityVerified: true,
             verificationLevel: true,
+            kycStatus: true,
           },
         },
       },
@@ -387,6 +399,12 @@ export class DisbursementService {
     if (!disbursement.organizer.isIdentityVerified) {
       throw new ValidationError(
         'Identity verification is required to receive payouts. The organizer must verify their identity before funds can be disbursed.',
+      );
+    }
+
+    if (disbursement.organizer.kycStatus !== 'APPROVED') {
+      throw new ValidationError(
+        'KYC verification must be approved before payouts can be processed. The organizer must complete KYC verification.',
       );
     }
 
@@ -483,6 +501,60 @@ export class DisbursementService {
 
     logger.info(`Disbursement completed: ${disbursementId} by user: ${completedBy}`);
 
+    // Notify organizer of completed payout
+    try {
+      const organizer = await prisma.user.findUnique({
+        where: { id: disbursement.organizerId },
+        select: { id: true, email: true, firstName: true, lastName: true, organizationName: true },
+      });
+
+      if (organizer) {
+        const organizerName = organizer.organizationName
+          || `${organizer.firstName || ''} ${organizer.lastName || ''}`.trim()
+          || 'Organizer';
+
+        const amount = Number(disbursement.totalAmount);
+        const currency = disbursement.currency;
+        const formattedAmount = `${currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+
+        await NotificationService.sendNotification({
+          userId: organizer.id,
+          type: NotificationType.PAYOUT_COMPLETED,
+          title: `Payout completed for "${disbursement.event.title}"`,
+          message: `Your payout of ${formattedAmount} for "${disbursement.event.title}" has been completed. Reference: ${paymentReference}`,
+          priority: NotificationPriority.HIGH,
+          eventId: disbursement.eventId,
+          data: {
+            disbursementId: disbursement.id,
+            disbursementNumber: disbursement.disbursementNumber,
+            amount,
+            currency,
+            paymentReference,
+          },
+        });
+
+        const dashboardUrl = `${process.env.CLIENT_URL || 'https://eventknit.com'}/organizer/payouts`;
+        await emailService.sendPayoutCompletedEmail(organizer.email, {
+          organizerName,
+          eventTitle: disbursement.event.title,
+          amount: formattedAmount,
+          currency,
+          paymentReference,
+          disbursementNumber: disbursement.disbursementNumber,
+          completedAt: new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          dashboardUrl,
+        });
+      }
+    } catch (notifError) {
+      // Don't throw — the disbursement is already completed successfully
+      logger.error(`Failed to send payout completion notification for disbursement ${disbursementId}:`, notifError);
+    }
+
     return updated;
   }
 
@@ -541,6 +613,120 @@ export class DisbursementService {
         totalAmount: true,
         status: true,
         completedAt: true,
+      },
+    });
+
+    const totalDisbursed = disbursements
+      .filter((d) => d.status === 'completed')
+      .reduce((sum, d) => sum + Number(d.totalAmount), 0);
+
+    const totalPending = disbursements
+      .filter((d) => d.status === 'pending' || d.status === 'processing')
+      .reduce((sum, d) => sum + Number(d.totalAmount), 0);
+
+    return {
+      totalDisbursed: Number(totalDisbursed.toFixed(2)),
+      totalPending: Number(totalPending.toFixed(2)),
+      totalCount: disbursements.length,
+      completedCount: disbursements.filter((d) => d.status === 'completed').length,
+      pendingCount: disbursements.filter((d) => d.status === 'pending').length,
+      processingCount: disbursements.filter((d) => d.status === 'processing').length,
+      failedCount: disbursements.filter((d) => d.status === 'failed').length,
+    };
+  }
+
+  /**
+   * Get all disbursements (admin) with optional search, pagination, and filters
+   */
+  static async getAllDisbursements(filters?: {
+    status?: string;
+    startDate?: Date;
+    endDate?: Date;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.OrganizerDisbursementWhereInput = {};
+
+    if (filters?.status) {
+      where.status = filters.status;
+    }
+
+    if (filters?.startDate || filters?.endDate) {
+      where.createdAt = {};
+      if (filters.startDate) {
+        where.createdAt.gte = filters.startDate;
+      }
+      if (filters.endDate) {
+        where.createdAt.lte = filters.endDate;
+      }
+    }
+
+    if (filters?.search) {
+      where.OR = [
+        { disbursementNumber: { contains: filters.search, mode: 'insensitive' } },
+        { event: { title: { contains: filters.search, mode: 'insensitive' } } },
+        { organizer: { organizationName: { contains: filters.search, mode: 'insensitive' } } },
+        { organizer: { email: { contains: filters.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [disbursements, total] = await Promise.all([
+      prisma.organizerDisbursement.findMany({
+        where,
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              startDate: true,
+            },
+          },
+          organizer: {
+            select: {
+              id: true,
+              email: true,
+              organizationName: true,
+            },
+          },
+          platformFees: {
+            select: {
+              id: true,
+              feeAmount: true,
+              organizerAmount: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.organizerDisbursement.count({ where }),
+    ]);
+
+    return {
+      disbursements,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get platform-wide disbursement summary (admin)
+   */
+  static async getPlatformDisbursementSummary() {
+    const disbursements = await prisma.organizerDisbursement.findMany({
+      select: {
+        totalAmount: true,
+        status: true,
       },
     });
 

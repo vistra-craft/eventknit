@@ -12,6 +12,7 @@ import {
   LogOut,
   Crown,
   Megaphone,
+  Wallet,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -85,6 +86,16 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       ]
     },
     {
+      id: "finance",
+      label: "Finance",
+      icon: Wallet,
+      group: "main",
+      children: [
+        { name: "Financial Management", href: "/organizer/financial-management" },
+        { name: "Payouts", href: "/organizer/payouts" },
+      ]
+    },
+    {
       id: "team",
       label: "Team",
       icon: UserPlus,
@@ -129,6 +140,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       setExpandedItems(prev => ({
         ...prev,
         events: location.pathname.startsWith('/organizer/events'),
+        finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
         settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
       }));
     }

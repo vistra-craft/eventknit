@@ -1,7 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Clock, Globe } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import { getVenueType } from "@/types/event";
 import { EventImage } from "./EventImage";
 
@@ -19,7 +19,6 @@ interface EventCardProps {
   location: string;
   price: string;
   currency?: string;
-  category: string;
   isOnline?: boolean;
   onlineLink?: string | null;
 }
@@ -36,7 +35,6 @@ export const EventCard: React.FC<EventCardProps> = ({
   endTime,
   venue,
   location,
-  category,
   isOnline,
   onlineLink,
 }) => {
@@ -104,12 +102,6 @@ export const EventCard: React.FC<EventCardProps> = ({
           focalY={imageFocalY}
           className="w-full h-full transition-transform duration-300"
         />
-        {/* Category Badge */}
-        <div className="absolute top-4 left-4">
-          <span className="px-3 py-1 bg-muted/80 text-foreground backdrop-blur-sm rounded-full text-xs">
-            {category}
-          </span>
-        </div>
       </div>
 
       {/* Event Details */}
@@ -136,15 +128,9 @@ export const EventCard: React.FC<EventCardProps> = ({
         {/* Location */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {venueType === 'online' ? (
-            <>
-              <Globe className="w-4 h-4" />
-              <span>Online Event</span>
-            </>
+            <span>Online Event</span>
           ) : (
-            <>
-              <MapPin className="w-4 h-4" />
-              <span className="truncate">{venue ? `${venue}, ${location}` : location}</span>
-            </>
+            <span className="truncate">{venue ? `${venue}, ${location}` : location}</span>
           )}
         </div>
       </div>

@@ -7,6 +7,7 @@ import { SMSSessionCleanupJob } from './sms-session-cleanup.job.js';
 import { PostEventSurveyJob } from './post-event-survey.job.js';
 import { EmailDigestJob } from './email-digest.job.js';
 import { CartCleanupJob } from './cart-cleanup.job.js';
+import { AutoPayoutJob } from './auto-payout.job.js';
 
 /**
  * Initialize all scheduled jobs
@@ -21,8 +22,9 @@ export function initializeJobs(): void {
     PostEventSurveyJob.start();
     EmailDigestJob.start();
     CartCleanupJob.start();
+    AutoPayoutJob.start();
 
-    logger.info('Scheduled jobs initialized (8 jobs)');
+    logger.info('Scheduled jobs initialized (9 jobs)');
   } catch (error) {
     logger.error('Failed to initialize scheduled jobs:', error);
     throw error;
@@ -42,6 +44,7 @@ export function stopJobs(): void {
     PostEventSurveyJob.stop();
     EmailDigestJob.stop();
     CartCleanupJob.stop();
+    AutoPayoutJob.stop();
 
     logger.info('Scheduled jobs stopped');
   } catch (error) {
@@ -58,4 +61,5 @@ export { SMSSessionCleanupJob } from './sms-session-cleanup.job.js';
 export { PostEventSurveyJob } from './post-event-survey.job.js';
 export { EmailDigestJob } from './email-digest.job.js';
 export { CartCleanupJob } from './cart-cleanup.job.js';
+export { AutoPayoutJob } from './auto-payout.job.js';
 

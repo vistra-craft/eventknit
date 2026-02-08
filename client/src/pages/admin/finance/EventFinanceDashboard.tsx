@@ -109,19 +109,26 @@ const EventFinanceDashboard = () => {
         0
       );
 
-      const pendingDisbursements = disbursementsResponse.success && disbursementsResponse.data
-        ? disbursementsResponse.data.reduce((sum, d) => sum + d.totalAmount, 0)
-        : 0;
+      // Extract disbursements from response (may be flat array or paginated object)
+      let disbursementsList: { totalAmount: number }[] = [];
+      if (disbursementsResponse.success && disbursementsResponse.data) {
+        const dData = disbursementsResponse.data;
+        disbursementsList = Array.isArray(dData) ? dData : (dData as { disbursements: { totalAmount: number }[] }).disbursements || [];
+      }
+      const pendingDisbursements = disbursementsList.reduce((sum, d) => sum + d.totalAmount, 0);
 
       // Load refunds for total refunds
       const refundsResponse = await getRefunds({
-        eventId: "", // Get all refunds
         status: "completed",
       });
 
-      const totalRefunds = refundsResponse.success && refundsResponse.data
-        ? refundsResponse.data.reduce((sum, r) => sum + r.refundAmount, 0)
-        : 0;
+      // Extract refunds from response (may be flat array or paginated object)
+      let refundsList: { refundAmount: number }[] = [];
+      if (refundsResponse.success && refundsResponse.data) {
+        const rData = refundsResponse.data;
+        refundsList = Array.isArray(rData) ? rData : (rData as { refunds: { refundAmount: number }[] }).refunds || [];
+      }
+      const totalRefunds = refundsList.reduce((sum, r) => sum + r.refundAmount, 0);
 
       setStats({
         totalRevenue,

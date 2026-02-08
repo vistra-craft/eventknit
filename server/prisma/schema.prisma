@@ -2207,6 +2207,8 @@ enum NotificationType {
   CAPACITY_REACHED
   PAYMENT_RECEIVED
   REFUND_PROCESSED
+  PAYOUT_INITIATED        // Automatic payout created for organizer
+  PAYOUT_COMPLETED        // Payout has been completed and sent to organizer
   EVENT_PERFORMANCE_SUMMARY
 
   // Registration-related

@@ -57,6 +57,12 @@ tags:
     description: Career inquiry management for job applicants
   - name: Cart
     description: Shopping cart and ticket reservation system
+  - name: Admin Finance
+    description: Admin financial operations — payment transactions, platform fees, disbursements, refunds, reconciliation
+  - name: Platform Finance
+    description: Platform-level accounting — expenses, income, wages
+  - name: Organizer Payouts
+    description: Organizer payout preferences, history, and scheduling
 
 components:
   securitySchemes:
@@ -1583,6 +1589,341 @@ components:
           type: number
           format: decimal
           description: Discount amount (optional)
+
+    # Financial Schemas
+    PlatformFee:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        feeNumber:
+          type: string
+          example: PF-2026-001
+        transactionId:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        feePercentage:
+          type: number
+          example: 10.0
+        feeAmount:
+          type: number
+          format: decimal
+        organizerAmount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          example: NGN
+        status:
+          type: string
+          enum: [calculated, disbursed, refunded]
+        disbursementId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Disbursement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        disbursementNumber:
+          type: string
+          example: DISB-2026-001
+        organizerId:
+          type: string
+          format: uuid
+        eventId:
+          type: string
+          format: uuid
+        totalAmount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+          example: NGN
+        paymentMethod:
+          type: string
+          example: bank_transfer
+        bankName:
+          type: string
+          nullable: true
+        accountName:
+          type: string
+          nullable: true
+        accountNumber:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+        scheduledDate:
+          type: string
+          format: date-time
+          nullable: true
+        processedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        paymentReference:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Refund:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        refundNumber:
+          type: string
+          example: REF-2026-001
+        transactionId:
+          type: string
+          format: uuid
+        refundAmount:
+          type: number
+          format: decimal
+        currency:
+          type: string
+        refundType:
+          type: string
+          enum: [full, partial]
+        refundReason:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+        platformFeeRefund:
+          type: number
+          format: decimal
+          nullable: true
+        refundReference:
+          type: string
+          nullable: true
+        requestedAt:
+          type: string
+          format: date-time
+        processedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Reconciliation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reconciliationNumber:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        totalPaystackTransactions:
+          type: integer
+        totalSystemTransactions:
+          type: integer
+        matchedTransactions:
+          type: integer
+        unmatchedTransactions:
+          type: integer
+        totalPaystackAmount:
+          type: number
+          format: decimal
+        totalSystemAmount:
+          type: number
+          format: decimal
+        discrepancyAmount:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [pending, in_progress, completed, discrepancies_found]
+        discrepancies:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [amount_mismatch, missing_in_system, missing_in_paystack]
+              reference:
+                type: string
+              description:
+                type: string
+              paystackAmount:
+                type: number
+                nullable: true
+              systemAmount:
+                type: number
+                nullable: true
+
+    PayoutPreference:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizerId:
+          type: string
+          format: uuid
+        primaryMethod:
+          type: string
+          example: bank_transfer
+        bankName:
+          type: string
+          nullable: true
+        accountName:
+          type: string
+          nullable: true
+        accountNumber:
+          type: string
+          nullable: true
+        bankCode:
+          type: string
+          nullable: true
+        routingNumber:
+          type: string
+          nullable: true
+        paystackRecipientCode:
+          type: string
+          nullable: true
+        alternativeMethods:
+          type: object
+          nullable: true
+        autoPayoutEnabled:
+          type: boolean
+          default: false
+        autoPayoutThreshold:
+          type: number
+          format: decimal
+          nullable: true
+        autoPayoutSchedule:
+          type: string
+          enum: [daily, weekly, monthly]
+          nullable: true
+        taxId:
+          type: string
+          nullable: true
+        taxCountry:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PlatformExpense:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          type: string
+        description:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        status:
+          type: string
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    PlatformIncome:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          type: string
+        description:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        status:
+          type: string
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    Wage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employeeName:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        payPeriod:
+          type: string
+        payDate:
+          type: string
+          format: date-time
+        department:
+          type: string
+          nullable: true
+        status:
+          type: string
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
 
   responses:
     UnauthorizedError:
@@ -8637,6 +8978,1796 @@ paths:
                     reservedCarts: 12
                     expiringInMinutes: 3
                     totalItemsInCarts: 128
+
+  # ==================== ADMIN FINANCE ====================
+
+  /admin/finance/insights:
+    get:
+      tags:
+        - Admin Finance
+      summary: Get finance insights
+      description: Get aggregated finance insights for admin dashboards with configurable time periods
+      operationId: getFinanceInsights
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [monthly, quarterly, semiannual, yearly]
+            default: monthly
+      responses:
+        '200':
+          description: Finance insights retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          period:
+                            type: string
+                          totalRevenue:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                label:
+                                  type: string
+                                value:
+                                  type: number
+                          platformFees:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                label:
+                                  type: string
+                                value:
+                                  type: number
+                          pendingDisbursements:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                label:
+                                  type: string
+                                value:
+                                  type: number
+                          totalRefunds:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                label:
+                                  type: string
+                                value:
+                                  type: number
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/finance/payments/sync:
+    post:
+      tags:
+        - Admin Finance
+      summary: Sync payments from Paystack
+      description: Synchronize payment transactions from the Paystack payment processor
+      operationId: syncPayments
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                eventId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Payments synced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/finance/payments:
+    get:
+      tags:
+        - Admin Finance
+      summary: List payment transactions
+      description: Get paginated list of payment transactions with filtering
+      operationId: getPaymentTransactions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: registrationId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Payment transactions retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          transactions:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                amount:
+                                  type: number
+                                paymentStatus:
+                                  type: string
+                                paymentDate:
+                                  type: string
+                                  format: date-time
+                                event:
+                                  type: object
+                                  properties:
+                                    id:
+                                      type: string
+                                    title:
+                                      type: string
+                                registration:
+                                  type: object
+                                  properties:
+                                    id:
+                                      type: string
+                                    attendee:
+                                      type: object
+                                      properties:
+                                        email:
+                                          type: string
+                                        firstName:
+                                          type: string
+                                        lastName:
+                                          type: string
+                                platformFee:
+                                  $ref: '#/components/schemas/PlatformFee'
+                          pagination:
+                            $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/finance/payments/{id}:
+    get:
+      tags:
+        - Admin Finance
+      summary: Get payment transaction
+      description: Get a specific payment transaction by ID with full details
+      operationId: getPaymentTransaction
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment transaction retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/finance/platform-fees:
+    get:
+      tags:
+        - Admin Finance
+      summary: List platform fees
+      description: Get platform fees for an event
+      operationId: getPlatformFees
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [calculated, disbursed, refunded]
+        - name: includeDisbursed
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Platform fees retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PlatformFee'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/finance/platform-fees/summary:
+    get:
+      tags:
+        - Admin Finance
+      summary: Get platform fee summary
+      description: Get aggregated platform fee summary for an event
+      operationId: getPlatformFeeSummary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Platform fee summary retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/finance/disbursements:
+    post:
+      tags:
+        - Admin Finance
+      summary: Create disbursement
+      description: Create a new organizer disbursement (payout)
+      operationId: createDisbursement
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - eventId
+                - organizerId
+              properties:
+                eventId:
+                  type: string
+                  format: uuid
+                organizerId:
+                  type: string
+                  format: uuid
+                platformFeeIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  description: Specific fee IDs to include (defaults to all pending)
+                scheduledDate:
+                  type: string
+                  format: date-time
+                paymentMethod:
+                  type: string
+                  default: bank_transfer
+                bankName:
+                  type: string
+                accountName:
+                  type: string
+                accountNumber:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Disbursement created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Disbursement'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    get:
+      tags:
+        - Admin Finance
+      summary: List disbursements
+      description: Get disbursements filtered by organizer or event
+      operationId: getDisbursements
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed, cancelled]
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Disbursements retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Disbursement'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/finance/disbursements/summary:
+    get:
+      tags:
+        - Admin Finance
+      summary: Get disbursement summary
+      description: Get aggregated disbursement summary for an organizer
+      operationId: getDisbursementSummary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizerId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Disbursement summary retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          totalPending:
+                            type: number
+                          totalProcessing:
+                            type: number
+                          totalCompleted:
+                            type: number
+                          totalAmount:
+                            type: number
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/finance/disbursements/{id}:
+    get:
+      tags:
+        - Admin Finance
+      summary: Get disbursement
+      description: Get a specific disbursement by ID with related data
+      operationId: getDisbursement
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Disbursement retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Disbursement'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/finance/disbursements/{id}/process:
+    post:
+      tags:
+        - Admin Finance
+      summary: Process disbursement
+      description: Start processing a pending disbursement
+      operationId: processDisbursement
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentReference:
+                  type: string
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: Disbursement processing started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/finance/disbursements/{id}/complete:
+    post:
+      tags:
+        - Admin Finance
+      summary: Complete disbursement
+      description: Mark a disbursement as completed with payment reference
+      operationId: completeDisbursement
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentReference
+              properties:
+                paymentReference:
+                  type: string
+      responses:
+        '200':
+          description: Disbursement completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/finance/refunds:
+    post:
+      tags:
+        - Admin Finance
+      summary: Create refund
+      description: Create a refund request for a payment transaction
+      operationId: createRefund
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transactionId
+                - refundReason
+                - refundType
+              properties:
+                transactionId:
+                  type: string
+                  format: uuid
+                refundAmount:
+                  type: number
+                  description: If not provided, full amount is refunded
+                refundReason:
+                  type: string
+                refundType:
+                  type: string
+                  enum: [full, partial]
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Refund created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Refund'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+    get:
+      tags:
+        - Admin Finance
+      summary: List refunds
+      description: Get refunds for an event
+      operationId: getRefunds
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed, cancelled]
+      responses:
+        '200':
+          description: Refunds retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Refund'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/finance/refunds/summary:
+    get:
+      tags:
+        - Admin Finance
+      summary: Get refund summary
+      description: Get aggregated refund summary for an event
+      operationId: getRefundSummary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Refund summary retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          totalRefunds:
+                            type: integer
+                          totalRefundAmount:
+                            type: number
+                          pending:
+                            type: integer
+                          processing:
+                            type: integer
+                          completed:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/finance/refunds/{id}:
+    get:
+      tags:
+        - Admin Finance
+      summary: Get refund
+      description: Get a specific refund by ID with transaction details
+      operationId: getRefund
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Refund retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Refund'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/finance/refunds/{id}/process:
+    post:
+      tags:
+        - Admin Finance
+      summary: Process refund
+      description: Start processing a pending refund
+      operationId: processRefund
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refundReference:
+                  type: string
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: Refund processing started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/finance/refunds/{id}/complete:
+    post:
+      tags:
+        - Admin Finance
+      summary: Complete refund
+      description: Mark a refund as completed with refund reference
+      operationId: completeRefund
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refundReference
+              properties:
+                refundReference:
+                  type: string
+      responses:
+        '200':
+          description: Refund completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/finance/reconciliations:
+    post:
+      tags:
+        - Admin Finance
+      summary: Create reconciliation
+      description: Create a payment reconciliation between Paystack and system records
+      operationId: createReconciliation
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - startDate
+                - endDate
+              properties:
+                startDate:
+                  type: string
+                  format: date-time
+                endDate:
+                  type: string
+                  format: date-time
+                eventId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Reconciliation created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Reconciliation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+    get:
+      tags:
+        - Admin Finance
+      summary: List reconciliations
+      description: Get payment reconciliation records
+      operationId: getReconciliations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, in_progress, completed, discrepancies_found]
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Reconciliations retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Reconciliation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/finance/reconciliations/{id}:
+    get:
+      tags:
+        - Admin Finance
+      summary: Get reconciliation
+      description: Get a specific reconciliation by ID with discrepancy details
+      operationId: getReconciliation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Reconciliation retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Reconciliation'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/finance/reconciliations/{id}/auto-fix:
+    post:
+      tags:
+        - Admin Finance
+      summary: Auto-fix reconciliation
+      description: Automatically fix reconciliation discrepancies where possible
+      operationId: autoFixReconciliation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Discrepancies auto-fixed
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Reconciliation'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== PLATFORM FINANCE ====================
+
+  /admin/platform-finance/summary:
+    get:
+      tags:
+        - Platform Finance
+      summary: Get finance summary
+      description: Get platform-level financial summary (income, expenses, wages, net profit)
+      operationId: getFinanceSummary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Finance summary retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          totalIncome:
+                            type: number
+                          totalExpenses:
+                            type: number
+                          totalWages:
+                            type: number
+                          netProfit:
+                            type: number
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/platform-finance/expenses:
+    get:
+      tags:
+        - Platform Finance
+      summary: List expenses
+      description: Get paginated list of platform expenses
+      operationId: getPlatformExpenses
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Expenses retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PlatformExpense'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+    post:
+      tags:
+        - Platform Finance
+      summary: Create expense
+      description: Create a new platform expense record
+      operationId: createPlatformExpense
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - category
+                - description
+                - amount
+              properties:
+                category:
+                  type: string
+                description:
+                  type: string
+                amount:
+                  type: number
+      responses:
+        '201':
+          description: Expense created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PlatformExpense'
+
+  /admin/platform-finance/expenses/{id}:
+    get:
+      tags:
+        - Platform Finance
+      summary: Get expense
+      operationId: getPlatformExpenseById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Expense retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PlatformExpense'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Platform Finance
+      summary: Update expense
+      operationId: updatePlatformExpense
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category:
+                  type: string
+                description:
+                  type: string
+                amount:
+                  type: number
+      responses:
+        '200':
+          description: Expense updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PlatformExpense'
+    delete:
+      tags:
+        - Platform Finance
+      summary: Delete expense
+      operationId: deletePlatformExpense
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Expense deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /admin/platform-finance/income:
+    get:
+      tags:
+        - Platform Finance
+      summary: List income
+      description: Get paginated list of platform income records
+      operationId: getPlatformIncomes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Income records retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PlatformIncome'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+    post:
+      tags:
+        - Platform Finance
+      summary: Create income
+      operationId: createPlatformIncome
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - category
+                - description
+                - amount
+              properties:
+                category:
+                  type: string
+                description:
+                  type: string
+                amount:
+                  type: number
+      responses:
+        '201':
+          description: Income created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PlatformIncome'
+
+  /admin/platform-finance/income/{id}:
+    get:
+      tags:
+        - Platform Finance
+      summary: Get income
+      operationId: getPlatformIncomeById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Income retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PlatformIncome'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Platform Finance
+      summary: Update income
+      operationId: updatePlatformIncome
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category:
+                  type: string
+                description:
+                  type: string
+                amount:
+                  type: number
+      responses:
+        '200':
+          description: Income updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PlatformIncome'
+    delete:
+      tags:
+        - Platform Finance
+      summary: Delete income
+      operationId: deletePlatformIncome
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Income deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /admin/platform-finance/wages:
+    get:
+      tags:
+        - Platform Finance
+      summary: List wages
+      description: Get paginated list of wage records
+      operationId: getWages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: department
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: payPeriod
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Wages retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Wage'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+    post:
+      tags:
+        - Platform Finance
+      summary: Create wage
+      operationId: createWage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - employeeName
+                - amount
+                - payPeriod
+                - payDate
+              properties:
+                employeeName:
+                  type: string
+                amount:
+                  type: number
+                payPeriod:
+                  type: string
+                payDate:
+                  type: string
+                  format: date-time
+                department:
+                  type: string
+      responses:
+        '201':
+          description: Wage record created
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Wage'
+
+  /admin/platform-finance/wages/{id}:
+    get:
+      tags:
+        - Platform Finance
+      summary: Get wage
+      operationId: getWageById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Wage retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Wage'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Platform Finance
+      summary: Update wage
+      operationId: updateWage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employeeName:
+                  type: string
+                amount:
+                  type: number
+                payPeriod:
+                  type: string
+                payDate:
+                  type: string
+                  format: date-time
+                department:
+                  type: string
+      responses:
+        '200':
+          description: Wage updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Wage'
+    delete:
+      tags:
+        - Platform Finance
+      summary: Delete wage
+      operationId: deleteWage
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Wage deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  # ==================== ORGANIZER PAYOUTS ====================
+
+  /organizer-dashboard/payouts/preferences:
+    get:
+      tags:
+        - Organizer Payouts
+      summary: Get payout preferences
+      description: Get the organizer's payout preferences including bank details and auto-payout settings
+      operationId: getPayoutPreferences
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Payout preferences retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          preferences:
+                            $ref: '#/components/schemas/PayoutPreference'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    put:
+      tags:
+        - Organizer Payouts
+      summary: Update payout preferences
+      description: Update bank details, payout method, and auto-payout settings
+      operationId: updatePayoutPreferences
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                primaryMethod:
+                  type: string
+                  maxLength: 50
+                bankName:
+                  type: string
+                  maxLength: 200
+                accountName:
+                  type: string
+                  maxLength: 200
+                accountNumber:
+                  type: string
+                  maxLength: 50
+                bankCode:
+                  type: string
+                  maxLength: 20
+                routingNumber:
+                  type: string
+                  maxLength: 50
+                paystackRecipientCode:
+                  type: string
+                  maxLength: 100
+                alternativeMethods:
+                  type: object
+                autoPayoutEnabled:
+                  type: boolean
+                autoPayoutThreshold:
+                  type: number
+                autoPayoutSchedule:
+                  type: string
+                  enum: [daily, weekly, monthly]
+                taxId:
+                  type: string
+                  maxLength: 50
+                taxCountry:
+                  type: string
+                  maxLength: 5
+      responses:
+        '200':
+          description: Payout preferences updated
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          preferences:
+                            $ref: '#/components/schemas/PayoutPreference'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /organizer-dashboard/payouts/history:
+    get:
+      tags:
+        - Organizer Payouts
+      summary: Get payout history
+      description: Get paginated list of the organizer's past disbursements
+      operationId: getPayoutHistory
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed, cancelled]
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Payout history retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          disbursements:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Disbursement'
+                          pagination:
+                            allOf:
+                              - $ref: '#/components/schemas/Pagination'
+                              - type: object
+                                properties:
+                                  hasMore:
+                                    type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /organizer-dashboard/payouts/schedule:
+    post:
+      tags:
+        - Organizer Payouts
+      summary: Schedule a payout
+      description: Schedule a future payout for the organizer's earnings
+      operationId: schedulePayout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scheduledDate
+              properties:
+                eventId:
+                  type: string
+                  format: uuid
+                amount:
+                  type: number
+                  minimum: 0
+                scheduledDate:
+                  type: string
+                  format: date-time
+                  description: Must be a future date
+                notes:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '201':
+          description: Payout scheduled
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          disbursement:
+                            $ref: '#/components/schemas/Disbursement'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /organizer-dashboard/payouts/summary:
+    get:
+      tags:
+        - Organizer Payouts
+      summary: Get payout summary
+      description: Get aggregated payout summary (pending, scheduled, total paid)
+      operationId: getPayoutSummary
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Payout summary retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          pending:
+                            type: object
+                            properties:
+                              amount:
+                                type: number
+                              count:
+                                type: integer
+                          scheduled:
+                            type: object
+                            properties:
+                              amount:
+                                type: number
+                              count:
+                                type: integer
+                          totalPaid:
+                            type: number
+                          lastPayoutDate:
+                            type: string
+                            format: date-time
+                            nullable: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
 security:
   - BearerAuth: []
