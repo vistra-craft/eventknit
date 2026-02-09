@@ -5,7 +5,6 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
-import AdminLayout from "../AdminLayout";
 
 interface LogEntry {
   id: string;
@@ -143,7 +142,6 @@ const LogsPage = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -301,7 +299,6 @@ const LogsPage = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

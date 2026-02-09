@@ -20,7 +20,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import OrganizerLayout from "./OrganizerLayout";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
 import RoleSwitcher from "@/components/RoleSwitcher";
@@ -1028,7 +1027,6 @@ const OrganizerSettingsPage = () => {
   };
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1142,7 +1140,6 @@ const OrganizerSettingsPage = () => {
           </div>
         </div>
       </div>
-    </OrganizerLayout>
   );
 };
 

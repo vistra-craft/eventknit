@@ -1,0 +1,292 @@
+/**
+ * Organizer Routes
+ * All routes under /organizer/* path (protected, requires organizer roles)
+ * Supports multiple role variations: ORGANIZER, ORGANIZER_STAFF, ORGANIZER_TELLER
+ */
+
+import { lazy, createElement } from 'react';
+import type { ProtectedRouteConfig } from './types';
+import { UserRole } from '../types/auth';
+
+// Lazy load organizer page components
+
+// Dashboard & Onboarding
+const OrganizerDashboard = lazy(() => import('../pages/organizer/OrganizerDashboard'));
+const OnboardingWizard = lazy(() => import('../pages/organizer/OnboardingWizard'));
+
+// Event Management
+const AllEventsPage = lazy(() => import('../pages/organizer/AllEventsPage'));
+const UpcomingEventsPage = lazy(() => import('../pages/organizer/UpcomingEventsPage'));
+const PastEventsPage = lazy(() => import('../pages/organizer/PastEventsPage'));
+const CancelledEventsPage = lazy(() => import('../pages/organizer/CancelledEventsPage'));
+const CreateEventPage = lazy(() => import('../pages/organizer/CreateEventPage'));
+const StandaloneCreateEventPage = lazy(() => import('../pages/organizer/StandaloneCreateEventPage'));
+const EventManagementPage = lazy(() => import('../pages/organizer/EventManagementPage'));
+const EventTemplates = lazy(() => import('../pages/organizer/EventTemplates'));
+const EventTemplatesManagement = lazy(() => import('../pages/organizer/EventTemplatesManagement'));
+const EventDraftsManagement = lazy(() => import('../pages/organizer/EventDraftsManagement'));
+const EventCollaboration = lazy(() => import('../pages/organizer/EventCollaboration'));
+
+// Analytics
+const AnalyticsOverview = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.AnalyticsOverview })));
+const EventPerformance = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.EventPerformance })));
+const AttendeeInsights = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.AttendeeInsights })));
+const RevenueReports = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.RevenueReports })));
+const TestAnalytics = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.TestAnalytics })));
+
+// Team Management
+const StaffManagementPage = lazy(() => import('../pages/organizer/team').then(m => ({ default: m.StaffManagementPage })));
+// const RolesPermissionsPage = lazy(() => import('../pages/organizer/team').then(m => ({ default: m.RolesPermissionsPage })));
+// const TeamCalendarPage = lazy(() => import('../pages/organizer/team').then(m => ({ default: m.TeamCalendarPage })));
+
+// Settings
+const OrganizerSettingsPage = lazy(() => import('../pages/organizer/OrganizerSettingsPage'));
+
+// Verification & Subscription
+const VerificationPage = lazy(() => import('../pages/organizer/VerificationPage'));
+const KYCVerificationPage = lazy(() => import('../pages/organizer/KYCVerificationPage'));
+const SubscriptionManagement = lazy(() => import('../pages/organizer/SubscriptionManagement'));
+
+// Venues
+const VenueManagement = lazy(() => import('../pages/organizer/VenueManagement'));
+
+// Attendees
+const AttendeeSegmentation = lazy(() => import('../pages/organizer/AttendeeSegmentation'));
+const AttendeeTagsManagement = lazy(() => import('../pages/organizer/AttendeeTagsManagement'));
+const AttendeeCommunication = lazy(() => import('../pages/organizer/AttendeeCommunication'));
+
+// Marketing
+const OrganizerPromoCodeManager = lazy(() => import('../pages/organizer/marketing/OrganizerPromoCodeManager'));
+
+// Financial (if needed)
+// const FinancialManagement = lazy(() => import('../pages/organizer/FinancialManagement'));
+// const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'));
+
+/**
+ * Common role combinations
+ */
+const ALL_ORGANIZER_ROLES = [
+  UserRole.ORGANIZER,
+  UserRole.ORGANIZER_STAFF,
+  UserRole.ORGANIZER_TELLER,
+  UserRole.SUPERADMIN,
+];
+
+const NON_TELLER_ROLES = [
+  UserRole.ORGANIZER,
+  UserRole.ORGANIZER_STAFF,
+  UserRole.SUPERADMIN,
+];
+
+const ORGANIZER_ADMIN_ONLY = [
+  UserRole.ORGANIZER,
+  UserRole.SUPERADMIN,
+];
+
+/**
+ * Organizer route definitions
+ * All routes require organizer-related roles
+ */
+export const organizerRoutes: ProtectedRouteConfig[] = [
+  // Dashboard & Onboarding
+  {
+    path: 'dashboard',
+    element: createElement(OrganizerDashboard),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'onboarding',
+    element: createElement(OnboardingWizard),
+    allowedRoles: [UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER],
+  },
+
+  // Events - List Views
+  {
+    path: 'events',
+    element: createElement(AllEventsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'events/upcoming',
+    element: createElement(UpcomingEventsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'events/past',
+    element: createElement(PastEventsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'events/cancelled',
+    element: createElement(CancelledEventsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+
+  // Events - Creation
+  {
+    path: 'events/create',
+    element: createElement(CreateEventPage),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'events/create-standalone',
+    element: createElement(StandaloneCreateEventPage),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Events - Templates & Drafts
+  {
+    path: 'events/templates',
+    element: createElement(EventTemplates),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'events/templates-management',
+    element: createElement(EventTemplatesManagement),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'events/drafts',
+    element: createElement(EventDraftsManagement),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Event Management (specific event)
+  {
+    path: 'event/:eventId',
+    element: createElement(EventManagementPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'event/:eventId/collaboration',
+    element: createElement(EventCollaboration),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Analytics
+  {
+    path: 'analytics',
+    element: createElement(AnalyticsOverview),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'analytics/events',
+    element: createElement(EventPerformance),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'analytics/attendees',
+    element: createElement(AttendeeInsights),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'analytics/revenue',
+    element: createElement(RevenueReports),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'analytics/test',
+    element: createElement(TestAnalytics),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Team Management
+  {
+    path: 'team/staff',
+    element: createElement(StaffManagementPage),
+    allowedRoles: ORGANIZER_ADMIN_ONLY,
+  },
+  // TODO: Uncomment when implemented
+  // {
+  //   path: 'team/roles',
+  //   element: createElement(RolesPermissionsPage),
+  //   allowedRoles: ORGANIZER_ADMIN_ONLY,
+  // },
+  // {
+  //   path: 'team/calendar',
+  //   element: createElement(TeamCalendarPage),
+  //   allowedRoles: NON_TELLER_ROLES,
+  // },
+
+  // Settings
+  {
+    path: 'settings',
+    element: createElement(OrganizerSettingsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'settings/profile',
+    element: createElement(OrganizerSettingsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'settings/notifications',
+    element: createElement(OrganizerSettingsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'settings/security',
+    element: createElement(OrganizerSettingsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'settings/appearance',
+    element: createElement(OrganizerSettingsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+
+  // Profile (legacy route, redirects to settings)
+  {
+    path: 'profile',
+    element: createElement(OrganizerSettingsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+
+  // Verification & Subscription
+  {
+    path: 'verification',
+    element: createElement(VerificationPage),
+    allowedRoles: ORGANIZER_ADMIN_ONLY,
+  },
+  {
+    path: 'kyc',
+    element: createElement(KYCVerificationPage),
+    allowedRoles: ORGANIZER_ADMIN_ONLY,
+  },
+  {
+    path: 'subscription',
+    element: createElement(SubscriptionManagement),
+    allowedRoles: ORGANIZER_ADMIN_ONLY,
+  },
+
+  // Venues
+  {
+    path: 'venues',
+    element: createElement(VenueManagement),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Attendees
+  {
+    path: 'attendees/segmentation',
+    element: createElement(AttendeeSegmentation),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'attendees/tags',
+    element: createElement(AttendeeTagsManagement),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'attendees/communication',
+    element: createElement(AttendeeCommunication),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Marketing
+  {
+    path: 'marketing/promo-codes',
+    element: createElement(OrganizerPromoCodeManager),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+];

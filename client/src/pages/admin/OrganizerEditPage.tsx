@@ -17,7 +17,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import AdminLayout from "./AdminLayout";
 import {
   getUserById,
   updateUser,
@@ -311,21 +310,18 @@ const OrganizerEditPage = () => {
   // Loading state
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <Loader />
             <p className="mt-2 text-muted-foreground">Loading organizer details...</p>
           </div>
         </div>
-      </AdminLayout>
     );
   }
 
   // Error state (only if no userData at all)
   if (error && !userData) {
     return (
-      <AdminLayout>
         <div className="space-y-6">
           <BackButton onClick={handleBack} label="Back to Organizers" />
           <Alert variant="destructive">
@@ -333,12 +329,10 @@ const OrganizerEditPage = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Status Messages */}
         {error && (
@@ -664,7 +658,6 @@ const OrganizerEditPage = () => {
           </Button>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

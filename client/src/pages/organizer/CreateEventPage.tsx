@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import CreateEventStepwise from "../CreateEventStepwise";
-import OrganizerLayout from "./OrganizerLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
 import { getDashboardAccess } from "@/lib/organizer-api";
@@ -53,9 +52,7 @@ const CreateEventPage: React.FC = () => {
 
   // Organizer has dashboard access - show with layout
   return (
-    <OrganizerLayout>
       <CreateEventStepwise />
-    </OrganizerLayout>
   );
 };
 

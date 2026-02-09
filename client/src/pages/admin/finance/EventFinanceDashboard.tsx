@@ -4,7 +4,6 @@ import { DollarSign, TrendingUp, TrendingDown, CreditCard, ArrowRight, RefreshCw
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import AdminLayout from "../AdminLayout";
 import {
   getPaymentTransactions,
   getDisbursements,
@@ -158,16 +157,13 @@ const EventFinanceDashboard = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -530,7 +526,6 @@ const EventFinanceDashboard = () => {
           </Card>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

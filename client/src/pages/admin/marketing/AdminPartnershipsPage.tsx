@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import AdminLayout from "../AdminLayout";
 import { 
   Handshake, 
   Building2,
@@ -644,7 +643,6 @@ const AdminPartnershipsPage = () => {
   const avgRating = partnerships.filter(p => p.rating).reduce((sum, partnership) => sum + (partnership.rating || 0), 0) / partnerships.filter(p => p.rating).length;
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
@@ -1797,7 +1795,6 @@ const AdminPartnershipsPage = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
   );
 };
 

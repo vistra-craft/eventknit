@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 
-import OrganizerLayout from './OrganizerLayout';
 import { EntityTypeSelector } from '@/components/kyc/EntityTypeSelector';
 import { DocumentUploadWizard } from '@/components/kyc/DocumentUploadWizard';
 import { DirectorsForm } from '@/components/kyc/DirectorsForm';
@@ -192,16 +191,13 @@ const KYCVerificationPage = () => {
 
   if (loading) {
     return (
-      <OrganizerLayout>
         <div className="flex justify-center min-h-[400px] items-center">
           <Loader size="lg" />
         </div>
-      </OrganizerLayout>
     );
   }
 
   return (
-    <OrganizerLayout>
       <div className="container mx-auto max-w-4xl py-8 px-4">
         <BackButton to="/organizer/dashboard" label="Back to Dashboard" />
 
@@ -296,7 +292,6 @@ const KYCVerificationPage = () => {
           </CardContent>
         </Card>
       </div>
-    </OrganizerLayout>
   );
 };
 

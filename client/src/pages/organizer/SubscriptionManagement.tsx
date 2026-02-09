@@ -9,7 +9,6 @@ import {
   XCircle,
   Check,
 } from 'lucide-react';
-import OrganizerLayout from './OrganizerLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -190,29 +189,24 @@ const SubscriptionManagement = () => {
 
   if (loading) {
     return (
-      <OrganizerLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader size="lg" />
         </div>
-      </OrganizerLayout>
     );
   }
 
   if (!subscription) {
     return (
-      <OrganizerLayout>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>Failed to load subscription information</AlertDescription>
         </Alert>
-      </OrganizerLayout>
     );
   }
 
   const currentTierInfo = TIER_INFO[subscription.tier];
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -454,7 +448,6 @@ const SubscriptionManagement = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </OrganizerLayout>
   );
 };
 

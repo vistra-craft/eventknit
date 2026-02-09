@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import OrganizerLayout from "./OrganizerLayout";
 import {
   Ticket,
   Plus,
@@ -190,18 +189,15 @@ const AdvancedTicketTypes = () => {
 
   if (!eventId) {
     return (
-      <OrganizerLayout>
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Event ID is required</p>
           </CardContent>
         </Card>
-      </OrganizerLayout>
     );
   }
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -362,7 +358,6 @@ const AdvancedTicketTypes = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </OrganizerLayout>
   );
 };
 

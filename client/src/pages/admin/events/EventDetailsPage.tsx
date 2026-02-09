@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "@/components/ui/loader";
-import AdminLayout from "../AdminLayout";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import { getEventById } from "@/lib/event-api";
 import { getEventRegistrations } from "@/lib/organizer-api";
 import { updateOrganizerDataAccess } from "@/lib/admin-api";
@@ -426,18 +426,16 @@ const EventDetailsPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center py-12">
           <Loader size="lg" className="h-8 w-8" />
           <span className="ml-2 text-muted-foreground">Loading event details...</span>
         </div>
-      </AdminLayout>
     );
   }
 
   if (error || !eventData) {
     return (
-      <AdminLayout>
+      <>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error || 'Event not found'}</AlertDescription>
@@ -445,7 +443,7 @@ const EventDetailsPage = () => {
         <Button onClick={() => navigate("/admin/events")} className="mt-4">
           Back to Events
         </Button>
-      </AdminLayout>
+      </>
     );
   }
 
@@ -547,7 +545,6 @@ const EventDetailsPage = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -555,7 +552,7 @@ const EventDetailsPage = () => {
             <BackButton to="/admin/events" label="Back to Events" />
             <div>
               <h1 className="text-base font-semibold text-foreground">{eventData.title}</h1>
-              <p className="text-muted-foreground">Event ID: {eventData.id}</p>
+              <p className="text-muted-foreground hidden">Event ID: {eventData.id}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -680,12 +677,18 @@ const EventDetailsPage = () => {
                     
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Description</label>
-                      <p className="text-sm text-foreground mt-1">{eventData.description}</p>
+                      <RichTextContent
+                        content={eventData.description || '<p>No description available.</p>'}
+                        className="text-sm mt-1"
+                      />
                     </div>
 
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Full Description</label>
-                      <p className="text-sm text-foreground mt-1">{eventData.fullDescription}</p>
+                      <RichTextContent
+                        content={eventData.fullDescription || '<p>No full description available.</p>'}
+                        className="text-sm mt-1"
+                      />
                     </div>
 
                     {eventData.requirements && eventData.requirements.length > 0 && (
@@ -1762,7 +1765,6 @@ const EventDetailsPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
   );
 };
 

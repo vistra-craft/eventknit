@@ -1,12 +1,28 @@
 import React, { useState, useEffect } from "react";
-import OrganizerSidebar from "./OrganizerSidebar";
-import OrganizerHeader from "./OrganizerHeader";
+import { Routes, Route, Outlet } from 'react-router-dom';
+import { Suspense } from 'react';
+import OrganizerSidebar from "../pages/organizer/OrganizerSidebar";
+import OrganizerHeader from "../pages/organizer/OrganizerHeader";
+import { organizerRoutes } from '../routes/organizerRoutes';
+import { ProtectedRoute } from '../components/ProtectedRoute';
+import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
 
-interface OrganizerLayoutProps {
-  children: React.ReactNode;
-}
+/**
+ * Loading component for suspense fallback
+ * Professional skeleton loader with shimmer animations
+ */
+const LoadingFallback = () => (
+  <SkeletonGroup className="p-6 space-y-6">
+    <SkeletonPageHeader showActions={false} />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {[1, 2, 3, 4].map((i) => (
+        <SkeletonMetricCard key={i} />
+      ))}
+    </div>
+  </SkeletonGroup>
+);
 
-const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
+const OrganizerLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed, will be set by useEffect
   const [isMobile, setIsMobile] = useState(false);
 
@@ -49,7 +65,7 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden lg:h-screen lg:overflow-hidden">
       {/* Main layout area (sidebar + header + page content) */}
-      <div className="max-w-7xl w-full mx-auto flex flex-1 lg:h-full lg:overflow-hidden">
+      <div className="w-full flex flex-1 lg:h-full lg:overflow-hidden">
         {/* Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0 lg:sticky lg:top-0 lg:self-start lg:h-screen lg:overflow-hidden">
           <OrganizerSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={isMobile} />
@@ -66,7 +82,26 @@ const OrganizerLayout: React.FC<OrganizerLayoutProps> = ({ children }) => {
 
           {/* Page Content */}
           <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
-            {children}
+            <Suspense fallback={<LoadingFallback />}>
+              <Routes>
+                {organizerRoutes.map((route, index) => (
+                  <Route
+                    key={index}
+                    path={route.path}
+                    element={
+                      route.allowedRoles ? (
+                        <ProtectedRoute allowedRoles={route.allowedRoles}>
+                          {route.element}
+                        </ProtectedRoute>
+                      ) : (
+                        route.element
+                      )
+                    }
+                  />
+                ))}
+              </Routes>
+              <Outlet />
+            </Suspense>
           </main>
         </div>
       </div>

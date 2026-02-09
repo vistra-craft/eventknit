@@ -32,6 +32,67 @@ const hashPassword = async (password: string): Promise<string> => {
 const prisma = new PrismaClient();
 
 /**
+ * Create or update system configuration
+ */
+const createConfiguration = async (): Promise<void> => {
+  try {
+    logger.info('Setting up system configuration...');
+
+    // Check if configuration already exists
+    const existingConfig = await prisma.configuration.findFirst();
+
+    // Determine environment
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+
+    // Get test email addresses from environment or use defaults
+    const testToEmails = process.env.MAILTRAP_TO_EMAIL
+      ? process.env.MAILTRAP_TO_EMAIL.split(',').map(e => e.trim())
+      : ['dev-team@eventknit.test'];
+
+    const testCcEmails = process.env.MAILTRAP_CC_EMAIL
+      ? process.env.MAILTRAP_CC_EMAIL.split(',').map(e => e.trim())
+      : [];
+
+    const mailTrapConfig = {
+      trap: isDevelopment, // Enable mailTrap in development, disable in production
+      toAddress: testToEmails,
+      ccAddress: testCcEmails,
+    };
+
+    if (existingConfig) {
+      logger.info('Configuration already exists, updating...');
+      await prisma.configuration.update({
+        where: { id: existingConfig.id },
+        data: {
+          mailTrap: mailTrapConfig,
+          isSystemUnderMaintenance: false,
+          updatedAt: new Date(),
+        },
+      });
+      logger.info(`✓ Configuration updated (MailTrap: ${mailTrapConfig.trap ? 'ENABLED' : 'DISABLED'})`);
+    } else {
+      await prisma.configuration.create({
+        data: {
+          mailTrap: mailTrapConfig,
+          isSystemUnderMaintenance: false,
+        },
+      });
+      logger.info(`✓ Configuration created (MailTrap: ${mailTrapConfig.trap ? 'ENABLED' : 'DISABLED'})`);
+    }
+
+    if (mailTrapConfig.trap) {
+      logger.info(`📧 MailTrap is ENABLED - All emails will be redirected to: ${testToEmails.join(', ')}`);
+      logger.warn('⚠️  This is expected in development. Disable mailTrap in production!');
+    } else {
+      logger.info('📧 MailTrap is DISABLED - Emails will be sent to actual recipients');
+    }
+  } catch (error) {
+    logger.error('Failed to create configuration:', error);
+    throw error;
+  }
+};
+
+/**
  * Create or update the superuser
  */
 const createSuperuser = async (): Promise<void> => {
@@ -767,14 +828,17 @@ async function main(): Promise<void> {
       throw error;
     }
     
+    // Create system configuration first
+    await createConfiguration();
+
     // Create superuser
     await createSuperuser();
-    
+
     // Get superuser ID
     const superuser = await prisma.user.findUnique({
       where: { email: SUPERVISOR_CREDENTIALS.email },
     });
-    
+
     if (!superuser) {
       throw new Error('Superuser not found after creation');
     }

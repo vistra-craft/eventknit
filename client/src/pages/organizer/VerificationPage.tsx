@@ -5,7 +5,6 @@ import BackButton from '@/components/BackButton';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import OrganizerLayout from './OrganizerLayout';
 import VerificationForm from '@/components/verification/VerificationForm';
 const VerificationPage = () => {
   const navigate = useNavigate();
@@ -32,7 +31,6 @@ const VerificationPage = () => {
 
   if (showSuccess) {
     return (
-      <OrganizerLayout>
         <div className="max-w-2xl mx-auto p-6">
           <Card className="border-success bg-success/5">
             <CardContent className="pt-6">
@@ -50,12 +48,10 @@ const VerificationPage = () => {
             </CardContent>
           </Card>
         </div>
-      </OrganizerLayout>
     );
   }
 
   return (
-    <OrganizerLayout>
       <div className="max-w-4xl mx-auto p-6">
         <div className="mb-6">
           <BackButton label="Back" className="mb-4" />
@@ -111,7 +107,6 @@ const VerificationPage = () => {
           />
         )}
       </div>
-    </OrganizerLayout>
   );
 };
 

@@ -3,7 +3,6 @@ import { Activity, Server, Database, Cpu, HardDrive, Wifi, AlertTriangle, CheckC
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
-import AdminLayout from "../AdminLayout";
 
 interface SystemMetric {
   id: string;
@@ -167,7 +166,6 @@ const SystemHealthPage = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -300,7 +298,6 @@ const SystemHealthPage = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

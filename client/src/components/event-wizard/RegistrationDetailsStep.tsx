@@ -47,15 +47,6 @@ export function RegistrationDetailsStep({
 
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Registration Form
-        </h2>
-        <p className="text-muted-foreground">
-          Customize what information you collect from attendees.
-        </p>
-      </div>
-
       <div className="flex justify-end items-center space-x-2 mb-4">
         <Label htmlFor="builder-mode" className="text-sm font-medium">
           {useDragAndDrop ? 'Drag & Drop Builder' : 'Simple Builder'}

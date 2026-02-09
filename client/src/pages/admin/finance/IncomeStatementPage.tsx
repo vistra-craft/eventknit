@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import AdminLayout from '@/pages/admin/AdminLayout';
 import {
   Download,
   FileText,
@@ -93,7 +92,6 @@ const IncomeStatementPage: React.FC = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="min-h-screen bg-background">
         {/* Header */}
         <div className="bg-gradient-to-b from-primary/5 via-background to-muted/10 py-8">
@@ -493,7 +491,6 @@ const IncomeStatementPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

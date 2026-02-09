@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import type { StepComponentProps, TicketType } from "./types";
 
 interface ReviewStepProps extends StepComponentProps {
@@ -19,15 +20,6 @@ export function ReviewStep({
 }: ReviewStepProps) {
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Review & Publish
-        </h2>
-        <p className="text-muted-foreground">
-          Review your event details and publish when ready.
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Event Summary</CardTitle>
@@ -65,7 +57,14 @@ export function ReviewStep({
 
           <div>
             <Label className="text-sm font-medium text-muted-foreground">Description</Label>
-            <p className="text-base">{eventData.description || 'Not set'}</p>
+            {eventData.description ? (
+              <RichTextContent
+                content={eventData.description}
+                className="text-base"
+              />
+            ) : (
+              <p className="text-base">Not set</p>
+            )}
           </div>
 
           <div>

@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import OrganizerLayout from "./OrganizerLayout";
 import {
   Users,
   Plus,
@@ -222,7 +221,6 @@ const AttendeeSegmentation = () => {
   };
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -412,7 +410,6 @@ const AttendeeSegmentation = () => {
           </Dialog>
         )}
       </div>
-    </OrganizerLayout>
   );
 };
 

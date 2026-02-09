@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Loader } from "../../../components/ui/loader";
-import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
@@ -157,28 +156,23 @@ const PastEventsPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center py-12">
           <Loader size="lg" className="h-8 w-8" />
           <span className="ml-2 text-muted-foreground">Loading past events...</span>
         </div>
-      </AdminLayout>
     );
   }
 
   if (error) {
     return (
-      <AdminLayout>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -329,7 +323,6 @@ const PastEventsPage = () => {
           </Card>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

@@ -365,15 +365,15 @@ model User {
   dataExportRequests DataExportRequest[] @relation("DataExportRequests")
 
   // Cart Reservation System
-  carts              CartReservation[]   @relation("UserCarts")
+  carts CartReservation[] @relation("UserCarts")
 
   // Credit/Voucher System
-  userCredit             UserCredit?           @relation("UserCredits")
-  creditTransactions     CreditTransaction[]   @relation("CreditInitiator")
-  vouchersCreated        Voucher[]             @relation("VoucherCreator")
-  organizerVouchers      Voucher[]             @relation("OrganizerVouchers")
-  voucherRedemptions     VoucherRedemption[]   @relation("VoucherRedemptions")
-  emailDigestQueue       EmailDigestQueue[]    @relation("UserDigestQueue")
+  userCredit         UserCredit?         @relation("UserCredits")
+  creditTransactions CreditTransaction[] @relation("CreditInitiator")
+  vouchersCreated    Voucher[]           @relation("VoucherCreator")
+  organizerVouchers  Voucher[]           @relation("OrganizerVouchers")
+  voucherRedemptions VoucherRedemption[] @relation("VoucherRedemptions")
+  emailDigestQueue   EmailDigestQueue[]  @relation("UserDigestQueue")
 
   @@index([email])
   @@index([role])
@@ -663,8 +663,8 @@ model Event {
 
   // Media
   image       String? // Image URL
-  imageFocalX Int?    @default(50) // Focal point X position (0-100)
-  imageFocalY Int?    @default(50) // Focal point Y position (0-100)
+  imageFocalX Int?     @default(50) // Focal point X position (0-100)
+  imageFocalY Int?     @default(50) // Focal point Y position (0-100)
   coverImage  String? // For backward compatibility
   bannerImage String? // For banner/header use
   images      String[] // Array of image URLs
@@ -712,10 +712,10 @@ model Event {
   autoRefundEnabled Boolean @default(false)
   refundPolicy      String? // 'no_refunds', 'full_refund', 'partial_refund', 'tiered', 'custom'
   refundPolicyText  String? @db.Text // Custom refund policy text shown to attendees
-  refundTiers       Json?   // Array of {daysBeforeEvent: number, refundPercentage: number} for tiered refunds
+  refundTiers       Json? // Array of {daysBeforeEvent: number, refundPercentage: number} for tiered refunds
 
   // Service fee configuration
-  serviceFeeType           String?  // 'percentage', 'fixed', 'none'
+  serviceFeeType           String? // 'percentage', 'fixed', 'none'
   serviceFeeValue          Decimal? @db.Decimal(10, 2) // Fee amount (percentage or fixed)
   serviceFeePassToAttendee Boolean  @default(true) // true = shown at checkout, false = absorbed by organizer
 
@@ -855,8 +855,8 @@ model EventRegistration {
   ticketEmailError  String? // Error message if email failed
 
   // Async PDF Generation
-  ticketPdfUrl       String?   // URL to generated ticket PDF (stored in Cloudinary)
-  ticketPdfStatus    String?   // PENDING, GENERATING, READY, FAILED
+  ticketPdfUrl         String? // URL to generated ticket PDF (stored in Cloudinary)
+  ticketPdfStatus      String? // PENDING, GENERATING, READY, FAILED
   ticketPdfGeneratedAt DateTime? // When PDF was generated
 
   // Seating
@@ -1557,9 +1557,9 @@ model PaymentWebhookEvent {
   gateway String @default("PAYSTACK")
 
   // Event details
-  eventType     String // charge.success, payment_intent.succeeded, etc.
-  payload       Json // Full webhook payload for debugging/replay
-  reference     String? // Payment reference if applicable
+  eventType      String // charge.success, payment_intent.succeeded, etc.
+  payload        Json // Full webhook payload for debugging/replay
+  reference      String? // Payment reference if applicable
   registrationId String? // Associated registration if applicable
 
   // Processing status
@@ -2325,21 +2325,21 @@ model Notification {
 
 // Email Digest Queue - stores notifications to be sent in daily/weekly digests
 model EmailDigestQueue {
-  id             String           @id @default(cuid())
+  id             String               @id @default(cuid())
   userId         String
   notificationId String
-  digestType     String           // DAILY, WEEKLY
+  digestType     String // DAILY, WEEKLY
   priority       NotificationPriority @default(MEDIUM)
 
   // Notification content (denormalized for digest generation)
   notificationType NotificationType
   title            String
-  message          String         @db.Text
+  message          String           @db.Text
   eventId          String?
   eventTitle       String?
 
   // Status
-  status    String   @default("PENDING") // PENDING, SENT, EXPIRED
+  status    String    @default("PENDING") // PENDING, SENT, EXPIRED
   sentAt    DateTime?
   expiresAt DateTime?
 
@@ -2483,6 +2483,32 @@ model SystemSettings {
   @@index([key])
   @@index([category])
   @@index([environment])
+  @@index([createdBy])
+  @@index([updatedBy])
+}
+
+// Configuration model - Singleton for system-wide configuration
+// Similar to SystemSettings but stores complex configuration objects
+model Configuration {
+  id String @id @default(cuid())
+
+  // Mail Trap Configuration
+  // In development/test environments, emails can be redirected to test addresses
+  // Structure: { trap: boolean, toAddress: string[], ccAddress: string[] }
+  mailTrap Json @default("{\"trap\":true,\"toAddress\":[],\"ccAddress\":[]}")
+
+  // System Maintenance
+  isSystemUnderMaintenance Boolean   @default(false)
+  maintenanceMessage       String?   @db.Text
+  maintenanceStartTime     DateTime?
+  maintenanceEndTime       DateTime?
+
+  // Audit fields
+  createdBy String?
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([createdBy])
   @@index([updatedBy])
 }
@@ -3222,11 +3248,11 @@ model TicketResale {
 
 // User Credit Balance
 model UserCredit {
-  id        String  @id @default(uuid())
-  userId    String  @unique
-  user      User    @relation("UserCredits", fields: [userId], references: [id], onDelete: Cascade)
-  balance   Decimal @default(0) @db.Decimal(12, 2) // Current credit balance
-  currency  String  @default("NGN")
+  id       String  @id @default(uuid())
+  userId   String  @unique
+  user     User    @relation("UserCredits", fields: [userId], references: [id], onDelete: Cascade)
+  balance  Decimal @default(0) @db.Decimal(12, 2) // Current credit balance
+  currency String  @default("NGN")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3238,20 +3264,20 @@ model UserCredit {
 
 // Credit Transaction History
 model CreditTransaction {
-  id        String  @id @default(uuid())
-  creditId  String
-  credit    UserCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  id       String     @id @default(uuid())
+  creditId String
+  credit   UserCredit @relation(fields: [creditId], references: [id], onDelete: Cascade)
 
   // Transaction details
-  type        String   // CREDIT, DEBIT, EXPIRED, ADJUSTMENT
-  amount      Decimal  @db.Decimal(12, 2)
-  balanceAfter Decimal @db.Decimal(12, 2) // Balance after this transaction
-  description String
-  reference   String?  // Reference to related entity (refund ID, order ID, etc.)
+  type          String // CREDIT, DEBIT, EXPIRED, ADJUSTMENT
+  amount        Decimal @db.Decimal(12, 2)
+  balanceAfter  Decimal @db.Decimal(12, 2) // Balance after this transaction
+  description   String
+  reference     String? // Reference to related entity (refund ID, order ID, etc.)
   referenceType String? // REFUND, PURCHASE, ADMIN_GRANT, PROMO, EXPIRY
 
   // Voucher/Credit source info
-  voucherCode String?  // If from a voucher
+  voucherCode String? // If from a voucher
   expiresAt   DateTime? // When this credit expires
 
   // Who initiated the transaction
@@ -3282,20 +3308,20 @@ model Voucher {
   currency String  @default("NGN")
 
   // Usage limits
-  maxUses      Int?      // Max number of redemptions (null = unlimited)
-  usedCount    Int       @default(0)
-  usesPerUser  Int       @default(1) // How many times same user can use
+  maxUses     Int? // Max number of redemptions (null = unlimited)
+  usedCount   Int  @default(0)
+  usesPerUser Int  @default(1) // How many times same user can use
 
   // Validity
-  validFrom DateTime @default(now())
+  validFrom  DateTime  @default(now())
   validUntil DateTime?
-  isActive  Boolean  @default(true)
+  isActive   Boolean   @default(true)
 
   // Restrictions
-  eventId        String? // Restrict to specific event
-  event          Event?  @relation("EventVouchers", fields: [eventId], references: [id], onDelete: SetNull)
-  organizerId    String? // Created by organizer
-  organizer      User?   @relation("OrganizerVouchers", fields: [organizerId], references: [id], onDelete: SetNull)
+  eventId           String? // Restrict to specific event
+  event             Event?   @relation("EventVouchers", fields: [eventId], references: [id], onDelete: SetNull)
+  organizerId       String? // Created by organizer
+  organizer         User?    @relation("OrganizerVouchers", fields: [organizerId], references: [id], onDelete: SetNull)
   minPurchaseAmount Decimal? @db.Decimal(12, 2) // Minimum purchase to apply
 
   // Who created the voucher
@@ -3322,9 +3348,9 @@ model VoucherRedemption {
   user      User    @relation("VoucherRedemptions", fields: [userId], references: [id], onDelete: Cascade)
 
   // Redemption details
-  amount    Decimal @db.Decimal(12, 2) // Amount credited
-  orderId   String? // Related order if applied at checkout
-  eventId   String? // Event where voucher was applied
+  amount  Decimal @db.Decimal(12, 2) // Amount credited
+  orderId String? // Related order if applied at checkout
+  eventId String? // Event where voucher was applied
 
   createdAt DateTime @default(now())
 
@@ -5161,17 +5187,17 @@ model PrintJob {
 // Carts expire after a configurable timeout (default 8 minutes)
 
 enum CartStatus {
-  ACTIVE    // Cart is active and items can be modified
-  RESERVED  // Cart has been reserved for payment (in payment flow)
+  ACTIVE // Cart is active and items can be modified
+  RESERVED // Cart has been reserved for payment (in payment flow)
   COMPLETED // Cart has been converted to registration
-  EXPIRED   // Cart expired due to timeout
+  EXPIRED // Cart expired due to timeout
   ABANDONED // Cart was abandoned by user
 }
 
 model CartReservation {
-  id     String     @id @default(uuid())
-  userId String?    // Null for guest carts (identified by sessionId)
-  user   User?      @relation("UserCarts", fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  userId String? // Null for guest carts (identified by sessionId)
+  user   User?   @relation("UserCarts", fields: [userId], references: [id], onDelete: Cascade)
 
   // Session tracking for guests
   sessionId   String  @unique // Anonymous session ID for guest carts
@@ -5179,10 +5205,10 @@ model CartReservation {
 
   // Cart status and timing
   status    CartStatus @default(ACTIVE)
-  expiresAt DateTime   // When cart reservation expires
+  expiresAt DateTime // When cart reservation expires
 
   // Reserved tickets are held until expiration
-  reservedAt DateTime? // When cart was moved to RESERVED status
+  reservedAt  DateTime? // When cart was moved to RESERVED status
   completedAt DateTime? // When cart was converted to registration
 
   // IP and device info for fraud prevention
@@ -5208,17 +5234,17 @@ model CartItem {
   cart   CartReservation @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   // Event and ticket details
-  eventId       String
-  event         Event  @relation("CartEvents", fields: [eventId], references: [id], onDelete: Cascade)
-  ticketType    String // Ticket type name/ID
-  quantity      Int    @default(1)
-  unitPrice     Decimal @db.Decimal(10, 2)
+  eventId    String
+  event      Event   @relation("CartEvents", fields: [eventId], references: [id], onDelete: Cascade)
+  ticketType String // Ticket type name/ID
+  quantity   Int     @default(1)
+  unitPrice  Decimal @db.Decimal(10, 2)
 
   // Seat selection (if applicable)
-  seatIds       String[] // Array of reserved seat IDs
+  seatIds String[] // Array of reserved seat IDs
 
   // Promo code (applied at item level)
-  promoCodeId   String?
+  promoCodeId    String?
   discountAmount Decimal? @db.Decimal(10, 2)
 
   // Lock tracking

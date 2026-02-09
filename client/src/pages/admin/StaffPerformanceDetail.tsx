@@ -27,7 +27,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/useToast';
-import AdminLayout from './AdminLayout';
 
 const StaffPerformanceDetail = () => {
   const { staffId } = useParams<{ staffId: string }>();
@@ -91,17 +90,14 @@ const StaffPerformanceDetail = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <Loader size="lg" />
         </div>
-      </AdminLayout>
     );
   }
 
   if (!performance) {
     return (
-      <AdminLayout>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
@@ -114,12 +110,10 @@ const StaffPerformanceDetail = () => {
             </Button>
           </CardContent>
         </Card>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className={`space-y-4 md:space-y-6 ${isMobile ? 'p-4' : 'p-0'}`}>
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -336,7 +330,6 @@ const StaffPerformanceDetail = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

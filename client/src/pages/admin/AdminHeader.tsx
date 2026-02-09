@@ -1,154 +1,198 @@
+/**
+ * Admin Top Navigation
+ * Clean, minimal header following industry standards (GridArc, Smart Purchase, Vercel, etc.)
+ * - NO page titles in header (titles go in page content)
+ * - Backdrop blur effect for glassmorphism
+ * - Sticky positioning
+ * - Simple layout: Menu (mobile) | Spacer | Theme + Notifications + Profile
+ */
+
 import React, { useState } from "react";
-import { Menu, User, ChevronDown, LogOut, Shield, AlertTriangle } from "lucide-react";
-import { Button } from "../../components/ui/button";
+import { Menu, User, ChevronDown, LogOut, Settings, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import NotificationBell from "../../components/NotificationBell";
 import { ThemeToggle } from "../../components/ThemeToggle";
+import { cn } from "@/lib/utils";
 
 interface AdminHeaderProps {
   onMenuToggle?: () => void;
 }
 
-const AdminHeader: React.FC<AdminHeaderProps> = ({
-  onMenuToggle
-}) => {
+const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
-  // Format user data from auth context
-  const userName = authUser ? `${authUser.firstName} ${authUser.lastName}` : "Admin User";
+  // Format user data
+  const userName = authUser
+    ? `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() || "Admin"
+    : "Admin";
   const userEmail = authUser?.email || "";
-  const userRole = authUser?.role?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || "Administrator";
+  const userInitial = authUser?.firstName?.[0]?.toUpperCase() || "A";
 
   const handleLogout = () => {
-    // Use proper logout function from useAuth
+    setIsProfileOpen(false);
     logout();
   };
 
-  return (
-    <header className="bg-card border-b border-border py-4 px-4 sm:px-6 lg:px-8 sticky top-0 z-40">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          {onMenuToggle && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onMenuToggle}
-              className="lg:hidden"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          )}
-            <div>
-              <h1 className="text-lg sm:text-xl font-semibold text-foreground flex items-center">
-                <Shield className="h-5 w-5 mr-2 text-primary" />
-                Admin Dashboard
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Welcome back, {userName}
-              </p>
-            </div>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          {/* Theme Toggle */}
-          <ThemeToggle />
+  // Mock notifications
+  const notifications = [
+    { id: 1, title: "New event created", time: "2 min ago", read: false },
+    { id: 2, title: "Organizer verified", time: "1 hour ago", read: false },
+    { id: 3, title: "Payment received", time: "3 hours ago", read: true },
+  ];
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-          {/* System Alerts */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="relative text-muted-foreground hover:bg-muted transition-colors"
+  return (
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
+      {/* Left: Mobile menu button */}
+      <div className="flex items-center gap-4">
+        {onMenuToggle && (
+          <button
+            onClick={onMenuToggle}
+            className="lg:hidden p-2 rounded-lg hover:bg-accent transition-colors"
+            aria-label="Open menu"
           >
-            <AlertTriangle className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-white text-xs rounded-full flex items-center justify-center">
-              2
-            </span>
-          </Button>
-          
-          {/* Notifications */}
-          <NotificationBell />
-          
-          {/* Profile Dropdown */}
-          <div className="relative">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center space-x-2 hover:bg-muted transition-colors"
-            >
-              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-primary-foreground" />
+            <Menu className="h-5 w-5" />
+          </button>
+        )}
+      </div>
+
+      {/* Right: Actions */}
+      <div className="flex items-center gap-2">
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
+        {/* Notifications */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setIsNotificationsOpen(!isNotificationsOpen);
+              setIsProfileOpen(false);
+            }}
+            className="relative p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          {/* Notifications dropdown */}
+          {isNotificationsOpen && (
+            <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-popover shadow-xl animate-scale-in origin-top-right z-50">
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <h3 className="font-semibold text-popover-foreground">Notifications</h3>
+                <button className="text-xs text-primary hover:underline">
+                  Mark all read
+                </button>
               </div>
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-foreground">{userName}</p>
-                <p className="text-xs text-muted-foreground">{userRole}</p>
-              </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            </Button>
-            
-            {/* Profile Dropdown Menu */}
-            {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
-                <div className="p-4 border-b border-border">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                      <User className="h-5 w-5 text-primary-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">{userName}</p>
-                      <p className="text-sm text-muted-foreground">{userEmail}</p>
-                      <p className="text-sm text-muted-foreground flex items-center">
-                        <Shield className="h-3 w-3 mr-1" />
-                        {userRole}
+              <div className="max-h-96 overflow-y-auto">
+                {notifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className={cn(
+                      "flex gap-3 p-4 border-b border-border last:border-0 hover:bg-secondary/50 transition-colors cursor-pointer",
+                      !notification.read && "bg-primary/5"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "mt-1 h-2 w-2 rounded-full shrink-0",
+                        notification.read ? "bg-muted-foreground/30" : "bg-primary"
+                      )}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-popover-foreground">
+                        {notification.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {notification.time}
                       </p>
                     </div>
                   </div>
-                </div>
-                
-                <div className="p-2">
-                  <button
-                    onClick={() => {
-                      setIsProfileOpen(false);
-                      navigate('/admin/profile');
-                    }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
-                  >
-                    <User className="h-4 w-4" />
-                    <span>View Profile</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => {
-                      setIsProfileOpen(false);
-                      navigate('/admin/settings');
-                    }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
-                  >
-                    <Shield className="h-4 w-4" />
-                    <span>Admin Settings</span>
-                  </button>
-                  
-                  <div className="border-t border-border my-2"></div>
-                  
-                  <button
-                    onClick={() => {
-                      setIsProfileOpen(false);
-                      handleLogout();
-                    }}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
+                ))}
               </div>
-            )}
-          </div>
+              <div className="p-3 border-t border-border">
+                <button className="w-full py-2 text-sm text-center text-primary hover:underline">
+                  View all notifications
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Profile */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setIsProfileOpen(!isProfileOpen);
+              setIsNotificationsOpen(false);
+            }}
+            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent transition-colors"
+          >
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-medium text-white">
+              {userInitial}
+            </div>
+            <div className="hidden md:block text-left">
+              <p className="text-sm font-medium">{userName}</p>
+              <p className="text-xs text-muted-foreground truncate max-w-[120px]">{userEmail}</p>
+            </div>
+            <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
+          </button>
+
+          {/* Profile dropdown */}
+          {isProfileOpen && (
+            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border bg-popover shadow-xl animate-scale-in origin-top-right z-50">
+              <div className="p-2">
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    navigate('/admin/profile');
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <User className="h-4 w-4" />
+                  <span>Profile</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    navigate('/admin/settings');
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </button>
+              </div>
+              <div className="border-t border-border p-2">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Log out</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Click outside to close dropdowns */}
+      {(isNotificationsOpen || isProfileOpen) && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => {
+            setIsNotificationsOpen(false);
+            setIsProfileOpen(false);
+          }}
+        />
+      )}
     </header>
   );
 };

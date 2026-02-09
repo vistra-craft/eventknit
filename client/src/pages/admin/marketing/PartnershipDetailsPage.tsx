@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import {
   Handshake,
@@ -240,20 +239,17 @@ Generated on: ${new Date().toLocaleDateString()}
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
             <p className="text-muted-foreground">Loading partnership details...</p>
           </div>
         </div>
-      </AdminLayout>
     );
   }
 
   if (!partnership) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -262,12 +258,10 @@ Generated on: ${new Date().toLocaleDateString()}
             <BackButton to="/admin/marketing/partnerships" label="Back to Partnerships" />
           </div>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className={`space-y-6 ${isPrintMode ? 'print-mode' : ''}`}>
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -510,7 +504,6 @@ Generated on: ${new Date().toLocaleDateString()}
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

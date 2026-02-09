@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/useToast";
-import AdminLayout from "../../AdminLayout";
 import {
   getFeaturedEventById,
   updateFeaturedEvent,
@@ -168,11 +167,9 @@ const EditFeaturedEventPage = () => {
 
   if (fetching) {
     return (
-      <AdminLayout>
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="text-center py-12 text-muted-foreground">Loading...</div>
         </div>
-      </AdminLayout>
     );
   }
 
@@ -211,7 +208,6 @@ const EditFeaturedEventPage = () => {
   const previewData = getPreviewData();
 
   return (
-    <AdminLayout>
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -432,7 +428,6 @@ const EditFeaturedEventPage = () => {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

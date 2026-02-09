@@ -1,11 +1,17 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EVENT_CATEGORIES } from '@/lib/event-categories';
 import { MapPin, Globe, Users } from 'lucide-react';
 import type { StepComponentProps } from './types';
+
+// Helper function to strip HTML tags and get text length
+const getTextLength = (html: string): number => {
+  const text = html.replace(/<[^>]*>/g, '').trim();
+  return text.length;
+};
 
 interface BasicInfoStepProps extends StepComponentProps {
   eventType: string;
@@ -24,15 +30,6 @@ export function BasicInfoStep({
 }: BasicInfoStepProps) {
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Basic Event Information
-        </h2>
-        <p className="text-muted-foreground">
-          Let's start with the essential details about your event.
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="eventName">Event Title *</Label>
@@ -64,21 +61,19 @@ export function BasicInfoStep({
 
       <div className="space-y-2">
         <Label htmlFor="description">Event Description *</Label>
-        <Textarea
-          id="description"
-          placeholder="Describe what your event is about..."
-          rows={4}
-          value={eventData.description}
-          maxLength={5000}
-          onChange={(e) => {
-            onInputChange("description", e.target.value);
+        <RichTextEditor
+          content={eventData.description}
+          onChange={(html) => {
+            onInputChange("description", html);
             if (validationErrors.description) setValidationErrors(prev => ({ ...prev, description: '' }));
           }}
+          placeholder="Describe what your event is about..."
+          minHeight="180px"
           className={validationErrors.description ? 'border-destructive' : ''}
         />
         <div className="flex justify-between">
           <p className="text-sm text-muted-foreground">
-            {eventData.description.length}/5000 characters
+            {getTextLength(eventData.description)}/5000 characters
           </p>
           {validationErrors.description && (
             <p className="text-sm text-destructive">{validationErrors.description}</p>
@@ -88,31 +83,27 @@ export function BasicInfoStep({
 
       <div className="space-y-2">
         <Label htmlFor="fullDescription">Detailed Description (Optional)</Label>
-        <Textarea
-          id="fullDescription"
+        <RichTextEditor
+          content={eventData.fullDescription}
+          onChange={(html) => onInputChange("fullDescription", html)}
           placeholder="Provide a more comprehensive description of your event, including what attendees can expect..."
-          rows={6}
-          value={eventData.fullDescription}
-          maxLength={10000}
-          onChange={(e) => onInputChange("fullDescription", e.target.value)}
+          minHeight="220px"
         />
         <p className="text-sm text-muted-foreground">
-          {eventData.fullDescription.length}/10000 characters
+          {getTextLength(eventData.fullDescription)}/10000 characters
         </p>
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="organizerDescription">About the Organizer (Optional)</Label>
-        <Textarea
-          id="organizerDescription"
+        <RichTextEditor
+          content={eventData.organizerDescription || ""}
+          onChange={(html) => onInputChange("organizerDescription", html)}
           placeholder="Tell attendees about yourself or your organization. This will be displayed on the event details page."
-          rows={4}
-          value={eventData.organizerDescription || ""}
-          maxLength={1000}
-          onChange={(e) => onInputChange("organizerDescription", e.target.value)}
+          minHeight="160px"
         />
         <p className="text-sm text-muted-foreground">
-          {(eventData.organizerDescription || "").length}/1000 characters
+          {getTextLength(eventData.organizerDescription || "")}/1000 characters
         </p>
         <p className="text-xs text-muted-foreground">
           Share information about yourself or your organization to help attendees learn more about the event host.

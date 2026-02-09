@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/useToast";
 import { createUser, type CreateUserData, type UserRole } from "@/lib/admin-api";
-import AdminLayout from "../AdminLayout";
 
 const CreateOrganizerPage = () => {
   const navigate = useNavigate();
@@ -89,7 +88,6 @@ const CreateOrganizerPage = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -211,7 +209,6 @@ const CreateOrganizerPage = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

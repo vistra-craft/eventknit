@@ -30,12 +30,13 @@ import {
   DollarSign,
   Search,
   Tag,
+  Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { getPromoCodes, createPromoCode, updatePromoCode, deletePromoCode, type PromoCode, type CreatePromoCodeData } from '@/lib/promo-code-api';
 import { getOrganizerEvents } from '@/lib/organizer-api';
 import { useToast } from '@/hooks/useToast';
-import OrganizerLayout from '../OrganizerLayout';
 
 interface OrganizerEvent {
   id: string;
@@ -53,6 +54,7 @@ const OrganizerPromoCodeManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
   const [filterEvent, setFilterEvent] = useState<string>('all');
+  const [codeValidation, setCodeValidation] = useState<{ valid: boolean; error?: string }>({ valid: true });
 
   // Form state
   const [formData, setFormData] = useState<CreatePromoCodeData>({
@@ -99,7 +101,71 @@ const OrganizerPromoCodeManager = () => {
     }
   };
 
+  // Generate meaningful promo code
+  const generatePromoCode = (): string => {
+    const { discountValue, discountType } = formData;
+    const timestamp = Date.now().toString().slice(-4);
+
+    if (discountValue > 0) {
+      if (discountType === 'PERCENTAGE') {
+        if (discountValue >= 50) return `MEGA${discountValue}-${timestamp}`;
+        if (discountValue >= 25) return `SAVE${discountValue}-${timestamp}`;
+        return `OFF${discountValue}-${timestamp}`;
+      } else {
+        return `CASH${Math.round(discountValue)}-${timestamp}`;
+      }
+    }
+
+    const seasonalPrefixes = ['WELCOME', 'LAUNCH', 'VIP', 'EARLYBIRD', 'SPECIAL', 'EXCLUSIVE', 'FLASH', 'LIMITED'];
+    const prefix = seasonalPrefixes[Math.floor(Math.random() * seasonalPrefixes.length)];
+    const suffix = Math.floor(1000 + Math.random() * 9000);
+    return `${prefix}${suffix}`;
+  };
+
+  // Validate promo code
+  const validatePromoCode = (code: string): { valid: boolean; error?: string } => {
+    if (!code) return { valid: false, error: 'Code is required' };
+    if (code.length < 4) return { valid: false, error: 'Code must be at least 4 characters' };
+    if (code.length > 20) return { valid: false, error: 'Code must be 20 characters or less' };
+    if (!/^[A-Z0-9-_]+$/.test(code)) {
+      return { valid: false, error: 'Only letters, numbers, hyphens (-), and underscores (_) allowed' };
+    }
+
+    const isDuplicate = promoCodes.some(
+      (existing) => existing.code.toUpperCase() === code.toUpperCase() && existing.id !== editingCode?.id
+    );
+    if (isDuplicate) return { valid: false, error: 'This code already exists' };
+
+    return { valid: true };
+  };
+
+  // Handle code input change with validation
+  const handleCodeChange = (value: string) => {
+    const upperValue = value.toUpperCase();
+    setFormData({ ...formData, code: upperValue });
+    const validation = validatePromoCode(upperValue);
+    setCodeValidation(validation);
+  };
+
+  // Generate and set a new code
+  const handleGenerateCode = () => {
+    const generated = generatePromoCode();
+    setFormData({ ...formData, code: generated });
+    setCodeValidation(validatePromoCode(generated));
+  };
+
   const handleCreate = async () => {
+    // Validate code before submission
+    const validation = validatePromoCode(formData.code);
+    if (!validation.valid) {
+      toast({
+        title: 'Invalid Code',
+        description: validation.error,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!formData.eventId) {
       toast({
         title: 'Error',
@@ -209,9 +275,10 @@ const OrganizerPromoCodeManager = () => {
     });
   };
 
-  const resetForm = () => {
+  const resetForm = (initialCode?: string) => {
+    const code = initialCode || '';
     setFormData({
-      code: '',
+      code,
       eventId: undefined,
       discountType: 'PERCENTAGE',
       discountValue: 0,
@@ -223,6 +290,11 @@ const OrganizerPromoCodeManager = () => {
       validFrom: new Date().toISOString().slice(0, 16),
       validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     });
+    if (code) {
+      setCodeValidation(validatePromoCode(code));
+    } else {
+      setCodeValidation({ valid: true });
+    }
   };
 
   const openEditModal = (code: PromoCode) => {
@@ -265,7 +337,6 @@ const OrganizerPromoCodeManager = () => {
   const totalUsed = promoCodes.reduce((sum, c) => sum + c.usedCount, 0);
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -275,8 +346,15 @@ const OrganizerPromoCodeManager = () => {
             </p>
           </div>
           <Button onClick={() => {
-            resetForm();
+            console.log('🎯 Opening Create Promo Code Modal');
             setEditingCode(null);
+            // Generate code immediately
+            const seasonalPrefixes = ['WELCOME', 'LAUNCH', 'VIP', 'EARLYBIRD', 'SPECIAL', 'EXCLUSIVE', 'FLASH', 'LIMITED'];
+            const prefix = seasonalPrefixes[Math.floor(Math.random() * seasonalPrefixes.length)];
+            const suffix = Math.floor(1000 + Math.random() * 9000);
+            const generated = `${prefix}${suffix}`;
+            console.log('✨ Generated code:', generated);
+            resetForm(generated);
             setShowCreateModal(true);
           }}>
             <Plus className="w-4 h-4 mr-2" />
@@ -501,17 +579,56 @@ const OrganizerPromoCodeManager = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Code *</Label>
-                  <Input
-                    placeholder="SUMMER2024"
-                    value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value.toUpperCase() })
-                    }
-                    disabled={!!editingCode}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Code cannot be changed after creation
-                  </p>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="flex-1 relative">
+                        <Input
+                          placeholder="e.g., SUMMER2024, WELCOME10"
+                          value={formData.code}
+                          onChange={(e) => handleCodeChange(e.target.value)}
+                          disabled={!!editingCode}
+                          className={!codeValidation.valid && formData.code ? 'border-destructive' : ''}
+                        />
+                        {!editingCode && (
+                          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {formData.code.length}/20
+                          </div>
+                        )}
+                      </div>
+                      {!editingCode && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={handleGenerateCode}
+                          title="Generate code"
+                          className="flex-shrink-0"
+                        >
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    {!codeValidation.valid && formData.code && (
+                      <div className="flex items-center gap-1 text-xs text-destructive">
+                        <AlertCircle className="h-3 w-3" />
+                        <span>{codeValidation.error}</span>
+                      </div>
+                    )}
+
+                    {codeValidation.valid && formData.code && (
+                      <div className="flex items-center gap-1 text-xs text-success">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Code is available</span>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-muted-foreground">
+                      {editingCode
+                        ? 'Code cannot be changed after creation'
+                        : 'Click the sparkle button to auto-generate or enter your own'}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -692,7 +809,6 @@ const OrganizerPromoCodeManager = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </OrganizerLayout>
   );
 };
 

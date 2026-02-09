@@ -13,7 +13,6 @@ import { Label } from "../../../components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Loader } from "../../../components/ui/loader";
-import AdminLayout from "../AdminLayout";
 import { getEvents, EventStatus } from "../../../lib/event-api";
 import { recallEvent } from "../../../lib/admin-api";
 import { shareEvent } from "../../../lib/utils/share";
@@ -262,28 +261,24 @@ const UpcomingEventsPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="flex items-center justify-center py-12">
-          <Loader size="lg" className="h-8 w-8" />
-          <span className="ml-2 text-muted-foreground">Loading upcoming events...</span>
-        </div>
-      </AdminLayout>
+      <div className="flex items-center justify-center py-12">
+        <Loader size="lg" className="h-8 w-8" />
+        <span className="ml-2 text-muted-foreground">Loading upcoming events...</span>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <AdminLayout>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </AdminLayout>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -644,8 +639,7 @@ const UpcomingEventsPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-    </AdminLayout>
+    </>
   );
 };
 

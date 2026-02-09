@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
-import OrganizerLayout from "../OrganizerLayout";
 import {
   Users,
   Clock,
@@ -246,7 +245,6 @@ const EventPerformance = () => {
   };
 
   return (
-    <OrganizerLayout>
       <div className="py-8">
         <div className="space-y-8">
         {/* Header */}
@@ -683,7 +681,6 @@ const EventPerformance = () => {
         </Tabs>
         </div>
       </div>
-    </OrganizerLayout>
   );
 };
 

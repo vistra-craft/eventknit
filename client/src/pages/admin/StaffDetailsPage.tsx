@@ -24,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import AdminLayout from "./AdminLayout";
 import { getUserById, getAdminStaffEvents, suspendUser, activateUser, getStaffProfile, getEmergencyContact, type EventStaffAssignment, type User as ApiUser, type StaffProfile, type EmergencyContact } from "@/lib/admin-api";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
@@ -408,19 +407,16 @@ const StaffDetailsPage = () => {
   // Loading state
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-96">
           <Loader />
           <span className="ml-2 text-muted-foreground">Loading staff details...</span>
         </div>
-      </AdminLayout>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <AdminLayout>
         <div className="space-y-6">
           <BackButton to="/admin/users/staff" label="Back to Staff" />
           <Alert variant="destructive">
@@ -428,12 +424,10 @@ const StaffDetailsPage = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -900,7 +894,6 @@ const StaffDetailsPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </AdminLayout>
   );
 };
 

@@ -40,7 +40,6 @@ import {
   Legend,
   Cell
 } from 'recharts';
-import AdminLayout from '../AdminLayout';
 
 // Custom row props for the virtualized scan list
 interface ScanRowCustomProps {
@@ -260,16 +259,13 @@ const RealtimeDashboard: React.FC = () => {
 
   if (!eventId) {
     return (
-      <AdminLayout>
         <div className="p-8 text-center">
           <p className="text-muted-foreground">No event selected</p>
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -536,7 +532,6 @@ const RealtimeDashboard: React.FC = () => {
         </Card>
       </div>
     </div>
-    </AdminLayout>
   );
 };
 

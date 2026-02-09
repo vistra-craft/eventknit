@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import AdminLayout from "../AdminLayout";
 import { useToast } from "@/hooks/useToast";
 import { getExpenseById, createExpense, updateExpense } from "@/lib/platform-finance-api";
 
@@ -130,16 +129,13 @@ const EditExpensePage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <Loader size="lg" />
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -303,7 +299,6 @@ const EditExpensePage = () => {
           </Card>
         </div>
       </div>
-    </AdminLayout>
   );
 };
 

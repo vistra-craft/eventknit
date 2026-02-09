@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import OrganizerLayout from "../OrganizerLayout";
 import {
   Users,
   Clock,
@@ -151,7 +150,6 @@ const AttendeeInsights = () => {
   };
 
   return (
-    <OrganizerLayout>
       <div className="py-8">
         <div className="space-y-8">
         {/* Header */}
@@ -564,7 +562,6 @@ const AttendeeInsights = () => {
         </Tabs>
         </div>
       </div>
-    </OrganizerLayout>
   );
 };
 

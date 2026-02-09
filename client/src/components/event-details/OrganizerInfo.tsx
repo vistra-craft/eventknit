@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Building, ExternalLink, ChevronDown, ChevronUp, Facebook, Twitter, Instagram, Linkedin, Youtube, Globe, MessageCircle } from "lucide-react";
 import type { EventData } from "@/types/event";
 
@@ -13,13 +14,16 @@ interface OrganizerInfoProps {
 export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, socialLinks }: OrganizerInfoProps) => {
   const name = organizerName || (organizer ? `${organizer.firstName} ${organizer.lastName}` : 'Unknown Organizer');
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  // Truncate description to 200 characters
+
+  // Strip HTML tags to get text length for truncation logic
+  const getTextLength = (html: string): number => {
+    const text = html.replace(/<[^>]*>/g, '').trim();
+    return text.length;
+  };
+
   const TRUNCATE_LENGTH = 200;
-  const shouldTruncate = organizerDescription && organizerDescription.length > TRUNCATE_LENGTH;
-  const displayDescription = shouldTruncate && !isExpanded
-    ? organizerDescription.substring(0, TRUNCATE_LENGTH) + '...'
-    : organizerDescription;
+  const textLength = organizerDescription ? getTextLength(organizerDescription) : 0;
+  const shouldTruncate = textLength > TRUNCATE_LENGTH;
 
   return (
     <section>
@@ -41,9 +45,12 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
             {/* Organizer Description */}
             {organizerDescription && (
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {displayDescription}
-                </p>
+                <div className={shouldTruncate && !isExpanded ? "line-clamp-3" : ""}>
+                  <RichTextContent
+                    content={organizerDescription}
+                    className="text-sm text-muted-foreground leading-relaxed"
+                  />
+                </div>
                 {shouldTruncate && (
                   <Button
                     variant="ghost"

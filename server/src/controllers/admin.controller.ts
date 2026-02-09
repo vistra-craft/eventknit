@@ -203,6 +203,23 @@ export class AdminController {
   }
 
   /**
+   * Get user statistics
+   */
+  static async getUsersStats(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const timeRange = (req.query.timeRange as '7d' | '30d' | '90d' | '1y') || '30d';
+      const stats = await AdminService.getUsersStats(timeRange);
+
+      res.status(200).json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get admin dashboard growth series for charts
    */
   static async getDashboardGrowth(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

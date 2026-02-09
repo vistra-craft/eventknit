@@ -111,16 +111,6 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Ticket Setup
-        </h2>
-        <p className="text-muted-foreground">
-          Configure your ticket types, pricing, and purchase options.
-        </p>
-      </div>
-
       {validationErrors.tickets && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />

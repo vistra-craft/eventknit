@@ -39,15 +39,6 @@ export const SocialConnectionsStep: React.FC<SocialConnectionsStepProps> = ({
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Connect Social Media
-        </h2>
-        <p className="text-muted-foreground">
-          Add your social media profiles to help attendees connect with you.
-        </p>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Social Profiles</CardTitle>

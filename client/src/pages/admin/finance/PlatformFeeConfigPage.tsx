@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/useToast";
 import { getSetting, setSetting } from "@/lib/system-settings-api";
 import { Percent, Calculator, Save, Loader2, History, AlertTriangle } from "lucide-react";
-import AdminLayout from "../AdminLayout";
+
 
 interface FeeConfig {
   feePercentage: number;
@@ -156,16 +156,13 @@ const PlatformFeeConfigPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -400,7 +397,6 @@ const PlatformFeeConfigPage = () => {
           </CardContent>
         </Card>
       </div>
-    </AdminLayout>
   );
 };
 

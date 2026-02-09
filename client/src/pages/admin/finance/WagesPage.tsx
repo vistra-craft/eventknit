@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import AdminLayout from "../AdminLayout";
 import { getExpenses, deleteExpense, type PlatformExpense } from "@/lib/accounting-api";
 import { useToast } from "@/hooks/useToast";
 
@@ -155,28 +154,23 @@ const WagesPage = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center py-12">
           <Loader size="lg" />
           <span className="ml-2 text-muted-foreground">Loading wage records...</span>
         </div>
-      </AdminLayout>
     );
   }
 
   if (error) {
     return (
-      <AdminLayout>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
-      </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -403,7 +397,6 @@ const WagesPage = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

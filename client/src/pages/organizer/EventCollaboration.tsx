@@ -7,7 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import OrganizerLayout from "./OrganizerLayout";
 import {
   Users,
   Plus,
@@ -200,18 +199,15 @@ const EventCollaboration = () => {
 
   if (!eventId) {
     return (
-      <OrganizerLayout>
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Event ID is required</p>
           </CardContent>
         </Card>
-      </OrganizerLayout>
     );
   }
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -402,7 +398,6 @@ const EventCollaboration = () => {
           </Dialog>
         )}
       </div>
-    </OrganizerLayout>
   );
 };
 

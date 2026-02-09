@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Palette, Globe, Plus } from 'lucide-react';
-import AdminLayout from '../AdminLayout';
 import BrandingTab from './BrandingTab';
 import CustomDomainsTab from './CustomDomainsTab';
 import BrandingSetupDialog from './BrandingSetupDialog';
@@ -31,7 +30,7 @@ const AdminWhiteLabelPage = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -77,7 +76,7 @@ const AdminWhiteLabelPage = () => {
         editBranding={editBranding}
         onSuccess={handleSuccess}
       />
-    </AdminLayout>
+    </>
   );
 };
 

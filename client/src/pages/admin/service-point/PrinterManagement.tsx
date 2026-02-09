@@ -44,7 +44,6 @@ import {
   X,
   Loader2,
 } from "lucide-react";
-import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -299,7 +298,6 @@ const PrinterManagement: React.FC = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="p-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -725,7 +723,6 @@ const PrinterManagement: React.FC = () => {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 };
 

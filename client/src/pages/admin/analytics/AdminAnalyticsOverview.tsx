@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import AdminLayout from "../AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -282,7 +281,6 @@ const AdminAnalyticsOverview = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="space-y-8">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
@@ -728,7 +726,6 @@ const AdminAnalyticsOverview = () => {
           </Tabs>
           )}
         </div>
-    </AdminLayout>
   );
 };
 

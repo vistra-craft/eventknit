@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import OrganizerLayout from "./OrganizerLayout";
 import {
   Percent,
   Plus,
@@ -170,18 +169,15 @@ const DynamicPricing = () => {
 
   if (!eventId) {
     return (
-      <OrganizerLayout>
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">Event ID is required</p>
           </CardContent>
         </Card>
-      </OrganizerLayout>
     );
   }
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -330,7 +326,6 @@ const DynamicPricing = () => {
           </div>
         )}
       </div>
-    </OrganizerLayout>
   );
 };
 

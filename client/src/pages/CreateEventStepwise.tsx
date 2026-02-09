@@ -26,7 +26,8 @@ import {
   Layout,
   ArrowRight,
   ArrowLeft,
-  X
+  X,
+  ChevronRight
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
@@ -40,6 +41,7 @@ import { useToast } from '@/hooks/useToast';
 import { SocialConnectionsStep } from '@/components/event-wizard/SocialConnectionsStep';
 import { AgendaBuilderStep } from '@/components/event-wizard/AgendaBuilderStep';
 import { BasicInfoStep } from '@/components/event-wizard/BasicInfoStep';
+import BackButton from '@/components/BackButton';
 import { DateLocationStep } from '@/components/event-wizard/DateLocationStep';
 import { MediaStep } from '@/components/event-wizard/MediaStep';
 import { TicketsStep } from '@/components/event-wizard/TicketsStep';
@@ -1933,19 +1935,27 @@ export default function CreateEventStepwise() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-10 max-w-4xl">
+    <div className="bg-background">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-5xl">
+        {/* Breadcrumb Navigation */}
+        <div className="mb-4">
+          <BackButton
+            to={location.pathname.startsWith('/admin') ? '/admin/dashboard' : '/organizer/dashboard'}
+            label="Back to Dashboard"
+          />
+        </div>
+
         {/* Header */}
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-1">
             {isEditMode ? 'Edit Event' : 'Create New Event'}
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {isEditMode ? 'Update your event details' : 'Set up your event with all the details attendees need to know'}
           </p>
-          
+
           {/* Draft Save Indicator */}
-          <div className="mt-4 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-3">
             {isSavingDraft ? (
               <>
                 <Loader size="sm" />
@@ -1953,33 +1963,30 @@ export default function CreateEventStepwise() {
               </>
             ) : lastSaved ? (
               <>
-                <Save className="w-4 h-4" />
+                <Save className="w-3.5 h-3.5" />
                 <span>Draft saved {lastSaved.toLocaleTimeString()}</span>
               </>
             ) : (
               <>
-                <Save className="w-4 h-4" />
+                <Save className="w-3.5 h-3.5" />
                 <span>Auto-saving every 30 seconds</span>
               </>
             )}
           </div>
-          
-          {/* Progress Indicator */}
-          <div className="mt-4 sm:mt-6">
-            <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mb-2">
-              <span>Step {currentStep} of {steps.length}</span>
-              <span>{Math.round((currentStep / steps.length) * 100)}% complete</span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div
-                className="bg-primary h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(currentStep / steps.length) * 100}%` }}
-              />
-            </div>
+        </div>
+
+        {/* Progress Indicator - Sticky */}
+        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 py-3 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b border-border mb-4 sm:mb-6">
+          <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mb-2">
+            <span>Step {currentStep} of {steps.length}</span>
+            <span>{Math.round((currentStep / steps.length) * 100)}% complete</span>
           </div>
-
-          {/* Step Navigation - Hidden on mobile, shown on desktop */}
-
+          <div className="w-full bg-muted rounded-full h-2">
+            <div
+              className="bg-primary h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(currentStep / steps.length) * 100}%` }}
+            />
+          </div>
         </div>
 
         {/* Error Alert */}
@@ -2048,7 +2055,7 @@ export default function CreateEventStepwise() {
 
         {/* Form Content */}
         <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
-          <CardContent className="p-6 sm:p-8">
+          <CardContent className="p-5 sm:p-6 lg:p-8">
             {currentStep === 1 && (
               <BasicInfoStep
                 eventData={eventData}
@@ -2169,57 +2176,63 @@ export default function CreateEventStepwise() {
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0 mt-6 sm:mt-8">
+            <div className="flex items-center justify-between gap-3 mt-8 pt-6 border-t border-border">
               {/* Left side - Back button (only from step 2 onwards) */}
               <div>
-                {currentStep >= 2 && (
-                  <button
+                {currentStep >= 2 ? (
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="default"
                     onClick={handleBack}
-                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                     disabled={isSubmitting}
                   >
-                    <ArrowLeft className="w-3 h-3" />
+                    <ArrowLeft className="w-4 h-4 mr-2" />
                     <span>Back</span>
-                  </button>
+                  </Button>
+                ) : (
+                  <div className="flex-1"></div>
                 )}
               </div>
-              
+
               {/* Right side - Preview (middle) and Next (right) */}
-              <div className="flex items-center gap-3 ml-auto">
-                {/* Preview Button - Show from step 3 onwards, in the middle */}
+              <div className="flex items-center gap-3">
+                {/* Preview Button - Show from step 3 onwards */}
                 {currentStep >= 3 && (
                   <Button
-                    variant="outline"
+                    variant="secondary"
+                    size="default"
                     onClick={() => setShowPreview(true)}
-                    className="px-6 border border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
                     disabled={isSubmitting}
                   >
                     <Eye className="w-4 h-4 mr-2" />
                     Preview
                   </Button>
                 )}
-                
+
                 {/* Next Button - Always on the right */}
                 {isSubmitting ? (
                   <Button
                     onClick={handleNext}
-                    className="px-6 h-11 rounded-xl bg-transparent text-primary hover:bg-primary hover:text-primary-foreground transition-colors shadow-none"
+                    size="lg"
+                    className="min-w-[140px]"
                     disabled={isSubmitting}
                   >
                     <Loader size="sm" className="mr-2" />
                     {currentStep === 8 ? 'Publishing...' : 'Validating...'}
                   </Button>
                 ) : (
-                  <button
+                  <Button
                     type="button"
+                    variant="default"
+                    size="lg"
                     onClick={handleNext}
-                    className="inline-flex items-center gap-1 text-sm px-2 py-1 rounded-md text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
                     disabled={isSubmitting}
+                    className="min-w-[140px]"
                   >
                     <span>{currentStep === 8 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'}</span>
-                    {currentStep !== 8 && <ArrowRight className="w-3 h-3" />}
-                  </button>
+                    {currentStep !== 8 && <ArrowRight className="w-4 h-4 ml-2" />}
+                  </Button>
                 )}
               </div>
             </div>

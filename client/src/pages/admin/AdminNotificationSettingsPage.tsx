@@ -28,7 +28,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import AdminLayout from "./AdminLayout";
 import { useToast } from "@/hooks/useToast";
 import {
   getDefaultPreferences,
@@ -296,7 +295,6 @@ const AdminNotificationSettingsPage = () => {
   };
 
   return (
-    <AdminLayout>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -1058,7 +1056,6 @@ const AdminNotificationSettingsPage = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </AdminLayout>
   );
 };
 

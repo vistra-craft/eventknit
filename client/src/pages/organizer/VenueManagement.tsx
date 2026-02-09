@@ -14,7 +14,6 @@ import {
   type Venue,
 } from '@/lib/venue-api';
 import { Plus, Trash2, Edit, MapPin, Building } from 'lucide-react';
-import OrganizerLayout from './OrganizerLayout';
 import {
   Dialog,
   DialogContent,
@@ -165,16 +164,13 @@ const VenueManagement = () => {
 
   if (loading) {
     return (
-      <OrganizerLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">Loading venues...</div>
         </div>
-      </OrganizerLayout>
     );
   }
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -393,7 +389,6 @@ const VenueManagement = () => {
           </div>
         )}
       </div>
-    </OrganizerLayout>
   );
 };
 

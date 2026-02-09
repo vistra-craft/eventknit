@@ -58,7 +58,6 @@ import {
   Upload,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
-import AdminLayout from "../AdminLayout";
 import BackButton from "@/components/BackButton";
 import { AttendeeImportDialog } from "@/components/AttendeeImportDialog";
 import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
@@ -525,22 +524,18 @@ const ServicePointEventDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <Loader size="lg" />
           <span className="ml-2 text-muted-foreground">Loading event data...</span>
         </div>
-      </AdminLayout>
     );
   }
 
   if (!eventData) {
     return (
-      <AdminLayout>
         <div className="flex items-center justify-center h-64">
           <div className="text-muted-foreground">Event not found</div>
         </div>
-      </AdminLayout>
     );
   }
 
@@ -549,7 +544,7 @@ const ServicePointEventDashboard: React.FC = () => {
   const organizerName = eventData.organizer?.organizationName || eventData.organizer?.firstName || 'Unknown';
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -1257,7 +1252,7 @@ const ServicePointEventDashboard: React.FC = () => {
           onSuccess={handleQuickRegisterSuccess}
         />
       )}
-    </AdminLayout>
+    </>
   );
 };
 

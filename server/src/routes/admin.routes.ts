@@ -78,6 +78,14 @@ router.post('/users', AdminController.createUser);
 router.get('/users', AdminController.getUsers);
 
 /**
+ * @route   GET /api/v1/admin/users/stats
+ * @desc    Get user statistics (staff, organizers, attendees, active users)
+ * @access  Private (ADMIN_STAFF+)
+ * @note    Must be defined before /users/:id to avoid route conflict
+ */
+router.get('/users/stats', AdminController.getUsersStats);
+
+/**
  * @route   GET /api/v1/admin/users/attendees
  * @desc    Get attendees with event filtering and registration history
  * @access  Private (ADMIN_STAFF+)

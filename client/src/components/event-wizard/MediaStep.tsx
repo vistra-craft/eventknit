@@ -63,15 +63,6 @@ export function MediaStep({
 }: MediaStepProps) {
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
-          Media & Additional Details
-        </h2>
-        <p className="text-muted-foreground">
-          Add images, FAQs, and other details to make your event stand out.
-        </p>
-      </div>
-
       {/* Event Image */}
       <div className="space-y-4">
         <Label>Event Image</Label>

@@ -25,8 +25,8 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
 
   const menuItems = [
     { label: "My Events", icon: Home, onClick: () => navigate("/user/dashboard") },
-    { label: "My Tickets", icon: Ticket, onClick: () => navigate("/user/dashboard?section=tickets") },
-    { label: "Saved", icon: Heart, onClick: () => navigate("/user/dashboard?section=saved") },
+    { label: "My Tickets", icon: Ticket, onClick: () => navigate("/user/tickets") },
+    { label: "Saved", icon: Heart, onClick: () => navigate("/user/saved") },
     { label: "Profile", icon: User, onClick: () => navigate("/user/profile") },
   ];
 

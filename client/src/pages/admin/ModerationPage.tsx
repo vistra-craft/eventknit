@@ -19,7 +19,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import AdminLayout from "./AdminLayout";
 import { suspendUser, deactivateUser, activateUser } from "@/lib/moderation-api";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
@@ -360,7 +359,7 @@ const ModerationPage = () => {
   };
 
   return (
-    <AdminLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -718,7 +717,7 @@ const ModerationPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </AdminLayout>
+    </>
   );
 };
 
