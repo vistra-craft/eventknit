@@ -39,7 +39,7 @@ describe('authReducer', () => {
       });
     });
 
-    it('should reset to initial state', () => {
+    it('should reset to logged-out state', () => {
       const stateWithUser = {
         ...initialAuthState,
         user: mockUser,
@@ -48,7 +48,12 @@ describe('authReducer', () => {
 
       const result = authReducer(stateWithUser, { type: 'AUTH_LOGOUT' });
 
-      expect(result).toEqual(initialAuthState);
+      // AUTH_LOGOUT sets isLoading: false (not initialAuthState's isLoading: true,
+      // which exists only to prevent redirect flash on initial page load)
+      expect(result).toEqual({
+        ...initialAuthState,
+        isLoading: false,
+      });
     });
   });
 
