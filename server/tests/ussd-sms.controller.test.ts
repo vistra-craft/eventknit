@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { USSDSMSController } from '../src/controllers/ussd-sms.controller';
 import { USSDSMSService } from '../src/services/ussd-sms.service';
+import { USSDService } from '../src/services/ussd.service';
 import { logger } from '../src/utils/logger';
 
 // Mock dependencies
 jest.mock('../src/services/ussd-sms.service');
+jest.mock('../src/services/ussd.service');
 jest.mock('../src/utils/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -27,6 +29,7 @@ describe('USSDSMSController', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
       send: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
     };
     mockNext = jest.fn();
     jest.clearAllMocks();
@@ -143,7 +146,7 @@ describe('USSDSMSController', () => {
         text: '1',
       };
 
-      (USSDSMSService.processIncomingSMS as jest.Mock).mockResolvedValue(undefined);
+      (USSDService.handleRequest as jest.Mock).mockResolvedValue('END Registration complete');
 
       await USSDSMSController.handleUSSD(
         mockRequest as Request,
@@ -151,25 +154,25 @@ describe('USSDSMSController', () => {
         mockNext,
       );
 
-      expect(USSDSMSService.processIncomingSMS).toHaveBeenCalledWith({
-        from: '+1234567890',
-        body: '1',
-        messageId: 'USS123',
+      expect(USSDService.handleRequest).toHaveBeenCalledWith({
+        sessionId: 'USS123',
+        serviceCode: '*384*123#',
+        phoneNumber: '+1234567890',
+        text: '1',
       });
+      expect(mockResponse.set).toHaveBeenCalledWith('Content-Type', 'text/plain');
       expect(mockResponse.status).toHaveBeenCalledWith(200);
-      expect(mockResponse.send).toHaveBeenCalledWith(
-        expect.stringContaining('END Registration service is processing'),
-      );
+      expect(mockResponse.send).toHaveBeenCalledWith('END Registration complete');
     });
 
-    it('should handle USSD with empty input as START', async () => {
+    it('should handle USSD with empty input', async () => {
       mockRequest.body = {
         phoneNumber: '+1234567890',
         sessionId: 'USS123',
         text: '',
       };
 
-      (USSDSMSService.processIncomingSMS as jest.Mock).mockResolvedValue(undefined);
+      (USSDService.handleRequest as jest.Mock).mockResolvedValue('CON Welcome');
 
       await USSDSMSController.handleUSSD(
         mockRequest as Request,
@@ -177,11 +180,13 @@ describe('USSDSMSController', () => {
         mockNext,
       );
 
-      expect(USSDSMSService.processIncomingSMS).toHaveBeenCalledWith({
-        from: '+1234567890',
-        body: 'START',
-        messageId: 'USS123',
+      expect(USSDService.handleRequest).toHaveBeenCalledWith({
+        sessionId: 'USS123',
+        serviceCode: '*384*123#',
+        phoneNumber: '+1234567890',
+        text: '',
       });
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
     });
 
     it('should handle missing required fields', async () => {
@@ -195,11 +200,10 @@ describe('USSDSMSController', () => {
         mockNext,
       );
 
-      expect(mockResponse.status).toHaveBeenCalledWith(400);
-      expect(mockResponse.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Missing required fields: phoneNumber and sessionId',
-      });
+      // USSD returns END text response for invalid requests (not JSON 400)
+      expect(mockResponse.set).toHaveBeenCalledWith('Content-Type', 'text/plain');
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.send).toHaveBeenCalledWith('END Invalid request. Please try again.');
     });
 
     it('should handle processing errors', async () => {
@@ -209,7 +213,7 @@ describe('USSDSMSController', () => {
         text: '1',
       };
 
-      (USSDSMSService.processIncomingSMS as jest.Mock).mockRejectedValue(
+      (USSDService.handleRequest as jest.Mock).mockRejectedValue(
         new Error('Processing error'),
       );
 
@@ -221,7 +225,7 @@ describe('USSDSMSController', () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.send).toHaveBeenCalledWith(
-        expect.stringContaining('END Error processing request'),
+        'END An error occurred. Please try again.',
       );
     });
   });

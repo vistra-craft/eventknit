@@ -50,7 +50,7 @@ describe('DisbursementService', () => {
       await cleanupTestData(tx);
     });
 
-    // Create test organizer with identity verification (required for payouts)
+    // Create test organizer with identity verification and KYC approval (required for payouts)
     const organizer = await prisma.user.create({
       data: {
         email: 'organizer@test.com',
@@ -63,7 +63,10 @@ describe('DisbursementService', () => {
         emailVerifiedAt: new Date(),
         isIdentityVerified: true, // Required for payouts (Eventbrite approach)
         identityVerifiedAt: new Date(),
-        verificationLevel: 2,
+        verificationLevel: 3,
+        kycStatus: 'APPROVED', // Required for payouts
+        kycSubmittedAt: new Date(),
+        kycApprovedAt: new Date(),
       },
     });
     organizerId = organizer.id;
@@ -465,10 +468,223 @@ describe('DisbursementService', () => {
       ).rejects.toThrow('Identity verification is required to receive payouts');
     });
 
-    it('should successfully create disbursement with identity verification', async () => {
+    it('should fail to create disbursement without KYC approval', async () => {
       if (!dbConnected) return;
 
-      // Use the verified organizer from beforeEach
+      // Create organizer with identity verification but no KYC
+      const noKycOrganizer = await prisma.user.create({
+        data: {
+          email: 'nokyc@test.com',
+          password: await hashPassword('password123'),
+          firstName: 'NoKyc',
+          lastName: 'Organizer',
+          role: UserRole.ORGANIZER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          isIdentityVerified: true,
+          identityVerifiedAt: new Date(),
+          verificationLevel: 2,
+          kycStatus: null, // No KYC submitted
+        },
+      });
+
+      // Create event for this organizer
+      const noKycEvent = await prisma.event.create({
+        data: {
+          title: 'No KYC Event',
+          description: 'Test event',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          organizerId: noKycOrganizer.id,
+          status: EventStatus.APPROVED,
+          isFree: false,
+          price: 100,
+        },
+      });
+
+      // Create platform fee for this organizer
+      const noKycRegistration = await prisma.eventRegistration.create({
+        data: {
+          eventId: noKycEvent.id,
+          attendeeId: noKycOrganizer.id,
+          quantity: 1,
+          status: RegistrationStatus.CONFIRMED,
+          paymentStatus: 'COMPLETED',
+          totalAmount: 10000,
+        },
+      });
+
+      const noKycPayment = await prisma.eventPaymentTransaction.create({
+        data: {
+          transactionNumber: 'EPT-2024-000010',
+          gatewayReference: 'gw-010',
+          gatewayAmount: 10000,
+          paystackReference: 'test_ref_010',
+          paystackAmount: 1000000,
+          currency: 'NGN',
+          amount: 10000,
+          paymentMethod: 'PAYSTACK',
+          paymentStatus: 'success',
+          paymentDate: new Date(),
+          eventId: noKycEvent.id,
+          registrationId: noKycRegistration.id,
+          attendeeEmail: 'nokyc@test.com',
+          attendeeName: 'NoKyc Organizer',
+        },
+      });
+
+      await PlatformFeeService.createPlatformFee(noKycPayment.id);
+
+      await expect(
+        DisbursementService.createDisbursement(
+          {
+            eventId: noKycEvent.id,
+            organizerId: noKycOrganizer.id,
+            paymentMethod: 'bank_transfer',
+          },
+          adminId,
+        ),
+      ).rejects.toThrow('KYC verification must be approved before payouts can be processed');
+    });
+
+    it('should fail to create disbursement with pending KYC status', async () => {
+      if (!dbConnected) return;
+
+      // Create organizer with identity verification but pending KYC
+      const pendingKycOrganizer = await prisma.user.create({
+        data: {
+          email: 'pendingkyc@test.com',
+          password: await hashPassword('password123'),
+          firstName: 'PendingKyc',
+          lastName: 'Organizer',
+          role: UserRole.ORGANIZER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          isIdentityVerified: true,
+          identityVerifiedAt: new Date(),
+          verificationLevel: 2,
+          kycStatus: 'PENDING',
+          kycSubmittedAt: new Date(),
+        },
+      });
+
+      const pendingKycEvent = await prisma.event.create({
+        data: {
+          title: 'Pending KYC Event',
+          description: 'Test event',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          organizerId: pendingKycOrganizer.id,
+          status: EventStatus.APPROVED,
+          isFree: false,
+          price: 100,
+        },
+      });
+
+      const pendingKycRegistration = await prisma.eventRegistration.create({
+        data: {
+          eventId: pendingKycEvent.id,
+          attendeeId: pendingKycOrganizer.id,
+          quantity: 1,
+          status: RegistrationStatus.CONFIRMED,
+          paymentStatus: 'COMPLETED',
+          totalAmount: 10000,
+        },
+      });
+
+      const pendingKycPayment = await prisma.eventPaymentTransaction.create({
+        data: {
+          transactionNumber: 'EPT-2024-000011',
+          gatewayReference: 'gw-011',
+          gatewayAmount: 10000,
+          paystackReference: 'test_ref_011',
+          paystackAmount: 1000000,
+          currency: 'NGN',
+          amount: 10000,
+          paymentMethod: 'PAYSTACK',
+          paymentStatus: 'success',
+          paymentDate: new Date(),
+          eventId: pendingKycEvent.id,
+          registrationId: pendingKycRegistration.id,
+          attendeeEmail: 'pendingkyc@test.com',
+          attendeeName: 'PendingKyc Organizer',
+        },
+      });
+
+      await PlatformFeeService.createPlatformFee(pendingKycPayment.id);
+
+      await expect(
+        DisbursementService.createDisbursement(
+          {
+            eventId: pendingKycEvent.id,
+            organizerId: pendingKycOrganizer.id,
+            paymentMethod: 'bank_transfer',
+          },
+          adminId,
+        ),
+      ).rejects.toThrow('KYC verification must be approved before payouts can be processed');
+    });
+
+    it('should fail to process disbursement without KYC approval', async () => {
+      if (!dbConnected) return;
+
+      // Create organizer with identity but no KYC
+      const noKycOrganizer2 = await prisma.user.create({
+        data: {
+          email: 'nokyc2@test.com',
+          password: await hashPassword('password123'),
+          firstName: 'NoKyc2',
+          lastName: 'Organizer',
+          role: UserRole.ORGANIZER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          isIdentityVerified: true,
+          identityVerifiedAt: new Date(),
+          verificationLevel: 2,
+          kycStatus: 'REJECTED',
+        },
+      });
+
+      const noKycEvent2 = await prisma.event.create({
+        data: {
+          title: 'No KYC Event 2',
+          description: 'Test event',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Test Location',
+          organizerId: noKycOrganizer2.id,
+          status: EventStatus.APPROVED,
+          isFree: false,
+          price: 100,
+        },
+      });
+
+      // Manually create a disbursement record (bypassing createDisbursement)
+      const disbursement = await prisma.organizerDisbursement.create({
+        data: {
+          disbursementNumber: 'DISB-2024-000010',
+          organizerId: noKycOrganizer2.id,
+          eventId: noKycEvent2.id,
+          totalAmount: 9000,
+          currency: 'NGN',
+          paymentMethod: 'bank_transfer',
+          status: 'pending',
+          createdBy: adminId,
+        },
+      });
+
+      await expect(
+        DisbursementService.processDisbursement(
+          disbursement.id,
+          { paymentReference: 'PAY_REF_KYC' },
+          adminId,
+        ),
+      ).rejects.toThrow('KYC verification must be approved before payouts can be processed');
+    });
+
+    it('should successfully create disbursement with identity verification and KYC approval', async () => {
+      if (!dbConnected) return;
+
+      // Use the verified organizer from beforeEach (has kycStatus: APPROVED)
       const disbursement = await DisbursementService.createDisbursement(
         {
           eventId,
@@ -482,7 +698,29 @@ describe('DisbursementService', () => {
       expect(disbursement.status).toBe('pending');
     });
 
-    it('should successfully process disbursement with identity verification', async () => {
+    it('should successfully create automated disbursement with createdBy null', async () => {
+      if (!dbConnected) return;
+
+      // Automated payouts pass null for createdBy
+      const disbursement = await DisbursementService.createDisbursement(
+        {
+          eventId,
+          organizerId,
+          paymentMethod: 'bank_transfer',
+          notes: 'Automatic post-event payout. Grace period: 5 business days.',
+        },
+        null, // Automated payout — no admin user
+      );
+
+      expect(disbursement.id).toBeDefined();
+      expect(disbursement.status).toBe('pending');
+
+      // Verify the disbursement has no createdBy
+      const fetched = await DisbursementService.getDisbursement(disbursement.id);
+      expect(fetched.creator).toBeNull();
+    });
+
+    it('should successfully process disbursement with identity verification and KYC approval', async () => {
       if (!dbConnected) return;
 
       const created = await DisbursementService.createDisbursement(

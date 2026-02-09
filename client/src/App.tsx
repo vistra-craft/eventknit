@@ -8,9 +8,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { UserRole } from "./types/auth";
-import type { ReactNode } from "react";
 import { lazy, Suspense } from "react";
+import type { ReactNode } from "react";
 
 // Lazy load layout components
 const AuthLayout = lazy(() => import("./layouts/AuthLayout"));
@@ -18,14 +17,7 @@ const PublicLayout = lazy(() => import("./layouts/PublicLayout"));
 const UserLayout = lazy(() => import("./layouts/UserLayout"));
 const OrganizerLayout = lazy(() => import("./layouts/OrganizerLayout"));
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
-// Public page imports - REMOVED: Now using PublicLayout with lazy-loaded routes
-// Public pages are now defined in client/src/routes/publicRoutes.tsx
-// User Dashboard imports - REMOVED: Now using UserLayout with lazy-loaded routes
-// User pages are now defined in client/src/routes/userRoutes.tsx
-// Organizer Dashboard imports - REMOVED: Now using OrganizerLayout with lazy-loaded routes
-// Organizer pages are now defined in client/src/routes/organizerRoutes.tsx
-// Admin Dashboard imports - REMOVED: Now using AdminLayout with lazy-loaded routes
-// Admin pages are now defined in client/src/routes/adminRoutes.tsx
+// All routes are now defined in client/src/routes/ and rendered by layouts
 
 // Wrapper component to provide role view context with user role
 // This needs to be inside BrowserRouter and AuthProvider
@@ -46,9 +38,7 @@ const App = () => (
         <BrowserRouter>
           <RoleViewWrapper>
             <Routes>
-      {/* Public Routes - Migrated to PublicLayout (Phase 3) */}
-      {/* Homepage, events, info pages, support - see client/src/routes/publicRoutes.tsx */}
-      {/* User Routes - Migrated to UserLayout (Phase 4) */}
+      {/* User Routes */}
       <Route path="/user/*" element={
         <ProtectedRoute>
           <Suspense fallback={<div className="min-h-screen bg-background" />}>
@@ -56,25 +46,25 @@ const App = () => (
           </Suspense>
         </ProtectedRoute>
       } />
-      {/* Organizer Routes - Migrated to OrganizerLayout (Phase 5) */}
+      {/* Organizer Routes */}
       <Route path="/organizer/*" element={
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <OrganizerLayout />
         </Suspense>
       } />
-      {/* Admin Routes - Migrated to AdminLayout (Phase 6) */}
+      {/* Admin Routes */}
       <Route path="/admin/*" element={
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <AdminLayout />
         </Suspense>
       } />
-      {/* Auth Routes - Migrated to AuthLayout (Phase 2) */}
+      {/* Auth Routes */}
       <Route path="/auth/*" element={
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <AuthLayout />
         </Suspense>
       } />
-      {/* Public Routes - Catch-all for homepage, events, info pages, support, 404 (Phase 3) */}
+      {/* Public Routes - Catch-all */}
       <Route path="/*" element={
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <PublicLayout />

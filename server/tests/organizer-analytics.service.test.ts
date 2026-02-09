@@ -56,7 +56,7 @@ describe('OrganizerAnalyticsService', () => {
       prismaMock.eventRegistration.findMany.mockResolvedValue([
         { ticketLineItems: [{ ticketType: 'GA', quantity: 1, totalPrice: 50 }] },
       ]);
-      prismaMock.refund.findMany.mockResolvedValue([{ amount: 20 }]);
+      prismaMock.refund.findMany.mockResolvedValue([{ refundAmount: 20 }]);
 
       const revenue = await OrganizerAnalyticsService.getRevenueAnalytics('org-1', { eventId: 'evt-1' });
 

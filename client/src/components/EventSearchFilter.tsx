@@ -8,6 +8,7 @@ export interface SearchFilters {
   search?: string;
   location?: string;
   category?: string;
+  tags?: string[];
   dateRange?: 'anytime' | 'today' | 'tomorrow' | 'this-week' | 'this-weekend' | 'next-week' | 'next-month';
   priceRange?: 'any' | 'free' | 'under-25' | '25-50' | '50-100' | '100-plus';
   eventType?: 'all' | 'in-person' | 'online' | 'hybrid';
@@ -87,6 +88,7 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
     filters.search || 
     filters.location || 
     (filters.category && filters.category !== 'all') ||
+    (filters.tags && filters.tags.length > 0) ||
     (filters.dateRange && filters.dateRange !== 'anytime') ||
     (filters.priceRange && filters.priceRange !== 'any') ||
     (filters.eventType && filters.eventType !== 'all');
@@ -230,8 +232,8 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
                   </Select>
                 </div>
 
-                {/* Location + Clear */}
-                <div className="flex flex-col gap-2 md:w-80">
+                {/* Location + Tags + Clear */}
+                <div className="flex flex-col gap-2 md:flex-1 lg:w-80">
                   <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
@@ -242,6 +244,21 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
                       className="pl-9 h-9 text-xs rounded-full border-border"
                     />
                   </div>
+
+                  <Input
+                    type="text"
+                    placeholder="Enter tags (comma-separated)"
+                    value={filters.tags?.join(", ") || ""}
+                    onChange={(e) => {
+                      const tagsStr = e.target.value;
+                      const tags = tagsStr
+                        .split(",")
+                        .map(tag => tag.trim())
+                        .filter(tag => tag.length > 0);
+                      handleFilterChange("tags", tags.length > 0 ? tags : undefined);
+                    }}
+                    className="h-9 text-xs rounded-full border-border"
+                  />
 
                   {hasActiveFilters && (
                     <button

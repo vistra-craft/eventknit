@@ -193,6 +193,13 @@ export const config = {
       ? process.env.ADMIN_ALLOWED_COUNTRIES.split(',').map(c => c.trim())
       : [],
   },
+
+  payout: {
+    // Business days after event ends before auto-payout is eligible (default: 5)
+    gracePeriodBusinessDays: parseInt(process.env.PAYOUT_GRACE_PERIOD_BUSINESS_DAYS || '5', 10),
+    // System-wide kill switch for automatic payouts
+    autoPayoutEnabled: process.env.AUTO_PAYOUT_ENABLED !== 'false',
+  },
 };
 
 // Validate required environment variables in production

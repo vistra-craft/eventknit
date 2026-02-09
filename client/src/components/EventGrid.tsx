@@ -78,7 +78,16 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
         }
       }
 
-      // 4. Date Range Filter
+      // 4. Tags Filter
+      if (filters.tags && filters.tags.length > 0) {
+        const eventTags = (event.tags || []).map(tag => tag.toLowerCase());
+        const hasAllTags = filters.tags.every(filterTag =>
+          eventTags.some(eventTag => eventTag.includes(filterTag.toLowerCase()))
+        );
+        if (!hasAllTags) return false;
+      }
+
+      // 5. Date Range Filter
       if (filters.dateRange && filters.dateRange !== 'anytime') {
         const eventDate = new Date(event.startDate);
         const now = new Date();
@@ -186,7 +195,6 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
                   location={event.location}
                   price={price}
                   currency={currency}
-                  category={event.category || ''}
                   isOnline={event.isOnline}
                   onlineLink={event.onlineLink}
                 />

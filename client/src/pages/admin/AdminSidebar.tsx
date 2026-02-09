@@ -43,7 +43,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     // Auto-expand settings section if on settings pages
     settings: location.pathname.startsWith('/admin/settings'),
     // Auto-expand branding section if on branding pages
-    branding: location.pathname === '/admin/white-label' || location.pathname === '/admin/custom-domains',
+    branding: location.pathname === '/admin/white-label',
     // Auto-expand support section if on support pages
     support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback',
     // Auto-expand service point section if on service-point pages
@@ -115,6 +115,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Income", href: "/admin/finance/income" },
         { name: "Salaries", href: "/admin/finance/wages" },
         { name: "Income Statement", href: "/admin/finance/income-statement" },
+        { name: "Platform Fees", href: "/admin/finance/platform-fees" },
       ]
     },
     {
@@ -158,13 +159,10 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     },
     {
       id: "branding",
-      label: "Branding",
+      label: "White Label",
       icon: Palette,
+      href: "/admin/white-label",
       group: "management",
-      children: [
-        { name: "White Label", href: "/admin/white-label" },
-        { name: "Custom Domains", href: "/admin/custom-domains" },
-      ]
     },
     {
       id: "support",
@@ -203,7 +201,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       finance: location.pathname.startsWith('/admin/finance'),
       users: location.pathname.startsWith('/admin/users'),
       settings: location.pathname.startsWith('/admin/settings'),
-      branding: location.pathname === '/admin/white-label' || location.pathname === '/admin/custom-domains',
+      branding: location.pathname === '/admin/white-label',
       support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback',
       workstation: location.pathname.startsWith('/admin/service-point')
     }));

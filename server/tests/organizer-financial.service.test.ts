@@ -80,14 +80,15 @@ describe('OrganizerFinancialService', () => {
     prismaMock.eventPaymentTransaction.findMany.mockResolvedValue([
       { amount: 300, platformFee: { feeAmount: 30 } },
     ]);
+    // Service filters isTaxDeductible: true at the query level,
+    // so mock should only return what the DB would return with that filter
     prismaMock.eventExpense.findMany.mockResolvedValue([
       { amount: 40, isTaxDeductible: true },
-      { amount: 10, isTaxDeductible: false },
     ]);
 
     const summary = await OrganizerFinancialService.getTaxSummary('org-1', { eventId: 'evt-1', year: 2024 });
 
-    expect(summary.taxableIncome).toBe(260); // (300-30) - 40
+    expect(summary.taxableIncome).toBe(230); // netRevenue(300-30=270) - taxDeductible(40)
     expect(summary.netRevenue).toBe(270);
     expect(summary.taxDeductibleExpenses).toBe(40);
   });

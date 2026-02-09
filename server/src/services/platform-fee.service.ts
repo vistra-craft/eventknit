@@ -5,9 +5,10 @@ import { generateFeeNumber } from '../utils/transaction-helpers.js';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export interface PlatformFeeConfig {
-  feePercentage: number; // e.g., 10.00 for 10%
+  feePercentage: number; // e.g., 7.50 for 7.5%
   minimumFee?: number;
   maximumFee?: number;
+  fixedFeePerTicket?: number; // Reserved for future use (0 = disabled)
 }
 
 export interface CalculatePlatformFeeResult {
@@ -19,10 +20,73 @@ export interface CalculatePlatformFeeResult {
 
 export class PlatformFeeService {
   /**
-   * Default platform fee percentage (10%)
-   * This can be made configurable per event or globally
+   * Default platform fee percentage (7.5%) — used as fallback when
+   * SystemSettings has no value for `finance.platformFeePercentage`.
+   *
+   * See docs/PAYMENT_AND_DISBURSEMENT.md Section 3.2 for the rationale
+   * behind this rate (cost-leadership strategy for the Kenyan market).
    */
-  private static readonly DEFAULT_FEE_PERCENTAGE = 10.0;
+  private static readonly DEFAULT_FEE_PERCENTAGE = 7.5;
+
+  /** In-memory cache for the global fee config. */
+  private static feeConfigCache: { config: PlatformFeeConfig; expiresAt: number } | null = null;
+  private static readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+  /**
+   * Read global fee configuration from SystemSettings.
+   * Results are cached for 5 minutes to avoid per-payment DB hits.
+   */
+  static async getGlobalFeeConfig(): Promise<PlatformFeeConfig> {
+    const now = Date.now();
+    if (this.feeConfigCache && now < this.feeConfigCache.expiresAt) {
+      return this.feeConfigCache.config;
+    }
+
+    try {
+      const settings = await prisma.systemSettings.findMany({
+        where: {
+          key: { in: [
+            'finance.platformFeePercentage',
+            'finance.minimumFee',
+            'finance.maximumFee',
+            'finance.fixedFeePerTicket',
+          ] },
+        },
+      });
+
+      const map = new Map(settings.map(s => [s.key, s.value]));
+
+      const config: PlatformFeeConfig = {
+        feePercentage: map.has('finance.platformFeePercentage')
+          ? Number(map.get('finance.platformFeePercentage')) || this.DEFAULT_FEE_PERCENTAGE
+          : this.DEFAULT_FEE_PERCENTAGE,
+        minimumFee: map.has('finance.minimumFee')
+          ? Number(map.get('finance.minimumFee')) || 0
+          : 0,
+        maximumFee: map.has('finance.maximumFee')
+          ? Number(map.get('finance.maximumFee')) || 0
+          : 0,
+        fixedFeePerTicket: map.has('finance.fixedFeePerTicket')
+          ? Number(map.get('finance.fixedFeePerTicket')) || 0
+          : 0,
+      };
+
+      this.feeConfigCache = { config, expiresAt: now + this.CACHE_TTL_MS };
+      return config;
+    } catch (error) {
+      logger.warn('Failed to read fee config from SystemSettings, using defaults:', error);
+      return {
+        feePercentage: this.DEFAULT_FEE_PERCENTAGE,
+        minimumFee: 0,
+        maximumFee: 0,
+      };
+    }
+  }
+
+  /** Invalidate the cached fee config (call after admin updates settings). */
+  static invalidateFeeConfigCache(): void {
+    this.feeConfigCache = null;
+  }
 
   /**
    * Calculate platform fee for a payment amount
@@ -109,10 +173,11 @@ export class PlatformFeeService {
       };
     }
 
-    // Calculate platform fee
+    // Calculate platform fee — use global config from SystemSettings when not overridden
     const grossAmount = Number(transaction.amount);
-    const feePercent = feePercentage || this.DEFAULT_FEE_PERCENTAGE;
-    const calculation = this.calculatePlatformFee(grossAmount, feePercent, config);
+    const globalConfig = config || await this.getGlobalFeeConfig();
+    const feePercent = feePercentage || globalConfig.feePercentage;
+    const calculation = this.calculatePlatformFee(grossAmount, feePercent, globalConfig);
 
     // Generate fee number
     let feeNumber = generateFeeNumber();

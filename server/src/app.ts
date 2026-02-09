@@ -4,8 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { config } from './config/index.js';
 import { stream } from './utils/logger.js';
 import authRoutes from './routes/auth.routes.js';
@@ -132,9 +131,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/api', rateLimiter);
 
 // Swagger API Documentation
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const swaggerDocument = YAML.load(join(__dirname, '..', 'swagger.yaml'));
+const swaggerDocument = YAML.load(join(process.cwd(), 'swagger.yaml'));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'EventKnit API Documentation',

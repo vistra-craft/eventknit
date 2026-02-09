@@ -64,8 +64,7 @@ const SupportPage = lazy(() => import('../pages/admin/SupportPage'));
 const PlatformFeedbackPage = lazy(() => import('../pages/admin/PlatformFeedbackPage'));
 
 // Branding
-const WhiteLabelManagementPage = lazy(() => import('../pages/admin/WhiteLabelManagementPage'));
-const AdminCustomDomainsPage = lazy(() => import('../pages/admin/AdminCustomDomainsPage'));
+const AdminWhiteLabelPage = lazy(() => import('../pages/admin/white-label/AdminWhiteLabelPage'));
 
 // Marketing
 const AdminMarketingPage = lazy(() => import('../pages/admin/AdminMarketingPage'));
@@ -86,6 +85,24 @@ const AdminAnalyticsOverview = lazy(() => import('../pages/admin/analytics').the
 // Financial
 const FinancialManagement = lazy(() => import('../pages/organizer/FinancialManagement'));
 const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'));
+
+// Finance
+const FinanceDashboard = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.FinanceDashboard })));
+const EventFinanceDashboard = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EventFinanceDashboard })));
+const PaymentTransactionsPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.PaymentTransactionsPage })));
+const DisbursementsPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.DisbursementsPage })));
+const RefundsPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.RefundsPage })));
+const ReconciliationPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.ReconciliationPage })));
+const ExpensesPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.ExpensesPage })));
+const IncomePage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.IncomePage })));
+const WagesPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.WagesPage })));
+const TransactionsPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.TransactionsPage })));
+const IncomeStatementPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.IncomeStatementPage })));
+const EditTransactionPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EditTransactionPage })));
+const EditExpensePage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EditExpensePage })));
+const EditIncomePage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EditIncomePage })));
+const EditWagePage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EditWagePage })));
+const PlatformFeeConfigPage = lazy(() => import('../pages/admin/finance/PlatformFeeConfigPage'));
 
 // Service Point
 const ServicePointEvents = lazy(() => import('../pages/admin/service-point/ServicePointEvents'));
@@ -332,12 +349,7 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   // Branding
   {
     path: 'white-label',
-    element: createElement(WhiteLabelManagementPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
-  },
-  {
-    path: 'custom-domains',
-    element: createElement(AdminCustomDomainsPage),
+    element: createElement(AdminWhiteLabelPage),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
 
@@ -439,6 +451,88 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'analytics/system',
     element: createElement(AdminAnalyticsOverview),
+    allowedRoles: SUPERADMIN_ONLY,
+  },
+
+  // Finance
+  {
+    path: 'finance',
+    element: createElement(FinanceDashboard),
+    allowedRoles: TELLER_ROLES,
+  },
+  {
+    path: 'finance/events',
+    element: createElement(EventFinanceDashboard),
+    allowedRoles: TELLER_ROLES,
+  },
+  {
+    path: 'finance/payments',
+    element: createElement(PaymentTransactionsPage),
+    allowedRoles: TELLER_ROLES,
+  },
+  {
+    path: 'finance/disbursements',
+    element: createElement(DisbursementsPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'finance/refunds',
+    element: createElement(RefundsPage),
+    allowedRoles: TELLER_ROLES,
+  },
+  {
+    path: 'finance/reconciliation',
+    element: createElement(ReconciliationPage),
+    allowedRoles: SUPERADMIN_ONLY,
+  },
+  {
+    path: 'finance/expenses',
+    element: createElement(ExpensesPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'finance/income',
+    element: createElement(IncomePage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'finance/wages',
+    element: createElement(WagesPage),
+    allowedRoles: SUPERADMIN_ONLY,
+  },
+  {
+    path: 'finance/transactions',
+    element: createElement(TransactionsPage),
+    allowedRoles: TELLER_ROLES,
+  },
+  {
+    path: 'finance/income-statement',
+    element: createElement(IncomeStatementPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'finance/platform-fees',
+    element: createElement(PlatformFeeConfigPage),
+    allowedRoles: SUPERADMIN_ONLY,
+  },
+  {
+    path: 'finance/transactions/edit/:id',
+    element: createElement(EditTransactionPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'finance/expenses/edit/:id',
+    element: createElement(EditExpensePage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'finance/income/edit/:id',
+    element: createElement(EditIncomePage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'finance/wages/edit/:id',
+    element: createElement(EditWagePage),
     allowedRoles: SUPERADMIN_ONLY,
   },
 

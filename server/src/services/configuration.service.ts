@@ -1,7 +1,7 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
-import { parseMailTrapConfig, stringifyMailTrapConfig, type MailTrapConfig } from '../types/configuration.types.js';
+import { parseMailTrapConfig, type MailTrapConfig } from '../types/configuration.types.js';
 
 export class ConfigurationService {
   /**

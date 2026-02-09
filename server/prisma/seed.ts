@@ -135,7 +135,7 @@ const createSuperuser = async (): Promise<void> => {
       logger.info('Creating new superuser...');
       const hashedPassword = await hashPassword(SUPERVISOR_CREDENTIALS.password);
 
-      const superuser = await prisma.user.create({
+      const _superuser = await prisma.user.create({
         data: {
           email: SUPERVISOR_CREDENTIALS.email,
           password: hashedPassword,
@@ -208,7 +208,7 @@ const createTestUsers = async (): Promise<void> => {
         logger.info(`Updated test user: ${userData.email}`);
       } else {
         const hashedPassword = await hashPassword(userData.password);
-        const user = await prisma.user.create({
+        const _user = await prisma.user.create({
           data: {
             email: userData.email,
             password: hashedPassword,
@@ -306,7 +306,7 @@ const createOrganizers = async (): Promise<string[]> => {
 /**
  * Create mock events
  */
-const createEvents = async (organizerIds: string[], superuserId: string): Promise<string[]> => {
+const createEvents = async (organizerIds: string[], _superuserId: string): Promise<string[]> => {
   try {
     logger.info('Creating mock events...');
 
@@ -779,6 +779,38 @@ const createFeaturedEvents = async (eventIds: string[], superuserId: string): Pr
 };
 
 /**
+ * Seed default platform fee settings into SystemSettings (upsert)
+ */
+const seedPlatformFeeSettings = async (userId: string): Promise<void> => {
+  const defaults = [
+    { key: 'finance.platformFeePercentage', value: '7.5', type: 'number', category: 'general', description: 'Global platform fee percentage applied to ticket sales (all-in, absorbs payment processing costs)' },
+    { key: 'finance.minimumFee', value: '0', type: 'number', category: 'general', description: 'Minimum platform fee per transaction (0 = no minimum)' },
+    { key: 'finance.maximumFee', value: '0', type: 'number', category: 'general', description: 'Maximum platform fee cap per transaction (0 = unlimited)' },
+    { key: 'finance.fixedFeePerTicket', value: '0', type: 'number', category: 'general', description: 'Fixed fee per ticket in base currency (0 = disabled). Reserved for future use.' },
+  ];
+
+  for (const setting of defaults) {
+    await prisma.systemSettings.upsert({
+      where: { key: setting.key },
+      create: {
+        key: setting.key,
+        value: setting.value,
+        type: setting.type,
+        category: setting.category,
+        description: setting.description,
+        isPublic: false,
+        isEncrypted: false,
+        createdBy: userId,
+        updatedBy: userId,
+      },
+      update: {}, // Don't overwrite if already exists
+    });
+  }
+
+  logger.info('Platform fee settings seeded (or already exist)');
+};
+
+/**
  * Main function
  */
 async function main(): Promise<void> {
@@ -823,11 +855,14 @@ async function main(): Promise<void> {
     // Create featured events
     await createFeaturedEvents(eventIds, superuser.id);
 
+    // Seed default platform fee settings
+    await seedPlatformFeeSettings(superuser.id);
+
     logger.info('✅ Script completed successfully');
-    logger.info(`📊 Summary:`);
+    logger.info('📊 Summary:');
     logger.info(`   - Organizers: ${organizerIds.length}`);
     logger.info(`   - Events: ${eventIds.length}`);
-    logger.info(`   - Featured Events: 4`);
+    logger.info('   - Featured Events: 4');
   } catch (error) {
     logger.error('❌ Script failed:', error);
     throw error;

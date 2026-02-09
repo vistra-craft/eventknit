@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, Shield, UserCheck, Activity, TrendingUp } from "lucide-react";
+import { Users, Shield, UserCheck, Activity } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SkeletonMetricCard } from "@/components/ui/Skeleton";

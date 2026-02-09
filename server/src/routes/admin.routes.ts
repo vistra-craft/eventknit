@@ -39,6 +39,8 @@ import { PaymentPlanController } from '../controllers/payment-plan.controller.js
 import { createPaymentPlanSchema } from '../validations/payment-plan.validations.js';
 import { WhiteLabelController } from '../controllers/white-label.controller.js';
 import {
+  createBrandingSchema,
+  createCustomDomainSchema,
   updateBrandingStatusSchema,
   verifyCustomDomainSchema,
 } from '../validations/white-label.validations.js';
@@ -753,6 +755,68 @@ router.put(
   validateParams(Joi.object({ domainId: Joi.string().uuid().required() })),
   validate(verifyCustomDomainSchema),
   WhiteLabelController.verifyCustomDomain,
+);
+
+/**
+ * @route   GET /api/v1/admin/white-label/brandings/:organizerId
+ * @desc    Get branding for a specific organizer
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/white-label/brandings/:organizerId',
+  validateParams(Joi.object({ organizerId: Joi.string().uuid().required() })),
+  WhiteLabelController.adminGetBrandingByOrganizer,
+);
+
+/**
+ * @route   PUT /api/v1/admin/white-label/brandings/:organizerId
+ * @desc    Admin create/update branding for organizer (auto-approved)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.put(
+  '/white-label/brandings/:organizerId',
+  validateParams(Joi.object({ organizerId: Joi.string().uuid().required() })),
+  validate(createBrandingSchema),
+  WhiteLabelController.adminUpsertBranding,
+);
+
+/**
+ * @route   GET /api/v1/admin/white-label/custom-domains
+ * @desc    Get all custom domains across all organizers
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/white-label/custom-domains',
+  validateQuery(Joi.object({
+    status: Joi.string().valid('PENDING', 'VERIFIED', 'FAILED', 'SUSPENDED').optional(),
+    isActive: Joi.boolean().optional(),
+    search: Joi.string().optional(),
+    organizerId: Joi.string().uuid().optional(),
+  })),
+  WhiteLabelController.adminGetAllCustomDomains,
+);
+
+/**
+ * @route   POST /api/v1/admin/white-label/custom-domains/:organizerId
+ * @desc    Admin add custom domain for organizer
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post(
+  '/white-label/custom-domains/:organizerId',
+  validateParams(Joi.object({ organizerId: Joi.string().uuid().required() })),
+  validate(createCustomDomainSchema),
+  WhiteLabelController.adminAddCustomDomain,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/white-label/custom-domains/:domainId
+ * @desc    Admin delete any custom domain
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.delete(
+  '/white-label/custom-domains/:domainId',
+  validateParams(Joi.object({ domainId: Joi.string().uuid().required() })),
+  WhiteLabelController.adminDeleteCustomDomain,
 );
 
 // ========== Extended Profile Management ==========

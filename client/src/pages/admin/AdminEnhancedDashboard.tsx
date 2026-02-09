@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Users, DollarSign, Plus, Building2, Activity, TrendingUp, Settings, BarChart3, Zap } from "lucide-react";
+import { Calendar, Users, DollarSign, Plus, Building2, Activity, TrendingUp, Zap } from "lucide-react";
 import { useAdminDashboardStats, useAdminDashboardGrowth } from "@/hooks/queries";
 import type { AdminDashboardGrowthPeriod, AdminDashboardGrowthPoint } from "@/lib/admin-api";
 import { CustomLineChart, CustomBarChart, CustomAreaChart } from "../../components/charts/ChartComponents";

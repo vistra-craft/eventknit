@@ -874,6 +874,113 @@ export class RefundService {
   }
 
   /**
+   * Get all refunds (admin) with optional search, pagination, and filters
+   */
+  static async getAllRefunds(filters?: {
+    status?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = filters?.page || 1;
+    const limit = filters?.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.RefundWhereInput = {};
+
+    if (filters?.status) {
+      where.status = filters.status;
+    }
+
+    if (filters?.search) {
+      where.OR = [
+        { refundNumber: { contains: filters.search, mode: 'insensitive' } },
+        { transaction: { transactionNumber: { contains: filters.search, mode: 'insensitive' } } },
+        { transaction: { attendeeName: { contains: filters.search, mode: 'insensitive' } } },
+        { event: { title: { contains: filters.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [refunds, total] = await Promise.all([
+      prisma.refund.findMany({
+        where,
+        include: {
+          transaction: {
+            select: {
+              id: true,
+              transactionNumber: true,
+              amount: true,
+              paymentDate: true,
+              attendeeName: true,
+            },
+          },
+          event: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          requester: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+        orderBy: { requestedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.refund.count({ where }),
+    ]);
+
+    return {
+      refunds,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get platform-wide refund summary (admin)
+   */
+  static async getPlatformRefundSummary() {
+    const refunds = await prisma.refund.findMany({
+      select: {
+        refundAmount: true,
+        platformFeeRefund: true,
+        status: true,
+        refundType: true,
+      },
+    });
+
+    const totalRefunded = refunds
+      .filter((r) => r.status === 'completed')
+      .reduce((sum, r) => sum + Number(r.refundAmount), 0);
+
+    const totalPlatformFeeRefunded = refunds
+      .filter((r) => r.status === 'completed' && r.platformFeeRefund)
+      .reduce((sum, r) => sum + Number(r.platformFeeRefund || 0), 0);
+
+    return {
+      totalRefunded: Number(totalRefunded.toFixed(2)),
+      totalPlatformFeeRefunded: Number(totalPlatformFeeRefunded.toFixed(2)),
+      totalCount: refunds.length,
+      completedCount: refunds.filter((r) => r.status === 'completed').length,
+      pendingCount: refunds.filter((r) => r.status === 'pending').length,
+      processingCount: refunds.filter((r) => r.status === 'processing').length,
+      fullRefunds: refunds.filter((r) => r.refundType === 'full').length,
+      partialRefunds: refunds.filter((r) => r.refundType === 'partial').length,
+    };
+  }
+
+  /**
    * Get refund summary for an event
    */
   static async getEventRefundSummary(eventId: string) {

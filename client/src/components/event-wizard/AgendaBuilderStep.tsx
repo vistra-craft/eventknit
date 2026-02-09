@@ -34,8 +34,8 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('schedule');
 
-  // Ensure arrays are always defined
-  const safeAgenda = agenda || [];
+  // Ensure arrays are always defined (wrapped in useMemo to stabilize references)
+  const safeAgenda = useMemo(() => agenda || [], [agenda]);
   const safeSpeakers = speakers || [];
   const safeExhibitors = exhibitors || [];
   const safeSponsors = sponsors || [];

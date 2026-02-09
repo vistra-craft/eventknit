@@ -137,7 +137,7 @@ export class SystemSettingsController {
         changeReason,
       } = req.body;
 
-      if (!value || !type || !category) {
+      if (value === undefined || value === null || !type || !category) {
         res.status(400).json({
           success: false,
           message: 'value, type, and category are required',

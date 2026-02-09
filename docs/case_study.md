@@ -1,6 +1,4 @@
-Got it — this is a **case study**, and yes, it absolutely needs proper structure.
-Below is a **clean, well-formatted `.md` version** with clear sections, headings, bullet points, and tables. You can paste this directly into a Markdown file.
-
+Case study Guide
 ---
 
 # Case Study: The Mookh Ticketing Incident (CHAN 2024/2025)

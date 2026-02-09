@@ -294,6 +294,16 @@ export const createDisbursement = async (
   return apiPost<ApiResponse<Disbursement>>('/admin/finance/disbursements', params);
 };
 
+export interface DisbursementsResponse {
+  disbursements: Disbursement[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 /**
  * Get disbursements
  */
@@ -303,16 +313,22 @@ export const getDisbursements = async (params?: {
   status?: string;
   startDate?: string;
   endDate?: string;
-}): Promise<ApiResponse<Disbursement[]>> => {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<ApiResponse<Disbursement[] | DisbursementsResponse>> => {
   const queryParams = new URLSearchParams();
   if (params?.organizerId) queryParams.append('organizerId', params.organizerId);
   if (params?.eventId) queryParams.append('eventId', params.eventId);
   if (params?.status) queryParams.append('status', params.status);
   if (params?.startDate) queryParams.append('startDate', params.startDate);
   if (params?.endDate) queryParams.append('endDate', params.endDate);
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
 
   const query = queryParams.toString();
-  return apiGet<ApiResponse<Disbursement[]>>(
+  return apiGet<ApiResponse<Disbursement[] | DisbursementsResponse>>(
     `/admin/finance/disbursements${query ? `?${query}` : ''}`
   );
 };
@@ -355,12 +371,7 @@ export const completeDisbursement = async (
   );
 };
 
-/**
- * Get disbursement summary for an organizer
- */
-export const getDisbursementSummary = async (
-  organizerId: string
-): Promise<ApiResponse<{
+export interface DisbursementSummary {
   totalDisbursed: number;
   totalPending: number;
   totalCount: number;
@@ -368,16 +379,18 @@ export const getDisbursementSummary = async (
   pendingCount: number;
   processingCount: number;
   failedCount: number;
-}>> => {
-  return apiGet<ApiResponse<{
-    totalDisbursed: number;
-    totalPending: number;
-    totalCount: number;
-    completedCount: number;
-    pendingCount: number;
-    processingCount: number;
-    failedCount: number;
-  }>>(`/admin/finance/disbursements/summary?organizerId=${organizerId}`);
+}
+
+/**
+ * Get disbursement summary (platform-wide or for a specific organizer)
+ */
+export const getDisbursementSummary = async (
+  organizerId?: string
+): Promise<ApiResponse<DisbursementSummary>> => {
+  const query = organizerId ? `?organizerId=${organizerId}` : '';
+  return apiGet<ApiResponse<DisbursementSummary>>(
+    `/admin/finance/disbursements/summary${query}`
+  );
 };
 
 // ==================== Refunds ====================
@@ -399,19 +412,36 @@ export const createRefund = async (
   return apiPost<ApiResponse<Refund>>('/admin/finance/refunds', params);
 };
 
-/**
- * Get refunds for an event
- */
-export const getRefunds = async (params: {
-  eventId: string;
-  status?: string;
-}): Promise<ApiResponse<Refund[]>> => {
-  const queryParams = new URLSearchParams();
-  queryParams.append('eventId', params.eventId);
-  if (params.status) queryParams.append('status', params.status);
+export interface RefundsResponse {
+  refunds: Refund[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
-  return apiGet<ApiResponse<Refund[]>>(
-    `/admin/finance/refunds?${queryParams.toString()}`
+/**
+ * Get refunds (optionally filtered by eventId, or all refunds paginated)
+ */
+export const getRefunds = async (params?: {
+  eventId?: string;
+  status?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<ApiResponse<Refund[] | RefundsResponse>> => {
+  const queryParams = new URLSearchParams();
+  if (params?.eventId) queryParams.append('eventId', params.eventId);
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+  const query = queryParams.toString();
+  return apiGet<ApiResponse<Refund[] | RefundsResponse>>(
+    `/admin/finance/refunds${query ? `?${query}` : ''}`
   );
 };
 
@@ -448,12 +478,7 @@ export const completeRefund = async (
   );
 };
 
-/**
- * Get refund summary for an event
- */
-export const getRefundSummary = async (
-  eventId: string
-): Promise<ApiResponse<{
+export interface RefundSummary {
   totalRefunded: number;
   totalPlatformFeeRefunded: number;
   totalCount: number;
@@ -462,17 +487,18 @@ export const getRefundSummary = async (
   processingCount: number;
   fullRefunds: number;
   partialRefunds: number;
-}>> => {
-  return apiGet<ApiResponse<{
-    totalRefunded: number;
-    totalPlatformFeeRefunded: number;
-    totalCount: number;
-    completedCount: number;
-    pendingCount: number;
-    processingCount: number;
-    fullRefunds: number;
-    partialRefunds: number;
-  }>>(`/admin/finance/refunds/summary?eventId=${eventId}`);
+}
+
+/**
+ * Get refund summary (platform-wide or for a specific event)
+ */
+export const getRefundSummary = async (
+  eventId?: string
+): Promise<ApiResponse<RefundSummary>> => {
+  const query = eventId ? `?eventId=${eventId}` : '';
+  return apiGet<ApiResponse<RefundSummary>>(
+    `/admin/finance/refunds/summary${query}`
+  );
 };
 
 // ==================== Reconciliation ====================
