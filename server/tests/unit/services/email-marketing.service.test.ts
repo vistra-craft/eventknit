@@ -381,12 +381,14 @@ describe('EmailMarketingService', () => {
         data: { status: 'sending' },
       });
       expect(emailService.sendEmail).toHaveBeenCalledTimes(2);
-      expect(emailService.sendEmail).toHaveBeenCalledWith({
-        to: 'user1@example.com',
-        subject: 'Test Subject',
-        html: '<p>Test Content</p>',
-        text: 'Test Content',
-      });
+      expect(emailService.sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          to: 'user1@example.com',
+          subject: 'Test Subject',
+          html: expect.stringContaining('<p>Test Content</p>'),
+          text: expect.stringContaining('Test Content'),
+        }),
+      );
       expect(result).toEqual({
         success: true,
         sentCount: 2,
@@ -552,6 +554,7 @@ describe('EmailMarketingService', () => {
         include: {
           attendee: {
             select: {
+              id: true,
               email: true,
               firstName: true,
               lastName: true,

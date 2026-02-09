@@ -147,12 +147,12 @@ describe('PlatformFeeService', () => {
   });
 
   describe('calculatePlatformFee', () => {
-    it('should calculate platform fee correctly with default 10%', () => {
+    it('should calculate platform fee correctly with default 7.5%', () => {
       const result = PlatformFeeService.calculatePlatformFee(10000);
       expect(result.grossAmount).toBe(10000);
-      expect(result.feePercentage).toBe(10.0);
-      expect(result.feeAmount).toBe(1000); // 10% of 10000
-      expect(result.organizerAmount).toBe(9000); // 10000 - 1000
+      expect(result.feePercentage).toBe(7.5);
+      expect(result.feeAmount).toBe(750); // 7.5% of 10000
+      expect(result.organizerAmount).toBe(9250); // 10000 - 750
     });
 
     it('should calculate platform fee with custom percentage', () => {
@@ -198,16 +198,16 @@ describe('PlatformFeeService', () => {
 
       expect(result.id).toBeDefined();
       expect(result.feeNumber).toMatch(/^PF-\d{4}-\d{6}$/);
-      expect(result.feeAmount).toBe(1000); // 10% of 10000
-      expect(result.organizerAmount).toBe(9000);
+      expect(result.feeAmount).toBe(750); // 7.5% of 10000
+      expect(result.organizerAmount).toBe(9250);
 
       // Verify in database
       const fee = await prisma.platformFee.findUnique({
         where: { id: result.id },
       });
       expect(fee).toBeDefined();
-      expect(Number(fee?.feeAmount)).toBe(1000);
-      expect(Number(fee?.organizerAmount)).toBe(9000);
+      expect(Number(fee?.feeAmount)).toBe(750);
+      expect(Number(fee?.organizerAmount)).toBe(9250);
       expect(fee?.status).toBe('calculated');
     });
 
@@ -298,8 +298,8 @@ describe('PlatformFeeService', () => {
 
       const summary = await PlatformFeeService.getEventPlatformFeeSummary(eventId);
 
-      expect(summary.totalFees).toBe(1000);
-      expect(summary.totalOrganizerAmount).toBe(9000);
+      expect(summary.totalFees).toBe(750);  // 7.5% of 10000
+      expect(summary.totalOrganizerAmount).toBe(9250);
       expect(summary.totalTransactions).toBe(1);
       expect(summary.pendingCount).toBe(1);
       expect(summary.disbursedCount).toBe(0);

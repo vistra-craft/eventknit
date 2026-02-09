@@ -1,5 +1,5 @@
 import { AttendeeSegmentationService } from '../src/services/attendee-segmentation.service';
-import { ValidationError } from '../src/utils/errors';
+import { NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
 jest.mock('../src/config/database', () => ({
@@ -56,10 +56,11 @@ describe('AttendeeSegmentationService', () => {
   });
 
   it('throws on cross-organizer update', async () => {
-    prismaMock.attendeeSegment.findFirst.mockResolvedValue({ id: 'seg-1', organizerId: 'other' });
+    // Service queries with organizerId in where clause, so cross-organizer returns null
+    prismaMock.attendeeSegment.findFirst.mockResolvedValue(null);
     await expect(
       AttendeeSegmentationService.updateSegment('seg-1', 'org-1', { name: 'Bad' }),
-    ).rejects.toBeInstanceOf(ValidationError);
+    ).rejects.toBeInstanceOf(NotFoundError);
   });
 });
 

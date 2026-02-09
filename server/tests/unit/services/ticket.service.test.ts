@@ -19,6 +19,8 @@ jest.mock('../../../src/services/ticket-security.service.js', () => ({
   TicketSecurityService: {
     generateSignature: jest.fn((payload: string) => `SIGNATURE-${payload.substring(0, 10).replace(/\|/g, '-')}`),
     validateTicketData: jest.fn().mockReturnValue(true),
+    isSignedTicketsEnabled: jest.fn().mockReturnValue(false),
+    generateSignedTicket: jest.fn(),
   },
 }));
 
