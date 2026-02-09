@@ -244,30 +244,48 @@ export class FeaturedEventService {
       where: {
         isActive: true,
         deletedAt: null,
-        OR: [
+        AND: [
           {
-            displayStartDate: null,
-            displayEndDate: null,
+            OR: [
+              {
+                displayStartDate: null,
+                displayEndDate: null,
+              },
+              {
+                displayStartDate: {
+                  lte: now,
+                },
+                displayEndDate: null,
+              },
+              {
+                displayStartDate: null,
+                displayEndDate: {
+                  gte: now,
+                },
+              },
+              {
+                displayStartDate: {
+                  lte: now,
+                },
+                displayEndDate: {
+                  gte: now,
+                },
+              },
+            ],
           },
           {
-            displayStartDate: {
-              lte: now,
-            },
-            displayEndDate: null,
-          },
-          {
-            displayStartDate: null,
-            displayEndDate: {
-              gte: now,
-            },
-          },
-          {
-            displayStartDate: {
-              lte: now,
-            },
-            displayEndDate: {
-              gte: now,
-            },
+            OR: [
+              {
+                type: FeaturedItemType.IMAGE,
+              },
+              {
+                type: FeaturedItemType.EVENT,
+                event: {
+                  status: EventStatus.APPROVED,
+                  deletedAt: null,
+                },
+              },
+            ],
           },
         ],
       },
@@ -277,6 +295,8 @@ export class FeaturedEventService {
             id: true,
             title: true,
             image: true,
+            imageFocalX: true,
+            imageFocalY: true,
             category: true,
             startDate: true,
             startTime: true,
@@ -302,6 +322,8 @@ export class FeaturedEventService {
           eventId: fe.eventId || '',
           title: fe.customTitle || fe.event.title,
           image: fe.customImage || fe.event.image || '',
+          imageFocalX: fe.event.imageFocalX ?? 50,
+          imageFocalY: fe.event.imageFocalY ?? 50,
           category: fe.customCategory || fe.event.category || '',
           date: fe.event.startDate,
           time: fe.event.startTime || '',
@@ -319,6 +341,8 @@ export class FeaturedEventService {
           eventId: null,
           title: fe.title || '',
           image: fe.imageUrl || '',
+          imageFocalX: 50,
+          imageFocalY: 50,
           category: '',
           date: null,
           time: '',

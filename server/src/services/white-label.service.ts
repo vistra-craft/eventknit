@@ -52,6 +52,43 @@ export interface UpdateCustomDomainData {
 
 export class WhiteLabelService {
   /**
+   * Validate branding data (colors, emails, URLs)
+   */
+  private static validateBrandingData(data: CreateBrandingData): void {
+    const colorFields = [
+      'primaryColor',
+      'secondaryColor',
+      'accentColor',
+      'backgroundColor',
+      'textColor',
+      'linkColor',
+    ];
+    for (const field of colorFields) {
+      const raw = data[field as keyof CreateBrandingData];
+      const value = typeof raw === 'string' ? raw : null;
+      if (value && !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value)) {
+        throw new ValidationError(`Invalid color format for ${field}. Use hex format (e.g., #FF5733)`);
+      }
+    }
+
+    if (data.supportEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.supportEmail)) {
+      throw new ValidationError('Invalid support email format');
+    }
+
+    const urlFields = ['logoUrl', 'logoLightUrl', 'logoDarkUrl', 'faviconUrl', 'coverImageUrl', 'websiteUrl', 'emailHeaderImage'];
+    for (const field of urlFields) {
+      const value = data[field as keyof CreateBrandingData];
+      if (value) {
+        try {
+          new URL(value as string);
+        } catch {
+          throw new ValidationError(`Invalid URL format for ${field}`);
+        }
+      }
+    }
+  }
+
+  /**
    * Simple creator used by tests to ensure organizer scoped record
    */
   static async createBranding(
@@ -180,40 +217,7 @@ export class WhiteLabelService {
     data: CreateBrandingData,
   ) {
     try {
-      // Validate color formats if provided
-      const colorFields = [
-        'primaryColor',
-        'secondaryColor',
-        'accentColor',
-        'backgroundColor',
-        'textColor',
-        'linkColor',
-      ];
-      for (const field of colorFields) {
-        const raw = data[field as keyof CreateBrandingData];
-        const value = typeof raw === 'string' ? raw : null;
-        if (value && !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(value)) {
-          throw new ValidationError(`Invalid color format for ${field}. Use hex format (e.g., #FF5733)`);
-        }
-      }
-
-      // Validate email format if provided
-      if (data.supportEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.supportEmail)) {
-        throw new ValidationError('Invalid support email format');
-      }
-
-      // Validate URL formats if provided
-      const urlFields = ['logoUrl', 'logoLightUrl', 'logoDarkUrl', 'faviconUrl', 'coverImageUrl', 'websiteUrl', 'emailHeaderImage'];
-      for (const field of urlFields) {
-        const value = data[field as keyof CreateBrandingData];
-        if (value) {
-          try {
-            new URL(value as string);
-          } catch {
-            throw new ValidationError(`Invalid URL format for ${field}`);
-          }
-        }
-      }
+      this.validateBrandingData(data);
 
       const branding = await prisma.whiteLabelBranding.upsert({
         where: { organizerId },
@@ -595,6 +599,152 @@ export class WhiteLabelService {
       return domain;
     } catch (error) {
       logger.error('Failed to get active custom domain:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Admin: create or update branding for any organizer (auto-approved)
+   */
+  static async adminUpsertBranding(
+    organizerId: string,
+    data: CreateBrandingData,
+    adminId: string,
+  ) {
+    try {
+      this.validateBrandingData(data);
+
+      // Verify organizer exists
+      const organizer = await prisma.user.findUnique({
+        where: { id: organizerId },
+      });
+
+      if (!organizer) {
+        throw new NotFoundError('Organizer not found');
+      }
+
+      const branding = await prisma.whiteLabelBranding.upsert({
+        where: { organizerId },
+        create: {
+          organizerId,
+          ...data,
+          socialLinks: data.socialLinks ? (data.socialLinks as any) : undefined,
+          metadata: data.metadata ? (data.metadata as any) : undefined,
+          status: BrandingStatus.ACTIVE,
+          isActive: true,
+          approvedBy: adminId,
+          approvedAt: new Date(),
+        },
+        update: {
+          ...data,
+          socialLinks: data.socialLinks ? (data.socialLinks as any) : undefined,
+          metadata: data.metadata ? (data.metadata as any) : undefined,
+          status: BrandingStatus.ACTIVE,
+          isActive: true,
+          approvedBy: adminId,
+          approvedAt: new Date(),
+          rejectionReason: null,
+        },
+        include: {
+          organizer: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              organizationName: true,
+            },
+          },
+        },
+      });
+
+      logger.info(`Admin ${adminId} upserted branding for organizer ${organizerId}`);
+      return branding;
+    } catch (error) {
+      logger.error('Failed to admin upsert branding:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all custom domains across all organizers (admin only)
+   */
+  static async getAllCustomDomains(filters?: {
+    status?: CustomDomainStatus;
+    isActive?: boolean;
+    search?: string;
+    organizerId?: string;
+  }) {
+    try {
+      const where: any = {};
+
+      if (filters?.status) {
+        where.status = filters.status;
+      }
+
+      if (filters?.isActive !== undefined) {
+        where.isActive = filters.isActive;
+      }
+
+      if (filters?.organizerId) {
+        where.organizerId = filters.organizerId;
+      }
+
+      if (filters?.search) {
+        where.OR = [
+          { domain: { contains: filters.search, mode: 'insensitive' } },
+          { organizer: { organizationName: { contains: filters.search, mode: 'insensitive' } } },
+          { organizer: { email: { contains: filters.search, mode: 'insensitive' } } },
+        ];
+      }
+
+      const domains = await prisma.customDomain.findMany({
+        where,
+        include: {
+          organizer: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              organizationName: true,
+            },
+          },
+        },
+        orderBy: [
+          { isPrimary: 'desc' },
+          { createdAt: 'desc' },
+        ],
+      });
+
+      return domains;
+    } catch (error) {
+      logger.error('Failed to get all custom domains:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Admin: delete any custom domain (no organizer ownership check)
+   */
+  static async adminDeleteCustomDomain(domainId: string) {
+    try {
+      const domain = await prisma.customDomain.findUnique({
+        where: { id: domainId },
+      });
+
+      if (!domain) {
+        throw new NotFoundError('Custom domain not found');
+      }
+
+      await prisma.customDomain.delete({
+        where: { id: domainId },
+      });
+
+      logger.info(`Admin deleted custom domain: ${domainId}`);
+      return { success: true };
+    } catch (error) {
+      logger.error('Failed to admin delete custom domain:', error);
       throw error;
     }
   }

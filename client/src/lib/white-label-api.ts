@@ -1,6 +1,14 @@
 import api from './api';
 import type { ApiResponse } from './api';
 
+export interface OrganizerInfo {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  organizationName?: string;
+}
+
 export interface WhiteLabelBranding {
   id: string;
   organizerId: string;
@@ -178,6 +186,60 @@ export const verifyCustomDomain = async (
       failureReason,
     },
   );
+};
+
+// Admin: Get branding for specific organizer
+export const adminGetBrandingByOrganizer = async (
+  organizerId: string,
+): Promise<ApiResponse<WhiteLabelBranding & { organizer?: OrganizerInfo }>> => {
+  return api.get<ApiResponse<WhiteLabelBranding & { organizer?: OrganizerInfo }>>(
+    `/admin/white-label/brandings/${organizerId}`,
+  );
+};
+
+// Admin: Create/update branding for organizer (auto-approved)
+export const adminUpsertBranding = async (
+  organizerId: string,
+  data: CreateBrandingData,
+): Promise<ApiResponse<WhiteLabelBranding & { organizer?: OrganizerInfo }>> => {
+  return api.put<ApiResponse<WhiteLabelBranding & { organizer?: OrganizerInfo }>>(
+    `/admin/white-label/brandings/${organizerId}`,
+    data,
+  );
+};
+
+// Admin: Get all custom domains across all organizers
+export const adminGetAllCustomDomains = async (filters?: {
+  status?: 'PENDING' | 'VERIFIED' | 'FAILED' | 'SUSPENDED';
+  isActive?: boolean;
+  search?: string;
+  organizerId?: string;
+}): Promise<ApiResponse<(CustomDomain & { organizer?: OrganizerInfo })[]>> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.isActive !== undefined) params.append('isActive', String(filters.isActive));
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.organizerId) params.append('organizerId', filters.organizerId);
+  const qs = params.toString();
+  return api.get<ApiResponse<(CustomDomain & { organizer?: OrganizerInfo })[]>>(
+    `/admin/white-label/custom-domains${qs ? `?${qs}` : ''}`,
+  );
+};
+
+// Admin: Add custom domain for specific organizer
+export const adminAddCustomDomain = async (
+  organizerId: string,
+  data: CreateCustomDomainData,
+): Promise<ApiResponse<CustomDomain>> => {
+  return api.post<ApiResponse<CustomDomain>>(
+    `/admin/white-label/custom-domains/${organizerId}`,
+    data,
+  );
+};
+
+// Admin: Delete any custom domain
+export const adminDeleteCustomDomain = async (domainId: string): Promise<void> => {
+  await api.delete(`/admin/white-label/custom-domains/${domainId}`);
 };
 
 // Public APIs

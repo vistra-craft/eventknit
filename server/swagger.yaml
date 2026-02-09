@@ -63,6 +63,8 @@ tags:
     description: Platform-level accounting — expenses, income, wages
   - name: Organizer Payouts
     description: Organizer payout preferences, history, and scheduling
+  - name: White Label
+    description: White-label branding and custom domain management for organizers
 
 components:
   securitySchemes:
@@ -1924,6 +1926,240 @@ components:
           type: integer
         totalPages:
           type: integer
+
+    # White Label Schemas
+    WhiteLabelBranding:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizerId:
+          type: string
+          format: uuid
+        logoUrl:
+          type: string
+          nullable: true
+        logoLightUrl:
+          type: string
+          nullable: true
+        logoDarkUrl:
+          type: string
+          nullable: true
+        faviconUrl:
+          type: string
+          nullable: true
+        coverImageUrl:
+          type: string
+          nullable: true
+        primaryColor:
+          type: string
+          nullable: true
+          example: '#1D9BF0'
+        secondaryColor:
+          type: string
+          nullable: true
+        accentColor:
+          type: string
+          nullable: true
+        backgroundColor:
+          type: string
+          nullable: true
+        textColor:
+          type: string
+          nullable: true
+        linkColor:
+          type: string
+          nullable: true
+        fontFamily:
+          type: string
+          nullable: true
+          example: Inter
+        headingFont:
+          type: string
+          nullable: true
+        brandName:
+          type: string
+          nullable: true
+        tagline:
+          type: string
+          nullable: true
+        supportEmail:
+          type: string
+          format: email
+          nullable: true
+        supportPhone:
+          type: string
+          nullable: true
+        websiteUrl:
+          type: string
+          format: uri
+          nullable: true
+        emailHeaderImage:
+          type: string
+          nullable: true
+        emailFooterText:
+          type: string
+          nullable: true
+        emailSignature:
+          type: string
+          nullable: true
+        socialLinks:
+          type: object
+          nullable: true
+          description: Social media links (facebook, twitter, instagram, linkedin, youtube, tiktok)
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE, PENDING_APPROVAL]
+        isActive:
+          type: boolean
+        approvedBy:
+          type: string
+          format: uuid
+          nullable: true
+        approvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        rejectionReason:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateBrandingInput:
+      type: object
+      properties:
+        brandName:
+          type: string
+        tagline:
+          type: string
+        logoUrl:
+          type: string
+        logoLightUrl:
+          type: string
+        logoDarkUrl:
+          type: string
+        faviconUrl:
+          type: string
+        coverImageUrl:
+          type: string
+        primaryColor:
+          type: string
+          example: '#1D9BF0'
+        secondaryColor:
+          type: string
+        accentColor:
+          type: string
+        backgroundColor:
+          type: string
+        textColor:
+          type: string
+        linkColor:
+          type: string
+        fontFamily:
+          type: string
+        headingFont:
+          type: string
+        supportEmail:
+          type: string
+          format: email
+        supportPhone:
+          type: string
+        websiteUrl:
+          type: string
+          format: uri
+        emailHeaderImage:
+          type: string
+        emailFooterText:
+          type: string
+        emailSignature:
+          type: string
+        socialLinks:
+          type: object
+
+    CustomDomain:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        organizerId:
+          type: string
+          format: uuid
+        domain:
+          type: string
+          example: events.example.com
+        subdomain:
+          type: string
+          nullable: true
+        isPrimary:
+          type: boolean
+        status:
+          type: string
+          enum: [PENDING, VERIFIED, FAILED, SUSPENDED]
+        verificationToken:
+          type: string
+          nullable: true
+        verificationCode:
+          type: string
+          nullable: true
+        verifiedAt:
+          type: string
+          format: date-time
+          nullable: true
+        verifiedBy:
+          type: string
+          format: uuid
+          nullable: true
+        sslEnabled:
+          type: boolean
+        sslExpiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        cnameTarget:
+          type: string
+          nullable: true
+        ipAddress:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        lastCheckedAt:
+          type: string
+          format: date-time
+          nullable: true
+        failureReason:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateCustomDomainInput:
+      type: object
+      required:
+        - domain
+      properties:
+        domain:
+          type: string
+          example: events.example.com
+        subdomain:
+          type: string
+        isPrimary:
+          type: boolean
+        cnameTarget:
+          type: string
+        ipAddress:
+          type: string
 
   responses:
     UnauthorizedError:
@@ -10768,6 +11004,561 @@ paths:
                             nullable: true
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+
+  # ==================== WHITE LABEL - ADMIN ====================
+  /admin/white-label/brandings:
+    get:
+      tags:
+        - White Label
+      summary: Get all brandings
+      description: List all white-label brandings across organizers with optional filters (requires ADMIN_STAFF role or higher)
+      operationId: adminGetAllBrandings
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, PENDING_APPROVAL]
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Search across brandName, organizationName, email
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Brandings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/WhiteLabelBranding'
+                    - type: object
+                      properties:
+                        organizer:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            email:
+                              type: string
+                            firstName:
+                              type: string
+                            lastName:
+                              type: string
+                            organizationName:
+                              type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/white-label/brandings/{brandingId}/status:
+    put:
+      tags:
+        - White Label
+      summary: Update branding status
+      description: Approve or reject an organizer's branding submission (requires ADMIN_STAFF role or higher)
+      operationId: adminUpdateBrandingStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: brandingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [ACTIVE, INACTIVE]
+                rejectionReason:
+                  type: string
+                  description: Required when status is INACTIVE
+      responses:
+        '200':
+          description: Branding status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhiteLabelBranding'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/white-label/brandings/{organizerId}:
+    get:
+      tags:
+        - White Label
+      summary: Get branding by organizer
+      description: Get branding for a specific organizer (requires ADMIN_STAFF role or higher)
+      operationId: adminGetBrandingByOrganizer
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Branding retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WhiteLabelBranding'
+                  - type: object
+                    properties:
+                      organizer:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          email:
+                            type: string
+                          firstName:
+                            type: string
+                          lastName:
+                            type: string
+                          organizationName:
+                            type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - White Label
+      summary: Create or update branding for organizer
+      description: Admin creates or updates branding on behalf of an organizer. Branding is auto-approved (requires ADMIN_STAFF role or higher)
+      operationId: adminUpsertBranding
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBrandingInput'
+      responses:
+        '200':
+          description: Branding created/updated successfully (auto-approved)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhiteLabelBranding'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Organizer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/white-label/custom-domains:
+    get:
+      tags:
+        - White Label
+      summary: Get all custom domains
+      description: List all custom domains across organizers with optional filters (requires ADMIN_STAFF role or higher)
+      operationId: adminGetAllCustomDomains
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, VERIFIED, FAILED, SUSPENDED]
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Search across domain, organizationName, email
+          schema:
+            type: string
+        - name: organizerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Custom domains retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  allOf:
+                    - $ref: '#/components/schemas/CustomDomain'
+                    - type: object
+                      properties:
+                        organizer:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            email:
+                              type: string
+                            firstName:
+                              type: string
+                            lastName:
+                              type: string
+                            organizationName:
+                              type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/white-label/custom-domains/{organizerId}:
+    post:
+      tags:
+        - White Label
+      summary: Add custom domain for organizer
+      description: Admin adds a custom domain on behalf of an organizer (requires ADMIN_STAFF role or higher)
+      operationId: adminAddCustomDomain
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomDomainInput'
+      responses:
+        '201':
+          description: Custom domain added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomDomain'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/white-label/custom-domains/{domainId}/verify:
+    put:
+      tags:
+        - White Label
+      summary: Verify custom domain
+      description: Verify or fail a custom domain after DNS check (requires ADMIN_STAFF role or higher)
+      operationId: adminVerifyCustomDomain
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [VERIFIED, FAILED, SUSPENDED]
+                failureReason:
+                  type: string
+                  description: Required when status is FAILED
+      responses:
+        '200':
+          description: Domain verification status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomDomain'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/white-label/custom-domains/{domainId}:
+    delete:
+      tags:
+        - White Label
+      summary: Delete custom domain
+      description: Delete any custom domain (requires ADMIN_STAFF role or higher)
+      operationId: adminDeleteCustomDomain
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Custom domain deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Custom domain deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== WHITE LABEL - ORGANIZER ====================
+  /organizer/branding:
+    get:
+      tags:
+        - White Label
+      summary: Get own branding
+      description: Get the authenticated organizer's branding (creates default if none exists)
+      operationId: getOrganizerBranding
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Branding retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhiteLabelBranding'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    put:
+      tags:
+        - White Label
+      summary: Create or update own branding
+      description: Organizer submits or updates branding (status resets to PENDING_APPROVAL)
+      operationId: upsertOrganizerBranding
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBrandingInput'
+      responses:
+        '200':
+          description: Branding submitted for approval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhiteLabelBranding'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /organizer/custom-domains:
+    get:
+      tags:
+        - White Label
+      summary: Get own custom domains
+      description: List the authenticated organizer's custom domains
+      operationId: getOrganizerCustomDomains
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Custom domains retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomDomain'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    post:
+      tags:
+        - White Label
+      summary: Add custom domain
+      description: Add a custom domain to the authenticated organizer's account
+      operationId: addOrganizerCustomDomain
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomDomainInput'
+      responses:
+        '201':
+          description: Custom domain added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomDomain'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /organizer/custom-domains/{domainId}:
+    get:
+      tags:
+        - White Label
+      summary: Get custom domain by ID
+      description: Get a specific custom domain (scoped to authenticated organizer)
+      operationId: getOrganizerCustomDomainById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Custom domain retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomDomain'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - White Label
+      summary: Update custom domain
+      description: Update a custom domain (scoped to authenticated organizer)
+      operationId: updateOrganizerCustomDomain
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isPrimary:
+                  type: boolean
+                sslEnabled:
+                  type: boolean
+                sslCertificate:
+                  type: string
+                sslKey:
+                  type: string
+      responses:
+        '200':
+          description: Custom domain updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomDomain'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - White Label
+      summary: Delete custom domain
+      description: Delete a custom domain (scoped to authenticated organizer)
+      operationId: deleteOrganizerCustomDomain
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: domainId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Custom domain deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Custom domain deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
 security:
   - BearerAuth: []
