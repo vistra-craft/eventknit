@@ -26,7 +26,6 @@ export function BasicInfoStep({
   setValidationErrors,
   eventType,
   setEventType,
-  eventCategories,
 }: BasicInfoStepProps) {
   return (
     <div className="space-y-6">

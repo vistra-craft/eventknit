@@ -27,7 +27,6 @@ import {
   ArrowRight,
   ArrowLeft,
   X,
-  ChevronRight
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
@@ -111,6 +110,18 @@ interface RegistrationFieldData {
 
 const DRAFT_STORAGE_KEY = 'eventknit_event_draft';
 
+/* Step definitions — ordered to match industry standard event creation flow */
+const steps = [
+  { title: "Basic Info", icon: FileText },       // 1: Title, description, category, tags
+  { title: "Date & Location", icon: Calendar },   // 2: Date/time, venue type, venue/link
+  { title: "Media", icon: Camera },               // 3: Cover image (moved up — visual identity)
+  { title: "Tickets", icon: Ticket },             // 4: Ticket types, pricing, currency, capacity
+  { title: "Agenda", icon: Clock },               // 5: Schedule, speakers, exhibitors, sponsors
+  { title: "Registration", icon: Users },         // 6: Custom fields, privacy, requirements
+  { title: "Social", icon: Layout },              // 7: Social links, FAQs
+  { title: "Review", icon: CheckCircle }          // 8: Final review
+];
+
 export default function CreateEventStepwise() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -127,18 +138,6 @@ export default function CreateEventStepwise() {
   const [useDragAndDrop, setUseDragAndDrop] = useState(false);
   const { toast } = useToast();
   
-  /* Step definitions — ordered to match industry standard event creation flow */
-  const steps = [
-    { title: "Basic Info", icon: FileText },       // 1: Title, description, category, tags
-    { title: "Date & Location", icon: Calendar },   // 2: Date/time, venue type, venue/link
-    { title: "Media", icon: Camera },               // 3: Cover image (moved up — visual identity)
-    { title: "Tickets", icon: Ticket },             // 4: Ticket types, pricing, currency, capacity
-    { title: "Agenda", icon: Clock },               // 5: Schedule, speakers, exhibitors, sponsors
-    { title: "Registration", icon: Users },         // 6: Custom fields, privacy, requirements
-    { title: "Social", icon: Layout },              // 7: Social links, FAQs
-    { title: "Review", icon: CheckCircle }          // 8: Final review
-  ];
-
   const [currentStep, setCurrentStep] = useState(() => {
     if (stepParam) {
       const step = parseInt(stepParam, 10);

@@ -29,7 +29,6 @@ import {
   Percent,
   DollarSign,
   Search,
-  RefreshCw,
   AlertCircle,
   Sparkles,
 } from 'lucide-react';
@@ -75,7 +74,7 @@ const PromoCodeManager = () => {
       console.log('✅ Code validation:', codeValidation);
       console.log('✏️ Editing mode:', !!editingCode);
     }
-  }, [showCreateModal, formData.code, codeValidation, editingCode]);
+  }, [showCreateModal, formData, codeValidation, editingCode]);
 
   // Generate meaningful promo code based on discount context
   const generatePromoCode = (): string => {

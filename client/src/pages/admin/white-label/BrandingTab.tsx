@@ -65,9 +65,11 @@ const BrandingTab = ({ onEditBranding, refreshKey }: BrandingTabProps) => {
             ? 'ACTIVE'
             : undefined;
       const res = await getAllBrandings({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status: status as any,
         search: searchTerm || undefined,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setBrandings((res as any)?.data || res || []);
     } catch {
       toast({
@@ -124,24 +126,13 @@ const BrandingTab = ({ onEditBranding, refreshKey }: BrandingTabProps) => {
     return <Badge variant={c.variant}>{c.label}</Badge>;
   };
 
-  const stats = {
-    pending: Array.isArray(brandings)
-      ? brandings.filter((b) => b.status === 'PENDING_APPROVAL').length
-      : 0,
-    active: Array.isArray(brandings)
-      ? brandings.filter((b) => b.status === 'ACTIVE').length
-      : 0,
-    rejected: Array.isArray(brandings)
-      ? brandings.filter((b) => b.status === 'INACTIVE').length
-      : 0,
-  };
-
   // For stats, load all brandings once
   const [allBrandings, setAllBrandings] = useState<BrandingWithOrg[]>([]);
   useEffect(() => {
     const loadAll = async () => {
       try {
         const res = await getAllBrandings({});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setAllBrandings((res as any)?.data || res || []);
       } catch {
         // Silently fail for stats

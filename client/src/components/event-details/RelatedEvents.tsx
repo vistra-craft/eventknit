@@ -82,7 +82,6 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
               location={event.location || ""}
               price={event.isFree ? "Free" : event.price ? event.price.toString() : "See tickets"}
               currency={event.isFree || !event.price ? undefined : event.currency || "$"}
-              category={event.category || "Event"}
             />
           </div>
         ))}

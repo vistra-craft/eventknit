@@ -160,7 +160,6 @@ interface SkeletonChartProps {
 
 export function SkeletonChart({
   height = 224,
-  showLegend = false,
   className,
 }: SkeletonChartProps) {
   return (

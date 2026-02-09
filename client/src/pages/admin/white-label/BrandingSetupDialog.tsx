@@ -19,7 +19,7 @@ import {
   type WhiteLabelBranding,
   type OrganizerInfo,
 } from '@/lib/white-label-api';
-import { Search, Palette, Type, Mail, Globe, Share2 } from 'lucide-react';
+import { Search, Palette, Type, Mail, Share2 } from 'lucide-react';
 import BrandingPreview from './BrandingPreview';
 
 interface BrandingSetupDialogProps {
@@ -162,9 +162,11 @@ const BrandingSetupDialog = ({
     }
     setIsSearching(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await getUsers({ role: 'ORGANIZER' as any, search: term, limit: 15 });
       const users = res?.data?.users || [];
       setOrganizers(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         users.map((u: any) => ({
           id: u.id,
           label: u.organizationName || `${u.firstName} ${u.lastName}`,
@@ -185,6 +187,7 @@ const BrandingSetupDialog = ({
     return () => clearTimeout(timeout);
   }, [organizerSearch, searchOrganizers]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateField = (field: keyof CreateBrandingData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -213,7 +216,7 @@ const BrandingSetupDialog = ({
         }
         if (Object.keys(cleaned).length > 0) cleanData.socialLinks = cleaned;
       } else if (value !== '' && value !== undefined && value !== null) {
-        (cleanData as any)[key] = value;
+        (cleanData as Record<string, unknown>)[key] = value;
       }
     }
 
@@ -228,8 +231,9 @@ const BrandingSetupDialog = ({
       });
       onOpenChange(false);
       onSuccess();
-    } catch (error: any) {
-      const message = error?.response?.data?.error || error?.message;
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      const message = err?.response?.data?.error || err?.message;
       toast({
         title: 'Error',
         description: message || 'Failed to save branding',

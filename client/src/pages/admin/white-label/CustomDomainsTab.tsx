@@ -83,9 +83,11 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
             ? 'VERIFIED'
             : undefined;
       const res = await adminGetAllCustomDomains({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status: statusFilter as any,
         search: searchTerm || undefined,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setDomains((res as any)?.data || res || []);
     } catch {
       toast({ title: 'Error', description: 'Failed to load domains', variant: 'destructive' });
@@ -106,9 +108,11 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
     }
     setIsSearchingOrg(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await getUsers({ role: 'ORGANIZER' as any, search: term, limit: 15 });
       const users = res?.data?.users || [];
       setOrgResults(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         users.map((u: any) => ({
           id: u.id,
           label: u.organizationName || `${u.firstName} ${u.lastName}`,
@@ -148,8 +152,9 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
       setShowAddDialog(false);
       resetAddForm();
       loadDomains();
-    } catch (error: any) {
-      const msg = error?.response?.data?.error || error?.message;
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      const msg = err?.response?.data?.error || err?.message;
       toast({ title: 'Error', description: msg || 'Failed to add domain', variant: 'destructive' });
     } finally {
       setIsSaving(false);
@@ -520,7 +525,7 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
                   key={s}
                   variant={verifyStatus === s ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setVerifyStatus(s as any)}
+                  onClick={() => setVerifyStatus(s as 'VERIFIED' | 'FAILED' | 'SUSPENDED')}
                 >
                   {s === 'VERIFIED' ? 'Verify' : s === 'FAILED' ? 'Fail' : 'Suspend'}
                 </Button>

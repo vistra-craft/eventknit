@@ -27,7 +27,6 @@ export const StatsCardSkeleton: React.FC = () => {
  */
 export const ChartCardSkeleton: React.FC<{ height?: number; title?: string }> = ({
   height = 224,
-  title
 }) => {
   return <SkeletonChart height={height} />;
 };

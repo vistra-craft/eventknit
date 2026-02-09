@@ -21,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import OrganizerLayout from "./OrganizerLayout";
 import {
   Wallet,
   Building2,
@@ -111,7 +110,7 @@ const PayoutManagement = () => {
   const [saving, setSaving] = useState(false);
 
   // Preferences state
-  const [preferences, setPreferences] = useState<PayoutPreferences | null>(null);
+  const [, setPreferences] = useState<PayoutPreferences | null>(null);
   const [formData, setFormData] = useState({
     primaryMethod: "bank_transfer",
     bankName: "",
@@ -166,10 +165,11 @@ const PayoutManagement = () => {
         limit: HISTORY_LIMIT,
       };
       if (historyFilter) filters.status = historyFilter;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await getPayoutHistory(filters as any);
       if (res.success && res.data) {
         setDisbursements(res.data.disbursements || []);
-        setHistoryTotal(res.data.pagination?.totalPages || 1);
+        setHistoryTotal(res.data.totalPages || 1);
       }
     } catch {
       toast({ title: "Failed to load payout history", variant: "destructive" });
@@ -220,6 +220,7 @@ const PayoutManagement = () => {
       if (formData.autoPayoutThreshold) {
         payload.autoPayoutThreshold = parseFloat(formData.autoPayoutThreshold);
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await updatePayoutPreferences(payload as any);
       if (res.success) {
         toast({ title: "Payout preferences updated" });
@@ -236,16 +237,13 @@ const PayoutManagement = () => {
 
   if (loading) {
     return (
-      <OrganizerLayout>
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </OrganizerLayout>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   return (
-    <OrganizerLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Payout Management</h1>
@@ -592,7 +590,6 @@ const PayoutManagement = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </OrganizerLayout>
   );
 };
 
