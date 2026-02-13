@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, ArrowLeft, Users, Calendar } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useAppleAuth } from '@/hooks/useAppleAuth';
@@ -16,19 +16,17 @@ import { extractErrorMessage } from '@/lib/utils/error';
 import BackButton from '@/components/BackButton';
 import Logo from '@/components/Logo';
 
-type SelectedRole = 'ATTENDEE' | 'ORGANIZER';
-type Step = 'type' | 'email' | 'verify';
+type Step = 'email' | 'verify';
 
 const SignUp = () => {
   const navigate = useNavigate();
   const { dispatch } = useAuthContext();
 
   // Step management
-  const [step, setStep] = useState<Step>('type');
+  const [step, setStep] = useState<Step>('email');
 
   // Form state
   const [email, setEmail] = useState('');
-  const [selectedRole, setSelectedRole] = useState<SelectedRole>('ATTENDEE');
   const [code, setCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -41,24 +39,15 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Google OAuth
+  // Google OAuth (no role parameter - all users default to ATTENDEE)
   const { signUpWithGoogle, isLoading: isGoogleLoading } = useGoogleAuth({
-    role: selectedRole,
     onError: (err) => setError(err),
   });
 
-  // Apple OAuth
+  // Apple OAuth (no role parameter - all users default to ATTENDEE)
   const { signInWithApple, isLoading: isAppleLoading } = useAppleAuth({
-    role: selectedRole,
     onError: (err) => setError(err),
   });
-
-  // Step 1: Select account type
-  const handleSelectRole = (role: SelectedRole) => {
-    setSelectedRole(role);
-    setError('');
-    setStep('email');
-  };
 
   // Step 2: Send verification code
   const handleSendCode = async (e: React.FormEvent) => {
@@ -72,7 +61,7 @@ const SignUp = () => {
 
     setIsLoading(true);
     try {
-      await requestRegistrationCode(email, selectedRole);
+      await requestRegistrationCode(email);
       setStep('verify');
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to send verification code. Please try again.'));
@@ -127,17 +116,21 @@ const SignUp = () => {
         setAccessToken(result.data.accessToken);
         dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
 
-        // Route based on role
+        // NEW: All new users go through unified onboarding
         const role = result.data.user.role;
-        if (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') {
-          const needsOnboarding = typeof (result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted === 'boolean'
-            ? !(result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
-            : true;
-          navigate(needsOnboarding ? '/organizer/onboarding' : '/organizer/dashboard');
-        } else if (role === 'SUPERADMIN' || role === 'ADMIN_STAFF' || role === 'MARKETER' || role === 'SUPPORT' || role === 'TELLER') {
+        const needsOnboarding = typeof (result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted === 'boolean'
+          ? !(result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
+          : true;
+
+        if (role === 'SUPERADMIN' || role === 'ADMIN' || role === 'ADMIN_STAFF') {
+          // Admins skip onboarding, go directly to admin dashboard
           navigate('/admin/dashboard');
+        } else if (needsOnboarding) {
+          // All non-admin users go to unified onboarding
+          navigate('/onboarding/welcome');
         } else {
-          navigate('/user/dashboard');
+          // Existing users (shouldn't happen for new signups, but included for safety)
+          navigate('/dashboard');
         }
       }
     } catch (err) {
@@ -151,7 +144,7 @@ const SignUp = () => {
     setError('');
     setIsLoading(true);
     try {
-      await requestRegistrationCode(email, selectedRole);
+      await requestRegistrationCode(email);
     } catch (err) {
       setError(extractErrorMessage(err, 'Failed to resend code. Please try again.'));
     } finally {
@@ -164,13 +157,12 @@ const SignUp = () => {
     if (step === 'verify') {
       setStep('email');
       setCode('');
-    } else if (step === 'email') {
-      setStep('type');
     }
+    // No longer need to go back from 'email' step (type step removed)
   };
 
-  // Step progress
-  const stepNumber = step === 'type' ? 1 : step === 'email' ? 2 : 3;
+  // Step progress (2 steps now: email, verify)
+  const stepNumber = step === 'email' ? 1 : 2;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
@@ -178,7 +170,7 @@ const SignUp = () => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between gap-4 mb-4">
-            {step === 'type' ? (
+            {step === 'email' ? (
               <BackButton to="/" label="Back to home" />
             ) : (
               <button
@@ -192,9 +184,9 @@ const SignUp = () => {
             <Logo />
           </div>
 
-          {/* Step Progress */}
+          {/* Step Progress (2 steps) */}
           <div className="flex gap-2 mb-5 max-w-xs">
-            {[1, 2, 3].map((s) => (
+            {[1, 2].map((s) => (
               <div
                 key={s}
                 className={`h-1 flex-1 rounded-full transition-all duration-300 ${
@@ -205,95 +197,18 @@ const SignUp = () => {
           </div>
 
           <h1 className="text-2xl font-bold text-foreground mb-1">
-            {step === 'type' && 'Choose how you\u2019ll use EventKnit'}
             {step === 'email' && 'Create your account'}
             {step === 'verify' && 'Complete your profile'}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {step === 'type' && 'Pick the option that best matches what you want to do on the platform.'}
-            {step === 'email' && (
-              <>Sign up as {selectedRole === 'ATTENDEE' ? 'an attendee' : 'an organizer'} to get started.</>
-            )}
+            {step === 'email' && 'Sign up to discover and create amazing events.'}
             {step === 'verify' && (
               <>We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span></>
             )}
           </p>
         </div>
 
-        {/* ===== Step 1: Account Type Selection ===== */}
-        {step === 'type' && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Attendee Card */}
-              <Card
-                className="group border border-border bg-card-surface rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
-                onClick={() => handleSelectRole('ATTENDEE')}
-              >
-                <CardHeader className="pb-3">
-                  <div className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                    <Users className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-xl font-semibold text-foreground">
-                    Attend events
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Discover concerts, conferences, meetups, and more. Save favorites, get tickets,
-                    and keep everything in one place.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="default"
-                    className="w-full h-11"
-                  >
-                    Continue as attendee
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Organizer Card */}
-              <Card
-                className="group border border-border bg-card-surface rounded-2xl shadow-none hover:bg-muted/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
-                onClick={() => handleSelectRole('ORGANIZER')}
-              >
-                <CardHeader className="pb-3">
-                  <div className="w-11 h-11 bg-primary/10 rounded-full flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
-                    <Calendar className="w-6 h-6 text-primary" />
-                  </div>
-                  <CardTitle className="text-xl font-semibold text-foreground">
-                    Organize events
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Create and manage events, track ticket sales, and understand your audience with
-                    simple, powerful tools.
-                  </p>
-                  <Button
-                    type="button"
-                    variant="default"
-                    className="w-full h-11"
-                  >
-                    Continue as organizer
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Sign in link */}
-            <div className="text-center mt-6">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{' '}
-                <Link to="/auth/signin" className="text-primary font-medium hover:underline">
-                  Log in
-                </Link>
-              </p>
-            </div>
-          </>
-        )}
-
-        {/* ===== Steps 2 & 3: Form Card ===== */}
+        {/* ===== Form Card (Email & Verify Steps) ===== */}
         {(step === 'email' || step === 'verify') && (
           <div className="max-w-md mx-auto">
             <Card className="border border-border bg-card-surface rounded-2xl shadow-none">
