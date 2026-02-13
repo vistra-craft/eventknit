@@ -32,7 +32,7 @@ const CreateEventEntry = () => {
 
     if (canOrganize) {
       // User is already an organizer, navigate to event creation
-      navigate('/organizer/events/create');
+      navigate('/user/create-event');
     } else {
       // User is an attendee, show upgrade modal
       setShowModal(true);

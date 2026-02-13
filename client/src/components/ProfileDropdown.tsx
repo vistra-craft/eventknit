@@ -108,16 +108,16 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
         const accessResponse = await getDashboardAccess();
         if (accessResponse.success && !accessResponse.data.hasAccess) {
           // No event created - redirect to event creation
-          return '/organizer/events/create-standalone';
+          return '/user/create-event';
         }
       } catch (error) {
         console.error('Error checking dashboard access:', error);
         // On error, redirect to event creation to be safe
-        return '/organizer/events/create-standalone';
+        return '/user/create-event';
       }
     }
-    
-    if (isOrganizerRole) return '/organizer/dashboard';
+
+    if (isOrganizerRole) return '/user/dashboard';
     return '/user/dashboard';
   };
 
@@ -139,7 +139,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
       UserRole.ORGANIZER_TELLER,
     ].includes(roleToUse);
     
-    if (isOrganizerRole) return '/organizer/settings';
+    if (isOrganizerRole) return '/user/profile';
     if (isAdminRole) return '/admin/profile';
     return '/user/profile';
   };
@@ -203,7 +203,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
             {user.role === UserRole.ORGANIZER && hasEvent === false ? (
               <>
                 <button
-                  onClick={() => handleNavigate('/organizer/events/create-standalone')}
+                  onClick={() => handleNavigate('/user/create-event')}
                   className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
                 >
                   <Plus className="w-4 h-4" />

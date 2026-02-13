@@ -84,8 +84,8 @@ export const BecomeOrganizerModal = ({
         if (onSuccess) {
           onSuccess();
         } else {
-          // Navigate to event creation
-          navigate('/organizer/events/create');
+          // Navigate to event creation (unified dashboard)
+          navigate('/user/create-event');
         }
       } else {
         throw new Error(response.message || 'Failed to upgrade to organizer');
