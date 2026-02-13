@@ -11,6 +11,7 @@ import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
 import EmptyState from '../../components/EmptyState';
 import { OrganizingEventCard } from '../../components/OrganizingEventCard';
+import { OrganizerQuickActions } from '../../components/OrganizerQuickActions';
 import { useMyEvents } from '../../hooks/useMyEvents';
 import { shareEvent } from '../../lib/utils/share';
 import { downloadTicket } from '../../lib/utils/ticket';
@@ -111,6 +112,13 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
           ))}
         </div>
       </div>
+
+      {/* Organizer Quick Actions */}
+      {canOrganize && (
+        <div className="mb-6">
+          <OrganizerQuickActions />
+        </div>
+      )}
 
       {/* Tab Content */}
       <div className="min-h-[400px]">
