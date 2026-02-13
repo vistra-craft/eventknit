@@ -21,6 +21,16 @@ export const comparePassword = async (
 };
 
 /**
+ * Hash a token (e.g., password reset, email verification) with SHA-256.
+ * Tokens are stored as hashes in the database so that a DB compromise
+ * doesn't expose usable tokens. The raw token is sent to the user,
+ * and on verification we hash the incoming token and look up the hash.
+ */
+export const hashToken = (token: string): string => {
+  return crypto.createHash('sha256').update(token).digest('hex');
+};
+
+/**
  * Check if a password has been found in known data breaches using the
  * HaveIBeenPwned k-anonymity API. Only the first 5 characters of the
  * SHA-1 hash are sent to the API — the full password is never exposed.

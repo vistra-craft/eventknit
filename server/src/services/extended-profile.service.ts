@@ -1,6 +1,5 @@
-import { PrismaClient, StaffDepartment, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { StaffDepartment, Prisma } from '@prisma/client';
+import { prisma } from '../config/database.js';
 
 export interface StaffProfileData {
   employeeId?: string;

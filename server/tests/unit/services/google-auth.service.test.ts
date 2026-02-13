@@ -34,6 +34,14 @@ jest.mock('../../../src/utils/logger.js', () => ({
   },
 }));
 
+jest.mock('../../../src/utils/password.js', () => ({
+  ...jest.requireActual('../../../src/utils/password.js'),
+  hashPassword: jest.fn(),
+  comparePassword: jest.fn(),
+  checkPasswordBreach: jest.fn(),
+  // hashToken uses real implementation (pure SHA-256, no side effects)
+}));
+
 jest.mock('../../../src/config/index.js', () => ({
   config: {
     google: {
@@ -42,6 +50,28 @@ jest.mock('../../../src/config/index.js', () => ({
     jwt: {
       expiresIn: '1h',
     },
+    security: {
+      maxLoginAttempts: 5,
+      lockoutDuration: 15,
+    },
+  },
+}));
+
+jest.mock('../../../src/services/email.service.js', () => ({
+  emailService: {
+    sendVerificationCode: jest.fn(),
+    sendPasswordResetEmail: jest.fn(),
+    sendWelcomeEmail: jest.fn(),
+    sendAccountInvitation: jest.fn(),
+  },
+}));
+
+jest.mock('../../../src/utils/audit.js', () => ({
+  createAuditLog: jest.fn(),
+  AuditActions: {
+    USER_LOGIN: 'USER_LOGIN',
+    USER_LOGOUT: 'USER_LOGOUT',
+    PASSWORD_CHANGE: 'PASSWORD_CHANGE',
   },
 }));
 
@@ -67,6 +97,7 @@ describe('GoogleAuthService', () => {
       // Arrange
       const mockIdToken = 'valid-google-id-token';
       const mockTokenInfo = {
+        aud: 'test-google-client-id',
         sub: 'google-user-123',
         email: 'test@gmail.com',
         email_verified: 'true',
@@ -118,10 +149,33 @@ describe('GoogleAuthService', () => {
       ).rejects.toThrow('Failed to verify Google token');
     });
 
+    it('should throw error when token audience does not match client ID', async () => {
+      // Arrange
+      const mockIdToken = 'token-wrong-audience';
+      const mockTokenInfo = {
+        aud: 'some-other-app-client-id',
+        sub: 'google-user-123',
+        email: 'test@gmail.com',
+        email_verified: 'true',
+      };
+
+      mockAxiosGet.mockResolvedValue({ data: mockTokenInfo });
+
+      // Act & Assert
+      await expect(
+        GoogleAuthService.verifyGoogleIdToken(mockIdToken),
+      ).rejects.toThrow(AuthenticationError);
+
+      await expect(
+        GoogleAuthService.verifyGoogleIdToken(mockIdToken),
+      ).rejects.toThrow('Invalid Google token');
+    });
+
     it('should throw error when token verification returns no sub', async () => {
       // Arrange
       const mockIdToken = 'token-without-sub';
       const mockTokenInfo = {
+        aud: 'test-google-client-id',
         email: 'test@gmail.com',
         email_verified: 'true',
         // Missing sub field
@@ -139,6 +193,7 @@ describe('GoogleAuthService', () => {
       // Arrange
       const mockIdToken = 'valid-token';
       const mockTokenInfo = {
+        aud: 'test-google-client-id',
         sub: 'google-user-123',
         email: 'test@gmail.com',
         email_verified: 'false',
@@ -251,6 +306,7 @@ describe('GoogleAuthService', () => {
     it('should create new user for first-time Google login with ID token', async () => {
       // Arrange
       mockAxiosGet.mockResolvedValue({ data: {
+        aud: 'test-google-client-id',
         sub: mockGoogleUser.id,
         email: mockGoogleUser.email,
         email_verified: 'true',
@@ -280,7 +336,7 @@ describe('GoogleAuthService', () => {
       };
 
       prisma.user.create.mockResolvedValue(mockCreatedUser as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       // Act
       const result = await GoogleAuthService.authenticateWithGoogle(
@@ -323,13 +379,16 @@ describe('GoogleAuthService', () => {
         }),
       });
 
-      expect(prisma.refreshToken.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+      // Token is now saved via AuthService.saveRefreshToken (uses upsert + hashing)
+      expect(prisma.refreshToken.upsert).toHaveBeenCalledWith({
+        where: { token: expect.any(String) }, // hashed token
+        create: expect.objectContaining({
           userId: mockCreatedUser.id,
-          token: mockTokens.refreshToken,
+          token: expect.any(String), // hashed token
           ipAddress: '127.0.0.1',
           userAgent: 'Test User Agent',
         }),
+        update: expect.any(Object),
       });
     });
 
@@ -355,7 +414,7 @@ describe('GoogleAuthService', () => {
 
       prisma.user.findFirst.mockResolvedValue(mockExistingUser as any);
       prisma.user.update.mockResolvedValue(mockExistingUser as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       // Act
       const result = await GoogleAuthService.authenticateWithGoogle(
@@ -382,6 +441,7 @@ describe('GoogleAuthService', () => {
     it('should link Google account to existing email user', async () => {
       // Arrange
       mockAxiosGet.mockResolvedValue({ data: {
+        aud: 'test-google-client-id',
         sub: 'google-new-123',
         email: mockGoogleUser.email,
         email_verified: 'true',
@@ -409,7 +469,7 @@ describe('GoogleAuthService', () => {
         ...mockExistingUser,
         googleId: 'google-new-123',
       } as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       // Act
       const _result = await GoogleAuthService.authenticateWithGoogle('valid-id-token');
@@ -445,7 +505,7 @@ describe('GoogleAuthService', () => {
         ...mockExistingUser,
         avatar: mockGoogleUser.picture,
       } as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       // Act
       await GoogleAuthService.authenticateWithGoogle('valid-access-token', 'access_token');
@@ -477,7 +537,7 @@ describe('GoogleAuthService', () => {
 
       prisma.user.findFirst.mockResolvedValue(mockExistingUser as any);
       prisma.user.update.mockResolvedValue(mockExistingUser as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       // Act
       await GoogleAuthService.authenticateWithGoogle('valid-access-token', 'access_token');
@@ -494,6 +554,7 @@ describe('GoogleAuthService', () => {
     it('should respect ATTENDEE role for new users', async () => {
       // Arrange
       mockAxiosGet.mockResolvedValue({ data: {
+        aud: 'test-google-client-id',
         sub: mockGoogleUser.id,
         email: mockGoogleUser.email,
         email_verified: 'true',
@@ -501,7 +562,7 @@ describe('GoogleAuthService', () => {
 
       prisma.user.findFirst.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue({ id: 'new-user', role: UserRole.ATTENDEE } as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       // Act
       await GoogleAuthService.authenticateWithGoogle(
@@ -521,6 +582,7 @@ describe('GoogleAuthService', () => {
     it('should respect ORGANIZER role for new users', async () => {
       // Arrange
       mockAxiosGet.mockResolvedValue({ data: {
+        aud: 'test-google-client-id',
         sub: mockGoogleUser.id,
         email: mockGoogleUser.email,
         email_verified: 'true',
@@ -528,7 +590,7 @@ describe('GoogleAuthService', () => {
 
       prisma.user.findFirst.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue({ id: 'new-user', role: UserRole.ORGANIZER } as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       // Act
       await GoogleAuthService.authenticateWithGoogle(
@@ -548,6 +610,7 @@ describe('GoogleAuthService', () => {
     it('should throw error for invalid role (ADMIN) during registration', async () => {
       // Arrange
       const mockTokenInfo = {
+        aud: 'test-google-client-id',
         sub: 'google-123',
         email: 'newuser@gmail.com',
         email_verified: 'true',
@@ -582,6 +645,7 @@ describe('GoogleAuthService', () => {
     it('should mark email as verified for Google users', async () => {
       // Arrange
       mockAxiosGet.mockResolvedValue({ data: {
+        aud: 'test-google-client-id',
         sub: mockGoogleUser.id,
         email: mockGoogleUser.email,
         email_verified: 'true',
@@ -589,7 +653,7 @@ describe('GoogleAuthService', () => {
 
       prisma.user.findFirst.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue({ id: 'new-user' } as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       // Act
       await GoogleAuthService.authenticateWithGoogle('valid-token');
@@ -603,9 +667,42 @@ describe('GoogleAuthService', () => {
       });
     });
 
+    it('should normalize email to lowercase', async () => {
+      // Arrange
+      mockAxiosGet.mockResolvedValue({ data: {
+        aud: 'test-google-client-id',
+        sub: mockGoogleUser.id,
+        email: 'MixedCase@Gmail.COM',
+        email_verified: 'true',
+      } });
+
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ id: 'new-user' } as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
+
+      // Act
+      await GoogleAuthService.authenticateWithGoogle('valid-token');
+
+      // Assert
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { googleId: mockGoogleUser.id },
+            { email: 'mixedcase@gmail.com' },
+          ],
+        },
+      });
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          email: 'mixedcase@gmail.com',
+        }),
+      });
+    });
+
     it('should throw error for SUSPENDED user', async () => {
       // Arrange
       const mockTokenInfo = {
+        aud: 'test-google-client-id',
         sub: 'google-123',
         email: 'suspended@gmail.com',
         email_verified: 'true',
@@ -636,6 +733,7 @@ describe('GoogleAuthService', () => {
     it('should parse name correctly when only full name provided', async () => {
       // Arrange
       mockAxiosGet.mockResolvedValue({ data: {
+        aud: 'test-google-client-id',
         sub: 'google-123',
         email: 'user@gmail.com',
         email_verified: 'true',
@@ -645,7 +743,7 @@ describe('GoogleAuthService', () => {
 
       prisma.user.findFirst.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue({ id: 'new-user' } as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       // Act
       await GoogleAuthService.authenticateWithGoogle('valid-token');
@@ -662,6 +760,7 @@ describe('GoogleAuthService', () => {
     it('should handle missing Google account email', async () => {
       // Arrange
       mockAxiosGet.mockResolvedValue({ data: {
+        aud: 'test-google-client-id',
         sub: 'google-123',
         // Missing email
         email_verified: 'true',
@@ -686,7 +785,7 @@ describe('GoogleAuthService', () => {
         status: UserStatus.ACTIVE,
       } as any);
       prisma.user.update.mockResolvedValue({} as any);
-      prisma.refreshToken.create.mockResolvedValue({} as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
       const testIp = '192.168.1.100';
       const testUserAgent = 'Mozilla/5.0';
@@ -700,13 +799,15 @@ describe('GoogleAuthService', () => {
         testUserAgent,
       );
 
-      // Assert
-      expect(prisma.refreshToken.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+      // Assert — now uses upsert via AuthService.saveRefreshToken (with hashing)
+      expect(prisma.refreshToken.upsert).toHaveBeenCalledWith({
+        where: { token: expect.any(String) },
+        create: expect.objectContaining({
           ipAddress: testIp,
           userAgent: testUserAgent,
           expiresAt: expect.any(Date),
         }),
+        update: expect.any(Object),
       });
     });
   });

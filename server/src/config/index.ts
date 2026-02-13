@@ -38,6 +38,7 @@ export const config = {
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-key-change-in-production-min-32-chars',
     expiresIn: process.env.JWT_EXPIRES_IN || '15m', // 15 minutes
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // 7 days
+    unsubscribeSecret: process.env.JWT_UNSUBSCRIBE_SECRET || 'dev-unsubscribe-secret-change-in-production-min-32',
   },
   
   cors: {
@@ -84,6 +85,13 @@ export const config = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+  },
+
+  apple: {
+    clientId: process.env.APPLE_CLIENT_ID || '',
+    teamId: process.env.APPLE_TEAM_ID || '',
+    keyId: process.env.APPLE_KEY_ID || '',
+    privateKeyPath: process.env.APPLE_PRIVATE_KEY_PATH || '',
   },
 
   socialMedia: {

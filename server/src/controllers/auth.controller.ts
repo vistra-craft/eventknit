@@ -48,7 +48,6 @@ export class AuthController {
         data: {
           user: result.user,
           accessToken: result.accessToken,
-          refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
           expiresIn: result.expiresIn,
         },
       });
@@ -83,7 +82,7 @@ export class AuthController {
       const userAgent = req.get('user-agent');
       const rememberMe = req.body.rememberMe === true;
 
-      const result = await AuthService.login(req.body, ipAddress, userAgent);
+      const result = await AuthService.login(req.body, ipAddress, userAgent, rememberMe);
 
       // Set refresh token as HttpOnly cookie
       // If rememberMe is true, extend cookie to 30 days, otherwise 7 days
@@ -104,7 +103,6 @@ export class AuthController {
         data: {
           user: result.user,
           accessToken: result.accessToken,
-          refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
           expiresIn: result.expiresIn,
         },
       });
@@ -271,7 +269,7 @@ export class AuthController {
           lastLoginAt: true,
           createdAt: true,
           updatedAt: true,
-          password: true,
+          password: true, // Only used for hasPassword check below — never sent in response
         },
       });
 
@@ -283,10 +281,7 @@ export class AuthController {
         return;
       }
 
-      // Check if user has a password set (for guest users)
-      const hasPassword = user.password !== null && user.password !== undefined;
-
-      // Remove password from response
+      const hasPassword = !!user.password;
       const { password: _password, ...userWithoutPassword } = user;
 
       res.status(200).json({
@@ -316,7 +311,8 @@ export class AuthController {
         return;
       }
 
-      const { firstName, lastName, otherName, phoneNumber, companyAffiliation, organizationName, businessEmail, email, avatar } = req.body;
+      // NOTE: email is NOT accepted here — use the dedicated /email/request-change flow
+      const { firstName, lastName, otherName, phoneNumber, companyAffiliation, organizationName, businessEmail, avatar } = req.body;
 
       const { ProfileService } = await import('../services/profile.service.js');
 
@@ -332,7 +328,6 @@ export class AuthController {
           companyAffiliation,
           organizationName,
           businessEmail,
-          email,
           avatar,
         },
       );
@@ -402,7 +397,6 @@ export class AuthController {
         data: {
           user: result.user,
           accessToken: result.accessToken,
-          refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
           expiresIn: result.expiresIn,
         },
       });
@@ -439,6 +433,45 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'Google authentication successful',
+        data: {
+          user: result.user,
+          accessToken: result.accessToken,
+          expiresIn: result.expiresIn,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Apple OAuth login/registration
+   */
+  static async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const { AppleAuthService } = await import('../services/apple-auth.service.js');
+      const result = await AppleAuthService.authenticateWithApple(
+        req.body.idToken,
+        req.body.role,
+        req.body.user,
+        ipAddress,
+        userAgent,
+      );
+
+      // Set refresh token as HttpOnly cookie
+      res.cookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Apple authentication successful',
         data: {
           user: result.user,
           accessToken: result.accessToken,
@@ -627,9 +660,58 @@ export class AuthController {
         data: {
           user: result.user,
           accessToken: result.accessToken,
-          refreshToken: result.refreshToken, // Also include in response for client-side storage if needed
           expiresIn: result.expiresIn,
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Request email change — sends code to new email, notifies old email
+   */
+  static async requestEmailChange(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      await AuthService.requestEmailChange(
+        req.user.id,
+        req.body.newEmail,
+        req.body.currentPassword,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification code sent to your new email address',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Confirm email change with the verification code
+   */
+  static async confirmEmailChange(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const result = await AuthService.confirmEmailChange(
+        req.user.id,
+        req.body.code,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Email changed successfully. Please log in again with your new email.',
+        data: { newEmail: result.newEmail },
       });
     } catch (error) {
       next(error);

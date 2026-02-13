@@ -1,7 +1,7 @@
 import type { Request } from 'express';
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
-import { ValidationError, NotFoundError } from '../utils/errors.js';
+import { NotFoundError } from '../utils/errors.js';
 import { uploadImageToCloudinary } from './cloudinary.service.js';
 
 export interface UpdateProfileData {
@@ -38,7 +38,7 @@ export class ProfileService {
   static async updateProfileWithAvatar(
     userId: string,
     file: Request['file'],
-    updateData: UpdateProfileData & { email?: string },
+    updateData: UpdateProfileData,
   ): Promise<ProfileUpdateResult> {
     // Fetch current user to validate
     const currentUser = await prisma.user.findUnique({
@@ -49,10 +49,8 @@ export class ProfileService {
       throw new NotFoundError('User not found');
     }
 
-    // Email cannot be changed once registered (immutability requirement)
-    if (updateData.email !== undefined && updateData.email !== currentUser.email) {
-      throw new ValidationError('Email address cannot be changed once registered');
-    }
+    // NOTE: Email changes are handled via the dedicated /email/request-change flow.
+    // The Joi validation schema strips email from updateData before it reaches here.
 
     let avatarUrl: string | null | undefined = undefined;
 

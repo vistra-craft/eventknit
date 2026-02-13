@@ -1,26 +1,12 @@
 import Joi from 'joi';
 
-// UserRole enum values (from Prisma schema)
-// Will be available after running: npm run prisma:generate
-const UserRoleValues = [
-  'SUPERADMIN',
-  'ADMIN_STAFF',
-  'MARKETER',
-  'SUPPORT',
-  'TELLER',
-  'ORGANIZER',
-  'ORGANIZER_STAFF',
-  'ORGANIZER_TELLER',
-  'ATTENDEE',
-] as const;
-
 // Eventbrite-style password requirements: 8+ chars, at least 1 letter and 1 number
 // Allows all printable ASCII characters (no forced uppercase or special chars)
 const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d).{8,128}$/;
 
 export const authValidations = {
   requestRegistrationCode: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
@@ -34,7 +20,7 @@ export const authValidations = {
   }),
 
   verifyRegistrationCode: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
@@ -65,7 +51,7 @@ export const authValidations = {
   }),
 
   register: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
@@ -96,22 +82,22 @@ export const authValidations = {
       'string.max': 'Company affiliation must not exceed 200 characters',
     }),
     role: Joi.string()
-      .valid(...UserRoleValues)
+      .valid('ATTENDEE', 'ORGANIZER')
       .optional()
       .default('ATTENDEE')
       .messages({
-        'any.only': 'Invalid role. Must be one of: ATTENDEE, ORGANIZER, etc.',
+        'any.only': 'Role must be either ATTENDEE or ORGANIZER',
       }),
     organizationName: Joi.string().trim().min(1).max(200).optional().allow('', null).messages({
       'string.max': 'Organization name must not exceed 200 characters',
     }),
-    businessEmail: Joi.string().email().optional().allow('', null).messages({
+    businessEmail: Joi.string().trim().lowercase().email().optional().allow('', null).messages({
       'string.email': 'Please provide a valid business email address',
     }),
   }),
 
   requestEmailOAuthCode: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
@@ -125,7 +111,7 @@ export const authValidations = {
   }),
 
   verifyEmailOAuthCode: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
@@ -156,14 +142,37 @@ export const authValidations = {
       }),
   }),
 
+  appleAuth: Joi.object({
+    authorizationCode: Joi.string().required().messages({
+      'any.required': 'Apple authorization code is required',
+    }),
+    idToken: Joi.string().required().messages({
+      'any.required': 'Apple ID token is required',
+    }),
+    role: Joi.string()
+      .valid('ATTENDEE', 'ORGANIZER')
+      .optional()
+      .default('ATTENDEE')
+      .messages({
+        'any.only': 'Role must be either ATTENDEE or ORGANIZER',
+      }),
+    user: Joi.object({
+      name: Joi.object({
+        firstName: Joi.string().allow('').optional(),
+        lastName: Joi.string().allow('').optional(),
+      }).optional(),
+    }).optional(),
+  }),
+
   login: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
     password: Joi.string().required().messages({
       'any.required': 'Password is required',
     }),
+    rememberMe: Joi.boolean().optional().default(false),
   }),
 
   refreshToken: Joi.object({
@@ -179,7 +188,7 @@ export const authValidations = {
   }),
 
   forgotPassword: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
@@ -210,7 +219,7 @@ export const authValidations = {
       .required()
       .messages({
         'string.min': 'Password must be at least 8 characters long',
-        'string.pattern.base': 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character',
+        'string.pattern.base': 'Password must be at least 8 characters and contain at least one letter and one number',
         'any.required': 'New password is required',
       }),
   }),
@@ -228,14 +237,14 @@ export const authValidations = {
   }),
 
   requestEmailVerification: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
   }),
 
   confirmEmailVerification: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
@@ -261,16 +270,14 @@ export const authValidations = {
       'string.max': 'Company affiliation must not exceed 200 characters',
     }),
     organizationName: Joi.string().trim().min(1).max(200).optional().allow(null, ''),
-    businessEmail: Joi.string().email().optional().allow(null, '').messages({
+    businessEmail: Joi.string().trim().lowercase().email().optional().allow(null, '').messages({
       'string.email': 'Please provide a valid business email address',
     }),
-    email: Joi.string().email().optional().messages({
-      'string.email': 'Please provide a valid email address',
-    }),
+    // NOTE: email is NOT accepted here — use the dedicated /email/request-change flow
   }),
 
   requestMagicLink: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
     }),
@@ -298,9 +305,27 @@ export const authValidations = {
   }),
 
   resendAccountInvitation: Joi.object({
-    email: Joi.string().email().required().messages({
+    email: Joi.string().trim().lowercase().email().required().messages({
       'string.email': 'Please provide a valid email address',
       'any.required': 'Email is required',
+    }),
+  }),
+
+  requestEmailChange: Joi.object({
+    newEmail: Joi.string().trim().lowercase().email().required().messages({
+      'string.email': 'Please provide a valid email address',
+      'any.required': 'New email is required',
+    }),
+    currentPassword: Joi.string().required().messages({
+      'any.required': 'Current password is required for email changes',
+    }),
+  }),
+
+  confirmEmailChange: Joi.object({
+    code: Joi.string().length(6).pattern(/^\d+$/).required().messages({
+      'string.length': 'Verification code must be 6 digits',
+      'string.pattern.base': 'Verification code must contain only digits',
+      'any.required': 'Verification code is required',
     }),
   }),
 };

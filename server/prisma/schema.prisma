@@ -197,6 +197,7 @@ model User {
 
   // OAuth provider IDs
   googleId        String?    @unique // Google OAuth user ID
+  appleId         String?    @unique // Apple Sign In user ID
   // Contact address information
   address         String?
   city            String?
@@ -262,6 +263,7 @@ model User {
   emailVerifications                EmailVerification[]
   passwordResets                    PasswordReset[]
   magicLinkTokens                   MagicLinkToken[]
+  pendingEmailChanges               PendingEmailChange[]
   kycDocuments                      KYCDocument[]
   organizerDirectors                OrganizerDirector[]          @relation("OrganizerDirectors")
   attendeeConsents                  AttendeeConsent[]            @relation("AttendeeConsents")
@@ -542,6 +544,24 @@ model MagicLinkToken {
   @@index([userId])
   @@index([expiresAt])
   @@index([used])
+}
+
+model PendingEmailChange {
+  id        String    @id @default(uuid())
+  userId    String
+  oldEmail  String
+  newEmail  String
+  code      String // 6-digit verification code (sent to new email)
+  expiresAt DateTime
+  verified  Boolean   @default(false)
+  verifiedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([newEmail])
+  @@index([expiresAt])
 }
 
 model KYCDocument {

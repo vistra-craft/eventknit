@@ -1,6 +1,6 @@
-# Authentication System - Developer Guide
+# Authentication System — Developer Guide
 
-This document provides a comprehensive walkthrough of the EventKnit authentication system, covering JWT tokens, OAuth integration, password security, and the complete auth flow.
+Unified documentation for the EventKnit authentication system across all platforms (Web, Mobile, Backend).
 
 ## Table of Contents
 
@@ -9,12 +9,14 @@ This document provides a comprehensive walkthrough of the EventKnit authenticati
 3. [User Roles & Hierarchy](#user-roles--hierarchy)
 4. [Token Management](#token-management)
 5. [Authentication Flows](#authentication-flows)
-6. [Frontend Implementation](#frontend-implementation)
-7. [Backend Implementation](#backend-implementation)
-8. [Security Features](#security-features)
-9. [OAuth Integration](#oauth-integration)
-10. [Protected Routes](#protected-routes)
+6. [OAuth Integration](#oauth-integration)
+7. [Client Implementation](#client-implementation)
+8. [Backend Implementation](#backend-implementation)
+9. [Security Features](#security-features)
+10. [API Endpoint Reference](#api-endpoint-reference)
 11. [Common Patterns & Best Practices](#common-patterns--best-practices)
+12. [Database Models](#database-models)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -22,16 +24,30 @@ This document provides a comprehensive walkthrough of the EventKnit authenticati
 
 The authentication system uses JWT (JSON Web Tokens) with a dual-token strategy:
 
-- **Access Token**: Short-lived (15 minutes), stored in localStorage
-- **Refresh Token**: Long-lived (7-30 days), stored in HTTP-only cookie
+- **Access Token**: Short-lived (15 minutes), returned in JSON response body
+- **Refresh Token**: Long-lived (7–30 days), sent as HTTP-only `Set-Cookie` header
+
+All clients (web browser, iOS, Android) share the same backend API. The backend is always the source of truth — clients differ only in how they store tokens and render UI.
+
+### Platform Comparison
+
+| Aspect | Web (React) | Mobile (Flutter) |
+|--------|-------------|-------------------|
+| **State Management** | React Context + useReducer | GetX (reactive observables) |
+| **Access Token Storage** | `localStorage` | `FlutterSecureStorage` (encrypted) |
+| **Refresh Token Storage** | HTTP-only cookie (automatic) | Extracted from `Set-Cookie` header via Dio interceptor → `FlutterSecureStorage` |
+| **Token Refresh** | Fetch interceptor with request queue | Dio `RefreshTokenInterceptor` with request queue |
+| **Google Sign-In** | Popup OAuth flow (access_token or id_token) | Native `google_sign_in` SDK → id_token |
+| **Apple Sign-In** | Not supported (web) | Native `sign_in_with_apple` SDK (iOS only) |
+| **Route Guards** | `<ProtectedRoute>` component | GetX middleware / manual checks |
+| **Offline Auth** | N/A (requires internet) | Cached tokens in `FlutterSecureStorage`; session persists offline |
 
 ### Key Characteristics
 
-- **Frontend**: React Context + useReducer for global auth state
 - **Backend**: Express with Prisma ORM, bcrypt for passwords
 - **Tokens**: JWT with separate secrets for access/refresh
-- **OAuth**: Google, Apple, and custom Email OAuth (passwordless)
-- **Security**: Rate limiting, breach detection, account status management
+- **OAuth**: Google, Apple, and Email OAuth (passwordless)
+- **Security**: Rate limiting, breach detection, account status management, token revocation
 
 ### Authentication Flow Diagram
 
@@ -67,70 +83,110 @@ The authentication system uses JWT (JSON Web Tokens) with a dual-token strategy:
                    ▼                      ▼
           ┌─────────────────┐    ┌─────────────────┐
           │  Return in JSON │    │ Set HTTP-only   │
-          │    Response     │    │    Cookie       │
+          │  Response Body  │    │  Set-Cookie     │
           └────────┬────────┘    └────────┬────────┘
                    │                      │
                    └──────────┬───────────┘
                               │
-                              ▼
-                   ┌─────────────────────┐
-                   │  Frontend receives  │
-                   │  stores access token│
-                   │  in localStorage    │
-                   └─────────────────────┘
+              ┌───────────────┼───────────────┐
+              │                               │
+              ▼                               ▼
+    ┌──────────────────┐            ┌──────────────────┐
+    │  Web: Store in   │            │  Mobile: Extract │
+    │  localStorage    │            │  from Set-Cookie │
+    │  (auto-cookie)   │            │  via interceptor │
+    └──────────────────┘            └──────────────────┘
 ```
 
 ---
 
 ## File Structure
 
+### Server
+
 ```
-eventknit/
-├── client/src/
-│   ├── types/
-│   │   └── auth.ts                    # User, AuthState, UserRole types
-│   │
-│   ├── contexts/
-│   │   └── AuthContext.tsx            # Global auth state provider
-│   │
-│   ├── hooks/
-│   │   ├── useAuth.ts                 # Main auth hook (login, logout, etc.)
-│   │   ├── useAuthContext.ts          # Context accessor hook
-│   │   └── authReducer.ts             # Auth state reducer
-│   │
-│   ├── lib/
-│   │   ├── api.ts                     # HTTP client with token refresh
-│   │   └── auth-api.ts                # Auth-specific API functions
-│   │
-│   ├── components/
-│   │   └── ProtectedRoute.tsx         # Route guard component
-│   │
-│   └── pages/auth/
-│       ├── SignIn.tsx                 # Login page
-│       ├── SignUp.tsx                 # Registration page
-│       ├── ForgotPassword.tsx         # Password reset request
-│       └── ResetPassword.tsx          # Password reset form
-│
-└── server/src/
-    ├── controllers/
-    │   └── auth.controller.ts         # HTTP request handlers
-    │
-    ├── services/
-    │   ├── auth.service.ts            # Core auth business logic
-    │   └── google-auth.service.ts     # Google OAuth verification
-    │
-    ├── routes/
-    │   └── auth.routes.ts             # Route definitions
-    │
-    ├── middleware/
-    │   └── auth.middleware.ts         # authenticate, authorize middlewares
-    │
-    ├── utils/
-    │   ├── jwt.ts                     # Token generation/verification
-    │   └── password.ts                # Hashing, breach checking
-    │
-    └── prisma/
-        └── schema.prisma              # User, RefreshToken, etc. models
+eventknit/server/src/
+├── controllers/
+│   └── auth.controller.ts         # HTTP request handlers
+├── services/
+│   ├── auth.service.ts            # Core auth business logic
+│   ├── google-auth.service.ts     # Google OAuth verification
+│   └── apple-auth.service.ts      # Apple Sign In verification
+├── routes/
+│   └── auth.routes.ts             # Route definitions
+├── middleware/
+│   └── auth.middleware.ts         # authenticate, authorize, optionalAuth
+├── validations/
+│   └── auth.validations.ts       # Joi request validation schemas
+├── utils/
+│   ├── jwt.ts                     # Token generation/verification
+│   └── password.ts                # Hashing, breach checking
+└── prisma/
+    └── schema.prisma              # User, RefreshToken, etc. models
+```
+
+### Web Client (React)
+
+```
+eventknit/client/src/
+├── types/
+│   └── auth.ts                    # User, AuthState, UserRole types
+├── contexts/
+│   └── AuthContext.tsx            # Global auth state provider
+├── hooks/
+│   ├── useAuth.ts                 # Main auth hook (login, logout, etc.)
+│   ├── useAuthContext.ts          # Context accessor hook
+│   └── authReducer.ts             # Auth state reducer
+├── lib/
+│   ├── api.ts                     # HTTP client with token refresh
+│   └── auth-api.ts                # Auth-specific API functions
+├── components/
+│   └── ProtectedRoute.tsx         # Route guard component
+└── pages/auth/
+    ├── SignIn.tsx                 # Login page
+    ├── SignUp.tsx                 # Registration page
+    ├── ForgotPassword.tsx         # Password reset request
+    └── ResetPassword.tsx          # Password reset form
+```
+
+### Mobile Client (Flutter)
+
+```
+eventknit_mobile/lib/
+├── domain/
+│   ├── entities/
+│   │   └── user.dart              # Freezed User entity + AuthTokens + LoginResult
+│   ├── repositories/
+│   │   └── auth_repository.dart   # Auth repository interface (abstract)
+│   └── usecases/auth/
+│       ├── login_usecase.dart
+│       ├── register_usecase.dart
+│       ├── logout_usecase.dart
+│       ├── get_current_user_usecase.dart
+│       ├── update_profile_usecase.dart
+│       ├── forgot_password_usecase.dart
+│       ├── change_password_usecase.dart
+│       └── social_auth_usecase.dart   # Google + Apple auth
+├── data/repositories/
+│   └── auth_repository_impl.dart  # Repository implementation (API calls)
+├── controllers/
+│   └── auth_controller.dart       # GetX auth state controller
+├── core/
+│   ├── network/
+│   │   ├── dio_client.dart        # Dio HTTP client (singleton)
+│   │   └── interceptors/
+│   │       ├── auth_interceptor.dart           # Adds Bearer token to requests
+│   │       ├── refresh_token_interceptor.dart   # Auto-refresh on 401
+│   │       └── cookie_token_interceptor.dart    # Extracts refreshToken from Set-Cookie
+│   ├── services/
+│   │   ├── api_client.dart        # Thin wrapper around DioClient
+│   │   └── storage_service.dart   # FlutterSecureStorage (tokens) + SharedPreferences (prefs)
+│   └── bindings/
+│       └── app_bindings.dart      # GetX dependency injection
+└── presentation/auth/screens/
+    ├── login_screen.dart          # Login screen
+    ├── signup_screen.dart         # Registration screen
+    └── forgot_password_screen.dart
 ```
 
 ---
@@ -140,62 +196,46 @@ eventknit/
 ### Role Definitions
 
 ```typescript
-// types/auth.ts
 enum UserRole {
   // Admin Tier (Platform Staff)
-  SUPERADMIN = 'SUPERADMIN',           // Full access, manage all
-  ADMIN_STAFF = 'ADMIN_STAFF',         // Admin operations
-  MARKETER = 'MARKETER',               // Marketing features
-  SUPPORT = 'SUPPORT',                 // Customer support
-  TELLER = 'TELLER',                   // Financial operations
+  SUPERADMIN = 'SUPERADMIN',
+  ADMIN_STAFF = 'ADMIN_STAFF',
+  MARKETER = 'MARKETER',
+  SUPPORT = 'SUPPORT',
+  TELLER = 'TELLER',
 
   // Organizer Tier (Event Creators)
-  ORGANIZER = 'ORGANIZER',             // Full organizer access
-  ORGANIZER_STAFF = 'ORGANIZER_STAFF', // Limited organizer access
-  ORGANIZER_TELLER = 'ORGANIZER_TELLER', // Organizer financial ops
+  ORGANIZER = 'ORGANIZER',
+  ORGANIZER_STAFF = 'ORGANIZER_STAFF',
+  ORGANIZER_TELLER = 'ORGANIZER_TELLER',
 
   // User Tier
-  ATTENDEE = 'ATTENDEE',               // Event attendees
+  ATTENDEE = 'ATTENDEE',
 }
 ```
 
-### Role Hierarchy
+### Role Hierarchy (used by `requireMinRole()` middleware)
 
-Used for `requireMinRole()` middleware:
-
-```typescript
-// server/src/middleware/auth.middleware.ts
-const roleHierarchy: Record<UserRole, number> = {
-  SUPERADMIN: 10,
-  ADMIN_STAFF: 8,
-  MARKETER: 7,
-  SUPPORT: 6,
-  TELLER: 5,
-  ORGANIZER: 4,
-  ORGANIZER_STAFF: 3,
-  ORGANIZER_TELLER: 2,
-  ATTENDEE: 1,
-};
+```
+SUPERADMIN (10) → ADMIN_STAFF (8) → MARKETER (7) → SUPPORT (6) → TELLER (5)
+→ ORGANIZER (4) → ORGANIZER_STAFF (3) → ORGANIZER_TELLER (2) → ATTENDEE (1)
 ```
 
 ### Account Status
 
-```typescript
-enum UserStatus {
-  ACTIVE = 'ACTIVE',           // Full access
-  DEACTIVATED = 'DEACTIVATED', // Can auth, restricted actions
-  SUSPENDED = 'SUSPENDED',     // Cannot authenticate
-}
-```
+| Status | Can Login | Can Perform Actions |
+|--------|-----------|-------------------|
+| `ACTIVE` | Yes | Full access |
+| `DEACTIVATED` | Yes | Restricted |
+| `SUSPENDED` | No | Blocked |
 
 ---
 
 ## Token Management
 
-### Token Configuration
+### Configuration
 
-```typescript
-// Environment variables
+```env
 JWT_SECRET=your-access-token-secret
 JWT_REFRESH_SECRET=your-refresh-token-secret
 JWT_EXPIRES_IN=15m
@@ -209,98 +249,48 @@ interface TokenPayload {
   userId: string;
   email: string;
   role: UserRole;
-  iat?: number;  // Issued at (auto-added)
-  exp?: number;  // Expiration (auto-added)
+  iat?: number;   // Issued at
+  exp?: number;   // Expiration
 }
 ```
 
-### Token Generation
+### Token Storage by Platform
 
-```typescript
-// server/src/utils/jwt.ts
-import jwt from 'jsonwebtoken';
+| Token | Web | Mobile | Duration |
+|-------|-----|--------|----------|
+| Access | `localStorage` | `FlutterSecureStorage` (AES encrypted) | 15 min |
+| Refresh | HTTP-only cookie (browser auto-sends) | `FlutterSecureStorage` (extracted from `Set-Cookie` by `CookieTokenInterceptor`) | 7–30 days |
 
-export const generateAccessToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, config.jwt.secret, {
-    expiresIn: config.jwt.expiresIn // "15m"
-  });
-};
+### Why Mobile Needs a Cookie Interceptor
 
-export const generateRefreshToken = (payload: TokenPayload): string => {
-  return jwt.sign(payload, config.jwt.refreshSecret, {
-    expiresIn: config.jwt.refreshExpiresIn // "7d"
-  });
-};
-```
+Browsers automatically store and send `Set-Cookie` headers. Mobile HTTP clients (Dio) do not. The `CookieTokenInterceptor` intercepts responses on auth endpoints (`/auth/login`, `/auth/register`, `/auth/google`, `/auth/apple`) and extracts the `refreshToken` from the `Set-Cookie` header, saving it to encrypted storage.
 
-### Token Storage Strategy
+```dart
+// core/network/interceptors/cookie_token_interceptor.dart
+class CookieTokenInterceptor extends Interceptor {
+  static const _authPaths = ['/auth/login', '/auth/register', '/auth/google', '/auth/apple'];
 
-| Token | Storage | Accessible By | Duration |
-|-------|---------|---------------|----------|
-| Access | localStorage | JavaScript | 15 minutes |
-| Refresh | HTTP-only cookie | Server only | 7-30 days |
-
-### Frontend Token Management
-
-```typescript
-// client/src/lib/api.ts
-const ACCESS_TOKEN_KEY = 'accessToken';
-
-export const getAccessToken = (): string | null => {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
-};
-
-export const setAccessToken = (token: string): void => {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
-};
-
-export const removeAccessToken = (): void => {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-};
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    if (_authPaths.any((path) => response.requestOptions.path.contains(path))) {
+      _extractAndSaveRefreshToken(response);
+    }
+    handler.next(response);
+  }
+}
 ```
 
 ### Automatic Token Refresh
 
-```typescript
-// client/src/lib/api.ts
-let isRefreshing = false;
-let refreshQueue: Array<(token: string) => void> = [];
+Both platforms implement a request-queuing pattern for concurrent 401 responses:
 
-const refreshAccessToken = async (): Promise<string> => {
-  if (isRefreshing) {
-    // Queue this request while refresh is in progress
-    return new Promise((resolve) => {
-      refreshQueue.push(resolve);
-    });
-  }
+1. First 401 triggers a refresh request (`POST /auth/refresh`)
+2. Subsequent 401s during refresh are queued (not duplicated)
+3. On refresh success: all queued requests are retried with the new access token
+4. On refresh failure: user is logged out
 
-  isRefreshing = true;
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include', // Send HTTP-only cookie
-    });
-
-    if (!response.ok) {
-      throw new Error('Token refresh failed');
-    }
-
-    const data = await response.json();
-    const newToken = data.data.accessToken;
-
-    setAccessToken(newToken);
-
-    // Process queued requests
-    refreshQueue.forEach(cb => cb(newToken));
-    refreshQueue = [];
-
-    return newToken;
-  } finally {
-    isRefreshing = false;
-  }
-};
-```
+**Web**: Implemented in `client/src/lib/api.ts` with a `refreshQueue` promise array.
+**Mobile**: Implemented in `core/network/interceptors/refresh_token_interceptor.dart` with a Dio `QueuedInterceptor`.
 
 ---
 
@@ -308,378 +298,264 @@ const refreshAccessToken = async (): Promise<string> => {
 
 ### 1. Email/Password Login
 
+**Endpoint**: `POST /auth/login`
+
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                        LOGIN FLOW                                │
-└──────────────────────────────────────────────────────────────────┘
-
-Frontend (SignIn.tsx)
-├── User enters email + password
-├── Optional: Check "Remember me"
-└── Submit → useAuth().login(email, password, rememberMe)
-
-useAuth Hook
-├── dispatch({ type: 'AUTH_START' })
-├── authApi.login({ email, password, rememberMe })
-└── POST /auth/login
-
-Backend (AuthController)
-├── Extract credentials from body
-├── AuthService.login(email, password, ipAddress, userAgent)
-│   ├── Find user by email
-│   ├── Compare password (bcrypt)
-│   ├── Check status !== SUSPENDED
-│   ├── Reset failed login attempts
-│   ├── Generate access + refresh tokens
-│   └── Save refresh token to database
-├── Set HTTP-only cookie (refreshToken)
-└── Return { user, accessToken, expiresIn }
-
-Frontend receives response
-├── dispatch({ type: 'AUTH_SUCCESS', payload: user })
-├── setAccessToken(accessToken)
-├── Determine dashboard route by role
-│   ├── ORGANIZER (needs onboarding) → /organizer/onboarding
-│   ├── ORGANIZER (complete) → /organizer/dashboard
-│   ├── Admin roles → /admin/dashboard
-│   └── ATTENDEE → /user/dashboard
-└── navigate(dashboardRoute)
+Client                              Server
+  │                                    │
+  │  POST /auth/login                  │
+  │  { email, password, rememberMe }   │
+  │ ──────────────────────────────────►│
+  │                                    ├── Find user by email
+  │                                    ├── Compare password (bcrypt)
+  │                                    ├── Check status ≠ SUSPENDED
+  │                                    ├── Reset failed login attempts
+  │                                    ├── Generate access + refresh tokens
+  │                                    ├── Store refresh token in DB
+  │                                    │
+  │  200 OK                            │
+  │  Set-Cookie: refreshToken=xxx      │
+  │  { user, accessToken, expiresIn }  │
+  │ ◄──────────────────────────────────│
+  │                                    │
+  ├── Store access token               │
+  ├── Navigate to dashboard            │
 ```
+
+**Remember Me**: When `rememberMe: true`, the refresh token cookie lasts 30 days instead of 7.
 
 ### 2. Registration (Code Verification)
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                     REGISTRATION FLOW                            │
-└──────────────────────────────────────────────────────────────────┘
+**Endpoints**: `POST /auth/register-code/request` → `POST /auth/register-code/verify`
 
-Step 1: Role Selection
-├── User selects ATTENDEE or ORGANIZER
-└── Proceed to step 2
+1. User selects role (ATTENDEE or ORGANIZER) and enters email
+2. Server sends 6-digit code (10-minute expiry) to email
+3. User enters code + password + name → server creates account, returns tokens
 
-Step 2: Email Verification
-├── User enters email
-├── POST /auth/register-code/request { email, role }
-│   ├── Check email not already ACTIVE
-│   ├── Generate 6-digit code (10-min expiry)
-│   ├── Store in EmailVerification table
-│   └── Send code via email
-└── Proceed to step 3
+Password requirements: 8+ characters, at least one letter and one number.
 
-Step 3: Complete Profile
-├── User enters:
-│   ├── Verification code (6 digits)
-│   ├── First name, Last name
-│   ├── Password (8+ chars, 1 letter, 1 number)
-│   └── Accept terms checkbox
-├── POST /auth/register-code/verify
-│   ├── Validate code and expiry
-│   ├── Check password breach (HaveIBeenPwned)
-│   ├── Hash password (bcrypt)
-│   ├── Create User with role
-│   │   └── ORGANIZER: onboardingCompleted = false
-│   ├── Mark verification as verified
-│   ├── Generate tokens
-│   └── Return { user, accessToken }
-├── dispatch({ type: 'AUTH_SUCCESS' })
-├── setAccessToken()
-└── Navigate to dashboard
-```
+### 3. Google Sign-In
 
-### 3. Password Reset
+**Endpoint**: `POST /auth/google`
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                   PASSWORD RESET FLOW                            │
-└──────────────────────────────────────────────────────────────────┘
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `token` | string | Yes | Google OAuth token |
+| `tokenType` | string | No | `id_token` (default) or `access_token` |
+| `role` | string | No | `ATTENDEE` (default) or `ORGANIZER` |
 
-Request Reset (ForgotPassword.tsx)
-├── User enters email
-├── POST /auth/password/reset-request { email }
-│   ├── Find user by email (silent fail if not found)
-│   ├── Generate reset token (1-hour expiry)
-│   ├── Store in PasswordReset table
-│   └── Send email with reset link
-└── Show "Check your email" message
+**Web flow**: Google popup → receives access_token or id_token → sends to backend.
+**Mobile flow**: Native `GoogleSignIn()` SDK → receives id_token → sends to backend.
 
-Reset Password (ResetPassword.tsx)
-├── User clicks link: /auth/reset-password?token=xxx
-├── Validate token presence
-├── User enters new password + confirm
-├── POST /auth/password/reset-confirm { token, password }
-│   ├── Find PasswordReset by token
-│   ├── Check expiry (1 hour max)
-│   ├── Check password breach
-│   ├── Hash new password
-│   ├── Update user.password
-│   ├── Mark token as used
-│   └── Optionally revoke all user tokens
-├── Show success message
-└── Redirect to /auth/signin
-```
+Server verifies the token with Google, then either logs in an existing user (matched by `googleId` or `email`) or creates a new account.
 
-### 4. Token Refresh
+### 4. Apple Sign-In (Mobile iOS Only)
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                    TOKEN REFRESH FLOW                            │
-└──────────────────────────────────────────────────────────────────┘
+**Endpoint**: `POST /auth/apple`
 
-API Request (any protected endpoint)
-├── Include Authorization: Bearer {accessToken}
-└── Send request
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `authorizationCode` | string | Yes | Apple authorization code |
+| `idToken` | string | Yes | Apple identity token |
+| `role` | string | No | `ATTENDEE` (default) or `ORGANIZER` |
+| `user.name.firstName` | string | No | Only sent on first authorization |
+| `user.name.lastName` | string | No | Only sent on first authorization |
 
-Backend middleware
-├── Verify access token
-├── Token expired? → Return 401
-└── Token valid? → Process request
+Apple only provides the user's name on the **first** authorization. The backend caches it. Subsequent sign-ins only receive the identity token.
 
-Frontend catches 401
-├── Check if already refreshing
-│   └── YES: Queue request
-├── POST /auth/refresh (credentials: include)
-│   ├── Extract refreshToken from cookie
-│   ├── Verify refresh token JWT
-│   ├── Find token in DB (not revoked)
-│   ├── Check expiry
-│   ├── Generate new access token
-│   ├── Generate new refresh token
-│   ├── Update refresh token in DB
-│   └── Return { accessToken }
-├── Set new HTTP-only cookie
-├── setAccessToken(newToken)
-├── Process queued requests
-└── Retry original request
-```
+### 5. Email OAuth (Passwordless)
 
-### 5. Logout
+**Endpoints**: `POST /auth/email-oauth/request` → `POST /auth/email-oauth/verify`
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                       LOGOUT FLOW                                │
-│                   (Hybrid Approach)                              │
-└──────────────────────────────────────────────────────────────────┘
+Code-based passwordless login. Works for both new and existing users — creates account if new, logs in if existing.
 
-Frontend (useAuth.logout)
-├── removeAccessToken()                  ← SYNC: Clear localStorage
-├── localStorage.removeItem('activeViewRole')
-├── dispatch({ type: 'AUTH_LOGOUT' })   ← SYNC: Clear state
-├── window.dispatchEvent('tokenChange') ← Notify components
-├── navigate('/', { replace: true })    ← SYNC: Navigate immediately
-└── authApi.logout().catch(...)         ← ASYNC: Fire-and-forget
+### 6. Magic Link Login
 
-Backend (optional, may not complete)
-├── Extract refreshToken from cookie
-├── Revoke token in database
-└── Return 200 OK
+**Endpoints**: `POST /auth/magic-link/request` → `GET /auth/magic-link/verify?token=xxx`
 
-Note: Logout is INSTANT for user experience.
-Server call is best-effort and non-blocking.
-```
+Sends a login link via email. Clicking the link auto-authenticates the user.
+
+### 7. Token Refresh
+
+**Endpoint**: `POST /auth/refresh`
+
+The refresh token is read from the `refreshToken` cookie (not the request body). Returns a new access token and rotates the refresh token.
+
+### 8. Password Reset
+
+**Endpoints**: `POST /auth/password/reset-request` → `POST /auth/password/reset-confirm`
+
+1. User submits email → server sends reset link (1-hour expiry)
+2. User clicks link → enters new password → server validates token, hashes password, revokes all refresh tokens
+
+The reset-request endpoint always returns success (doesn't reveal if the email exists).
+
+### 9. Logout
+
+**Endpoint**: `POST /auth/logout` (requires auth)
+
+**Web**: Instant client-side logout (clear localStorage, clear state, navigate). Server call is fire-and-forget.
+**Mobile**: `AuthController.logout()` calls backend, clears tokens from `FlutterSecureStorage`, resets state. Caller handles navigation.
 
 ---
 
-## Frontend Implementation
+## OAuth Integration
 
-### Auth Context & Provider
+### Google OAuth
+
+Server-side verification supports two token types:
 
 ```typescript
-// contexts/AuthContext.tsx
-interface AuthContextType {
-  state: AuthState;
-  dispatch: React.Dispatch<AuthAction>;
+// services/google-auth.service.ts
+// ID token: verified via https://oauth2.googleapis.com/tokeninfo?id_token=xxx
+// Access token: verified via https://www.googleapis.com/oauth2/v3/userinfo
+
+static async authenticateWithGoogle(token, tokenType, role, ip, ua) {
+  const googleUser = tokenType === 'id_token'
+    ? await this.verifyGoogleIdToken(token)
+    : await this.verifyGoogleAccessToken(token);
+
+  // Find by googleId → find by email → create new user
+  // Generate tokens, return auth response
 }
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
-
-  return (
-    <AuthContext.Provider value={{ state, dispatch }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
 ```
 
-### Auth Reducer
+### Apple Sign In
+
+Server-side verification:
 
 ```typescript
-// hooks/authReducer.ts
-type AuthAction =
-  | { type: 'AUTH_START' }
-  | { type: 'AUTH_SUCCESS'; payload: User }
-  | { type: 'AUTH_FAILURE'; payload: string }
-  | { type: 'AUTH_LOGOUT' }
-  | { type: 'AUTH_CLEAR_ERROR' }
-  | { type: 'UPDATE_USER'; payload: Partial<User> };
-
-export const authReducer = (state: AuthState, action: AuthAction): AuthState => {
-  switch (action.type) {
-    case 'AUTH_START':
-      return { ...state, isLoading: true, error: null };
-
-    case 'AUTH_SUCCESS':
-      return {
-        ...state,
-        user: action.payload,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      };
-
-    case 'AUTH_FAILURE':
-      return {
-        ...state,
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: action.payload,
-      };
-
-    case 'AUTH_LOGOUT':
-      return {
-        ...state,
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      };
-
-    case 'AUTH_CLEAR_ERROR':
-      return { ...state, error: null, isLoading: false };
-
-    case 'UPDATE_USER':
-      return {
-        ...state,
-        user: state.user ? { ...state.user, ...action.payload } : null,
-      };
-
-    default:
-      return state;
-  }
-};
+// services/apple-auth.service.ts
+static async authenticateWithApple(idToken, role, userData, ip, ua) {
+  // Verify idToken with Apple's JWKS endpoint
+  // Extract email and sub (Apple user ID) from token claims
+  // Find by appleId → find by email → create new user
+  // Use userData.name on first auth (Apple only sends name once)
+}
 ```
 
-### useAuth Hook
+### Native SDK Setup
+
+**Google Sign-In**:
+- iOS: Add `GoogleService-Info.plist` from Firebase Console
+- Android: Add `google-services.json` from Firebase Console
+
+**Apple Sign-In**:
+- iOS only: Add "Sign in with Apple" capability in Xcode → Runner → Signing & Capabilities
+
+---
+
+## Client Implementation
+
+### Web (React)
+
+**Auth state** is managed via React Context with a reducer:
 
 ```typescript
-// hooks/useAuth.ts
-export const useAuth = () => {
-  const { state, dispatch } = useAuthContext();
-  const navigate = useNavigate();
-
-  const login = async (email: string, password: string, rememberMe = false) => {
+// hooks/useAuth.ts — key methods
+const useAuth = () => {
+  const login = async (email, password, rememberMe) => {
     dispatch({ type: 'AUTH_START' });
-
-    try {
-      const response = await authApi.login({ email, password, rememberMe });
-
-      if (response.success && response.data) {
-        const { user, accessToken } = response.data;
-        dispatch({ type: 'AUTH_SUCCESS', payload: user });
-        setAccessToken(accessToken);
-
-        // Navigate based on role and onboarding status
-        const dashboardRoute = getDashboardRoute(user.role, user.onboardingCompleted);
-        navigate(dashboardRoute, { replace: true });
-      } else {
-        dispatch({ type: 'AUTH_FAILURE', payload: response.message || 'Login failed' });
-      }
-    } catch (error) {
-      dispatch({ type: 'AUTH_FAILURE', payload: 'An error occurred' });
+    const response = await authApi.login({ email, password, rememberMe });
+    if (response.success) {
+      dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user });
+      setAccessToken(response.data.accessToken);
+      navigate(getDashboardRoute(user.role));
     }
   };
 
   const logout = () => {
-    // Immediate client-side logout
     removeAccessToken();
-    localStorage.removeItem('activeViewRole');
     dispatch({ type: 'AUTH_LOGOUT' });
-    window.dispatchEvent(new Event('tokenChange'));
     navigate('/', { replace: true });
-
-    // Fire-and-forget server call
-    authApi.logout().catch(() => {});
-  };
-
-  const getDashboardRoute = (role: UserRole, onboardingCompleted?: boolean): string => {
-    if (role === UserRole.ORGANIZER && !onboardingCompleted) {
-      return '/organizer/onboarding';
-    }
-
-    const roleRoutes: Record<UserRole, string> = {
-      [UserRole.SUPERADMIN]: '/admin/dashboard',
-      [UserRole.ADMIN_STAFF]: '/admin/dashboard',
-      [UserRole.MARKETER]: '/admin/dashboard',
-      [UserRole.SUPPORT]: '/admin/dashboard',
-      [UserRole.TELLER]: '/admin/dashboard',
-      [UserRole.ORGANIZER]: '/organizer/dashboard',
-      [UserRole.ORGANIZER_STAFF]: '/organizer/dashboard',
-      [UserRole.ORGANIZER_TELLER]: '/organizer/dashboard',
-      [UserRole.ATTENDEE]: '/user/dashboard',
-    };
-
-    return roleRoutes[role] || '/';
-  };
-
-  return {
-    user: state.user,
-    isAuthenticated: state.isAuthenticated,
-    isLoading: state.isLoading,
-    error: state.error,
-    login,
-    logout,
-    register,
-    refreshProfile,
-    clearError,
-    getDashboardRoute,
+    authApi.logout().catch(() => {}); // Fire-and-forget
   };
 };
 ```
 
-### Auth API Client
+**Route protection** uses a `<ProtectedRoute>` component:
 
-```typescript
-// lib/auth-api.ts
-export const authApi = {
-  login: async (credentials: LoginCredentials) => {
-    return apiPost<AuthResponse>('/auth/login', credentials);
-  },
+```tsx
+<Route path="/organizer/dashboard" element={
+  <ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF]}>
+    <OrganizerDashboard />
+  </ProtectedRoute>
+} />
+```
 
-  register: async (data: RegisterData) => {
-    return apiPost<AuthResponse>('/auth/register', data);
-  },
+### Mobile (Flutter)
 
-  requestRegistrationCode: async (email: string, role: UserRole) => {
-    return apiPost('/auth/register-code/request', { email, role });
-  },
+**Auth state** is managed via a GetX `AuthController`:
 
-  verifyRegistrationCode: async (data: VerifyCodeData) => {
-    return apiPost<AuthResponse>('/auth/register-code/verify', data);
-  },
+```dart
+// controllers/auth_controller.dart — key pattern
+class AuthController extends GetxController {
+  final Rx<User?> user = Rx<User?>(null);
+  final RxBool isAuthenticated = false.obs;
+  final RxBool isLoading = false.obs;
+  final RxString error = ''.obs;
 
-  getProfile: async () => {
-    return apiGet<{ user: User }>('/auth/me');
-  },
+  Future<bool> login({required String email, required String password}) async {
+    isLoading.value = true;
+    error.value = '';
+    final result = await _loginUseCase(email: email, password: password);
+    final success = result.fold(
+      (failure) { error.value = failure.message; return false; },
+      (loginResult) { user.value = loginResult.user; isAuthenticated.value = true; return true; },
+    );
+    isLoading.value = false;
+    return success;
+  }
+}
+```
 
-  logout: async () => {
-    return apiPost('/auth/logout', {});
-  },
+**Social auth** uses native SDKs:
 
-  forgotPassword: async (email: string) => {
-    return apiPost('/auth/password/reset-request', { email });
-  },
+```dart
+// Google: Native SDK → id_token → POST /auth/google
+Future<bool> googleSignIn() async {
+  final googleUser = await GoogleSignIn().signIn();
+  final idToken = (await googleUser.authentication).idToken;
+  final result = await _socialAuthUseCase.googleAuth(idToken: idToken);
+  // Handle result...
+}
 
-  resetPassword: async (token: string, password: string) => {
-    return apiPost('/auth/password/reset-confirm', { token, password });
-  },
+// Apple: Native SDK → authorizationCode + identityToken → POST /auth/apple
+Future<bool> appleSignIn() async {
+  final credential = await SignInWithApple.getAppleIDCredential(
+    scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+  );
+  final result = await _socialAuthUseCase.appleAuth(
+    authorizationCode: credential.authorizationCode,
+    idToken: credential.identityToken!,
+    firstName: credential.givenName,
+    lastName: credential.familyName,
+  );
+  // Handle result...
+}
+```
 
-  googleAuth: async (token: string, tokenType: 'id_token' | 'access_token', role?: UserRole) => {
-    return apiPost<AuthResponse>('/auth/google', { token, tokenType, role });
-  },
-};
+**Interceptor chain** (order matters):
+
+```
+Request → CookieTokenInterceptor → AuthInterceptor → RefreshTokenInterceptor → LoggingInterceptor → Server
+```
+
+1. `CookieTokenInterceptor`: On response, extracts `refreshToken` from `Set-Cookie` on auth endpoints
+2. `AuthInterceptor`: Adds `Authorization: Bearer <accessToken>` header to all requests
+3. `RefreshTokenInterceptor`: On 401, queues requests, refreshes token, retries. On refresh failure → navigates to login
+4. `LoggingInterceptor`: Debug logging
+
+**Role-based routing** on login:
+
+```dart
+// login_screen.dart
+void _routeBasedOnRole(dynamic user) {
+  final role = user.role.value;
+  if (role == 'SUPERADMIN' || role == 'ADMIN_STAFF') Get.offAllNamed('/admin');
+  else if (role == 'ORGANIZER' || ...) Get.offAllNamed('/organizer');
+  else Get.offAllNamed('/home');
+}
 ```
 
 ---
@@ -688,791 +564,267 @@ export const authApi = {
 
 ### Auth Service
 
+The `AuthService` class contains all core auth business logic:
+
 ```typescript
-// services/auth.service.ts
-export class AuthService {
-  static async login(
-    email: string,
-    password: string,
-    ipAddress?: string,
-    userAgent?: string
-  ): Promise<AuthResponse> {
-    // Find user
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !user.password) {
-      throw new AuthenticationError('Invalid credentials');
-    }
-
-    // Check status
-    if (user.status === UserStatus.SUSPENDED) {
-      throw new AuthenticationError('Account is suspended');
-    }
-
-    // Verify password
-    const isValid = await comparePassword(password, user.password);
-    if (!isValid) {
-      await this.incrementFailedAttempts(user.id);
-      throw new AuthenticationError('Invalid credentials');
-    }
-
-    // Reset failed attempts on success
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        failedLoginAttempts: 0,
-        lastLoginAt: new Date(),
-      },
-    });
-
-    // Generate tokens
-    const { accessToken, refreshToken, expiresIn } = await this.generateTokens(user);
-
-    // Save refresh token
-    await this.saveRefreshToken(user.id, refreshToken);
-
-    return {
-      user: this.sanitizeUser(user),
-      accessToken,
-      refreshToken,
-      expiresIn,
-    };
-  }
-
-  static async generateTokens(user: User) {
-    const payload = {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    };
-
-    const accessToken = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken(payload);
-    const expiresIn = parseExpiresIn(config.jwt.expiresIn);
-
-    return { accessToken, refreshToken, expiresIn };
-  }
-
-  static async refreshToken(
-    token: string,
-    ipAddress?: string,
-    userAgent?: string
-  ): Promise<{ accessToken: string; expiresIn: number }> {
-    // Verify token
-    const payload = verifyRefreshToken(token);
-
-    // Find in database
-    const storedToken = await prisma.refreshToken.findUnique({
-      where: { token },
-      include: { user: true },
-    });
-
-    if (!storedToken || storedToken.revokedAt) {
-      throw new AuthenticationError('Invalid refresh token');
-    }
-
-    if (storedToken.expiresAt < new Date()) {
-      throw new AuthenticationError('Refresh token expired');
-    }
-
-    // Generate new tokens
-    const newPayload = {
-      userId: storedToken.user.id,
-      email: storedToken.user.email,
-      role: storedToken.user.role,
-    };
-
-    const accessToken = generateAccessToken(newPayload);
-    const newRefreshToken = generateRefreshToken(newPayload);
-    const expiresIn = parseExpiresIn(config.jwt.expiresIn);
-
-    // Update refresh token in DB
-    await prisma.refreshToken.update({
-      where: { id: storedToken.id },
-      data: {
-        token: newRefreshToken,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    });
-
-    return { accessToken, expiresIn, refreshToken: newRefreshToken };
-  }
-}
+// Key methods
+AuthService.login(credentials, ip, userAgent, rememberMe) → { user, accessToken, refreshToken, expiresIn }
+AuthService.register(data) → { user, accessToken, refreshToken }
+AuthService.requestRegistrationCode(email, role) → void
+AuthService.verifyRegistrationCode(email, code, password, firstName, lastName) → { user, accessToken, refreshToken }
+AuthService.refreshToken(token, ip, userAgent) → { accessToken, refreshToken, expiresIn }
+AuthService.logout(refreshToken) → void
+AuthService.forgotPassword(email, ip) → void
+AuthService.resetPassword(token, password, ip) → void
+AuthService.changePassword(userId, currentPassword, newPassword) → void
+AuthService.setPassword(userId, password) → void
+AuthService.requestEmailOAuthCode(email, role) → void
+AuthService.verifyEmailOAuthCode(email, code, ip, userAgent) → { user, accessToken, refreshToken }
+AuthService.requestMagicLink(email) → void
+AuthService.verifyMagicLink(token, ip, userAgent) → { user, accessToken, refreshToken }
+AuthService.requestEmailChange(userId, newEmail, currentPassword) → void
+AuthService.confirmEmailChange(userId, code) → { newEmail }
 ```
 
-### Auth Controller
+### Auth Controller Response Pattern
+
+All auth endpoints that return tokens follow this pattern:
 
 ```typescript
-// controllers/auth.controller.ts
-export class AuthController {
-  static async login(req: Request, res: Response, next: NextFunction) {
-    try {
-      const { email, password, rememberMe } = req.body;
-      const ipAddress = req.ip;
-      const userAgent = req.get('user-agent');
+// Set refresh token as HttpOnly cookie (NEVER in response body)
+res.cookie('refreshToken', result.refreshToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (30 days if rememberMe)
+});
 
-      const result = await AuthService.login(email, password, ipAddress, userAgent);
-
-      // Set HTTP-only cookie
-      const cookieMaxAge = rememberMe
-        ? 30 * 24 * 60 * 60 * 1000  // 30 days
-        : 7 * 24 * 60 * 60 * 1000;  // 7 days
-
-      res.cookie('refreshToken', result.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: cookieMaxAge,
-      });
-
-      res.json({
-        success: true,
-        data: {
-          user: result.user,
-          accessToken: result.accessToken,
-          expiresIn: result.expiresIn,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  static async refresh(req: Request, res: Response, next: NextFunction) {
-    try {
-      const refreshToken = req.cookies.refreshToken;
-
-      if (!refreshToken) {
-        throw new AuthenticationError('No refresh token');
-      }
-
-      const result = await AuthService.refreshToken(
-        refreshToken,
-        req.ip,
-        req.get('user-agent')
-      );
-
-      // Set new refresh token cookie
-      res.cookie('refreshToken', result.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      res.json({
-        success: true,
-        data: {
-          accessToken: result.accessToken,
-          expiresIn: result.expiresIn,
-        },
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-}
+// Return access token and user in response body
+res.json({
+  success: true,
+  data: {
+    user: result.user,
+    accessToken: result.accessToken,
+    expiresIn: result.expiresIn,   // seconds until expiry
+  },
+});
 ```
 
 ### Auth Middleware
 
 ```typescript
 // middleware/auth.middleware.ts
-export const authenticate = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new AuthenticationError('No token provided');
-    }
-
-    const token = authHeader.split(' ')[1];
-    const payload = verifyAccessToken(token);
-
-    // Fetch user from database
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-    });
-
-    if (!user) {
-      throw new AuthenticationError('User not found');
-    }
-
-    if (user.status === UserStatus.SUSPENDED) {
-      throw new AuthenticationError('Account suspended');
-    }
-
-    req.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role as UserRole,
-      status: user.status,
-    };
-
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const authorize = (...allowedRoles: UserRole[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user) {
-      return next(new AuthenticationError('Not authenticated'));
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      return next(new AuthorizationError('Insufficient permissions'));
-    }
-
-    next();
-  };
-};
-
-export const optionalAuth = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      const payload = verifyAccessToken(token);
-
-      const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
-      });
-
-      if (user && user.status !== UserStatus.SUSPENDED) {
-        req.user = {
-          id: user.id,
-          email: user.email,
-          role: user.role as UserRole,
-          status: user.status,
-        };
-      }
-    }
-
-    next();
-  } catch {
-    // Silently continue without auth
-    next();
-  }
-};
+authenticate      // Verifies Bearer token, attaches req.user, rejects if invalid
+authorize(...roles) // Checks req.user.role is in allowed roles
+optionalAuth      // Same as authenticate but continues silently if no token
+requireMinRole(role) // Checks req.user.role meets minimum hierarchy level
 ```
 
-### Auth Routes
+### Validation
 
-```typescript
-// routes/auth.routes.ts
-const router = Router();
+All auth endpoints use Joi validation via `validate()` middleware. See `server/src/validations/auth.validations.ts` for exact schemas.
 
-// Public routes (rate limited)
-router.post('/login', ipAuthRateLimiter, AuthController.login);
-router.post('/register', ipAuthRateLimiter, AuthController.register);
-router.post('/register-code/request', ipAuthRateLimiter, AuthController.requestRegistrationCode);
-router.post('/register-code/verify', ipAuthRateLimiter, AuthController.verifyRegistrationCode);
-router.post('/refresh', AuthController.refresh);
-router.post('/password/reset-request', ipAuthRateLimiter, AuthController.forgotPassword);
-router.post('/password/reset-confirm', AuthController.resetPassword);
-
-// OAuth routes
-router.post('/google', ipAuthRateLimiter, AuthController.googleAuth);
-router.post('/apple', ipAuthRateLimiter, AuthController.appleAuth);
-router.post('/email-oauth/request', ipAuthRateLimiter, AuthController.requestEmailOAuth);
-router.post('/email-oauth/verify', ipAuthRateLimiter, AuthController.verifyEmailOAuth);
-
-// Protected routes
-router.post('/logout', authenticate, AuthController.logout);
-router.get('/me', authenticate, AuthController.getProfile);
-router.put('/profile', authenticate, upload.single('avatar'), AuthController.updateProfile);
-router.post('/password/change', authenticate, AuthController.changePassword);
-
-export default router;
-```
+Password regex: `^(?=.*[a-zA-Z])(?=.*\d).{8,128}$` — at least 8 chars, one letter, one number.
 
 ---
 
 ## Security Features
 
-### 1. Password Security
+### Password Security
+
+- **Hashing**: bcrypt with 12 salt rounds
+- **Breach checking**: HaveIBeenPwned API with k-anonymity (only SHA-1 prefix sent)
+- **Requirements**: 8+ chars, at least one letter, one number
+
+### Rate Limiting
+
+| Limiter | Scope | Limit |
+|---------|-------|-------|
+| `ipAuthRateLimiter` | All auth routes | 100 requests per 15 min per IP |
+| `authRateLimiter` | Login, register, OAuth | 5 attempts per minute |
+
+### Cookie Security
 
 ```typescript
-// utils/password.ts
-import bcrypt from 'bcrypt';
-import crypto from 'crypto';
-
-const SALT_ROUNDS = 12;
-
-export const hashPassword = async (password: string): Promise<string> => {
-  return bcrypt.hash(password, SALT_ROUNDS);
-};
-
-export const comparePassword = async (
-  plainPassword: string,
-  hashedPassword: string
-): Promise<boolean> => {
-  return bcrypt.compare(plainPassword, hashedPassword);
-};
-
-// HaveIBeenPwned breach check (k-anonymity)
-export const checkPasswordBreach = async (password: string): Promise<number> => {
-  const sha1 = crypto.createHash('sha1').update(password).digest('hex').toUpperCase();
-  const prefix = sha1.slice(0, 5);
-  const suffix = sha1.slice(5);
-
-  try {
-    const response = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`);
-    const text = await response.text();
-
-    const lines = text.split('\n');
-    for (const line of lines) {
-      const [hashSuffix, count] = line.split(':');
-      if (hashSuffix === suffix) {
-        return parseInt(count, 10);
-      }
-    }
-    return 0;
-  } catch {
-    // Non-blocking: Don't prevent registration if API is down
-    return 0;
-  }
-};
-```
-
-### 2. Rate Limiting
-
-```typescript
-// middleware/rateLimiter.ts
-import rateLimit from 'express-rate-limit';
-
-export const ipAuthRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
-  message: {
-    success: false,
-    message: 'Too many requests, please try again later',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-export const authRateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 5, // 5 attempts per minute for login
-  message: {
-    success: false,
-    message: 'Too many login attempts, please try again later',
-  },
-});
-```
-
-### 3. Cookie Security
-
-```typescript
-// Cookie configuration for refresh tokens
-res.cookie('refreshToken', token, {
-  httpOnly: true,      // JS cannot access (XSS protection)
+{
+  httpOnly: true,      // JavaScript cannot access (XSS protection)
   secure: true,        // HTTPS only in production
   sameSite: 'strict',  // CSRF protection
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-});
-```
-
-### 4. Token Revocation
-
-```typescript
-// Revoke all user tokens (on password change, security concern)
-static async revokeAllUserTokens(userId: string, reason?: string): Promise<void> {
-  await prisma.refreshToken.updateMany({
-    where: {
-      userId,
-      revokedAt: null,
-    },
-    data: {
-      revokedAt: new Date(),
-    },
-  });
-
-  logger.info(`Revoked all tokens for user ${userId}. Reason: ${reason}`);
+  maxAge: 7 * 24 * 60 * 60 * 1000,
 }
 ```
 
-### 5. Failed Login Tracking
+### Token Revocation
+
+All user refresh tokens are revoked on:
+- Password change
+- Password reset
+- Account suspension
+- Manual admin action
 
 ```typescript
-// Track failed login attempts
-static async incrementFailedAttempts(userId: string): Promise<void> {
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      failedLoginAttempts: { increment: 1 },
-    },
-  });
+AuthService.revokeAllUserTokens(userId, reason)
+```
 
-  // Optional: Suspend after too many failures
-  if (user.failedLoginAttempts >= 10) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { status: UserStatus.SUSPENDED },
-    });
-    logger.warn(`User ${userId} suspended due to too many failed attempts`);
-  }
-}
+### Failed Login Tracking
+
+- Each failed attempt increments `failedLoginAttempts`
+- After 10 failures, the account is automatically suspended
+- Successful login resets the counter
+
+### Mobile-Specific Security
+
+- **Encrypted token storage**: `FlutterSecureStorage` uses AES encryption backed by Android Keystore / iOS Keychain
+- **Token migration**: On first launch after the security upgrade, tokens are migrated from `SharedPreferences` to `FlutterSecureStorage`
+- **Certificate pinning**: Planned for production
+- **Biometric unlock**: Planned for sensitive operations
+
+### Error Sanitization
+
+The mobile login screen sanitizes auth error messages to avoid leaking whether an email or password was incorrect:
+
+```dart
+// If message contains 'password', 'email', 'credential', etc.
+// → Returns generic "Invalid email or password"
 ```
 
 ---
 
-## OAuth Integration
+## API Endpoint Reference
 
-### Google OAuth
+All endpoints are prefixed with `/api/v1/auth`.
 
-```typescript
-// services/google-auth.service.ts
-export class GoogleAuthService {
-  static async verifyGoogleIdToken(idToken: string): Promise<GoogleUserInfo> {
-    const response = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
-    );
+### Public Endpoints
 
-    if (!response.ok) {
-      throw new AuthenticationError('Invalid Google token');
-    }
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/login` | Email/password login |
+| POST | `/register` | Legacy registration |
+| POST | `/signup` | Alias for `/register` |
+| POST | `/register-code/request` | Request registration verification code |
+| POST | `/register-code/verify` | Verify code and create account |
+| POST | `/email-oauth/request` | Request passwordless login code |
+| POST | `/email-oauth/verify` | Verify passwordless code |
+| POST | `/google` | Google OAuth login/registration |
+| POST | `/apple` | Apple Sign In login/registration |
+| POST | `/refresh` | Refresh access token (cookie-based) |
+| GET | `/verify-email` | Verify email via token link |
+| POST | `/verify-email/request` | Request email verification code |
+| POST | `/verify-email/confirm` | Confirm email with code |
+| POST | `/password/reset-request` | Request password reset |
+| POST | `/forgot-password` | Alias for reset-request |
+| POST | `/password/reset-confirm` | Reset password with token |
+| POST | `/reset-password` | Alias for reset-confirm |
+| POST | `/create-account` | Create account from invitation |
+| POST | `/resend-invitation` | Resend invitation email |
+| POST | `/magic-link/request` | Request magic link login |
+| GET | `/magic-link/verify` | Verify magic link token |
+| GET | `/public-key` | Get Ed25519 public key for offline ticket verification |
 
-    const data = await response.json();
+### Protected Endpoints (require `Authorization: Bearer <token>`)
 
-    return {
-      id: data.sub,
-      email: data.email,
-      name: data.name,
-      picture: data.picture,
-      emailVerified: data.email_verified === 'true',
-    };
-  }
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/logout` | Logout (revokes refresh token) |
+| GET | `/me` | Get current user profile |
+| GET | `/profile` | Alias for `/me` |
+| PUT | `/profile` | Update profile (multipart/form-data for avatar) |
+| POST | `/email/request-change` | Request email change (sends code to new email) |
+| POST | `/email/confirm-change` | Confirm email change with code |
+| POST | `/password/change` | Change password (requires current password) |
+| POST | `/password/setup` | Set password for OAuth/guest users (no existing password) |
 
-  static async verifyGoogleAccessToken(accessToken: string): Promise<GoogleUserInfo> {
-    const response = await fetch(
-      `https://www.googleapis.com/oauth2/v3/userinfo`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }
-    );
+### Standard Auth Response (Token-Issuing Endpoints)
 
-    if (!response.ok) {
-      throw new AuthenticationError('Invalid Google access token');
-    }
+Applies to: login, register, register-code/verify, email-oauth/verify, google, apple, create-account, magic-link/verify.
 
-    return response.json();
-  }
-}
-
-// Usage in AuthService
-static async googleAuth(
-  token: string,
-  tokenType: 'id_token' | 'access_token',
-  role?: UserRole
-): Promise<AuthResponse> {
-  // Verify token with Google
-  const googleUser = tokenType === 'id_token'
-    ? await GoogleAuthService.verifyGoogleIdToken(token)
-    : await GoogleAuthService.verifyGoogleAccessToken(token);
-
-  // Find or create user
-  let user = await prisma.user.findUnique({
-    where: { googleId: googleUser.id },
-  });
-
-  if (!user) {
-    user = await prisma.user.findUnique({
-      where: { email: googleUser.email },
-    });
-
-    if (user) {
-      // Link Google to existing account
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { googleId: googleUser.id },
-      });
-    } else {
-      // Create new user
-      user = await prisma.user.create({
-        data: {
-          email: googleUser.email,
-          googleId: googleUser.id,
-          firstName: googleUser.name?.split(' ')[0],
-          lastName: googleUser.name?.split(' ').slice(1).join(' '),
-          avatar: googleUser.picture,
-          role: role || UserRole.ATTENDEE,
-          status: UserStatus.ACTIVE,
-          isEmailVerified: true,
-        },
-      });
-    }
-  }
-
-  // Generate tokens
-  return this.generateAuthResponse(user);
-}
-```
-
-### Email OAuth (Passwordless)
-
-```typescript
-// Passwordless authentication via email code
-static async requestEmailOAuthCode(email: string, role?: UserRole): Promise<void> {
-  // Generate 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-  // Store code
-  await prisma.emailVerification.create({
-    data: {
-      email,
-      code,
-      role,
-      expiresAt,
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "id": "uuid",
+      "email": "user@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "role": "ATTENDEE",
+      "status": "ACTIVE",
+      "isEmailVerified": true,
+      "hasPassword": true,
+      "onboardingCompleted": true
     },
-  });
-
-  // Send email
-  await emailService.sendVerificationCode(email, code);
-}
-
-static async verifyEmailOAuthCode(email: string, code: string): Promise<AuthResponse> {
-  // Find verification record
-  const verification = await prisma.emailVerification.findFirst({
-    where: {
-      email,
-      code,
-      verified: false,
-      expiresAt: { gt: new Date() },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  if (!verification) {
-    throw new AuthenticationError('Invalid or expired code');
+    "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+    "expiresIn": 900
   }
-
-  // Find or create user
-  let user = await prisma.user.findUnique({ where: { email } });
-
-  if (!user) {
-    user = await prisma.user.create({
-      data: {
-        email,
-        role: verification.role || UserRole.ATTENDEE,
-        status: UserStatus.ACTIVE,
-        isEmailVerified: true,
-      },
-    });
-  }
-
-  // Mark verification as used
-  await prisma.emailVerification.update({
-    where: { id: verification.id },
-    data: { verified: true, verifiedAt: new Date() },
-  });
-
-  // Generate tokens
-  return this.generateAuthResponse(user);
 }
 ```
 
----
+The `refreshToken` is NOT in the response body. It is set as a `Set-Cookie` HTTP header:
 
-## Protected Routes
-
-### Frontend Route Guard
-
-```tsx
-// components/ProtectedRoute.tsx
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  allowedRoles?: UserRole[];
-}
-
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  children,
-  allowedRoles,
-}) => {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const location = useLocation();
-
-  // Show loading spinner
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
-    return <Navigate to="/auth/signin" state={{ from: location }} replace />;
-  }
-
-  // Check role authorization
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    const dashboardRoute = getDashboardRoute(user.role);
-    return <Navigate to={dashboardRoute} replace />;
-  }
-
-  // Check organizer onboarding
-  if (user?.role === UserRole.ORGANIZER && !user.onboardingCompleted) {
-    if (!location.pathname.startsWith('/organizer/onboarding')) {
-      return <Navigate to="/organizer/onboarding" replace />;
-    }
-  }
-
-  return <>{children}</>;
-};
 ```
-
-### Usage in Routes
-
-```tsx
-// App.tsx
-<Routes>
-  {/* Public routes */}
-  <Route path="/auth/signin" element={<SignIn />} />
-  <Route path="/auth/signup" element={<SignUp />} />
-
-  {/* Protected routes */}
-  <Route
-    path="/organizer/dashboard"
-    element={
-      <ProtectedRoute allowedRoles={[UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF]}>
-        <OrganizerDashboard />
-      </ProtectedRoute>
-    }
-  />
-
-  <Route
-    path="/admin/dashboard"
-    element={
-      <ProtectedRoute allowedRoles={[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]}>
-        <AdminDashboard />
-      </ProtectedRoute>
-    }
-  />
-</Routes>
+Set-Cookie: refreshToken=eyJhbGciOiJIUzI1NiIs...; HttpOnly; Secure; SameSite=Strict; Max-Age=604800
 ```
 
 ---
 
 ## Common Patterns & Best Practices
 
-### 1. Always Check Auth State Before Actions
+### Always Check Auth Before Actions
 
+**Web:**
 ```typescript
-const { user, isAuthenticated } = useAuth();
-
-const handleAction = () => {
-  if (!isAuthenticated) {
-    navigate('/auth/signin');
-    return;
-  }
-
-  // Proceed with action
-};
+const { isAuthenticated } = useAuth();
+if (!isAuthenticated) navigate('/auth/signin');
 ```
 
-### 2. Handle Token Expiration Gracefully
-
-```typescript
-// The API client handles this automatically
-// But for manual checks:
-const makeAuthenticatedRequest = async () => {
-  try {
-    const response = await apiGet('/protected-endpoint');
-    return response;
-  } catch (error) {
-    if (error.status === 401) {
-      // Token refresh will be attempted automatically
-      // If it fails, user will be logged out
-    }
-    throw error;
-  }
-};
+**Mobile:**
+```dart
+final auth = Get.find<AuthController>();
+if (!auth.isLoggedIn) Get.toNamed('/login');
 ```
 
-### 3. Protect Sensitive Operations
+### Role-Based UI
 
-```typescript
-// Backend: Always verify user owns the resource
-static async updateEvent(eventId: string, userId: string, data: UpdateEventData) {
-  const event = await prisma.event.findUnique({ where: { id: eventId } });
-
-  if (!event) {
-    throw new NotFoundError('Event not found');
-  }
-
-  if (event.organizerId !== userId) {
-    throw new AuthorizationError('You do not own this event');
-  }
-
-  // Proceed with update
-}
-```
-
-### 4. Use Role-Based UI
-
+**Web:**
 ```tsx
-const { user } = useAuth();
-
-return (
-  <div>
-    {user?.role === UserRole.ORGANIZER && (
-      <OrganizerFeatures />
-    )}
-
-    {[UserRole.SUPERADMIN, UserRole.ADMIN_STAFF].includes(user?.role) && (
-      <AdminFeatures />
-    )}
-  </div>
-);
+{user?.role === UserRole.ORGANIZER && <OrganizerFeatures />}
 ```
 
-### 5. Secure Password Requirements
+**Mobile:**
+```dart
+if (auth.currentUser?.role == UserRole.ORGANIZER) showOrganizerUI();
+```
+
+### Protect Sensitive Backend Operations
 
 ```typescript
-// Frontend validation
-const validatePassword = (password: string): string[] => {
-  const errors: string[] = [];
-
-  if (password.length < 8) {
-    errors.push('Password must be at least 8 characters');
-  }
-  if (!/[a-zA-Z]/.test(password)) {
-    errors.push('Password must contain at least one letter');
-  }
-  if (!/\d/.test(password)) {
-    errors.push('Password must contain at least one number');
-  }
-
-  return errors;
-};
+// Always verify the user owns the resource
+if (event.organizerId !== req.user.id) {
+  throw new AuthorizationError('You do not own this event');
+}
 ```
 
 ---
 
 ## Database Models
 
-### User Model
+### User
 
 ```prisma
 model User {
   id                  String      @id @default(uuid())
   email               String      @unique
   password            String?     // Optional for OAuth users
+
   firstName           String?
   lastName            String?
+  phoneNumber         String?
+  avatar              String?
 
-  // OAuth
+  // OAuth identifiers
   googleId            String?     @unique
+  appleId             String?     @unique
 
   // Account
   role                UserRole    @default(ATTENDEE)
@@ -1487,7 +839,6 @@ model User {
   // Security
   failedLoginAttempts Int         @default(0)
   lastLoginAt         DateTime?
-  avatar              String?
 
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
@@ -1499,7 +850,7 @@ model User {
 }
 ```
 
-### Supporting Models
+### RefreshToken
 
 ```prisma
 model RefreshToken {
@@ -1511,7 +862,11 @@ model RefreshToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+```
 
+### Supporting Models
+
+```prisma
 model EmailVerification {
   id         String    @id @default(uuid())
   email      String
@@ -1520,8 +875,7 @@ model EmailVerification {
   verified   Boolean   @default(false)
   expiresAt  DateTime
   verifiedAt DateTime?
-
-  createdAt DateTime @default(now())
+  createdAt  DateTime  @default(now())
 }
 
 model PasswordReset {
@@ -1530,8 +884,7 @@ model PasswordReset {
   token     String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 ```
 
@@ -1541,46 +894,73 @@ model PasswordReset {
 
 ### Common Issues
 
-1. **"Token expired" on every request**
-   - Check JWT_SECRET matches between token generation and verification
-   - Verify system clocks are synchronized
-   - Check JWT_EXPIRES_IN format ("15m", not "15")
+**"Token expired" on every request**
+- Check `JWT_SECRET` matches between generation and verification
+- Verify system clocks are synchronized
+- Check `JWT_EXPIRES_IN` format ("15m", not "15")
 
-2. **Refresh token not working**
-   - Ensure cookies are being sent (credentials: 'include')
-   - Check CORS allows credentials
-   - Verify sameSite cookie setting matches your domain setup
+**Refresh token not working (Web)**
+- Ensure `credentials: 'include'` on fetch calls
+- Check CORS allows credentials (`Access-Control-Allow-Credentials: true`)
+- Verify `sameSite` cookie setting matches your domain setup
 
-3. **OAuth login creates duplicate accounts**
-   - Check email matching logic before creating new user
-   - Ensure googleId is being stored and checked
+**Refresh token not working (Mobile)**
+- Verify `CookieTokenInterceptor` is registered in `DioClient` BEFORE `AuthInterceptor`
+- Check `Set-Cookie` header is present in auth responses (not stripped by proxy)
+- Verify `StorageService` is correctly reading/writing to `FlutterSecureStorage`
 
-4. **User can't login after password reset**
-   - Verify password is being hashed on save
-   - Check bcrypt salt rounds haven't changed
+**Session lost after 15 minutes (Mobile)**
+- The `CookieTokenInterceptor` is likely not extracting the refresh token from `Set-Cookie`
+- Check the interceptor chain order in `dio_client.dart`
+
+**Google Sign-In fails on mobile**
+- Ensure `GoogleService-Info.plist` (iOS) or `google-services.json` (Android) is configured
+- The backend expects `{ token: "...", tokenType: "id_token" }` — not `{ idToken: "..." }`
+
+**Apple Sign-In not showing**
+- Apple Sign-In is iOS only — hidden on Android via `Platform.isIOS` check
+- Requires "Sign in with Apple" capability in Xcode
+
+**OAuth creates duplicate accounts**
+- Check email matching logic: the service looks up by `googleId`/`appleId` first, then by `email`
+- If a user registered with email first, OAuth should link the accounts
+
+**"401 Unauthorized" immediately after login (Mobile)**
+- Verify `AuthInterceptor` reads the access token from `FlutterSecureStorage` (not the old `SharedPreferences`)
+- Check the one-time migration from `SharedPreferences` to `FlutterSecureStorage` ran correctly
+
+**Android emulator cannot reach localhost**
+- Use `10.0.2.2` instead of `localhost`, or run `adb reverse tcp:3001 tcp:3001`
 
 ### Debug Tips
 
+**Web:**
 ```typescript
-// Log auth state changes
-useEffect(() => {
-  console.log('Auth state:', { user, isAuthenticated, isLoading });
-}, [user, isAuthenticated, isLoading]);
-
-// Log token on API requests
 console.log('Access token:', getAccessToken());
+console.log('Auth state:', { user, isAuthenticated, isLoading });
+```
 
-// Check cookie presence (server-side)
+**Mobile:**
+```dart
+// Check stored tokens
+final storage = StorageService();
+print('Access token: ${await storage.getAccessToken()}');
+print('Refresh token: ${await storage.getRefreshToken()}');
+```
+
+**Server:**
+```typescript
 console.log('Refresh token cookie:', req.cookies.refreshToken);
+console.log('Set-Cookie header:', res.getHeaders()['set-cookie']);
 ```
 
 ---
 
 ## Related Documentation
 
-- [Event Creation Guide](./EVENT_CREATION_GUIDE.md) - Event creation system
-- [API Documentation](./API.md) - REST API endpoints
-- [Database Schema](./DATABASE.md) - Prisma schema reference
+- [Swagger API Docs](http://localhost:3001/api-docs) — Interactive API documentation
+- [Auth Security Gaps](../server/docs/AUTH_SECURITY_GAPS.md) — Security audit and fixes
+- [Mobile Technical Guide](../../eventknit_mobile/docs/TECHNICAL_GUIDE.md) — Mobile architecture reference
 
 ---
 

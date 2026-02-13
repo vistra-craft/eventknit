@@ -96,6 +96,18 @@ router.post(
 );
 
 /**
+ * @route   POST /api/v1/auth/apple
+ * @desc    Apple Sign In login/registration
+ * @access  Public
+ */
+router.post(
+  '/apple',
+  authRateLimiter,
+  validate(authValidations.appleAuth),
+  AuthController.appleAuth,
+);
+
+/**
  * @route   POST /api/v1/auth/login
  * @desc    Login user
  * @access  Public
@@ -323,6 +335,30 @@ router.put(
   validate(authValidations.updateProfile),
   handleMulterUpload,
   AuthController.updateProfile,
+);
+
+/**
+ * @route   POST /api/v1/auth/email/request-change
+ * @desc    Request email address change (sends code to new email, notification to old)
+ * @access  Private
+ */
+router.post(
+  '/email/request-change',
+  authRateLimiter,
+  validate(authValidations.requestEmailChange),
+  AuthController.requestEmailChange,
+);
+
+/**
+ * @route   POST /api/v1/auth/email/confirm-change
+ * @desc    Confirm email change with verification code
+ * @access  Private
+ */
+router.post(
+  '/email/confirm-change',
+  authRateLimiter,
+  validate(authValidations.confirmEmailChange),
+  AuthController.confirmEmailChange,
 );
 
 /**

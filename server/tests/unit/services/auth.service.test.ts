@@ -8,6 +8,7 @@ import {
   ConflictError,
 } from '../../../src/utils/errors.js';
 import * as passwordUtils from '../../../src/utils/password.js';
+import { hashToken } from '../../../src/utils/password.js';
 import * as jwtUtils from '../../../src/utils/jwt.js';
 import { emailService } from '../../../src/services/email.service.js';
 import * as databaseModule from '../../../src/config/database.js';
@@ -18,7 +19,13 @@ jest.mock('../../../src/config/database.js', () => ({
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/utils/password.js');
+jest.mock('../../../src/utils/password.js', () => ({
+  ...jest.requireActual('../../../src/utils/password.js'),
+  hashPassword: jest.fn(),
+  comparePassword: jest.fn(),
+  checkPasswordBreach: jest.fn(),
+  // hashToken uses real implementation (pure SHA-256, no side effects)
+}));
 jest.mock('../../../src/utils/jwt.js');
 
 jest.mock('../../../src/services/email.service.js', () => ({
@@ -237,14 +244,8 @@ describe('AuthService - Registration Flow', () => {
       // Act
       await AuthService.requestRegistrationCode(mockEmail);
 
-      // Assert
-      expect(prisma.emailVerification.deleteMany).toHaveBeenCalledWith({
-        where: {
-          email: mockEmail,
-          verified: false,
-          expiresAt: { lt: expect.any(Date) },
-        },
-      });
+      // Assert — single deleteMany call removes all unverified codes for this email
+      expect(prisma.emailVerification.deleteMany).toHaveBeenCalledTimes(1);
       expect(prisma.emailVerification.deleteMany).toHaveBeenCalledWith({
         where: {
           email: mockEmail,
@@ -874,7 +875,7 @@ describe('AuthService - Registration Flow', () => {
       ).rejects.toThrow('Invalid or expired refresh token');
     });
 
-    it('should throw error for revoked token', async () => {
+    it('should revoke all user tokens on replay of revoked token (replay detection)', async () => {
       // Arrange
       const revokedToken = {
         ...mockTokenDoc,
@@ -882,15 +883,21 @@ describe('AuthService - Registration Flow', () => {
         revokedAt: new Date(),
       };
       prisma.refreshToken.findUnique.mockResolvedValue(revokedToken as any);
+      prisma.refreshToken.updateMany.mockResolvedValue({ count: 2 });
 
-      // Act & Assert
+      // Act & Assert — replay detection should revoke all tokens and throw
       await expect(
         AuthService.refreshToken(mockRefreshToken),
       ).rejects.toThrow(AuthenticationError);
 
-      await expect(
-        AuthService.refreshToken(mockRefreshToken),
-      ).rejects.toThrow('Invalid or expired refresh token');
+      // Verify all user tokens were revoked (replay detection)
+      expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { userId: revokedToken.userId, revoked: false },
+        data: expect.objectContaining({
+          revoked: true,
+          revokedReason: 'replay_detection',
+        }),
+      });
     });
 
     it('should throw error for expired token', async () => {
@@ -1060,7 +1067,7 @@ describe('AuthService - Registration Flow', () => {
     const mockReset = {
       id: 'reset-123',
       userId: 'user-123',
-      token: mockToken,
+      token: hashToken(mockToken), // Tokens are stored hashed
       expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour from now
       used: false,
       usedAt: null,
@@ -1089,7 +1096,7 @@ describe('AuthService - Registration Flow', () => {
 
       // Assert
       expect(prisma.passwordReset.findUnique).toHaveBeenCalledWith({
-        where: { token: mockToken },
+        where: { token: hashToken(mockToken) },
         include: { user: true },
       });
       expect(passwordUtils.checkPasswordBreach).toHaveBeenCalledWith(mockNewPassword);
@@ -1150,7 +1157,7 @@ describe('AuthService - Registration Flow', () => {
 
       // Assert
       expect(prisma.passwordReset.findUnique).toHaveBeenCalledWith({
-        where: { token: mockToken },
+        where: { token: hashToken(mockToken) },
         include: { user: true },
       });
     });
