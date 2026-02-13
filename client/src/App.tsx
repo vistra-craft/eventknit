@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
@@ -45,8 +45,11 @@ const App = () => (
         <BrowserRouter>
           <RoleViewWrapper>
             <Routes>
-      {/* User Routes */}
-      <Route path="/user/*" element={
+              {/* Dashboard Redirect - Unified dashboard for all non-admin users */}
+              <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+
+              {/* User Routes */}
+              <Route path="/user/*" element={
         <ProtectedRoute>
           <Suspense fallback={<div className="min-h-screen bg-background" />}>
             <UserLayout />
