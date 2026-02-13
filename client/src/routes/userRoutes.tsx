@@ -37,6 +37,7 @@ const Invoices = lazy(() => import('../pages/user/Invoices'));
 const TicketViewPage = lazy(() => import('../pages/user/TicketViewPage'));
 const UserProfilePage = lazy(() => import('../pages/user/UserProfilePage'));
 const NotificationPreferencesPage = lazy(() => import('../pages/user/NotificationPreferencesPage'));
+const EventManagementHub = lazy(() => import('../pages/user/EventManagementHub'));
 
 /**
  * User route definitions
@@ -61,6 +62,12 @@ export const userRoutes: RouteConfig[] = [
   {
     path: 'my-events',
     element: createElement(DashboardMyEvent),
+  },
+
+  // Event Management (Organizer features in unified dashboard)
+  {
+    path: 'manage-events/:eventId',
+    element: createElement(EventManagementHub),
   },
 
   // Ticket management

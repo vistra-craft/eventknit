@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
@@ -30,12 +30,18 @@ const CompletionScreen = lazy(() => import("./pages/onboarding/CompletionScreen"
 // This needs to be inside BrowserRouter and AuthProvider
 const RoleViewWrapper = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  
+
   return (
     <RoleViewProvider userRole={user?.role || null}>
       {children}
     </RoleViewProvider>
   );
+};
+
+// Redirect component for organizer event routes
+const OrganizerEventRedirect = () => {
+  const { eventId } = useParams<{ eventId: string }>();
+  return <Navigate to={`/user/manage-events/${eventId}`} replace />;
 };
 
 const App = () => (
@@ -47,6 +53,11 @@ const App = () => (
             <Routes>
               {/* Dashboard Redirect - Unified dashboard for all non-admin users */}
               <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+
+              {/* Legacy Organizer Route Redirects - Redirect to unified dashboard */}
+              <Route path="/organizer/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+              <Route path="/organizer/event/:eventId" element={<OrganizerEventRedirect />} />
+              <Route path="/organizer/events" element={<Navigate to="/user/dashboard" replace />} />
 
               {/* User Routes */}
               <Route path="/user/*" element={
