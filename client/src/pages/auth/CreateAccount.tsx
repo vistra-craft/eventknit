@@ -126,9 +126,21 @@ const CreateAccount = () => {
 
         setSuccess(true);
 
-        // Redirect to dashboard after a short delay
+        // Determine navigation path based on role and onboarding status
+        const role = response.data.user.role;
+        const needsOnboarding = typeof (response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted === 'boolean'
+          ? !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
+          : true;
+
+        // Redirect after a short delay
         setTimeout(() => {
-          navigate('/dashboard');
+          if (role === 'SUPERADMIN' || role === 'ADMIN_STAFF') {
+            navigate('/admin/dashboard');
+          } else if (needsOnboarding) {
+            navigate('/onboarding/welcome');
+          } else {
+            navigate('/dashboard');
+          }
         }, 2000);
       }
     } catch (err: unknown) {
@@ -177,7 +189,7 @@ const CreateAccount = () => {
               Your EventKnit account has been created successfully.
             </p>
             <p className="text-sm text-muted-foreground">
-              Redirecting to dashboard...
+              Redirecting...
             </p>
           </CardContent>
         </Card>
