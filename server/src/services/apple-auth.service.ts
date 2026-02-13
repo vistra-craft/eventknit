@@ -129,12 +129,9 @@ export class AppleAuthService {
       logger.info(`User logged in with Apple: ${user.email}`);
     } else {
       // Create new user account
-      const selectedRole = role || UserRole.ATTENDEE;
-
-      // Validate role - only allow ATTENDEE or ORGANIZER for new registrations
-      if (selectedRole !== UserRole.ATTENDEE && selectedRole !== UserRole.ORGANIZER) {
-        throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
-      }
+      // All new registrations default to ATTENDEE role
+      // Users can become organizers later via onboarding (when they select "organize" intent)
+      const selectedRole = UserRole.ATTENDEE;
 
       // Apple only sends name on first authorization
       const firstName = userData?.name?.firstName || '';

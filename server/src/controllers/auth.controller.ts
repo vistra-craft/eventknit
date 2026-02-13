@@ -7,10 +7,12 @@ import { TicketSecurityService } from '../services/ticket-security.service.js';
 export class AuthController {
   /**
    * Request registration verification code (email-only registration)
+   * Note: role parameter is now optional and ignored (all users default to ATTENDEE)
    */
   static async requestRegistrationCode(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await AuthService.requestRegistrationCode(req.body.email, req.body.role);
+      // Role parameter is optional and will be ignored - all users default to ATTENDEE
+      await AuthService.requestRegistrationCode(req.body.email);
 
       res.status(200).json({
         success: true,
@@ -354,10 +356,12 @@ export class AuthController {
 
   /**
    * Request Email OAuth code (code-based passwordless login/registration)
+   * Note: role parameter is now optional and ignored (all users default to ATTENDEE)
    */
   static async requestEmailOAuthCode(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      await AuthService.requestEmailOAuthCode(req.body.email, req.body.role);
+      // Role parameter is optional and will be ignored - all users default to ATTENDEE
+      await AuthService.requestEmailOAuthCode(req.body.email);
 
       res.status(200).json({
         success: true,
@@ -407,6 +411,7 @@ export class AuthController {
 
   /**
    * Google OAuth login/registration
+   * Note: role parameter is now optional and ignored (all new users default to ATTENDEE)
    */
   static async googleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -417,7 +422,7 @@ export class AuthController {
       const result = await GoogleAuthService.authenticateWithGoogle(
         req.body.token,
         req.body.tokenType || 'id_token',
-        req.body.role,
+        undefined, // Role parameter no longer used - all new users default to ATTENDEE
         ipAddress,
         userAgent,
       );
@@ -446,6 +451,7 @@ export class AuthController {
 
   /**
    * Apple OAuth login/registration
+   * Note: role parameter is now optional and ignored (all new users default to ATTENDEE)
    */
   static async appleAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -455,7 +461,7 @@ export class AuthController {
       const { AppleAuthService } = await import('../services/apple-auth.service.js');
       const result = await AppleAuthService.authenticateWithApple(
         req.body.idToken,
-        req.body.role,
+        undefined, // Role parameter no longer used - all new users default to ATTENDEE
         req.body.user,
         ipAddress,
         userAgent,

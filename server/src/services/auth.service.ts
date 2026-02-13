@@ -90,11 +90,9 @@ export class AuthService {
       }
     }
 
-    // Validate role - only allow ATTENDEE or ORGANIZER for new registrations
-    const selectedRole = role || UserRole.ATTENDEE;
-    if (selectedRole !== UserRole.ATTENDEE && selectedRole !== UserRole.ORGANIZER) {
-      throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
-    }
+    // All new registrations default to ATTENDEE role
+    // Users can become organizers later by creating events (unified dashboard approach)
+    const selectedRole = UserRole.ATTENDEE;
 
     // Generate 6-digit verification code
     const code = crypto.randomInt(100000, 999999).toString();
@@ -371,11 +369,9 @@ export class AuthService {
       // No need to block them here
     }
 
-    // Validate role if provided (only for new users)
-    const selectedRole = role || UserRole.ATTENDEE;
-    if (selectedRole !== UserRole.ATTENDEE && selectedRole !== UserRole.ORGANIZER) {
-      throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed.');
-    }
+    // All new registrations default to ATTENDEE role
+    // Users can become organizers later by creating events (unified dashboard approach)
+    const selectedRole = UserRole.ATTENDEE;
 
     // Generate 6-digit verification code
     const code = crypto.randomInt(100000, 999999).toString();

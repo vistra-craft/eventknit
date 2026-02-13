@@ -177,12 +177,9 @@ export class GoogleAuthService {
       logger.info(`User logged in with Google: ${user.email}`);
     } else {
       // Create new user account
-      const selectedRole = role || UserRole.ATTENDEE;
-
-      // Validate role - only allow ATTENDEE or ORGANIZER for new registrations
-      if (selectedRole !== UserRole.ATTENDEE && selectedRole !== UserRole.ORGANIZER) {
-        throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
-      }
+      // All new registrations default to ATTENDEE role
+      // Users can become organizers later via onboarding (when they select "organize" intent)
+      const selectedRole = UserRole.ATTENDEE;
 
       // Parse name from Google data
       const firstName = googleUser.given_name || googleUser.name?.split(' ')[0] || '';

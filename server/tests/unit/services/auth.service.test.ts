@@ -120,7 +120,7 @@ describe('AuthService - Registration Flow', () => {
       );
     });
 
-    it('should send verification code with ORGANIZER role', async () => {
+    it('should default all new users to ATTENDEE role (ignoring role parameter)', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(null);
       prisma.emailVerification.deleteMany.mockResolvedValue({ count: 0 });
@@ -129,7 +129,7 @@ describe('AuthService - Registration Flow', () => {
         email: mockEmail,
         code: '123456',
         token: null,
-        role: UserRole.ORGANIZER,
+        role: UserRole.ATTENDEE, // Always ATTENDEE now
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
         verified: false,
         verifiedAt: null,
@@ -138,31 +138,44 @@ describe('AuthService - Registration Flow', () => {
       });
       (emailService.sendVerificationCode as jest.Mock).mockResolvedValue(undefined);
 
-      // Act
+      // Act - Even if ORGANIZER role is passed, it should be ignored
       await AuthService.requestRegistrationCode(mockEmail, UserRole.ORGANIZER);
 
-      // Assert
+      // Assert - Should always create with ATTENDEE role
       expect(prisma.emailVerification.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          role: UserRole.ORGANIZER,
+          role: UserRole.ATTENDEE, // Changed from ORGANIZER
         }),
       });
     });
 
-    it('should throw error for invalid role (ADMIN)', async () => {
+    it('should ignore role parameter and always use ATTENDEE', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(null);
+      prisma.emailVerification.deleteMany.mockResolvedValue({ count: 0 });
+      prisma.emailVerification.create.mockResolvedValue({
+        id: 'verification-123',
+        email: mockEmail,
+        code: '123456',
+        token: null,
+        role: UserRole.ATTENDEE,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        verified: false,
+        verifiedAt: null,
+        userId: null,
+        createdAt: new Date(),
+      });
+      (emailService.sendVerificationCode as jest.Mock).mockResolvedValue(undefined);
 
-      // Act & Assert
-      await expect(
-        AuthService.requestRegistrationCode(mockEmail, 'ADMIN' as UserRole),
-      ).rejects.toThrow(ValidationError);
+      // Act - Pass ADMIN role (which previously would have failed)
+      await AuthService.requestRegistrationCode(mockEmail, 'ADMIN' as UserRole);
 
-      await expect(
-        AuthService.requestRegistrationCode(mockEmail, 'ADMIN' as UserRole),
-      ).rejects.toThrow(
-        'Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.',
-      );
+      // Assert - Should still create with ATTENDEE role
+      expect(prisma.emailVerification.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          role: UserRole.ATTENDEE, // Ignores ADMIN, uses ATTENDEE
+        }),
+      });
     });
 
     it('should throw error if user already exists with ACTIVE status', async () => {
@@ -401,36 +414,36 @@ describe('AuthService - Registration Flow', () => {
       });
     });
 
-    it('should create ORGANIZER user with onboardingCompleted false', async () => {
-      // Arrange
-      const organizerVerification = {
+    it('should create ATTENDEE user with onboardingCompleted false (all users need onboarding)', async () => {
+      // Arrange - Even if verification had ORGANIZER role, user created as ATTENDEE
+      const verification = {
         ...mockVerification,
-        role: UserRole.ORGANIZER,
+        role: UserRole.ATTENDEE, // Changed: always ATTENDEE now
       };
 
-      prisma.emailVerification.findFirst.mockResolvedValue(organizerVerification);
+      prisma.emailVerification.findFirst.mockResolvedValue(verification);
       prisma.user.findUnique.mockResolvedValue(null);
       prisma.user.create.mockResolvedValue({
-        id: 'organizer-123',
+        id: 'user-123',
         email: mockEmail,
         password: 'hashed-password',
         firstName: mockFirstName,
         lastName: mockLastName,
         otherName: null,
         companyAffiliation: null,
-        role: UserRole.ORGANIZER,
+        role: UserRole.ATTENDEE, // Changed: all new users are ATTENDEE
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
         organizationName: null,
         verificationLevel: 0,
-        onboardingCompleted: false, // false for organizers
+        onboardingCompleted: false, // false for ALL users now (not just organizers)
         avatar: null,
         phoneNumber: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       } as any);
-      prisma.emailVerification.update.mockResolvedValue(organizerVerification as any);
+      prisma.emailVerification.update.mockResolvedValue(verification as any);
       prisma.refreshToken.create.mockResolvedValue({} as any);
 
       // Act
@@ -445,11 +458,11 @@ describe('AuthService - Registration Flow', () => {
       // Assert
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          role: UserRole.ORGANIZER,
+          role: UserRole.ATTENDEE, // Changed from ORGANIZER
           onboardingCompleted: false,
         }),
       });
-      expect(result.user.role).toBe(UserRole.ORGANIZER);
+      expect(result.user.role).toBe(UserRole.ATTENDEE); // Changed from ORGANIZER
     });
 
     it('should throw error for invalid verification code', async () => {
