@@ -35,7 +35,7 @@ function isGoogleLoaded(): boolean {
 }
 
 interface UseGoogleAuthOptions {
-  role: OAuthRole;
+  role?: OAuthRole; // Optional - defaults to ATTENDEE on backend
   onSuccess?: () => void;
   onError?: (error: string) => void;
 }

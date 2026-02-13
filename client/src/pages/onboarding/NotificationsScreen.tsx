@@ -6,7 +6,6 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -54,8 +53,7 @@ const NOTIFICATION_PREFERENCES: NotificationPreference[] = [
 ];
 
 export const NotificationsScreen = () => {
-  const navigate = useNavigate();
-  const { saveProgress, complete, getStatus, isLoading } = useOnboarding();
+  const { complete, getStatus, isLoading } = useOnboarding();
   const [preferences, setPreferences] = useState<Record<string, boolean>>(() => {
     return NOTIFICATION_PREFERENCES.reduce((acc, pref) => {
       acc[pref.id] = pref.defaultValue;

@@ -2,7 +2,7 @@
  * Onboarding API Functions
  */
 
-import { apiGet, apiPost, type ApiResponse } from './api';
+import { apiGet, apiPost } from './api';
 import type { User } from './auth-api';
 
 /**
