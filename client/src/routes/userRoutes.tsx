@@ -38,6 +38,7 @@ const TicketViewPage = lazy(() => import('../pages/user/TicketViewPage'));
 const UserProfilePage = lazy(() => import('../pages/user/UserProfilePage'));
 const NotificationPreferencesPage = lazy(() => import('../pages/user/NotificationPreferencesPage'));
 const EventManagementHub = lazy(() => import('../pages/user/EventManagementHub'));
+const CreateEventEntry = lazy(() => import('../pages/user/CreateEventEntry'));
 
 /**
  * User route definitions
@@ -68,6 +69,12 @@ export const userRoutes: RouteConfig[] = [
   {
     path: 'manage-events/:eventId',
     element: createElement(EventManagementHub),
+  },
+
+  // Event Creation (Role-aware routing)
+  {
+    path: 'create-event',
+    element: createElement(CreateEventEntry),
   },
 
   // Ticket management
