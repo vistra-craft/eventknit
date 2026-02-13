@@ -19,6 +19,13 @@ const OrganizerLayout = lazy(() => import("./layouts/OrganizerLayout"));
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 // All routes are now defined in client/src/routes/ and rendered by layouts
 
+// Lazy load onboarding screens
+const WelcomeScreen = lazy(() => import("./pages/onboarding/WelcomeScreen"));
+const InterestsScreen = lazy(() => import("./pages/onboarding/InterestsScreen"));
+const EventTypesScreen = lazy(() => import("./pages/onboarding/EventTypesScreen"));
+const NotificationsScreen = lazy(() => import("./pages/onboarding/NotificationsScreen"));
+const CompletionScreen = lazy(() => import("./pages/onboarding/CompletionScreen"));
+
 // Wrapper component to provide role view context with user role
 // This needs to be inside BrowserRouter and AuthProvider
 const RoleViewWrapper = ({ children }: { children: ReactNode }) => {
@@ -63,6 +70,42 @@ const App = () => (
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <AuthLayout />
         </Suspense>
+      } />
+      {/* Onboarding Routes - Protected */}
+      <Route path="/onboarding/welcome" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <WelcomeScreen />
+          </Suspense>
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding/interests" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <InterestsScreen />
+          </Suspense>
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding/event-types" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <EventTypesScreen />
+          </Suspense>
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding/notifications" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <NotificationsScreen />
+          </Suspense>
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding/complete" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <CompletionScreen />
+          </Suspense>
+        </ProtectedRoute>
       } />
       {/* Public Routes - Catch-all */}
       <Route path="/*" element={
