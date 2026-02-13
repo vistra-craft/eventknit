@@ -1,24 +1,27 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Download, Share2 } from "lucide-react";
-import { Button } from "../../components/ui/button";
-import { Loader } from "../../components/ui/loader";
-import { Badge } from "../../components/ui/badge";
-import EmptyState from "../../components/EmptyState";
-import { getUserRegisteredEvents } from "../../lib/event-api";
-import { shareEvent } from "../../lib/utils/share";
-import { downloadTicket } from "../../lib/utils/ticket";
-import { useToast } from "../../hooks/useToast";
+/**
+ * Dashboard Home - Unified My Events Hub
+ * Three tabs: Attending, Organizing, Saved
+ * Displays all events in a unified interface
+ */
 
-interface EventData {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  type: string;
-  image: string;
-  status?: 'upcoming' | 'ongoing' | 'completed';
-}
+import { useNavigate } from 'react-router-dom';
+import { Calendar, MapPin, Download, Share2, Plus, Heart } from 'lucide-react';
+import { Button } from '../../components/ui/button';
+import { Loader } from '../../components/ui/loader';
+import { Badge } from '../../components/ui/badge';
+import EmptyState from '../../components/EmptyState';
+import { OrganizingEventCard } from '../../components/OrganizingEventCard';
+import { useMyEvents } from '../../hooks/useMyEvents';
+import { shareEvent } from '../../lib/utils/share';
+import { downloadTicket } from '../../lib/utils/ticket';
+import { useToast } from '../../hooks/useToast';
+import {
+  PAGE_TITLES,
+  TAB_LABELS,
+  EMPTY_STATE_MESSAGES,
+  EMPTY_STATE_CTAS,
+  CTA_LABELS,
+} from '../../constants/navigationLabels';
 
 interface User {
   name: string;
@@ -32,60 +35,38 @@ export interface DashboardHomeProps {
   registration?: unknown;
 }
 
-type FilterTab = 'all' | 'upcoming' | 'completed';
-
-const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
+const DashboardHome = ({ user }: DashboardHomeProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [events, setEvents] = useState<EventData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<FilterTab>('all');
-
-  const fetchEvents = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
-      if (response.success && response.data) {
-        setEvents(response.data.events.map(event => ({
-          id: event.id,
-          title: event.title,
-          date: event.date,
-          location: event.location,
-          type: event.type || 'In-Person',
-          image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
-          status: event.status || 'upcoming',
-        })));
-      }
-    } catch (error) {
-      console.error("Error fetching events:", error);
-      toast({ title: "Error", description: "Failed to load events", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
-  const filteredEvents = useMemo(() => {
-    if (activeTab === 'upcoming') return events.filter(e => e.status === 'upcoming');
-    if (activeTab === 'completed') return events.filter(e => e.status === 'completed');
-    return events;
-  }, [activeTab, events]);
+  const {
+    attendingEvents,
+    organizingEvents,
+    savedEvents,
+    attendingLoading,
+    organizingLoading,
+    savedLoading,
+    activeTab,
+    setActiveTab,
+    canOrganize,
+  } = useMyEvents();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric'
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
     });
   };
 
-  const handleShare = async (event: EventData) => {
+  const handleShare = async (event: { title: string; id: string }) => {
     const shared = await shareEvent(event.title, event.id);
-    toast({ title: shared ? "Shared" : "Link Copied", description: shared ? "Event shared" : "Link copied to clipboard" });
+    toast({
+      title: shared ? 'Shared' : 'Link Copied',
+      description: shared ? 'Event shared' : 'Link copied to clipboard',
+    });
   };
 
-  const handleDownload = (event: EventData) => {
+  const handleDownload = (event: { id: string; title: string; date: string; location: string; type: string }) => {
     try {
       downloadTicket({
         eventTitle: event.title,
@@ -96,28 +77,29 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
         ticketType: event.type,
         ticketId: `${event.id}-${Date.now()}`,
       });
-      toast({ title: "Downloaded", description: "Ticket downloaded" });
+      toast({ title: 'Downloaded', description: 'Ticket downloaded' });
     } catch {
-      toast({ title: "Error", description: "Failed to download", variant: "destructive" });
+      toast({ title: 'Error', description: 'Failed to download', variant: 'destructive' });
     }
   };
 
+  // Tabs configuration
   const tabs = [
-    { key: 'all', label: 'All' },
-    { key: 'upcoming', label: 'Upcoming' },
-    { key: 'completed', label: 'Past' },
+    { key: 'attending' as const, label: TAB_LABELS.ATTENDING },
+    ...(canOrganize ? [{ key: 'organizing' as const, label: TAB_LABELS.ORGANIZING }] : []),
+    { key: 'saved' as const, label: TAB_LABELS.SAVED },
   ];
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-3xl">
+    <div className="container mx-auto px-6 py-8 max-w-7xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-foreground">My Events</h1>
+        <h1 className="text-2xl font-bold text-foreground">{PAGE_TITLES.MY_EVENTS}</h1>
         <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key as FilterTab)}
+              onClick={() => setActiveTab(tab.key)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                 activeTab === tab.key
                   ? 'bg-background text-foreground shadow-sm'
@@ -130,85 +112,180 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Event List */}
-      {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader size="default" />
-        </div>
-      ) : filteredEvents.length > 0 ? (
-        <div className="space-y-3">
-          {filteredEvents.map((event) => (
-            <div
-              key={event.id}
-              onClick={() => navigate(`/user/event/${event.id}`)}
-              className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
-            >
-              <img
-                src={event.image}
-                alt={event.title}
-                className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                    {event.title}
-                  </h3>
-                  <Badge
-                    variant="secondary"
-                    className={`text-xs flex-shrink-0 ${
-                      event.status === 'upcoming' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                    }`}
-                  >
-                    {event.status === 'upcoming' ? 'Upcoming' : 'Past'}
-                  </Badge>
-                </div>
-                <div className="space-y-1 text-sm text-muted-foreground mb-2">
-                  <p className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {formatDate(event.date)}
-                  </p>
-                  <p className="flex items-center gap-1.5 line-clamp-1">
-                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                    {event.location}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={(e) => { e.stopPropagation(); handleDownload(event); }}
-                  >
-                    <Download className="w-3.5 h-3.5 mr-1" />
-                    Download
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
-                    onClick={(e) => { e.stopPropagation(); handleShare(event); }}
-                  >
-                    <Share2 className="w-3.5 h-3.5 mr-1" />
-                    Share
-                  </Button>
-                </div>
+      {/* Tab Content */}
+      <div className="min-h-[400px]">
+        {/* Attending Tab */}
+        {activeTab === 'attending' && (
+          <div>
+            {attendingLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader size="default" />
               </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon={Calendar}
-          title={activeTab === 'all' ? "No Events Yet" : activeTab === 'upcoming' ? "No Upcoming Events" : "No Past Events"}
-          description={activeTab === 'all'
-            ? "You haven't registered for any events yet."
-            : activeTab === 'upcoming'
-            ? "You don't have any upcoming events."
-            : "You haven't attended any events yet."
-          }
-          action={{ label: "Browse Events", onClick: () => navigate('/') }}
-        />
-      )}
+            ) : attendingEvents.length > 0 ? (
+              <div className="space-y-3 max-w-3xl">
+                {attendingEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    onClick={() => navigate(`/user/event/${event.id}`)}
+                    className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
+                  >
+                    <img
+                      src={event.image}
+                      alt={event.title}
+                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                          {event.title}
+                        </h3>
+                        <Badge
+                          variant="secondary"
+                          className={`text-xs flex-shrink-0 ${
+                            event.status === 'upcoming'
+                              ? 'bg-primary/10 text-primary'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {event.status === 'upcoming' ? 'Upcoming' : 'Past'}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1 text-sm text-muted-foreground mb-2">
+                        <p className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {formatDate(event.date)}
+                        </p>
+                        <p className="flex items-center gap-1.5 line-clamp-1">
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                          {event.location}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownload(event);
+                          }}
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1" />
+                          Download
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShare(event);
+                          }}
+                        >
+                          <Share2 className="w-3.5 h-3.5 mr-1" />
+                          Share
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Calendar}
+                title="No Events Yet"
+                description={EMPTY_STATE_MESSAGES.NO_ATTENDING_EVENTS}
+                subtitle={EMPTY_STATE_CTAS.ATTENDING}
+                action={{ label: 'Browse Events', onClick: () => navigate('/') }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Organizing Tab */}
+        {activeTab === 'organizing' && (
+          <div>
+            {organizingLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader size="default" />
+              </div>
+            ) : organizingEvents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {organizingEvents.map((event) => (
+                  <OrganizingEventCard key={event.id} event={event} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Plus}
+                title="No Events Yet"
+                description={EMPTY_STATE_MESSAGES.NO_ORGANIZING_EVENTS}
+                subtitle={EMPTY_STATE_CTAS.ORGANIZING}
+                action={{
+                  label: CTA_LABELS.CREATE_FIRST_EVENT,
+                  onClick: () => navigate('/user/create-event'),
+                }}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Saved Tab */}
+        {activeTab === 'saved' && (
+          <div>
+            {savedLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader size="default" />
+              </div>
+            ) : savedEvents.length > 0 ? (
+              <div className="space-y-3 max-w-3xl">
+                {savedEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    onClick={() => navigate(`/event/${event.id}`)}
+                    className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
+                  >
+                    <img
+                      src={event.image}
+                      alt={event.title}
+                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1 mb-1">
+                        {event.title}
+                      </h3>
+                      <div className="space-y-1 text-sm text-muted-foreground mb-2">
+                        <p className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {formatDate(event.date)}
+                        </p>
+                        <p className="flex items-center gap-1.5 line-clamp-1">
+                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                          {event.location}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                          <Heart className="w-3.5 h-3.5 mr-1 fill-current text-destructive" />
+                          Saved
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Heart}
+                title="No Saved Events"
+                description={EMPTY_STATE_MESSAGES.NO_SAVED_EVENTS}
+                subtitle={EMPTY_STATE_CTAS.SAVED}
+                action={{ label: 'Browse Events', onClick: () => navigate('/') }}
+              />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
