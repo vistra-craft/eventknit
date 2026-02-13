@@ -96,15 +96,18 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-foreground">{PAGE_TITLES.MY_EVENTS}</h1>
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg" role="tablist" aria-label="Event categories">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              aria-controls={`${tab.key}-panel`}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
                 activeTab === tab.key
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-background text-foreground shadow-sm scale-105'
+                  : 'text-muted-foreground hover:text-foreground hover:scale-102'
               }`}
             >
               {tab.label}
@@ -124,23 +127,27 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
       <div className="min-h-[400px]">
         {/* Attending Tab */}
         {activeTab === 'attending' && (
-          <div>
+          <div role="tabpanel" id="attending-panel" aria-labelledby="attending-tab">
             {attendingLoading ? (
               <div className="flex items-center justify-center py-16">
                 <Loader size="default" />
               </div>
             ) : attendingEvents.length > 0 ? (
               <div className="space-y-3 max-w-3xl">
-                {attendingEvents.map((event) => (
+                {attendingEvents.map((event, index) => (
                   <div
                     key={event.id}
                     onClick={() => navigate(`/user/event/${event.id}`)}
-                    className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
+                    className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                    role="article"
+                    aria-label={`Event: ${event.title}`}
                   >
                     <img
                       src={event.image}
-                      alt={event.title}
-                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                      alt={`Cover image for ${event.title}`}
+                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
+                      loading="lazy"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
@@ -172,11 +179,12 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 px-2 text-xs"
+                          className="h-7 px-2 text-xs hover:scale-105 active:scale-95 transition-transform duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDownload(event);
                           }}
+                          aria-label={`Download ticket for ${event.title}`}
                         >
                           <Download className="w-3.5 h-3.5 mr-1" />
                           Download
@@ -184,11 +192,12 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 px-2 text-xs"
+                          className="h-7 px-2 text-xs hover:scale-105 active:scale-95 transition-transform duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleShare(event);
                           }}
+                          aria-label={`Share ${event.title}`}
                         >
                           <Share2 className="w-3.5 h-3.5 mr-1" />
                           Share
@@ -212,15 +221,21 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
 
         {/* Organizing Tab */}
         {activeTab === 'organizing' && (
-          <div>
+          <div role="tabpanel" id="organizing-panel" aria-labelledby="organizing-tab">
             {organizingLoading ? (
               <div className="flex items-center justify-center py-16">
-                <Loader size="default" />
+                <Loader size="default" aria-label="Loading organizing events" />
               </div>
             ) : organizingEvents.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {organizingEvents.map((event) => (
-                  <OrganizingEventCard key={event.id} event={event} />
+                {organizingEvents.map((event, index) => (
+                  <div
+                    key={event.id}
+                    className="animate-in fade-in-0 zoom-in-95"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <OrganizingEventCard event={event} />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -240,23 +255,27 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
 
         {/* Saved Tab */}
         {activeTab === 'saved' && (
-          <div>
+          <div role="tabpanel" id="saved-panel" aria-labelledby="saved-tab">
             {savedLoading ? (
               <div className="flex items-center justify-center py-16">
-                <Loader size="default" />
+                <Loader size="default" aria-label="Loading saved events" />
               </div>
             ) : savedEvents.length > 0 ? (
               <div className="space-y-3 max-w-3xl">
-                {savedEvents.map((event) => (
+                {savedEvents.map((event, index) => (
                   <div
                     key={event.id}
                     onClick={() => navigate(`/event/${event.id}`)}
-                    className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
+                    className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                    role="article"
+                    aria-label={`Saved event: ${event.title}`}
                   >
                     <img
                       src={event.image}
-                      alt={event.title}
-                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                      alt={`Cover image for ${event.title}`}
+                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
+                      loading="lazy"
                     />
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1 mb-1">

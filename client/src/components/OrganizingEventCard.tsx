@@ -1,8 +1,10 @@
 /**
  * Organizing Event Card Component
  * Displays event with organizer metrics and quick actions
+ * Optimized with React.memo for better performance
  */
 
+import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, CheckCircle, DollarSign, BarChart3, MoreVertical } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
@@ -16,7 +18,7 @@ interface OrganizingEventCardProps {
   onManage?: (eventId: string) => void;
 }
 
-export const OrganizingEventCard = ({ event, onManage }: OrganizingEventCardProps) => {
+const OrganizingEventCardComponent = ({ event, onManage }: OrganizingEventCardProps) => {
   const navigate = useNavigate();
 
   const formatDate = (dateString: string) => {
@@ -65,13 +67,16 @@ export const OrganizingEventCard = ({ event, onManage }: OrganizingEventCardProp
     <Card
       variant="interactive"
       className="group overflow-hidden bg-card-surface rounded-2xl shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+      role="article"
+      aria-label={`Event: ${event.title}`}
     >
       {/* Event Image */}
       <div className="relative overflow-hidden h-48">
         <img
           src={event.image}
-          alt={event.title}
+          alt={`Cover image for ${event.title}`}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
         />
         <div className="absolute top-3 right-3">
           <Badge variant={getStatusColor(event.status)}>
@@ -155,7 +160,8 @@ export const OrganizingEventCard = ({ event, onManage }: OrganizingEventCardProp
             variant="default"
             size="sm"
             onClick={handleManageClick}
-            className="flex-1"
+            className="flex-1 hover:scale-105 active:scale-95 transition-transform duration-200"
+            aria-label={`Manage ${event.title}`}
           >
             Manage Event
           </Button>
@@ -163,14 +169,16 @@ export const OrganizingEventCard = ({ event, onManage }: OrganizingEventCardProp
             variant="outline"
             size="sm"
             onClick={() => navigate(`/user/manage-events/${event.id}?tab=analytics`)}
-            className="px-2"
+            className="px-2 hover:scale-105 active:scale-95 transition-transform duration-200"
+            aria-label={`View analytics for ${event.title}`}
           >
             <BarChart3 className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="px-2"
+            className="px-2 hover:scale-105 active:scale-95 transition-transform duration-200"
+            aria-label={`More options for ${event.title}`}
           >
             <MoreVertical className="h-4 w-4" />
           </Button>
@@ -179,3 +187,7 @@ export const OrganizingEventCard = ({ event, onManage }: OrganizingEventCardProp
     </Card>
   );
 };
+
+// Memoize component to prevent unnecessary re-renders
+// Will only re-render if event or onManage props change
+export const OrganizingEventCard = memo(OrganizingEventCardComponent);

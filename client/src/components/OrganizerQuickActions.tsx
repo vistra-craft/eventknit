@@ -118,10 +118,13 @@ export const OrganizerQuickActions = () => {
       <CardContent className="space-y-4">
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {quickStats.map((stat) => (
+          {quickStats.map((stat, index) => (
             <div
               key={stat.label}
-              className="bg-background rounded-lg p-3 border border-border"
+              className="bg-background rounded-lg p-3 border border-border transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 animate-in fade-in-0 zoom-in-95"
+              style={{ animationDelay: `${index * 50}ms` }}
+              role="article"
+              aria-label={`${stat.label}: ${stat.value}`}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className={`p-1.5 rounded-md ${stat.bgColor}`}>
@@ -138,13 +141,15 @@ export const OrganizerQuickActions = () => {
 
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-2">
-          {quickActions.map((action) => (
+          {quickActions.map((action, index) => (
             <Button
               key={action.label}
               variant={action.variant}
               size="sm"
               onClick={action.onClick}
-              className="flex-1 min-w-[140px]"
+              className="flex-1 min-w-[140px] hover:scale-105 active:scale-95 transition-transform duration-200 animate-in fade-in-0 slide-in-from-bottom-2"
+              style={{ animationDelay: `${(index + 4) * 50}ms` }}
+              aria-label={action.label}
             >
               <action.icon className="h-4 w-4 mr-1.5" />
               {action.label}
@@ -154,11 +159,22 @@ export const OrganizerQuickActions = () => {
 
         {/* Empty State Message */}
         {totalEvents === 0 && (
-          <div className="text-center py-3 bg-background rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground mb-2">
+          <div className="text-center py-6 bg-background rounded-lg border border-border border-dashed animate-in fade-in-0 zoom-in-95 duration-500">
+            <div className="mb-3 inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10">
+              <Calendar className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
               You haven't created any events yet.
             </p>
-            <Button size="sm" onClick={() => navigate('/user/create-event')}>
+            <p className="text-xs text-muted-foreground mb-4 max-w-sm mx-auto">
+              Start building your community by creating your first event. It only takes a few minutes!
+            </p>
+            <Button
+              size="sm"
+              onClick={() => navigate('/user/create-event')}
+              className="hover:scale-105 active:scale-95 transition-transform duration-200"
+              aria-label={CTA_LABELS.CREATE_FIRST_EVENT}
+            >
               <Plus className="h-4 w-4 mr-1.5" />
               {CTA_LABELS.CREATE_FIRST_EVENT}
             </Button>
