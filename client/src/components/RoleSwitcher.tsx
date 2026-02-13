@@ -24,6 +24,7 @@ import {
   becomeAttendee,
   type RoleSwitchOptions,
 } from "@/lib/user-dashboard-api";
+import { ROLE_LABELS } from "@/constants/roleLabels";
 
 interface RoleSwitcherProps {
   className?: string;
@@ -87,9 +88,7 @@ const RoleSwitcher: React.FC<RoleSwitcherProps> = ({ className }) => {
   };
 
   const getRoleLabel = (role: string): string => {
-    if (role === UserRole.ATTENDEE) return "Attendee";
-    if (role === UserRole.ORGANIZER) return "Organizer";
-    return role;
+    return ROLE_LABELS[role as UserRole] || role;
   };
 
   const handleBecomeOrganizer = async () => {

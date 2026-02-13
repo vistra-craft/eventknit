@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { useUploadAvatar } from "@/hooks/useUploadAvatar";
+import { ROLE_LABELS } from "@/constants/roleLabels";
 
 const UserProfilePage = () => {
   const { user, refreshProfile } = useAuth();
@@ -433,7 +434,7 @@ const UserProfilePage = () => {
                     <Label>Role</Label>
                     <div className="mt-1">
                       <Badge variant="outline" className="text-sm">
-                        {accountInfo.role === UserRole.ATTENDEE ? "Attendee" : accountInfo.role || "Loading..."}
+                        {accountInfo.role ? ROLE_LABELS[accountInfo.role as UserRole] : "Loading..."}
                       </Badge>
                     </div>
                   </div>

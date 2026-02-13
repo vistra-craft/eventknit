@@ -9,6 +9,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useRoleView } from '@/contexts/RoleViewContext';
 import { UserRole } from '@/types/auth';
+import { ROLE_LABELS } from '@/constants/roleLabels';
 
 interface ProfileDropdownProps {
   onClose?: () => void;
@@ -144,24 +145,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
   };
 
   const getRoleLabel = (role: UserRole): string => {
-    const isAdminRole = [
-      UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
-      UserRole.SUPPORT,
-      UserRole.TELLER,
-    ].includes(role);
-    
-    const isOrganizerRole = [
-      UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
-      UserRole.ORGANIZER_TELLER,
-    ].includes(role);
-    
-    if (isAdminRole) return 'Admin';
-    if (isOrganizerRole) return 'Organizer';
-    if (role === UserRole.ATTENDEE) return 'Attendee';
-    return role;
+    return ROLE_LABELS[role] || role;
   };
 
   const handleRoleSwitch = (role: UserRole) => {
