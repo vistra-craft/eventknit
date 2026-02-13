@@ -20,7 +20,6 @@ import {
   PAGE_TITLES,
   TAB_LABELS,
   EMPTY_STATE_MESSAGES,
-  EMPTY_STATE_CTAS,
   CTA_LABELS,
 } from '../../constants/navigationLabels';
 

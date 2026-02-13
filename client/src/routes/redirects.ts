@@ -51,7 +51,7 @@ export const LEGACY_REDIRECTS = {
  * Replaces :eventId parameters with actual values
  */
 export const getRedirectPath = (oldPath: string, params?: Record<string, string>): string => {
-  let redirectPath = LEGACY_REDIRECTS[oldPath as keyof typeof LEGACY_REDIRECTS];
+  let redirectPath: string | undefined = LEGACY_REDIRECTS[oldPath as keyof typeof LEGACY_REDIRECTS];
 
   if (!redirectPath) {
     // Try to find a matching pattern for dynamic routes
@@ -67,7 +67,7 @@ export const getRedirectPath = (oldPath: string, params?: Record<string, string>
   // Replace parameters if provided
   if (redirectPath && params) {
     Object.entries(params).forEach(([key, value]) => {
-      redirectPath = redirectPath.replace(`:${key}`, value);
+      redirectPath = redirectPath!.replace(`:${key}`, value);
     });
   }
 

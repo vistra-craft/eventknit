@@ -157,9 +157,9 @@ export const useMyEvents = (): UseMyEventsReturn => {
           revenue: (event as any).revenue || 0,
           views: (event as any).views || 0,
           conversion: (event as any).conversion || '0%',
-          image: event.image,
+          image: event.image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',
           description: event.description,
-          category: event.category,
+          category: event.category || '',
           ticketsSold: event.attendees || 0,
           checkedIn: Math.floor((event.attendees || 0) * 0.7), // Estimate for now
         })));
