@@ -7,7 +7,7 @@
  * Persists mode preference to localStorage
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { UserRole } from '../types/auth';
 

@@ -182,7 +182,7 @@ export const BecomeOrganizerModal = ({
           >
             {isUpgrading ? (
               <>
-                <ButtonLoader size="sm" />
+                <ButtonLoader />
                 Upgrading...
               </>
             ) : (

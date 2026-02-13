@@ -16,7 +16,10 @@ export type UserRole =
   | 'ORGANIZER_TELLER'
   | 'ADMIN'
   | 'ADMIN_STAFF'
-  | 'SUPERADMIN';
+  | 'SUPERADMIN'
+  | 'MARKETER'
+  | 'SUPPORT'
+  | 'TELLER';
 
 /**
  * Primary role labels (full names for profile, settings, etc.)
@@ -29,6 +32,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: 'Administrator',
   ADMIN_STAFF: 'Admin Team Member',
   SUPERADMIN: 'Super Administrator',
+  MARKETER: 'Marketing Team',
+  SUPPORT: 'Support Team',
+  TELLER: 'Teller',
 };
 
 /**
@@ -42,6 +48,9 @@ export const ROLE_LABELS_SHORT: Record<UserRole, string> = {
   ADMIN: 'Admin',
   ADMIN_STAFF: 'Admin Staff',
   SUPERADMIN: 'Super Admin',
+  MARKETER: 'Marketing',
+  SUPPORT: 'Support',
+  TELLER: 'Teller',
 };
 
 /**
@@ -55,6 +64,9 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   ADMIN: 'Manage platform and users',
   ADMIN_STAFF: 'Support platform administration',
   SUPERADMIN: 'Full platform control',
+  MARKETER: 'Manage marketing campaigns and promotions',
+  SUPPORT: 'Provide customer support',
+  TELLER: 'Handle ticket sales and transactions',
 };
 
 /**
@@ -68,6 +80,9 @@ export const ROLE_BADGE_COLORS: Record<UserRole, string> = {
   ADMIN: 'red',
   ADMIN_STAFF: 'orange',
   SUPERADMIN: 'pink',
+  MARKETER: 'violet',
+  SUPPORT: 'green',
+  TELLER: 'indigo',
 };
 
 /**

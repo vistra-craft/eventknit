@@ -6,7 +6,6 @@
 
 import { useParams } from 'react-router-dom';
 import EventManagement from '../organizer/EventManagement';
-import { PAGE_TITLES } from '../../constants/navigationLabels';
 
 /**
  * EventManagementHub

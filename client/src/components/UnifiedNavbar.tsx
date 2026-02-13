@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, LogOut, User, Ticket, Heart, Plus, Calendar, BarChart3 } from 'lucide-react';
+import { Home, LogOut, User, Ticket, Heart, Plus, BarChart3, type LucideIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import Logo from './Logo';
 import { useAuth } from '../hooks/useAuth';
@@ -14,7 +14,12 @@ import { ThemeToggle } from './ThemeToggle';
 import { ModeToggle } from './ModeToggle';
 import { useDashboardMode } from '../contexts/DashboardModeContext';
 import { NAV_LABELS, CTA_LABELS } from '../constants/navigationLabels';
-import { cn } from '../lib/utils';
+
+interface MenuItem {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+}
 
 interface User {
   name: string;
@@ -35,8 +40,8 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   // Menu items - context aware based on mode
-  const getMenuItems = () => {
-    const baseItems = [
+  const getMenuItems = (): MenuItem[] => {
+    const baseItems: MenuItem[] = [
       { label: NAV_LABELS.MY_EVENTS, icon: Home, onClick: () => navigate('/user/dashboard') },
       { label: NAV_LABELS.MY_TICKETS, icon: Ticket, onClick: () => navigate('/user/tickets') },
       { label: NAV_LABELS.SAVED, icon: Heart, onClick: () => navigate('/user/saved') },

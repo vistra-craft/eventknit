@@ -11,7 +11,7 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import type { OrganizingEvent } from '../hooks/useMyEvents';
-import { cn } from '../lib/utils';
+
 
 interface OrganizingEventCardProps {
   event: OrganizingEvent;

@@ -92,11 +92,11 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
   ];
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-foreground">{PAGE_TITLES.MY_EVENTS}</h1>
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg" role="tablist" aria-label="Event categories">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">{PAGE_TITLES.MY_EVENTS}</h1>
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-full sm:w-auto overflow-x-auto" role="tablist" aria-label="Event categories">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -104,7 +104,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
               role="tab"
               aria-selected={activeTab === tab.key}
               aria-controls={`${tab.key}-panel`}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`flex-1 sm:flex-none px-4 sm:px-3 py-2 sm:py-1.5 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'bg-background text-foreground shadow-sm scale-105'
                   : 'text-muted-foreground hover:text-foreground hover:scale-102'
@@ -212,7 +212,6 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 icon={Calendar}
                 title="No Events Yet"
                 description={EMPTY_STATE_MESSAGES.NO_ATTENDING_EVENTS}
-                subtitle={EMPTY_STATE_CTAS.ATTENDING}
                 action={{ label: 'Browse Events', onClick: () => navigate('/') }}
               />
             )}
@@ -243,7 +242,6 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 icon={Plus}
                 title="No Events Yet"
                 description={EMPTY_STATE_MESSAGES.NO_ORGANIZING_EVENTS}
-                subtitle={EMPTY_STATE_CTAS.ORGANIZING}
                 action={{
                   label: CTA_LABELS.CREATE_FIRST_EVENT,
                   onClick: () => navigate('/user/create-event'),
@@ -306,7 +304,6 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 icon={Heart}
                 title="No Saved Events"
                 description={EMPTY_STATE_MESSAGES.NO_SAVED_EVENTS}
-                subtitle={EMPTY_STATE_CTAS.SAVED}
                 action={{ label: 'Browse Events', onClick: () => navigate('/') }}
               />
             )}
