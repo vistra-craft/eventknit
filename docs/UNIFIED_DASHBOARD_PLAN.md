@@ -2,6 +2,124 @@
 
 > **Goal:** Document everything in the current attendee and organizer dashboards (web + mobile), then propose how to merge them into a unified dual-purpose experience where every user can both attend and organize events.
 
+> **Last Updated:** February 2026
+> **Status:** Planning & Implementation Phase
+
+---
+
+## Document Navigation
+
+- [PART 0: Industry Standards & Strategic Rationale](#part-0-industry-standards--strategic-rationale)
+- [PART 1: Current State — Web](#part-1-current-state--web)
+- [PART 2: Current State — Mobile](#part-2-current-state--mobile)
+- [PART 3: Feature Comparison](#part-3-feature-comparison--what-each-dashboard-has)
+- [PART 4: Proposed Merge — Mobile](#part-4-proposed-merge--mobile)
+- [PART 5: Proposed Merge — Web](#part-5-proposed-merge--web-future-phase)
+- [PART 6: Verification (Mobile)](#part-6-verification-mobile)
+- [PART 7: Terminology Strategy](#part-7-terminology-strategy)
+- [PART 8: Implementation Priorities & Timeline](#part-8-implementation-priorities--timeline)
+- [PART 9: Testing & Quality Assurance](#part-9-testing--quality-assurance)
+- [APPENDIX: Quick Reference](#appendix-quick-reference)
+
+---
+
+# PART 0: Industry Standards & Strategic Rationale
+
+> **Why This Approach?** Understanding how leading platforms handle dual roles informs our design decisions and validates our strategy.
+
+## Industry Research Summary
+
+### Key Platforms Analyzed (2026)
+
+| Platform | User Model | Key Insight |
+|----------|-----------|-------------|
+| **Eventbrite** | Organizers manage events, attendees browse | Separate dashboards, team-based permissions |
+| **Meetup** | Members → Organizers transition | **75% of organizers started as members** |
+| **Ticket Tailor** | Event Creators | Marketing term: "Event Creator" |
+| **Universe** | Organizers + Hosts | "Organizer" for account, "Host" for events |
+
+### Critical Industry Trends (2026)
+
+1. **Seamless Role Transitions**
+   - Modern platforms make switching from attendee to organizer **effortless**
+   - Meetup's 75% stat proves users want both capabilities
+   - No platform forces users to "pick a side"
+
+2. **Unified Navigation**
+   - Users expect one account, multiple capabilities
+   - Context switching should be **instant** (no logout/login)
+   - Dashboard adapts to current context
+
+3. **Progressive Disclosure**
+   - Attendee features are always visible
+   - Organizer features appear when needed
+   - No overwhelming "choose your role" screens
+
+4. **Terminology Standards**
+   - **"Organizer"** is universal (not "Merchant" or "Creator" in UI)
+   - **"Attendee"** is standard (not "Participant" or "Member")
+   - **"Event Creator"** used in marketing, not in-app
+   - **"Host"** used for individual event management
+
+**Sources:**
+- [Eventbrite Multi-User Access](https://www.eventbrite.com/help/en-us/articles/710537/)
+- [Meetup 2026 Roadmap](https://www.meetup.com/blog/2026-meetup-roadmap/)
+- [How to Choose a Ticketing Platform in 2026](https://creators.tixr.com/post/how-to-choose-a-ticketing-platform)
+- [Ticket Tailor vs Eventbrite](https://www.tickettailor.com/eventbrite-alternative)
+
+## Strategic Rationale for Unified Dashboard
+
+### Problem Statement
+
+**Current State Issues:**
+- ❌ Users must "switch roles" — feels like two separate accounts
+- ❌ Organizers who want to attend events must switch back
+- ❌ Discovery friction: attendees don't know they can organize
+- ❌ Not aligned with industry standards (Meetup's 75% transition)
+
+**User Journey Friction:**
+```
+Current: Attendee → "I want to organize" → Find role switcher → Switch role → Lose attendee context
+Desired: Attendee → "Create Event" button → Instant organizer mode → Keep attendee access
+```
+
+### Solution Benefits
+
+**For Users:**
+✅ **Single unified account** — no mental model of "two different users"
+✅ **Instant context switching** — browse events while managing your own
+✅ **Progressive disclosure** — organizer features appear when you create an event
+✅ **Familiar patterns** — matches Eventbrite, Meetup, etc.
+
+**For Business:**
+✅ **Increased organizer conversion** — easier to start organizing
+✅ **Better retention** — users stay engaged in both roles
+✅ **Simplified onboarding** — one dashboard to learn
+✅ **Competitive advantage** — matches industry leaders
+
+**For Development:**
+✅ **Easier maintenance** — one codebase to update
+✅ **Better UX consistency** — shared components
+✅ **Simpler state management** — no role-based routing complexity
+
+### Design Principles
+
+**1. Context Over Role**
+- Don't ask "What role are you?"
+- Ask "What are you trying to do right now?"
+
+**2. Additive, Not Destructive**
+- Creating an event adds organizer features
+- Doesn't remove attendee features
+
+**3. Spatial Clarity**
+- Clear visual distinction between "Events I'm Attending" and "Events I'm Hosting"
+- No ambiguity about which context you're in
+
+**4. Industry Alignment**
+- Use terminology users already know from Eventbrite/Meetup
+- Follow established UX patterns
+
 ---
 
 # PART 1: CURRENT STATE — WEB
@@ -705,3 +823,521 @@ The web merge is a **Phase 2** effort after mobile is proven. The mobile merge v
 8. +Create tab → organizers see create flow, attendees see "Become an Organizer" prompt
 9. Login as **ADMIN** → still lands on AdminLayout (unchanged)
 10. Admin "Switch to User Mode" → navigates to unified layout (not PublicLayout)
+
+---
+
+# PART 7: Terminology Strategy
+
+> **Critical Decision:** Keep ATTENDEE/ORGANIZER in code, use industry-friendly terms in UI.
+
+## The Strategy
+
+**Code (Backend, Database, API):**
+- ✅ Keep `ATTENDEE` and `ORGANIZER` enums
+- ✅ Keep route paths (`/user/*`, `/organizer/*`)
+- ✅ Keep API response fields (`role: "ORGANIZER"`)
+
+**UI (Web & Mobile):**
+- ✏️ Display "Event Organizer" instead of "ORGANIZER"
+- ✏️ Display "Attendee" (already correct)
+- ✏️ Use "Event Management" instead of "Organizer Dashboard"
+- ✏️ Use "My Events" instead of "User Dashboard"
+- ✏️ Use "Create Events" CTA instead of "Switch to Organizer"
+
+## Why This Approach?
+
+**Benefits:**
+✅ **No database migrations** — UserRole enum stays the same
+✅ **No API versioning** — existing endpoints unchanged
+✅ **Minimal breaking changes** — backend code stable
+✅ **Industry alignment** — UI matches Eventbrite/Meetup
+✅ **Easy to iterate** — change UI labels without backend changes
+✅ **A/B testing ready** — test different UI terms easily
+
+**Implementation:**
+```typescript
+// Web: src/constants/roleLabels.ts
+export const ROLE_LABELS = {
+  ATTENDEE: 'Attendee',
+  ORGANIZER: 'Event Organizer',
+  ORGANIZER_STAFF: 'Team Member',
+  // ...
+};
+
+// Mobile: lib/core/constants/role_labels.dart
+class RoleLabels {
+  static const Map<String, String> primary = {
+    'ATTENDEE': 'Attendee',
+    'ORGANIZER': 'Event Organizer',
+    'ORGANIZER_STAFF': 'Team Member',
+  };
+}
+```
+
+**Detailed Documentation:**
+See [TERMINOLOGY_STRATEGY.md](./TERMINOLOGY_STRATEGY.md) for complete implementation guide, code examples, and migration checklist.
+
+---
+
+# PART 7B: Authentication & Onboarding Changes
+
+> **Critical:** The unified dashboard requires significant changes to authentication and onboarding flows.
+
+## Current Authentication Issues
+
+**Problem:** Authentication and onboarding are tightly coupled to the old role-based model:
+
+1. **Signup has role selection** — Users choose ATTENDEE or ORGANIZER during registration
+2. **Post-registration routing is role-based** — Different dashboards for different roles
+3. **Post-login routing is role-based** — `getDashboardRoute()` splits users
+4. **Onboarding is forced for organizers** — Happens immediately after ORGANIZER signup
+
+**Files Affected:**
+- `client/src/pages/auth/SignUp.tsx` — 3-step signup with role selection
+- `client/src/hooks/useAuth.ts` — `getDashboardRoute()` function
+- `client/src/pages/auth/SignIn.tsx` — OAuth callback routing
+- `lib/presentation/auth/screens/login_screen.dart` — Mobile login routing
+
+## Required Changes Summary
+
+### 1. Remove Role Selection from Signup
+
+**Before:** Step 1 = Choose "Attend events" or "Organize events"
+**After:** Skip role selection, all new users = ATTENDEE
+
+### 2. Update Post-Registration Routing
+
+**Before:**
+```typescript
+if (role === 'ORGANIZER') navigate('/organizer/dashboard');
+else if (role === 'ATTENDEE') navigate('/user/dashboard');
+```
+
+**After:**
+```typescript
+if (isAdmin) navigate('/admin/dashboard');
+else navigate('/dashboard');  // Unified dashboard for everyone
+```
+
+### 3. Update Post-Login Routing
+
+**Before:** `getDashboardRoute()` returns different paths per role
+**After:** All non-admin users go to `/dashboard`
+
+### 4. Defer Onboarding
+
+**Before:** ORGANIZER signup → immediate onboarding wizard
+**After:** ATTENDEE → Create first event → onboarding wizard
+
+### 5. Update OAuth Flows
+
+**Before:** Google/Apple signup passes `selectedRole` parameter
+**After:** All OAuth signups default to ATTENDEE
+
+## Implementation Impact
+
+**Web Changes:**
+- 10 file modifications (auth pages, hooks, routing)
+- Remove ~100 lines of role selection UI
+- Update 6 routing functions
+
+**Mobile Changes:**
+- 2 file modifications (login screen, auth controller)
+- Already simpler (no role selection)
+- Only routing logic needs updating
+
+**Backend Changes:**
+- **NONE required** (role parameter becomes optional, backward compatible)
+
+## Testing Requirements
+
+- [ ] New user signup (all methods) → unified dashboard
+- [ ] Existing ATTENDEE login → unified dashboard
+- [ ] Existing ORGANIZER login → unified dashboard (no forced onboarding)
+- [ ] ADMIN login → admin dashboard (unchanged)
+- [ ] Role switching still works
+- [ ] Password reset flow unchanged
+
+**Detailed Guide:**
+See [AUTHENTICATION_MIGRATION.md](./AUTHENTICATION_MIGRATION.md) for complete step-by-step migration plan, code changes, and testing strategy.
+
+---
+
+# PART 8: Implementation Priorities & Timeline
+
+## Implementation Strategy
+
+**Approach:** Mobile-first, then web. Validate UX on mobile before investing in larger web refactor.
+
+### Phase 1: Mobile App (Weeks 1-7)
+
+**Why Mobile First?**
+- ✅ Smaller codebase (easier to refactor)
+- ✅ Single state management system (GetX)
+- ✅ Faster iteration and testing
+- ✅ Proves the unified dashboard concept
+- ✅ Users can test on real devices immediately
+
+**Week 1: Foundation**
+- [ ] Create `UnifiedLayout` widget (5-tab navigation)
+- [ ] Set up `MyEventsController`
+- [ ] Create role label constants
+- [ ] Update splash screen routing logic
+
+**Week 2: My Events Hub**
+- [ ] Build `MyEventsScreen` with 3 sub-tabs
+- [ ] Implement Attending tab (reuse existing API)
+- [ ] Implement Organizing tab (reuse `OrganizerDashboardController`)
+- [ ] Implement Saved tab (reuse `SavedEventsController`)
+
+**Week 3: Home Screen Updates**
+- [ ] Modify `DashboardScreen` for role-aware stats
+- [ ] Update quick actions (Create Event vs Scan Ticket)
+- [ ] Test with both ATTENDEE and ORGANIZER roles
+
+**Week 4: Event Management Screen**
+- [ ] Create `EventManagementScreen` container
+- [ ] Integrate existing organizer screens as tabs
+- [ ] Test navigation from My Events → Event Management
+
+**Week 5: Create Event Tab & Role Upgrade**
+- [ ] Build `CreateEventScreen` with role detection
+- [ ] Implement "Become an Organizer" flow
+- [ ] Add `becomeOrganizer` API integration
+- [ ] Test ATTENDEE → ORGANIZER transition
+
+**Week 6: Terminology Migration**
+- [ ] Create `RoleLabels` class
+- [ ] Update all UI text using labels
+- [ ] Update navigation bar labels
+- [ ] Update profile screen
+- [ ] Update email templates (mobile notifications)
+
+**Week 7: Testing & Refinement**
+- [ ] QA testing (both roles)
+- [ ] Accessibility testing
+- [ ] Performance testing
+- [ ] Fix bugs and polish UI
+- [ ] Prepare for deployment
+
+### Phase 2: Web Application (Weeks 8-14)
+
+**Week 8-9: Foundation**
+- [ ] Create role label constants (`roleLabels.ts`)
+- [ ] Update `RoleViewContext` for terminology
+- [ ] Plan UnifiedWebLayout structure
+- [ ] Design mode toggle component
+
+**Week 10-11: Layout Implementation**
+- [ ] Build UnifiedWebLayout shell
+- [ ] Implement mode toggle (Attending ↔ Organizing)
+- [ ] Migrate shared pages (Profile, Notifications)
+- [ ] Update navigation components
+
+**Week 12: Route Consolidation**
+- [ ] Create new `/dashboard/*` routes
+- [ ] Set up redirects from old routes
+- [ ] Update all internal links
+- [ ] Test deep linking
+
+**Week 13: Terminology Migration**
+- [ ] Update all components with `ROLE_LABELS`
+- [ ] Update page titles and headings
+- [ ] Update email templates
+- [ ] Update documentation
+
+**Week 14: Testing & Launch**
+- [ ] Visual regression testing
+- [ ] Cross-browser testing
+- [ ] User acceptance testing
+- [ ] Phased rollout (beta users first)
+
+### Phase 3: Backend Enhancements (Ongoing)
+
+**Capabilities System (Future Enhancement):**
+Instead of strict role checks, implement capability flags:
+
+```typescript
+// Current (role-based)
+if (user.role === 'ORGANIZER') {
+  // allow event creation
+}
+
+// Future (capability-based)
+if (user.capabilities.includes('CREATE_EVENTS')) {
+  // allow event creation
+}
+```
+
+This allows:
+- User with ATTENDEE role but organizer capability
+- Finer-grained permissions
+- Easier white-label customization
+
+**API Versioning (If Needed):**
+- Keep existing endpoints for backward compatibility
+- Add new `/v2/*` endpoints if role semantics change
+- Document migration path for API consumers
+
+---
+
+# PART 9: Testing & Quality Assurance
+
+## Testing Strategy
+
+### 1. Unit Testing
+
+**Backend:**
+```bash
+# Role-based authorization tests
+npm test -- auth.middleware.test.ts
+npm test -- permission.service.test.ts
+
+# Ensure ATTENDEE/ORGANIZER logic still works
+npm test -- organizer.service.test.ts
+```
+
+**Frontend (Web):**
+```bash
+# Component tests with role labels
+npm test -- RoleSwitcher.test.tsx
+npm test -- ProfileBadge.test.tsx
+npm test -- useAuth.test.tsx
+```
+
+**Mobile:**
+```bash
+flutter test test/unit/role_labels_test.dart
+flutter test test/unit/auth_controller_test.dart
+```
+
+### 2. Integration Testing
+
+**Mobile:**
+```bash
+# E2E flow tests
+flutter drive --target=test_driver/app.dart
+
+# Test scenarios:
+# - Login as ATTENDEE → see unified dashboard
+# - Login as ORGANIZER → see unified dashboard with My Events
+# - ATTENDEE creates event → becomes ORGANIZER
+# - Switch between Attending/Organizing tabs
+```
+
+**Web:**
+```bash
+# Playwright E2E tests
+npm run test:e2e
+
+# Test scenarios:
+# - Role label display in all contexts
+# - Mode toggle functionality
+# - Route preservation during mode switch
+# - Shared components across modes
+```
+
+### 3. User Acceptance Testing (UAT)
+
+**Beta User Groups:**
+1. **Pure Attendees** — Never organized before
+2. **Pure Organizers** — Rarely attend events
+3. **Dual-Role Power Users** — Frequently switch roles
+4. **New Users** — First-time platform users
+
+**UAT Criteria:**
+- [ ] Users can find event creation easily
+- [ ] Role switching is intuitive (no confusion)
+- [ ] Terminology is clear and professional
+- [ ] No disruption to existing workflows
+- [ ] Performance is acceptable
+
+**Feedback Collection:**
+- In-app surveys after 7 days
+- User interviews (5-10 per group)
+- Analytics tracking (feature usage)
+- Support ticket monitoring
+
+### 4. Accessibility Testing
+
+**WCAG 2.1 AA Compliance:**
+- [ ] Screen reader compatibility (role labels announced correctly)
+- [ ] Keyboard navigation (mode toggle accessible)
+- [ ] Color contrast (role badges meet 4.5:1 ratio)
+- [ ] Focus indicators (clear focus states)
+
+**Testing Tools:**
+- axe DevTools (automated scanning)
+- NVDA/JAWS screen readers (manual testing)
+- Lighthouse accessibility audit
+
+### 5. Performance Testing
+
+**Metrics:**
+- [ ] Dashboard load time < 2 seconds
+- [ ] Mode switch transition < 300ms
+- [ ] Mobile app startup < 3 seconds
+- [ ] No memory leaks during role switching
+
+**Tools:**
+- Lighthouse (web performance)
+- Chrome DevTools (network, memory)
+- Flutter DevTools (widget rebuild profiling)
+
+### 6. Regression Testing
+
+**Critical Paths to Test:**
+- [ ] Event registration still works
+- [ ] Payment flow unaffected
+- [ ] QR code generation intact
+- [ ] Email notifications sent correctly
+- [ ] Analytics tracking accurate
+- [ ] Admin dashboard functioning
+- [ ] API responses unchanged
+
+**Automated Regression Suite:**
+```bash
+# Backend API tests
+npm run test:api
+
+# Frontend critical path tests
+npm run test:regression
+
+# Mobile smoke tests
+flutter test test/smoke/
+```
+
+### 7. Rollback Plan
+
+**Rollback Triggers:**
+- Critical bug affecting core functionality
+- User confusion metrics > 20%
+- Performance degradation > 30%
+- Accessibility violations found in production
+
+**Rollback Procedure:**
+1. Revert frontend deployments (web & mobile)
+2. Backend remains unchanged (no DB changes made)
+3. Restore old routes and layouts
+4. Communicate with users about temporary revert
+
+**Rollback Testing:**
+- [ ] Prepare rollback branch in Git
+- [ ] Test rollback in staging environment
+- [ ] Document rollback steps
+- [ ] Assign rollback decision authority
+
+---
+
+# APPENDIX: Quick Reference
+
+## A. Terminology Mapping
+
+| Code Value | UI Display (Web) | UI Display (Mobile) | Context |
+|------------|------------------|---------------------|---------|
+| `ATTENDEE` | Attendee | Attendee | All contexts |
+| `ORGANIZER` | Event Organizer | Organizer | Profile, settings |
+| `ORGANIZER` | Event Creator | Event Creator | Marketing, first-time prompts |
+| `/user/*` | My Events | My Events | Navigation label |
+| `/organizer/*` | Event Management | Manage Events | Navigation label |
+| "Switch to Organizer" | Create Events | Create Events | CTA button |
+| "Switch to Attendee" | Browse Events | Browse Events | CTA button |
+
+## B. File Changes Summary
+
+### Mobile (HIGH PRIORITY)
+
+**New Files:**
+- `lib/screens/layouts/unified_layout.dart`
+- `lib/screens/my_events_screen.dart`
+- `lib/controllers/my_events_controller.dart`
+- `lib/presentation/organizer/screens/event_management_screen.dart`
+- `lib/screens/create_event_screen.dart`
+- `lib/core/constants/role_labels.dart`
+- `lib/core/constants/navigation_labels.dart`
+
+**Modified Files (High Impact):**
+- `lib/main.dart` — routing changes
+- `lib/screens/splash_screen.dart` — simplified role routing
+- `lib/presentation/attendee/screens/dashboard_screen.dart` — role-aware stats
+- `lib/presentation/auth/screens/login_screen.dart` — routing update
+
+### Web (PHASE 2)
+
+**New Files:**
+- `client/src/constants/roleLabels.ts`
+- `client/src/constants/navigationLabels.ts`
+- `client/src/layouts/UnifiedWebLayout.tsx` (future)
+- `client/src/components/ModeToggle.tsx` (future)
+
+**Modified Files (High Impact):**
+- `client/src/components/RoleSwitcher.tsx`
+- `client/src/components/Navbar.tsx`
+- `client/src/components/ProfileBadge.tsx`
+- `client/src/pages/auth/SignIn.tsx`
+- `client/src/routes/index.tsx`
+
+### Backend (NO CHANGES)
+
+**Unchanged:**
+- ✅ `prisma/schema.prisma` — UserRole enum
+- ✅ `src/middleware/auth.middleware.ts` — role checks
+- ✅ All route definitions
+- ✅ All service layer code
+
+## C. Common Pitfalls & Solutions
+
+| Pitfall | Solution |
+|---------|----------|
+| Hardcoding "ORGANIZER" in UI | Always use `ROLE_LABELS[user.role]` |
+| Forgetting to update email templates | Search codebase for "organizer" (case-insensitive) |
+| Breaking existing API consumers | Keep all API response fields unchanged |
+| Inconsistent terminology across platforms | Use shared constants in both web & mobile |
+| Screen reader announces "ORGANIZER" | Ensure ARIA labels use display names |
+| Deep links to `/organizer/*` break | Set up redirects to new routes |
+
+## D. Key Decisions Log
+
+| Decision | Rationale | Date |
+|----------|-----------|------|
+| Keep ATTENDEE/ORGANIZER in code | Avoid breaking changes, stable backend | Feb 2026 |
+| Use "Event Organizer" in UI | Industry standard per research | Feb 2026 |
+| Mobile-first implementation | Faster validation, smaller scope | Feb 2026 |
+| Unified dashboard for both roles | Matches Meetup/Eventbrite patterns | Feb 2026 |
+
+## E. Success Metrics
+
+**Quantitative:**
+- [ ] Organizer sign-ups increase by 25% (easier discovery)
+- [ ] Role switching actions decrease by 50% (less friction)
+- [ ] User session duration increases by 15% (more engagement)
+- [ ] Support tickets about role confusion decrease by 40%
+
+**Qualitative:**
+- [ ] User surveys show 80%+ satisfaction with terminology
+- [ ] Beta testers report "clearer" and "more intuitive" experience
+- [ ] No negative feedback about role switching complexity
+- [ ] Users successfully create first event without help docs
+
+## F. Related Documentation
+
+- [TERMINOLOGY_STRATEGY.md](./TERMINOLOGY_STRATEGY.md) — Complete terminology implementation guide
+- [TECHNICAL_GUIDE.md](./TECHNICAL_GUIDE.md) — Backend technical architecture
+- [AUTHENTICATION_GUIDE.md](./AUTHENTICATION_GUIDE.md) — Auth system and role management
+- [PLATFORM_GUIDE.md](./PLATFORM_GUIDE.md) — End-to-end platform features
+
+---
+
+**Document Status:** ✅ READY FOR REVIEW & IMPLEMENTATION
+
+**Next Actions:**
+1. ✅ Review and approve Part 0 (Industry Standards)
+2. ✅ Review and approve Part 7 (Terminology Strategy)
+3. ⬜ Create detailed sprint planning for Phase 1 (Mobile)
+4. ⬜ Assign development tasks to team
+5. ⬜ Begin Week 1 implementation
+
+**Questions or Concerns?**
+- Contact Product Owner for strategy questions
+- Contact Tech Lead for implementation questions
+- Contact UX Designer for terminology/design questions
