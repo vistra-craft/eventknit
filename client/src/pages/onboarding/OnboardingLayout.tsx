@@ -101,9 +101,9 @@ export const OnboardingLayout = ({
           </div>
 
           {/* Title */}
-          <h1 className="text-3xl font-bold text-foreground mb-2">{title}</h1>
+          <h1 className="text-page-title mb-2">{title}</h1>
           {subtitle && (
-            <p className="text-muted-foreground">{subtitle}</p>
+            <p className="text-page-subtitle">{subtitle}</p>
           )}
         </div>
 

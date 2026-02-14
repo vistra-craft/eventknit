@@ -6,14 +6,12 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, LogOut, User, Ticket, Heart, Plus, BarChart3, type LucideIcon } from 'lucide-react';
-import { Button } from './ui/button';
+import { LogOut, User, BarChart3, type LucideIcon } from 'lucide-react';
 import Logo from './Logo';
 import { useAuth } from '../hooks/useAuth';
 import { ThemeToggle } from './ThemeToggle';
-import { ModeToggle } from './ModeToggle';
 import { useDashboardMode } from '../contexts/DashboardModeContext';
-import { NAV_LABELS, CTA_LABELS } from '../constants/navigationLabels';
+import { NAV_LABELS } from '../constants/navigationLabels';
 
 interface MenuItem {
   label: string;
@@ -41,11 +39,7 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
 
   // Menu items - context aware based on mode
   const getMenuItems = (): MenuItem[] => {
-    const baseItems: MenuItem[] = [
-      { label: NAV_LABELS.MY_EVENTS, icon: Home, onClick: () => navigate('/user/dashboard') },
-      { label: NAV_LABELS.MY_TICKETS, icon: Ticket, onClick: () => navigate('/user/tickets') },
-      { label: NAV_LABELS.SAVED, icon: Heart, onClick: () => navigate('/user/saved') },
-    ];
+    const baseItems: MenuItem[] = [];
 
     // Add organizing-specific items if in organizing mode
     if (mode === 'organizing' && canOrganize) {
@@ -70,38 +64,8 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
           {/* Logo */}
           <Logo />
 
-          {/* Center - Mode Toggle (Desktop only, if can organize) */}
-          {canOrganize && (
-            <div className="hidden md:flex">
-              <ModeToggle />
-            </div>
-          )}
-
           {/* Right Side */}
           <div className="flex items-center gap-2">
-            {/* Create Event Button - visible to all users */}
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => navigate('/user/create-event')}
-              className="hidden sm:flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-transform duration-200"
-              aria-label={CTA_LABELS.CREATE_EVENT}
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden lg:inline">{CTA_LABELS.CREATE_EVENT}</span>
-              <span className="lg:hidden">Create</span>
-            </Button>
-
-            {/* Home */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/')}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Home className="h-4 w-4" />
-            </Button>
-
             {/* Theme Toggle */}
             <ThemeToggle />
 
@@ -126,24 +90,7 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     </div>
 
-                    {/* Mode Toggle (Mobile only, if can organize) */}
-                    {canOrganize && (
-                      <div className="md:hidden px-3 py-2 border-b border-border">
-                        <ModeToggle showLabels={true} />
-                      </div>
-                    )}
-
                     <div className="py-1">
-                      {/* Create Event (Mobile) */}
-                      <button
-                        onClick={() => { navigate('/user/create-event'); setIsOpen(false); }}
-                        className="sm:hidden w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors duration-150 focus:outline-none focus:bg-muted"
-                        aria-label={CTA_LABELS.CREATE_EVENT}
-                      >
-                        <Plus className="w-4 h-4 text-primary" />
-                        <span className="font-medium text-primary">{CTA_LABELS.CREATE_EVENT}</span>
-                      </button>
-
                       {menuItems.map((item) => (
                         <button
                           key={item.label}

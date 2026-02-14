@@ -97,7 +97,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
   const [savedEvents, setSavedEvents] = useState<SavedEvent[]>([]);
 
   const [attendingLoading, setAttendingLoading] = useState(true);
-  const [organizingLoading, setOrganizingLoading] = useState(false);
+  const [organizingLoading, setOrganizingLoading] = useState(true);
   const [savedLoading, setSavedLoading] = useState(false);
 
   const [attendingError, setAttendingError] = useState<string | null>(null);

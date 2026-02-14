@@ -31,8 +31,8 @@ const CreateEventEntry = () => {
       user.role === UserRole.ORGANIZER_TELLER;
 
     if (canOrganize) {
-      // User is already an organizer, navigate to event creation
-      navigate('/user/create-event');
+      // User is already an organizer, navigate to event creation form in user context
+      navigate('/user/create-event-form');
     } else {
       // User is an attendee, show upgrade modal
       setShowModal(true);
@@ -46,9 +46,9 @@ const CreateEventEntry = () => {
   };
 
   const handleUpgradeSuccess = () => {
-    // After successful upgrade, navigate to event creation
+    // After successful upgrade, navigate to event creation form in user context
     setShowModal(false);
-    navigate('/organizer/events/create');
+    navigate('/user/create-event-form');
   };
 
   // Show loading while checking user role

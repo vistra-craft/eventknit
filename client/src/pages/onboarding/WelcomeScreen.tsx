@@ -82,8 +82,8 @@ export const WelcomeScreen = () => {
     >
       <div className="space-y-6">
         <div>
-          <h2 className="text-xl font-semibold mb-2">What brings you here today?</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-section-header mb-2">What brings you here today?</h2>
+          <p className="text-page-subtitle">
             Select all that apply. You can always change this later.
           </p>
         </div>
@@ -112,8 +112,8 @@ export const WelcomeScreen = () => {
               </div>
 
               <div>
-                <h3 className="font-semibold text-lg mb-1">Attend events</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-card-title mb-1">Attend events</h3>
+                <p className="text-card-description">
                   Discover and register for events
                 </p>
               </div>
@@ -167,8 +167,8 @@ export const WelcomeScreen = () => {
               </div>
 
               <div>
-                <h3 className="font-semibold text-lg mb-1">Organize events</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-card-title mb-1">Organize events</h3>
+                <p className="text-card-description">
                   Create and manage events
                 </p>
               </div>

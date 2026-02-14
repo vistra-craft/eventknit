@@ -52,10 +52,10 @@ export const CompletionScreen = () => {
 
         {/* Success Message */}
         <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-section-header">
             Welcome to EventKnit, {firstName}! 🎉
           </h2>
-          <p className="text-muted-foreground max-w-md mx-auto">
+          <p className="text-page-subtitle max-w-md mx-auto">
             Your account is ready. Let's start discovering amazing events!
           </p>
         </div>
@@ -69,7 +69,7 @@ export const CompletionScreen = () => {
           ].map((feature, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 text-sm text-muted-foreground animate-in fade-in slide-in-from-left duration-500"
+              className="flex items-center gap-3 text-page-subtitle animate-in fade-in slide-in-from-left duration-500"
               style={{ animationDelay: `${600 + index * 100}ms` }}
             >
               <div className="p-1 rounded-full bg-primary/10">

@@ -240,8 +240,9 @@ export class AuthService {
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
-        // Set onboardingCompleted to false for new organizers (will be set to true after onboarding)
-        onboardingCompleted: userRole === UserRole.ORGANIZER ? false : true,
+        // Set onboardingCompleted to false for ALL new users (unified onboarding)
+        // Will be set to true after completing onboarding flow
+        onboardingCompleted: false,
       },
     });
 

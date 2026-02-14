@@ -93,9 +93,31 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-foreground">{PAGE_TITLES.MY_EVENTS}</h1>
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-full sm:w-auto overflow-x-auto" role="tablist" aria-label="Event categories">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <h1 className="text-page-title mb-1">{PAGE_TITLES.MY_EVENTS}</h1>
+            <p className="text-page-subtitle">
+              {activeTab === 'attending' && "Events you're attending"}
+              {activeTab === 'organizing' && "Events you're hosting"}
+              {activeTab === 'saved' && "Events you've saved"}
+            </p>
+          </div>
+          {canOrganize && (
+            <Button
+              onClick={() => navigate('/user/create-event')}
+              size="default"
+              className="w-full sm:w-auto gap-2"
+              aria-label={CTA_LABELS.CREATE_EVENT}
+            >
+              <Plus className="h-4 w-4" />
+              {CTA_LABELS.CREATE_EVENT}
+            </Button>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-full sm:w-auto overflow-x-auto border border-border" role="tablist" aria-label="Event categories">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -103,10 +125,10 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
               role="tab"
               aria-selected={activeTab === tab.key}
               aria-controls={`${tab.key}-panel`}
-              className={`flex-1 sm:flex-none px-4 sm:px-3 py-2 sm:py-1.5 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
+              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
                 activeTab === tab.key
-                  ? 'bg-background text-foreground shadow-sm scale-105'
-                  : 'text-muted-foreground hover:text-foreground hover:scale-102'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
               {tab.label}
@@ -114,13 +136,6 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
           ))}
         </div>
       </div>
-
-      {/* Organizer Quick Actions */}
-      {canOrganize && (
-        <div className="mb-6">
-          <OrganizerQuickActions />
-        </div>
-      )}
 
       {/* Tab Content */}
       <div className="min-h-[400px]">
@@ -224,28 +239,36 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
               <div className="flex items-center justify-center py-16">
                 <Loader size="default" aria-label="Loading organizing events" />
               </div>
-            ) : organizingEvents.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {organizingEvents.map((event, index) => (
-                  <div
-                    key={event.id}
-                    className="animate-in fade-in-0 zoom-in-95"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <OrganizingEventCard event={event} />
-                  </div>
-                ))}
-              </div>
             ) : (
-              <EmptyState
-                icon={Plus}
-                title="No Events Yet"
-                description={EMPTY_STATE_MESSAGES.NO_ORGANIZING_EVENTS}
-                action={{
-                  label: CTA_LABELS.CREATE_FIRST_EVENT,
-                  onClick: () => navigate('/user/create-event'),
-                }}
-              />
+              <>
+                {/* Organizer Quick Actions */}
+                {canOrganize && (
+                  <div className="mb-6">
+                    <OrganizerQuickActions />
+                  </div>
+                )}
+
+                {/* Events Grid or Empty State */}
+                {organizingEvents.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {organizingEvents.map((event) => (
+                      <div key={event.id}>
+                        <OrganizingEventCard event={event} />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={Plus}
+                    title="No Events Yet"
+                    description={EMPTY_STATE_MESSAGES.NO_ORGANIZING_EVENTS}
+                    action={{
+                      label: CTA_LABELS.CREATE_FIRST_EVENT,
+                      onClick: () => navigate('/user/create-event'),
+                    }}
+                  />
+                )}
+              </>
             )}
           </div>
         )}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,10 @@ import {
   TrendingUp,
   Users,
   Calculator,
+  Search,
+  Calendar,
+  MapPin,
+  ArrowLeft,
 } from "lucide-react";
 import {
   createPricingRule,
@@ -21,8 +25,9 @@ import {
   calculateDynamicPrice,
   deletePricingRule,
 } from "@/lib/organizer-dashboard-api";
+import { getEvents } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 interface PricingRule {
   id: string;
@@ -60,14 +65,51 @@ type CreateRulePayload = {
   applicableTicketTypes?: string[];
 };
 
+interface Event {
+  id: string;
+  title: string;
+  date: string;
+  location?: string;
+  status: string;
+  image?: string;
+  category?: string;
+}
+
 const AdminDynamicPricing = () => {
   const { eventId } = useParams<{ eventId: string }>();
+  const navigate = useNavigate();
   const [rules, setRules] = useState<PricingRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [priceCalculation, setPriceCalculation] = useState<PriceCalculation | null>(null);
   const { toast } = useToast();
+
+  // Event selector state
+  const [events, setEvents] = useState<Event[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loadingEvents, setLoadingEvents] = useState(false);
+
+  // Fetch events for selector
+  const fetchEvents = useCallback(async () => {
+    try {
+      setLoadingEvents(true);
+      const response = await getEvents({ limit: 50, status: 'APPROVED' });
+      if (response.success && response.data?.events) {
+        setEvents(response.data.events as Event[]);
+      }
+    } catch (error) {
+      console.error("Error fetching events:", error);
+    } finally {
+      setLoadingEvents(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!eventId) {
+      fetchEvents();
+    }
+  }, [eventId, fetchEvents]);
 
   const fetchRules = useCallback(async () => {
     if (!eventId) return;
@@ -167,165 +209,259 @@ const AdminDynamicPricing = () => {
     return labels[type] || type;
   };
 
+  const handleSelectEvent = (event: Event) => {
+    navigate(`/admin/event/${event.id}/tickets/pricing`);
+  };
+
+  const handleBackToSelector = () => {
+    navigate('/admin/tickets/pricing');
+  };
+
+  const filteredEvents = events.filter((event) =>
+    event.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Event Selector View
   if (!eventId) {
     return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-page-title">Dynamic Pricing</h1>
+          <p className="text-muted-foreground mt-1">
+            Select an event to configure dynamic pricing rules and strategies
+          </p>
+        </div>
+
         <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">Event ID is required</p>
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search events..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loadingEvents ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Loading events...</p>
+              </div>
+            ) : filteredEvents.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  {searchQuery ? "No events found matching your search" : "No events available"}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredEvents.map((event) => (
+                  <Card
+                    key={event.id}
+                    className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary"
+                    onClick={() => handleSelectEvent(event)}
+                  >
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base line-clamp-2">{event.title}</CardTitle>
+                      <Badge variant="outline" className="w-fit">
+                        {event.status}
+                      </Badge>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        {new Date(event.date).toLocaleDateString()}
+                      </div>
+                      {event.location && (
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4 mr-2" />
+                          <span className="line-clamp-1">{event.location}</span>
+                        </div>
+                      )}
+                      <Button variant="outline" size="sm" className="w-full mt-3">
+                        Configure Pricing
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
+      </div>
     );
   }
 
+  // Pricing Management View (when event is selected)
   return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-page-title">Dynamic Pricing</h1>
-            <p className="text-muted-foreground mt-1">
-              Create pricing rules for time-based, demand-based, and group discounts
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Price Calculator
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Price Calculator</DialogTitle>
-                </DialogHeader>
-                <PriceCalculatorForm onSubmit={handleCalculatePrice} />
-              </DialogContent>
-            </Dialog>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Rule
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Create Pricing Rule</DialogTitle>
-                </DialogHeader>
-                <CreateRuleForm
-                  onSubmit={handleCreateRule}
-                  onCancel={() => setIsCreateDialogOpen(false)}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" onClick={handleBackToSelector}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Events
+        </Button>
+      </div>
 
-        {priceCalculation && (
-          <Card className="bg-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Calculated Price</p>
-                  <p className="text-2xl font-bold">
-                    ${priceCalculation.finalPrice.toFixed(2)}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-page-title">Dynamic Pricing</h1>
+          <p className="text-muted-foreground mt-1">
+            Create pricing rules for time-based, demand-based, and group discounts
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Dialog open={isCalculatorOpen} onOpenChange={setIsCalculatorOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Calculator className="h-4 w-4 mr-2" />
+                Price Calculator
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Price Calculator</DialogTitle>
+              </DialogHeader>
+              <PriceCalculatorForm onSubmit={handleCalculatePrice} />
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Rule
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create Pricing Rule</DialogTitle>
+              </DialogHeader>
+              <CreateRuleForm
+                onSubmit={handleCreateRule}
+                onCancel={() => setIsCreateDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {priceCalculation && (
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Calculated Price</p>
+                <p className="text-2xl font-bold">
+                  ${priceCalculation.finalPrice.toFixed(2)}
+                </p>
+                {priceCalculation.discount && (
+                  <p className="text-sm text-success">
+                    Saved: ${priceCalculation.discount.toFixed(2)} (from $
+                    {priceCalculation.originalPrice.toFixed(2)})
                   </p>
-                  {priceCalculation.discount && (
-                    <p className="text-sm text-success">
-                      Saved: ${priceCalculation.discount.toFixed(2)} (from $
-                      {priceCalculation.originalPrice.toFixed(2)})
-                    </p>
-                  )}
-                </div>
-                {priceCalculation.appliedRules.length > 0 && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Applied Rules:</p>
-                    {priceCalculation.appliedRules.map((rule: string, idx: number) => (
-                      <Badge key={idx} variant="secondary" className="mr-1">
-                        {rule}
-                      </Badge>
-                    ))}
-                  </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        )}
+              {priceCalculation.appliedRules.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Applied Rules:</p>
+                  {priceCalculation.appliedRules.map((rule: string, idx: number) => (
+                    <Badge key={idx} variant="secondary" className="mr-1">
+                      {rule}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-        {loading ? (
-          <div className="text-center py-8">Loading pricing rules...</div>
-        ) : rules.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Percent className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No pricing rules yet</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {rules.map((rule) => (
-              <Card key={rule.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{rule.name}</h3>
-                        <Badge variant="outline">{getTypeLabel(rule.type)}</Badge>
-                        <Badge variant={rule.isActive ? "default" : "outline"}>
-                          {rule.isActive ? "Active" : "Inactive"}
-                        </Badge>
-                        <Badge variant="secondary">Priority: {rule.priority}</Badge>
+      {loading ? (
+        <div className="text-center py-8">Loading pricing rules...</div>
+      ) : rules.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Percent className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-lg font-semibold mb-2">No pricing rules yet</p>
+            <p className="text-muted-foreground mb-4">
+              Create your first pricing rule to implement dynamic pricing
+            </p>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Rule
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {rules.map((rule) => (
+            <Card key={rule.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <h3 className="font-semibold">{rule.name}</h3>
+                      <Badge variant="outline">{getTypeLabel(rule.type)}</Badge>
+                      <Badge variant={rule.isActive ? "default" : "outline"}>
+                        {rule.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                      <Badge variant="secondary">Priority: {rule.priority}</Badge>
+                    </div>
+                    {rule.type === "time_based" && rule.startDate && rule.endDate && (
+                      <div className="text-sm text-muted-foreground mb-2">
+                        <Clock className="h-4 w-4 inline mr-1" />
+                        {new Date(rule.startDate).toLocaleDateString()} -{" "}
+                        {new Date(rule.endDate).toLocaleDateString()}
                       </div>
-                      {rule.type === "time_based" && rule.startDate && rule.endDate && (
-                        <div className="text-sm text-muted-foreground mb-2">
-                          <Clock className="h-4 w-4 inline mr-1" />
-                          {new Date(rule.startDate).toLocaleDateString()} -{" "}
-                          {new Date(rule.endDate).toLocaleDateString()}
-                        </div>
-                      )}
-                      {rule.type === "demand_based" && rule.demandThreshold && (
-                        <div className="text-sm text-muted-foreground mb-2">
-                          <TrendingUp className="h-4 w-4 inline mr-1" />
-                          Triggers at {rule.demandThreshold}% sold
-                          {rule.priceMultiplier && (
-                            <span className="ml-2">
-                              ({((rule.priceMultiplier - 1) * 100).toFixed(0)}% increase)
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {rule.type === "group_discount" && rule.minGroupSize && (
-                        <div className="text-sm text-muted-foreground mb-2">
-                          <Users className="h-4 w-4 inline mr-1" />
-                          Min {rule.minGroupSize} people
-                          {rule.discountValue && rule.discountType && (
-                            <span className="ml-2">
-                              ({rule.discountType === "PERCENTAGE"
-                                ? `${rule.discountValue}%`
-                                : `$${rule.discountValue}`}{" "}
-                              off)
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteRule(rule.id)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    </div>
+                    )}
+                    {rule.type === "demand_based" && rule.demandThreshold && (
+                      <div className="text-sm text-muted-foreground mb-2">
+                        <TrendingUp className="h-4 w-4 inline mr-1" />
+                        Triggers at {rule.demandThreshold}% sold
+                        {rule.priceMultiplier && (
+                          <span className="ml-2">
+                            ({((rule.priceMultiplier - 1) * 100).toFixed(0)}% increase)
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {rule.type === "group_discount" && rule.minGroupSize && (
+                      <div className="text-sm text-muted-foreground mb-2">
+                        <Users className="h-4 w-4 inline mr-1" />
+                        Min {rule.minGroupSize} people
+                        {rule.discountValue && rule.discountType && (
+                          <span className="ml-2">
+                            ({rule.discountType === "PERCENTAGE"
+                              ? `${rule.discountValue}%`
+                              : `$${rule.discountValue}`}{" "}
+                            off)
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteRule(rule.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -438,7 +574,7 @@ const CreateRuleForm = ({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="discountType">Discount Type</Label>
+              <Label htmlFor="discountType">Discount Type *</Label>
               <Select
                 value={formData.discountType}
                 onValueChange={(value: "PERCENTAGE" | "FIXED_AMOUNT") =>
@@ -449,13 +585,15 @@ const CreateRuleForm = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PERCENTAGE">Percentage</SelectItem>
-                  <SelectItem value="FIXED_AMOUNT">Fixed Amount</SelectItem>
+                  <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                  <SelectItem value="FIXED_AMOUNT">Fixed Amount ($)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="discountValue">Discount Value *</Label>
+              <Label htmlFor="discountValue">
+                Discount Value ({formData.discountType === "PERCENTAGE" ? "%" : "$"}) *
+              </Label>
               <Input
                 id="discountValue"
                 type="number"
@@ -471,32 +609,39 @@ const CreateRuleForm = ({
 
       {formData.type === "demand_based" && (
         <>
-          <div>
-            <Label htmlFor="demandThreshold">Demand Threshold (%) *</Label>
-            <Input
-              id="demandThreshold"
-              type="number"
-              min="0"
-              max="100"
-              value={formData.demandThreshold}
-              onChange={(e) => setFormData({ ...formData, demandThreshold: e.target.value })}
-              required
-              placeholder="e.g., 80"
-            />
-          </div>
-          <div>
-            <Label htmlFor="priceMultiplier">Price Multiplier *</Label>
-            <Input
-              id="priceMultiplier"
-              type="number"
-              step="0.01"
-              min="0.1"
-              max="10"
-              value={formData.priceMultiplier}
-              onChange={(e) => setFormData({ ...formData, priceMultiplier: e.target.value })}
-              required
-              placeholder="e.g., 1.2 for 20% increase"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="demandThreshold">Demand Threshold (%) *</Label>
+              <Input
+                id="demandThreshold"
+                type="number"
+                min="0"
+                max="100"
+                value={formData.demandThreshold}
+                onChange={(e) => setFormData({ ...formData, demandThreshold: e.target.value })}
+                required
+                placeholder="75"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Percentage of tickets sold to trigger this rule
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="priceMultiplier">Price Multiplier *</Label>
+              <Input
+                id="priceMultiplier"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.priceMultiplier}
+                onChange={(e) => setFormData({ ...formData, priceMultiplier: e.target.value })}
+                required
+                placeholder="1.25"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                1.25 = 25% price increase
+              </p>
+            </div>
           </div>
         </>
       )}
@@ -504,7 +649,7 @@ const CreateRuleForm = ({
       {formData.type === "group_discount" && (
         <>
           <div>
-            <Label htmlFor="minGroupSize">Min Group Size *</Label>
+            <Label htmlFor="minGroupSize">Minimum Group Size *</Label>
             <Input
               id="minGroupSize"
               type="number"
@@ -512,11 +657,12 @@ const CreateRuleForm = ({
               value={formData.minGroupSize}
               onChange={(e) => setFormData({ ...formData, minGroupSize: e.target.value })}
               required
+              placeholder="5"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="discountType">Discount Type</Label>
+              <Label htmlFor="discountType">Discount Type *</Label>
               <Select
                 value={formData.discountType}
                 onValueChange={(value: "PERCENTAGE" | "FIXED_AMOUNT") =>
@@ -527,13 +673,15 @@ const CreateRuleForm = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PERCENTAGE">Percentage</SelectItem>
-                  <SelectItem value="FIXED_AMOUNT">Fixed Amount</SelectItem>
+                  <SelectItem value="PERCENTAGE">Percentage (%)</SelectItem>
+                  <SelectItem value="FIXED_AMOUNT">Fixed Amount ($)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="discountValue">Discount Value *</Label>
+              <Label htmlFor="discountValue">
+                Discount Value ({formData.discountType === "PERCENTAGE" ? "%" : "$"}) *
+              </Label>
               <Input
                 id="discountValue"
                 type="number"
@@ -554,21 +702,29 @@ const CreateRuleForm = ({
           type="number"
           value={formData.priority}
           onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-          placeholder="Higher priority rules apply first"
+          placeholder="0"
         />
+        <p className="text-xs text-muted-foreground mt-1">
+          Higher priority rules are applied first
+        </p>
       </div>
 
       <div>
-        <Label htmlFor="applicableTicketTypes">Applicable Ticket Types (comma-separated, leave empty for all)</Label>
+        <Label htmlFor="applicableTicketTypes">Applicable Ticket Types (optional)</Label>
         <Input
           id="applicableTicketTypes"
           value={formData.applicableTicketTypes}
-          onChange={(e) => setFormData({ ...formData, applicableTicketTypes: e.target.value })}
-          placeholder="e.g., VIP, General"
+          onChange={(e) =>
+            setFormData({ ...formData, applicableTicketTypes: e.target.value })
+          }
+          placeholder="General Admission, VIP (comma-separated)"
         />
+        <p className="text-xs text-muted-foreground mt-1">
+          Leave blank to apply to all ticket types
+        </p>
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
@@ -584,42 +740,44 @@ const PriceCalculatorForm = ({
   onSubmit: (ticketType: string, quantity: number) => void;
 }) => {
   const [ticketType, setTicketType] = useState("");
-  const [quantity, setQuantity] = useState("1");
+  const [quantity, setQuantity] = useState(1);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(ticketType, parseInt(quantity));
+    onSubmit(ticketType, quantity);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="ticketType">Ticket Type *</Label>
+        <Label htmlFor="ticketType">Ticket Type</Label>
         <Input
           id="ticketType"
           value={ticketType}
           onChange={(e) => setTicketType(e.target.value)}
-          required
           placeholder="e.g., General Admission"
+          required
         />
       </div>
       <div>
-        <Label htmlFor="quantity">Quantity *</Label>
+        <Label htmlFor="quantity">Quantity</Label>
         <Input
           id="quantity"
           type="number"
           min="1"
           value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
+          onChange={(e) => setQuantity(parseInt(e.target.value))}
           required
         />
       </div>
       <div className="flex justify-end">
-        <Button type="submit">Calculate</Button>
+        <Button type="submit">
+          <Calculator className="h-4 w-4 mr-2" />
+          Calculate Price
+        </Button>
       </div>
     </form>
   );
 };
 
 export default AdminDynamicPricing;
-
