@@ -29,7 +29,7 @@ import {
   getReservedSeating,
   deleteTicketPackage,
 } from "@/lib/organizer-dashboard-api";
-import { getEvents } from "@/lib/event-api";
+import { getEvents, EventStatus } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -72,7 +72,7 @@ const AdminAdvancedTicketTypes = () => {
     seatingChart?: unknown;
   }
 
-  const [reservedSeating, setReservedSeating] = useState<ReservedSeating[]>([]);
+  const [, setReservedSeating] = useState<ReservedSeating[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("packages");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -81,14 +81,14 @@ const AdminAdvancedTicketTypes = () => {
   // Event selector state
   const [events, setEvents] = useState<Event[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
   const [loadingEvents, setLoadingEvents] = useState(false);
 
   // Fetch events for selector
   const fetchEvents = useCallback(async () => {
     try {
       setLoadingEvents(true);
-      const response = await getEvents({ limit: 50, status: 'APPROVED' });
+      const response = await getEvents({ limit: 50, status: EventStatus.APPROVED });
       if (response.success && response.data?.events) {
         setEvents(response.data.events as Event[]);
       }

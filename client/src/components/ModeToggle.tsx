@@ -5,7 +5,7 @@
  */
 
 import { Users, Calendar } from 'lucide-react';
-import { useDashboardMode } from '../contexts/DashboardModeContext';
+import { useDashboardMode } from '../hooks/useDashboardMode';
 import { MODE_LABELS } from '../constants/navigationLabels';
 import { cn } from '../lib/utils';
 

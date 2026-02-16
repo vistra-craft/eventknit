@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { OnboardingController } from '../../../src/controllers/onboarding.controller.js';
 import { prisma } from '../../../src/config/database.js';
 import { AuthenticatedRequest } from '../../../src/middleware/auth.middleware.js';
@@ -76,7 +76,7 @@ describe('OnboardingController', () => {
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(prisma.user.update).toHaveBeenCalledWith({
@@ -121,7 +121,7 @@ describe('OnboardingController', () => {
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(prisma.user.update).toHaveBeenCalledWith(
@@ -129,7 +129,7 @@ describe('OnboardingController', () => {
           data: expect.objectContaining({
             role: 'ORGANIZER',
           }),
-        })
+        }),
       );
     });
 
@@ -157,7 +157,7 @@ describe('OnboardingController', () => {
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(prisma.user.update).toHaveBeenCalledWith(
@@ -165,7 +165,7 @@ describe('OnboardingController', () => {
           data: expect.objectContaining({
             role: 'ATTENDEE',
           }),
-        })
+        }),
       );
     });
 
@@ -191,7 +191,7 @@ describe('OnboardingController', () => {
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(prisma.user.update).toHaveBeenCalledWith(
@@ -199,7 +199,7 @@ describe('OnboardingController', () => {
           data: expect.objectContaining({
             role: 'ATTENDEE',
           }),
-        })
+        }),
       );
     });
 
@@ -232,7 +232,7 @@ describe('OnboardingController', () => {
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(prisma.user.update).toHaveBeenCalledWith(
@@ -244,7 +244,7 @@ describe('OnboardingController', () => {
               organizerEventTypes: ['workshop'],
             },
           }),
-        })
+        }),
       );
     });
 
@@ -254,7 +254,7 @@ describe('OnboardingController', () => {
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(res.status).toHaveBeenCalledWith(401);
@@ -273,7 +273,7 @@ describe('OnboardingController', () => {
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(next).toHaveBeenCalledWith(error);
@@ -310,7 +310,7 @@ describe('OnboardingController', () => {
       await OnboardingController.saveProgress(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(prisma.user.update).toHaveBeenCalledWith({
@@ -337,7 +337,7 @@ describe('OnboardingController', () => {
       await OnboardingController.saveProgress(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(res.status).toHaveBeenCalledWith(401);
@@ -368,7 +368,7 @@ describe('OnboardingController', () => {
       await OnboardingController.skipOnboarding(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(prisma.user.update).toHaveBeenCalledWith({
@@ -405,7 +405,7 @@ describe('OnboardingController', () => {
       await OnboardingController.getOnboardingStatus(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(res.status).toHaveBeenCalledWith(200);
@@ -427,7 +427,7 @@ describe('OnboardingController', () => {
       await OnboardingController.getOnboardingStatus(
         req as AuthenticatedRequest,
         res as Response,
-        next
+        next,
       );
 
       expect(res.status).toHaveBeenCalledWith(404);

@@ -354,7 +354,7 @@ export class AuthService {
    * Request Email OAuth code (code-based passwordless login/registration)
    * Works for both new and existing users - sends code to email
    */
-  static async requestEmailOAuthCode(email: string, role?: UserRole): Promise<void> {
+  static async requestEmailOAuthCode(email: string, _role?: UserRole): Promise<void> {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },

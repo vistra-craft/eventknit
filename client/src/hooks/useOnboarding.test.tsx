@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
 import { useOnboarding } from './useOnboarding';
@@ -321,7 +321,7 @@ describe('useOnboarding', () => {
       await act(async () => {
         try {
           await result.current.getStatus();
-        } catch (error) {
+        } catch {
           // Expected error
         }
       });

@@ -25,7 +25,7 @@ import {
   calculateDynamicPrice,
   deletePricingRule,
 } from "@/lib/organizer-dashboard-api";
-import { getEvents } from "@/lib/event-api";
+import { getEvents, EventStatus } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -94,7 +94,7 @@ const AdminDynamicPricing = () => {
   const fetchEvents = useCallback(async () => {
     try {
       setLoadingEvents(true);
-      const response = await getEvents({ limit: 50, status: 'APPROVED' });
+      const response = await getEvents({ limit: 50, status: EventStatus.APPROVED });
       if (response.success && response.data?.events) {
         setEvents(response.data.events as Event[]);
       }

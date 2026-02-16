@@ -10,7 +10,7 @@ import { LogOut, User, BarChart3, type LucideIcon } from 'lucide-react';
 import Logo from './Logo';
 import { useAuth } from '../hooks/useAuth';
 import { ThemeToggle } from './ThemeToggle';
-import { useDashboardMode } from '../contexts/DashboardModeContext';
+import { useDashboardMode } from '../hooks/useDashboardMode';
 import { NAV_LABELS } from '../constants/navigationLabels';
 
 interface MenuItem {
