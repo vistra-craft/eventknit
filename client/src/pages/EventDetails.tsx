@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent } from "@/hooks/useEvent";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -156,17 +155,6 @@ const EventDetails = () => {
     return false;
   })();
 
-  // Format registration deadline for display
-  const formatDeadline = (deadline: string) => {
-    const date = new Date(deadline);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
 
   // Meta tags logic
   const getFrontendUrl = () => {
@@ -221,20 +209,6 @@ const EventDetails = () => {
     // placeholder — wire to backend favourites when ready
   };
 
-  // Floating register button: appears once the action bar scrolls out of view
-  const [showFloatingRegister, setShowFloatingRegister] = useState(false);
-  const actionBarRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = actionBarRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowFloatingRegister(!entry.isIntersecting),
-      { threshold: 0, rootMargin: '-64px 0px 0px 0px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [event]); // re-run once event loads so the ref is populated
 
   if (isLoading) {
     return (
@@ -298,11 +272,8 @@ const EventDetails = () => {
                 onlineLink={event.onlineLink}
               />
 
-              {/* Action bar: like/share scroll with content, register observed for floating button */}
-              <div
-                ref={actionBarRef}
-                className="flex items-center justify-between py-3 border-b border-border"
-              >
+              {/* Action bar: like/share left, register right */}
+              <div className="flex items-center justify-between py-3 border-b border-border">
                 {/* Like + Share */}
                 <div className="flex items-center gap-2">
                   <button
