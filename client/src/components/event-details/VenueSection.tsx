@@ -31,7 +31,7 @@ export const VenueSection = ({ venue, location, coordinates, isOnline, onlineLin
             </div>
             <div>
               <h3 className="text-xl font-bold mb-2">Online Event</h3>
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 The event link will be shared with registered attendees via email and in your ticket.
               </p>
             </div>
@@ -70,7 +70,7 @@ export const VenueSection = ({ venue, location, coordinates, isOnline, onlineLin
           <h3 className="text-xl font-bold mb-2">{venue || 'Event Location'}</h3>
           <div className="flex items-start gap-2 text-muted-foreground">
             <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <p>{location}</p>
+            <p className="text-sm">{location}</p>
           </div>
         </div>
       </div>

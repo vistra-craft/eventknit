@@ -117,7 +117,7 @@ export const ConfirmationStep = ({
           <CheckCircle className="w-10 h-10 text-success" />
         </div>
         <h2 className="text-2xl font-bold mb-2">Registration Successful!</h2>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {event.isFree
             ? "You're all set for the event"
             : 'Your payment has been processed successfully'}
