@@ -399,6 +399,59 @@
 @layer utilities {
 
   /* ========================================================================
+     MOBILE-SPECIFIC UTILITIES - Touch-friendly and safe-area support
+     ======================================================================== */
+
+  /* Touch Target Sizes - Minimum 44x44px for accessibility */
+  .touch-target-sm {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .touch-target-md {
+    @apply min-h-[48px] min-w-[48px];
+  }
+
+  .touch-target-lg {
+    @apply min-h-[56px] min-w-[56px];
+  }
+
+  /* iOS Safe Area Support - For notch/dynamic island */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Mobile-optimized spacing */
+  .mobile-container {
+    @apply px-4 sm:px-6 md:px-8;
+  }
+
+  /* Prevent text selection on buttons/interactive elements (mobile) */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Mobile-friendly tap highlight */
+  .tap-highlight-none {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ========================================================================
      UNIFIED PAGE TYPOGRAPHY - Use these for consistent text across pages
      ======================================================================== */
 

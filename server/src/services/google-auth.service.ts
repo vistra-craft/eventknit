@@ -2,18 +2,12 @@ import axios from 'axios';
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import {
-  generateAccessToken,
-  generateRefreshToken,
-  parseExpiresIn,
-  type TokenPayload,
-} from '../utils/jwt.js';
-import {
   AuthenticationError,
   ValidationError,
 } from '../utils/errors.js';
 import { UserRole, UserStatus } from '@prisma/client';
 import { config } from '../config/index.js';
-import type { AuthResponse } from './auth.service.js';
+import { AuthService, type AuthResponse } from './auth.service.js';
 
 interface GoogleUserData {
   id: string;
@@ -26,6 +20,7 @@ interface GoogleUserData {
 }
 
 interface GoogleTokenInfo {
+  aud: string;
   email: string;
   email_verified: string;
   name?: string;
@@ -49,22 +44,31 @@ export class GoogleAuthService {
 
       const data = response.data;
 
-      // Verify the token is for our app
-      if (config.google.clientId && data.sub) {
-        // Token is valid
-        return {
-          id: data.sub,
-          email: data.email,
-          verified_email: data.email_verified === 'true',
-          name: data.name,
-          given_name: data.given_name,
-          family_name: data.family_name,
-          picture: data.picture,
-        };
+      // Verify the token audience matches our client ID to prevent token reuse attacks
+      if (config.google.clientId && data.aud !== config.google.clientId) {
+        logger.warn(`Google token audience mismatch: expected ${config.google.clientId}, got ${data.aud}`);
+        throw new AuthenticationError('Invalid Google token');
       }
 
-      throw new AuthenticationError('Invalid Google token');
+      if (!data.sub) {
+        throw new AuthenticationError('Invalid Google token');
+      }
+
+      return {
+        id: data.sub,
+        email: data.email,
+        verified_email: data.email_verified === 'true',
+        name: data.name,
+        given_name: data.given_name,
+        family_name: data.family_name,
+        picture: data.picture,
+      };
     } catch (error) {
+      // Re-throw AuthenticationError with original message
+      if (error instanceof AuthenticationError) {
+        throw error;
+      }
+
       if (axios.isAxiosError(error) && error.response) {
         logger.error('Google token verification failed:', error.response.data);
       } else {
@@ -110,54 +114,6 @@ export class GoogleAuthService {
   }
 
   /**
-   * Generate tokens for user
-   */
-  private static async generateTokens(user: { id: string; email: string; role: UserRole }): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-  }> {
-    const payload: Omit<TokenPayload, 'iat' | 'exp'> = {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    };
-
-    const accessToken = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken(payload);
-    const expiresIn = parseExpiresIn(config.jwt.expiresIn);
-
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn,
-    };
-  }
-
-  /**
-   * Save refresh token to database
-   */
-  private static async saveRefreshToken(
-    userId: string,
-    token: string,
-    ipAddress?: string,
-    userAgent?: string,
-  ): Promise<void> {
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-    await prisma.refreshToken.create({
-      data: {
-        userId,
-        token,
-        expiresAt,
-        ipAddress,
-        userAgent,
-      },
-    });
-  }
-
-  /**
    * Login or register user with Google
    * Supports both ID token (from Google Sign-In) and access token (from OAuth flow)
    */
@@ -177,12 +133,15 @@ export class GoogleAuthService {
       throw new ValidationError('Google account does not have an email address');
     }
 
+    // Normalize email to match validation layer convention
+    const normalizedEmail = googleUser.email.toLowerCase().trim();
+
     // Check if user already exists with this googleId or email
     let user = await prisma.user.findFirst({
       where: {
         OR: [
           { googleId: googleUser.id },
-          { email: googleUser.email },
+          { email: normalizedEmail },
         ],
       },
     });
@@ -218,12 +177,9 @@ export class GoogleAuthService {
       logger.info(`User logged in with Google: ${user.email}`);
     } else {
       // Create new user account
-      const selectedRole = role || UserRole.ATTENDEE;
-
-      // Validate role - only allow ATTENDEE or ORGANIZER for new registrations
-      if (selectedRole !== UserRole.ATTENDEE && selectedRole !== UserRole.ORGANIZER) {
-        throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
-      }
+      // All new registrations default to ATTENDEE role
+      // Users can become organizers later via onboarding (when they select "organize" intent)
+      const selectedRole = UserRole.ATTENDEE;
 
       // Parse name from Google data
       const firstName = googleUser.given_name || googleUser.name?.split(' ')[0] || '';
@@ -231,14 +187,14 @@ export class GoogleAuthService {
 
       user = await prisma.user.create({
         data: {
-          email: googleUser.email,
+          email: normalizedEmail,
           googleId: googleUser.id,
           firstName: firstName || null,
           lastName: lastName || null,
           avatar: googleUser.picture || null,
           role: selectedRole,
           status: UserStatus.ACTIVE,
-          isEmailVerified: googleUser.verified_email || true, // Google emails are considered verified
+          isEmailVerified: true, // Google-verified emails are trusted
           emailVerifiedAt: new Date(),
         },
       });
@@ -246,11 +202,11 @@ export class GoogleAuthService {
       logger.info(`User registered with Google: ${user.email}`);
     }
 
-    // Generate tokens
-    const tokens = await this.generateTokens(user);
+    // Generate tokens (reuse AuthService to avoid duplication)
+    const tokens = await AuthService.generateTokens(user);
 
-    // Save refresh token
-    await this.saveRefreshToken(user.id, tokens.refreshToken, ipAddress, userAgent);
+    // Save refresh token with hashing (reuse AuthService)
+    await AuthService.saveRefreshToken(user.id, tokens.refreshToken, ipAddress, userAgent);
 
     return {
       user: {

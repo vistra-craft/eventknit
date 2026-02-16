@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
@@ -19,16 +19,29 @@ const OrganizerLayout = lazy(() => import("./layouts/OrganizerLayout"));
 const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
 // All routes are now defined in client/src/routes/ and rendered by layouts
 
+// Lazy load onboarding screens
+const WelcomeScreen = lazy(() => import("./pages/onboarding/WelcomeScreen"));
+const InterestsScreen = lazy(() => import("./pages/onboarding/InterestsScreen"));
+const EventTypesScreen = lazy(() => import("./pages/onboarding/EventTypesScreen"));
+const NotificationsScreen = lazy(() => import("./pages/onboarding/NotificationsScreen"));
+const CompletionScreen = lazy(() => import("./pages/onboarding/CompletionScreen"));
+
 // Wrapper component to provide role view context with user role
 // This needs to be inside BrowserRouter and AuthProvider
 const RoleViewWrapper = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
-  
+
   return (
     <RoleViewProvider userRole={user?.role || null}>
       {children}
     </RoleViewProvider>
   );
+};
+
+// Redirect component for organizer event routes
+const OrganizerEventRedirect = () => {
+  const { eventId } = useParams<{ eventId: string }>();
+  return <Navigate to={`/user/manage-events/${eventId}`} replace />;
 };
 
 const App = () => (
@@ -38,8 +51,16 @@ const App = () => (
         <BrowserRouter>
           <RoleViewWrapper>
             <Routes>
-      {/* User Routes */}
-      <Route path="/user/*" element={
+              {/* Dashboard Redirect - Unified dashboard for all non-admin users */}
+              <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+
+              {/* Legacy Organizer Route Redirects - Redirect to unified dashboard */}
+              <Route path="/organizer/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+              <Route path="/organizer/event/:eventId" element={<OrganizerEventRedirect />} />
+              <Route path="/organizer/events" element={<Navigate to="/user/dashboard" replace />} />
+
+              {/* User Routes */}
+              <Route path="/user/*" element={
         <ProtectedRoute>
           <Suspense fallback={<div className="min-h-screen bg-background" />}>
             <UserLayout />
@@ -63,6 +84,42 @@ const App = () => (
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <AuthLayout />
         </Suspense>
+      } />
+      {/* Onboarding Routes - Protected */}
+      <Route path="/onboarding/welcome" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <WelcomeScreen />
+          </Suspense>
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding/interests" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <InterestsScreen />
+          </Suspense>
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding/event-types" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <EventTypesScreen />
+          </Suspense>
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding/notifications" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <NotificationsScreen />
+          </Suspense>
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding/complete" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <CompletionScreen />
+          </Suspense>
+        </ProtectedRoute>
       } />
       {/* Public Routes - Catch-all */}
       <Route path="/*" element={

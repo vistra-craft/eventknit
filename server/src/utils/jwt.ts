@@ -35,7 +35,7 @@ export const verifyAccessToken = (token: string): TokenPayload => {
   try {
     return jwt.verify(token, config.jwt.secret) as TokenPayload;
   } catch {
-    throw new Error('Invalid or expired access token');
+    throw new AuthenticationError('Invalid or expired access token');
   }
 };
 
@@ -88,7 +88,7 @@ export interface UnsubscribeTokenPayload {
 export const generateUnsubscribeToken = (payload: UnsubscribeTokenPayload): string => {
   return jwt.sign(
     { ...payload, purpose: 'unsubscribe' },
-    config.jwt.secret,
+    config.jwt.unsubscribeSecret,
     { expiresIn: '30d' } as jwt.SignOptions,
   );
 };
@@ -99,7 +99,7 @@ export const generateUnsubscribeToken = (payload: UnsubscribeTokenPayload): stri
  */
 export const verifyUnsubscribeToken = (token: string): UnsubscribeTokenPayload => {
   try {
-    const decoded = jwt.verify(token, config.jwt.secret) as UnsubscribeTokenPayload & { purpose: string };
+    const decoded = jwt.verify(token, config.jwt.unsubscribeSecret) as UnsubscribeTokenPayload & { purpose: string };
     if (decoded.purpose !== 'unsubscribe') {
       throw new Error('Invalid token purpose');
     }

@@ -8,6 +8,7 @@ import { join } from 'path';
 import { config } from './config/index.js';
 import { stream } from './utils/logger.js';
 import authRoutes from './routes/auth.routes.js';
+import onboardingRoutes from './routes/onboarding.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import organizerRoutes from './routes/organizer.routes.js';
 import eventRoutes from './routes/event.routes.js';
@@ -170,6 +171,7 @@ import { SystemSettingsController } from './controllers/system-settings.controll
 app.get('/api/v1/settings/public', SystemSettingsController.getPublicSettings);
 
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/onboarding', onboardingRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/organizer', organizerRoutes);
 app.use('/api/v1/events', eventRoutes);

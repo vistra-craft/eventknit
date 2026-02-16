@@ -15,6 +15,7 @@ import {
   Monitor,
   LogOut,
   Palette,
+  Ticket,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -38,6 +39,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     marketing: location.pathname.startsWith('/admin/marketing'),
     // Auto-expand finance section if on finance pages
     finance: location.pathname.startsWith('/admin/finance'),
+    // Auto-expand tickets section if on tickets pages
+    tickets: location.pathname.startsWith('/admin/tickets'),
     // Auto-expand users section if on users pages
     users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
     // Auto-expand settings section if on settings pages
@@ -116,6 +119,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Salaries", href: "/admin/finance/wages" },
         { name: "Income Statement", href: "/admin/finance/income-statement" },
         { name: "Platform Fees", href: "/admin/finance/platform-fees" },
+      ]
+    },
+    {
+      id: "tickets",
+      label: "Tickets",
+      icon: Ticket,
+      group: "main",
+      children: [
+        { name: "Advanced Ticket Types", href: "/admin/tickets/advanced" },
+        { name: "Dynamic Pricing", href: "/admin/tickets/pricing" },
       ]
     },
     {
@@ -199,6 +212,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       events: location.pathname.startsWith('/admin/events'),
       marketing: location.pathname.startsWith('/admin/marketing'),
       finance: location.pathname.startsWith('/admin/finance'),
+      tickets: location.pathname.startsWith('/admin/tickets'),
       users: location.pathname.startsWith('/admin/users'),
       settings: location.pathname.startsWith('/admin/settings'),
       branding: location.pathname === '/admin/white-label',

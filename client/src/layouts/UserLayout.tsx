@@ -1,15 +1,16 @@
 /**
- * User Layout
+ * User Layout - Enhanced for Unified Dashboard
  * Wraps all /user/* routes
  * Provides consistent layout for user dashboard pages
- * Includes navigation bar and main content area
+ * Includes unified navigation bar with mode support and main content area
  */
 
 import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import { Suspense } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { userRoutes } from '../routes/userRoutes';
-import DashboardNavbar from '../pages/user/DashboardNavbar';
+import UnifiedNavbar from '../components/UnifiedNavbar';
+import { DashboardModeProvider } from '../contexts/DashboardModeContext';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
 
 /**
@@ -58,33 +59,35 @@ const UserLayout = () => {
   const activeSection = pathParts[2] || 'dashboard';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <DashboardNavbar
-        user={user}
-        activeSection={activeSection}
-        eventTitle={eventData?.title}
-      />
-      <main className="pt-16 flex-1">
-        {/* Success Message */}
-        {successMessage && (
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-            <div className="bg-success-light border border-success/20 rounded-lg p-4 mb-6">
-              <div className="flex">
-                <div className="text-success">{successMessage}</div>
+    <DashboardModeProvider>
+      <div className="min-h-screen bg-background flex flex-col">
+        <UnifiedNavbar
+          user={user}
+          activeSection={activeSection}
+          eventTitle={eventData?.title}
+        />
+        <main className="pt-16 flex-1">
+          {/* Success Message */}
+          {successMessage && (
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+              <div className="bg-success-light border border-success/20 rounded-lg p-4 mb-6">
+                <div className="flex">
+                  <div className="text-success">{successMessage}</div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        <Suspense fallback={<LoadingFallback />}>
-          <Routes>
-            {userRoutes.map((route, index) => (
-              <Route key={index} path={route.path} element={route.element} />
-            ))}
-          </Routes>
-          <Outlet />
-        </Suspense>
-      </main>
-    </div>
+          )}
+          <Suspense fallback={<LoadingFallback />}>
+            <Routes>
+              {userRoutes.map((route, index) => (
+                <Route key={index} path={route.path} element={route.element} />
+              ))}
+            </Routes>
+            <Outlet />
+          </Suspense>
+        </main>
+      </div>
+    </DashboardModeProvider>
   );
 };
 

@@ -44,6 +44,7 @@ import {
   updateBrandingStatusSchema,
   verifyCustomDomainSchema,
 } from '../validations/white-label.validations.js';
+import { extendedProfileValidations } from '../validations/extended-profile.validations.js';
 import { AdminSecurityController } from '../controllers/admin-security.controller.js';
 import { AdminPlatformAnalyticsController } from '../controllers/admin-platform-analytics.controller.js';
 import { authenticate } from '../middleware/auth.middleware.js';
@@ -851,6 +852,7 @@ router.get(
 router.put(
   '/users/:userId/staff-profile',
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  validate(extendedProfileValidations.upsertStaffProfile),
   ExtendedProfileController.updateStaffProfile,
 );
 
@@ -873,6 +875,7 @@ router.get(
 router.put(
   '/users/:userId/organizer-profile',
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  validate(extendedProfileValidations.upsertOrganizerProfile),
   ExtendedProfileController.updateOrganizerProfile,
 );
 
@@ -895,6 +898,7 @@ router.get(
 router.put(
   '/users/:userId/emergency-contact',
   validateParams(Joi.object({ userId: Joi.string().uuid().required() })),
+  validate(extendedProfileValidations.upsertEmergencyContact),
   ExtendedProfileController.updateEmergencyContact,
 );
 

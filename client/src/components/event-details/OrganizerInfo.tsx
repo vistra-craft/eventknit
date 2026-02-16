@@ -26,58 +26,54 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
   const shouldTruncate = textLength > TRUNCATE_LENGTH;
 
   return (
-    <section>
-      <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          {/* Avatar Placeholder */}
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-4 ring-primary/5">
-            <Building className="w-10 h-10 text-primary" />
+    <section className="space-y-4">
+      {/* Top row: avatar + name + subtitle */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-2 ring-primary/5">
+          <Building className="w-5 h-5 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-foreground leading-tight">{name}</h3>
+          <p className="text-xs text-muted-foreground">Event Organizer</p>
+        </div>
+      </div>
+
+      {/* Organizer Description */}
+      {organizerDescription && (
+        <div className="space-y-2">
+          <div className={shouldTruncate && !isExpanded ? "line-clamp-3" : ""}>
+            <RichTextContent
+              content={organizerDescription}
+              className="text-sm text-muted-foreground leading-relaxed"
+            />
           </div>
+          {shouldTruncate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-8 text-primary hover:text-primary/80 p-0"
+            >
+              {isExpanded ? (
+                <>
+                  Show Less
+                  <ChevronUp className="w-4 h-4 ml-1" />
+                </>
+              ) : (
+                <>
+                  See More
+                  <ChevronDown className="w-4 h-4 ml-1" />
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+      )}
 
-          {/* Info */}
-          <div className="flex-1 text-center md:text-left space-y-4">
-            <div>
-              <h3 className="text-2xl font-bold text-foreground mb-1">{name}</h3>
-              <p className="text-muted-foreground">
-                Event Organizer
-              </p>
-            </div>
-
-            {/* Organizer Description */}
-            {organizerDescription && (
-              <div className="space-y-2">
-                <div className={shouldTruncate && !isExpanded ? "line-clamp-3" : ""}>
-                  <RichTextContent
-                    content={organizerDescription}
-                    className="text-sm text-muted-foreground leading-relaxed"
-                  />
-                </div>
-                {shouldTruncate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsExpanded(!isExpanded)}
-                    className="h-8 text-primary hover:text-primary/80 p-0"
-                  >
-                    {isExpanded ? (
-                      <>
-                        Show Less
-                        <ChevronUp className="w-4 h-4 ml-1" />
-                      </>
-                    ) : (
-                      <>
-                        See More
-                        <ChevronDown className="w-4 h-4 ml-1" />
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Social Links */}
-            {socialLinks && Object.keys(socialLinks).length > 0 && (
-              <div className="flex flex-wrap gap-2 justify-center md:justify-start pt-2">
-                {Object.entries(socialLinks).map(([platform, url]) => {
+      {/* Social Links */}
+      {socialLinks && Object.keys(socialLinks).length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {Object.entries(socialLinks).map(([platform, url]) => {
                   if (!url || url.trim() === '') return null;
                   
                   const platformLower = platform.toLowerCase();
@@ -115,11 +111,9 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
                       {Icon}
                     </a>
                   );
-                })}
-              </div>
-            )}
-          </div>
+          })}
         </div>
+      )}
     </section>
   );
 };

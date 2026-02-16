@@ -37,6 +37,9 @@ const Invoices = lazy(() => import('../pages/user/Invoices'));
 const TicketViewPage = lazy(() => import('../pages/user/TicketViewPage'));
 const UserProfilePage = lazy(() => import('../pages/user/UserProfilePage'));
 const NotificationPreferencesPage = lazy(() => import('../pages/user/NotificationPreferencesPage'));
+const EventManagementHub = lazy(() => import('../pages/user/EventManagementHub'));
+const CreateEventEntry = lazy(() => import('../pages/user/CreateEventEntry'));
+const CreateEventStepwise = lazy(() => import('../pages/CreateEventStepwise'));
 
 /**
  * User route definitions
@@ -61,6 +64,22 @@ export const userRoutes: RouteConfig[] = [
   {
     path: 'my-events',
     element: createElement(DashboardMyEvent),
+  },
+
+  // Event Management (Organizer features in unified dashboard)
+  {
+    path: 'manage-events/:eventId',
+    element: createElement(EventManagementHub),
+  },
+
+  // Event Creation (Role-aware routing)
+  {
+    path: 'create-event',
+    element: createElement(CreateEventEntry),
+  },
+  {
+    path: 'create-event-form',
+    element: createElement(CreateEventStepwise),
   },
 
   // Ticket management

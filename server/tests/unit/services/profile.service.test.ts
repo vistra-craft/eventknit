@@ -2,7 +2,7 @@ import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
 import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
 import type { Request } from 'express';
 import { ProfileService } from '../../../src/services/profile.service.js';
-import { ValidationError, NotFoundError } from '../../../src/utils/errors.js';
+import { NotFoundError } from '../../../src/utils/errors.js';
 import * as cloudinaryService from '../../../src/services/cloudinary.service.js';
 import * as databaseModule from '../../../src/config/database.js';
 
@@ -158,31 +158,8 @@ describe('ProfileService', () => {
       expect(result.avatar).toBe('https://example.com/avatar.jpg');
     });
 
-    it('should throw error when trying to change email', async () => {
-      // Arrange
-      prisma.user.findUnique.mockResolvedValue(mockUser as any);
-
-      // Act & Assert
-      await expect(
-        ProfileService.updateProfileWithAvatar(
-          mockUserId,
-          undefined,
-          {
-            email: 'newemail@test.com',
-          },
-        ),
-      ).rejects.toThrow(ValidationError);
-
-      await expect(
-        ProfileService.updateProfileWithAvatar(
-          mockUserId,
-          undefined,
-          {
-            email: 'newemail@test.com',
-          },
-        ),
-      ).rejects.toThrow('Email address cannot be changed once registered');
-    });
+    // NOTE: Email change is now handled via /email/request-change flow.
+    // The Joi validation schema strips email before it reaches the service.
 
     it('should throw error if user not found', async () => {
       // Arrange
@@ -266,23 +243,26 @@ describe('ProfileService', () => {
       });
     });
 
-    it('should allow email to remain unchanged', async () => {
+    it('should update firstName without affecting other fields', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      prisma.user.update.mockResolvedValue(mockUser as any);
+      prisma.user.update.mockResolvedValue({ ...mockUser, firstName: 'Jane' } as any);
 
       // Act
       await ProfileService.updateProfileWithAvatar(
         mockUserId,
         undefined,
         {
-          email: mockUser.email, // Same email
           firstName: 'Jane',
         },
       );
 
-      // Assert - should not throw error
-      expect(prisma.user.update).toHaveBeenCalled();
+      // Assert
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: mockUserId },
+        data: { firstName: 'Jane' },
+        select: expect.any(Object),
+      });
     });
   });
 

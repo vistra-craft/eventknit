@@ -214,17 +214,26 @@ components:
           type: string
           format: date-time
 
-    AuthTokens:
+    AuthResponse:
       type: object
+      description: |
+        Authentication response returned by all token-issuing endpoints.
+        The refresh token is NOT included in the response body — it is sent
+        as a Set-Cookie HTTP header (HttpOnly, Secure, SameSite=Strict).
       properties:
+        user:
+          $ref: '#/components/schemas/User'
         accessToken:
           type: string
           description: JWT access token (expires in 15 minutes)
-        refreshToken:
-          type: string
-          description: JWT refresh token (expires in 7 days)
-        user:
-          $ref: '#/components/schemas/User'
+        expiresIn:
+          type: integer
+          description: Access token lifetime in seconds
+          example: 900
+
+    # Kept for backward compatibility in documentation references
+    AuthTokens:
+      $ref: '#/components/schemas/AuthResponse'
 
     # Event Schemas
     Event:
@@ -2351,7 +2360,10 @@ paths:
       tags:
         - Authentication
       summary: Login user
-      description: Authenticate user with email and password
+      description: |
+        Authenticate user with email and password.
+        The refresh token is set as an HttpOnly cookie in the response (not in the JSON body).
+        When `rememberMe` is true, the cookie lasts 30 days instead of 7.
       operationId: login
       requestBody:
         required: true
@@ -2369,6 +2381,10 @@ paths:
                 password:
                   type: string
                   format: password
+                rememberMe:
+                  type: boolean
+                  default: false
+                  description: Extend refresh token cookie to 30 days (default 7)
       responses:
         '200':
           description: Login successful
@@ -2461,7 +2477,10 @@ paths:
       tags:
         - Authentication
       summary: Google OAuth login/registration
-      description: Authenticate user with a Google OAuth token (ID token or access token from popup OAuth flow)
+      description: |
+        Authenticate user with a Google OAuth token. Supports both ID tokens (from native mobile SDKs)
+        and access tokens (from web popup OAuth flow). If the user doesn't exist, a new account is created.
+        The refresh token is set as an HttpOnly cookie.
       operationId: googleAuth
       requestBody:
         required: true
@@ -2480,6 +2499,11 @@ paths:
                   enum: [id_token, access_token]
                   default: id_token
                   description: Type of token being sent
+                role:
+                  type: string
+                  enum: [ATTENDEE, ORGANIZER]
+                  default: ATTENDEE
+                  description: Role for new accounts (ignored for existing users)
       responses:
         '200':
           description: Google authentication successful
@@ -2498,7 +2522,10 @@ paths:
       tags:
         - Authentication
       summary: Apple Sign In OAuth login/registration
-      description: Authenticate user with Apple Sign In
+      description: |
+        Authenticate user with Apple Sign In. Requires both the authorization code and identity token.
+        Apple only provides the user's name on the first authorization — subsequent sign-ins only
+        include the tokens. The refresh token is set as an HttpOnly cookie.
       operationId: appleAuth
       requestBody:
         required: true
@@ -2507,22 +2534,31 @@ paths:
             schema:
               type: object
               required:
-                - identityToken
+                - authorizationCode
+                - idToken
               properties:
-                identityToken:
-                  type: string
-                  description: Apple identity token
                 authorizationCode:
                   type: string
+                  description: Apple authorization code
+                idToken:
+                  type: string
+                  description: Apple identity token (JWT)
+                role:
+                  type: string
+                  enum: [ATTENDEE, ORGANIZER]
+                  default: ATTENDEE
+                  description: Role for new accounts (ignored for existing users)
                 user:
                   type: object
+                  description: User info (only available on first Apple authorization)
                   properties:
-                    firstName:
-                      type: string
-                    lastName:
-                      type: string
-                    email:
-                      type: string
+                    name:
+                      type: object
+                      properties:
+                        firstName:
+                          type: string
+                        lastName:
+                          type: string
       responses:
         '200':
           description: Apple authentication successful
@@ -2578,7 +2614,10 @@ paths:
       tags:
         - Authentication
       summary: Logout user
-      description: Invalidate current session
+      description: |
+        Invalidate current session. Revokes the refresh token in the database
+        and clears the refreshToken cookie. The access token remains valid until
+        it expires (max 15 minutes).
       operationId: logout
       security:
         - BearerAuth: []
@@ -3032,6 +3071,133 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/email/request-change:
+    post:
+      tags:
+        - Authentication
+      summary: Request email change
+      description: |
+        Request to change the user's email address. Requires current password for verification.
+        Sends a 6-digit verification code to the new email and a notification to the old email.
+      operationId: requestEmailChange
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - newEmail
+                - currentPassword
+              properties:
+                newEmail:
+                  type: string
+                  format: email
+                  description: The new email address
+                currentPassword:
+                  type: string
+                  format: password
+                  description: Current password for verification
+      responses:
+        '200':
+          description: Verification code sent to new email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Email already in use or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/email/confirm-change:
+    post:
+      tags:
+        - Authentication
+      summary: Confirm email change
+      description: Confirm the email change using the 6-digit verification code sent to the new email address. After confirmation, the user must log in again with the new email.
+      operationId: confirmEmailChange
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  pattern: '^\d{6}$'
+                  description: 6-digit verification code sent to new email
+      responses:
+        '200':
+          description: Email changed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          newEmail:
+                            type: string
+                            format: email
+        '400':
+          description: Invalid or expired code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /auth/public-key:
+    get:
+      tags:
+        - Authentication
+      summary: Get ticket verification public key
+      description: |
+        Returns the Ed25519 public key used to sign ticket QR codes.
+        Mobile apps download this key to verify ticket signatures offline at venues.
+      operationId: getPublicKey
+      responses:
+        '200':
+          description: Public key retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          publicKey:
+                            type: string
+                            description: Ed25519 public key in hex format
+                          algorithm:
+                            type: string
+                            example: Ed25519
+                          format:
+                            type: string
+                            example: hex
+                          usage:
+                            type: string
+                            example: ticket-verification
 
   # ==================== EVENTS ====================
   /events:

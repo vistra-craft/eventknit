@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { prisma } from '../config/database.js';
-import { hashPassword, comparePassword, checkPasswordBreach } from '../utils/password.js';
+import { hashPassword, comparePassword, checkPasswordBreach, hashToken } from '../utils/password.js';
 import { logger } from '../utils/logger.js';
 import {
   generateAccessToken,
@@ -90,24 +90,13 @@ export class AuthService {
       }
     }
 
-    // Validate role - only allow ATTENDEE or ORGANIZER for new registrations
-    const selectedRole = role || UserRole.ATTENDEE;
-    if (selectedRole !== UserRole.ATTENDEE && selectedRole !== UserRole.ORGANIZER) {
-      throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
-    }
+    // All new registrations default to ATTENDEE role
+    // Users can become organizers later by creating events (unified dashboard approach)
+    const selectedRole = UserRole.ATTENDEE;
 
     // Generate 6-digit verification code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = crypto.randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Delete any existing unverified codes for this email
-    await prisma.emailVerification.deleteMany({
-      where: {
-        email,
-        verified: false,
-        expiresAt: { lt: new Date() },
-      },
-    });
 
     // Delete any existing unverified codes for this email
     await prisma.emailVerification.deleteMany({
@@ -251,8 +240,9 @@ export class AuthService {
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
-        // Set onboardingCompleted to false for new organizers (will be set to true after onboarding)
-        onboardingCompleted: userRole === UserRole.ORGANIZER ? false : true,
+        // Set onboardingCompleted to false for ALL new users (unified onboarding)
+        // Will be set to true after completing onboarding flow
+        onboardingCompleted: false,
       },
     });
 
@@ -310,8 +300,11 @@ export class AuthService {
     const hashedPassword = await hashPassword(data.password);
 
     // Default role to ATTENDEE if not provided
-    // All users start as ATTENDEE and can create events after verification
+    // Only allow ATTENDEE or ORGANIZER for self-registration (defense-in-depth)
     const userRole = data.role || UserRole.ATTENDEE;
+    if (userRole !== UserRole.ATTENDEE && userRole !== UserRole.ORGANIZER) {
+      throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
+    }
 
     // Auto-approve registration (no manual approval needed)
     // Users are ACTIVE immediately, but must verify email before full access
@@ -361,7 +354,7 @@ export class AuthService {
    * Request Email OAuth code (code-based passwordless login/registration)
    * Works for both new and existing users - sends code to email
    */
-  static async requestEmailOAuthCode(email: string, role?: UserRole): Promise<void> {
+  static async requestEmailOAuthCode(email: string, _role?: UserRole): Promise<void> {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -377,14 +370,12 @@ export class AuthService {
       // No need to block them here
     }
 
-    // Validate role if provided (only for new users)
-    const selectedRole = role || UserRole.ATTENDEE;
-    if (selectedRole !== UserRole.ATTENDEE && selectedRole !== UserRole.ORGANIZER) {
-      throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed.');
-    }
+    // All new registrations default to ATTENDEE role
+    // Users can become organizers later by creating events (unified dashboard approach)
+    const selectedRole = UserRole.ATTENDEE;
 
     // Generate 6-digit verification code
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = crypto.randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Delete any existing unverified codes for this email
@@ -542,7 +533,7 @@ export class AuthService {
   /**
    * Login user with email and password (traditional login)
    */
-  static async login(data: LoginData, ipAddress?: string, userAgent?: string): Promise<AuthResponse> {
+  static async login(data: LoginData, ipAddress?: string, userAgent?: string, rememberMe: boolean = false): Promise<AuthResponse> {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -667,8 +658,8 @@ export class AuthService {
     // Generate tokens
     const tokens = await this.generateTokens(user);
 
-    // Save refresh token
-    await this.saveRefreshToken(user.id, tokens.refreshToken, ipAddress, userAgent);
+    // Save refresh token (match DB expiry to cookie duration)
+    await this.saveRefreshToken(user.id, tokens.refreshToken, ipAddress, userAgent, rememberMe);
 
     return {
       user: {
@@ -702,7 +693,36 @@ export class AuthService {
       include: { user: true },
     });
 
-    if (!tokenDoc || tokenDoc.revoked || tokenDoc.expiresAt < new Date()) {
+    if (!tokenDoc || tokenDoc.expiresAt < new Date()) {
+      throw new AuthenticationError('Invalid or expired refresh token');
+    }
+
+    // Replay detection: if a revoked token is reused, it indicates token theft.
+    // Revoke ALL refresh tokens for this user (token family revocation per OWASP).
+    if (tokenDoc.revoked) {
+      await prisma.refreshToken.updateMany({
+        where: { userId: tokenDoc.userId, revoked: false },
+        data: {
+          revoked: true,
+          revokedAt: new Date(),
+          revokedReason: 'replay_detection',
+        },
+      });
+
+      logger.warn(`Refresh token replay detected for user ${tokenDoc.userId} — all tokens revoked`);
+
+      await createAuditLog({
+        userId: tokenDoc.userId,
+        action: AuditActions.SUSPICIOUS_ACTIVITY,
+        entity: 'RefreshToken',
+        entityId: tokenDoc.id,
+        metadata: {
+          reason: 'Refresh token replay detected',
+          revokedTokenId: tokenDoc.id,
+          ipAddress: tokenDoc.ipAddress,
+        },
+      });
+
       throw new AuthenticationError('Invalid or expired refresh token');
     }
 
@@ -755,8 +775,10 @@ export class AuthService {
    * Verify email with token
    */
   static async verifyEmail(token: string): Promise<void> {
+    // Hash the incoming token to match the stored hash
+    const tokenHash = hashToken(token);
     const verification = await prisma.emailVerification.findUnique({
-      where: { token },
+      where: { token: tokenHash },
       include: { user: true },
     });
 
@@ -809,20 +831,21 @@ export class AuthService {
       return;
     }
 
-    // Generate reset token
+    // Generate reset token — store SHA-256 hash in DB, send raw token to user
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(token);
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await prisma.passwordReset.create({
       data: {
         userId: user.id,
-        token,
+        token: tokenHash,
         expiresAt,
         ipAddress,
       },
     });
 
-    // Send email
+    // Send raw (unhashed) token to user via email
     try {
       await emailService.sendPasswordResetEmail(user.email, token);
     } catch (error) {
@@ -835,8 +858,10 @@ export class AuthService {
    * Reset password with token
    */
   static async resetPassword(token: string, newPassword: string, ipAddress?: string): Promise<void> {
+    // Hash the incoming token to match the stored hash
+    const tokenHash = hashToken(token);
     const reset = await prisma.passwordReset.findUnique({
-      where: { token },
+      where: { token: tokenHash },
       include: { user: true },
     });
 
@@ -908,6 +933,7 @@ export class AuthService {
    */
   private static async generateEmailVerificationToken(userId: string): Promise<string> {
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(token);
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Get user to get email
@@ -919,11 +945,12 @@ export class AuthService {
       throw new NotFoundError('User not found');
     }
 
+    // Store hashed token in DB, send raw token to user
     await prisma.emailVerification.create({
       data: {
         userId,
-        email: user.email, // Required field
-        token,
+        email: user.email,
+        token: tokenHash,
         expiresAt,
       },
     });
@@ -940,7 +967,7 @@ export class AuthService {
   /**
    * Generate JWT tokens
    */
-  private static async generateTokens(user: { id: string; email: string; role: UserRole }): Promise<{
+  static async generateTokens(user: { id: string; email: string; role: UserRole }): Promise<{
     accessToken: string;
     refreshToken: string;
     expiresIn: number;
@@ -983,14 +1010,16 @@ export class AuthService {
   /**
    * Save refresh token to database
    */
-  private static async saveRefreshToken(
+  static async saveRefreshToken(
     userId: string,
     token: string,
     ipAddress?: string,
     userAgent?: string,
+    rememberMe: boolean = false,
   ): Promise<void> {
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    const daysToExpire = rememberMe ? 30 : 7;
+    expiresAt.setDate(expiresAt.getDate() + daysToExpire);
 
     // Use upsert to handle potential duplicate tokens (shouldn't happen but safety measure)
     await prisma.refreshToken.upsert({
@@ -1123,9 +1152,12 @@ export class AuthService {
    * Verifies token, loads existing guest account, sets password, and returns auth response
    */
   static async createAccountFromInvitation(token: string, password: string): Promise<AuthResponse> {
-    // Find email verification record with this token
+    // Hash the incoming token to match the stored hash
+    const tokenHash = hashToken(token);
+
+    // Find email verification record with the hashed token
     const emailVerification = await prisma.emailVerification.findUnique({
-      where: { token },
+      where: { token: tokenHash },
       include: {
         user: true,
       },
@@ -1270,22 +1302,23 @@ export class AuthService {
       },
     });
 
-    // Generate new account invitation token
+    // Generate new account invitation token — store hash, send raw token
     const accountInvitationToken = crypto.randomBytes(32).toString('hex');
+    const accountInvitationTokenHash = hashToken(accountInvitationToken);
     const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    // Store new account invitation token
+    // Store hashed token in DB
     await prisma.emailVerification.create({
       data: {
         userId: user.id,
         email: user.email,
-        token: accountInvitationToken,
+        token: accountInvitationTokenHash,
         expiresAt: accountInvitationExpiresAt,
         verified: false,
       },
     });
 
-    // Send account invitation email
+    // Send raw (unhashed) token in the email link
     const accountCreationUrl = `${config.frontend.url}/auth/create-account?token=${accountInvitationToken}`;
 
     const html = `
@@ -1373,7 +1406,7 @@ export class AuthService {
     }
 
     // Generate 6-digit verification code
-    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const code = crypto.randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Delete any existing unverified codes for this email
@@ -1459,7 +1492,7 @@ export class AuthService {
    */
   static async requestMagicLink(email: string): Promise<void> {
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: { email },
     });
 
     if (!user) {
@@ -1471,24 +1504,24 @@ export class AuthService {
       throw new AuthenticationError('This account has been suspended. Please contact support.');
     }
 
-    // Generate secure token
+    // Generate secure token — store hash, send raw token
     const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(token);
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-    // Delete any existing unused magic link tokens for this user
+    // Delete ALL existing unused magic link tokens for this user (not just expired)
     await prisma.magicLinkToken.deleteMany({
       where: {
         userId: user.id,
         used: false,
-        expiresAt: { lt: new Date() },
       },
     });
 
-    // Create new magic link token
+    // Create new magic link token with hashed value
     await prisma.magicLinkToken.create({
       data: {
         userId: user.id,
-        token,
+        token: tokenHash,
         expiresAt,
       },
     });
@@ -1507,8 +1540,10 @@ export class AuthService {
    * Verify magic link token and auto-login user
    */
   static async verifyMagicLink(token: string, ipAddress?: string, userAgent?: string): Promise<AuthResponse> {
+    // Hash the incoming token to match the stored hash
+    const tokenHash = hashToken(token);
     const magicLink = await prisma.magicLinkToken.findUnique({
-      where: { token },
+      where: { token: tokenHash },
       include: { user: true },
     });
 
@@ -1578,6 +1613,159 @@ export class AuthService {
       refreshToken: tokens.refreshToken,
       expiresIn: tokens.expiresIn,
     };
+  }
+
+  /**
+   * Request email change — requires password confirmation.
+   * Sends a verification code to the NEW email and a notification to the OLD email.
+   */
+  static async requestEmailChange(
+    userId: string,
+    newEmail: string,
+    currentPassword: string,
+  ): Promise<void> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Cannot change to the same email (newEmail is already normalized by Joi validation)
+    if (user.email === newEmail) {
+      throw new ValidationError('New email must be different from your current email');
+    }
+
+    // Require password confirmation to prevent session-hijack attacks
+    if (!user.password) {
+      throw new ValidationError('You must set a password before changing your email. Use the password setup flow first.');
+    }
+    const isPasswordValid = await comparePassword(currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new ValidationError('Current password is incorrect');
+    }
+
+    // Check if new email is already taken
+    const existingUser = await prisma.user.findUnique({
+      where: { email: newEmail },
+    });
+    if (existingUser) {
+      throw new ConflictError('A user with this email already exists');
+    }
+
+    // Delete any existing pending email change requests for this user
+    await prisma.pendingEmailChange.deleteMany({
+      where: { userId, verified: false },
+    });
+
+    // Generate verification code for the NEW email
+    const code = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await prisma.pendingEmailChange.create({
+      data: {
+        userId,
+        oldEmail: user.email,
+        newEmail,
+        code,
+        expiresAt,
+      },
+    });
+
+    // Send verification code to the NEW email
+    await emailService.sendVerificationCode(newEmail, code);
+
+    // Send notification to the OLD email (security alert, not a code)
+    try {
+      await emailService.sendEmail({
+        to: user.email,
+        subject: 'Email Change Requested - EventKnit',
+        html: `
+          <p>Hello ${user.firstName || 'there'},</p>
+          <p>A request was made to change your EventKnit account email to <strong>${newEmail}</strong>.</p>
+          <p>If this was you, no action is needed — the change will complete once the new email is verified.</p>
+          <p>If this wasn't you, please <a href="${config.frontend.url}/auth/signin">log in and change your password immediately</a>, or contact support.</p>
+          <p>— The EventKnit Team</p>
+        `,
+        isCritical: true,
+      });
+    } catch (notifyError) {
+      // Non-blocking — the change can still proceed
+      logger.warn(`Failed to send email change notification to old email: ${notifyError}`);
+    }
+
+    logger.info(`Email change requested for user ${userId}: ${user.email} → ${newEmail}`);
+  }
+
+  /**
+   * Confirm email change with the verification code sent to the new email.
+   * Updates the user's email and sends a final confirmation to the old address.
+   */
+  static async confirmEmailChange(
+    userId: string,
+    code: string,
+  ): Promise<{ newEmail: string }> {
+    const pending = await prisma.pendingEmailChange.findFirst({
+      where: {
+        userId,
+        code,
+        verified: false,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!pending) {
+      throw new ValidationError('Invalid verification code');
+    }
+
+    if (pending.expiresAt < new Date()) {
+      throw new ValidationError('Verification code has expired. Please request a new email change.');
+    }
+
+    // Re-check that the new email is still available (race condition guard)
+    const existingUser = await prisma.user.findUnique({
+      where: { email: pending.newEmail },
+    });
+    if (existingUser) {
+      throw new ConflictError('A user with this email already exists');
+    }
+
+    // Atomically update the email and mark the change as verified
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { email: pending.newEmail },
+      }),
+      prisma.pendingEmailChange.update({
+        where: { id: pending.id },
+        data: { verified: true, verifiedAt: new Date() },
+      }),
+    ]);
+
+    // Revoke all refresh tokens — force re-login with new email in token payload
+    await this.revokeAllUserTokens(userId, 'email_change');
+
+    // Send confirmation to the OLD email
+    try {
+      await emailService.sendEmail({
+        to: pending.oldEmail,
+        subject: 'Your Email Has Been Changed - EventKnit',
+        html: `
+          <p>Hello,</p>
+          <p>Your EventKnit account email has been successfully changed to <strong>${pending.newEmail}</strong>.</p>
+          <p>If this wasn't you, please contact support immediately at <a href="mailto:support@eventknit.com">support@eventknit.com</a>.</p>
+          <p>— The EventKnit Team</p>
+        `,
+        isCritical: true,
+      });
+    } catch (notifyError) {
+      logger.warn(`Failed to send email change confirmation to old email: ${notifyError}`);
+    }
+
+    logger.info(`Email changed for user ${userId}: ${pending.oldEmail} → ${pending.newEmail}`);
+
+    return { newEmail: pending.newEmail };
   }
 }
 

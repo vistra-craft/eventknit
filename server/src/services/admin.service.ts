@@ -1076,6 +1076,55 @@ export class AdminService {
     const totalRevenue = Number(revenueResult._sum.totalAmount || 0);
     const totalRevenuePrev = Number(revenueResultPrev._sum.totalAmount || 0);
 
+    // Additional platform metrics for mobile dashboard
+    const [
+      totalUsers,
+      activeEvents,
+      totalCheckIns,
+      pendingApprovals,
+      totalTicketsSold,
+    ] = await Promise.all([
+      // Total attendee users
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+          role: 'ATTENDEE',
+          status: 'ACTIVE',
+        },
+      }),
+      // Currently live events (approved and currently running)
+      prisma.event.count({
+        where: {
+          deletedAt: null,
+          status: 'APPROVED',
+          startDate: { lte: now },
+          OR: [
+            { endDate: null },
+            { endDate: { gte: now } },
+          ],
+        },
+      }),
+      // Total check-ins (all time)
+      prisma.eventRegistration.count({
+        where: {
+          checkedInAt: { not: null },
+        },
+      }),
+      // Events pending approval
+      prisma.event.count({
+        where: {
+          deletedAt: null,
+          status: 'PENDING',
+        },
+      }),
+      // Total tickets sold (confirmed registrations)
+      prisma.eventRegistration.count({
+        where: {
+          status: 'CONFIRMED',
+        },
+      }),
+    ]);
+
     // Calculate percentage changes
     const calculateChange = (current: number, previous: number): { value: string; changeType: 'positive' | 'negative' } => {
       if (previous === 0) {
@@ -1096,7 +1145,31 @@ export class AdminService {
     // System health (simplified - can be enhanced with actual health checks)
     const systemHealth = 99.9; // Placeholder - can be calculated from actual system metrics
 
+    // Parse growth percentages as raw numbers for mobile
+    const parseGrowth = (change: { value: string }) => {
+      const num = parseFloat(change.value.replace(/[+%]/g, ''));
+      return isNaN(num) ? 0 : num;
+    };
+
     return {
+      // Raw numeric data for mobile dashboard
+      platform: {
+        totalEvents,
+        activeEvents,
+        totalUsers,
+        activeOrganizers: organizers,
+        totalTicketsSold,
+        totalRevenue,
+        totalCheckIns,
+        pendingApprovals,
+      },
+      comparison: {
+        eventsGrowth: parseGrowth(eventsChange),
+        usersGrowth: parseGrowth(organizersChange),
+        revenueGrowth: parseGrowth(revenueChange),
+        checkInsGrowth: 0,
+      },
+      // Formatted stats for web dashboard
       stats: {
         totalEvents: {
           value: totalEvents.toLocaleString(),

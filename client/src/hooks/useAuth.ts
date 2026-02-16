@@ -15,6 +15,7 @@ export const useAuth = () => {
 
   /**
    * Get dashboard route based on user role
+   * NEW: Unified dashboard for ATTENDEE and ORGANIZER
    */
   const getDashboardRoute = useCallback((role: UserRole): string => {
     switch (role) {
@@ -25,15 +26,13 @@ export const useAuth = () => {
       case UserRole.SUPPORT:
       case UserRole.TELLER:
         return '/admin/dashboard';
-      // Organizer roles - redirect to organizer dashboard
+      // All non-admin users go to unified dashboard
       case UserRole.ORGANIZER:
       case UserRole.ORGANIZER_STAFF:
       case UserRole.ORGANIZER_TELLER:
-        return '/organizer/dashboard';
-      // Attendee role - redirect to user dashboard
       case UserRole.ATTENDEE:
       default:
-        return '/user/dashboard';
+        return '/dashboard';  // Unified dashboard for everyone
     }
   }, []);
 
@@ -51,20 +50,23 @@ export const useAuth = () => {
           setAccessToken(response.data.accessToken);
           dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user });
 
-          // Check if organizer needs onboarding
+          // NEW: Check if user needs personalized onboarding (all new users, not just organizers)
           const role = response.data.user.role;
-          const isOrganizerRole = 
-            role === 'ORGANIZER' || 
-            role === 'ORGANIZER_STAFF' || 
-            role === 'ORGANIZER_TELLER';
-          
-          const needsOnboarding = isOrganizerRole && (
+          const isAdminRole =
+            role === 'SUPERADMIN' ||
+            role === 'ADMIN_STAFF' ||
+            role === 'MARKETER' ||
+            role === 'SUPPORT' ||
+            role === 'TELLER';
+
+          const needsOnboarding = !isAdminRole && (
             !("onboardingCompleted" in response.data.user) ||
             !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
           );
 
           if (needsOnboarding) {
-            navigate('/organizer/onboarding');
+            // New unified onboarding for ALL users
+            navigate('/onboarding/welcome');
           } else {
             // Redirect to appropriate dashboard
             const dashboardRoute = getDashboardRoute(response.data.user.role);
@@ -99,9 +101,28 @@ export const useAuth = () => {
           setAccessToken(response.data.accessToken);
           dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user });
 
-          // Redirect to appropriate dashboard
-          const dashboardRoute = getDashboardRoute(response.data.user.role);
-          navigate(dashboardRoute);
+          // NEW: All new users go through unified onboarding
+          const role = response.data.user.role;
+          const isAdminRole =
+            role === 'SUPERADMIN' ||
+            role === 'ADMIN_STAFF' ||
+            role === 'MARKETER' ||
+            role === 'SUPPORT' ||
+            role === 'TELLER';
+
+          const needsOnboarding = !isAdminRole && (
+            !("onboardingCompleted" in response.data.user) ||
+            !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
+          );
+
+          if (needsOnboarding) {
+            // New unified onboarding for ALL users
+            navigate('/onboarding/welcome');
+          } else {
+            // Redirect to appropriate dashboard
+            const dashboardRoute = getDashboardRoute(response.data.user.role);
+            navigate(dashboardRoute);
+          }
         } else {
           throw new Error(response.message || 'Registration failed');
         }

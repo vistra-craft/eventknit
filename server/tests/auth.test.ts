@@ -6,9 +6,22 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { logger } from '../src/utils/logger';
 import { cleanupTestData } from './test-helpers';
+import { hashToken } from '../src/utils/password';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
+};
+
+/** Extract refresh token from Set-Cookie response header */
+const getRefreshTokenFromCookie = (res: request.Response): string | undefined => {
+  const cookies = res.headers['set-cookie'];
+  if (!cookies) return undefined;
+  const cookieArr = Array.isArray(cookies) ? cookies : [cookies];
+  for (const cookie of cookieArr) {
+    const match = cookie.match(/refreshToken=([^;]+)/);
+    if (match) return match[1];
+  }
+  return undefined;
 };
 
 describe('Authentication System', () => {
@@ -78,7 +91,8 @@ describe('Authentication System', () => {
       expect(response.body.data.user.email).toBe(userData.email);
       expect(response.body.data.user.role).toBe(UserRole.ATTENDEE);
       expect(response.body.data.accessToken).toBeDefined();
-      expect(response.body.data.refreshToken).toBeDefined();
+      expect(getRefreshTokenFromCookie(response)).toBeDefined();
+      expect(response.body.data.refreshToken).toBeUndefined(); // Refresh token should only be in httpOnly cookie
       expect(response.body.data.user.password).toBeUndefined(); // Password should not be returned
       // Check verification level defaults to 1
       expect(response.body.data.user.verificationLevel).toBe(1);
@@ -876,8 +890,9 @@ describe('Authentication System', () => {
         .expect(200);
 
       expect(loginResponse.body.success).toBe(true);
-      expect(loginResponse.body.data.refreshToken).toBeDefined();
-      refreshToken = loginResponse.body.data.refreshToken;
+      const cookieToken = getRefreshTokenFromCookie(loginResponse);
+      expect(cookieToken).toBeDefined();
+      refreshToken = cookieToken!;
     });
 
     afterEach(async () => {
@@ -1006,8 +1021,8 @@ describe('Authentication System', () => {
         .expect(200);
 
       expect(loginResponse.body.success).toBe(true);
-      expect(loginResponse.body.data.refreshToken).toBeDefined();
-      const refreshToken = loginResponse.body.data.refreshToken;
+      const refreshToken = getRefreshTokenFromCookie(loginResponse);
+      expect(refreshToken).toBeDefined();
 
       // DEACTIVATED users can refresh tokens
       const response = await request(app)
@@ -1146,9 +1161,10 @@ describe('Authentication System', () => {
 
       expect(loginResponse.body.success).toBe(true);
       expect(loginResponse.body.data.accessToken).toBeDefined();
-      expect(loginResponse.body.data.refreshToken).toBeDefined();
+      const cookieToken = getRefreshTokenFromCookie(loginResponse);
+      expect(cookieToken).toBeDefined();
       accessToken = loginResponse.body.data.accessToken;
-      refreshToken = loginResponse.body.data.refreshToken;
+      refreshToken = cookieToken!;
     });
 
     afterEach(async () => {
@@ -1388,16 +1404,17 @@ describe('Authentication System', () => {
         },
       });
 
-      // Create reset token
-      const reset = await prisma.passwordReset.create({
+      // Create reset token (store hash in DB, keep raw token for API request)
+      const rawToken = 'test-reset-token';
+      await prisma.passwordReset.create({
         data: {
           userId: user.id,
-          token: 'test-reset-token',
+          token: hashToken(rawToken),
           expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
         },
       });
 
-      resetToken = reset.token;
+      resetToken = rawToken;
     });
 
     afterEach(async () => {
@@ -2303,17 +2320,18 @@ describe('Authentication System', () => {
         },
       });
 
-      // Create magic link token
-      const token = await prisma.magicLinkToken.create({
+      // Create magic link token (store hash in DB, keep raw token for API request)
+      const rawMagicToken = 'test-magic-link-token-123';
+      await prisma.magicLinkToken.create({
         data: {
           userId: user.id,
-          token: 'test-magic-link-token-123',
+          token: hashToken(rawMagicToken),
           expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
           used: false,
         },
       });
 
-      magicLinkToken = token.token;
+      magicLinkToken = rawMagicToken;
     });
 
     afterEach(async () => {
@@ -2340,9 +2358,9 @@ describe('Authentication System', () => {
       expect(response.body.data.accessToken).toBeDefined();
       expect(response.body.data.expiresIn).toBeDefined();
 
-      // Verify token was marked as used
+      // Verify token was marked as used (stored as hash in DB)
       const token = await prisma.magicLinkToken.findUnique({
-        where: { token: magicLinkToken },
+        where: { token: hashToken(magicLinkToken) },
       });
 
       expect(token?.used).toBe(true);
@@ -2369,18 +2387,19 @@ describe('Authentication System', () => {
         return;
       }
 
-      // Create expired token
+      // Create expired token (store hash, send raw)
+      const rawExpiredToken = 'expired-token-123';
       const expiredToken = await prisma.magicLinkToken.create({
         data: {
           userId: user.id,
-          token: 'expired-token-123',
+          token: hashToken(rawExpiredToken),
           expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
           used: false,
         },
       });
 
       const response = await request(app)
-        .get(`/api/v1/auth/magic-link/verify?token=${expiredToken.token}`)
+        .get(`/api/v1/auth/magic-link/verify?token=${rawExpiredToken}`)
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -2398,11 +2417,12 @@ describe('Authentication System', () => {
         return;
       }
 
-      // Create used token
+      // Create used token (store hash, send raw)
+      const rawUsedToken = 'used-token-123';
       const usedToken = await prisma.magicLinkToken.create({
         data: {
           userId: user.id,
-          token: 'used-token-123',
+          token: hashToken(rawUsedToken),
           expiresAt: new Date(Date.now() + 15 * 60 * 1000),
           used: true,
           usedAt: new Date(),
@@ -2410,7 +2430,7 @@ describe('Authentication System', () => {
       });
 
       const response = await request(app)
-        .get(`/api/v1/auth/magic-link/verify?token=${usedToken.token}`)
+        .get(`/api/v1/auth/magic-link/verify?token=${rawUsedToken}`)
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -2441,17 +2461,18 @@ describe('Authentication System', () => {
         },
       });
 
+      const rawSuspendedToken = 'suspended-token-123';
       const suspendedToken = await prisma.magicLinkToken.create({
         data: {
           userId: suspendedUser.id,
-          token: 'suspended-token-123',
+          token: hashToken(rawSuspendedToken),
           expiresAt: new Date(Date.now() + 15 * 60 * 1000),
           used: false,
         },
       });
 
       const response = await request(app)
-        .get(`/api/v1/auth/magic-link/verify?token=${suspendedToken.token}`)
+        .get(`/api/v1/auth/magic-link/verify?token=${rawSuspendedToken}`)
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -2490,20 +2511,17 @@ describe('Authentication System', () => {
       });
       userId = user.id;
 
-      // Create verification token
-      const token = crypto.randomBytes(32).toString('hex');
-      const verification = await prisma.emailVerification.create({
+      // Create verification token (store hash in DB, keep raw for API request)
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      await prisma.emailVerification.create({
         data: {
           userId: user.id,
           email: user.email,
-          token,
+          token: hashToken(rawToken),
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
         },
       });
-      if (!verification.token) {
-        throw new Error('Verification token should not be null');
-      }
-      verificationToken = verification.token;
+      verificationToken = rawToken;
     });
 
     afterEach(async () => {
@@ -2557,19 +2575,19 @@ describe('Authentication System', () => {
         return;
       }
 
-      // Create expired token
-      const expiredToken = crypto.randomBytes(32).toString('hex');
+      // Create expired token (store hash, send raw)
+      const rawExpiredToken = crypto.randomBytes(32).toString('hex');
       await prisma.emailVerification.create({
         data: {
           userId,
           email: 'unverified@test.com',
-          token: expiredToken,
+          token: hashToken(rawExpiredToken),
           expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
         },
       });
 
       const response = await request(app)
-        .get(`/api/v1/auth/verify-email?token=${expiredToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawExpiredToken}`)
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -2577,7 +2595,7 @@ describe('Authentication System', () => {
 
       // Cleanup
       await prisma.emailVerification.deleteMany({
-        where: { token: expiredToken },
+        where: { token: hashToken(rawExpiredToken) },
       });
     });
 
@@ -2587,9 +2605,9 @@ describe('Authentication System', () => {
         return;
       }
 
-      // Mark verification as already verified
+      // Mark verification as already verified (token is stored hashed in DB)
       await prisma.emailVerification.update({
-        where: { token: verificationToken },
+        where: { token: hashToken(verificationToken) },
         data: {
           verified: true,
           verifiedAt: new Date(),
@@ -2770,21 +2788,18 @@ describe('Authentication System', () => {
       });
       userId = user.id;
 
-      // Create invitation token
-      const token = crypto.randomBytes(32).toString('hex');
-      const verification = await prisma.emailVerification.create({
+      // Create invitation token (store hash in DB, keep raw for API request)
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      await prisma.emailVerification.create({
         data: {
           userId: user.id,
           email: user.email,
-          token,
+          token: hashToken(rawToken),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
           verified: false,
         },
       });
-      if (!verification.token) {
-        throw new Error('Invitation token should not be null');
-      }
-      invitationToken = verification.token;
+      invitationToken = rawToken;
     });
 
     afterEach(async () => {
@@ -2856,13 +2871,13 @@ describe('Authentication System', () => {
         return;
       }
 
-      // Create expired token
-      const expiredToken = crypto.randomBytes(32).toString('hex');
+      // Create expired token (store hash, send raw)
+      const rawExpiredToken = crypto.randomBytes(32).toString('hex');
       await prisma.emailVerification.create({
         data: {
           userId,
           email: 'guestuser@test.com',
-          token: expiredToken,
+          token: hashToken(rawExpiredToken),
           expiresAt: new Date(Date.now() - 1000), // Expired
           verified: false,
         },
@@ -2871,7 +2886,7 @@ describe('Authentication System', () => {
       const response = await request(app)
         .post('/api/v1/auth/create-account')
         .send({
-          token: expiredToken,
+          token: rawExpiredToken,
           password: 'NewPassword123!@$',
         })
         .expect(400);
@@ -2881,7 +2896,7 @@ describe('Authentication System', () => {
 
       // Cleanup
       await prisma.emailVerification.deleteMany({
-        where: { token: expiredToken },
+        where: { token: hashToken(rawExpiredToken) },
       });
     });
 
@@ -2891,9 +2906,9 @@ describe('Authentication System', () => {
         return;
       }
 
-      // Mark token as used
+      // Mark token as used (token stored as hash in DB)
       await prisma.emailVerification.update({
-        where: { token: invitationToken },
+        where: { token: hashToken(invitationToken) },
         data: {
           verified: true,
           verifiedAt: new Date(),
@@ -2932,13 +2947,13 @@ describe('Authentication System', () => {
         },
       });
 
-      // Create invitation token for this user
-      const token = crypto.randomBytes(32).toString('hex');
+      // Create invitation token for this user (store hash, send raw)
+      const rawToken = crypto.randomBytes(32).toString('hex');
       await prisma.emailVerification.create({
         data: {
           userId: userWithPassword.id,
           email: userWithPassword.email,
-          token,
+          token: hashToken(rawToken),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           verified: false,
         },
@@ -2947,7 +2962,7 @@ describe('Authentication System', () => {
       const response = await request(app)
         .post('/api/v1/auth/create-account')
         .send({
-          token,
+          token: rawToken,
           password: 'NewPassword123!@$',
         })
         .expect(400);
@@ -2957,7 +2972,7 @@ describe('Authentication System', () => {
 
       // Cleanup
       await prisma.emailVerification.deleteMany({
-        where: { token },
+        where: { token: hashToken(rawToken) },
       });
       await prisma.user.deleteMany({
         where: { email: 'haspassword@test.com' },
@@ -2983,12 +2998,12 @@ describe('Authentication System', () => {
         },
       });
 
-      const token = crypto.randomBytes(32).toString('hex');
+      const rawSuspendedToken = crypto.randomBytes(32).toString('hex');
       await prisma.emailVerification.create({
         data: {
           userId: suspendedUser.id,
           email: suspendedUser.email,
-          token,
+          token: hashToken(rawSuspendedToken),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           verified: false,
         },
@@ -2997,7 +3012,7 @@ describe('Authentication System', () => {
       const response = await request(app)
         .post('/api/v1/auth/create-account')
         .send({
-          token,
+          token: rawSuspendedToken,
           password: 'NewPassword123!@$',
         })
         .expect(409);
@@ -3007,7 +3022,7 @@ describe('Authentication System', () => {
 
       // Cleanup
       await prisma.emailVerification.deleteMany({
-        where: { token },
+        where: { token: hashToken(rawSuspendedToken) },
       });
       await prisma.user.deleteMany({
         where: { email: 'suspendedinvite@test.com' },

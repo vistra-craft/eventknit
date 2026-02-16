@@ -1,4 +1,4 @@
-import { Calendar, MapPin, Globe, Video } from "lucide-react";
+import { Calendar, MapPin, Globe, Video, Heart, Share2 } from "lucide-react";
 import { getVenueType } from "@/types/event";
 import { EventImage } from "@/components/EventImage";
 
@@ -14,9 +14,11 @@ interface EventHeroProps {
   imageFocalY?: number | null;
   isOnline?: boolean;
   onlineLink?: string | null;
+  onSave?: () => void;
+  onShare?: () => void;
 }
 
-export const EventHero = ({ title, category, date, time, venue, location, image, imageFocalX, imageFocalY, isOnline, onlineLink }: EventHeroProps) => {
+export const EventHero = ({ title, category, date, time, venue, location, image, imageFocalX, imageFocalY, isOnline, onlineLink, onSave, onShare }: EventHeroProps) => {
   const venueType = getVenueType({ isOnline, venue, onlineLink });
 
   return (
@@ -36,6 +38,31 @@ export const EventHero = ({ title, category, date, time, venue, location, image,
             }
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent rounded-t-2xl rounded-b-2xl" />
+
+          {/* Save / Share buttons — top right of image */}
+          {(onSave || onShare) && (
+            <div className="absolute top-3 right-3 flex gap-2">
+              {onSave && (
+                <button
+                  onClick={onSave}
+                  className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white transition-colors"
+                  aria-label="Save event"
+                >
+                  <Heart className="h-4 w-4" />
+                </button>
+              )}
+              {onShare && (
+                <button
+                  onClick={onShare}
+                  className="h-9 w-9 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm flex items-center justify-center text-white transition-colors"
+                  aria-label="Share event"
+                >
+                  <Share2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="absolute bottom-4 left-4 right-4 text-white space-y-1">
             {category && (
               <p className="text-xs uppercase tracking-wide text-white/80">{category}</p>
@@ -50,8 +77,8 @@ export const EventHero = ({ title, category, date, time, venue, location, image,
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide">Date & time</p>
-              <p className="font-medium text-foreground">{date}</p>
-              {time && <p>{time}</p>}
+              <p className="text-sm font-medium text-foreground">{date}</p>
+              {time && <p className="text-sm">{time}</p>}
             </div>
           </div>
           <div className="flex items-start gap-3">
@@ -68,7 +95,7 @@ export const EventHero = ({ title, category, date, time, venue, location, image,
               <p className="text-xs font-semibold uppercase tracking-wide">
                 {venueType === 'online' ? 'Online Event' : venueType === 'hybrid' ? 'Hybrid Event' : 'Location'}
               </p>
-              <p className="font-medium text-foreground">
+              <p className="text-sm font-medium text-foreground">
                 {venueType === 'online'
                   ? 'Virtual — link available after registration'
                   : `${venue ? `${venue}, ` : ''}${location}`}

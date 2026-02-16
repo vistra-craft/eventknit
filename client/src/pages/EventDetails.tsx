@@ -10,7 +10,7 @@ import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, Clock, AlertCircle } from "lucide-react";
+import { Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Card } from "@/components/ui/card";
 
@@ -155,17 +155,6 @@ const EventDetails = () => {
     return false;
   })();
 
-  // Format registration deadline for display
-  const formatDeadline = (deadline: string) => {
-    const date = new Date(deadline);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
 
   // Meta tags logic
   const getFrontendUrl = () => {
@@ -201,13 +190,25 @@ const EventDetails = () => {
 
   const handleRegisterClick = () => {
     if (userAlreadyRegistered) {
-      // Navigate to my tickets page
       navigate('/my-tickets');
     } else {
-      // Navigate to registration page
       navigate(`/event/${id}/register`);
     }
   };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/event/${id}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: event?.title, url }); } catch { /* dismissed */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+    }
+  };
+
+  const handleSave = () => {
+    // placeholder — wire to backend favourites when ready
+  };
+
 
   if (isLoading) {
     return (
@@ -244,8 +245,8 @@ const EventDetails = () => {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       
-      <main className="flex-1 pb-12 bg-gradient-to-b from-primary/5 via-background to-muted/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-24">
+      <main className="flex-1 pb-8 bg-gradient-to-b from-primary/5 via-background to-muted/10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-24">
           {/* Back Button */}
           <div className="mb-6">
             <Button
@@ -258,9 +259,7 @@ const EventDetails = () => {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Hero, Organizer, About, Important Info, Refund Policy, Venue, Tags */}
-            <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6">
               <EventHero
                 title={event.title}
                 category={event.category}
@@ -273,6 +272,39 @@ const EventDetails = () => {
                 onlineLink={event.onlineLink}
               />
 
+              {/* Action bar: like/share left, register right */}
+              <div className="flex items-center justify-between py-3 border-b border-border">
+                {/* Like + Share */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSave}
+                    className="h-9 w-9 rounded-full border border-border hover:bg-muted flex items-center justify-center transition-colors"
+                    aria-label="Save event"
+                  >
+                    <Heart className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="h-9 w-9 rounded-full border border-border hover:bg-muted flex items-center justify-center transition-colors"
+                    aria-label="Share event"
+                  >
+                    <Share2 className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+
+                {/* Register */}
+                {isRegistrationClosed ? (
+                  <div className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-muted border border-border text-sm font-medium text-muted-foreground">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Registration Closed
+                  </div>
+                ) : (
+                  <Button onClick={handleRegisterClick} className="font-semibold">
+                    <Ticket className="mr-2 h-4 w-4" />
+                    {userAlreadyRegistered ? 'View My Ticket' : (event.isFree ? 'Register Free' : 'Register for Event')}
+                  </Button>
+                )}
+              </div>
 
               {/* Organizer Info */}
               <OrganizerInfo 
@@ -457,77 +489,6 @@ const EventDetails = () => {
 
             </div>
 
-            {/* Right Column - Action Button and Info */}
-            <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-20 lg:self-start">
-              {/* Primary Action Card */}
-              <Card className="border border-border bg-background rounded-2xl shadow-sm transition-all p-6">
-                <div className="space-y-4">
-                  {/* Price Display */}
-                  {!event.isFree && (
-                    <div className="text-center pb-4 border-b">
-                      <p className="text-sm text-muted-foreground mb-1">Starting from</p>
-                      <p className="text-3xl font-bold text-primary">
-                        {event.currency || '$'}
-                        {event.ticketTypes && event.ticketTypes.length > 0
-                          ? Math.min(...event.ticketTypes.map(t => t.price))
-                          : event.price || 0}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Registration Deadline Notice */}
-                  {event.registrationDeadline && !isRegistrationClosed && (
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-                      <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
-                        Registration closes {formatDeadline(event.registrationDeadline)}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Register Button or Closed Notice */}
-                  {isRegistrationClosed ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-center gap-2 p-4 rounded-lg bg-muted border border-border">
-                        <AlertCircle className="w-5 h-5 text-muted-foreground" />
-                        <p className="text-sm font-medium text-muted-foreground">Registration Closed</p>
-                      </div>
-                      <p className="text-xs text-center text-muted-foreground">
-                        {event.registrationDeadline
-                          ? `Registration ended on ${formatDeadline(event.registrationDeadline)}`
-                          : 'This event has already started'}
-                      </p>
-                    </div>
-                  ) : (
-                    <Button
-                      size="lg"
-                      variant="default"
-                      className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all bg-primary hover:bg-primary/90"
-                      onClick={handleRegisterClick}
-                    >
-                      <Ticket className="mr-2 h-5 w-5" />
-                      {userAlreadyRegistered ? 'View My Ticket' : (event.isFree ? 'Register Free' : 'Register for Event')}
-                    </Button>
-                  )}
-
-                  {/* Secondary Actions */}
-                  <div className="grid grid-cols-2 gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="gap-2 border-border text-muted-foreground hover:text-foreground hover:bg-muted">
-                      <Heart className="w-4 h-4" />
-                      Save
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2 border-border text-muted-foreground hover:text-foreground hover:bg-muted">
-                      <Share2 className="w-4 h-4" />
-                      Share
-                    </Button>
-                  </div>
-
-                </div>
-              </Card>
-
-            </div>
-          </div>
-
           {/* Related Events - Full Width */}
           <section className="pt-6 border-t border-border/60 mt-6">
             <div className="flex items-center justify-between mb-6">
@@ -558,7 +519,6 @@ const EventDetails = () => {
           </section>
         </div>
       </main>
-
       <Footer />
     </div>
   );

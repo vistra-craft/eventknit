@@ -39,7 +39,7 @@ const EventRegistration = () => {
   const [searchParams] = useSearchParams();
   const { isAuthenticated, user: authUser } = useAuth();
   const { event, isLoading, error: eventError, fetchEvent } = useEvent();
-  const [currentStep] = useState<'registration' | 'confirmation'>('registration');
+  const [currentStep, setCurrentStep] = useState<'tickets' | 'registration' | 'confirmation'>('tickets');
   const [formData, setFormData] = useState<FormData>({});
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -164,6 +164,13 @@ const EventRegistration = () => {
       handleApplyPromoCode(urlPromoCode);
     }
   }, [selectedTickets, searchParams, appliedDiscount, event, handleApplyPromoCode]);
+
+  // Skip ticket step for events without ticket types
+  useEffect(() => {
+    if (event && (!event.ticketTypes || event.ticketTypes.length === 0) && currentStep === 'tickets') {
+      setCurrentStep('registration');
+    }
+  }, [event, currentStep]);
 
   // Note: Guest checkout is now allowed - no authentication redirect
 
@@ -737,6 +744,10 @@ const EventRegistration = () => {
       ? new Date(`2000-01-01T${event.startTime}`).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       : "");
   const eventLocation = event.location || event.venue || "Location TBA";
+  const hasTicketTypes = !!(event.ticketTypes && event.ticketTypes.length > 0);
+  // Step counts: ticket step + registration step + (payment if paid) + confirmation
+  const totalSteps = (hasTicketTypes ? 1 : 0) + 1 + (event.isFree ? 1 : 2);
+  const currentStepNumber = currentStep === 'tickets' ? 1 : hasTicketTypes ? 2 : 1;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -747,24 +758,37 @@ const EventRegistration = () => {
           {/* Progress Indicator */}
           <div className="flex items-center justify-center py-4 -mt-2">
             <div className="flex items-center space-x-4">
+              {hasTicketTypes && (
+                <>
+                  <div className="flex items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                      currentStep === 'tickets' ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'
+                    }`}>1</div>
+                    <span className={`ml-2 text-sm ${currentStep === 'tickets' ? 'font-medium' : 'text-muted-foreground'}`}>Tickets</span>
+                  </div>
+                  <div className="w-8 h-0.5 bg-muted"></div>
+                </>
+              )}
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">1</div>
-                <span className="ml-2 text-sm font-medium">Registration</span>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  currentStep === 'registration' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                }`}>{hasTicketTypes ? 2 : 1}</div>
+                <span className={`ml-2 text-sm ${currentStep === 'registration' ? 'font-medium' : 'text-muted-foreground'}`}>Registration</span>
               </div>
               <div className="w-8 h-0.5 bg-muted"></div>
               <div className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                  event.isFree ? 'bg-muted text-muted-foreground' : 'bg-muted text-muted-foreground'
-                }`}>2</div>
-                <span className={`ml-2 text-sm ${event.isFree ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
-                  {event.isFree ? 'Confirmation' : 'Payment'}
-                </span>
+                <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                  {hasTicketTypes ? 3 : 2}
+                </div>
+                <span className="ml-2 text-sm text-muted-foreground">{event.isFree ? 'Confirmation' : 'Payment'}</span>
               </div>
               {!event.isFree && (
                 <>
                   <div className="w-8 h-0.5 bg-muted"></div>
                   <div className="flex items-center">
-                    <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-semibold">3</div>
+                    <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-semibold">
+                      {hasTicketTypes ? 4 : 3}
+                    </div>
                     <span className="ml-2 text-sm text-muted-foreground">Confirmation</span>
                   </div>
                 </>
@@ -796,8 +820,8 @@ const EventRegistration = () => {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide">Date & time</p>
-                  <p className="font-medium text-foreground">{formattedDate}</p>
-                  {formattedTime && <p>{formattedTime}</p>}
+                  <p className="text-sm font-medium text-foreground">{formattedDate}</p>
+                  {formattedTime && <p className="text-sm">{formattedTime}</p>}
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -806,8 +830,8 @@ const EventRegistration = () => {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide">Location</p>
-                  <p className="font-medium text-foreground">{eventLocation}</p>
-                  {event.venue && <p>{event.venue}</p>}
+                  <p className="text-sm font-medium text-foreground">{eventLocation}</p>
+                  {event.venue && <p className="text-sm">{event.venue}</p>}
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -816,7 +840,7 @@ const EventRegistration = () => {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide">Organizer</p>
-                  <p className="font-medium text-foreground">
+                  <p className="text-sm font-medium text-foreground">
                     {event.organizerName ||
                       (event.organizer
                         ? event.organizer.organizationName ||
@@ -832,22 +856,17 @@ const EventRegistration = () => {
           </section>
 
           <section className="rounded-2xl bg-background shadow-sm border border-border">
-            {currentStep === "registration" ? (
+            {currentStep === 'tickets' ? (
+              /* ── STEP 1: TICKET SELECTION ── */
               <div className="p-6 md:p-8 space-y-8">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Registration
-                    </p>
-                    <h2 className="text-2xl font-semibold text-foreground">Secure your spot</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Complete this short form to confirm your attendance.
-                    </p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tickets</p>
+                    <h2 className="text-2xl font-semibold text-foreground">Select your tickets</h2>
+                    <p className="text-sm text-muted-foreground">Choose ticket types and quantities you'd like to purchase.</p>
                   </div>
                   <div className="inline-flex items-center rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
-                    <span className={currentStep === "registration" ? "font-semibold text-foreground" : ""}>
-                      Step 1 of 2
-                    </span>
+                    <span className="font-semibold text-foreground">Step 1 of {totalSteps}</span>
                   </div>
                 </div>
 
@@ -1062,6 +1081,72 @@ const EventRegistration = () => {
                   </div>
                 )}
 
+                <Button
+                  type="button"
+                  size="lg"
+                  className="w-full h-12 text-base font-semibold"
+                  disabled={Object.values(selectedTickets).every(qty => !qty)}
+                  onClick={() => setCurrentStep('registration')}
+                >
+                  Continue to Registration
+                </Button>
+              </div>
+            ) : currentStep === 'registration' ? (
+              /* ── STEP 2: REGISTRATION FORM ── */
+              <div className="p-6 md:p-8 space-y-8">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Registration</p>
+                    <h2 className="text-2xl font-semibold text-foreground">Secure your spot</h2>
+                    <p className="text-sm text-muted-foreground">Complete this short form to confirm your attendance.</p>
+                  </div>
+                  <div className="inline-flex items-center rounded-full border border-border bg-muted/40 px-3 py-1 text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">Step {currentStepNumber} of {totalSteps}</span>
+                  </div>
+                </div>
+
+                {/* Read-only ticket summary */}
+                {hasTicketTypes && Object.values(selectedTickets).some(qty => qty > 0) && (
+                  <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your tickets</p>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep('tickets')}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Change
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      {Object.entries(selectedTickets)
+                        .filter(([, qty]) => qty > 0)
+                        .map(([name, qty]) => {
+                          const ticket = event.ticketTypes?.find(t => t.name === name);
+                          return (
+                            <div key={name} className="flex justify-between text-sm">
+                              <span className="text-foreground">{qty}× {name}</span>
+                              {ticket && <span className="font-medium">{event.currency || '$'} {(ticket.price * qty).toFixed(2)}</span>}
+                            </div>
+                          );
+                        })}
+                    </div>
+                    {!event.isFree && (
+                      <div className="flex justify-between text-sm pt-2 border-t font-semibold">
+                        <span>Total</span>
+                        <span className="text-primary">
+                          {event.currency || '$'} {
+                            event.ticketTypes?.reduce((sum, t) => sum + (t.price * (selectedTickets[t.name] || 0)), 0).toFixed(2)
+                          }
+                          {appliedDiscount && (
+                            <span className="ml-2 text-success font-normal text-xs">(-{event.currency || '$'}{appliedDiscount.amount.toFixed(2)} promo)</span>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <form onSubmit={handleRegistrationSubmit} className="space-y-8" autoComplete="on">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
                       {/* Always show basic fields if not authenticated or if they're missing from custom fields */}
@@ -1165,14 +1250,9 @@ const EventRegistration = () => {
                     </div>
 
                     {/* Data Sharing Consent */}
-                    <div className="pt-6 border-t space-y-4">
-                      <div className="space-y-1">
-                        <h3 className="text-sm font-semibold text-foreground">Data Sharing Preferences</h3>
-                        <p className="text-xs text-muted-foreground">
-                          Choose how you'd like to share your data with the event organizer. Your basic contact information is required for event participation.
-                        </p>
-                      </div>
-                      
+                    <div className="pt-6 border-t space-y-3">
+                      <h3 className="text-sm font-semibold text-foreground">Data Sharing Preferences</h3>
+
                       <div className="space-y-3">
                         <div className="flex items-start gap-3">
                           <Checkbox
@@ -1181,9 +1261,9 @@ const EventRegistration = () => {
                             onCheckedChange={(checked) => setMarketingConsent(!!checked)}
                           />
                           <label htmlFor="marketingConsent" className="text-sm text-foreground cursor-pointer flex-1">
-                            <span className="font-medium">Marketing Communications</span>
+                            <span className="font-medium">Marketing emails</span>
                             <span className="block text-xs text-muted-foreground mt-0.5">
-                              Allow the organizer to send me marketing emails and updates about future events
+                              Receive updates about future events from this organizer
                             </span>
                           </label>
                         </div>
@@ -1195,9 +1275,9 @@ const EventRegistration = () => {
                             onCheckedChange={(checked) => setDemographicsConsent(!!checked)}
                           />
                           <label htmlFor="demographicsConsent" className="text-sm text-foreground cursor-pointer flex-1">
-                            <span className="font-medium">Demographic Data (Premium Feature)</span>
+                            <span className="font-medium">Demographic data</span>
                             <span className="block text-xs text-muted-foreground mt-0.5">
-                              Share demographic information (location, age, etc.) to help organizers improve their events
+                              Share location, age, etc. to help improve future events
                             </span>
                           </label>
                         </div>
@@ -1209,16 +1289,16 @@ const EventRegistration = () => {
                             onCheckedChange={(checked) => setAnalyticsConsent(!!checked)}
                           />
                           <label htmlFor="analyticsConsent" className="text-sm text-foreground cursor-pointer flex-1">
-                            <span className="font-medium">Engagement Analytics (Premium Feature)</span>
+                            <span className="font-medium">Engagement analytics</span>
                             <span className="block text-xs text-muted-foreground mt-0.5">
-                              Allow tracking of engagement metrics (email opens, session views, etc.) for event improvement
+                              Allow tracking of email opens and session views
                             </span>
                           </label>
                         </div>
                       </div>
 
-                      <p className="text-xs text-muted-foreground pt-2 border-t">
-                        You can change these preferences anytime after registration. Learn more in our{" "}
+                      <p className="text-xs text-muted-foreground">
+                        You can update these anytime.{" "}
                         <a href="/privacy-policy" target="_blank" className="text-primary hover:underline">
                           Privacy Policy
                         </a>
