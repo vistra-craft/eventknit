@@ -38,10 +38,10 @@ export const ActionChoiceStep = ({ onComplete }: ActionChoiceStepProps) => {
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
+        <h2 className="text-page-title mb-2">
           Ready to Get Started?
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-page-subtitle">
           Choose your next step to begin organizing events
         </p>
       </div>

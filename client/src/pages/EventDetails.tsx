@@ -306,14 +306,6 @@ const EventDetails = () => {
                 )}
               </div>
 
-              {/* Organizer Info */}
-              <OrganizerInfo 
-                organizer={event.organizer}
-                organizerName={event.organizerName}
-                organizerDescription={event.organizerDescription}
-                socialLinks={event.socialLinks}
-              />
-
               {/* About Section */}
               <section>
                 <h2 className="text-3xl font-bold mb-4">About This Event</h2>
@@ -486,6 +478,14 @@ const EventDetails = () => {
                 }
                 return null;
               })()}
+
+              {/* Organizer Info */}
+              <OrganizerInfo
+                organizer={event.organizer}
+                organizerName={event.organizerName}
+                organizerDescription={event.organizerDescription}
+                socialLinks={event.socialLinks}
+              />
 
             </div>
 

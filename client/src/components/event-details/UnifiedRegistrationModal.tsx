@@ -138,7 +138,7 @@ export const UnifiedRegistrationModal = ({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-page-title">
             {currentStep === 'confirmation' ? 'Registration Complete!' : 'Complete Your Registration'}
           </DialogTitle>
         </DialogHeader>

@@ -45,8 +45,8 @@ export const TicketSelectionStep = ({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">Select Your Tickets</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-section-header mb-2">Select Your Tickets</h3>
+        <p className="text-card-description">
           Choose the ticket type and quantity you'd like to purchase
         </p>
       </div>
@@ -78,7 +78,7 @@ export const TicketSelectionStep = ({
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1 pr-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-base">{ticket.name}</h4>
+                    <h4 className="text-card-title">{ticket.name}</h4>
                     {isVip && (
                       <Badge
                         variant="secondary"

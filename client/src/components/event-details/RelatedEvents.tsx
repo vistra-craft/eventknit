@@ -18,22 +18,50 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
     const fetchRelatedEvents = async () => {
       try {
         setIsLoading(true);
-        
-        // Fetch events with same category or tags
-        const response = await getEvents({
-          status: EventStatus.APPROVED,
-          category: category,
-          limit: 20, // Fetch more to filter out current event
-        });
 
-        if (response.success && response.data.events) {
-          // Filter out the current event and limit to 4
-          const filtered = response.data.events
-            .filter((event) => event.id !== currentEventId)
-            .slice(0, 4);
-          
-          setRelatedEvents(filtered);
+        let filtered: EventData[] = [];
+
+        // First try: fetch events with same category
+        if (category) {
+          const response = await getEvents({
+            status: EventStatus.APPROVED,
+            category: category,
+            limit: 20,
+          });
+
+          if (response.success && response.data?.events) {
+            filtered = response.data.events
+              .filter((event) => event.id !== currentEventId)
+              .slice(0, 3);
+          }
         }
+
+        // Fallback: if no category match or no results, fetch all approved events
+        // and prioritize by matching tags
+        if (filtered.length === 0) {
+          const fallbackResponse = await getEvents({
+            status: EventStatus.APPROVED,
+            limit: 20,
+          });
+
+          if (fallbackResponse.success && fallbackResponse.data?.events) {
+            const otherEvents = fallbackResponse.data.events
+              .filter((event) => event.id !== currentEventId);
+
+            // Sort by number of matching tags (most relevant first)
+            if (tags && tags.length > 0) {
+              otherEvents.sort((a, b) => {
+                const aMatches = (a.tags || []).filter((t) => tags.includes(t)).length;
+                const bMatches = (b.tags || []).filter((t) => tags.includes(t)).length;
+                return bMatches - aMatches;
+              });
+            }
+
+            filtered = otherEvents.slice(0, 3);
+          }
+        }
+
+        setRelatedEvents(filtered);
       } catch (error) {
         console.error("Error fetching related events:", error);
       } finally {
@@ -46,12 +74,9 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
 
   if (isLoading) {
     return (
-      <section className="space-y-6">
-        <h2 className="text-2xl font-semibold text-foreground">You Might Also Like</h2>
-        <div className="flex items-center justify-center py-12">
-          <Loader size="lg" />
-        </div>
-      </section>
+      <div className="flex items-center justify-center py-12">
+        <Loader size="lg" />
+      </div>
     );
   }
 
@@ -60,10 +85,7 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
   }
 
   return (
-    <section className="space-y-6">
-      <h2 className="text-2xl font-semibold text-foreground">You Might Also Like</h2>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {relatedEvents.map((event, index) => (
           <div
             key={event.id}
@@ -85,8 +107,7 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
             />
           </div>
         ))}
-      </div>
-    </section>
+    </div>
   );
 };
 
