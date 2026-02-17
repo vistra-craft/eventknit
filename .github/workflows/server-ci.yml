@@ -57,6 +57,8 @@ jobs:
       - name: Install server dependencies
         working-directory: ./server
         run: npm ci
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Run server linter
         working-directory: ./server
@@ -73,6 +75,8 @@ jobs:
       - name: Build server
         working-directory: ./server
         run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Upload server build artifacts
         uses: actions/upload-artifact@v4
