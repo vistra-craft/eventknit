@@ -131,6 +131,25 @@ export class EventController {
   }
 
   /**
+   * Get related events
+   */
+  static async getRelatedEvents(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const eventId = req.params.id as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 8;
+
+      const result = await EventService.getRelatedEvents(eventId, limit);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update event
    */
   static async updateEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

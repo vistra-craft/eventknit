@@ -368,6 +368,50 @@ export const getEventById = async (id: string): Promise<EventResponse> => {
 };
 
 /**
+ * Get related events for a given event (scored by relevance)
+ */
+export const getRelatedEvents = async (eventId: string, limit?: number): Promise<EventsListResponse> => {
+  const queryParams = new URLSearchParams();
+  if (limit) queryParams.append('limit', limit.toString());
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString
+    ? `/events/${eventId}/related?${queryString}`
+    : `/events/${eventId}/related`;
+
+  const response = await apiGet<EventsListResponse>(endpoint);
+
+  // Transform backend events to frontend format (same pattern as getEvents)
+  if (response.success && response.data) {
+    const normalizedEvents = (response.data.events || []).map(event => ({
+      ...event,
+      agenda: event.agenda
+        ? event.agenda.map(item => ({
+            title: item.title || "",
+            description: item.description || "",
+            date: item.date || undefined,
+            startTime: item.startTime || "",
+            endTime: item.endTime || "",
+            speakers: item.speakers || [],
+          }))
+        : event.agenda,
+      exhibitors: event.exhibitors
+        ? event.exhibitors.map(exhibitor => ({
+            ...exhibitor,
+            description: exhibitor.description || "",
+            logo: exhibitor.logo || "",
+            contactEmail: exhibitor.contactEmail || "",
+            booth: exhibitor.booth || "",
+          }))
+        : event.exhibitors,
+    }));
+    response.data.events = transformEventsData(normalizedEvents);
+  }
+
+  return response;
+};
+
+/**
  * Create a new event
  */
 export const createEvent = async (data: CreateEventData): Promise<EventResponse> => {

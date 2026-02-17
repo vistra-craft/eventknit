@@ -6,37 +6,23 @@ interface EventTagsProps {
 }
 
 export const EventTags = ({ tags, category }: EventTagsProps) => {
-  // Combine tags and category for display
   const allTags: string[] = [];
-  
-  // Add category first if it exists
-  if (category) {
-    allTags.push(category);
-  }
-  
-  // Add tags if they exist
-  if (tags && tags.length > 0) {
-    allTags.push(...tags);
-  }
-  
+  if (category) allTags.push(category);
+  if (tags && tags.length > 0) allTags.push(...tags);
+
+  if (allTags.length === 0) return null;
+
   return (
-    <section>
-      <h3 className="text-xl font-bold mb-3">Tags & Categories</h3>
-      <div className="flex flex-wrap gap-2">
-        {allTags.length > 0 ? (
-          allTags.map((tag, index) => (
-            <Badge 
-              key={`${tag}-${index}`}
-              variant="secondary"
-              className="px-3 py-1.5 text-sm hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
-            >
-              {tag}
-            </Badge>
-          ))
-        ) : (
-          <p className="text-sm text-muted-foreground italic">No tags or categories available</p>
-        )}
-      </div>
-    </section>
+    <div className="flex flex-wrap gap-2">
+      {allTags.map((tag, index) => (
+        <Badge
+          key={`${tag}-${index}`}
+          variant="secondary"
+          className="px-2.5 py-1 text-xs hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer"
+        >
+          {tag}
+        </Badge>
+      ))}
+    </div>
   );
 };
