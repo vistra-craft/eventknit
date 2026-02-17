@@ -21,7 +21,7 @@ export const EventTags = ({ tags, category }: EventTagsProps) => {
   
   return (
     <section>
-      <h3 className="text-xl font-bold mb-3">Tags & Categories</h3>
+      <h3 className="text-section-header mb-3">Tags & Categories</h3>
       <div className="flex flex-wrap gap-2">
         {allTags.length > 0 ? (
           allTags.map((tag, index) => (
