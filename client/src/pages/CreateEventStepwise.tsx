@@ -1704,7 +1704,7 @@ export default function CreateEventStepwise() {
                 
                 <div className="p-6">
                   {/* Event Title */}
-                  <h3 className="text-2xl font-bold mb-2">{eventData.title || 'Event Registration'}</h3>
+                  <h3 className="text-page-title mb-2">{eventData.title || 'Event Registration'}</h3>
                   
                   {/* Organizer */}
                   {eventData.organizer && (
@@ -1751,7 +1751,7 @@ export default function CreateEventStepwise() {
                   </div>
                   
                   <div className="border-t pt-4 mt-4">
-                    <h4 className="text-lg font-semibold mb-4">Registration Form</h4>
+                    <h4 className="text-section-header mb-4">Registration Form</h4>
                     <form className="space-y-4">
                   {registrationFields.map((field, index) => (
                     <div key={field.id || index} className="space-y-2">
@@ -1823,7 +1823,7 @@ export default function CreateEventStepwise() {
             
             {/* Event Title */}
             <div>
-              <h2 className="text-3xl font-bold">{eventData.title || 'Untitled Event'}</h2>
+              <h2 className="text-page-title">{eventData.title || 'Untitled Event'}</h2>
               {eventData.organizer && (
                 <p className="text-muted-foreground mt-1">by {eventData.organizer}</p>
               )}
@@ -1859,7 +1859,7 @@ export default function CreateEventStepwise() {
             {/* Description */}
             {eventData.description && (
               <div>
-                <h3 className="font-semibold mb-2">About this event</h3>
+                <h3 className="text-section-header mb-2">About this event</h3>
                 <p className="text-muted-foreground whitespace-pre-wrap">{eventData.description}</p>
               </div>
             )}
@@ -1867,7 +1867,7 @@ export default function CreateEventStepwise() {
             {/* Tickets */}
             {ticketTypes.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-3">Tickets</h3>
+                <h3 className="text-section-header mb-3">Tickets</h3>
                 <div className="space-y-2">
                   {ticketTypes.map((ticket, index) => (
                     <div key={index} className="flex justify-between items-center p-3 border rounded-lg">
@@ -1893,7 +1893,7 @@ export default function CreateEventStepwise() {
             {/* FAQs */}
             {faqs.filter(f => f.question && f.answer).length > 0 && (
               <div>
-                <h3 className="font-semibold mb-3">Frequently Asked Questions</h3>
+                <h3 className="text-section-header mb-3">Frequently Asked Questions</h3>
                 <div className="space-y-3">
                   {faqs.filter(f => f.question && f.answer).map((faq, index) => (
                     <div key={index}>

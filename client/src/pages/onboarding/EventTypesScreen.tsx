@@ -155,8 +155,8 @@ export const EventTypesScreen = () => {
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-lg mb-1">{type.label}</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-card-title mb-1">{type.label}</h3>
+                    <p className="text-card-description">
                       {type.description}
                     </p>
                   </div>

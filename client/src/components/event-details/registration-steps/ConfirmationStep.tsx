@@ -116,8 +116,8 @@ export const ConfirmationStep = ({
         <div className="mx-auto w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mb-4">
           <CheckCircle className="w-10 h-10 text-success" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Registration Successful!</h2>
-        <p className="text-sm text-muted-foreground">
+        <h2 className="text-page-title mb-2">Registration Successful!</h2>
+        <p className="text-card-description">
           {event.isFree
             ? "You're all set for the event"
             : 'Your payment has been processed successfully'}
@@ -133,7 +133,7 @@ export const ConfirmationStep = ({
             </div>
           )}
           <div className="flex-1">
-            <h3 className="font-bold text-lg mb-2">{event.title}</h3>
+            <h3 className="text-section-header mb-2">{event.title}</h3>
             <div className="space-y-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
@@ -160,7 +160,7 @@ export const ConfirmationStep = ({
 
       {/* Ticket Details */}
       <Card className="p-4">
-        <h4 className="font-semibold mb-3">Your Tickets</h4>
+        <h4 className="text-card-title mb-3">Your Tickets</h4>
         <div className="space-y-2">
           {ticketBreakdown.map((item) => (
             <div key={item.name} className="flex justify-between text-sm">
@@ -194,7 +194,7 @@ export const ConfirmationStep = ({
       {/* Payment Info (if paid) */}
       {!event.isFree && paymentData && (
         <Card className="p-4">
-          <h4 className="font-semibold mb-3">Payment Details</h4>
+          <h4 className="text-card-title mb-3">Payment Details</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Transaction ID:</span>

@@ -33,7 +33,7 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
           <Building className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-foreground leading-tight">{name}</h3>
+          <h3 className="text-section-header leading-tight">{name}</h3>
           <p className="text-xs text-muted-foreground">Event Organizer</p>
         </div>
       </div>

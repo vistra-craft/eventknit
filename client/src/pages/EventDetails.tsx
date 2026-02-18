@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent } from "@/hooks/useEvent";
 import { useMetaTags } from "@/hooks/useMetaTags";
@@ -11,7 +10,7 @@ import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { Users, CheckCircle, Heart, Share2, Ticket, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
+import { Users, CheckCircle, Heart, Share2, Ticket, ArrowRight, AlertCircle } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Card } from "@/components/ui/card";
 
@@ -156,17 +155,6 @@ const EventDetails = () => {
     return false;
   })();
 
-  // Format registration deadline for display
-  const formatDeadline = (deadline: string) => {
-    const date = new Date(deadline);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
 
   // Meta tags logic
   const getFrontendUrl = () => {
@@ -221,20 +209,6 @@ const EventDetails = () => {
     // placeholder — wire to backend favourites when ready
   };
 
-  // Floating register button: appears once the action bar scrolls out of view
-  const [showFloatingRegister, setShowFloatingRegister] = useState(false);
-  const actionBarRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = actionBarRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowFloatingRegister(!entry.isIntersecting),
-      { threshold: 0, rootMargin: '-64px 0px 0px 0px' }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [event]); // re-run once event loads so the ref is populated
 
   if (isLoading) {
     return (
@@ -257,7 +231,7 @@ const EventDetails = () => {
         <Navbar />
         <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center max-w-md px-4">
-            <h2 className="text-2xl font-bold mb-4">Event not found</h2>
+            <h2 className="text-page-title mb-4">Event not found</h2>
             <p className="text-muted-foreground mb-6">{error || 'The event you are looking for does not exist.'}</p>
             <Button onClick={() => navigate('/')}>Back to Home</Button>
           </div>
@@ -273,18 +247,6 @@ const EventDetails = () => {
       
       <main className="flex-1 pb-8 bg-gradient-to-b from-primary/5 via-background to-muted/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-24">
-          {/* Back Button */}
-          <div className="mb-6">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/')}
-              className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors -ml-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Home
-            </Button>
-          </div>
-
           <div className="space-y-6">
               <EventHero
                 title={event.title}
@@ -298,11 +260,8 @@ const EventDetails = () => {
                 onlineLink={event.onlineLink}
               />
 
-              {/* Action bar: like/share scroll with content, register observed for floating button */}
-              <div
-                ref={actionBarRef}
-                className="flex items-center justify-between py-3 border-b border-border"
-              >
+              {/* Action bar: like/share left, register right */}
+              <div className="flex items-center justify-between py-3 border-b border-border">
                 {/* Like + Share */}
                 <div className="flex items-center gap-2">
                   <button
@@ -335,17 +294,9 @@ const EventDetails = () => {
                 )}
               </div>
 
-              {/* Organizer Info */}
-              <OrganizerInfo 
-                organizer={event.organizer}
-                organizerName={event.organizerName}
-                organizerDescription={event.organizerDescription}
-                socialLinks={event.socialLinks}
-              />
-
               {/* About Section */}
               <section>
-                <h2 className="text-3xl font-bold mb-4">About This Event</h2>
+                <h2 className="text-page-title mb-4">About This Event</h2>
                 <RichTextContent
                   content={event.fullDescription || event.description || '<p>No description available.</p>'}
                   className="prose-lg text-muted-foreground leading-relaxed"
@@ -354,7 +305,7 @@ const EventDetails = () => {
 
               {/* Event Agenda Summary */}
               <section>
-                <h2 className="text-3xl font-bold mb-6">Event Schedule</h2>
+                <h2 className="text-page-title mb-6">Event Schedule</h2>
                 <Card className="border border-border bg-background rounded-2xl shadow-sm p-6">
                   <div className="space-y-3">
                     {(() => {
@@ -418,7 +369,7 @@ const EventDetails = () => {
               {/* Important Information */}
               {(event.requirements?.length || event.ageRestriction) && (
                 <section>
-                  <h3 className="text-xl font-bold mb-4">Important Information</h3>
+                  <h3 className="text-section-header mb-4">Important Information</h3>
                   <div className="grid sm:grid-cols-2 gap-4">
                       {event.ageRestriction && (
                         <div className="flex items-start gap-3">
@@ -426,7 +377,7 @@ const EventDetails = () => {
                             <Users className="w-5 h-5 text-primary" />
                           </div>
                           <div>
-                            <h4 className="font-semibold mb-1">Age Restriction</h4>
+                            <h4 className="text-card-title mb-1">Age Restriction</h4>
                             <p className="text-sm text-muted-foreground">{event.ageRestriction}</p>
                           </div>
                         </div>
@@ -438,7 +389,7 @@ const EventDetails = () => {
                             <CheckCircle className="w-5 h-5 text-primary" />
                           </div>
                           <div>
-                            <h4 className="font-semibold mb-1">Requirement</h4>
+                            <h4 className="text-card-title mb-1">Requirement</h4>
                             <p className="text-sm text-muted-foreground">{req}</p>
                           </div>
                         </div>
@@ -489,7 +440,7 @@ const EventDetails = () => {
                   const safeSpeakers = speakersData as { name?: string; title?: string; image?: string }[];
                   return (
                     <section>
-                      <h2 className="text-3xl font-bold mb-4">Featured Speakers</h2>
+                      <h2 className="text-page-title mb-4">Featured Speakers</h2>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {safeSpeakers.slice(0, 8).map((speaker, index: number) => (
                           <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border border-border bg-background shadow-sm transition-all">
@@ -500,7 +451,7 @@ const EventDetails = () => {
                                 <Users className="w-8 h-8 text-muted-foreground" />
                               )}
                             </div>
-                            <h4 className="font-bold text-sm mb-1">{speaker?.name || 'Speaker'}</h4>
+                            <h4 className="text-card-title text-sm mb-1">{speaker?.name || 'Speaker'}</h4>
                             <p className="text-primary font-medium text-xs line-clamp-2">{speaker?.title || ''}</p>
                           </div>
                         ))}
@@ -516,12 +467,20 @@ const EventDetails = () => {
                 return null;
               })()}
 
+              {/* Organizer Info */}
+              <OrganizerInfo
+                organizer={event.organizer}
+                organizerName={event.organizerName}
+                organizerDescription={event.organizerDescription}
+                socialLinks={event.socialLinks}
+              />
+
             </div>
 
           {/* Related Events - Full Width */}
           <section className="pt-6 border-t border-border/60 mt-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">You May Also Like</h2>
+              <h2 className="text-page-title">You May Also Like</h2>
               <Button
                 variant="ghost"
                 onClick={() => {

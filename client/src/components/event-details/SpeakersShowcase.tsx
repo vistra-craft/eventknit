@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, ExternalLink, Linkedin, Twitter } from "lucide-react";
+import { ExternalLink, Linkedin, Twitter } from "lucide-react";
 import {
   Dialog,
   DialogContent,

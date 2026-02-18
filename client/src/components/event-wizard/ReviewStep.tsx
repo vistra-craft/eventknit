@@ -28,15 +28,15 @@ export function ReviewStep({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Event Title</Label>
-              <p className="text-lg font-semibold">{eventData.title || 'Not set'}</p>
+              <p className="text-section-header">{eventData.title || 'Not set'}</p>
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Organizer</Label>
-              <p className="text-lg font-semibold">{eventData.organizer || 'Not set'}</p>
+              <p className="text-section-header">{eventData.organizer || 'Not set'}</p>
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Date & Time</Label>
-              <p className="text-lg font-semibold">
+              <p className="text-section-header">
                 {eventData.date && eventData.time
                   ? `${eventData.date} at ${eventData.time}`
                   : 'Not set'
@@ -45,7 +45,7 @@ export function ReviewStep({
             </div>
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Location</Label>
-              <p className="text-lg font-semibold">
+              <p className="text-section-header">
                 {eventType === 'online'
                   ? 'Online Event'
                   : eventType === 'hybrid'

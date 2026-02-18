@@ -25,10 +25,10 @@ export const ProcessOverview = () => {
   return (
     <div className="space-y-8">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
+        <h2 className="text-page-title mb-2">
           How It Works
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-page-subtitle">
           Here's what happens after you sign up
         </p>
       </div>
@@ -49,9 +49,9 @@ export const ProcessOverview = () => {
               <div className="flex-1 pt-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-semibold text-muted-foreground">Step {step.number}</span>
-                  <h3 className="text-lg font-semibold text-foreground">{step.title}</h3>
+                  <h3 className="text-section-header">{step.title}</h3>
                 </div>
-                <p className="text-sm text-muted-foreground">{step.description}</p>
+                <p className="text-card-description">{step.description}</p>
               </div>
 
               {/* Connector Line */}
