@@ -1,134 +1,201 @@
-import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent } from "@/hooks/useEvent";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { RichTextContent } from "@/components/ui/RichTextContent";
-import { AnimatedSection } from "@/components/ui/AnimatedSection";
-import { EventHeroV2 } from "@/components/event-details/EventHeroV2";
-import { EventSidebar } from "@/components/event-details/EventSidebar";
-import { MobileActionBar } from "@/components/event-details/MobileActionBar";
-import { EventDetailsSkeleton } from "@/components/event-details/EventDetailsSkeleton";
+import { EventHero } from "@/components/event-details/EventHero";
+import { VenueSection } from "@/components/event-details/VenueSection";
 import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
-import { VenueSection } from "@/components/event-details/VenueSection";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
-<<<<<<< Updated upstream
 import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Users, CheckCircle, Heart, Share2, Ticket, ArrowRight, AlertCircle } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Card } from "@/components/ui/card";
-=======
-import { AgendaTimeline } from "@/components/event-details/AgendaTimeline";
-import { SpeakersShowcase } from "@/components/event-details/SpeakersShowcase";
-import { SponsorsShowcase } from "@/components/event-details/SponsorsShowcase";
-import { ExhibitorsGrid } from "@/components/event-details/ExhibitorsGrid";
-import { FAQsAccordion } from "@/components/event-details/FAQsAccordion";
-import { Users, CheckCircle, ArrowLeft, ArrowRight } from "lucide-react";
 
-// ── helpers ──────────────────────────────────────────────────
->>>>>>> Stashed changes
-
+// Helper function to format time for display
 const formatTimeForDisplay = (timeStr: string): string => {
-  if (!timeStr) return "";
-  if (/AM|PM/i.test(timeStr)) return timeStr;
-  const m = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
-  if (m) {
-    let h = parseInt(m[1], 10);
-    const min = m[2];
-    const period = h >= 12 ? "PM" : "AM";
-    if (h > 12) h -= 12;
-    if (h === 0) h = 12;
-    return `${h}:${min} ${period}`;
+  if (!timeStr) return '';
+  
+  // If already in readable format (contains AM/PM), return as is
+  if (/AM|PM/i.test(timeStr)) {
+    return timeStr;
   }
+  
+  // Try to parse as HH:MM or HH:MM:SS format
+  const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (timeMatch) {
+    let hours = parseInt(timeMatch[1], 10);
+    const minutes = timeMatch[2];
+    const period = hours >= 12 ? 'PM' : 'AM';
+    if (hours > 12) hours -= 12;
+    if (hours === 0) hours = 12;
+    return `${hours}:${minutes} ${period}`;
+  }
+  
   return timeStr;
 };
 
-/** Safely parse a JSON-encoded field that may arrive as a string or already parsed. */
-function safeParse<T>(data: T | string | null | undefined): T | null {
-  if (!data) return null;
-  if (typeof data === "string") {
-    try {
-      return JSON.parse(data) as T;
-    } catch {
-      return null;
-    }
-  }
-  return data;
-}
+// Helper function to generate agenda summary
+const generateAgendaSummary = (agenda: { title?: string; startTime?: string }[] | null | undefined) => {
+  if (!agenda || agenda.length === 0) return null;
 
-// ── component ────────────────────────────────────────────────
+  // Group agenda items by session type
+  const sessionGroups = new Map<string, { times: string[], count: number }>();
+
+  agenda.forEach((item) => {
+    const title = item.title || '';
+    const lower = title.toLowerCase();
+    
+    let sessionType = 'Session';
+    if (lower.includes('keynote')) sessionType = 'Keynote';
+    else if (lower.includes('workshop')) sessionType = 'Workshop';
+    else if (lower.includes('panel')) sessionType = 'Panel';
+    else if (lower.includes('networking') || lower.includes('meet')) sessionType = 'Networking';
+    else if (lower.includes('break') || lower.includes('coffee')) sessionType = 'Break';
+    else if (lower.includes('lunch') || lower.includes('meal') || lower.includes('dinner') || lower.includes('breakfast')) sessionType = 'Meal';
+    else if (lower.includes('registration') || lower.includes('check-in') || lower.includes('badge')) sessionType = 'Registration';
+    else if (lower.includes('closing') || lower.includes('wrap') || lower.includes('remark')) sessionType = 'Closing';
+    else if (lower.includes('intro') || lower.includes('welcome') || lower.includes('opening')) sessionType = 'Opening';
+    else if (lower.includes('demo') || lower.includes('showcase')) sessionType = 'Demo';
+    else if (lower.includes('qa') || lower.includes('q&a') || lower.includes('question')) sessionType = 'Q&A';
+    
+    if (!sessionGroups.has(sessionType)) {
+      sessionGroups.set(sessionType, { times: [], count: 0 });
+    }
+    
+    const group = sessionGroups.get(sessionType)!;
+    if (item.startTime) {
+      const formattedTime = formatTimeForDisplay(item.startTime);
+      if (formattedTime && !group.times.includes(formattedTime)) {
+        group.times.push(formattedTime);
+      }
+    }
+    group.count += 1;
+  });
+  
+  // Create summary text
+  const summaryParts: string[] = [];
+  
+  sessionGroups.forEach((group, type) => {
+    if (group.times.length === 0) {
+      // If no times, just mention the type
+      if (group.count === 1) {
+        summaryParts.push(`${type}`);
+      } else {
+        summaryParts.push(`${group.count} ${type}s`);
+      }
+    } else if (group.times.length === 1) {
+      summaryParts.push(`${type} at ${group.times[0]}`);
+    } else if (group.times.length === 2) {
+      summaryParts.push(`${type} at ${group.times[0]} & ${group.times[1]}`);
+    } else if (group.count === 1) {
+      summaryParts.push(`${type} at ${group.times[0]}`);
+    } else {
+      // Sort times and show range
+      const sortedTimes = group.times.sort((a, b) => {
+        // Try to parse both formats
+        const parseTime = (time: string): number => {
+          // Format with AM/PM
+          const ampmMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+          if (ampmMatch) {
+            let hours = parseInt(ampmMatch[1], 10);
+            const minutes = parseInt(ampmMatch[2], 10);
+            const period = ampmMatch[3].toUpperCase();
+            if (period === 'PM' && hours !== 12) hours += 12;
+            if (period === 'AM' && hours === 12) hours = 0;
+            return hours * 60 + minutes;
+          }
+          // Format HH:MM
+          const hhmmMatch = time.match(/(\d{1,2}):(\d{2})/);
+          if (hhmmMatch) {
+            const hours = parseInt(hhmmMatch[1], 10);
+            const minutes = parseInt(hhmmMatch[2], 10);
+            return hours * 60 + minutes;
+          }
+          return 0;
+        };
+        return parseTime(a) - parseTime(b);
+      });
+      summaryParts.push(`${type}s from ${sortedTimes[0]} to ${sortedTimes[sortedTimes.length - 1]}`);
+    }
+  });
+  
+  return summaryParts.length > 0 ? summaryParts.join(', ') : null;
+};
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
+  // Fetch event data
   const { event, isLoading, error } = useEvent(id);
-  const [aboutExpanded, setAboutExpanded] = useState(false);
-
+  
   // TODO: Check if user is already registered for this event
   const userAlreadyRegistered = false;
 
-  // Registration status
+  // Check if registration is open
   const isRegistrationClosed = (() => {
     if (!event) return false;
     const now = new Date();
-    if (event.registrationDeadline && new Date(event.registrationDeadline) < now) return true;
-    if (event.startDate && new Date(event.startDate) < now) return true;
+
+    // Check if registration deadline has passed
+    if (event.registrationDeadline) {
+      const deadline = new Date(event.registrationDeadline);
+      if (deadline < now) return true;
+    }
+
+    // Check if event has already started
+    if (event.startDate) {
+      const eventStart = new Date(event.startDate);
+      if (eventStart < now) return true;
+    }
+
     return false;
   })();
 
-<<<<<<< Updated upstream
-=======
-  const isSoldOut =
-    event?.availableSlots !== null &&
-    event?.availableSlots !== undefined &&
-    event.availableSlots <= 0;
->>>>>>> Stashed changes
 
-  // Meta tags
+  // Meta tags logic
   const getFrontendUrl = () => {
     const envUrl = import.meta.env.VITE_FRONTEND_URL;
-    return envUrl ? envUrl.replace(/\/$/, "") : window.location.origin;
+    if (envUrl) {
+      return envUrl.replace(/\/$/, '');
+    }
+    return window.location.origin;
   };
+  
   const frontendUrl = getFrontendUrl();
   const eventUrl = id ? `${frontendUrl}/event/${id}` : undefined;
-  const eventImage = event?.image
-    ? event.image.startsWith("http")
-      ? event.image
-      : `${frontendUrl}${event.image}`
+  const eventImage = event?.image 
+    ? (event.image.startsWith('http') ? event.image : `${frontendUrl}${event.image}`)
     : undefined;
-  const eventDescription = event?.description
-    ? event.description.length > 160
-      ? `${event.description.substring(0, 157)}...`
-      : event.description
-    : event?.title
-      ? `Join us for ${event.title}${event.venue ? ` at ${event.venue}` : ""}${event.startDate ? ` on ${new Date(event.startDate).toLocaleDateString()}` : ""}`
+  
+  const eventDescription = event?.description 
+    ? (event.description.length > 160 
+        ? `${event.description.substring(0, 157)}...` 
+        : event.description)
+    : event?.title 
+      ? `Join us for ${event.title}${event.venue ? ` at ${event.venue}` : ''}${event.startDate ? ` on ${new Date(event.startDate).toLocaleDateString()}` : ''}`
       : undefined;
-
+  
   useMetaTags({
     title: event?.title,
     description: eventDescription,
     image: eventImage,
     url: eventUrl,
-    type: "website",
-    siteName: "EventKnit",
+    type: 'website',
+    siteName: 'EventKnit',
   });
 
   const handleRegisterClick = () => {
     if (userAlreadyRegistered) {
-<<<<<<< Updated upstream
       navigate('/my-tickets');
-=======
-      navigate("/my-tickets");
->>>>>>> Stashed changes
     } else {
       navigate(`/event/${id}/register`);
     }
   };
 
-<<<<<<< Updated upstream
   const handleShare = async () => {
     const url = `${window.location.origin}/event/${id}`;
     if (navigator.share) {
@@ -157,17 +224,12 @@ const EventDetails = () => {
       </div>
     );
   }
-=======
-  // ── loading state ──
-  if (isLoading) return <EventDetailsSkeleton />;
->>>>>>> Stashed changes
 
-  // ── error state ──
   if (error || !event) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
         <Navbar />
-        <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-gradient-to-b from-primary/5 via-background to-muted/10">
           <div className="text-center max-w-md px-4">
             <h2 className="text-page-title mb-4">Event not found</h2>
             <p className="text-muted-foreground mb-6">{error || 'The event you are looking for does not exist.'}</p>
@@ -179,42 +241,9 @@ const EventDetails = () => {
     );
   }
 
-  // ── data parsing ──
-  const agenda = safeParse(event.agenda);
-  const hasAgenda = Array.isArray(agenda) && agenda.length > 0;
-
-  const speakers = safeParse(event.speakers);
-  const hasSpeakers = Array.isArray(speakers) && speakers.length > 0;
-
-  const sponsors = safeParse(event.sponsors);
-  const hasSponsors = Array.isArray(sponsors) && sponsors.length > 0;
-
-  const exhibitors = safeParse(event.exhibitors);
-  const hasExhibitors = Array.isArray(exhibitors) && exhibitors.length > 0;
-
-  const faqs = safeParse(event.faqs);
-  const hasFaqs = Array.isArray(faqs) && faqs.length > 0;
-
-  const hasImportantInfo = !!(event.requirements?.length || event.ageRestriction);
-
-  // About "Read More" logic
-  const aboutContent = event.fullDescription || event.description || "";
-  const plainAbout = aboutContent.replace(/<[^>]*>/g, "").trim();
-  const shouldTruncateAbout = plainAbout.length > 500;
-
-  const formattedDate =
-    event.date || new Date(event.startDate).toLocaleDateString();
-  const formattedTime =
-    event.time ||
-    (event.startTime
-      ? formatTimeForDisplay(event.startTime)
-      : "");
-
-  // ── render ──
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-<<<<<<< Updated upstream
       
       <main className="flex-1 pb-8 bg-gradient-to-b from-primary/5 via-background to-muted/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-24">
@@ -330,95 +359,12 @@ const EventDetails = () => {
                       }
                     })()}
                   </div>
-                  {shouldTruncateAbout && (
-                    <div className="flex justify-center mt-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setAboutExpanded(!aboutExpanded)}
-                        className="text-primary hover:text-primary/80"
-                      >
-                        {aboutExpanded ? "Show Less" : "Read More"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </AnimatedSection>
-
-              {/* Agenda */}
-              {hasAgenda && (
-                <>
-                  <SectionDivider />
-                  <AnimatedSection>
-                    <h2 className="text-2xl font-bold tracking-tight mb-1">Event Schedule</h2>
-                    <p className="text-sm text-muted-foreground mb-6">
-                      Full detailed agenda for the event
-                    </p>
-                    <AgendaTimeline agenda={agenda!} eventStartDate={event.startDate} />
-                  </AnimatedSection>
-                </>
-              )}
-
-              {/* Speakers */}
-              {hasSpeakers && (
-                <>
-                  <SectionDivider />
-                  <AnimatedSection>
-                    <h2 className="text-2xl font-bold tracking-tight mb-6">Featured Speakers</h2>
-                    <SpeakersShowcase speakers={speakers!} />
-                  </AnimatedSection>
-                </>
-              )}
-
-              {/* Sponsors */}
-              {hasSponsors && (
-                <>
-                  <SectionDivider />
-                  <AnimatedSection>
-                    <h2 className="text-2xl font-bold tracking-tight mb-6">Sponsors</h2>
-                    <SponsorsShowcase sponsors={sponsors!} />
-                  </AnimatedSection>
-                </>
-              )}
-
-              {/* Exhibitors */}
-              {hasExhibitors && (
-                <>
-                  <SectionDivider />
-                  <AnimatedSection>
-                    <h2 className="text-2xl font-bold tracking-tight mb-6">Exhibitors</h2>
-                    <ExhibitorsGrid exhibitors={exhibitors!} />
-                  </AnimatedSection>
-                </>
-              )}
-
-              {/* FAQs */}
-              {hasFaqs && (
-                <>
-                  <SectionDivider />
-                  <AnimatedSection>
-                    <h2 className="text-2xl font-bold tracking-tight mb-6">
-                      Frequently Asked Questions
-                    </h2>
-                    <FAQsAccordion faqs={faqs!} />
-                  </AnimatedSection>
-                </>
-              )}
-
-              {/* Venue */}
-              <SectionDivider />
-              <AnimatedSection>
-                <h2 className="text-2xl font-bold tracking-tight mb-4">
-                  {event.isOnline ? "Event Access" : "Venue Information"}
-                </h2>
-                <VenueSection
-                  venue={event.venue}
-                  location={event.location}
-                  coordinates={event.coordinates}
-                  isOnline={event.isOnline}
-                  onlineLink={event.onlineLink}
-                />
-              </AnimatedSection>
+                </Card>
+                {/* Agenda Details Hint */}
+                <p className="text-sm text-center text-muted-foreground mt-2 italic">
+                  * Full detailed agenda available after registration
+                </p>
+              </section>
 
               {/* Important Information */}
               {(event.requirements?.length || event.ageRestriction) && (
@@ -436,6 +382,7 @@ const EventDetails = () => {
                           </div>
                         </div>
                       )}
+                      
                       {event.requirements?.map((req, i) => (
                         <div key={i} className="flex items-start gap-3">
                           <div className="p-2 rounded-lg bg-primary/10">
@@ -530,76 +477,41 @@ const EventDetails = () => {
 
             </div>
 
-<<<<<<< Updated upstream
           {/* Related Events - Full Width */}
           <section className="pt-6 border-t border-border/60 mt-6">
-=======
-            {/* ── Right column — sidebar (desktop) ── */}
-            <div className="hidden lg:block" id="sidebar-cta">
-              <EventSidebar
-                event={event}
-                isRegistrationClosed={isRegistrationClosed}
-                userAlreadyRegistered={userAlreadyRegistered}
-                onRegisterClick={handleRegisterClick}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* ── Related Events (full width band) ── */}
-        <div className="bg-muted/30 py-12 mt-4">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
->>>>>>> Stashed changes
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-page-title">You May Also Like</h2>
               <Button
                 variant="ghost"
                 onClick={() => {
-                  navigate("/");
+                  navigate('/');
+                  // Scroll to events section after navigation
                   setTimeout(() => {
-                    const el = document.querySelector('[data-section="events"]');
-                    el?.scrollIntoView({ behavior: "smooth" });
+                    const eventsSection = document.querySelector('[data-section="events"]');
+                    if (eventsSection) {
+                      eventsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
                   }, 100);
                 }}
-                className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted"
+                className="gap-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 View All
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
-            <RelatedEvents
+            <RelatedEvents 
               currentEventId={event.id}
               category={event.category || undefined}
               tags={event.tags}
             />
-          </div>
+          </section>
         </div>
       </main>
-<<<<<<< Updated upstream
-=======
-
-      {/* ── Mobile action bar ── */}
-      <MobileActionBar
-        event={event}
-        isRegistrationClosed={isRegistrationClosed}
-        isSoldOut={isSoldOut}
-        userAlreadyRegistered={userAlreadyRegistered}
-        onRegisterClick={handleRegisterClick}
-      />
-
->>>>>>> Stashed changes
       <Footer />
     </div>
   );
 };
 
-/** Centered short divider between sections */
-function SectionDivider() {
-  return (
-    <div className="py-10">
-      <div className="max-w-xs mx-auto border-t border-border/20" />
-    </div>
-  );
-}
-
 export default EventDetails;
+
+                 
