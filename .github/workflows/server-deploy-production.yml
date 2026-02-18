@@ -26,7 +26,7 @@ jobs:
           echo "NODE_ENV=production" >> $GITHUB_ENV
           echo "MONGODB_URI=${{ secrets.PRODUCTION_MONGODB_URI }}" >> $GITHUB_ENV
           echo "JWT_SECRET=${{ secrets.PRODUCTION_JWT_SECRET }}" >> $GITHUB_ENV
-          echo "PORT=${{ secrets.PRODUCTION_PORT || '3001' }}" >> $GITHUB_ENV
+          echo "PORT=${{ secrets.PRODUCTION_PORT || '3010' }}" >> $GITHUB_ENV
           echo "CORS_ORIGIN=${{ secrets.PRODUCTION_CLIENT_URL }}" >> $GITHUB_ENV
           echo "REDIS_URL=${{ secrets.PRODUCTION_REDIS_URL }}" >> $GITHUB_ENV
 

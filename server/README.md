@@ -325,10 +325,10 @@ npm run seed:dummy-data    # Create comprehensive test data
 
 ```bash
 # Check if ports are in use
-lsof -i :3001 -i :5432 -i :6379
+lsof -i :3010 -i :5432 -i :6380
 
 # Kill process on specific port
-kill -9 $(lsof -ti :3001)
+kill -9 $(lsof -ti :3010)
 ```
 
 ### Database Connection Issues

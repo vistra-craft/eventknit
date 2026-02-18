@@ -23,7 +23,7 @@ info:
     name: ISC
 
 servers:
-  - url: http://localhost:3001/api/v1
+  - url: http://localhost:3010/api/v1
     description: Development server
   - url: https://api.eventknit.com/api/v1
     description: Production server

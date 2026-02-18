@@ -10,7 +10,7 @@ import { logger } from '../utils/logger.js';
 import Redis from 'ioredis';
 
 // Redis configuration (uses same connection for all operations)
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6380';
 const INVENTORY_KEY_PREFIX = 'inventory:event:';
 const INVENTORY_TTL_SECONDS = 3600; // 1 hour TTL for inventory cache
 const SYNC_INTERVAL_MS = 30000; // 30 seconds sync interval
