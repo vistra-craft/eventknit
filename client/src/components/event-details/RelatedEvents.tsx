@@ -1,6 +1,6 @@
 import { EventCard } from "@/components/EventCard";
 import { useEffect, useState } from "react";
-import { getEvents, EventStatus } from "@/lib/event-api";
+import { getRelatedEvents } from "@/lib/event-api";
 import type { EventData } from "@/types/event";
 import { Loader } from "@/components/ui/loader";
 
@@ -15,6 +15,8 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!currentEventId) return;
+
     const fetchRelatedEvents = async () => {
       try {
         setIsLoading(true);
@@ -70,19 +72,23 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
     };
 
     fetchRelatedEvents();
-  }, [currentEventId, category, tags]);
+  }, [currentEventId]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader size="lg" />
       </div>
+      <div className="flex items-center justify-center py-12">
+        <Loader size="lg" />
+      </div>
     );
   }
 
-  if (relatedEvents.length === 0) {
-    return null; // Don't show section if no related events
-  }
+  if (relatedEvents.length === 0) return null;
+
+  // 4 or fewer on desktop: use grid
+  const useGrid = relatedEvents.length <= 4;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -110,4 +116,3 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
     </div>
   );
 };
-

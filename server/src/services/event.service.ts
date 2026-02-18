@@ -605,6 +605,134 @@ export class EventService {
   }
 
   /**
+   * Get related events scored by multiple relevance signals
+   */
+  static async getRelatedEvents(eventId: string, limit: number = 8) {
+    // Fetch source event with only the fields needed for scoring
+    const source = await prisma.event.findFirst({
+      where: { id: eventId, deletedAt: null },
+      select: {
+        id: true,
+        category: true,
+        tags: true,
+        location: true,
+        organizerId: true,
+        startDate: true,
+      },
+    });
+
+    if (!source) {
+      throw new NotFoundError('Event not found');
+    }
+
+    const now = new Date();
+    const sourceCity = source.location
+      ? source.location.split(',')[0].trim().toLowerCase()
+      : '';
+    const sourceTags = (source.tags || []).map((t: string) => t.toLowerCase());
+
+    // Build OR conditions for pre-filtering candidates
+    const orConditions: Prisma.EventWhereInput[] = [];
+    if (source.category) {
+      orConditions.push({ category: source.category });
+    }
+    if (sourceTags.length > 0) {
+      orConditions.push({ tags: { hasSome: source.tags || [] } });
+    }
+    orConditions.push({ organizerId: source.organizerId });
+    if (sourceCity) {
+      orConditions.push({ location: { startsWith: sourceCity, mode: 'insensitive' } });
+    }
+
+    const candidates = await prisma.event.findMany({
+      where: {
+        id: { not: eventId },
+        status: EventStatus.APPROVED,
+        type: EventType.PUBLIC,
+        deletedAt: null,
+        startDate: { gte: now },
+        OR: orConditions,
+      },
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            organizationName: true,
+          },
+        },
+        _count: {
+          select: {
+            registrations: {
+              where: {
+                status: {
+                  in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+                },
+              },
+            },
+          },
+        },
+      },
+      take: 100,
+    });
+
+    // Score each candidate
+    const scored = candidates.map((event) => {
+      let score = 0;
+
+      // Same category: +3
+      if (source.category && event.category === source.category) {
+        score += 3;
+      }
+
+      // Shared tags: +2 per tag (max 10 points)
+      if (sourceTags.length > 0 && event.tags) {
+        const eventTags = event.tags.map((t: string) => t.toLowerCase());
+        const shared = sourceTags.filter((t: string) => eventTags.includes(t)).length;
+        score += Math.min(shared * 2, 10);
+      }
+
+      // Same organizer: +2
+      if (event.organizerId === source.organizerId) {
+        score += 2;
+      }
+
+      // Same city: +1
+      if (sourceCity && event.location) {
+        const candidateCity = event.location.split(',')[0].trim().toLowerCase();
+        if (candidateCity === sourceCity) {
+          score += 1;
+        }
+      }
+
+      // Time proximity (within 30 days of source startDate): +1
+      if (source.startDate && event.startDate) {
+        const diffMs = Math.abs(event.startDate.getTime() - source.startDate.getTime());
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+        if (diffDays <= 30) {
+          score += 1;
+        }
+      }
+
+      return { event, score };
+    });
+
+    // Sort by score DESC, then startDate ASC (soonest first)
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.event.startDate.getTime() - b.event.startDate.getTime();
+    });
+
+    const topEvents = scored.slice(0, limit).map((s) => s.event);
+
+    return {
+      events: topEvents,
+      total: topEvents.length,
+    };
+  }
+
+  /**
    * Update event
    */
   static async updateEvent(
