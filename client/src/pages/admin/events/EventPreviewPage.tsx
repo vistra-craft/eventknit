@@ -87,8 +87,8 @@ const EventPreviewPage = () => {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="flex-1">
-            <h1 className="text-base font-semibold text-foreground">Event Preview</h1>
-            <p className="text-sm text-muted-foreground">View event details</p>
+            <h1 className="text-card-title">Event Preview</h1>
+            <p className="text-card-description">View event details</p>
           </div>
           <Button
             variant="default"
@@ -114,7 +114,7 @@ const EventPreviewPage = () => {
                   size="lg"
                 />
                 <div className="flex-1">
-                  <h2 className="text-base font-semibold text-foreground mb-2">
+                  <h2 className="text-card-title mb-2">
                     {event.title}
                   </h2>
                   {event.category && (
@@ -137,7 +137,7 @@ const EventPreviewPage = () => {
                   <div className="flex items-center gap-3">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Start Date</p>
+                      <p className="text-card-description">Start Date</p>
                       <p className="font-medium">
                         {new Date(event.startDate).toLocaleDateString()}
                         {event.startTime && ` at ${event.startTime}`}
@@ -149,7 +149,7 @@ const EventPreviewPage = () => {
                   <div className="flex items-center gap-3">
                     <Calendar className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">End Date</p>
+                      <p className="text-card-description">End Date</p>
                       <p className="font-medium">
                         {new Date(event.endDate).toLocaleDateString()}
                         {event.endTime && ` at ${event.endTime}`}
@@ -161,7 +161,7 @@ const EventPreviewPage = () => {
                   <div className="flex items-center gap-3">
                     <MapPin className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Location</p>
+                      <p className="text-card-description">Location</p>
                       <p className="font-medium">{event.location || event.venue}</p>
                     </div>
                   </div>
@@ -169,7 +169,7 @@ const EventPreviewPage = () => {
                 <div className="flex items-center gap-3">
                   <Users className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">Attendees</p>
+                    <p className="text-card-description">Attendees</p>
                     <p className="font-medium">{event.attendees || 0}</p>
                   </div>
                 </div>
@@ -177,7 +177,7 @@ const EventPreviewPage = () => {
                   <div className="flex items-center gap-3">
                     <Users className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Capacity</p>
+                      <p className="text-card-description">Capacity</p>
                       <p className="font-medium">{event.capacity}</p>
                     </div>
                   </div>
@@ -186,7 +186,7 @@ const EventPreviewPage = () => {
                   <div className="flex items-center gap-3">
                     <DollarSign className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Price</p>
+                      <p className="text-card-description">Price</p>
                       <p className="font-medium">
                         {event.isFree ? "Free" : `$${event.price}`}
                       </p>

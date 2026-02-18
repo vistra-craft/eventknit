@@ -239,8 +239,8 @@ export const PaymentStep = ({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">Payment</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-section-header mb-2">Payment</h3>
+        <p className="text-card-description">
           Review your order and complete payment
         </p>
       </div>
@@ -254,7 +254,7 @@ export const PaymentStep = ({
 
       {/* Order Summary */}
       <Card className="p-4">
-        <h4 className="font-semibold mb-3">Order Summary</h4>
+        <h4 className="text-card-title mb-3">Order Summary</h4>
         <div className="space-y-2">
           {ticketBreakdown.map((item) => (
             <div key={item.name} className="flex justify-between text-sm">
@@ -278,7 +278,7 @@ export const PaymentStep = ({
       {/* Billing Information */}
       {registrationData && (
         <Card className="p-4 bg-muted/30">
-          <h4 className="font-semibold mb-3 flex items-center gap-2">
+          <h4 className="text-card-title mb-3 flex items-center gap-2">
             <CreditCard className="w-4 h-4" />
             Billing Information
           </h4>
@@ -305,7 +305,7 @@ export const PaymentStep = ({
 
       {/* Payment Method Selection */}
       <Card className="p-4">
-        <h4 className="font-semibold mb-3">Payment Method</h4>
+        <h4 className="text-card-title mb-3">Payment Method</h4>
         <RadioGroup
           value={paymentMethod}
           onValueChange={(value) => setPaymentMethod(value as 'card' | 'mpesa')}

@@ -395,7 +395,7 @@ export const RegistrationStep = ({
 
         {/* Registration Summary */}
         <div className="border rounded-lg p-4 bg-muted/30">
-          <h3 className="font-semibold mb-3">Registration Summary</h3>
+          <h3 className="text-card-title mb-3">Registration Summary</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Event:</span>
@@ -418,8 +418,8 @@ export const RegistrationStep = ({
         {event.registrationFields && event.registrationFields.length > 0 && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold mb-2">Additional Information</h3>
-              <p className="text-sm text-muted-foreground">
+              <h3 className="text-section-header mb-2">Additional Information</h3>
+              <p className="text-card-description">
                 Please complete the following information to finalize your registration.
               </p>
             </div>
@@ -489,10 +489,10 @@ export const RegistrationStep = ({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">
+        <h3 className="text-section-header mb-2">
           {event.isFree ? 'Complete Your Registration' : 'Login or Register to Continue'}
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-card-description">
           Create an account or log in to complete your registration
         </p>
       </div>
@@ -687,8 +687,8 @@ export const RegistrationStep = ({
             {event.registrationFields && event.registrationFields.length > 0 && (
               <div className="pt-4 border-t space-y-4">
                 <div>
-                  <h4 className="font-semibold mb-2">Additional Information</h4>
-                  <p className="text-sm text-muted-foreground">
+                  <h4 className="text-card-title mb-2">Additional Information</h4>
+                  <p className="text-card-description">
                     Please provide the following information for your registration.
                   </p>
                 </div>
