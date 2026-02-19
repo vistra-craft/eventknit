@@ -5,13 +5,23 @@
  * Includes unified navigation bar with mode support and main content area
  */
 
-import { Routes, Route, Outlet, useLocation } from 'react-router-dom';
+import { Routes, Route, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Suspense } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useOrganizerApproval } from '../hooks/useOrganizerApproval';
 import { userRoutes } from '../routes/userRoutes';
 import UnifiedNavbar from '../components/UnifiedNavbar';
 import { DashboardModeProvider } from '../contexts/DashboardModeContext';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../components/ui/dialog';
+import { Button } from '../components/ui/button';
 
 /**
  * Loading component for suspense fallback
@@ -35,7 +45,9 @@ const LoadingFallback = () => (
  */
 const UserLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user: authUser } = useAuth();
+  const { showApprovalModal, handleApprovalAcknowledged } = useOrganizerApproval();
 
   // Get user data from auth context
   const user = authUser ? {
@@ -60,6 +72,29 @@ const UserLayout = () => {
 
   return (
     <DashboardModeProvider>
+      {/* Organizer Approval Modal */}
+      <Dialog open={showApprovalModal} onOpenChange={(open) => { if (!open) handleApprovalAcknowledged(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">Account Approved</DialogTitle>
+            <DialogDescription className="text-center">
+              Congratulations! Your organizer account has been approved.
+              You now have full access to create and manage events on EventKnit.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              onClick={() => {
+                handleApprovalAcknowledged();
+                navigate('/organizer/dashboard');
+              }}
+            >
+              Get Started
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="min-h-screen bg-background flex flex-col">
         <UnifiedNavbar
           user={user}

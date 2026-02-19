@@ -416,6 +416,40 @@ export class AdminController {
   }
 
   /**
+   * Approve a pending organizer
+   */
+  static async approveOrganizer(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const user = await AdminService.approveOrganizer(
+        (req.params.id as string),
+        req.user.id,
+        req.user.role,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Organizer approved successfully',
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get attendees
    */
   static async getAttendees(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

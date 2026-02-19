@@ -54,8 +54,7 @@ const App = () => (
               {/* Dashboard Redirect - Unified dashboard for all non-admin users */}
               <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
 
-              {/* Legacy Organizer Route Redirects - Redirect to unified dashboard */}
-              <Route path="/organizer/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+              {/* Legacy Organizer Route Redirects */}
               <Route path="/organizer/event/:eventId" element={<OrganizerEventRedirect />} />
               <Route path="/organizer/events" element={<Navigate to="/user/dashboard" replace />} />
 

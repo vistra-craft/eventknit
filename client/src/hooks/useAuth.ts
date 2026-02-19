@@ -26,13 +26,15 @@ export const useAuth = () => {
       case UserRole.SUPPORT:
       case UserRole.TELLER:
         return '/admin/dashboard';
-      // All non-admin users go to unified dashboard
+      // Organizer roles - redirect to organizer dashboard
       case UserRole.ORGANIZER:
       case UserRole.ORGANIZER_STAFF:
       case UserRole.ORGANIZER_TELLER:
+        return '/organizer/dashboard';
+      // Attendees and default - unified dashboard
       case UserRole.ATTENDEE:
       default:
-        return '/dashboard';  // Unified dashboard for everyone
+        return '/dashboard';
     }
   }, []);
 
@@ -64,8 +66,20 @@ export const useAuth = () => {
             !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
           );
 
-          if (needsOnboarding) {
-            // New unified onboarding for ALL users
+          const isOrganizerRole =
+            role === 'ORGANIZER' ||
+            role === 'ORGANIZER_STAFF' ||
+            role === 'ORGANIZER_TELLER';
+
+          if (response.data.user.status === 'PENDING_APPROVAL') {
+            // Pending organizers go to user dashboard (limited access, shows pending banner)
+            navigate('/user/dashboard');
+          } else if (isOrganizerRole) {
+            // Active organizers go straight to organizer dashboard
+            // ProtectedRoute handles organizer-specific onboarding if needed
+            navigate('/organizer/dashboard');
+          } else if (needsOnboarding) {
+            // Non-organizer users go through unified onboarding
             navigate('/onboarding/welcome');
           } else {
             // Redirect to appropriate dashboard
@@ -115,7 +129,10 @@ export const useAuth = () => {
             !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
           );
 
-          if (needsOnboarding) {
+          if (response.data.user.status === 'PENDING_APPROVAL') {
+            // Pending organizers go to user dashboard (limited access, shows pending banner)
+            navigate('/user/dashboard');
+          } else if (needsOnboarding) {
             // New unified onboarding for ALL users
             navigate('/onboarding/welcome');
           } else {

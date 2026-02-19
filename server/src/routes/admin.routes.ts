@@ -186,6 +186,13 @@ router.post('/users/:id/deactivate', AdminController.deactivateUser);
 router.post('/users/:id/activate', AdminController.activateUser);
 
 /**
+ * @route   POST /api/v1/admin/users/:id/approve
+ * @desc    Approve a pending organizer (PENDING_APPROVAL → ACTIVE)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/users/:id/approve', AdminController.approveOrganizer);
+
+/**
  * @route   POST /api/v1/admin/events/:id/recall
  * @desc    Recall event (pull down approved event)
  * @access  Private (ADMIN_STAFF+)

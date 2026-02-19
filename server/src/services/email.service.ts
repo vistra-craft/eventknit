@@ -1503,6 +1503,146 @@ class EmailService {
       html,
     });
   }
+  /**
+   * Send notification to organizer that their application is under review
+   */
+  async sendOrganizerPendingEmail(email: string, firstName: string): Promise<void> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Application Under Review</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">Welcome to EventKnit, ${firstName}!</h1>
+            <p>Thank you for registering as an organizer on EventKnit.</p>
+            <p>Your application is currently <strong>under review</strong> by our team. This process ensures the quality and safety of events on our platform.</p>
+            <div style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0;"><strong>What happens next?</strong></p>
+              <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Our team will review your application</li>
+                <li>You'll receive an email once your account is approved</li>
+                <li>You can still log in and browse events while you wait</li>
+              </ul>
+            </div>
+            <p>If you have any questions, please don't hesitate to contact our support team.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: 'Your EventKnit Organizer Application is Under Review',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send organizer pending email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send notification to admin about a new organizer registration
+   */
+  async sendAdminNewOrganizerNotification(
+    adminEmail: string,
+    adminName: string,
+    organizer: { firstName: string; lastName: string; email: string; organizationName?: string | null },
+  ): Promise<void> {
+    const reviewUrl = `${config.frontend.url}/admin/users/organizers`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>New Organizer Registration</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">New Organizer Registration</h1>
+            <p>Hi ${adminName},</p>
+            <p>A new organizer has registered on EventKnit and is awaiting approval.</p>
+            <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Name:</strong> ${organizer.firstName} ${organizer.lastName}</p>
+              <p style="margin: 5px 0;"><strong>Email:</strong> ${organizer.email}</p>
+              ${organizer.organizationName ? `<p style="margin: 5px 0;"><strong>Organization:</strong> ${organizer.organizationName}</p>` : ''}
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${reviewUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Review Application</a>
+            </div>
+            <p>Or visit: <a href="${reviewUrl}" style="color: #4a6cf7;">${reviewUrl}</a></p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: adminEmail,
+      subject: `New Organizer Registration: ${organizer.firstName} ${organizer.lastName}`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send admin notification to ${adminEmail}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send notification to organizer that their account has been approved
+   */
+  async sendOrganizerApprovedEmail(email: string, firstName: string): Promise<void> {
+    const loginUrl = `${config.frontend.url}/auth/signin`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Account Approved</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">Congratulations, ${firstName}!</h1>
+            <p>Your organizer account on EventKnit has been <strong>approved</strong>.</p>
+            <p>You now have full access to create and manage events on our platform.</p>
+            <div style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0;"><strong>You can now:</strong></p>
+              <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Create and publish events</li>
+                <li>Manage ticket sales</li>
+                <li>Access organizer analytics</li>
+                <li>Manage your event team</li>
+              </ul>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Get Started</a>
+            </div>
+            <p>Or visit: <a href="${loginUrl}" style="color: #4a6cf7;">${loginUrl}</a></p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: 'Your EventKnit Organizer Account Has Been Approved',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send organizer approved email to ${email}: ${result.error?.message}`);
+    }
+  }
 }
 
 export const emailService = new EmailService();

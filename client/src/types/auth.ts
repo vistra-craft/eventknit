@@ -18,6 +18,7 @@ export enum UserStatus {
   ACTIVE = 'ACTIVE',
   DEACTIVATED = 'DEACTIVATED',
   SUSPENDED = 'SUSPENDED',
+  PENDING_APPROVAL = 'PENDING_APPROVAL',
 }
 
 export interface User {

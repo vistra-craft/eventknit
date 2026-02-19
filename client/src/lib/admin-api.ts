@@ -250,7 +250,7 @@ export const bulkUpdateOrganizerDataAccess = async (
 /**
  * User Status Management Types
  */
-export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED' | 'PENDING_APPROVAL';
 export type UserRole = 'SUPERADMIN' | 'ADMIN_STAFF' | 'ORGANIZER' | 'ATTENDEE';
 
 export interface User {
@@ -404,6 +404,15 @@ export const activateUser = async (
   userId: string
 ): Promise<ActivateUserResponse> => {
   return apiPost<ActivateUserResponse>(`/admin/users/${userId}/activate`, {});
+};
+
+/**
+ * Approve a pending organizer (PENDING_APPROVAL → ACTIVE)
+ */
+export const approveOrganizer = async (
+  userId: string
+): Promise<ActivateUserResponse> => {
+  return apiPost<ActivateUserResponse>(`/admin/users/${userId}/approve`, {});
 };
 
 /**

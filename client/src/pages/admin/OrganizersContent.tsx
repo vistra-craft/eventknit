@@ -20,7 +20,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/useToast";
-import { getUsers, suspendUser, deactivateUser, activateUser, type User, type UserStatus } from "@/lib/admin-api";
+import { getUsers, suspendUser, deactivateUser, activateUser, approveOrganizer, type User, type UserStatus } from "@/lib/admin-api";
 import { exportUserData } from "@/lib/utils/export";
 import { usePermissions } from "@/hooks/usePermissions";
 import { UserRole } from "@/types/auth";
@@ -89,7 +89,10 @@ const OrganizersContent = () => {
   }, [searchTerm, statusFilter]);
 
   const getStatusBadge = (status: UserStatus) => {
-    const statusMap: Record<UserStatus, string> = {
+    if (status === "PENDING_APPROVAL") {
+      return "bg-amber-500/10 text-amber-600 border-amber-500/20";
+    }
+    const statusMap: Record<string, string> = {
       ACTIVE: "ACTIVE",
       SUSPENDED: "SUSPENDED",
       DEACTIVATED: "DEACTIVATED",
@@ -203,6 +206,36 @@ const OrganizersContent = () => {
     }
   };
 
+  const handleApproveOrganizer = async (id: string) => {
+    try {
+      setActionLoading(id);
+      const response = await approveOrganizer(id);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Organizer approved successfully",
+        });
+        // Refresh list
+        const updatedResponse = await getUsers({ role: "ORGANIZER", page, limit });
+        if (updatedResponse.success && updatedResponse.data) {
+          setOrganizers(updatedResponse.data.users);
+          if (updatedResponse.data.pagination) {
+            setTotalPages(updatedResponse.data.pagination.totalPages);
+            setTotal(updatedResponse.data.pagination.total);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to approve organizer";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const filteredOrganizers = organizers.filter((organizer) => {
     const matchesSearch =
@@ -277,11 +310,19 @@ const OrganizersContent = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
             <div className="text-base font-semibold text-primary mb-2">{total || organizers.length}</div>
             <p className="text-sm text-muted-foreground">Total Organizers</p>
+          </CardContent>
+        </Card>
+        <Card className="border-border bg-card">
+          <CardContent className="p-4 text-center">
+            <div className="text-base font-semibold text-amber-600 mb-2">
+              {organizers.filter((o) => o.status === "PENDING_APPROVAL").length}
+            </div>
+            <p className="text-sm text-muted-foreground">Pending Approval</p>
           </CardContent>
         </Card>
         <Card className="border-border bg-card">
@@ -334,6 +375,7 @@ const OrganizersContent = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="PENDING_APPROVAL">Pending Approval</SelectItem>
                 <SelectItem value="ACTIVE">Active</SelectItem>
                 <SelectItem value="SUSPENDED">Suspended</SelectItem>
                 <SelectItem value="DEACTIVATED">Deactivated</SelectItem>
@@ -419,6 +461,31 @@ const OrganizersContent = () => {
                           Edit
                         </Button>
                       )}
+                      {organizer.status === "PENDING_APPROVAL" && (
+                        canModifyOrganizer ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleApproveOrganizer(organizer.id)}
+                            className="text-amber-600 border-amber-500/20 hover:bg-amber-500/5"
+                            title="Approve Organizer"
+                            disabled={actionLoading === organizer.id}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled
+                            title="You do not have permission to approve organizer accounts"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                        )
+                      )}
                       {organizer.status === "ACTIVE" && (
                         canModifyOrganizer ? (
                           <Button
@@ -487,6 +554,15 @@ const OrganizersContent = () => {
                             </DropdownMenuItem>
                           )}
                           {canModifyOrganizer && <DropdownMenuSeparator />}
+                          {organizer.status === "PENDING_APPROVAL" && canModifyOrganizer && (
+                            <DropdownMenuItem
+                              onClick={() => handleApproveOrganizer(organizer.id)}
+                              disabled={actionLoading === organizer.id}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Approve
+                            </DropdownMenuItem>
+                          )}
                           {organizer.status === "ACTIVE" && canModifyOrganizer && (
                             <>
                               <DropdownMenuItem 

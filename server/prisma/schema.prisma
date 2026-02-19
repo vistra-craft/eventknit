@@ -24,6 +24,7 @@ enum UserStatus {
   ACTIVE // User account is active and can use the platform fully
   SUSPENDED // Admin action: User is banned (punitive) - cannot login or use platform
   DEACTIVATED // User self-deactivated or admin soft-deleted (non-punitive) - can login but cannot perform actions, can be reactivated
+  PENDING_APPROVAL // Organizer registered but awaiting admin approval - can login with limited access
 }
 
 enum KYCStatus {
