@@ -74,11 +74,9 @@ const OrganizerLayout: React.FC = () => {
         {/* Main Content */}
         <div className="flex-1 min-w-0 flex flex-col lg:overflow-y-auto scrollbar-hide lg:h-full">
           {/* Header */}
-          <div className="px-4 sm:px-6">
-            <OrganizerHeader
-              onMenuToggle={isMobile ? handleMobileMenuClick : undefined}
-            />
-          </div>
+          <OrganizerHeader
+            onMenuToggle={isMobile ? handleMobileMenuClick : undefined}
+          />
 
           {/* Page Content */}
           <main className="flex-1 px-4 sm:px-6 pt-6 pb-6">
