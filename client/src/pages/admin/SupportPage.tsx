@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   MessageSquare,
   Search,
@@ -95,6 +96,7 @@ const defaultMetrics: SupportMetrics = {
 };
 
 const SupportPage = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<QueryStatus | "all">("all");
@@ -795,7 +797,7 @@ const SupportPage = () => {
               description="Connect your social media accounts to receive and manage messages and mentions from your audience."
               action={{
                 label: "Connect Account",
-                onClick: () => window.location.href = "/admin/social-media",
+                onClick: () => navigate("/admin/social-media"),
                 icon: Plus,
               }}
             />

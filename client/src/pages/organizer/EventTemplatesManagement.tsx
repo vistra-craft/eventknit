@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +43,7 @@ interface EventTemplate {
 }
 
 const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) => {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<EventTemplate[]>([]);
   const [publicTemplates, setPublicTemplates] = useState<EventTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,7 +163,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
       const response = await applyTemplate(templateId);
       if (response.success && response.data) {
         // Navigate to create event page with template data
-        window.location.href = `/organizer/create-event?template=${templateId}`;
+        navigate(`/organizer/create-event?template=${templateId}`);
       }
     } catch (error) {
       console.error("Error using template:", error);
