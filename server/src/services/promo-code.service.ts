@@ -444,6 +444,38 @@ export class PromoCodeService {
   }
 
   /**
+   * Check if a promo code is available (not taken)
+   */
+  static async checkCodeAvailability(code: string): Promise<boolean> {
+    const existing = await prisma.promoCode.findUnique({
+      where: { code: code.toUpperCase() },
+      select: { id: true },
+    });
+    return !existing;
+  }
+
+  /**
+   * Generate a unique promo code
+   */
+  static async generateUniqueCode(): Promise<string> {
+    const prefixes = ['PROMO', 'EVENT', 'DEAL', 'SAVE', 'OFFER'];
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    let attempts = 0;
+
+    while (attempts < 10) {
+      const suffix = this.generateCodeSuffix(6);
+      const code = `${prefix}-${suffix}`;
+      const available = await this.checkCodeAvailability(code);
+      if (available) return code;
+      attempts++;
+    }
+
+    // Fallback with longer suffix
+    const suffix = this.generateCodeSuffix(8);
+    return `${prefixes[0]}-${suffix}`;
+  }
+
+  /**
    * Bulk generate promo codes (admin-only)
    */
   static async bulkGenerateCodes(

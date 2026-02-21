@@ -64,6 +64,13 @@ adminRouter.get('/', PromoCodeRequestController.getRequests);
 adminRouter.get('/pending-count', PromoCodeRequestController.getPendingCount);
 
 /**
+ * @route   GET /api/v1/admin/promo-codes/requests/:id
+ * @desc    Get a single promo code request by ID
+ * @access  Private (ADMIN_STAFF+)
+ */
+adminRouter.get('/:id', PromoCodeRequestController.getRequestById);
+
+/**
  * @route   PATCH /api/v1/admin/promo-codes/requests/:id/approve
  * @desc    Approve a promo code request
  * @access  Private (ADMIN_STAFF+)

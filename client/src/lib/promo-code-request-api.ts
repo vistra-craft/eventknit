@@ -84,6 +84,22 @@ export const getMyPromoCodeRequests = async (
 
 // ── Admin endpoints ──────────────────────────────────────
 
+export const getPromoCodeRequestById = async (
+  id: string,
+): Promise<{ success: boolean; data?: PromoCodeRequest; message?: string }> => {
+  try {
+    const response = await apiGet<ApiResponse<PromoCodeRequest>>(
+      `/admin/promo-codes/requests/${id}`,
+    );
+    return response;
+  } catch (error: unknown) {
+    return {
+      success: false,
+      message: getErrorMessage(error, 'Failed to fetch request'),
+    };
+  }
+};
+
 export const getPromoCodeRequests = async (
   filters: { status?: string; page?: number; limit?: number } = {},
 ): Promise<{ success: boolean; data?: PaginatedRequests; message?: string }> => {

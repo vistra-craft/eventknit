@@ -99,6 +99,20 @@ router.get('/', AdminPromoCodeController.getPromoCodes);
 router.get('/stats', AdminPromoCodeController.getStats);
 
 /**
+ * @route   GET /api/v1/admin/promo-codes/check-availability
+ * @desc    Check if a promo code is available
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/check-availability', AdminPromoCodeController.checkAvailability);
+
+/**
+ * @route   GET /api/v1/admin/promo-codes/generate-code
+ * @desc    Generate a unique promo code
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/generate-code', AdminPromoCodeController.generateCode);
+
+/**
  * @route   GET /api/v1/admin/promo-codes/batch/:batchId
  * @desc    Get codes by batch ID
  * @access  Private (ADMIN_STAFF+)

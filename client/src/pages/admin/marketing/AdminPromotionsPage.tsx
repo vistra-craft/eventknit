@@ -56,6 +56,7 @@ import {
   MessageSquare,
   User,
   Mail,
+  ChevronDown,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -127,6 +128,7 @@ const AdminPromotionsPage = () => {
   const [rejectingRequest, setRejectingRequest] = useState<PromoCodeRequest | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
+  const [expandedRequests, setExpandedRequests] = useState<Set<string>>(new Set());
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -303,6 +305,15 @@ const AdminPromotionsPage = () => {
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast({ title: "Copied!", description: "Code copied to clipboard" });
+  };
+
+  const toggleRequestExpanded = (id: string) => {
+    setExpandedRequests((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const getStatus = (code: AdminPromoCode): "active" | "inactive" | "expired" => {
@@ -634,105 +645,141 @@ const AdminPromotionsPage = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
-                {requests.map((request) => (
-                  <Card key={request.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-3 flex-wrap">
-                            {getRequestStatusBadge(request.status)}
-                            <span className="text-sm text-muted-foreground">
-                              {new Date(request.createdAt).toLocaleDateString()} at{" "}
-                              {new Date(request.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          </div>
+              <div className="space-y-3">
+                {requests.map((request) => {
+                  const isExpanded = expandedRequests.has(request.id);
+                  const hasDetails = !!(
+                    request.organizer?.email ||
+                    request.event ||
+                    request.message ||
+                    (request.status === "APPROVED" && request.promoCode) ||
+                    (request.status === "REJECTED" && request.rejectionReason)
+                  );
 
-                          <div className="space-y-2">
-                            {request.organizer && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <User className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium text-foreground">
-                                  {request.organizer.firstName} {request.organizer.lastName}
+                  return (
+                    <Card key={request.id} className="transition-shadow hover:shadow-md">
+                      <CardContent className="p-0">
+                        {/* Compact header row */}
+                        <div className="flex items-center gap-3 px-5 py-3.5">
+                          {/* Chevron toggle */}
+                          {hasDetails ? (
+                            <button
+                              onClick={() => toggleRequestExpanded(request.id)}
+                              className="shrink-0 p-1 -ml-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                            >
+                              <ChevronDown
+                                className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                          ) : (
+                            <div className="w-6 shrink-0" />
+                          )}
+
+                          {/* Status badge */}
+                          {getRequestStatusBadge(request.status)}
+
+                          {/* Organizer name + org */}
+                          {request.organizer && (
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-sm font-medium text-foreground truncate">
+                                {request.organizer.firstName} {request.organizer.lastName}
+                              </span>
+                              {request.organizer.organizationName && (
+                                <span className="text-sm text-muted-foreground truncate hidden sm:inline">
+                                  · {request.organizer.organizationName}
                                 </span>
-                                {request.organizer.organizationName && (
-                                  <span className="text-muted-foreground">
-                                    ({request.organizer.organizationName})
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            {request.organizer && (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Mail className="h-4 w-4" />
-                                <span>{request.organizer.email}</span>
-                              </div>
-                            )}
-                            {request.event && (
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
-                                <span>Event: <span className="font-medium text-foreground">{request.event.title}</span></span>
-                              </div>
-                            )}
-                            {request.message && (
-                              <div className="mt-2 p-3 bg-muted/50 rounded-lg text-sm text-foreground">
-                                {request.message}
-                              </div>
-                            )}
-                            {request.status === "APPROVED" && request.promoCode && (
-                              <div className="flex items-center gap-2 mt-2">
-                                <span className="text-sm text-muted-foreground">Created code:</span>
-                                <code className="px-2 py-1 bg-muted rounded text-sm font-mono font-semibold">
-                                  {request.promoCode.code}
-                                </code>
-                              </div>
-                            )}
-                            {request.status === "REJECTED" && request.rejectionReason && (
-                              <div className="flex items-start gap-2 mt-2 text-sm">
-                                <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                                <span className="text-muted-foreground">
-                                  <span className="font-medium text-foreground">Reason:</span> {request.rejectionReason}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Date */}
+                          <span className="text-xs text-muted-foreground shrink-0 ml-auto">
+                            {new Date(request.createdAt).toLocaleDateString()}
+                          </span>
+
+                          {/* Actions */}
+                          {request.status === "PENDING" && (
+                            <div className="flex gap-2 shrink-0 ml-2">
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  const params = new URLSearchParams({
+                                    requestId: request.id,
+                                  });
+                                  if (request.organizer) params.set("organizerId", request.organizer.id);
+                                  if (request.eventId) params.set("eventId", request.eventId);
+                                  navigate(`/admin/marketing/promo-codes/create?${params.toString()}`);
+                                }}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => {
+                                  setRejectingRequest(request);
+                                  setRejectReason("");
+                                  setRejectDialogOpen(true);
+                                }}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
+                          )}
                         </div>
 
-                        {request.status === "PENDING" && (
-                          <div className="flex gap-2 shrink-0">
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                const params = new URLSearchParams({
-                                  requestId: request.id,
-                                });
-                                if (request.organizer) params.set("organizerId", request.organizer.id);
-                                if (request.eventId) params.set("eventId", request.eventId);
-                                navigate(`/admin/marketing/promo-codes/create?${params.toString()}`);
-                              }}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => {
-                                setRejectingRequest(request);
-                                setRejectReason("");
-                                setRejectDialogOpen(true);
-                              }}
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Reject
-                            </Button>
+                        {/* Expandable details */}
+                        {hasDetails && (
+                          <div
+                            className={`overflow-hidden transition-all duration-200 ease-in-out ${
+                              isExpanded ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                            }`}
+                          >
+                            <div className="px-5 pb-4 pt-1 border-t border-border/40 space-y-2">
+                              {request.organizer?.email && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                                  <span>{request.organizer.email}</span>
+                                </div>
+                              )}
+                              {request.event && (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Calendar className="h-3.5 w-3.5 shrink-0" />
+                                  <span>Event: <span className="font-medium text-foreground">{request.event.title}</span></span>
+                                </div>
+                              )}
+                              {request.message && (
+                                <div className="p-3 bg-muted/50 rounded-lg text-sm text-foreground">
+                                  {request.message}
+                                </div>
+                              )}
+                              {request.status === "APPROVED" && request.promoCode && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-muted-foreground">Created code:</span>
+                                  <code className="px-2 py-1 bg-muted rounded text-sm font-mono font-semibold">
+                                    {request.promoCode.code}
+                                  </code>
+                                </div>
+                              )}
+                              {request.status === "REJECTED" && request.rejectionReason && (
+                                <div className="flex items-start gap-2 text-sm">
+                                  <AlertCircle className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
+                                  <span className="text-muted-foreground">
+                                    <span className="font-medium text-foreground">Reason:</span> {request.rejectionReason}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
 
                 {/* Request Pagination */}
                 {requestsPagination.totalPages > 1 && (

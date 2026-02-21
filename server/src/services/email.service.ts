@@ -1656,39 +1656,92 @@ class EmailService {
   ): Promise<void> {
     const reviewUrl = `${config.frontend.url}/admin/marketing/promo-codes?tab=requests`;
 
+    const messageBlock = message
+      ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 20px 0;">
+          <tr>
+            <td style="padding: 16px 20px; background-color: #fafafa; border-left: 3px solid #d1d5db; border-radius: 0 6px 6px 0;">
+              <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600;">Message from organizer</p>
+              <p style="margin: 0; font-size: 14px; color: #374151; font-style: italic; line-height: 1.5;">"${message}"</p>
+            </td>
+          </tr>
+        </table>`
+      : '';
+
     const html = `
       <!DOCTYPE html>
       <html>
-        <head>
-          <meta charset="utf-8">
-          <title>New Promo Code Request</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #4a6cf7;">New Promo Code Request</h1>
-            <p>Hi ${adminName},</p>
-            <p>An organizer has submitted a new promo code request for your review.</p>
-            <div style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
-              <p style="margin: 0 0 8px 0;"><strong>Organizer:</strong> ${organizer.name}</p>
-              <p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${organizer.email}</p>
-              ${organizer.organizationName ? `<p style="margin: 0 0 8px 0;"><strong>Organization:</strong> ${organizer.organizationName}</p>` : ''}
-              ${eventTitle ? `<p style="margin: 0 0 8px 0;"><strong>Event:</strong> ${eventTitle}</p>` : ''}
-              ${message ? `<p style="margin: 0;"><strong>Message:</strong> ${message}</p>` : ''}
-            </div>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${reviewUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Review Requests</a>
-            </div>
-            <p>Or visit: <a href="${reviewUrl}" style="color: #4a6cf7;">${reviewUrl}</a></p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
-          </div>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="560" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 32px 32px 0 32px;">
+                      <p style="margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600;">Promo Code Request</p>
+                      <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3;">New request from ${organizer.name}</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding: 24px 32px;">
+                      <p style="margin: 0 0 20px 0; font-size: 14px; color: #374151; line-height: 1.6;">Hi ${adminName}, an organizer has requested a promo code and needs your review.</p>
+
+                      <!-- Details table -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; border-collapse: collapse;">
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; width: 120px; vertical-align: top;">Organizer</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500;">${organizer.name}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; vertical-align: top;">Email</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827;">${organizer.email}</td>
+                        </tr>
+                        ${organizer.organizationName ? `
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; vertical-align: top;">Organization</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827;">${organizer.organizationName}</td>
+                        </tr>` : ''}
+                        ${eventTitle ? `
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; vertical-align: top;">Event</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500;">${eventTitle}</td>
+                        </tr>` : ''}
+                      </table>
+
+                      ${messageBlock}
+
+                      <!-- CTA -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0 0 0;">
+                        <tr>
+                          <td>
+                            <a href="${reviewUrl}" style="display: inline-block; padding: 10px 20px; background-color: #111827; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">Review Request</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 20px 32px; border-top: 1px solid #f3f4f6;">
+                      <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">This is an automated notification from EventKnit. You're receiving this because you're an administrator.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
         </body>
       </html>
     `;
 
     const result = await this.sendEmail({
       to: adminEmail,
-      subject: `New Promo Code Request from ${organizer.name}`,
+      subject: `Promo Code Request \u2014 ${organizer.name}`,
       html,
     });
 
@@ -1709,40 +1762,92 @@ class EmailService {
     const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
 
     const discountDisplay = promoCode.discountType === 'PERCENTAGE'
-      ? `${promoCode.discountValue}% off`
-      : `$${promoCode.discountValue} off`;
+      ? `${promoCode.discountValue}%`
+      : `$${promoCode.discountValue}`;
+
+    const validityInfo = promoCode.validFrom && promoCode.validUntil
+      ? `<tr>
+           <td style="padding: 10px 0; color: #6b7280; vertical-align: top;">Valid</td>
+           <td style="padding: 10px 0; color: #111827;">${new Date(promoCode.validFrom).toLocaleDateString()} \u2013 ${new Date(promoCode.validUntil).toLocaleDateString()}</td>
+         </tr>`
+      : '';
 
     const html = `
       <!DOCTYPE html>
       <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Promo Code Request Approved</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #4a6cf7;">Great News, ${firstName}!</h1>
-            <p>Your promo code request has been <strong style="color: #22c55e;">approved</strong>.</p>
-            ${eventTitle ? `<p>For event: <strong>${eventTitle}</strong></p>` : ''}
-            <div style="background-color: #f5f5f5; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
-              <p style="margin: 0 0 8px 0;"><strong>Promo Code:</strong> <code style="background: #e5e7eb; padding: 2px 8px; border-radius: 4px; font-size: 16px;">${promoCode.code}</code></p>
-              <p style="margin: 0;"><strong>Discount:</strong> ${discountDisplay}</p>
-            </div>
-            <p>The promo code is now available in your dashboard.</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${viewUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">View Promo Codes</a>
-            </div>
-            <p>Or visit: <a href="${viewUrl}" style="color: #4a6cf7;">${viewUrl}</a></p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
-          </div>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="560" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 32px 32px 0 32px;">
+                      <p style="margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #059669; font-weight: 600;">Approved</p>
+                      <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3;">Your promo code is ready</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding: 24px 32px;">
+                      <p style="margin: 0 0 20px 0; font-size: 14px; color: #374151; line-height: 1.6;">Hi ${firstName}, your promo code request${eventTitle ? ` for <strong>${eventTitle}</strong>` : ''} has been approved.</p>
+
+                      <!-- Code display -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px 0;">
+                        <tr>
+                          <td style="padding: 20px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600;">Your promo code</p>
+                            <p style="margin: 0; font-size: 28px; font-weight: 700; color: #111827; font-family: 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 2px;">${promoCode.code}</p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Details -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; border-collapse: collapse;">
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; width: 120px; vertical-align: top;">Discount</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500;">${discountDisplay} off</td>
+                        </tr>
+                        ${eventTitle ? `
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; vertical-align: top;">Event</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827;">${eventTitle}</td>
+                        </tr>` : ''}
+                        ${validityInfo}
+                      </table>
+
+                      <p style="margin: 24px 0 0 0; font-size: 14px; color: #374151; line-height: 1.6;">This code is now active and available in your dashboard. Share it with your attendees to start offering discounts.</p>
+
+                      <!-- CTA -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0 0 0;">
+                        <tr>
+                          <td>
+                            <a href="${viewUrl}" style="display: inline-block; padding: 10px 20px; background-color: #111827; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">View in Dashboard</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 20px 32px; border-top: 1px solid #f3f4f6;">
+                      <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">This is an automated notification from EventKnit.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
         </body>
       </html>
     `;
 
     const result = await this.sendEmail({
       to: organizerEmail,
-      subject: 'Your Promo Code Request Has Been Approved',
+      subject: `Promo Code Approved \u2014 ${promoCode.code}`,
       html,
     });
 
@@ -1762,37 +1867,72 @@ class EmailService {
   ): Promise<void> {
     const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
 
+    const reasonBlock = reason
+      ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 20px 0;">
+          <tr>
+            <td style="padding: 16px 20px; background-color: #fef2f2; border-left: 3px solid #fca5a5; border-radius: 0 6px 6px 0;">
+              <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #991b1b; font-weight: 600;">Reason</p>
+              <p style="margin: 0; font-size: 14px; color: #7f1d1d; line-height: 1.5;">${reason}</p>
+            </td>
+          </tr>
+        </table>`
+      : '';
+
     const html = `
       <!DOCTYPE html>
       <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Update on Your Promo Code Request</title>
-        </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #4a6cf7;">Hi ${firstName},</h1>
-            <p>We've reviewed your promo code request${eventTitle ? ` for <strong>${eventTitle}</strong>` : ''} and unfortunately we're unable to approve it at this time.</p>
-            ${reason ? `
-            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
-              <p style="margin: 0;"><strong>Reason:</strong> ${reason}</p>
-            </div>
-            ` : ''}
-            <p>If you have questions or would like to discuss this further, please don't hesitate to reach out to our support team.</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${viewUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">View Promo Codes</a>
-            </div>
-            <p>Or visit: <a href="${viewUrl}" style="color: #4a6cf7;">${viewUrl}</a></p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
-          </div>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="560" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 32px 32px 0 32px;">
+                      <p style="margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600;">Request Update</p>
+                      <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3;">Regarding your promo code request</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding: 24px 32px;">
+                      <p style="margin: 0 0 16px 0; font-size: 14px; color: #374151; line-height: 1.6;">Hi ${firstName}, we've reviewed your promo code request${eventTitle ? ` for <strong>${eventTitle}</strong>` : ''} and we're unable to approve it at this time.</p>
+
+                      ${reasonBlock}
+
+                      <p style="margin: 16px 0 0 0; font-size: 14px; color: #374151; line-height: 1.6;">You're welcome to submit a new request if your circumstances change. If you have questions, please reach out to our support team.</p>
+
+                      <!-- CTA -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0 0 0;">
+                        <tr>
+                          <td>
+                            <a href="${viewUrl}" style="display: inline-block; padding: 10px 20px; background-color: #111827; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">View Promo Codes</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 20px 32px; border-top: 1px solid #f3f4f6;">
+                      <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">This is an automated notification from EventKnit.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
         </body>
       </html>
     `;
 
     const result = await this.sendEmail({
       to: organizerEmail,
-      subject: 'Update on Your Promo Code Request',
+      subject: `Update on Your Promo Code Request${eventTitle ? ` \u2014 ${eventTitle}` : ''}`,
       html,
     });
 

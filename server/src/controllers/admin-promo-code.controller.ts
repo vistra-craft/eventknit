@@ -5,6 +5,36 @@ import { PromoCodeScope, DiscountType } from '@prisma/client';
 
 export class AdminPromoCodeController {
   /**
+   * Check if a promo code is available
+   */
+  static async checkAvailability(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const code = req.query.code as string;
+      if (!code || code.length < 3) {
+        res.status(400).json({ success: false, message: 'Code must be at least 3 characters' });
+        return;
+      }
+
+      const available = await PromoCodeService.checkCodeAvailability(code);
+      res.status(200).json({ success: true, data: { available } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Generate a unique promo code
+   */
+  static async generateCode(_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const code = await PromoCodeService.generateUniqueCode();
+      res.status(200).json({ success: true, data: { code } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get all promo codes with filtering
    */
   static async getPromoCodes(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

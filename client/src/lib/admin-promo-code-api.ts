@@ -358,6 +358,40 @@ export const deleteBatch = async (
 };
 
 /**
+ * Check if a promo code is available (admin)
+ */
+export const checkCodeAvailability = async (
+  code: string
+): Promise<{ success: boolean; data?: { available: boolean }; message?: string }> => {
+  try {
+    const response = await apiGet<ApiResponse<{ available: boolean }>>(
+      `/admin/promo-codes/check-availability?code=${encodeURIComponent(code)}`
+    );
+    return response;
+  } catch (error: unknown) {
+    return {
+      success: false,
+      message: getErrorMessage(error, 'Failed to check code availability'),
+    };
+  }
+};
+
+/**
+ * Generate a unique promo code (admin)
+ */
+export const generatePromoCode = async (): Promise<{ success: boolean; data?: { code: string }; message?: string }> => {
+  try {
+    const response = await apiGet<ApiResponse<{ code: string }>>('/admin/promo-codes/generate-code');
+    return response;
+  } catch (error: unknown) {
+    return {
+      success: false,
+      message: getErrorMessage(error, 'Failed to generate promo code'),
+    };
+  }
+};
+
+/**
  * Get scope display label
  */
 export const getScopeLabel = (scope: PromoCodeScope): string => {

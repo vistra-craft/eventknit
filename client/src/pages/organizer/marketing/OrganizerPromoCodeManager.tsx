@@ -24,6 +24,7 @@ import {
   Send,
   MessageSquare,
   AlertCircle,
+  Info,
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { ConfirmDialog, SuccessDialog } from '@/components/ui/confirm-dialog';
@@ -73,6 +74,7 @@ const OrganizerPromoCodeManager = () => {
   const [showRequestSuccess, setShowRequestSuccess] = useState(false);
   const [requestLoading, setRequestLoading] = useState(false);
   const [hasApprovedEvent, setHasApprovedEvent] = useState(false);
+  const [hasAnyEvents, setHasAnyEvents] = useState(false);
   const [myRequests, setMyRequests] = useState<PromoCodeRequest[]>([]);
   const [requestMessage, setRequestMessage] = useState('');
   const [requestEventId, setRequestEventId] = useState<string>('');
@@ -99,7 +101,9 @@ const OrganizerPromoCodeManager = () => {
     try {
       const eventsResponse = await getOrganizerEvents();
       if (eventsResponse.success && eventsResponse.data?.events) {
-        setEvents(eventsResponse.data.events as OrganizerEvent[]);
+        const eventsList = eventsResponse.data.events as OrganizerEvent[];
+        setEvents(eventsList);
+        setHasAnyEvents(eventsList.length > 0);
       }
 
       const codesResponse = await getPromoCodes();
@@ -293,6 +297,21 @@ const OrganizerPromoCodeManager = () => {
         </Button>
       </div>
 
+      {/* Eligibility Notice */}
+      {!hasApprovedEvent && hasAnyEvents && !loading && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+          <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+              Your events are pending admin approval
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
+              You need at least one approved event to request promo codes. Once an admin reviews and approves your event, the "Request Promo Code" button will become available.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
@@ -336,222 +355,230 @@ const OrganizerPromoCodeManager = () => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search by code or event..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      {/* Main content: codes + requests side by side on large screens */}
+      <div className="flex flex-col xl:flex-row gap-6">
+        {/* Left: Filters + Promo Codes */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Search by code or event..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={filterEvent} onValueChange={setFilterEvent}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Filter by event" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Events</SelectItem>
+                {events.map((event) => (
+                  <SelectItem key={event.id} value={event.id}>
+                    {event.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterStatus} onValueChange={(value: 'all' | 'active' | 'inactive' | 'expired') => setFilterStatus(value)}>
+              <SelectTrigger className="w-full sm:w-[150px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-        <Select value={filterEvent} onValueChange={setFilterEvent}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Filter by event" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Events</SelectItem>
-            {events.map((event) => (
-              <SelectItem key={event.id} value={event.id}>
-                {event.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={(value: 'all' | 'active' | 'inactive' | 'expired') => setFilterStatus(value)}>
-          <SelectTrigger className="w-full sm:w-[150px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-            <SelectItem value="expired">Expired</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
-      {/* Promo Codes List */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader size="lg" />
-        </div>
-      ) : filteredCodes.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Tag className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No promo codes found</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Request a promo code from the EventKnit team to offer discounts on your events
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {filteredCodes.map((code) => {
-            const status = getStatus(code);
-            return (
-              <Card key={code.id}>
-                <CardContent className="p-6">
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-3 mb-2">
-                        <div className="flex items-center gap-2">
-                          <code className="px-3 py-1 bg-muted rounded text-lg font-mono font-semibold">
-                            {code.code}
-                          </code>
+          {/* Promo Codes List */}
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader size="lg" />
+            </div>
+          ) : filteredCodes.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Tag className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No promo codes found</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Request a promo code from the EventKnit team to offer discounts on your events
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {filteredCodes.map((code) => {
+                const status = getStatus(code);
+                return (
+                  <Card key={code.id}>
+                    <CardContent className="p-6">
+                      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-3 mb-2">
+                            <div className="flex items-center gap-2">
+                              <code className="px-3 py-1 bg-muted rounded text-lg font-mono font-semibold">
+                                {code.code}
+                              </code>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCopyCode(code.code)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <Badge
+                              variant={
+                                status === 'active'
+                                  ? 'default'
+                                  : status === 'expired'
+                                  ? 'secondary'
+                                  : 'outline'
+                              }
+                            >
+                              {status === 'active' && <CheckCircle className="w-3 h-3 mr-1" />}
+                              {status === 'expired' && <XCircle className="w-3 h-3 mr-1" />}
+                              {status === 'inactive' && <Clock className="w-3 h-3 mr-1" />}
+                              {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </Badge>
+                          </div>
+
+                          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mt-4 text-sm">
+                            <div>
+                              <p className="text-muted-foreground">Discount</p>
+                              <p className="font-semibold text-foreground">
+                                {code.discountType === 'PERCENTAGE' ? (
+                                  <span className="flex items-center gap-1">
+                                    <Percent className="w-4 h-4" />
+                                    {code.discountValue}%
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1">
+                                    <DollarSign className="w-4 h-4" />
+                                    {code.discountValue}
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Usage</p>
+                              <p className="font-semibold text-foreground">
+                                {code.usedCount} / {code.usageLimit || '\u221E'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Valid Until</p>
+                              <p className="font-semibold text-foreground">
+                                {new Date(code.validUntil).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Event</p>
+                              <p className="font-semibold text-foreground truncate">
+                                {code.event?.title || 'All Events'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 shrink-0">
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={() => handleCopyCode(code.code)}
-                            className="h-8 w-8 p-0"
+                            onClick={() => openEditModal(code)}
                           >
-                            <Copy className="w-4 h-4" />
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(code.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                        <Badge
-                          variant={
-                            status === 'active'
-                              ? 'default'
-                              : status === 'expired'
-                              ? 'secondary'
-                              : 'outline'
-                          }
-                        >
-                          {status === 'active' && <CheckCircle className="w-3 h-3 mr-1" />}
-                          {status === 'expired' && <XCircle className="w-3 h-3 mr-1" />}
-                          {status === 'inactive' && <Clock className="w-3 h-3 mr-1" />}
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </Badge>
                       </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
-                        <div>
-                          <p className="text-muted-foreground">Discount</p>
-                          <p className="font-semibold text-foreground">
-                            {code.discountType === 'PERCENTAGE' ? (
-                              <span className="flex items-center gap-1">
-                                <Percent className="w-4 h-4" />
-                                {code.discountValue}%
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1">
-                                <DollarSign className="w-4 h-4" />
-                                {code.discountValue}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Usage</p>
-                          <p className="font-semibold text-foreground">
-                            {code.usedCount} / {code.usageLimit || '\u221E'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Valid Until</p>
-                          <p className="font-semibold text-foreground">
-                            {new Date(code.validUntil).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Event</p>
-                          <p className="font-semibold text-foreground truncate">
-                            {code.event?.title || 'All Events'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditModal(code)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(code.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* My Requests Section */}
-      {myRequests.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <MessageSquare className="w-5 h-5" />
-            My Requests
-          </h2>
-          <div className="grid gap-3">
-            {myRequests.map((request) => (
-              <Card key={request.id}>
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
+        {/* Right: My Requests sidebar */}
+        {myRequests.length > 0 && (
+          <div className="w-full xl:w-[360px] 2xl:w-[400px] shrink-0">
+            <div className="xl:sticky xl:top-4 space-y-3">
+              <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                My Requests
+                <Badge variant="outline" className="ml-auto text-xs font-normal">
+                  {myRequests.length}
+                </Badge>
+              </h2>
+              <div className="grid gap-3">
+                {myRequests.map((request) => (
+                  <Card key={request.id}>
+                    <CardContent className="p-3.5">
+                      <div className="flex items-center gap-2 mb-2">
                         {getRequestStatusBadge(request.status)}
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs text-muted-foreground ml-auto">
                           {new Date(request.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                       {request.event && (
-                        <p className="text-sm text-foreground">
-                          Event: <span className="font-medium">{request.event.title}</span>
+                        <p className="text-sm text-foreground truncate">
+                          <span className="text-muted-foreground">Event:</span>{' '}
+                          <span className="font-medium">{request.event.title}</span>
                         </p>
                       )}
                       {request.message && (
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                           {request.message}
                         </p>
                       )}
                       {request.status === 'APPROVED' && request.promoCode && (
                         <div className="mt-2 flex items-center gap-2">
-                          <code className="px-2 py-1 bg-muted rounded text-sm font-mono font-semibold">
+                          <code className="px-2 py-0.5 bg-muted rounded text-xs font-mono font-semibold">
                             {request.promoCode.code}
                           </code>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleCopyCode(request.promoCode!.code)}
-                            className="h-6 w-6 p-0"
+                            className="h-5 w-5 p-0"
                           >
                             <Copy className="w-3 h-3" />
                           </Button>
                         </div>
                       )}
                       {request.status === 'REJECTED' && request.rejectionReason && (
-                        <div className="mt-2 flex items-start gap-2 text-sm">
-                          <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
-                          <p className="text-muted-foreground">
-                            <span className="font-medium text-foreground">Reason:</span> {request.rejectionReason}
+                        <div className="mt-2 flex items-start gap-1.5 text-xs">
+                          <AlertCircle className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
+                          <p className="text-muted-foreground line-clamp-2">
+                            {request.rejectionReason}
                           </p>
                         </div>
                       )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Request Promo Code Dialog */}
       <ConfirmDialog

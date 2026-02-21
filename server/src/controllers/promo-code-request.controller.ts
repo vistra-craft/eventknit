@@ -162,6 +162,23 @@ export class PromoCodeRequestController {
   }
 
   /**
+   * Get a single request by ID (admin)
+   */
+  static async getRequestById(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const id = req.params.id as string;
+      const request = await PromoCodeRequestService.getRequestById(id);
+      res.status(200).json({ success: true, data: request });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get pending request count (admin badge)
    */
   static async getPendingCount(
