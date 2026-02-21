@@ -129,8 +129,10 @@ const OrganizerSettingsPage = () => {
           const prefs = response.data.preferences;
           setSettings(prev => ({
             ...prev,
-            // Appearance
-            theme: prefs.theme || "system",
+            // Appearance — use current ThemeContext value, not API value.
+            // ThemeContext (backed by localStorage) is the active source of truth.
+            // Only explicit user actions (ThemeSelector) should change the theme.
+            theme: currentTheme,
             // Security
             twoFactorAuth: prefs.twoFactorAuth ?? false,
             sessionTimeout: prefs.sessionTimeout || 30,
@@ -143,11 +145,6 @@ const OrganizerSettingsPage = () => {
             marketingEmails: prefs.marketingEmails ?? false,
             weeklyDigest: prefs.weeklyDigest ?? true,
           }));
-
-          // Sync theme with ThemeContext
-          if (prefs.theme && prefs.theme !== currentTheme) {
-            setThemeContext(prefs.theme);
-          }
         }
       } catch (error) {
         console.error("Failed to load preferences:", error);
