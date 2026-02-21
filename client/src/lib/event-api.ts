@@ -50,7 +50,6 @@ export interface EventFilters {
 export interface CreateEventData {
   title: string;
   description: string;
-  fullDescription?: string;
   organizerDescription?: string;
   category?: string;
   tags?: string[];

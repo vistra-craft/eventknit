@@ -8,6 +8,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { GuestRoute } from "./components/GuestRoute";
 import { lazy, Suspense } from "react";
 import type { ReactNode } from "react";
 
@@ -56,7 +57,6 @@ const App = () => (
 
               {/* Legacy Organizer Route Redirects */}
               <Route path="/organizer/event/:eventId" element={<OrganizerEventRedirect />} />
-              <Route path="/organizer/events" element={<Navigate to="/user/dashboard" replace />} />
 
               {/* User Routes */}
               <Route path="/user/*" element={
@@ -78,11 +78,13 @@ const App = () => (
           <AdminLayout />
         </Suspense>
       } />
-      {/* Auth Routes */}
+      {/* Auth Routes - Guest only (redirects authenticated users to dashboard) */}
       <Route path="/auth/*" element={
-        <Suspense fallback={<div className="min-h-screen bg-background" />}>
-          <AuthLayout />
-        </Suspense>
+        <GuestRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <AuthLayout />
+          </Suspense>
+        </GuestRoute>
       } />
       {/* Onboarding Routes - Protected */}
       <Route path="/onboarding/welcome" element={

@@ -9,14 +9,10 @@ export const eventValidations = {
       'string.max': 'Event title must not exceed 200 characters',
       'any.required': 'Event title is required',
     }),
-    description: Joi.string().trim().min(10).max(5000).required().messages({
+    description: Joi.string().trim().min(10).max(10000).required().messages({
       'string.min': 'Event description must be at least 10 characters long',
-      'string.max': 'Event description must not exceed 5000 characters',
+      'string.max': 'Event description must not exceed 10000 characters',
       'any.required': 'Event description is required',
-    }),
-    fullDescription: Joi.string().trim().min(10).max(20000).optional().allow('', null).messages({
-      'string.min': 'Full description must be at least 10 characters long',
-      'string.max': 'Full description must not exceed 20000 characters',
     }),
     organizerDescription: Joi.string().trim().max(1000).optional().allow('', null).messages({
       'string.max': 'Organizer description must not exceed 1000 characters',
@@ -164,13 +160,9 @@ export const eventValidations = {
       'string.min': 'Event title must be at least 3 characters long',
       'string.max': 'Event title must not exceed 200 characters',
     }),
-    description: Joi.string().trim().min(10).max(5000).optional().messages({
+    description: Joi.string().trim().min(10).max(10000).optional().messages({
       'string.min': 'Event description must be at least 10 characters long',
-      'string.max': 'Event description must not exceed 5000 characters',
-    }),
-    fullDescription: Joi.string().trim().min(10).max(20000).optional().allow('', null).messages({
-      'string.min': 'Full description must be at least 10 characters long',
-      'string.max': 'Full description must not exceed 20000 characters',
+      'string.max': 'Event description must not exceed 10000 characters',
     }),
     organizerDescription: Joi.string().trim().max(1000).optional().allow('', null).messages({
       'string.max': 'Organizer description must not exceed 1000 characters',
@@ -391,7 +383,6 @@ export const eventValidations = {
     }),
     copyFields: Joi.array().items(Joi.string().valid(
       'description',
-      'fullDescription',
       'organizerDescription',
       'category',
       'tags',

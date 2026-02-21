@@ -111,7 +111,6 @@ export interface EventFormData {
   title: string;
   organizer: string;
   description: string;
-  fullDescription: string;
   organizerDescription?: string;
   date: string;
   time: string;

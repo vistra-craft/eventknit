@@ -52,17 +52,9 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
     {
       id: "events",
       label: "Events",
+      href: "/organizer/events",
       icon: Calendar,
       group: "main",
-      children: [
-        { name: "All Events", href: "/organizer/events" },
-        { name: "Upcoming", href: "/organizer/events/upcoming" },
-        { name: "Past Events", href: "/organizer/events/past" },
-        { name: "Cancelled Events", href: "/organizer/events/cancelled" },
-        { name: "Create New", href: "/organizer/events/create" },
-        { name: "Event Templates", href: "/organizer/events/templates-management" },
-        { name: "Event Drafts", href: "/organizer/events/drafts" },
-      ]
     },
     {
       id: "attendees",

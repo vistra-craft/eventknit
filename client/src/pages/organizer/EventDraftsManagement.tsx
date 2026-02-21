@@ -38,7 +38,7 @@ interface Draft {
   updatedAt: string;
 }
 
-const EventDraftsManagement = () => {
+const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDraft, setSelectedDraft] = useState<Draft | null>(null);
@@ -166,31 +166,55 @@ const EventDraftsManagement = () => {
 
   return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-page-title">Event Drafts</h1>
-            <p className="text-muted-foreground mt-1">
-              Create and manage event drafts before publishing
-            </p>
+        {!embedded && (
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-page-title">Event Drafts</h1>
+              <p className="text-muted-foreground mt-1">
+                Create and manage event drafts before publishing
+              </p>
+            </div>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Draft
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Create Event Draft</DialogTitle>
+                </DialogHeader>
+                <CreateDraftForm
+                  onSubmit={handleCreateDraft}
+                  onCancel={() => setIsCreateDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Draft
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create Event Draft</DialogTitle>
-              </DialogHeader>
-              <CreateDraftForm
-                onSubmit={handleCreateDraft}
-                onCancel={() => setIsCreateDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+        )}
+
+        {embedded && (
+          <div className="flex justify-end">
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Draft
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Create Event Draft</DialogTitle>
+                </DialogHeader>
+                <CreateDraftForm
+                  onSubmit={handleCreateDraft}
+                  onCancel={() => setIsCreateDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-8">Loading drafts...</div>

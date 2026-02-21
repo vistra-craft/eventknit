@@ -5,6 +5,7 @@
  */
 
 import { lazy, createElement } from 'react';
+import { Navigate } from 'react-router-dom';
 import type { ProtectedRouteConfig } from './types';
 import { UserRole } from '../types/auth';
 
@@ -14,17 +15,12 @@ import { UserRole } from '../types/auth';
 const OrganizerDashboard = lazy(() => import('../pages/organizer/OrganizerDashboard'));
 const OnboardingWizard = lazy(() => import('../pages/organizer/OnboardingWizard'));
 
-// Event Management
-const AllEventsPage = lazy(() => import('../pages/organizer/AllEventsPage'));
-const UpcomingEventsPage = lazy(() => import('../pages/organizer/UpcomingEventsPage'));
-const PastEventsPage = lazy(() => import('../pages/organizer/PastEventsPage'));
-const CancelledEventsPage = lazy(() => import('../pages/organizer/CancelledEventsPage'));
+// Event Management - Unified Page
+const UnifiedEventsPage = lazy(() => import('../pages/organizer/UnifiedEventsPage'));
 const CreateEventPage = lazy(() => import('../pages/organizer/CreateEventPage'));
 const StandaloneCreateEventPage = lazy(() => import('../pages/organizer/StandaloneCreateEventPage'));
 const EventManagementPage = lazy(() => import('../pages/organizer/EventManagementPage'));
 const EventTemplates = lazy(() => import('../pages/organizer/EventTemplates'));
-const EventTemplatesManagement = lazy(() => import('../pages/organizer/EventTemplatesManagement'));
-const EventDraftsManagement = lazy(() => import('../pages/organizer/EventDraftsManagement'));
 const EventCollaboration = lazy(() => import('../pages/organizer/EventCollaboration'));
 
 // Analytics
@@ -100,29 +96,41 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     allowedRoles: [UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER],
   },
 
-  // Events - List Views
+  // Events - Unified Page (All, Upcoming, Past, Cancelled, Templates, Drafts)
   {
     path: 'events',
-    element: createElement(AllEventsPage),
+    element: createElement(UnifiedEventsPage),
     allowedRoles: ALL_ORGANIZER_ROLES,
   },
+
+  // Backward-compat redirects: old URLs → unified page with query param
   {
     path: 'events/upcoming',
-    element: createElement(UpcomingEventsPage),
+    element: createElement(Navigate, { to: '/organizer/events?view=upcoming', replace: true }),
     allowedRoles: ALL_ORGANIZER_ROLES,
   },
   {
     path: 'events/past',
-    element: createElement(PastEventsPage),
+    element: createElement(Navigate, { to: '/organizer/events?view=past', replace: true }),
     allowedRoles: ALL_ORGANIZER_ROLES,
   },
   {
     path: 'events/cancelled',
-    element: createElement(CancelledEventsPage),
+    element: createElement(Navigate, { to: '/organizer/events?view=cancelled', replace: true }),
     allowedRoles: ALL_ORGANIZER_ROLES,
   },
+  {
+    path: 'events/templates-management',
+    element: createElement(Navigate, { to: '/organizer/events?view=templates', replace: true }),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'events/drafts',
+    element: createElement(Navigate, { to: '/organizer/events?view=drafts', replace: true }),
+    allowedRoles: NON_TELLER_ROLES,
+  },
 
-  // Events - Creation
+  // Events - Creation (keep as separate routes)
   {
     path: 'events/create',
     element: createElement(CreateEventPage),
@@ -134,20 +142,10 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     allowedRoles: NON_TELLER_ROLES,
   },
 
-  // Events - Templates & Drafts
+  // Events - Templates (legacy direct route)
   {
     path: 'events/templates',
     element: createElement(EventTemplates),
-    allowedRoles: NON_TELLER_ROLES,
-  },
-  {
-    path: 'events/templates-management',
-    element: createElement(EventTemplatesManagement),
-    allowedRoles: NON_TELLER_ROLES,
-  },
-  {
-    path: 'events/drafts',
-    element: createElement(EventDraftsManagement),
     allowedRoles: NON_TELLER_ROLES,
   },
 

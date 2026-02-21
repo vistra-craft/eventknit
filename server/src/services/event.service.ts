@@ -22,7 +22,6 @@ import { AttendeeCommunicationService } from './attendee-communication.service.j
 export interface CreateEventData {
   title: string;
   description: string;
-  fullDescription?: string;
   organizerDescription?: string;
   category?: string;
   tags?: string[];
@@ -334,7 +333,6 @@ export class EventService {
       data: {
         title: data.title.trim(),
         description: data.description.trim(),
-        fullDescription: data.fullDescription?.trim(),
         organizerDescription: data.organizerDescription?.trim(),
         category: data.category?.trim(),
         tags: data.tags || [],
@@ -797,7 +795,7 @@ export class EventService {
     // Determine if status should be reset to PENDING
     // Only reset for significant changes, not minor updates like adding an image
     const significantFields = [
-      'title', 'description', 'fullDescription', 'startDate', 'endDate',
+      'title', 'description', 'startDate', 'endDate',
       'startTime', 'endTime', 'venue', 'location', 'address', 'isOnline',
       'onlineLink', 'price', 'ticketTypes', 'capacity', 'category', 'type',
       'requirements', 'ageRestriction', 'duration', 'speakers', 'sponsors',
@@ -819,7 +817,6 @@ export class EventService {
 
     if (data.title !== undefined) updateData.title = data.title.trim();
     if (data.description !== undefined) updateData.description = data.description.trim();
-    if (data.fullDescription !== undefined) updateData.fullDescription = data.fullDescription?.trim();
     if (data.organizerDescription !== undefined) updateData.organizerDescription = data.organizerDescription?.trim();
     if (data.category !== undefined) updateData.category = data.category?.trim();
     if (data.tags !== undefined) updateData.tags = data.tags;
@@ -994,7 +991,7 @@ export class EventService {
     if (data.title !== undefined) changes.push('title');
     if (data.startDate !== undefined || data.startTime !== undefined) changes.push('date/time');
     if (data.venue !== undefined || data.location !== undefined || data.address !== undefined) changes.push('venue/location');
-    if (data.description !== undefined || data.fullDescription !== undefined) changes.push('description');
+    if (data.description !== undefined) changes.push('description');
     if (data.capacity !== undefined) changes.push('capacity');
     if (data.price !== undefined || data.ticketTypes !== undefined) changes.push('pricing');
 
@@ -4142,7 +4139,6 @@ export class EventService {
       // Determine which fields to copy
       const copyFields = data?.copyFields || [
         'description',
-        'fullDescription',
         'organizerDescription',
         'category',
         'tags',
@@ -4185,9 +4181,6 @@ export class EventService {
       // Copy selected fields
       if (copyFields.includes('description') && !excludeFields.includes('description')) {
         newEventData.description = originalEvent.description;
-      }
-      if (copyFields.includes('fullDescription') && !excludeFields.includes('fullDescription')) {
-        newEventData.fullDescription = originalEvent.fullDescription;
       }
       if (copyFields.includes('organizerDescription') && !excludeFields.includes('organizerDescription')) {
         newEventData.organizerDescription = originalEvent.organizerDescription;

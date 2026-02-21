@@ -72,25 +72,12 @@ export function BasicInfoStep({
         />
         <div className="flex justify-between">
           <p className="text-sm text-muted-foreground">
-            {getTextLength(eventData.description)}/5000 characters
+            {getTextLength(eventData.description)}/10000 characters
           </p>
           {validationErrors.description && (
             <p className="text-sm text-destructive">{validationErrors.description}</p>
           )}
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="fullDescription">Detailed Description (Optional)</Label>
-        <RichTextEditor
-          content={eventData.fullDescription}
-          onChange={(html) => onInputChange("fullDescription", html)}
-          placeholder="Provide a more comprehensive description of your event, including what attendees can expect..."
-          minHeight="220px"
-        />
-        <p className="text-sm text-muted-foreground">
-          {getTextLength(eventData.fullDescription)}/10000 characters
-        </p>
       </div>
 
       <div className="space-y-2">
