@@ -37,6 +37,7 @@ const createPromoCodeSchema = Joi.object({
   isActive: Joi.boolean().default(true),
   firstTimeOnly: Joi.boolean().default(false),
   isStackable: Joi.boolean().default(false),
+  organizerId: Joi.string().uuid().optional(),
 });
 
 const updatePromoCodeSchema = Joi.object({

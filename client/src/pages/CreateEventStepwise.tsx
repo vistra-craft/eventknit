@@ -1353,7 +1353,7 @@ export default function CreateEventStepwise() {
           // Only validate if at least one ticket has a quantity set
           if (totalTicketQuantity > 0 && totalTicketQuantity !== capacity) {
             errors.capacity = `Event capacity (${capacity}) must match the sum of ticket quantities (${totalTicketQuantity}). Please adjust either the capacity or ticket quantities.`;
-            errors.tickets = errors.tickets || 'Ticket quantities must match event capacity';
+            errors.tickets = errors.tickets || `Total ticket quantities (${totalTicketQuantity}) must equal event capacity (${capacity}). Adjust ticket quantities or go back to change the capacity.`;
           }
         }
       }

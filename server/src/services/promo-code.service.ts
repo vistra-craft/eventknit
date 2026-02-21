@@ -334,6 +334,7 @@ export class PromoCodeService {
     creatorId: string,
     data: CreatePromoCodeData,
     isAdmin: boolean = false,
+    overrideOrganizerId?: string,
   ) {
     // Check if code already exists
     const existing = await prisma.promoCode.findUnique({
@@ -381,7 +382,7 @@ export class PromoCodeService {
     const promoCode = await prisma.promoCode.create({
       data: {
         code: data.code.toUpperCase(),
-        organizerId: isAdmin && scope === PromoCodeScope.PLATFORM ? null : creatorId,
+        organizerId: isAdmin && scope === PromoCodeScope.PLATFORM ? null : (overrideOrganizerId || creatorId),
         scope,
         eventId: scope === PromoCodeScope.EVENT ? data.eventId : null,
         eventIds: scope === PromoCodeScope.MULTI_EVENT ? data.eventIds : [],

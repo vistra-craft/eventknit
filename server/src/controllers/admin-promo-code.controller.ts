@@ -101,7 +101,8 @@ export class AdminPromoCodeController {
         discountTiers: req.body.discountTiers,
       };
 
-      const promoCode = await PromoCodeService.createPromoCode(req.user.id, data, true);
+      const overrideOrganizerId = req.body.organizerId as string | undefined;
+      const promoCode = await PromoCodeService.createPromoCode(req.user.id, data, true, overrideOrganizerId);
 
       res.status(201).json({
         success: true,

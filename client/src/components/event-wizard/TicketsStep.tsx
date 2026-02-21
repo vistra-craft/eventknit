@@ -118,6 +118,50 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
         </Alert>
       )}
 
+      {/* Capacity Context Banner */}
+      {eventData.capacity && eventData.capacity.trim() !== '' && (() => {
+        const capacity = parseInt(eventData.capacity, 10);
+        if (isNaN(capacity) || capacity <= 0) return null;
+
+        const totalTicketQuantity = ticketTypes.reduce((sum, ticket) => {
+          const qty = parseInt(ticket.quantity, 10);
+          return sum + (isNaN(qty) ? 0 : qty);
+        }, 0);
+
+        const remaining = capacity - totalTicketQuantity;
+        const matches = totalTicketQuantity === capacity;
+
+        return (
+          <Card className={`border ${matches ? 'border-success/40 bg-success/5' : 'border-border bg-muted/30'}`}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${matches ? 'bg-success/20' : 'bg-primary/10'}`}>
+                  {matches ? (
+                    <ShieldCheck className="h-5 w-5 text-success" />
+                  ) : (
+                    <Users className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">
+                    Event Capacity: <strong>{capacity.toLocaleString()}</strong>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {totalTicketQuantity > 0 ? (
+                      matches
+                        ? `All ${capacity.toLocaleString()} spots allocated across ticket types`
+                        : `${totalTicketQuantity.toLocaleString()} of ${capacity.toLocaleString()} allocated${remaining > 0 ? ` \u2022 ${remaining.toLocaleString()} remaining` : ` \u2022 ${Math.abs(remaining).toLocaleString()} over capacity`}`
+                    ) : (
+                      'Set ticket quantities below to match this capacity'
+                    )}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Currency Selection */}
       {hasPaidTickets && (
         <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
@@ -616,43 +660,6 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
           Add Another Ticket Type
         </Button>
       </div>
-
-      {/* Capacity Validation */}
-      {eventData.capacity && eventData.capacity.trim() !== '' && (() => {
-        const capacity = parseInt(eventData.capacity, 10);
-        const totalTicketQuantity = ticketTypes.reduce((sum, ticket) => {
-          const qty = parseInt(ticket.quantity, 10);
-          return sum + (isNaN(qty) ? 0 : qty);
-        }, 0);
-
-        if (!isNaN(capacity) && capacity > 0 && totalTicketQuantity > 0) {
-          const matches = totalTicketQuantity === capacity;
-          return (
-            <Card className={`border-2 ${matches ? 'border-success/50 bg-success/5' : 'border-warning/50 bg-warning/5'}`}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${matches ? 'bg-success/20' : 'bg-warning/20'}`}>
-                    {matches ? (
-                      <ShieldCheck className="h-5 w-5 text-success" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-warning" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">
-                      {matches ? 'Capacity matches ticket quantities' : 'Capacity mismatch'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Event Capacity: <strong>{capacity}</strong> • Total Tickets: <strong>{totalTicketQuantity}</strong>
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        }
-        return null;
-      })()}
 
       <Separator className="my-8" />
 

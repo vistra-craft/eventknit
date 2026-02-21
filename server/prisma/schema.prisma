@@ -160,6 +160,12 @@ enum PromoCodeScope {
   MULTI_EVENT // Works on selected multiple events
 }
 
+enum PromoCodeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum DataAccessLevel {
   RESTRICTED // Summary cards only (total attendees, total revenue)
   STANDARD // Attendee list + payment summaries (no transaction IDs)
@@ -279,6 +285,8 @@ model User {
   promoCodesCreated                 PromoCode[]                  @relation("PromoCodeOrganizer")
   referralCodes                     PromoCode[]                  @relation("PromoCodeReferrer")
   promoCodeRedemptions              PromoCodeRedemption[]        @relation("PromoCodeUser")
+  promoCodeRequests                 PromoCodeRequest[]           @relation("PromoCodeRequestOrganizer")
+  promoCodeRequestsReviewed         PromoCodeRequest[]           @relation("PromoCodeRequestReviewer")
   eventAssignments                  EventStaff[]                 @relation("EventStaff")
   checkpointStaffAssignments        CheckpointStaff[]            @relation("CheckpointStaffAssignment")
   // Event Payment Relations
@@ -760,6 +768,7 @@ model Event {
   ticketTemplates        TicketTemplate[]
   featuredEvents         FeaturedEvent[]
   promoCodes             PromoCode[]               @relation("PromoCodeEvent")
+  promoCodeRequests      PromoCodeRequest[]        @relation("PromoCodeRequestEvent")
   ticketScans            TicketScan[]
   checkpoints            Checkpoint[]              @relation("EventCheckpoints")
   checkpointScans        CheckpointScan[]          @relation("EventCheckpointScans")
@@ -1233,6 +1242,7 @@ model PromoCode {
   referrer    User?                 @relation("PromoCodeReferrer", fields: [referrerUserId], references: [id], onDelete: SetNull)
   redemptions PromoCodeRedemption[]
   variants    PromoCodeVariant[]    @relation("PromoCodeVariants")
+  request     PromoCodeRequest?     @relation("PromoCodeFromRequest")
 
   @@index([code])
   @@index([organizerId])
@@ -3891,6 +3901,32 @@ model PromoCodeVariant {
 
   @@unique([promoCodeId, code])
   @@index([promoCodeId])
+}
+
+model PromoCodeRequest {
+  id          String                 @id @default(uuid())
+  organizerId String
+  organizer   User                   @relation("PromoCodeRequestOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  // Request details
+  eventId     String?
+  event       Event?                 @relation("PromoCodeRequestEvent", fields: [eventId], references: [id], onDelete: SetNull)
+  message     String?
+
+  // Admin handling
+  status      PromoCodeRequestStatus @default(PENDING)
+  reviewedBy  String?
+  reviewer    User?                  @relation("PromoCodeRequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  reviewedAt  DateTime?
+  rejectionReason String?
+  promoCodeId String?                @unique
+  promoCode   PromoCode?             @relation("PromoCodeFromRequest", fields: [promoCodeId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([organizerId])
+  @@index([status])
 }
 
 // Event Expenses

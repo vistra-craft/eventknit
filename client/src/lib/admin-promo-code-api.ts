@@ -104,6 +104,7 @@ export interface CreateAdminPromoCodeData {
   campaignSource?: string;
   isTiered?: boolean;
   discountTiers?: DiscountTier[];
+  organizerId?: string;
 }
 
 export interface BulkGenerateData {

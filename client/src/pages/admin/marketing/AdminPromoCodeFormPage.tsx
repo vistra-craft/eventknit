@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   Plus,
   X,
+  Info,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
@@ -29,12 +30,19 @@ import {
   type CreateAdminPromoCodeData,
 } from "@/lib/admin-promo-code-api";
 import { getEvents, EventStatus } from "@/lib/event-api";
+import { approvePromoCodeRequest } from "@/lib/promo-code-request-api";
 
 const AdminPromoCodeFormPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);
   const { toast } = useToast();
+
+  // Request context from URL params
+  const requestId = searchParams.get("requestId");
+  const requestOrganizerId = searchParams.get("organizerId");
+  const requestEventId = searchParams.get("eventId");
 
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
@@ -97,6 +105,14 @@ const AdminPromoCodeFormPage = () => {
           toast({ title: "Error", description: "Promo code not found", variant: "destructive" });
           navigate("/admin/marketing/promo-codes");
         }
+      } else if (requestId) {
+        // Pre-fill form from request context
+        setFormData((prev) => ({
+          ...prev,
+          scope: requestEventId ? "EVENT" as PromoCodeScope : "ORGANIZER" as PromoCodeScope,
+          eventId: requestEventId || undefined,
+          organizerId: requestOrganizerId || undefined,
+        }));
       }
     } catch (err: unknown) {
       console.error("Error loading data:", err);
@@ -104,7 +120,7 @@ const AdminPromoCodeFormPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, isEditing, navigate, toast]);
+  }, [id, isEditing, navigate, toast, requestId, requestEventId, requestOrganizerId]);
 
   useEffect(() => {
     loadData();
@@ -145,8 +161,19 @@ const AdminPromoCodeFormPage = () => {
         : await createAdminPromoCode(formData);
 
       if (response.success) {
-        toast({ title: "Success", description: isEditing ? "Promo code updated" : "Promo code created" });
-        navigate("/admin/marketing/promo-codes");
+        // If creating from a request, approve the request with the new promo code ID
+        if (requestId && !isEditing && response.data?.id) {
+          const approveRes = await approvePromoCodeRequest(requestId, response.data.id);
+          if (approveRes.success) {
+            toast({ title: "Success", description: "Promo code created and request approved" });
+          } else {
+            toast({ title: "Partial Success", description: "Promo code created but failed to approve request. Please approve manually.", variant: "destructive" });
+          }
+          navigate("/admin/marketing/promo-codes?tab=requests");
+        } else {
+          toast({ title: "Success", description: isEditing ? "Promo code updated" : "Promo code created" });
+          navigate("/admin/marketing/promo-codes");
+        }
       } else {
         toast({ title: "Error", description: response.message || "Failed to save", variant: "destructive" });
       }
@@ -168,6 +195,16 @@ const AdminPromoCodeFormPage = () => {
 
   return (
       <div className="space-y-6">
+        {/* Request Context Banner */}
+        {requestId && !isEditing && (
+          <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+            <Info className="h-5 w-5 text-primary shrink-0" />
+            <p className="text-sm text-foreground">
+              Creating promo code for an organizer request. The request will be automatically approved when you create this code.
+            </p>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -175,7 +212,7 @@ const AdminPromoCodeFormPage = () => {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/admin/marketing/promo-codes")}
+              onClick={() => requestId ? navigate("/admin/marketing/promo-codes?tab=requests") : navigate("/admin/marketing/promo-codes")}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back

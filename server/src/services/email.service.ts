@@ -1643,6 +1643,163 @@ class EmailService {
       logger.error(`Failed to send organizer approved email to ${email}: ${result.error?.message}`);
     }
   }
+
+  /**
+   * Send notification to admin about a new promo code request
+   */
+  async sendPromoCodeRequestNotification(
+    adminEmail: string,
+    adminName: string,
+    organizer: { name: string; email: string; organizationName?: string | null },
+    eventTitle?: string | null,
+    message?: string | null,
+  ): Promise<void> {
+    const reviewUrl = `${config.frontend.url}/admin/marketing/promo-codes?tab=requests`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>New Promo Code Request</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">New Promo Code Request</h1>
+            <p>Hi ${adminName},</p>
+            <p>An organizer has submitted a new promo code request for your review.</p>
+            <div style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0 0 8px 0;"><strong>Organizer:</strong> ${organizer.name}</p>
+              <p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${organizer.email}</p>
+              ${organizer.organizationName ? `<p style="margin: 0 0 8px 0;"><strong>Organization:</strong> ${organizer.organizationName}</p>` : ''}
+              ${eventTitle ? `<p style="margin: 0 0 8px 0;"><strong>Event:</strong> ${eventTitle}</p>` : ''}
+              ${message ? `<p style="margin: 0;"><strong>Message:</strong> ${message}</p>` : ''}
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${reviewUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Review Requests</a>
+            </div>
+            <p>Or visit: <a href="${reviewUrl}" style="color: #4a6cf7;">${reviewUrl}</a></p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: adminEmail,
+      subject: `New Promo Code Request from ${organizer.name}`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send promo code request notification to ${adminEmail}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send approval notification to organizer
+   */
+  async sendPromoCodeRequestApproved(
+    organizerEmail: string,
+    firstName: string,
+    promoCode: { code: string; discountType: string; discountValue: unknown; validFrom?: Date; validUntil?: Date },
+    eventTitle?: string | null,
+  ): Promise<void> {
+    const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
+
+    const discountDisplay = promoCode.discountType === 'PERCENTAGE'
+      ? `${promoCode.discountValue}% off`
+      : `$${promoCode.discountValue} off`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Promo Code Request Approved</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">Great News, ${firstName}!</h1>
+            <p>Your promo code request has been <strong style="color: #22c55e;">approved</strong>.</p>
+            ${eventTitle ? `<p>For event: <strong>${eventTitle}</strong></p>` : ''}
+            <div style="background-color: #f5f5f5; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0 0 8px 0;"><strong>Promo Code:</strong> <code style="background: #e5e7eb; padding: 2px 8px; border-radius: 4px; font-size: 16px;">${promoCode.code}</code></p>
+              <p style="margin: 0;"><strong>Discount:</strong> ${discountDisplay}</p>
+            </div>
+            <p>The promo code is now available in your dashboard.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${viewUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">View Promo Codes</a>
+            </div>
+            <p>Or visit: <a href="${viewUrl}" style="color: #4a6cf7;">${viewUrl}</a></p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: organizerEmail,
+      subject: 'Your Promo Code Request Has Been Approved',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send promo code approval email to ${organizerEmail}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send rejection notification to organizer
+   */
+  async sendPromoCodeRequestRejected(
+    organizerEmail: string,
+    firstName: string,
+    reason?: string | null,
+    eventTitle?: string | null,
+  ): Promise<void> {
+    const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Update on Your Promo Code Request</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">Hi ${firstName},</h1>
+            <p>We've reviewed your promo code request${eventTitle ? ` for <strong>${eventTitle}</strong>` : ''} and unfortunately we're unable to approve it at this time.</p>
+            ${reason ? `
+            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0;"><strong>Reason:</strong> ${reason}</p>
+            </div>
+            ` : ''}
+            <p>If you have questions or would like to discuss this further, please don't hesitate to reach out to our support team.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${viewUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">View Promo Codes</a>
+            </div>
+            <p>Or visit: <a href="${viewUrl}" style="color: #4a6cf7;">${viewUrl}</a></p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: organizerEmail,
+      subject: 'Update on Your Promo Code Request',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send promo code rejection email to ${organizerEmail}: ${result.error?.message}`);
+    }
+  }
 }
 
 export const emailService = new EmailService();
