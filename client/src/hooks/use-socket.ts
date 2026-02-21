@@ -27,7 +27,7 @@ export const useSocket = (options: UseSocketOptions = {}): UseSocketReturn => {
     if (!autoConnect) return;
 
     // Get auth token from localStorage
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('accessToken');
     if (!token) {
       console.warn('No auth token found, skipping WebSocket connection');
       return;

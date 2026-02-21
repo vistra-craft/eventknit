@@ -5,7 +5,8 @@
 import { useCallback, useEffect } from 'react';
 import { useAuthContext } from './useAuthContext';
 import * as authApi from '../lib/auth-api';
-import { setAccessToken, removeAccessToken, setLogoutCallback } from '../lib/api';
+import { setAccessToken, removeAccessToken, getAccessToken, setLogoutCallback } from '../lib/api';
+import { queryClient } from '../lib/queryClient';
 import { UserRole } from '../types/auth';
 import { useNavigate } from 'react-router-dom';
 
@@ -157,34 +158,45 @@ export const useAuth = () => {
 
   /**
    * Logout user
-   * Hybrid approach: Immediate client-side logout + optional server-side invalidation
-   * Following pos/vf-ticket pattern for immediate UX, with optional security enhancement
+   * Captures token before clearing, fires server logout with it, then cleans up client state.
    */
   const logout = useCallback(() => {
-    // 1. Clear token immediately (prevents any API calls from using it)
+    // 1. Capture the current access token BEFORE removing it (needed for server call)
+    const currentToken = getAccessToken();
+
+    // 2. Clear client-side state immediately for instant UX
     removeAccessToken();
-
-    // 2. Clear role view from localStorage
     localStorage.removeItem('activeViewRole');
+    // Note: We keep rememberedEmail so "Remember me" persists across sessions
 
-    // 3. Note: We keep rememberedEmail in localStorage so "Remember me" persists across sessions
-    // User can uncheck "Remember me" on next login to clear it
-
-    // 4. Dispatch logout immediately to clear state (synchronous)
+    // 3. Dispatch logout to clear React auth state
     dispatch({ type: 'AUTH_LOGOUT' });
 
-    // 5. Dispatch custom event to notify components immediately
+    // 4. Clear React Query cache to prevent stale data leaking to next session
+    queryClient.clear();
+
+    // 5. Notify components of token change
     window.dispatchEvent(new Event('tokenChange'));
 
-    // 6. Navigate immediately (no setTimeout delay - like pos/vf-ticket)
+    // 6. Navigate immediately
     navigate('/', { replace: true });
 
-    // 7. Fire-and-forget server-side token invalidation (optional security enhancement)
-    // Don't wait for this - it's non-blocking for better UX
-    authApi.logout().catch((error) => {
-      // Silently fail - client is already logged out
-      console.error('Logout API error (non-blocking):', error);
-    });
+    // 7. Fire-and-forget server-side token revocation using the captured token
+    // Uses raw fetch to bypass apiRequest's 401-refresh logic (we're already logged out)
+    if (currentToken) {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL ||
+        (import.meta.env.DEV ? '/api/v1' : 'https://eventknit.onrender.com/api/v1');
+      fetch(`${baseUrl}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`,
+        },
+        credentials: 'include', // Include cookies so server can clear refresh token
+      }).catch(() => {
+        // Silently fail - client is already logged out
+      });
+    }
   }, [dispatch, navigate]);
 
   /**
@@ -265,6 +277,7 @@ export const useAuth = () => {
       removeAccessToken();
       localStorage.removeItem('activeViewRole');
       dispatch({ type: 'AUTH_LOGOUT' });
+      queryClient.clear();
       // Use requestAnimationFrame to ensure state update propagates
       requestAnimationFrame(() => {
         navigate('/auth/signin');
