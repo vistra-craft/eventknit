@@ -22,7 +22,6 @@ import {
   Percent,
   Gift,
   AlertCircle,
-  Tag,
   Users,
   DollarSign,
   Settings,
@@ -660,43 +659,6 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
           Add Another Ticket Type
         </Button>
       </div>
-
-      <Separator className="my-8" />
-
-      {/* Promo Codes Section - Links to dedicated manager */}
-      <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Tag className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold">Promo Codes</h3>
-                <p className="text-sm text-muted-foreground">
-                  Create discount codes after publishing your event
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open('/organizer/marketing/promo-codes', '_blank')}
-              className="gap-2"
-            >
-              <Tag className="h-4 w-4" />
-              Manage Codes
-            </Button>
-          </div>
-          <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-            <p className="text-xs text-muted-foreground">
-              <strong>Tip:</strong> Promo codes are managed separately in the Marketing section.
-              You can create event-specific or organizer-wide codes, set usage limits,
-              validity dates, and track redemptions.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
 
       <Separator className="my-8" />
 
