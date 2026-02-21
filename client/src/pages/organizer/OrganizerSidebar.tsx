@@ -5,12 +5,11 @@ import {
   Settings,
   Home,
   Menu,
-  UserPlus,
+  Users,
   TrendingUp,
   ChevronDown,
   ChevronRight,
   LogOut,
-  Crown,
   Megaphone,
   Wallet,
 } from "lucide-react";
@@ -35,23 +34,24 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                            userRole === UserRole.ORGANIZER_TELLER;
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-    // Auto-expand events section if on events pages
     events: location.pathname.startsWith('/organizer/events'),
-    // Auto-expand settings section if on settings pages
-    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
+    attendees: location.pathname.startsWith('/organizer/attendees'),
+    analytics: location.pathname.startsWith('/organizer/analytics'),
+    marketing: location.pathname.startsWith('/organizer/marketing'),
+    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
   });
 
   const navigationItems = [
-    { 
-      id: "dashboard", 
-      label: "Dashboard", 
-      href: "/organizer/dashboard", 
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      href: "/organizer/dashboard",
       icon: Home,
       group: "main"
     },
-    { 
-      id: "events", 
-      label: "Events", 
+    {
+      id: "events",
+      label: "Events",
       icon: Calendar,
       group: "main",
       children: [
@@ -62,6 +62,26 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Create New", href: "/organizer/events/create" },
         { name: "Event Templates", href: "/organizer/events/templates-management" },
         { name: "Event Drafts", href: "/organizer/events/drafts" },
+      ]
+    },
+    {
+      id: "attendees",
+      label: "Attendees",
+      icon: Users,
+      group: "main",
+      children: [
+        { name: "Segmentation", href: "/organizer/attendees/segmentation" },
+        { name: "Tags", href: "/organizer/attendees/tags" },
+        { name: "Communication", href: "/organizer/attendees/communication" },
+      ]
+    },
+    {
+      id: "marketing",
+      label: "Marketing",
+      icon: Megaphone,
+      group: "main",
+      children: [
+        { name: "Promo Codes", href: "/organizer/marketing/promo-codes" },
       ]
     },
     {
@@ -77,34 +97,11 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       ]
     },
     {
-      id: "marketing",
-      label: "Marketing",
-      icon: Megaphone,
-      group: "main",
-      children: [
-        { name: "Promo Codes", href: "/organizer/marketing/promo-codes" },
-      ]
-    },
-    {
-      id: "finance",
-      label: "Finance",
+      id: "payouts",
+      label: "Payouts",
+      href: "/organizer/payouts",
       icon: Wallet,
-      group: "main",
-      children: [
-        { name: "Financial Management", href: "/organizer/financial-management" },
-        { name: "Payouts", href: "/organizer/payouts" },
-      ]
-    },
-    {
-      id: "team",
-      label: "Team",
-      icon: UserPlus,
-      group: "management",
-      children: [
-        { name: "Staff Management", href: "/organizer/team/staff" },
-        { name: "Roles & Permissions", href: "/organizer/team/roles" },
-        { name: "Team Calendar", href: "/organizer/team/calendar" },
-      ]
+      group: "main"
     },
     {
       id: "settings",
@@ -117,13 +114,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Security", href: "/organizer/settings/security" },
         { name: "Appearance", href: "/organizer/settings/appearance" },
       ]
-    },
-    { 
-      id: "subscription", 
-      label: "Subscription", 
-      href: "/organizer/subscription", 
-      icon: Crown,
-      group: "management"
     },
   ];
 
@@ -140,8 +130,10 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       setExpandedItems(prev => ({
         ...prev,
         events: location.pathname.startsWith('/organizer/events'),
-        finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
-        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
+        attendees: location.pathname.startsWith('/organizer/attendees'),
+        analytics: location.pathname.startsWith('/organizer/analytics'),
+        marketing: location.pathname.startsWith('/organizer/marketing'),
+        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
       }));
     }
   }, [location.pathname, isOrganizerStaff]);
