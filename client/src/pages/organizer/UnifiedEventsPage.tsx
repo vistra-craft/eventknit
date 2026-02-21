@@ -7,7 +7,6 @@ import { EventsListView } from "@/components/organizer/events/EventsListView";
 import { useOrganizerEvents, type EventView } from "@/hooks/useOrganizerEvents";
 import EventTemplatesManagement from "./EventTemplatesManagement";
 import EventDraftsManagement from "./EventDraftsManagement";
-import { AttendingEventsView } from "@/components/organizer/events/AttendingEventsView";
 
 const EVENT_VIEWS: EventView[] = ["all", "upcoming", "past", "cancelled"];
 
@@ -16,7 +15,7 @@ function isEventView(view: string): view is EventView {
 }
 
 function isValidView(view: string): view is ViewType {
-  return ["all", "upcoming", "past", "cancelled", "attending", "templates", "drafts"].includes(view);
+  return ["all", "upcoming", "past", "cancelled", "templates", "drafts"].includes(view);
 }
 
 const UnifiedEventsPage = () => {
@@ -95,8 +94,6 @@ const UnifiedEventsPage = () => {
             <EventTemplatesManagement embedded />
           ) : activeView === "drafts" ? (
             <EventDraftsManagement embedded />
-          ) : activeView === "attending" ? (
-            <AttendingEventsView />
           ) : (
             <EventsListView
               view={eventView}

@@ -5,13 +5,13 @@ import {
   Settings,
   Home,
   Menu,
-  Users,
   TrendingUp,
   ChevronDown,
   ChevronRight,
   LogOut,
   Megaphone,
   Wallet,
+  Ticket,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -34,8 +34,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                            userRole === UserRole.ORGANIZER_TELLER;
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-    events: location.pathname.startsWith('/organizer/events'),
-    attendees: location.pathname.startsWith('/organizer/attendees'),
     analytics: location.pathname.startsWith('/organizer/analytics'),
     marketing: location.pathname.startsWith('/organizer/marketing'),
     settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
@@ -57,15 +55,11 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       group: "main",
     },
     {
-      id: "attendees",
-      label: "Attendees",
-      icon: Users,
+      id: "attending",
+      label: "Attending",
+      href: "/organizer/attending",
+      icon: Ticket,
       group: "main",
-      children: [
-        { name: "Segmentation", href: "/organizer/attendees/segmentation" },
-        { name: "Tags", href: "/organizer/attendees/tags" },
-        { name: "Communication", href: "/organizer/attendees/communication" },
-      ]
     },
     {
       id: "marketing",
@@ -121,8 +115,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
     if (!isOrganizerStaff) {
       setExpandedItems(prev => ({
         ...prev,
-        events: location.pathname.startsWith('/organizer/events'),
-        attendees: location.pathname.startsWith('/organizer/attendees'),
         analytics: location.pathname.startsWith('/organizer/analytics'),
         marketing: location.pathname.startsWith('/organizer/marketing'),
         settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),

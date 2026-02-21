@@ -17,6 +17,7 @@ const OnboardingWizard = lazy(() => import('../pages/organizer/OnboardingWizard'
 
 // Event Management - Unified Page
 const UnifiedEventsPage = lazy(() => import('../pages/organizer/UnifiedEventsPage'));
+const AttendingEventsPage = lazy(() => import('../pages/organizer/AttendingEventsPage'));
 const CreateEventPage = lazy(() => import('../pages/organizer/CreateEventPage'));
 const StandaloneCreateEventPage = lazy(() => import('../pages/organizer/StandaloneCreateEventPage'));
 const EventManagementPage = lazy(() => import('../pages/organizer/EventManagementPage'));
@@ -128,6 +129,13 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     path: 'events/drafts',
     element: createElement(Navigate, { to: '/organizer/events?view=drafts', replace: true }),
     allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Attending Events (standalone page)
+  {
+    path: 'attending',
+    element: createElement(AttendingEventsPage),
+    allowedRoles: ALL_ORGANIZER_ROLES,
   },
 
   // Events - Creation (keep as separate routes)

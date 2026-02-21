@@ -5,13 +5,12 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Ticket,
   FileText,
   FilePen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export type ViewType = "all" | "upcoming" | "past" | "cancelled" | "attending" | "templates" | "drafts";
+export type ViewType = "all" | "upcoming" | "past" | "cancelled" | "templates" | "drafts";
 
 interface PillConfig {
   id: ViewType;
@@ -24,7 +23,6 @@ const pills: PillConfig[] = [
   { id: "upcoming", label: "Upcoming", icon: Clock },
   { id: "past", label: "Past", icon: CheckCircle },
   { id: "cancelled", label: "Cancelled", icon: XCircle },
-  { id: "attending", label: "Attending", icon: Ticket },
   { id: "templates", label: "Templates", icon: FileText },
   { id: "drafts", label: "Drafts", icon: FilePen },
 ];

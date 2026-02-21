@@ -321,7 +321,7 @@ export class AttendeeCommunicationService {
 
       // Get bulk messages sent by organizer
       const where: any = {
-        organizerId,
+        createdBy: organizerId,
       };
 
       if (filters?.eventId) {
