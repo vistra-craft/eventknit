@@ -15,6 +15,19 @@ import { useAuth } from './useAuth';
 import { refreshAccessToken, getAccessToken } from '../lib/api';
 import { UserRole, UserStatus } from '../types/auth';
 
+/**
+ * Check if an access token's payload is expired (with a small buffer).
+ * Falls back to true (needs refresh) if the token can't be decoded.
+ */
+const isTokenExpired = (token: string, bufferSeconds = 60): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 < Date.now() + bufferSeconds * 1000;
+  } catch {
+    return true;
+  }
+};
+
 const POLL_INTERVAL_MS = 30_000; // 30 seconds
 
 export const useOrganizerApproval = () => {
@@ -58,21 +71,24 @@ export const useOrganizerApproval = () => {
     let refreshAttempted = false;
 
     const connect = async () => {
-      // Refresh access token before connecting to ensure it's not expired.
-      // Socket.IO doesn't go through the API client's 401-refresh interceptor,
-      // so an expired token would cause a 403 rejection from the WS middleware.
-      try {
-        await refreshAccessToken();
-      } catch {
-        // Refresh failed — if there's no access token left, the session is dead.
-        // Don't attempt Socket.IO connection; the polling fallback will trigger
-        // a proper 401 → refresh → logout flow via apiRequest.
-        if (!getAccessToken()) return;
+      // Only refresh the access token if it's actually expired.
+      // Eagerly calling refreshAccessToken() races with apiRequest's
+      // isRefreshing guard, causing replay detection (backend rotates
+      // refresh tokens and revokes all tokens on duplicate use).
+      const currentToken = getAccessToken();
+      if (!currentToken) return;
+
+      if (isTokenExpired(currentToken)) {
+        try {
+          await refreshAccessToken();
+        } catch {
+          if (!getAccessToken()) return;
+        }
       }
 
       if (cancelled) return;
 
-      const token = localStorage.getItem('accessToken');
+      const token = getAccessToken();
       if (!token) return;
 
       socket = io({
