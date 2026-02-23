@@ -28,6 +28,9 @@ const SignIn = () => {
     password: ''
   });
   const [rememberMe, setRememberMe] = useState(false);
+  // Local error state for login errors — immune to external auth state changes
+  // (e.g., concurrent refreshProfile from initAuth dispatching AUTH_LOGOUT)
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Load remembered email on component mount
   useEffect(() => {
@@ -49,20 +52,10 @@ const SignIn = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount - clearError is stable from useAuth
 
-  // Watch for auth state changes and ensure form is accessible
-  useEffect(() => {
-    // If we're not authenticated, ensure we're not in loading state
-    // This fixes the issue where form stays disabled after logout
-    if (!isAuthenticated) {
-      if (isLoading) {
-        clearError(); // clearError also clears isLoading in reducer
-      }
-    }
-  }, [isAuthenticated, isLoading, clearError]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+    setLoginError(null);
 
     try {
       // Save or clear email based on rememberMe checkbox
@@ -75,8 +68,13 @@ const SignIn = () => {
       await login(formData.email, formData.password, rememberMe);
       // Navigation is handled by the useAuth hook
     } catch (error) {
-      // Error is handled by the auth context
-      console.error('Sign in error:', error);
+      // Extract error message and store locally so it can't be cleared
+      // by concurrent auth state changes (e.g., initAuth's refreshProfile failing)
+      const errorMessage =
+        error && typeof error === 'object' && 'message' in error
+          ? (error as { message: string }).message
+          : 'Invalid email or password. Please try again.';
+      setLoginError(errorMessage);
     }
   };
 
@@ -408,9 +406,9 @@ const SignIn = () => {
 
                 {/* Main Sign In Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {authError && (
+                  {(loginError || authError) && (
                     <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg mb-4">
-                      {authError}
+                      {loginError || authError}
                     </div>
                   )}
                   

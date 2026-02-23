@@ -7,6 +7,7 @@
 
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { getAccessToken } from '@/lib/api';
 import { UserRole } from '@/types/auth';
 
 interface GuestRouteProps {
@@ -16,8 +17,10 @@ interface GuestRouteProps {
 export const GuestRoute: React.FC<GuestRouteProps> = ({ children }) => {
   const { isAuthenticated, user, isLoading } = useAuth();
 
-  // While checking auth state, show nothing (prevents flash of auth page)
-  if (isLoading) {
+  // Only show blank during initial auth verification (when a stored token exists).
+  // During a login attempt there's no token yet, so we keep children mounted
+  // to preserve form state and display errors properly.
+  if (isLoading && getAccessToken()) {
     return <div className="min-h-screen bg-background" />;
   }
 

@@ -85,6 +85,35 @@ export class UserController {
   }
 
   /**
+   * Request organizer approval (sets status to PENDING_APPROVAL)
+   */
+  static async requestOrganizerApproval(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const user = await UserService.requestOrganizerApproval(
+        req.user.id,
+        req.ip,
+        req.headers['user-agent'],
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Organizer approval requested successfully',
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Switch from ORGANIZER to ATTENDEE
    */
   static async becomeAttendee(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

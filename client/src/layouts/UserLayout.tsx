@@ -22,6 +22,7 @@ import {
   DialogFooter,
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
+import { Clock } from 'lucide-react';
 
 /**
  * Loading component for suspense fallback
@@ -47,7 +48,7 @@ const UserLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
-  const { showApprovalModal, handleApprovalAcknowledged } = useOrganizerApproval();
+  const { showApprovalModal, handleApprovalAcknowledged, isPendingOrganizer } = useOrganizerApproval();
 
   // Get user data from auth context
   const user = authUser ? {
@@ -76,20 +77,26 @@ const UserLayout = () => {
       <Dialog open={showApprovalModal} onOpenChange={(open) => { if (!open) handleApprovalAcknowledged(); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-center text-xl">Account Approved</DialogTitle>
+            <DialogTitle className="text-center text-xl">Your Organizer Account is Approved!</DialogTitle>
             <DialogDescription className="text-center">
-              Congratulations! Your organizer account has been approved.
-              You now have full access to create and manage events on EventKnit.
+              Congratulations! An admin has approved your organizer account.
+              You can now manage your events, track ticket sales, and access the full organizer dashboard.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:justify-center">
+          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-center">
             <Button
               onClick={() => {
                 handleApprovalAcknowledged();
                 navigate('/organizer/dashboard');
               }}
             >
-              Get Started
+              Go to Organizer Dashboard
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleApprovalAcknowledged()}
+            >
+              Stay Here
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -108,6 +115,18 @@ const UserLayout = () => {
               <div className="bg-success-light border border-success/20 rounded-lg p-4 mb-6">
                 <div className="flex">
                   <div className="text-success">{successMessage}</div>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Pending Organizer Approval Banner */}
+          {isPendingOrganizer && (
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
+                <Clock className="h-5 w-5 text-primary flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Organizer Account Pending Approval</p>
+                  <p className="text-xs text-muted-foreground">Your application is under review. You&apos;ll be notified once an admin approves your account.</p>
                 </div>
               </div>
             </div>

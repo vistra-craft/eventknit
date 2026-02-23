@@ -331,7 +331,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div className="space-y-2">
-                        <Label>Session Title</Label>
+                        <Label>Session Title <span className="text-destructive">*</span></Label>
                         <Input
                           placeholder="Keynote Speech, Panel Discussion, etc."
                           value={item.title || ''}
@@ -461,7 +461,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                     </Button>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Name *</Label>
+                        <Label>Name <span className="text-destructive">*</span></Label>
                         <Input
                           value={speaker.name || ''}
                           onChange={(e) => updateSpeaker(index, 'name', e.target.value)}
@@ -582,7 +582,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                     </Button>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Company Name *</Label>
+                        <Label>Company Name <span className="text-destructive">*</span></Label>
                         <Input
                           value={exhibitor.name || ''}
                           onChange={(e) => updateExhibitor(index, 'name', e.target.value)}
@@ -683,7 +683,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                     </Button>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Sponsor Name *</Label>
+                        <Label>Sponsor Name <span className="text-destructive">*</span></Label>
                         <Input
                           value={sponsor.name || ''}
                           onChange={(e) => updateSponsor(index, 'name', e.target.value)}

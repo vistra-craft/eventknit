@@ -661,6 +661,13 @@ export const becomeOrganizer = async (data: {
 };
 
 /**
+ * Request organizer approval (sets status to PENDING_APPROVAL, triggers emails)
+ */
+export const requestOrganizerApproval = async (): Promise<ApiResponse<{ user: User }>> => {
+  return apiPost('/user/role-switch/request-approval', {});
+};
+
+/**
  * Switch from ORGANIZER to ATTENDEE role
  */
 export const becomeAttendee = async (): Promise<ApiResponse<{ user: User }>> => {

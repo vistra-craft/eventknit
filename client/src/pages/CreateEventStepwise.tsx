@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
-import { becomeOrganizer } from '@/lib/user-dashboard-api';
+import { becomeOrganizer, requestOrganizerApproval } from '@/lib/user-dashboard-api';
 import { EVENT_CATEGORIES } from '@/lib/event-categories';
 import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData, type BackendEvent } from '@/lib/event-utils';
@@ -1350,8 +1350,8 @@ export default function CreateEventStepwise() {
           
           // Only validate if at least one ticket has a quantity set
           if (totalTicketQuantity > 0 && totalTicketQuantity !== capacity) {
-            errors.capacity = `Event capacity (${capacity}) must match the sum of ticket quantities (${totalTicketQuantity}). Please adjust either the capacity or ticket quantities.`;
-            errors.tickets = errors.tickets || `Total ticket quantities (${totalTicketQuantity}) must equal event capacity (${capacity}). Adjust ticket quantities or go back to change the capacity.`;
+            errors.capacity = `Event capacity (${capacity}) doesn't match total ticket quantities (${totalTicketQuantity}). Adjust either value above.`;
+            errors.tickets = errors.tickets || `Total ticket quantities (${totalTicketQuantity}) must equal event capacity (${capacity}).`;
           }
         }
       }
@@ -1539,11 +1539,19 @@ export default function CreateEventStepwise() {
     const isOrganizerRole = ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
     const isAdminRole = ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'].includes(user.role);
 
+    // Track if this user was an attendee before upgrade (used for approval flow after event creation)
+    const wasAttendee = !isOrganizerRole && !isAdminRole;
+
+    // Show loading state from the start — covers both the upgrade and create steps
+    setIsSubmitting(true);
+    setError(null);
+
     // If ATTENDEE, upgrade to organizer using the organizer name from the form
     if (!isOrganizerRole && !isAdminRole) {
       const orgName = eventData.organizer?.trim();
       if (!orgName || orgName.length < 2) {
         setError('Please enter an organizer name (at least 2 characters) in Step 1 to continue.');
+        setIsSubmitting(false);
         return;
       }
       try {
@@ -1558,15 +1566,13 @@ export default function CreateEventStepwise() {
             ? upgradeError.message
             : 'Failed to set up organizer account. Please try again.'
         );
+        setIsSubmitting(false);
         return;
       }
     }
 
     // Eventbrite-style: No verification required to CREATE events
     // Verification is only required to RECEIVE payouts (handled in disbursement service)
-
-    setIsSubmitting(true);
-    setError(null);
 
     try {
       const apiData = transformFormDataToAPI();
@@ -1608,35 +1614,50 @@ export default function CreateEventStepwise() {
           sessionStorage.setItem('event_just_created', 'true');
           // Reset form state
           resetForm();
-          // Success! Navigate based on current route
-          const isAdminRoute = location.pathname.startsWith('/admin');
-          const isStandaloneRoute = location.pathname.includes('/create-standalone');
-          
-          if (isAdminRoute) {
-            navigate('/admin/dashboard', {
-              state: { message: 'Event created successfully! It is pending admin approval.' }
-            });
-          } else if (isStandaloneRoute) {
-            // For standalone creation, navigate to dashboard with success message and verification reminder
-            const needsVerification = verificationStatus && !verificationStatus.identityVerified;
-            const successMessage = 'Event created successfully! It is pending admin approval. You will receive an email when it\'s approved.';
-            const verificationMessage = needsVerification 
-              ? 'Complete identity verification to help speed up approval and receive payouts from ticket sales.'
-              : null;
-            
-            navigate('/organizer/dashboard', {
-              state: { 
-                message: successMessage,
-                verificationReminder: verificationMessage,
-                eventCreated: true,
-                needsVerification: needsVerification
+
+          // If this was an attendee who just became an organizer, trigger the approval flow
+          if (wasAttendee) {
+            try {
+              await requestOrganizerApproval();
+            } catch (approvalErr) {
+              // Non-blocking — event was already created, log but don't fail
+              console.error('Failed to request organizer approval:', approvalErr);
+            }
+            await refreshProfile();
+            navigate('/user/dashboard', {
+              state: {
+                message: 'Your event has been submitted! Your organizer account is now pending admin approval. You will receive an email once approved.',
               }
             });
           } else {
-            // Created from dashboard - go back to dashboard
-            navigate('/organizer/dashboard', {
-              state: { message: 'Event created successfully! It is pending admin approval.' }
-            });
+            // Existing organizer or admin — navigate normally
+            const isAdminRoute = location.pathname.startsWith('/admin');
+            const isStandaloneRoute = location.pathname.includes('/create-standalone');
+
+            if (isAdminRoute) {
+              navigate('/admin/dashboard', {
+                state: { message: 'Event created successfully! It is pending admin approval.' }
+              });
+            } else if (isStandaloneRoute) {
+              const needsVerification = verificationStatus && !verificationStatus.identityVerified;
+              const successMessage = 'Event created successfully! It is pending admin approval. You will receive an email when it\'s approved.';
+              const verificationMessage = needsVerification
+                ? 'Complete identity verification to help speed up approval and receive payouts from ticket sales.'
+                : null;
+
+              navigate('/organizer/dashboard', {
+                state: {
+                  message: successMessage,
+                  verificationReminder: verificationMessage,
+                  eventCreated: true,
+                  needsVerification: needsVerification
+                }
+              });
+            } else {
+              navigate('/organizer/dashboard', {
+                state: { message: 'Event created successfully! It is pending admin approval.' }
+              });
+            }
           }
         } else {
           setError(response.message || 'Failed to create event. Please try again.');
@@ -2186,6 +2207,17 @@ export default function CreateEventStepwise() {
                 eventType={eventType}
                 isPrivate={isPrivate}
                 setIsPrivate={setIsPrivate}
+                tags={tags}
+                requirements={requirements}
+                faqs={faqs}
+                agenda={agenda}
+                speakers={speakers}
+                exhibitors={exhibitors}
+                sponsors={sponsors}
+                registrationFields={registrationFields}
+                socialLinks={socialLinks}
+                timezone={timezone}
+                imagePreview={imagePreview}
               />
             )}
 
