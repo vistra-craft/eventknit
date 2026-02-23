@@ -78,45 +78,45 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
 
   if (!isAuthenticated || !user) return null;
 
-  const getDashboardRoute = async () => {
-    // Use user's actual role
-    const roleToUse = user?.role;
+  // const getDashboardRoute = async () => {
+  //   // Use user's actual role
+  //   const roleToUse = user?.role;
     
-    const isAdminRole = [
-      UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
-      UserRole.SUPPORT,
-      UserRole.TELLER,
-    ].includes(roleToUse);
+  //   const isAdminRole = [
+  //     UserRole.SUPERADMIN,
+  //     UserRole.ADMIN_STAFF,
+  //     UserRole.MARKETER,
+  //     UserRole.SUPPORT,
+  //     UserRole.TELLER,
+  //   ].includes(roleToUse);
     
-    const isOrganizerRole = [
-      UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
-      UserRole.ORGANIZER_TELLER,
-    ].includes(roleToUse);
+  //   const isOrganizerRole = [
+  //     UserRole.ORGANIZER,
+  //     UserRole.ORGANIZER_STAFF,
+  //     UserRole.ORGANIZER_TELLER,
+  //   ].includes(roleToUse);
     
-    if (isAdminRole) return '/admin/dashboard';
+  //   if (isAdminRole) return '/admin/dashboard';
     
-    // For organizers, check if they have dashboard access
-    if (isOrganizerRole && roleToUse === UserRole.ORGANIZER) {
-      try {
-        const { getDashboardAccess } = await import('@/lib/organizer-api');
-        const accessResponse = await getDashboardAccess();
-        if (accessResponse.success && !accessResponse.data.hasAccess) {
-          // No event created - redirect to event creation
-          return '/user/create-event';
-        }
-      } catch (error) {
-        console.error('Error checking dashboard access:', error);
-        // On error, redirect to event creation to be safe
-        return '/user/create-event';
-      }
-    }
+  //   // For organizers, check if they have dashboard access
+  //   if (isOrganizerRole && roleToUse === UserRole.ORGANIZER) {
+  //     try {
+  //       const { getDashboardAccess } = await import('@/lib/organizer-api');
+  //       const accessResponse = await getDashboardAccess();
+  //       if (accessResponse.success && !accessResponse.data.hasAccess) {
+  //         // No event created - redirect to event creation
+  //         return '/user/create-event';
+  //       }
+  //     } catch (error) {
+  //       console.error('Error checking dashboard access:', error);
+  //       // On error, redirect to event creation to be safe
+  //       return '/user/create-event';
+  //     }
+  //   }
 
-    if (isOrganizerRole) return '/user/dashboard';
-    return '/user/dashboard';
-  };
+  //   if (isOrganizerRole) return '/user/dashboard';
+  //   return '/user/dashboard';
+  // };
 
   const getProfileRoute = () => {
     // Use user's actual role
