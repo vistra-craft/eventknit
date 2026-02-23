@@ -238,7 +238,7 @@ const OrganizerPromoCodeManager = () => {
       minOrderAmount: code.minOrderAmount,
       maxDiscount: code.maxDiscount,
       usageLimit: code.usageLimit,
-      maxUsesPerUser: code.maxUsesPerUser,
+      maxUsesPerUser: code.maxUsesPerUser ?? 1,
       validFrom: new Date(code.validFrom).toISOString().slice(0, 16),
       validUntil: new Date(code.validUntil).toISOString().slice(0, 16),
     });
