@@ -132,17 +132,15 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
               {activeTab === 'saved' && "Events you've saved"}
             </p>
           </div>
-          {showOrganizing && (
-            <Button
-              onClick={() => navigate('/user/create-event')}
-              size="default"
-              className="w-full sm:w-auto gap-2"
-              aria-label={CTA_LABELS.CREATE_EVENT}
-            >
-              <Plus className="h-4 w-4" />
-              {CTA_LABELS.CREATE_EVENT}
-            </Button>
-          )}
+          <Button
+            onClick={() => navigate('/user/create-event')}
+            size="default"
+            className="w-full sm:w-auto gap-2"
+            aria-label={CTA_LABELS.CREATE_EVENT}
+          >
+            <Plus className="h-4 w-4" />
+            {CTA_LABELS.CREATE_EVENT}
+          </Button>
         </div>
 
         {/* Tabs */}
