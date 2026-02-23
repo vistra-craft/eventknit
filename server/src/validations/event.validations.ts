@@ -98,6 +98,8 @@ export const eventValidations = {
     image: Joi.string().uri().optional().allow('', null).messages({
       'string.uri': 'Image URL must be a valid URL',
     }),
+    imageFocalX: Joi.number().integer().min(0).max(100).optional().default(50),
+    imageFocalY: Joi.number().integer().min(0).max(100).optional().default(50),
     images: Joi.array().items(Joi.string().uri()).optional().messages({
       'array.max': 'Images array is too large',
     }),
@@ -248,6 +250,8 @@ export const eventValidations = {
     image: Joi.string().uri().optional().allow('', null).messages({
       'string.uri': 'Image URL must be a valid URL',
     }),
+    imageFocalX: Joi.number().integer().min(0).max(100).optional(),
+    imageFocalY: Joi.number().integer().min(0).max(100).optional(),
     images: Joi.array().items(Joi.string().uri()).optional(),
     type: Joi.string().valid(...EventTypeValues).optional(),
     requirements: Joi.array().items(Joi.string().trim().max(500)).optional(),

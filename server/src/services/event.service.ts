@@ -59,6 +59,8 @@ export interface CreateEventData {
   }>;
   capacity?: number | string;
   image?: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
   images?: string[];
   type?: EventType;
   requirements?: string[];
@@ -353,6 +355,8 @@ export class EventService {
         capacity,
         availableSlots,
         image: data.image?.trim(),
+        imageFocalX: data.imageFocalX ?? 50,
+        imageFocalY: data.imageFocalY ?? 50,
         images: data.images || [],
         timezone: data.timezone || null,
         type: data.type || EventType.PUBLIC,
@@ -852,6 +856,8 @@ export class EventService {
     if (data.image !== undefined) updateData.image = data.image?.trim();
     if (data.image !== undefined) updateData.image = data.image?.trim();
     if (data.images !== undefined) updateData.images = data.images;
+    if (data.imageFocalX !== undefined) updateData.imageFocalX = data.imageFocalX;
+    if (data.imageFocalY !== undefined) updateData.imageFocalY = data.imageFocalY;
     if (data.timezone !== undefined) updateData.timezone = data.timezone;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.requirements !== undefined) updateData.requirements = data.requirements;
