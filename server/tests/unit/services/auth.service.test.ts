@@ -351,7 +351,7 @@ describe('AuthService - Registration Flow', () => {
         emailVerifiedAt: new Date(),
         organizationName: null,
         verificationLevel: 0,
-        onboardingCompleted: true,
+        onboardingCompleted: false,
         avatar: null,
         phoneNumber: null,
         createdAt: new Date(),
@@ -390,7 +390,8 @@ describe('AuthService - Registration Flow', () => {
           role: UserRole.ATTENDEE,
           status: UserStatus.ACTIVE,
           isEmailVerified: true,
-          onboardingCompleted: true,
+          emailVerifiedAt: expect.any(Date),
+          onboardingCompleted: false,
         }),
       });
       expect(prisma.emailVerification.update).toHaveBeenCalledWith({
@@ -571,7 +572,7 @@ describe('AuthService - Registration Flow', () => {
         emailVerifiedAt: new Date(),
         organizationName: null,
         verificationLevel: 0,
-        onboardingCompleted: true,
+        onboardingCompleted: false,
         avatar: null,
         phoneNumber: null,
         createdAt: new Date(),
