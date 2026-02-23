@@ -40,7 +40,7 @@ export function DateLocationStep({
               handleInputChange("date", e.target.value);
               if (validationErrors.date) setValidationErrors(prev => ({ ...prev, date: '' }));
             }}
-            className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.date ? 'border-destructive' : ''}`}
+            className={`h-12 ${validationErrors.date ? 'border-destructive' : ''}`}
           />
           {validationErrors.date && (
             <p className="text-sm text-destructive">{validationErrors.date}</p>
@@ -57,7 +57,7 @@ export function DateLocationStep({
                 handleInputChange("time", e.target.value);
                 if (validationErrors.time) setValidationErrors(prev => ({ ...prev, time: '' }));
               }}
-              className={`h-12 border-border focus-visible:border-primary/30 pr-10 ${validationErrors.time ? 'border-destructive' : ''}`}
+              className={`h-12 pr-10 ${validationErrors.time ? 'border-destructive' : ''}`}
             />
             {eventData.time && (
               <Button
@@ -89,7 +89,7 @@ export function DateLocationStep({
               handleInputChange("endDate", e.target.value);
               if (validationErrors.endDate) setValidationErrors(prev => ({ ...prev, endDate: '' }));
             }}
-            className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.endDate ? 'border-destructive' : ''}`}
+            className={`h-12 ${validationErrors.endDate ? 'border-destructive' : ''}`}
           />
           {validationErrors.endDate && (
             <p className="text-sm text-destructive">{validationErrors.endDate}</p>
@@ -103,7 +103,7 @@ export function DateLocationStep({
               type="time"
               value={eventData.endTime}
               onChange={(e) => handleInputChange("endTime", e.target.value)}
-              className="h-12 border-border focus-visible:border-primary/30 pr-10"
+              className="h-12 pr-10"
             />
             {eventData.endTime && (
               <Button
@@ -165,7 +165,7 @@ export function DateLocationStep({
                   value={eventData.registrationDeadline}
                   max={eventData.date || undefined}
                   onChange={(e) => handleInputChange("registrationDeadline", e.target.value)}
-                  className="h-10 border-border focus-visible:border-primary/30"
+                  className="h-10"
                 />
               </div>
               <div className="space-y-2">
@@ -178,7 +178,7 @@ export function DateLocationStep({
                     type="time"
                     value={eventData.registrationDeadlineTime || "23:59"}
                     onChange={(e) => handleInputChange("registrationDeadlineTime", e.target.value)}
-                    className="h-10 border-border focus-visible:border-primary/30 pr-10"
+                    className="h-10 pr-10"
                   />
                   {eventData.registrationDeadlineTime && eventData.registrationDeadlineTime !== "23:59" && (
                     <Button
@@ -257,7 +257,7 @@ export function DateLocationStep({
                 handleInputChange("venue", e.target.value);
                 if (validationErrors.venue) setValidationErrors(prev => ({ ...prev, venue: '' }));
               }}
-              className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.venue ? 'border-destructive' : ''}`}
+              className={`h-12 ${validationErrors.venue ? 'border-destructive' : ''}`}
             />
             {validationErrors.venue && (
               <p className="text-sm text-destructive">{validationErrors.venue}</p>
@@ -273,7 +273,7 @@ export function DateLocationStep({
                 handleInputChange("location", e.target.value);
                 if (validationErrors.location) setValidationErrors(prev => ({ ...prev, location: '' }));
               }}
-              className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.location ? 'border-destructive' : ''}`}
+              className={`h-12 ${validationErrors.location ? 'border-destructive' : ''}`}
             />
             {validationErrors.location && (
               <p className="text-sm text-destructive">{validationErrors.location}</p>
@@ -314,7 +314,7 @@ export function DateLocationStep({
               handleInputChange("onlineLink", e.target.value);
               if (validationErrors.onlineLink) setValidationErrors(prev => ({ ...prev, onlineLink: '' }));
             }}
-            className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.onlineLink ? 'border-destructive' : ''}`}
+            className={`h-12 ${validationErrors.onlineLink ? 'border-destructive' : ''}`}
           />
           {validationErrors.onlineLink && (
             <p className="text-sm text-destructive">{validationErrors.onlineLink}</p>
@@ -352,7 +352,7 @@ export function DateLocationStep({
                 handleInputChange("capacity", "");
               }
             }}
-            className="h-12 border-border focus-visible:border-primary/30 flex-1"
+            className="h-12 flex-1"
           />
           {eventData.capacity && (
             <Button

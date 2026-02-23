@@ -40,7 +40,7 @@ export function BasicInfoStep({
               onInputChange("title", e.target.value);
               if (validationErrors.title) setValidationErrors(prev => ({ ...prev, title: '' }));
             }}
-            className={`h-12 border-border focus-visible:border-primary/30 ${validationErrors.title ? 'border-destructive' : ''}`}
+            className={`h-12 ${validationErrors.title ? 'border-destructive' : ''}`}
           />
           {validationErrors.title && (
             <p className="text-sm text-destructive">{validationErrors.title}</p>
@@ -53,7 +53,7 @@ export function BasicInfoStep({
             placeholder="Your organization name"
             value={eventData.organizer}
             onChange={(e) => onInputChange("organizer", e.target.value)}
-            className="h-12 border-border focus-visible:border-primary/30"
+            className="h-12"
           />
         </div>
       </div>

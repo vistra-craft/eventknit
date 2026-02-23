@@ -114,7 +114,7 @@ export function RegistrationDetailsStep({
                       value={field.label}
                       onChange={(e) => updateRegistrationField(index, { label: e.target.value })}
                       placeholder="Field label"
-                      className="h-12 border-border focus-visible:border-primary/30"
+                      className="h-12"
                     />
                   </div>
                   <div className="space-y-2">
@@ -143,7 +143,7 @@ export function RegistrationDetailsStep({
                     value={field.placeholder}
                     onChange={(e) => updateRegistrationField(index, { placeholder: e.target.value })}
                     placeholder="Enter placeholder text"
-                    className="h-12 border-border focus-visible:border-primary/30"
+                    className="h-12"
                   />
                 </div>
 
