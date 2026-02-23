@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
+import { becomeOrganizer } from '@/lib/user-dashboard-api';
 import { EVENT_CATEGORIES } from '@/lib/event-categories';
 import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData, type BackendEvent } from '@/lib/event-utils';
@@ -118,8 +119,8 @@ const steps = [
 export default function CreateEventStepwise() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-  
+  const { user, refreshProfile } = useAuth();
+
   // Check for edit mode and template from URL query params
   const searchParams = new URLSearchParams(location.search);
   const editEventId = searchParams.get('edit');
@@ -1537,10 +1538,28 @@ export default function CreateEventStepwise() {
     // Check if user is an organizer or admin
     const isOrganizerRole = ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
     const isAdminRole = ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'].includes(user.role);
-    
+
+    // If ATTENDEE, upgrade to organizer using the organizer name from the form
     if (!isOrganizerRole && !isAdminRole) {
-      setError('Only organizers and admins can create events');
-      return;
+      const orgName = eventData.organizer?.trim();
+      if (!orgName || orgName.length < 2) {
+        setError('Please enter an organizer name (at least 2 characters) in Step 1 to continue.');
+        return;
+      }
+      try {
+        const upgradeResponse = await becomeOrganizer({ organizationName: orgName });
+        if (!upgradeResponse.success) {
+          throw new Error(upgradeResponse.message || 'Failed to set up organizer account');
+        }
+        await refreshProfile();
+      } catch (upgradeError) {
+        setError(
+          upgradeError instanceof Error
+            ? upgradeError.message
+            : 'Failed to set up organizer account. Please try again.'
+        );
+        return;
+      }
     }
 
     // Eventbrite-style: No verification required to CREATE events
@@ -1631,7 +1650,7 @@ export default function CreateEventStepwise() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, verificationStatus]);
+  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, verificationStatus, refreshProfile, eventData.organizer]);
 
   const handleNext = useCallback(() => {
     if (currentStep < 5) {
