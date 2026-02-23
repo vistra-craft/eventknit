@@ -186,13 +186,13 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
             {/* For organizers without events: Show simplified menu */}
             {user.role === UserRole.ORGANIZER && hasEvent === false ? (
               <>
-                <button
+                {/* <button
                   onClick={() => handleNavigate('/user/create-event')}
                   className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   Create Event
-                </button>
+                </button> */}
               </>
             ) : (
               <>
@@ -205,7 +205,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                   Profile
                 </button>
 
-                <button
+                {/* <button
                   onClick={async () => {
                     const route = await getDashboardRoute();
                     handleNavigate(route);
@@ -214,7 +214,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
                 >
                   <LayoutDashboard className="w-4 h-4" />
                   Dashboard
-                </button>
+                </button> */}
 
                 <button
                   onClick={() => handleNavigate(getProfileRoute())}
