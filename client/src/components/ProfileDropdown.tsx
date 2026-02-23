@@ -4,7 +4,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings, LayoutDashboard, Plus } from 'lucide-react';
+import { User, LogOut, Settings } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/auth';
