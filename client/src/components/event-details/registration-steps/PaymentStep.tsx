@@ -7,7 +7,7 @@ import { Loader } from "@/components/ui/loader";
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import type { EventData } from '@/types/event';
-import type { TicketSelection } from '../UnifiedRegistrationModal';
+import type { TicketSelection, PromoDiscount } from '../UnifiedRegistrationModal';
 import { registerForEvent } from '@/lib/event-api';
 import { initializePayment, verifyPayment } from '@/lib/payment-api';
 
@@ -38,6 +38,7 @@ interface PaymentStepProps {
   registrationData: RegistrationData;
   onBack: () => void;
   onContinue: (data: PaymentResult) => void;
+  promoDiscount?: PromoDiscount | null;
 }
 
 // Paystack popup handler type
@@ -64,6 +65,7 @@ export const PaymentStep = ({
   registrationData,
   onBack,
   onContinue,
+  promoDiscount,
 }: PaymentStepProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +108,9 @@ export const PaymentStep = ({
       };
     });
 
+  const subtotal = ticketBreakdown.reduce((sum, item) => sum + item.subtotal, 0);
+  const discountAmount = promoDiscount?.discountAmount || 0;
+
   // Create registration first
   const createRegistration = useCallback(async () => {
     try {
@@ -117,6 +122,7 @@ export const PaymentStep = ({
       const response = await registerForEvent(event.id, {
         tickets,
         registrationData: registrationData.registrationData,
+        ...(promoDiscount?.code ? { promoCode: promoDiscount.code } : {}),
       });
 
       if (response.success && response.data?.registration?.id) {
@@ -126,7 +132,7 @@ export const PaymentStep = ({
     } catch (err) {
       throw err instanceof Error ? err : new Error('Registration failed');
     }
-  }, [event.id, selectedTickets, registrationData]);
+  }, [event.id, selectedTickets, registrationData, promoDiscount?.code]);
 
   // Handle Paystack popup payment
   const handlePaystackPayment = useCallback(async (regId: string) => {
@@ -266,6 +272,18 @@ export const PaymentStep = ({
               </span>
             </div>
           ))}
+          {promoDiscount && discountAmount > 0 && (
+            <>
+              <div className="border-t pt-2 mt-2 flex justify-between text-sm text-muted-foreground">
+                <span>Subtotal</span>
+                <span>{currency} {subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-success">
+                <span>Discount ({promoDiscount.code})</span>
+                <span>-{currency} {discountAmount.toFixed(2)}</span>
+              </div>
+            </>
+          )}
           <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
             <span>Total</span>
             <span className="text-primary text-lg">

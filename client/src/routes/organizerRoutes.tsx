@@ -36,8 +36,9 @@ const StaffManagementPage = lazy(() => import('../pages/organizer/team').then(m 
 // const RolesPermissionsPage = lazy(() => import('../pages/organizer/team').then(m => ({ default: m.RolesPermissionsPage })));
 // const TeamCalendarPage = lazy(() => import('../pages/organizer/team').then(m => ({ default: m.TeamCalendarPage })));
 
-// Settings
+// Settings & Profile
 const OrganizerSettingsPage = lazy(() => import('../pages/organizer/OrganizerSettingsPage'));
+const OrganizerProfileSetup = lazy(() => import('../pages/organizer/OrganizerProfileSetup'));
 
 // Verification & Subscription
 const VerificationPage = lazy(() => import('../pages/organizer/VerificationPage'));
@@ -95,6 +96,11 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     path: 'onboarding',
     element: createElement(OnboardingWizard),
     allowedRoles: [UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER],
+  },
+  {
+    path: 'profile-setup',
+    element: createElement(OrganizerProfileSetup),
+    allowedRoles: ORGANIZER_ADMIN_ONLY,
   },
 
   // Events - Unified Page (All, Upcoming, Past, Cancelled, Templates, Drafts)

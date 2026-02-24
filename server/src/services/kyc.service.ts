@@ -539,6 +539,396 @@ export class KYCService {
 
     logger.info(`Director deleted: ${directorId} by user: ${userId}`);
   }
+
+  // ─── Admin Review Methods ───────────────────────────────────────────────
+
+  /**
+   * List KYC submissions for admin review (paginated, filterable)
+   */
+  static async listKYCSubmissions(filters: {
+    status?: KYCStatus;
+    entityType?: OrganizerEntityType;
+    search?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) {
+    const page = filters.page || 1;
+    const limit = filters.limit || 20;
+    const skip = (page - 1) * limit;
+
+    const where: Record<string, unknown> = {
+      // Only organizer users who have submitted KYC
+      kycStatus: filters.status || { not: null },
+      organizerEntityType: filters.entityType ? filters.entityType : { not: null },
+    };
+
+    if (filters.search) {
+      where.OR = [
+        { firstName: { contains: filters.search, mode: 'insensitive' } },
+        { lastName: { contains: filters.search, mode: 'insensitive' } },
+        { email: { contains: filters.search, mode: 'insensitive' } },
+        { organizationName: { contains: filters.search, mode: 'insensitive' } },
+        { organizerBusinessName: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const sortBy = filters.sortBy || 'kycSubmittedAt';
+    const sortOrder = filters.sortOrder || 'desc';
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          organizationName: true,
+          organizerEntityType: true,
+          organizerBusinessName: true,
+          organizerIndustry: true,
+          kycStatus: true,
+          kycSubmittedAt: true,
+          kycApprovedAt: true,
+          verificationLevel: true,
+          avatar: true,
+          _count: {
+            select: { kycDocuments: true },
+          },
+        },
+        orderBy: { [sortBy]: sortOrder },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return {
+      submissions: users.map((u) => ({
+        userId: u.id,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        email: u.email,
+        organizationName: u.organizationName,
+        entityType: u.organizerEntityType,
+        businessName: u.organizerBusinessName,
+        industry: u.organizerIndustry,
+        kycStatus: u.kycStatus,
+        submittedAt: u.kycSubmittedAt,
+        approvedAt: u.kycApprovedAt,
+        verificationLevel: u.verificationLevel,
+        avatar: u.avatar,
+        documentCount: u._count.kycDocuments,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  /**
+   * Get full KYC details for a specific organizer (admin view)
+   */
+  static async getOrganizerKYCDetails(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNumber: true,
+        organizationName: true,
+        organizerEntityType: true,
+        organizerBusinessName: true,
+        organizerIndustry: true,
+        organizerCountry: true,
+        organizerRegistrationNumber: true,
+        kycStatus: true,
+        kycSubmittedAt: true,
+        kycApprovedAt: true,
+        verificationLevel: true,
+        isIdentityVerified: true,
+        avatar: true,
+        createdAt: true,
+        kycDocuments: {
+          orderBy: { createdAt: 'asc' },
+        },
+        organizerDirectors: {
+          orderBy: [{ isTopFive: 'desc' }, { sharePercentage: 'desc' }],
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Get requirements to show completeness
+    let requirementsStatus: Array<{
+      documentType: string;
+      description: string;
+      category: string;
+      isRequired: boolean;
+      minQuantity: number;
+      uploadedCount: number;
+      approvedCount: number;
+      pendingCount: number;
+      rejectedCount: number;
+      isComplete: boolean;
+    }> = [];
+
+    if (user.organizerEntityType) {
+      const requirements = getRequiredDocuments(
+        user.organizerEntityType,
+        user.organizerIndustry || undefined,
+      );
+
+      const documentsByType = new Map<string, typeof user.kycDocuments>();
+      user.kycDocuments.forEach((doc) => {
+        if (!documentsByType.has(doc.documentType)) {
+          documentsByType.set(doc.documentType, []);
+        }
+        documentsByType.get(doc.documentType)!.push(doc);
+      });
+
+      requirementsStatus = requirements.map((req) => {
+        const uploadedDocs = documentsByType.get(req.documentType) || [];
+        return {
+          documentType: req.documentType,
+          description: req.description,
+          category: req.category,
+          isRequired: req.isRequired,
+          minQuantity: req.minQuantity,
+          uploadedCount: uploadedDocs.length,
+          approvedCount: uploadedDocs.filter((d) => d.status === KYCStatus.APPROVED).length,
+          pendingCount: uploadedDocs.filter((d) => d.status === KYCStatus.PENDING).length,
+          rejectedCount: uploadedDocs.filter((d) => d.status === KYCStatus.REJECTED).length,
+          isComplete: uploadedDocs.filter((d) => d.status === KYCStatus.APPROVED).length >= req.minQuantity,
+        };
+      });
+    }
+
+    return {
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        organizationName: user.organizationName,
+        entityType: user.organizerEntityType,
+        businessName: user.organizerBusinessName,
+        industry: user.organizerIndustry,
+        country: user.organizerCountry,
+        registrationNumber: user.organizerRegistrationNumber,
+        kycStatus: user.kycStatus,
+        submittedAt: user.kycSubmittedAt,
+        approvedAt: user.kycApprovedAt,
+        verificationLevel: user.verificationLevel,
+        isIdentityVerified: user.isIdentityVerified,
+        avatar: user.avatar,
+        createdAt: user.createdAt,
+      },
+      documents: user.kycDocuments,
+      directors: user.organizerDirectors,
+      requirementsStatus,
+    };
+  }
+
+  /**
+   * Approve a single KYC document
+   */
+  static async approveKYCDocument(documentId: string, adminId: string) {
+    const document = await prisma.kYCDocument.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new NotFoundError('KYC document not found');
+    }
+
+    if (document.status === KYCStatus.APPROVED) {
+      throw new ValidationError('Document is already approved');
+    }
+
+    const updated = await prisma.kYCDocument.update({
+      where: { id: documentId },
+      data: {
+        status: KYCStatus.APPROVED,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        rejectionReason: null,
+      },
+    });
+
+    logger.info(`KYC document ${documentId} approved by admin ${adminId}`);
+    return updated;
+  }
+
+  /**
+   * Reject a single KYC document
+   */
+  static async rejectKYCDocument(documentId: string, adminId: string, rejectionReason: string) {
+    const document = await prisma.kYCDocument.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!document) {
+      throw new NotFoundError('KYC document not found');
+    }
+
+    if (document.status === KYCStatus.REJECTED) {
+      throw new ValidationError('Document is already rejected');
+    }
+
+    const updated = await prisma.kYCDocument.update({
+      where: { id: documentId },
+      data: {
+        status: KYCStatus.REJECTED,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        rejectionReason,
+      },
+    });
+
+    logger.info(`KYC document ${documentId} rejected by admin ${adminId}: ${rejectionReason}`);
+    return updated;
+  }
+
+  /**
+   * Approve an organizer's entire KYC (all required docs must be approved first)
+   */
+  static async approveOrganizerKYC(userId: string, adminId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { kycDocuments: true },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (user.kycStatus === KYCStatus.APPROVED) {
+      throw new ValidationError('KYC is already approved');
+    }
+
+    if (!user.organizerEntityType) {
+      throw new ValidationError('User has no entity type set');
+    }
+
+    // Validate all required documents are approved
+    const requirements = getRequiredDocuments(
+      user.organizerEntityType,
+      user.organizerIndustry || undefined,
+    );
+
+    const documentsByType = new Map<string, typeof user.kycDocuments>();
+    user.kycDocuments.forEach((doc) => {
+      if (!documentsByType.has(doc.documentType)) {
+        documentsByType.set(doc.documentType, []);
+      }
+      documentsByType.get(doc.documentType)!.push(doc);
+    });
+
+    const unapproved: string[] = [];
+    for (const req of requirements) {
+      if (!req.isRequired) continue;
+      const docs = documentsByType.get(req.documentType) || [];
+      const approvedCount = docs.filter((d) => d.status === KYCStatus.APPROVED).length;
+      if (approvedCount < req.minQuantity) {
+        unapproved.push(req.description);
+      }
+    }
+
+    if (unapproved.length > 0) {
+      throw new ValidationError(
+        `Cannot approve KYC. The following required documents are not yet approved: ${unapproved.join(', ')}`,
+      );
+    }
+
+    // Approve: update user KYC status, verification level, identity
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        kycStatus: KYCStatus.APPROVED,
+        kycApprovedAt: new Date(),
+        verificationLevel: 3,
+        isIdentityVerified: true,
+        identityVerifiedAt: new Date(),
+        payoutLimit: null, // Remove payout limit (unlimited)
+      },
+    });
+
+    logger.info(`KYC approved for user ${userId} by admin ${adminId}`);
+
+    return { message: 'KYC approved successfully' };
+  }
+
+  /**
+   * Reject an organizer's entire KYC
+   */
+  static async rejectOrganizerKYC(userId: string, adminId: string, reason: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (!user.kycStatus) {
+      throw new ValidationError('User has not submitted KYC');
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        kycStatus: KYCStatus.REJECTED,
+      },
+    });
+
+    logger.info(`KYC rejected for user ${userId} by admin ${adminId}: ${reason}`);
+
+    return { message: 'KYC rejected' };
+  }
+
+  /**
+   * Get KYC stats for admin dashboard
+   */
+  static async getKYCStats() {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [totalPending, approvedThisMonth, rejectedThisMonth, totalSubmissions] = await Promise.all([
+      prisma.user.count({ where: { kycStatus: KYCStatus.PENDING } }),
+      prisma.user.count({
+        where: {
+          kycStatus: KYCStatus.APPROVED,
+          kycApprovedAt: { gte: startOfMonth },
+        },
+      }),
+      prisma.user.count({
+        where: {
+          kycStatus: KYCStatus.REJECTED,
+          updatedAt: { gte: startOfMonth },
+        },
+      }),
+      prisma.user.count({ where: { kycStatus: { not: null } } }),
+    ]);
+
+    return {
+      totalPending,
+      approvedThisMonth,
+      rejectedThisMonth,
+      totalSubmissions,
+    };
+  }
 }
 
 

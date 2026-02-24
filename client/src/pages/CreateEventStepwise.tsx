@@ -36,6 +36,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
 import { applyTemplate } from '@/lib/organizer-dashboard-api';
 import { useToast } from '@/hooks/useToast';
+import { getMyOrganizerProfile } from '@/lib/organizer-profile-api';
 import { BasicInfoStep } from '@/components/event-wizard/BasicInfoStep';
 import BackButton from '@/components/BackButton';
 import { DateLocationStep } from '@/components/event-wizard/DateLocationStep';
@@ -171,11 +172,41 @@ export default function CreateEventStepwise() {
     fetchVerification();
   }, [user]);
 
+  // Auto-populate organizer fields from profile (for existing organizers)
+  useEffect(() => {
+    const fetchOrganizerProfile = async () => {
+      if (user && !isEditMode && ['ORGANIZER', 'ORGANIZER_STAFF'].includes(user.role)) {
+        try {
+          // Set organizer name from user profile
+          if (user.organizationName) {
+            setEventData(prev => ({
+              ...prev,
+              organizer: prev.organizer || user.organizationName || '',
+            }));
+          }
+          // Fetch extended profile for description
+          const response = await getMyOrganizerProfile();
+          if (response.success && response.data?.organizerProfile?.description) {
+            setEventData(prev => ({
+              ...prev,
+              organizerDescription: prev.organizerDescription || response.data!.organizerProfile!.description || '',
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch organizer profile:', error);
+        }
+      }
+    };
+    fetchOrganizerProfile();
+  }, [user, isEditMode]);
+
   const [eventType, setEventType] = useState("in-person");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const [showOrgNameDialog, setShowOrgNameDialog] = useState(false);
+  const [orgNameInput, setOrgNameInput] = useState('');
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [eventId] = useState<string | null>(editEventId);
@@ -1542,15 +1573,21 @@ export default function CreateEventStepwise() {
     // Track if this user was an attendee before upgrade (used for approval flow after event creation)
     const wasAttendee = !isOrganizerRole && !isAdminRole;
 
+    // If ATTENDEE, prompt for organization name before proceeding
+    if (wasAttendee && !orgNameInput.trim()) {
+      setShowOrgNameDialog(true);
+      return;
+    }
+
     // Show loading state from the start — covers both the upgrade and create steps
     setIsSubmitting(true);
     setError(null);
 
-    // If ATTENDEE, upgrade to organizer using the organizer name from the form
-    if (!isOrganizerRole && !isAdminRole) {
-      const orgName = eventData.organizer?.trim();
-      if (!orgName || orgName.length < 2) {
-        setError('Please enter an organizer name (at least 2 characters) in Step 1 to continue.');
+    // If ATTENDEE, upgrade to organizer using the collected org name
+    if (wasAttendee) {
+      const orgName = orgNameInput.trim();
+      if (orgName.length < 2) {
+        setError('Organization name must be at least 2 characters.');
         setIsSubmitting(false);
         return;
       }
@@ -1632,25 +1669,18 @@ export default function CreateEventStepwise() {
           } else {
             // Existing organizer or admin — navigate normally
             const isAdminRoute = location.pathname.startsWith('/admin');
-            const isStandaloneRoute = location.pathname.includes('/create-standalone');
 
             if (isAdminRoute) {
               navigate('/admin/dashboard', {
                 state: { message: 'Event created successfully! It is pending admin approval.' }
               });
-            } else if (isStandaloneRoute) {
-              const needsVerification = verificationStatus && !verificationStatus.identityVerified;
-              const successMessage = 'Event created successfully! It is pending admin approval. You will receive an email when it\'s approved.';
-              const verificationMessage = needsVerification
-                ? 'Complete identity verification to help speed up approval and receive payouts from ticket sales.'
-                : null;
-
-              navigate('/organizer/dashboard', {
+            } else if (!user?.profileCompleted) {
+              // First-time organizer: redirect to profile setup
+              navigate('/organizer/profile-setup', {
                 state: {
-                  message: successMessage,
-                  verificationReminder: verificationMessage,
+                  message: 'Event created successfully! Now set up your organizer profile to build trust with attendees.',
                   eventCreated: true,
-                  needsVerification: needsVerification
+                  fromEventCreation: true,
                 }
               });
             } else {
@@ -1671,7 +1701,7 @@ export default function CreateEventStepwise() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, verificationStatus, refreshProfile, eventData.organizer]);
+  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput]);
 
   const handleNext = useCallback(() => {
     if (currentStep < 5) {
@@ -2165,6 +2195,7 @@ export default function CreateEventStepwise() {
                 exhibitors={exhibitors}
                 sponsors={sponsors}
                 eventStartDate={eventData.date}
+                eventEndDate={eventData.endDate}
                 onAgendaUpdate={(field, value) => {
                   if (field === 'agenda') {
                     const agendaValue = value as AgendaItem[];
@@ -2288,6 +2319,52 @@ export default function CreateEventStepwise() {
       
       {/* Preview Modal */}
       {renderPreview()}
+
+      {/* Organization Name Dialog — shown when attendee clicks Publish */}
+      <Dialog open={showOrgNameDialog} onOpenChange={setShowOrgNameDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set Up Your Organizer Profile</DialogTitle>
+            <DialogDescription>
+              To publish events, you need an organizer account. Enter your organization or brand name below. You can update this later in your profile settings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="orgNameDialog">Organization Name *</Label>
+              <Input
+                id="orgNameDialog"
+                placeholder="Your organization or brand name"
+                value={orgNameInput}
+                onChange={(e) => setOrgNameInput(e.target.value)}
+                className="h-12"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && orgNameInput.trim().length >= 2) {
+                    setShowOrgNameDialog(false);
+                    handleSubmit();
+                  }
+                }}
+              />
+              {orgNameInput.trim().length > 0 && orgNameInput.trim().length < 2 && (
+                <p className="text-xs text-destructive">Must be at least 2 characters</p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowOrgNameDialog(false)}>Cancel</Button>
+              <Button
+                onClick={() => {
+                  setShowOrgNameDialog(false);
+                  handleSubmit();
+                }}
+                disabled={orgNameInput.trim().length < 2}
+              >
+                Continue & Publish
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

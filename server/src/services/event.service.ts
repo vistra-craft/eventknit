@@ -1588,6 +1588,7 @@ export class EventService {
               isOnline: true,
               onlineLink: true,
               image: true,
+              currency: true,
               organizer: {
                 select: {
                   id: true,
@@ -3682,6 +3683,7 @@ export class EventService {
                 isOnline: true,
                 onlineLink: true,
                 image: true,
+                currency: true,
                 organizer: {
                   select: {
                     id: true,
@@ -3742,6 +3744,7 @@ export class EventService {
                 isOnline: true,
                 onlineLink: true,
                 image: true,
+                currency: true,
                 organizer: {
                   select: {
                     id: true,

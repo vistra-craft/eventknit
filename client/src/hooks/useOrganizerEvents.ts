@@ -43,7 +43,7 @@ export function useOrganizerEvents({
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [fetchKey, setFetchKey] = useState(0);
+
 
   // Reset page, search, and filters when view changes
   useEffect(() => {
@@ -131,15 +131,15 @@ export function useOrganizerEvents({
     } finally {
       setLoading(false);
     }
-  }, [view, searchTerm, statusFilter, page, limit, fetchKey]);
+  }, [view, searchTerm, statusFilter, page, limit]);
 
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
 
   const refetch = useCallback(() => {
-    setFetchKey((k) => k + 1);
-  }, []);
+    fetchEvents();
+  }, [fetchEvents]);
 
   return {
     events,

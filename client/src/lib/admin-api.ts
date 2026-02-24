@@ -952,3 +952,170 @@ export const deleteEmergencyContact = async (
   return apiDelete(`/admin/users/${userId}/emergency-contact`);
 };
 
+// ─── KYC Review & Approval ────────────────────────────────────────────
+
+export interface KYCSubmissionSummary {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  organizationName: string | null;
+  entityType: string | null;
+  businessName: string | null;
+  industry: string | null;
+  kycStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  submittedAt: string | null;
+  approvedAt: string | null;
+  verificationLevel: number;
+  avatar: string | null;
+  documentCount: number;
+}
+
+export interface KYCDocument {
+  id: string;
+  userId: string;
+  documentType: string;
+  documentNumber: string | null;
+  documentUrl: string | null;
+  documentCategory: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  issueDate: string | null;
+  expiryDate: string | null;
+  isRequired: boolean;
+  isConditional: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KYCDirector {
+  id: string;
+  userId: string;
+  fullName: string;
+  nationality: string;
+  dateOfBirth: string;
+  documentType: string;
+  documentNumber: string;
+  kraPin: string | null;
+  sharePercentage: number | null;
+  isTopFive: boolean;
+  position: string | null;
+}
+
+export interface KYCRequirementStatus {
+  documentType: string;
+  description: string;
+  category: string;
+  isRequired: boolean;
+  minQuantity: number;
+  uploadedCount: number;
+  approvedCount: number;
+  pendingCount: number;
+  rejectedCount: number;
+  isComplete: boolean;
+}
+
+export interface KYCOrganizerDetails {
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string | null;
+    organizationName: string | null;
+    entityType: string | null;
+    businessName: string | null;
+    industry: string | null;
+    country: string;
+    registrationNumber: string | null;
+    kycStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    submittedAt: string | null;
+    approvedAt: string | null;
+    verificationLevel: number;
+    isIdentityVerified: boolean;
+    avatar: string | null;
+    createdAt: string;
+  };
+  documents: KYCDocument[];
+  directors: KYCDirector[];
+  requirementsStatus: KYCRequirementStatus[];
+}
+
+export interface KYCStats {
+  totalPending: number;
+  approvedThisMonth: number;
+  rejectedThisMonth: number;
+  totalSubmissions: number;
+}
+
+export const getKYCStats = async (): Promise<{
+  success: boolean;
+  data: { stats: KYCStats };
+}> => {
+  return apiGet('/admin/kyc/stats');
+};
+
+export const getKYCSubmissions = async (filters?: {
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  entityType?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}): Promise<{
+  success: boolean;
+  data: {
+    submissions: KYCSubmissionSummary[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  };
+}> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.entityType) params.append('entityType', filters.entityType);
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.page) params.append('page', filters.page.toString());
+  if (filters?.limit) params.append('limit', filters.limit.toString());
+  if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+  if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+  const qs = params.toString();
+  return apiGet(`/admin/kyc/submissions${qs ? `?${qs}` : ''}`);
+};
+
+export const getOrganizerKYCDetails = async (userId: string): Promise<{
+  success: boolean;
+  data: KYCOrganizerDetails;
+}> => {
+  return apiGet(`/admin/kyc/users/${userId}`);
+};
+
+export const approveKYCDocument = async (documentId: string): Promise<{
+  success: boolean;
+  data: { document: KYCDocument };
+}> => {
+  return apiPost(`/admin/kyc/documents/${documentId}/approve`, {});
+};
+
+export const rejectKYCDocument = async (documentId: string, rejectionReason: string): Promise<{
+  success: boolean;
+  data: { document: KYCDocument };
+}> => {
+  return apiPost(`/admin/kyc/documents/${documentId}/reject`, { rejectionReason });
+};
+
+export const approveOrganizerKYC = async (userId: string): Promise<{
+  success: boolean;
+  data: { message: string };
+}> => {
+  return apiPost(`/admin/kyc/users/${userId}/approve`, {});
+};
+
+export const rejectOrganizerKYC = async (userId: string, reason: string): Promise<{
+  success: boolean;
+  data: { message: string };
+}> => {
+  return apiPost(`/admin/kyc/users/${userId}/reject`, { reason });
+};
+

@@ -62,7 +62,7 @@ export const ConfirmationStep = ({
     });
 
   const handleViewTickets = () => {
-    navigate('/my-tickets');
+    navigate('/user/tickets');
     onClose();
   };
 

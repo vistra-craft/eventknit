@@ -104,6 +104,10 @@ const EditIncomePage = lazy(() => import('../pages/admin/finance').then(m => ({ 
 const EditWagePage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EditWagePage })));
 const PlatformFeeConfigPage = lazy(() => import('../pages/admin/finance/PlatformFeeConfigPage'));
 
+// KYC Review
+const KYCReviewDashboard = lazy(() => import('../pages/admin/kyc/KYCReviewDashboard'));
+const KYCOrganizerReviewPage = lazy(() => import('../pages/admin/kyc/KYCOrganizerReviewPage'));
+
 // Service Point
 const ServicePointEvents = lazy(() => import('../pages/admin/service-point/ServicePointEvents'));
 const ServicePointEventDashboard = lazy(() => import('../pages/admin/service-point/ServicePointEventDashboard'));
@@ -588,5 +592,17 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     path: 'service-point/history',
     element: createElement(ServicePointHistory),
     allowedRoles: TELLER_ROLES,
+  },
+
+  // KYC Review
+  {
+    path: 'kyc',
+    element: createElement(KYCReviewDashboard),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'kyc/review/:userId',
+    element: createElement(KYCOrganizerReviewPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
   },
 ];

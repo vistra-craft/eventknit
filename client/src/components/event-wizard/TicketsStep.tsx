@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Plus,
   Clock,
@@ -16,6 +17,16 @@ import {
   ChevronDown,
   Copy,
   Trash2,
+  Ticket,
+  Crown,
+  Zap,
+  GraduationCap,
+  DoorOpen,
+  Users,
+  ShieldCheck,
+  Ban,
+  RefreshCw,
+  FileText,
 } from 'lucide-react';
 import type { StepComponentProps, TicketType, CurrencyOption } from './types';
 import { CURRENCIES, DEFAULT_CURRENCY } from './types';
@@ -27,6 +38,75 @@ const SEGMENT_COLORS = [
   'bg-teal-500',
   'bg-rose-500',
   'bg-sky-500',
+];
+
+const TICKET_TEMPLATES: { label: string; icon: React.ReactNode; ticket: Partial<TicketType> }[] = [
+  {
+    label: 'General Admission',
+    icon: <Ticket className="h-3.5 w-3.5" />,
+    ticket: { name: 'General Admission', type: 'paid', price: '0', quantity: '100', maxPerPerson: 10, salesChannel: 'both' },
+  },
+  {
+    label: 'VIP',
+    icon: <Crown className="h-3.5 w-3.5" />,
+    ticket: { name: 'VIP', type: 'paid', price: '0', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
+  },
+  {
+    label: 'Early Bird',
+    icon: <Zap className="h-3.5 w-3.5" />,
+    ticket: { name: 'Early Bird', type: 'paid', price: '0', quantity: '100', maxPerPerson: 10, discountLabel: 'Early Bird', salesChannel: 'online' },
+  },
+  {
+    label: 'Student',
+    icon: <GraduationCap className="h-3.5 w-3.5" />,
+    ticket: { name: 'Student / Concession', type: 'paid', price: '0', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
+  },
+  {
+    label: 'Free Entry',
+    icon: <DoorOpen className="h-3.5 w-3.5" />,
+    ticket: { name: 'Free Entry', type: 'free', price: '0', quantity: '200', maxPerPerson: 10, salesChannel: 'both' },
+  },
+  {
+    label: 'Complimentary',
+    icon: <Users className="h-3.5 w-3.5" />,
+    ticket: { name: 'Speaker / Staff Pass', type: 'paid', price: '0', quantity: '20', maxPerPerson: 1, isComplementary: true, requiresInvitation: true, salesChannel: 'both' },
+  },
+];
+
+const REFUND_POLICY_TEMPLATES: {
+  value: string;
+  label: string;
+  description: string;
+  icon: typeof Ban;
+  defaultDays?: number;
+}[] = [
+  {
+    value: 'no_refunds',
+    label: 'No Refunds',
+    description: 'All ticket sales are final. No refunds will be issued.',
+    icon: Ban,
+    defaultDays: 0,
+  },
+  {
+    value: 'full_refund',
+    label: 'Full Refund',
+    description: '100% refund if requested before the deadline.',
+    icon: RefreshCw,
+    defaultDays: 7,
+  },
+  {
+    value: 'partial_refund',
+    label: 'Partial Refund (50%)',
+    description: '50% refund if requested before the deadline.',
+    icon: ShieldCheck,
+    defaultDays: 7,
+  },
+  {
+    value: 'custom',
+    label: 'Custom Policy',
+    description: 'Write your own refund terms for this event.',
+    icon: FileText,
+  },
 ];
 
 interface TicketsStepProps extends StepComponentProps {
@@ -57,16 +137,19 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
     });
   };
 
-  const addTicketType = () => {
+  const addTicketType = (template?: Partial<TicketType>) => {
     const newTicket: TicketType = {
       id: Date.now(),
-      name: '',
-      description: '',
-      type: 'paid',
-      price: '0',
-      quantity: '100',
-      maxPerPerson: 10,
-      salesChannel: 'both',
+      name: template?.name || '',
+      description: template?.description || '',
+      type: template?.type || 'paid',
+      price: template?.price || '0',
+      quantity: template?.quantity || '100',
+      maxPerPerson: template?.maxPerPerson ?? 10,
+      salesChannel: template?.salesChannel || 'both',
+      isComplementary: template?.isComplementary,
+      requiresInvitation: template?.requiresInvitation,
+      discountLabel: template?.discountLabel,
     };
     setTicketTypes([...ticketTypes, newTicket]);
   };
@@ -203,6 +286,24 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
           </Select>
         </div>
       )}
+
+      {/* ── Quick-add templates ── */}
+      <div className="flex flex-wrap gap-2">
+        <span className="text-xs text-muted-foreground self-center mr-1">Quick add:</span>
+        {TICKET_TEMPLATES.map((tpl) => (
+          <Button
+            key={tpl.label}
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs gap-1.5"
+            onClick={() => addTicketType(tpl.ticket)}
+          >
+            {tpl.icon}
+            {tpl.label}
+          </Button>
+        ))}
+      </div>
 
       {/* ── Ticket Cards ── */}
       <div className="space-y-3">
@@ -624,7 +725,7 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
 
         <button
           type="button"
-          onClick={addTicketType}
+          onClick={() => addTicketType()}
           className="w-full py-3 rounded-xl border border-dashed border-gray-300 dark:border-zinc-700 text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -632,17 +733,90 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
         </button>
       </div>
 
+      {/* ── Refund Policy ── */}
       {hasPaidTickets && (
-        <p className="text-xs text-center text-muted-foreground pt-2">
-          Service fees and refund policies are managed at the platform level.{' '}
-          <a
-            href="mailto:support@eventknit.com?subject=Custom%20Pricing%20Inquiry"
-            className="text-primary hover:underline"
-          >
-            Contact support
-          </a>{' '}
-          for custom arrangements.
-        </p>
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+            <label className="text-sm font-medium text-foreground">Refund Policy</label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Choose a refund policy for this event. This will be shown to attendees during checkout and on their tickets.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {REFUND_POLICY_TEMPLATES.map((tpl) => {
+              const isSelected = (eventData.refundPolicy || 'no_refunds') === tpl.value;
+              const Icon = tpl.icon;
+              return (
+                <button
+                  key={tpl.value}
+                  type="button"
+                  onClick={() => {
+                    onInputChange('refundPolicy', tpl.value);
+                    if (tpl.defaultDays !== undefined) {
+                      onInputChange('refundDeadlineDays', tpl.defaultDays);
+                    }
+                    if (tpl.value !== 'custom') {
+                      onInputChange('refundPolicyText', '');
+                    }
+                  }}
+                  className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-all ${
+                    isSelected
+                      ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                      : 'border-border hover:border-primary/30'
+                  }`}
+                >
+                  <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    isSelected ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-medium ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                      {tpl.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{tpl.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Deadline days — show for full_refund and partial_refund */}
+          {(eventData.refundPolicy === 'full_refund' || eventData.refundPolicy === 'partial_refund') && (
+            <div className="flex items-center gap-3 pl-1">
+              <label className="text-sm text-muted-foreground whitespace-nowrap">Refund deadline</label>
+              <Input
+                type="number"
+                min="1"
+                max="365"
+                value={eventData.refundDeadlineDays || ''}
+                placeholder="7"
+                className="h-9 w-20 text-center tabular-nums"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '' || /^\d+$/.test(v)) onInputChange('refundDeadlineDays', v ? parseInt(v) : 0);
+                }}
+              />
+              <span className="text-sm text-muted-foreground">days before event</span>
+            </div>
+          )}
+
+          {/* Custom policy text */}
+          {eventData.refundPolicy === 'custom' && (
+            <div className="space-y-1.5 pl-1">
+              <Label className="text-sm text-muted-foreground">Custom refund policy</Label>
+              <Textarea
+                placeholder="Describe your refund policy. E.g., Full refund up to 14 days before the event. 50% refund up to 7 days before. No refunds after that."
+                value={eventData.refundPolicyText || ''}
+                className="min-h-[80px] resize-none text-sm"
+                onChange={(e) => onInputChange('refundPolicyText', e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">This text will be displayed to attendees on the event page and in their confirmation email.</p>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

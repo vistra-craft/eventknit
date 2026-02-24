@@ -29,33 +29,21 @@ export function BasicInfoStep({
 }: BasicInfoStepProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="eventName">Event Title *</Label>
-          <Input
-            id="eventName"
-            placeholder="Give your event a catchy title"
-            value={eventData.title}
-            onChange={(e) => {
-              onInputChange("title", e.target.value);
-              if (validationErrors.title) setValidationErrors(prev => ({ ...prev, title: '' }));
-            }}
-            className={`h-12 ${validationErrors.title ? 'border-destructive' : ''}`}
-          />
-          {validationErrors.title && (
-            <p className="text-sm text-destructive">{validationErrors.title}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="organizer">Organizer Name</Label>
-          <Input
-            id="organizer"
-            placeholder="Your organization name"
-            value={eventData.organizer}
-            onChange={(e) => onInputChange("organizer", e.target.value)}
-            className="h-12"
-          />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="eventName">Event Title *</Label>
+        <Input
+          id="eventName"
+          placeholder="Give your event a catchy title"
+          value={eventData.title}
+          onChange={(e) => {
+            onInputChange("title", e.target.value);
+            if (validationErrors.title) setValidationErrors(prev => ({ ...prev, title: '' }));
+          }}
+          className={`h-12 ${validationErrors.title ? 'border-destructive' : ''}`}
+        />
+        {validationErrors.title && (
+          <p className="text-sm text-destructive">{validationErrors.title}</p>
+        )}
       </div>
 
       <div className="space-y-2">
@@ -78,22 +66,6 @@ export function BasicInfoStep({
             <p className="text-sm text-destructive">{validationErrors.description}</p>
           )}
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="organizerDescription">About the Organizer (Optional)</Label>
-        <RichTextEditor
-          content={eventData.organizerDescription || ""}
-          onChange={(html) => onInputChange("organizerDescription", html)}
-          placeholder="Tell attendees about yourself or your organization. This will be displayed on the event details page."
-          minHeight="160px"
-        />
-        <p className="text-sm text-muted-foreground">
-          {getTextLength(eventData.organizerDescription || "")}/1000 characters
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Share information about yourself or your organization to help attendees learn more about the event host.
-        </p>
       </div>
 
       <div className="space-y-4">

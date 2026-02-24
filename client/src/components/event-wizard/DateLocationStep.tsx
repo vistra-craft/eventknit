@@ -325,69 +325,6 @@ export function DateLocationStep({
         </div>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="capacity">Event Capacity</Label>
-        <div className="flex gap-2">
-          <Input
-            id="capacity"
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            placeholder="Maximum attendees"
-            value={eventData.capacity}
-            onChange={(e) => {
-              const value = e.target.value;
-              // Only allow positive integers or empty string
-              if (value === '' || /^\d+$/.test(value)) {
-                handleInputChange("capacity", value);
-              }
-            }}
-            onBlur={(e) => {
-              // Ensure value is valid on blur
-              const value = e.target.value.trim();
-              if (value === '' || parseInt(value, 10) > 0) {
-                handleInputChange("capacity", value);
-              } else {
-                // Reset to empty if invalid
-                handleInputChange("capacity", "");
-              }
-            }}
-            className="h-12 flex-1"
-          />
-          {eventData.capacity && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-12 px-3 hover:bg-muted"
-              onClick={() => handleInputChange("capacity", "")}
-            >
-              <X className="h-4 w-4 text-muted-foreground" />
-            </Button>
-          )}
-        </div>
-        {/* Quick capacity buttons */}
-        <div className="flex flex-wrap gap-2 mt-2">
-          {[10, 50, 100, 500, 1000].map((increment) => (
-            <Button
-              key={increment}
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 px-3 text-xs"
-              onClick={() => {
-                const current = parseInt(eventData.capacity || '0', 10) || 0;
-                handleInputChange("capacity", String(current + increment));
-              }}
-            >
-              +{increment}
-            </Button>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Enter directly or use quick buttons to set capacity
-        </p>
-      </div>
     </div>
   );
 }

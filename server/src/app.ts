@@ -58,6 +58,8 @@ import gdprRoutes from './routes/gdpr.routes.js';
 import creditRoutes from './routes/credit.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import configurationRoutes from './routes/configuration.routes.js';
+import extendedProfileRoutes from './routes/extended-profile.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -225,6 +227,8 @@ app.use('/api/v1/gdpr', gdprRoutes); // GDPR data export and account deletion
 app.use('/api/v1/credits', creditRoutes); // Credit/Voucher system
 app.use('/api/v1/cart', cartRoutes); // Cart reservation system
 app.use('/api/v1/configuration', configurationRoutes); // System configuration (mailTrap, maintenance mode)
+app.use('/api/v1/profile', extendedProfileRoutes); // Extended profile (organizer profile, staff profile)
+app.use('/api/v1/uploads', uploadRoutes); // Generic image upload (Cloudinary)
 
 // Error handler middleware (must be last)
 app.use(errorHandler);

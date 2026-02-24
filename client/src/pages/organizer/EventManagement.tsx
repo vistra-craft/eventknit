@@ -26,6 +26,10 @@ import {
   Plus,
   XCircle,
   Lock,
+  RotateCcw,
+  Ticket,
+  Link2,
+  Copy as CopyIcon,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -36,7 +40,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Pagination } from "../../components/ui/pagination";
-import { getOrganizerEventById, getEventRegistrations, cancelEvent, getSubscription, type OrganizerSubscription } from "../../lib/organizer-api";
+import { getOrganizerEventById, getEventRegistrations, cancelEvent, getSubscription, getEventRefunds, getEventRefundSummary, type OrganizerSubscription, type OrganizerRefund, type OrganizerRefundSummary } from "../../lib/organizer-api";
+import { getEventInvitations, createInvitation, revokeInvitation, getRegistrationLinkUrl, type InvitationsListResponse, InviteType } from "../../lib/invitation-api";
 import { transformEventData } from "../../lib/event-utils";
 import type { EventData } from "../../types/event";
 import { shareEvent } from "../../lib/utils/share";
@@ -297,6 +302,20 @@ const EventManagement = () => {
   const [attendeesLimit, setAttendeesLimit] = useState(25);
   const [subscription, setSubscription] = useState<OrganizerSubscription | null>(null);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  // Refund state
+  const [refunds, setRefunds] = useState<OrganizerRefund[]>([]);
+  const [refundSummary, setRefundSummary] = useState<OrganizerRefundSummary | null>(null);
+  const [refundsLoading, setRefundsLoading] = useState(false);
+  const [refundStatusFilter, setRefundStatusFilter] = useState<string>('all');
+  // Invitation state
+  type InvitationItem = InvitationsListResponse['data']['invitations'][number];
+  const [invitations, setInvitations] = useState<InvitationItem[]>([]);
+  const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [showCreateInvitation, setShowCreateInvitation] = useState(false);
+  const [newInviteType, setNewInviteType] = useState<InviteType>(InviteType.ATTENDEE);
+  const [newInviteTitle, setNewInviteTitle] = useState('');
+  const [newInviteMaxUses, setNewInviteMaxUses] = useState('');
+  const [creatingInvitation, setCreatingInvitation] = useState(false);
 
   // Fetch event data and attendees
   useEffect(() => {
@@ -335,11 +354,18 @@ const EventManagement = () => {
         if (registrationsResponse.success && registrationsResponse.data) {
           // Transform registrations to attendees format
           // Backend already filters based on access level
+          interface TicketLineItemData {
+            ticketType: string;
+            quantity: number;
+            unitPrice?: number;
+            totalPrice?: number;
+          }
           interface Registration {
             id: string;
             attendee?: { firstName?: string; lastName?: string; email?: string };
             user?: { firstName?: string; lastName?: string; email?: string };
             ticketType?: string | null;
+            ticketLineItems?: TicketLineItemData[];
             status?: string;
             createdAt?: string;
             quantity?: number;
@@ -347,19 +373,24 @@ const EventManagement = () => {
             paymentStatus?: string | null;
             paymentMethod?: string | null;
           }
-          const transformedAttendees = registrationsResponse.data.registrations.map((reg: Registration) => ({
-            id: reg.id,
-            name: `${reg.attendee?.firstName || reg.user?.firstName || ''} ${reg.attendee?.lastName || reg.user?.lastName || ''}`.trim() || 'Guest',
-            email: reg.attendee?.email || reg.user?.email || 'N/A',
-            ticketType: reg.ticketType || 'Standard',
-            status: reg.status?.toLowerCase() || 'pending',
-            registeredDate: reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A',
-            quantity: reg.quantity || 1,
-            totalAmount: reg.totalAmount || 0, // May be undefined if RESTRICTED
-            paymentStatus: reg.paymentStatus || undefined,
-            paymentMethod: reg.paymentMethod || undefined,
-            // paymentTransactionId is never included for organizers
-          }));
+          const transformedAttendees = registrationsResponse.data.registrations.map((reg: Registration) => {
+            // Build ticket type display from line items (preferred) or legacy ticketType field
+            const ticketDisplay = reg.ticketLineItems && reg.ticketLineItems.length > 0
+              ? reg.ticketLineItems.map(li => `${li.ticketType}${li.quantity > 1 ? ` x${li.quantity}` : ''}`).join(', ')
+              : reg.ticketType || 'Standard';
+            return {
+              id: reg.id,
+              name: `${reg.attendee?.firstName || reg.user?.firstName || ''} ${reg.attendee?.lastName || reg.user?.lastName || ''}`.trim() || 'Guest',
+              email: reg.attendee?.email || reg.user?.email || 'N/A',
+              ticketType: ticketDisplay,
+              status: reg.status?.toLowerCase() || 'pending',
+              registeredDate: reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A',
+              quantity: reg.quantity || 1,
+              totalAmount: reg.totalAmount || 0,
+              paymentStatus: reg.paymentStatus || undefined,
+              paymentMethod: reg.paymentMethod || undefined,
+            };
+          });
           setAttendees(transformedAttendees);
         }
         
@@ -379,6 +410,51 @@ const EventManagement = () => {
 
     fetchEventData();
   }, [eventId]);
+
+  // Fetch refunds when the refunds tab is active (lazy loading)
+  useEffect(() => {
+    const fetchRefunds = async () => {
+      if (!eventId || activeSection !== 'refunds') return;
+      try {
+        setRefundsLoading(true);
+        const statusParam = refundStatusFilter !== 'all' ? refundStatusFilter : undefined;
+        const [refundsRes, summaryRes] = await Promise.all([
+          getEventRefunds(eventId, { status: statusParam }),
+          getEventRefundSummary(eventId),
+        ]);
+        if (refundsRes.success && refundsRes.data) {
+          setRefunds(refundsRes.data);
+        }
+        if (summaryRes.success && summaryRes.data) {
+          setRefundSummary(summaryRes.data);
+        }
+      } catch {
+        // Silently fail — empty state will show
+      } finally {
+        setRefundsLoading(false);
+      }
+    };
+    fetchRefunds();
+  }, [eventId, activeSection, refundStatusFilter]);
+
+  // Fetch invitations when the invitations tab is active (lazy loading)
+  useEffect(() => {
+    const fetchInvitations = async () => {
+      if (!eventId || activeSection !== 'invitations') return;
+      try {
+        setInvitationsLoading(true);
+        const response = await getEventInvitations(eventId);
+        if (response.success && response.data) {
+          setInvitations(response.data.invitations || []);
+        }
+      } catch {
+        // Silently fail — empty state will show
+      } finally {
+        setInvitationsLoading(false);
+      }
+    };
+    fetchInvitations();
+  }, [eventId, activeSection]);
 
   // Check if event can be cancelled (APPROVED and hasn't started)
   const canCancelEvent = () => {
@@ -517,11 +593,14 @@ const EventManagement = () => {
 
   const navigationSections = [
     { key: "overview", label: "Overview", icon: BarChart3 },
+    { key: "tickets", label: "Tickets", icon: Ticket },
     { key: "attendees", label: "Attendees", icon: Users },
+    { key: "invitations", label: "Invitations", icon: Link2 },
     { key: "communication", label: "Communication", icon: MessageSquare },
     { key: "speakers", label: "Speakers", icon: Mic },
     { key: "sponsors", label: "Sponsors", icon: Star },
     { key: "revenue", label: "Revenue", icon: DollarSign },
+    { key: "refunds", label: "Refunds", icon: RotateCcw },
     { key: "staff", label: "Assigned Staff", icon: UserPlus },
   ];
 
@@ -556,6 +635,336 @@ const EventManagement = () => {
 
   const renderSection = () => {
     switch (activeSection) {
+      case "tickets": {
+        const ticketTypes = eventData.ticketTypes || [];
+        const totalSold = attendees.length;
+        const totalCapacity = eventData.capacity || 0;
+
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold">Ticket Types</h3>
+                <p className="text-sm text-muted-foreground">
+                  {ticketTypes.length} ticket type{ticketTypes.length !== 1 ? 's' : ''} configured
+                </p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
+                <Settings className="w-4 h-4 mr-2" />
+                Edit Tickets
+              </Button>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase">Total Sold</p>
+                  <p className="text-lg font-bold mt-1">{totalSold}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase">Capacity</p>
+                  <p className="text-lg font-bold mt-1">{totalCapacity || '∞'}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase">Remaining</p>
+                  <p className="text-lg font-bold mt-1">
+                    {totalCapacity ? Math.max(0, totalCapacity - totalSold) : '∞'}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase">Fill Rate</p>
+                  <p className="text-lg font-bold mt-1">
+                    {totalCapacity > 0 ? `${((totalSold / totalCapacity) * 100).toFixed(0)}%` : 'N/A'}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Ticket Type Breakdown */}
+            {ticketTypes.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Ticket className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                  <p className="text-sm font-medium text-muted-foreground">No ticket types configured</p>
+                  <p className="text-xs text-muted-foreground mt-1">Add ticket types in the event editor</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {ticketTypes.map((ticket, idx) => {
+                  const soldForType = attendees.filter(a => a.ticketType === ticket.name).length;
+                  const available = ticket.quantity || 0;
+                  const fillPct = available > 0 ? Math.min(100, (soldForType / available) * 100) : 0;
+
+                  return (
+                    <Card key={`${ticket.name}-${idx}`} className="border-border/40">
+                      <CardContent className="p-4">
+                        <div className="flex flex-col sm:flex-row justify-between gap-3">
+                          <div className="space-y-1.5 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold">{ticket.name}</span>
+                              {ticket.isComplementary && (
+                                <Badge variant="secondary" className="text-xs">Complimentary</Badge>
+                              )}
+                              {ticket.requiresInvitation && (
+                                <Badge variant="outline" className="text-xs">Invite Only</Badge>
+                              )}
+                              {ticket.discountLabel && (
+                                <Badge variant="destructive" className="text-xs">{ticket.discountLabel}</Badge>
+                              )}
+                            </div>
+                            {/* Progress bar */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    fillPct >= 90 ? 'bg-destructive' : fillPct >= 70 ? 'bg-amber-500' : 'bg-primary'
+                                  }`}
+                                  style={{ width: `${fillPct}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                {soldForType} / {available || '∞'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold">
+                              {ticket.price === 0 || !ticket.price ? 'Free' : `${eventData.currency || '$'} ${ticket.price}`}
+                            </p>
+                            {ticket.originalPrice && ticket.originalPrice > (ticket.price || 0) && (
+                              <p className="text-xs text-muted-foreground line-through">
+                                {eventData.currency || '$'} {ticket.originalPrice}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case "invitations": {
+        const handleCreateInvitation = async () => {
+          if (!eventId) return;
+          try {
+            setCreatingInvitation(true);
+            await createInvitation(eventId, {
+              inviteType: newInviteType,
+              title: newInviteTitle.trim() || undefined,
+              maxUses: newInviteMaxUses ? parseInt(newInviteMaxUses, 10) : undefined,
+            });
+            toast({ title: "Success", description: "Invitation link created" });
+            setShowCreateInvitation(false);
+            setNewInviteTitle('');
+            setNewInviteMaxUses('');
+            // Refresh invitations
+            const response = await getEventInvitations(eventId);
+            if (response.success && response.data) {
+              setInvitations(response.data.invitations || []);
+            }
+          } catch {
+            toast({ title: "Error", description: "Failed to create invitation", variant: "destructive" });
+          } finally {
+            setCreatingInvitation(false);
+          }
+        };
+
+        const handleRevokeInvitation = async (invId: string) => {
+          try {
+            await revokeInvitation(invId);
+            toast({ title: "Revoked", description: "Invitation link has been revoked" });
+            setInvitations(prev => prev.map(inv => inv.id === invId ? { ...inv, isActive: false } : inv));
+          } catch {
+            toast({ title: "Error", description: "Failed to revoke invitation", variant: "destructive" });
+          }
+        };
+
+        const handleCopyLink = (token: string) => {
+          const url = getRegistrationLinkUrl(token);
+          navigator.clipboard.writeText(url).then(() => {
+            toast({ title: "Copied", description: "Invitation link copied to clipboard" });
+          });
+        };
+
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold">Invitation Links</h3>
+                <p className="text-sm text-muted-foreground">
+                  Create shareable links for complimentary tickets, speakers, and VIP guests
+                </p>
+              </div>
+              <Dialog open={showCreateInvitation} onOpenChange={setShowCreateInvitation}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Link
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create Invitation Link</DialogTitle>
+                    <DialogDescription>
+                      Generate a shareable registration link for this event
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div>
+                      <Label>Invitation Type</Label>
+                      <Select value={newInviteType} onValueChange={(v) => setNewInviteType(v as InviteType)}>
+                        <SelectTrigger className="mt-2">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ATTENDEE">Attendee</SelectItem>
+                          <SelectItem value="SPEAKER">Speaker</SelectItem>
+                          <SelectItem value="EXHIBITOR">Exhibitor</SelectItem>
+                          <SelectItem value="GUEST">VIP Guest</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Title (optional)</Label>
+                      <Input
+                        className="mt-2"
+                        value={newInviteTitle}
+                        onChange={(e) => setNewInviteTitle(e.target.value)}
+                        placeholder="e.g., Speaker Registration, VIP Access"
+                      />
+                    </div>
+                    <div>
+                      <Label>Max Uses (optional)</Label>
+                      <Input
+                        className="mt-2"
+                        type="number"
+                        min="1"
+                        value={newInviteMaxUses}
+                        onChange={(e) => setNewInviteMaxUses(e.target.value)}
+                        placeholder="Unlimited if empty"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowCreateInvitation(false)} disabled={creatingInvitation}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleCreateInvitation} disabled={creatingInvitation}>
+                      {creatingInvitation ? <><ButtonLoader /> Creating...</> : 'Create Link'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {/* Summary */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase">Total Links</p>
+                  <p className="text-lg font-bold mt-1">{invitations.length}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase">Active</p>
+                  <p className="text-lg font-bold mt-1 text-success">{invitations.filter(i => i.isActive).length}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase">Total Registrations</p>
+                  <p className="text-lg font-bold mt-1">{invitations.reduce((sum, i) => sum + (i.usageCount || i.usedCount || 0), 0)}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Invitations List */}
+            {invitationsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader size="default" />
+              </div>
+            ) : invitations.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <Link2 className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                  <p className="text-sm font-medium text-muted-foreground">No invitation links yet</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Create invitation links for speakers, VIP guests, or complimentary attendees
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {invitations.map((inv) => (
+                  <Card key={inv.id} className="border-border/40">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row justify-between gap-3">
+                        <div className="space-y-1.5 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">
+                              {inv.title || `${inv.inviteType} Invitation`}
+                            </span>
+                            <Badge variant="secondary" className="text-xs">{inv.inviteType}</Badge>
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${inv.isActive ? 'text-success border-success/30' : 'text-muted-foreground'}`}
+                            >
+                              {inv.isActive ? 'Active' : 'Revoked'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>{inv.usageCount || inv.usedCount || 0} used{inv.maxUses ? ` / ${inv.maxUses} max` : ''}</span>
+                            <span>Created {new Date(inv.createdAt).toLocaleDateString()}</span>
+                            {inv.expiresAt && (
+                              <span>Expires {new Date(inv.expiresAt).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCopyLink(inv.token)}
+                            disabled={!inv.isActive}
+                          >
+                            <CopyIcon className="w-3.5 h-3.5 mr-1.5" />
+                            Copy Link
+                          </Button>
+                          {inv.isActive && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => handleRevokeInvitation(inv.id)}
+                            >
+                              Revoke
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      }
+
       case "attendees": {
         const attendeesStartIndex = (attendeesPage - 1) * attendeesLimit;
         const attendeesEndIndex = attendeesStartIndex + attendeesLimit;
@@ -1195,6 +1604,158 @@ const EventManagement = () => {
       case "communication":
         return (
           <EventCommunicationSection eventId={eventId || ""} eventTitle={eventData?.title || ""} />
+        );
+
+      case "refunds":
+        return (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h3 className="text-lg font-semibold">Refund Management</h3>
+                <p className="text-sm text-muted-foreground">
+                  View and track refund requests for this event
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={refundStatusFilter} onValueChange={setRefundStatusFilter}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="Filter status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Summary Cards */}
+            {refundSummary && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground uppercase">Total Refunds</p>
+                    <p className="text-lg font-bold mt-1">{refundSummary.totalCount}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground uppercase">Pending</p>
+                    <p className="text-lg font-bold mt-1 text-amber-600 dark:text-amber-400">{refundSummary.pendingCount}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground uppercase">Completed</p>
+                    <p className="text-lg font-bold mt-1 text-success">{refundSummary.completedCount}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-xs text-muted-foreground uppercase">Amount Refunded</p>
+                    <p className="text-lg font-bold mt-1">${refundSummary.totalRefunded.toLocaleString()}</p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Refunds List */}
+            {refundsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader size="default" />
+              </div>
+            ) : refunds.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <RotateCcw className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                  <p className="text-sm font-medium text-muted-foreground">No refund requests</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {refundStatusFilter !== 'all'
+                      ? `No ${refundStatusFilter} refunds found. Try a different filter.`
+                      : 'When attendees request refunds, they will appear here.'}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {refunds.map((refund) => (
+                  <Card key={refund.id} className="border-border/40">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row justify-between gap-3">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium font-mono">{refund.refundNumber}</span>
+                            <Badge
+                              variant="secondary"
+                              className={`text-xs ${
+                                refund.status === 'completed' ? 'bg-success/10 text-success' :
+                                refund.status === 'pending' ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300' :
+                                refund.status === 'processing' ? 'bg-primary/10 text-primary' :
+                                refund.status === 'failed' ? 'bg-destructive/10 text-destructive' :
+                                'bg-muted text-muted-foreground'
+                              }`}
+                            >
+                              {refund.status.charAt(0).toUpperCase() + refund.status.slice(1)}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {refund.refundType === 'full' ? 'Full Refund' : 'Partial Refund'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {refund.requester
+                              ? `${refund.requester.firstName} ${refund.requester.lastName}`
+                              : refund.transaction?.attendeeName || 'Unknown'}
+                            {refund.requester?.email && (
+                              <span className="ml-1 text-xs">({refund.requester.email})</span>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground italic">
+                            &ldquo;{refund.refundReason}&rdquo;
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0 space-y-1">
+                          <p className="text-sm font-bold">
+                            {refund.currency} {Number(refund.refundAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(refund.requestedAt).toLocaleDateString('en-US', {
+                              month: 'short', day: 'numeric', year: 'numeric',
+                            })}
+                          </p>
+                          {refund.completedAt && (
+                            <p className="text-xs text-success">
+                              Completed {new Date(refund.completedAt).toLocaleDateString('en-US', {
+                                month: 'short', day: 'numeric',
+                              })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Refund Policy Info */}
+            {eventData && (
+              <Card className="border-border/40 bg-muted/30">
+                <CardContent className="p-4">
+                  <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Event Refund Policy</p>
+                  <p className="text-sm">
+                    {eventData.refundPolicy === 'no_refunds' && 'No refunds — all ticket sales are final.'}
+                    {eventData.refundPolicy === 'full_refund' && `Full refund available up to ${eventData.refundDeadlineDays || 0} days before the event.`}
+                    {eventData.refundPolicy === 'partial_refund' && `50% partial refund available up to ${eventData.refundDeadlineDays || 0} days before the event.`}
+                    {eventData.refundPolicy === 'custom' && (eventData.refundPolicyText || 'Custom refund policy.')}
+                    {!eventData.refundPolicy && 'No refund policy configured for this event.'}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         );
 
       case "staff":

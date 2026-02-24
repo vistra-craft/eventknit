@@ -36,11 +36,11 @@ const MyTickets: React.FC = () => {
         setLoading(true);
         const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
         if (response.success && response.data) {
-          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; status?: string; backupCode?: string; registrationId?: string; image?: string }) => ({
+          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string }) => ({
             id: event.id,
             title: event.title,
             date: event.date || "",
-            location: event.location || "",
+            location: event.venue ? `${event.venue}, ${event.location || ""}` : (event.location || ""),
             status: (event.status as 'upcoming' | 'completed') || 'upcoming',
             ticketId: event.backupCode || `TKT-${event.id.slice(0, 8).toUpperCase()}`,
             registrationId: event.registrationId,

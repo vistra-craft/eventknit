@@ -256,6 +256,8 @@ model User {
   // Onboarding fields (for organizers)
   onboardingCompleted   Boolean   @default(false)
   onboardingCompletedAt DateTime?
+  profileCompleted      Boolean   @default(false)
+  profileCompletedAt    DateTime?
   eventPreferences      Json? // Store event types, organization type, events per year, etc.
 
   // Audit fields
@@ -442,6 +444,7 @@ model OrganizerProfile {
   // Business Info
   website          String?
   description      String? @db.Text
+  socialLinks      Json?   // {facebook, twitter, instagram, linkedin, youtube, tiktok}
   businessLicense  String?
   taxId            String?
   bankAccountLast4 String? // Store only last 4 digits for display

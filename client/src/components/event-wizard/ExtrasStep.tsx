@@ -14,6 +14,7 @@ interface ExtrasStepProps {
   exhibitors: ExhibitorItem[];
   sponsors: SponsorItem[];
   eventStartDate?: string;
+  eventEndDate?: string;
   onAgendaUpdate: (
     field: 'agenda' | 'speakers' | 'exhibitors' | 'sponsors',
     value: AgendaItem[] | SpeakerItem[] | ExhibitorItem[] | SponsorItem[]
@@ -38,6 +39,7 @@ export function ExtrasStep({
   exhibitors,
   sponsors,
   eventStartDate,
+  eventEndDate,
   onAgendaUpdate,
   eventData,
   onInputChange,
@@ -157,6 +159,7 @@ export function ExtrasStep({
                       exhibitors={exhibitors}
                       sponsors={sponsors}
                       eventStartDate={eventStartDate}
+                      eventEndDate={eventEndDate}
                       onUpdate={onAgendaUpdate}
                     />
                   )}

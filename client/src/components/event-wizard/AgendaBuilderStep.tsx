@@ -7,10 +7,35 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Calendar, Users, Briefcase, Award, ArrowUpDown, Link2, Linkedin, Globe, Twitter } from 'lucide-react';
-import type { AgendaItem, SpeakerItem, ExhibitorItem, SponsorItem, SessionType } from './types';
-import { SESSION_TYPES } from './types';
+import { CreatableSelect } from '@/components/ui/creatable-select';
+import { Plus, Trash2, Copy, Calendar, Users, Briefcase, Award, ArrowUpDown, Link2, Linkedin, Globe, Twitter, Coffee, UtensilsCrossed, Handshake, ClipboardCheck } from 'lucide-react';
+import type { AgendaItem, SpeakerItem, ExhibitorItem, SponsorItem } from './types';
+import { SESSION_TYPES, SPONSORSHIP_LEVELS } from './types';
 import { ImageUploadField } from './ImageUploadField';
+
+// Quick-add session templates
+const QUICK_ADD_TEMPLATES: { label: string; icon: React.ReactNode; item: Partial<AgendaItem> }[] = [
+  {
+    label: 'Registration',
+    icon: <ClipboardCheck className="h-3.5 w-3.5" />,
+    item: { title: 'Registration & Check-in', sessionType: 'registration', startTime: '08:00', endTime: '09:00' },
+  },
+  {
+    label: 'Break',
+    icon: <Coffee className="h-3.5 w-3.5" />,
+    item: { title: 'Coffee Break', sessionType: 'break', startTime: '10:30', endTime: '11:00' },
+  },
+  {
+    label: 'Lunch',
+    icon: <UtensilsCrossed className="h-3.5 w-3.5" />,
+    item: { title: 'Lunch Break', sessionType: 'lunch', startTime: '12:30', endTime: '13:30' },
+  },
+  {
+    label: 'Networking',
+    icon: <Handshake className="h-3.5 w-3.5" />,
+    item: { title: 'Networking Hour', sessionType: 'networking', startTime: '17:00', endTime: '18:00' },
+  },
+];
 
 interface AgendaBuilderStepProps {
   agenda: AgendaItem[];
@@ -18,6 +43,7 @@ interface AgendaBuilderStepProps {
   exhibitors: ExhibitorItem[];
   sponsors: SponsorItem[];
   eventStartDate?: string;
+  eventEndDate?: string;
   onUpdate: (
     field: 'agenda' | 'speakers' | 'exhibitors' | 'sponsors',
     value: AgendaItem[] | SpeakerItem[] | ExhibitorItem[] | SponsorItem[]
@@ -30,6 +56,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
   exhibitors = [],
   sponsors = [],
   eventStartDate,
+  eventEndDate,
   onUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState('schedule');
@@ -59,20 +86,46 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
     return Array.from(rooms);
   }, [safeAgenda]);
 
+  // Find the latest end time on a given date (for auto-suggest)
+  const getLatestEndTime = (date: string): string => {
+    let latest = '';
+    for (const item of safeAgenda) {
+      const itemDate = item.date || eventStartDate || '';
+      if (itemDate === date && item.endTime && item.endTime > latest) {
+        latest = item.endTime;
+      }
+    }
+    return latest;
+  };
+
   // --- Schedule Handlers ---
-  const addAgendaItem = () => {
+  const addAgendaItem = (template?: Partial<AgendaItem>) => {
+    const date = template?.date || eventStartDate || '';
+    const suggestedStart = template?.startTime || getLatestEndTime(date);
+
     const newItem: AgendaItem = {
       id: crypto.randomUUID(),
-      title: '',
-      description: '',
-      date: eventStartDate || '',
-      startTime: '',
-      endTime: '',
-      sessionType: 'other',
-      room: '',
+      title: template?.title || '',
+      description: template?.description || '',
+      date,
+      startTime: suggestedStart,
+      endTime: template?.endTime || '',
+      sessionType: template?.sessionType || 'other',
+      room: template?.room || '',
       speakerIds: [],
     };
     onUpdate('agenda', [...safeAgenda, newItem]);
+  };
+
+  const duplicateAgendaItem = (index: number) => {
+    const source = safeAgenda[index];
+    const duplicate: AgendaItem = {
+      ...source,
+      id: crypto.randomUUID(),
+    };
+    const newAgenda = [...safeAgenda];
+    newAgenda.splice(index + 1, 0, duplicate);
+    onUpdate('agenda', newAgenda);
   };
 
   const updateAgendaItem = (index: number, field: keyof AgendaItem, value: AgendaItem[keyof AgendaItem]) => {
@@ -172,26 +225,49 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
   };
 
   // Get session type color for badges
-  const getSessionTypeColor = (type?: SessionType) => {
+  const getSessionTypeColor = (type?: string) => {
     switch (type) {
       case 'keynote':
         return 'bg-primary/10 text-primary border-primary/20';
       case 'workshop':
+      case 'tutorial':
         return 'bg-blue-500/10 text-blue-600 border-blue-500/20';
       case 'panel':
+      case 'roundtable':
+      case 'fireside-chat':
         return 'bg-purple-500/10 text-purple-600 border-purple-500/20';
       case 'breakout':
+      case 'lightning-talk':
         return 'bg-green-500/10 text-green-600 border-green-500/20';
       case 'networking':
+      case 'social':
         return 'bg-orange-500/10 text-orange-600 border-orange-500/20';
+      case 'demo':
+      case 'qa':
+        return 'bg-cyan-500/10 text-cyan-600 border-cyan-500/20';
+      case 'opening-ceremony':
+      case 'closing-ceremony':
+      case 'awards':
+      case 'entertainment':
+        return 'bg-pink-500/10 text-pink-600 border-pink-500/20';
       case 'break':
       case 'lunch':
         return 'bg-muted text-muted-foreground border-border';
       case 'registration':
         return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
       default:
-        return 'bg-muted text-muted-foreground border-border';
+        // Custom types get a subtle teal badge
+        return 'bg-teal-500/10 text-teal-600 border-teal-500/20';
     }
+  };
+
+  // Resolve session type label (predefined or custom value)
+  const getSessionTypeLabel = (type?: string): string => {
+    if (!type) return 'Other';
+    const predefined = SESSION_TYPES.find(t => t.value === type);
+    if (predefined) return predefined.label;
+    // Custom type — capitalize first letter of each word
+    return type.replace(/\b\w/g, c => c.toUpperCase());
   };
 
   return (
@@ -252,7 +328,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                   </Button>
                 )}
                 <Button
-                  onClick={addAgendaItem}
+                  onClick={() => addAgendaItem()}
                   variant="ghost"
                   className="text-primary hover:bg-primary hover:text-primary-foreground transition-colors flex items-center gap-2"
                 >
@@ -261,47 +337,69 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Quick-add templates */}
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs text-muted-foreground self-center mr-1">Quick add:</span>
+                {QUICK_ADD_TEMPLATES.map((tpl) => (
+                  <Button
+                    key={tpl.label}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1.5"
+                    onClick={() => addAgendaItem(tpl.item)}
+                  >
+                    {tpl.icon}
+                    {tpl.label}
+                  </Button>
+                ))}
+              </div>
+
               {safeAgenda.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No sessions added yet. Click "Add Session" to start building your agenda.
+                  No sessions added yet. Click "Add Session" or use the quick-add buttons above.
                 </div>
               ) : (
                 safeAgenda.map((item, index) => (
                   <div key={item.id || index} className="relative border rounded-lg p-4 bg-card/50 hover:bg-card transition-colors">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 text-destructive hover:text-destructive/90"
-                      onClick={() => removeAgendaItem(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="absolute top-2 right-2 flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => duplicateAgendaItem(index)}
+                        title="Duplicate session"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive/90"
+                        onClick={() => removeAgendaItem(index)}
+                        title="Delete session"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
 
                     {/* Session Type Badge */}
                     {item.sessionType && (
                       <Badge className={`mb-3 ${getSessionTypeColor(item.sessionType)}`}>
-                        {SESSION_TYPES.find(t => t.value === item.sessionType)?.label || 'Other'}
+                        {getSessionTypeLabel(item.sessionType)}
                       </Badge>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                       <div className="space-y-2">
                         <Label>Session Type</Label>
-                        <Select
+                        <CreatableSelect
                           value={item.sessionType || 'other'}
-                          onValueChange={(value) => updateAgendaItem(index, 'sessionType', value as SessionType)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SESSION_TYPES.map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          onChange={(value) => updateAgendaItem(index, 'sessionType', value)}
+                          options={SESSION_TYPES}
+                          placeholder="Select type"
+                          customLabel="Custom type..."
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Date {eventStartDate && <span className="text-xs text-muted-foreground">(optional)</span>}</Label>
@@ -309,6 +407,8 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                           type="date"
                           value={item.date || eventStartDate || ''}
                           onChange={(e) => updateAgendaItem(index, 'date', e.target.value)}
+                          min={eventStartDate || undefined}
+                          max={eventEndDate || undefined}
                         />
                       </div>
                       <div className="space-y-2">
@@ -489,6 +589,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                           label="Photo"
                           value={speaker.image || ''}
                           onChange={(value) => updateSpeaker(index, 'image', value)}
+                          folder="speakers"
                           previewSize="md"
                           aspectRatio="square"
                         />
@@ -629,6 +730,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                           label="Logo"
                           value={exhibitor.logo || ''}
                           onChange={(value) => updateExhibitor(index, 'logo', value)}
+                          folder="exhibitors"
                           previewSize="md"
                           aspectRatio="square"
                         />
@@ -692,23 +794,13 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                       </div>
                       <div className="space-y-2">
                         <Label>Sponsorship Level</Label>
-                        <Select
+                        <CreatableSelect
                           value={sponsor.level || 'bronze'}
-                          onValueChange={(value) => updateSponsor(index, 'level', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select level" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="platinum">Platinum</SelectItem>
-                            <SelectItem value="gold">Gold</SelectItem>
-                            <SelectItem value="silver">Silver</SelectItem>
-                            <SelectItem value="bronze">Bronze</SelectItem>
-                            <SelectItem value="title">Title Sponsor</SelectItem>
-                            <SelectItem value="presenting">Presenting Sponsor</SelectItem>
-                            <SelectItem value="partner">Community Partner</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          onChange={(value) => updateSponsor(index, 'level', value)}
+                          options={SPONSORSHIP_LEVELS}
+                          placeholder="Select level"
+                          customLabel="Custom level..."
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label className="flex items-center gap-1">
@@ -725,6 +817,7 @@ export const AgendaBuilderStep: React.FC<AgendaBuilderStepProps> = ({
                           label="Logo"
                           value={sponsor.logo || ''}
                           onChange={(value) => updateSponsor(index, 'logo', value)}
+                          folder="sponsors"
                           previewSize="md"
                           aspectRatio="square"
                         />

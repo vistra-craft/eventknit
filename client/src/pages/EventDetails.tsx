@@ -10,7 +10,9 @@ import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { Users, CheckCircle, Heart, Share2, Ticket, ArrowRight, AlertCircle } from "lucide-react";
+import { Users, CheckCircle, Heart, Share2, Ticket, ArrowRight, AlertCircle, Building2, Award } from "lucide-react";
+import { FAQsAccordion } from "@/components/event-details/FAQsAccordion";
+import { RefundPolicy } from "@/components/event-details/RefundPolicy";
 import { Loader } from "@/components/ui/loader";
 import { Card } from "@/components/ui/card";
 
@@ -190,7 +192,7 @@ const EventDetails = () => {
 
   const handleRegisterClick = () => {
     if (userAlreadyRegistered) {
-      navigate('/my-tickets');
+      navigate('/user/tickets');
     } else {
       navigate(`/event/${id}/register`);
     }
@@ -303,68 +305,37 @@ const EventDetails = () => {
                 />
               </section>
 
-              {/* Event Agenda Summary */}
-              <section>
-                <h2 className="text-page-title mb-6">Event Schedule</h2>
-                <Card className="border border-border bg-background rounded-2xl shadow-sm p-6">
-                  <div className="space-y-3">
-                    {(() => {
-                      // Handle different data formats
-                      let agendaData = event.agenda;
-                      
-                      // If agenda is a string, try to parse it
-                      if (typeof agendaData === 'string') {
-                        try {
-                          agendaData = JSON.parse(agendaData);
-                        } catch (e) {
-                          console.error('Failed to parse agenda string:', e);
-                          agendaData = null;
-                        }
-                      }
-                      
-                      // Check if we have valid agenda data
-                      const hasAgenda = agendaData && Array.isArray(agendaData) && agendaData.length > 0;
-                      
-                      if (hasAgenda) {
-                        const summary = generateAgendaSummary(agendaData);
-                        console.log('Generated Summary:', summary);
-                        if (summary && summary.trim() !== '') {
-                          return (
-                            <>
-                              <p className="text-muted-foreground leading-relaxed text-lg">
-                                {summary}
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-4 pt-4 border-t border-border/50">
-                                <strong>Full agenda with detailed session descriptions, speaker information, and session locations available in your attendee dashboard after registration.</strong>
-                              </p>
-                            </>
-                          );
-                        } else {
-                          // If summary is empty/null, show a generic message
-                          return (
-                            <>
-                              <p className="text-muted-foreground leading-relaxed text-lg">
-                                Full schedule with multiple sessions and activities throughout the event.
-                              </p>
-                              <p className="text-sm text-muted-foreground mt-4 pt-4 border-t border-border/50">
-                                <strong>Full agenda with detailed session descriptions, speaker information, and session locations available in your attendee dashboard after registration.</strong>
-                              </p>
-                            </>
-                          );
-                        }
-                      } else {
-                        return (
-                          <p className="text-muted-foreground">Full schedule will be available after registration.</p>
-                        );
-                      }
-                    })()}
-                  </div>
-                </Card>
-                {/* Agenda Details Hint */}
-                <p className="text-sm text-center text-muted-foreground mt-2 italic">
-                  * Full detailed agenda available after registration
-                </p>
-              </section>
+              {/* Event Agenda Summary - only show when agenda is configured */}
+              {(() => {
+                let agendaData = event.agenda;
+                if (typeof agendaData === 'string') {
+                  try { agendaData = JSON.parse(agendaData); } catch { agendaData = null; }
+                }
+                const hasAgenda = agendaData && Array.isArray(agendaData) && agendaData.length > 0;
+                if (!hasAgenda) return null;
+
+                const summary = generateAgendaSummary(agendaData);
+                return (
+                  <section>
+                    <h2 className="text-page-title mb-6">Event Schedule</h2>
+                    <Card className="border border-border bg-background rounded-2xl shadow-sm p-6">
+                      <div className="space-y-3">
+                        <p className="text-muted-foreground leading-relaxed text-lg">
+                          {summary && summary.trim() !== ''
+                            ? summary
+                            : 'Full schedule with multiple sessions and activities throughout the event.'}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-4 pt-4 border-t border-border/50">
+                          <strong>Full agenda with detailed session descriptions, speaker information, and session locations available in your attendee dashboard after registration.</strong>
+                        </p>
+                      </div>
+                    </Card>
+                    <p className="text-sm text-center text-muted-foreground mt-2 italic">
+                      * Full detailed agenda available after registration
+                    </p>
+                  </section>
+                );
+              })()}
 
               {/* Important Information */}
               {(event.requirements?.length || event.ageRestriction) && (
@@ -412,60 +383,171 @@ const EventDetails = () => {
                 category={event.category} 
               />
 
-              {/* Featured Speakers (Names/Titles Only) */}
+              {/* Featured Speakers */}
               {(() => {
-                // Debug logging
-                console.log('Event.speakers:', event.speakers);
-                console.log('Event.speakers type:', typeof event.speakers);
-                console.log('Event.speakers is array?', Array.isArray(event.speakers));
-                console.log('Event.speakers length:', event.speakers?.length);
-                
-                // Handle different data formats
                 let speakersData = event.speakers;
-                
-                // If speakers is a string, try to parse it
                 if (typeof speakersData === 'string') {
-                  try {
-                    speakersData = JSON.parse(speakersData);
-                  } catch (e) {
-                    console.error('Failed to parse speakers string:', e);
-                    speakersData = null;
-                  }
+                  try { speakersData = JSON.parse(speakersData); } catch { speakersData = null; }
                 }
-                
-                // Check if we have valid speakers data
                 const hasSpeakers = speakersData && Array.isArray(speakersData) && speakersData.length > 0;
-                
-                if (hasSpeakers) {
-                  const safeSpeakers = speakersData as { name?: string; title?: string; image?: string }[];
-                  return (
-                    <section>
-                      <h2 className="text-page-title mb-4">Featured Speakers</h2>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {safeSpeakers.slice(0, 8).map((speaker, index: number) => (
-                          <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border border-border bg-background shadow-sm transition-all">
-                            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-3">
-                              {speaker?.image ? (
-                                <img src={speaker.image} alt={speaker.name || 'Speaker'} className="w-full h-full object-cover" />
-                              ) : (
-                                <Users className="w-8 h-8 text-muted-foreground" />
-                              )}
-                            </div>
-                            <h4 className="text-card-title text-sm mb-1">{speaker?.name || 'Speaker'}</h4>
-                            <p className="text-primary font-medium text-xs line-clamp-2">{speaker?.title || ''}</p>
+                if (!hasSpeakers) return null;
+                const safeSpeakers = speakersData as { name?: string; title?: string; image?: string }[];
+                return (
+                  <section>
+                    <h2 className="text-page-title mb-4">Featured Speakers</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {safeSpeakers.slice(0, 8).map((speaker, index: number) => (
+                        <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border border-border bg-background shadow-sm transition-all">
+                          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-3">
+                            {speaker?.image ? (
+                              <img src={speaker.image} alt={speaker.name || 'Speaker'} className="w-full h-full object-cover" />
+                            ) : (
+                              <Users className="w-8 h-8 text-muted-foreground" />
+                            )}
                           </div>
-                        ))}
-                      </div>
-                      {safeSpeakers.length > 8 && (
-                        <p className="text-sm text-muted-foreground mt-4 text-center">
-                          + {safeSpeakers.length - 8} more speakers. View full speaker profiles in your attendee dashboard after registration.
-                        </p>
-                      )}
-                    </section>
-                  );
-                }
-                return null;
+                          <h4 className="text-card-title text-sm mb-1">{speaker?.name || 'Speaker'}</h4>
+                          <p className="text-primary font-medium text-xs line-clamp-2">{speaker?.title || ''}</p>
+                        </div>
+                      ))}
+                    </div>
+                    {safeSpeakers.length > 8 && (
+                      <p className="text-sm text-muted-foreground mt-4 text-center">
+                        + {safeSpeakers.length - 8} more speakers. Full profiles available after registration.
+                      </p>
+                    )}
+                  </section>
+                );
               })()}
+
+              {/* Sponsors */}
+              {(() => {
+                let sponsorsData = event.sponsors;
+                if (typeof sponsorsData === 'string') {
+                  try { sponsorsData = JSON.parse(sponsorsData); } catch { sponsorsData = null; }
+                }
+                const hasSponsors = sponsorsData && Array.isArray(sponsorsData) && sponsorsData.length > 0;
+                if (!hasSponsors) return null;
+                const safeSponsors = sponsorsData as { name?: string; level?: string; logo?: string; website?: string }[];
+
+                // Group by level
+                const tierOrder = ['title', 'presenting', 'diamond', 'platinum', 'gold', 'silver', 'bronze', 'partner', 'media', 'technology', 'community', 'associate'];
+                const tierLabels: Record<string, string> = {
+                  title: 'Title Sponsor', presenting: 'Presenting', diamond: 'Diamond', platinum: 'Platinum',
+                  gold: 'Gold', silver: 'Silver', bronze: 'Bronze', partner: 'Partner',
+                  media: 'Media Partner', technology: 'Technology Partner', community: 'Community', associate: 'Associate',
+                };
+                const grouped: Record<string, typeof safeSponsors> = {};
+                safeSponsors.forEach(s => {
+                  const tier = (s.level || 'associate').toLowerCase();
+                  if (!grouped[tier]) grouped[tier] = [];
+                  grouped[tier].push(s);
+                });
+                const orderedTiers = tierOrder.filter(t => grouped[t]?.length > 0);
+
+                return (
+                  <section>
+                    <h2 className="text-page-title mb-4">Sponsors</h2>
+                    <div className="space-y-6">
+                      {orderedTiers.map(tier => (
+                        <div key={tier}>
+                          <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3 flex items-center gap-1.5">
+                            <Award className="w-3.5 h-3.5" />
+                            {tierLabels[tier] || tier}
+                          </p>
+                          <div className="flex flex-wrap gap-4">
+                            {grouped[tier].map((sponsor, i) => (
+                              <a
+                                key={i}
+                                href={sponsor.website ? (sponsor.website.startsWith('http') ? sponsor.website : `https://${sponsor.website}`) : undefined}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-background hover:shadow-md transition-all"
+                              >
+                                {sponsor.logo ? (
+                                  <img src={sponsor.logo} alt={sponsor.name || 'Sponsor'} className="w-10 h-10 rounded-lg object-contain" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <Award className="w-5 h-5 text-primary" />
+                                  </div>
+                                )}
+                                <span className="text-sm font-medium text-foreground">{sponsor.name}</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })()}
+
+              {/* Exhibitors */}
+              {(() => {
+                let exhibitorsData = event.exhibitors;
+                if (typeof exhibitorsData === 'string') {
+                  try { exhibitorsData = JSON.parse(exhibitorsData); } catch { exhibitorsData = null; }
+                }
+                const hasExhibitors = exhibitorsData && Array.isArray(exhibitorsData) && exhibitorsData.length > 0;
+                if (!hasExhibitors) return null;
+                const safeExhibitors = exhibitorsData as { name?: string; logo?: string; category?: string; booth?: string }[];
+                return (
+                  <section>
+                    <h2 className="text-page-title mb-4">Exhibitors</h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {safeExhibitors.slice(0, 12).map((exhibitor, index: number) => (
+                        <div key={index} className="p-3 flex flex-col items-center text-center rounded-lg border border-border bg-background shadow-sm">
+                          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-2">
+                            {exhibitor?.logo ? (
+                              <img src={exhibitor.logo} alt={exhibitor.name || 'Exhibitor'} className="w-full h-full object-contain p-1" />
+                            ) : (
+                              <Building2 className="w-6 h-6 text-muted-foreground" />
+                            )}
+                          </div>
+                          <h4 className="text-card-title text-xs mb-0.5 line-clamp-1">{exhibitor?.name || 'Exhibitor'}</h4>
+                          {exhibitor?.category && (
+                            <p className="text-[10px] text-muted-foreground">{exhibitor.category}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {safeExhibitors.length > 12 && (
+                      <p className="text-sm text-muted-foreground mt-3 text-center">
+                        + {safeExhibitors.length - 12} more exhibitors. Full details available after registration.
+                      </p>
+                    )}
+                  </section>
+                );
+              })()}
+
+              {/* FAQs */}
+              {(() => {
+                let faqsData = event.faqs;
+                if (typeof faqsData === 'string') {
+                  try { faqsData = JSON.parse(faqsData); } catch { faqsData = null; }
+                }
+                const hasFaqs = faqsData && Array.isArray(faqsData) && faqsData.length > 0;
+                if (!hasFaqs) return null;
+                const safeFaqs = faqsData as { question: string; answer: string }[];
+                return (
+                  <section>
+                    <h2 className="text-page-title mb-4">Frequently Asked Questions</h2>
+                    <Card className="border border-border bg-background rounded-2xl shadow-sm p-6">
+                      <FAQsAccordion faqs={safeFaqs} />
+                    </Card>
+                  </section>
+                );
+              })()}
+
+              {/* Refund Policy */}
+              {event.refundPolicy && (
+                <section>
+                  <RefundPolicy
+                    refundPolicy={event.refundPolicy}
+                    refundDeadlineDays={event.refundDeadlineDays}
+                    refundPolicyText={event.refundPolicyText}
+                  />
+                </section>
+              )}
 
               {/* Organizer Info */}
               <OrganizerInfo

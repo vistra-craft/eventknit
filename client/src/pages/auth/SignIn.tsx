@@ -15,7 +15,7 @@ import { requestEmailOAuthCode, verifyEmailOAuthCode, googleAuth, appleAuth } fr
 import loginImage from '@/assets/login.jpeg';
 
 const SignIn = () => {
-  const { login, isLoading, error: authError, clearError, isAuthenticated } = useAuth();
+  const { login, isLoading, error: authError, clearError } = useAuth();
   const { dispatch } = useAuthContext();
   const [showPassword, setShowPassword] = useState(false);
   const [emailOAuthEmail, setEmailOAuthEmail] = useState('');

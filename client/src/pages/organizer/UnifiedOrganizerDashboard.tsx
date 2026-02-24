@@ -32,6 +32,7 @@ import { UpgradePrompt } from "@/components/organizer/UpgradePrompt";
 import { CustomAreaChart } from "@/components/charts/ChartComponents";
 import { DashboardSkeleton } from "@/components/loaders/DashboardSkeleton";
 import { Loader } from "@/components/ui/loader";
+import { useAuth } from "@/hooks/useAuth";
 import {
   useOrganizerDashboardStats,
   useOrganizerDashboardEvents,
@@ -44,6 +45,7 @@ import type { OrganizerDashboardEvent } from "@/lib/organizer-api";
 const UnifiedOrganizerDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [timeRange, setTimeRange] = useState("30d");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [verificationReminder, setVerificationReminder] = useState<string | null>(null);
@@ -241,6 +243,26 @@ const UnifiedOrganizerDashboard = () => {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Profile Completion Nudge */}
+        {user && !user.profileCompleted && (
+          <Alert className="mb-6 border-amber-500/20 bg-amber-500/5">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-foreground flex-1">
+                <strong>Complete your organizer profile</strong> to build trust with attendees and improve your event visibility.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/organizer/profile-setup")}
+                className="border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+              >
+                Set Up Profile
+              </Button>
             </AlertDescription>
           </Alert>
         )}

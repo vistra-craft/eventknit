@@ -28,6 +28,7 @@ jest.mock('../../../src/utils/audit.js', () => ({
     INVITATION_CREATED: 'INVITATION_CREATED',
     INVITATION_UPDATED: 'INVITATION_UPDATED',
     INVITATION_REVOKED: 'INVITATION_REVOKED',
+    INVITATION_DELETED: 'INVITATION_DELETED',
   },
 }));
 
@@ -450,29 +451,30 @@ describe('InvitationService', () => {
   });
 
   describe('getInvitationByToken', () => {
+    const mockActiveInvitation = {
+      id: 'invitation-123',
+      eventId: mockEvent.id,
+      token: 'abc123',
+      inviteType: InviteType.ATTENDEE,
+      isActive: true,
+      expiresAt: new Date('2030-12-31'),
+      maxUses: null,
+      usedCount: 0,
+      event: {
+        ...mockEvent,
+        status: EventStatus.APPROVED,
+        organizer: {
+          id: mockOrganizer.id,
+          firstName: 'John',
+          lastName: 'Doe',
+          organizationName: null,
+        },
+      },
+    };
+
     it('should retrieve invitation by token', async () => {
       // Arrange
-      const mockInvitation = {
-        id: 'invitation-123',
-        eventId: mockEvent.id,
-        token: 'abc123',
-        inviteType: InviteType.ATTENDEE,
-        isActive: true,
-        expiresAt: new Date('2030-12-31'),
-        maxUses: null,
-        usedCount: 0,
-        event: {
-          ...mockEvent,
-          status: EventStatus.APPROVED,
-          organizer: {
-            id: mockOrganizer.id,
-            firstName: 'John',
-            lastName: 'Doe',
-            organizationName: null,
-          },
-        },
-      };
-      prisma.eventInvitation.findUnique.mockResolvedValue(mockInvitation as any);
+      prisma.eventInvitation.findUnique.mockResolvedValue(mockActiveInvitation as any);
 
       // Act
       const result = await InvitationService.getInvitationByToken('abc123');
@@ -498,6 +500,527 @@ describe('InvitationService', () => {
       await expect(
         InvitationService.getInvitationByToken('invalid-token'),
       ).rejects.toThrow('Invalid invitation link');
+    });
+
+    it('should throw error for revoked invitation', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockActiveInvitation,
+        isActive: false,
+      } as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.getInvitationByToken('abc123'),
+      ).rejects.toThrow(ValidationError);
+
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockActiveInvitation,
+        isActive: false,
+      } as any);
+
+      await expect(
+        InvitationService.getInvitationByToken('abc123'),
+      ).rejects.toThrow('This invitation link has been revoked');
+    });
+
+    it('should throw error for expired invitation', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockActiveInvitation,
+        expiresAt: new Date('2020-01-01'), // Past date
+      } as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.getInvitationByToken('abc123'),
+      ).rejects.toThrow(ValidationError);
+
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockActiveInvitation,
+        expiresAt: new Date('2020-01-01'),
+      } as any);
+
+      await expect(
+        InvitationService.getInvitationByToken('abc123'),
+      ).rejects.toThrow('This invitation link has expired');
+    });
+
+    it('should throw error when max uses reached', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockActiveInvitation,
+        maxUses: 5,
+        usedCount: 5,
+      } as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.getInvitationByToken('abc123'),
+      ).rejects.toThrow(ValidationError);
+
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockActiveInvitation,
+        maxUses: 5,
+        usedCount: 5,
+      } as any);
+
+      await expect(
+        InvitationService.getInvitationByToken('abc123'),
+      ).rejects.toThrow('maximum number of uses');
+    });
+
+    it('should throw error when event is not approved', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockActiveInvitation,
+        event: {
+          ...mockActiveInvitation.event,
+          status: EventStatus.PENDING,
+        },
+      } as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.getInvitationByToken('abc123'),
+      ).rejects.toThrow(ValidationError);
+
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockActiveInvitation,
+        event: {
+          ...mockActiveInvitation.event,
+          status: EventStatus.PENDING,
+        },
+      } as any);
+
+      await expect(
+        InvitationService.getInvitationByToken('abc123'),
+      ).rejects.toThrow('not yet available for registration');
+    });
+
+    it('should succeed when invitation has no expiration or usage limit', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockActiveInvitation,
+        expiresAt: null,
+        maxUses: null,
+      } as any);
+
+      // Act
+      const result = await InvitationService.getInvitationByToken('abc123');
+
+      // Assert
+      expect(result).toBeDefined();
+      expect(result.isActive).toBe(true);
+    });
+  });
+
+  describe('getEventInvitations', () => {
+    it('should return invitations for event with usage count', async () => {
+      // Arrange
+      prisma.event.findFirst.mockResolvedValue(mockEvent as any);
+      prisma.eventInvitation.findMany.mockResolvedValue([
+        {
+          id: 'inv-1',
+          eventId: mockEvent.id,
+          inviteType: InviteType.ATTENDEE,
+          isActive: true,
+          creator: { id: mockOrganizer.id, firstName: 'Organizer', lastName: 'Test', email: 'organizer@test.com' },
+          _count: { registrations: 5 },
+        },
+        {
+          id: 'inv-2',
+          eventId: mockEvent.id,
+          inviteType: InviteType.SPEAKER,
+          isActive: true,
+          creator: { id: mockOrganizer.id, firstName: 'Organizer', lastName: 'Test', email: 'organizer@test.com' },
+          _count: { registrations: 2 },
+        },
+      ] as any);
+
+      // Act
+      const result = await InvitationService.getEventInvitations(
+        mockEvent.id,
+        mockOrganizer.id,
+        UserRole.ORGANIZER,
+      );
+
+      // Assert
+      expect(result).toHaveLength(2);
+      expect(result[0].usageCount).toBe(5);
+      expect(result[1].usageCount).toBe(2);
+    });
+
+    it('should throw AuthorizationError for ATTENDEE role', async () => {
+      await expect(
+        InvitationService.getEventInvitations(
+          mockEvent.id,
+          'attendee-123',
+          UserRole.ATTENDEE,
+        ),
+      ).rejects.toThrow(AuthorizationError);
+    });
+
+    it('should throw NotFoundError when event not found', async () => {
+      // Arrange
+      prisma.event.findFirst.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        InvitationService.getEventInvitations(
+          'non-existent',
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw AuthorizationError when organizer does not own event', async () => {
+      // Arrange
+      prisma.event.findFirst.mockResolvedValue({
+        ...mockEvent,
+        organizerId: 'different-organizer',
+      } as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.getEventInvitations(
+          mockEvent.id,
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(AuthorizationError);
+    });
+
+    it('should allow admin to view invitations for any event', async () => {
+      // Arrange
+      prisma.event.findFirst.mockResolvedValue({
+        ...mockEvent,
+        organizerId: 'different-organizer',
+      } as any);
+      prisma.eventInvitation.findMany.mockResolvedValue([] as any);
+
+      // Act
+      const result = await InvitationService.getEventInvitations(
+        mockEvent.id,
+        'admin-123',
+        UserRole.SUPERADMIN,
+      );
+
+      // Assert
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('updateInvitation', () => {
+    const mockExistingInvitation = {
+      id: 'invitation-123',
+      eventId: mockEvent.id,
+      inviteType: InviteType.ATTENDEE,
+      isActive: true,
+      usedCount: 3,
+      event: {
+        id: mockEvent.id,
+        organizerId: mockOrganizer.id,
+      },
+    };
+
+    it('should update invitation title and description', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue(mockExistingInvitation as any);
+      prisma.eventInvitation.update.mockResolvedValue({
+        ...mockExistingInvitation,
+        title: 'Updated Title',
+        description: 'Updated Desc',
+      } as any);
+
+      // Act
+      const result = await InvitationService.updateInvitation(
+        'invitation-123',
+        { title: 'Updated Title', description: 'Updated Desc' },
+        mockOrganizer.id,
+        UserRole.ORGANIZER,
+      );
+
+      // Assert
+      expect(result.title).toBe('Updated Title');
+      expect(prisma.eventInvitation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'invitation-123' },
+          data: expect.objectContaining({
+            title: 'Updated Title',
+            description: 'Updated Desc',
+          }),
+        }),
+      );
+    });
+
+    it('should throw NotFoundError when invitation does not exist', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        InvitationService.updateInvitation(
+          'non-existent',
+          { title: 'Test' },
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw AuthorizationError when organizer does not own event', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockExistingInvitation,
+        event: { id: mockEvent.id, organizerId: 'different-organizer' },
+      } as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.updateInvitation(
+          'invitation-123',
+          { title: 'Test' },
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(AuthorizationError);
+    });
+
+    it('should throw ValidationError when expiresAt is in the past', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue(mockExistingInvitation as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.updateInvitation(
+          'invitation-123',
+          { expiresAt: new Date('2020-01-01') },
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it('should throw ValidationError when maxUses less than 1', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue(mockExistingInvitation as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.updateInvitation(
+          'invitation-123',
+          { maxUses: 0 },
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it('should throw ValidationError when maxUses less than current usage', async () => {
+      // Arrange - invitation has 3 uses
+      prisma.eventInvitation.findUnique.mockResolvedValue(mockExistingInvitation as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.updateInvitation(
+          'invitation-123',
+          { maxUses: 2 }, // Less than current usedCount of 3
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(ValidationError);
+
+      prisma.eventInvitation.findUnique.mockResolvedValue(mockExistingInvitation as any);
+
+      await expect(
+        InvitationService.updateInvitation(
+          'invitation-123',
+          { maxUses: 2 },
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow('cannot be less than current usage');
+    });
+
+    it('should set revokedAt and revokedBy when deactivating', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue(mockExistingInvitation as any);
+      prisma.eventInvitation.update.mockResolvedValue({
+        ...mockExistingInvitation,
+        isActive: false,
+      } as any);
+
+      // Act
+      await InvitationService.updateInvitation(
+        'invitation-123',
+        { isActive: false },
+        mockOrganizer.id,
+        UserRole.ORGANIZER,
+      );
+
+      // Assert
+      expect(prisma.eventInvitation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            isActive: false,
+            revokedAt: expect.any(Date),
+            revokedBy: mockOrganizer.id,
+          }),
+        }),
+      );
+    });
+
+    it('should allow admin to update invitation for any event', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockExistingInvitation,
+        event: { id: mockEvent.id, organizerId: 'different-organizer' },
+      } as any);
+      prisma.eventInvitation.update.mockResolvedValue({
+        ...mockExistingInvitation,
+        title: 'Admin Update',
+      } as any);
+
+      // Act
+      const result = await InvitationService.updateInvitation(
+        'invitation-123',
+        { title: 'Admin Update' },
+        'admin-123',
+        UserRole.SUPERADMIN,
+      );
+
+      // Assert
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('revokeInvitation', () => {
+    it('should deactivate invitation via updateInvitation', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        id: 'invitation-123',
+        eventId: mockEvent.id,
+        isActive: true,
+        usedCount: 0,
+        event: { id: mockEvent.id, organizerId: mockOrganizer.id },
+      } as any);
+      prisma.eventInvitation.update.mockResolvedValue({
+        id: 'invitation-123',
+        isActive: false,
+      } as any);
+
+      // Act
+      const result = await InvitationService.revokeInvitation(
+        'invitation-123',
+        mockOrganizer.id,
+        UserRole.ORGANIZER,
+      );
+
+      // Assert
+      expect(result.isActive).toBe(false);
+      expect(prisma.eventInvitation.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            isActive: false,
+          }),
+        }),
+      );
+    });
+
+    it('should throw NotFoundError for non-existent invitation', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        InvitationService.revokeInvitation(
+          'non-existent',
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('deleteInvitation', () => {
+    const mockInvitationWithEvent = {
+      id: 'invitation-123',
+      eventId: mockEvent.id,
+      inviteType: InviteType.ATTENDEE,
+      event: {
+        id: mockEvent.id,
+        organizerId: mockOrganizer.id,
+      },
+    };
+
+    it('should delete invitation successfully', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue(mockInvitationWithEvent as any);
+      prisma.eventInvitation.delete.mockResolvedValue(mockInvitationWithEvent as any);
+
+      // Act
+      await InvitationService.deleteInvitation(
+        'invitation-123',
+        mockOrganizer.id,
+        UserRole.ORGANIZER,
+      );
+
+      // Assert
+      expect(prisma.eventInvitation.delete).toHaveBeenCalledWith({
+        where: { id: 'invitation-123' },
+      });
+    });
+
+    it('should throw NotFoundError when invitation does not exist', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        InvitationService.deleteInvitation(
+          'non-existent',
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(NotFoundError);
+    });
+
+    it('should throw AuthorizationError when organizer does not own event', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockInvitationWithEvent,
+        event: { id: mockEvent.id, organizerId: 'different-organizer' },
+      } as any);
+
+      // Act & Assert
+      await expect(
+        InvitationService.deleteInvitation(
+          'invitation-123',
+          mockOrganizer.id,
+          UserRole.ORGANIZER,
+        ),
+      ).rejects.toThrow(AuthorizationError);
+    });
+
+    it('should allow admin to delete invitation for any event', async () => {
+      // Arrange
+      prisma.eventInvitation.findUnique.mockResolvedValue({
+        ...mockInvitationWithEvent,
+        event: { id: mockEvent.id, organizerId: 'different-organizer' },
+      } as any);
+      prisma.eventInvitation.delete.mockResolvedValue(mockInvitationWithEvent as any);
+
+      // Act - should not throw
+      await InvitationService.deleteInvitation(
+        'invitation-123',
+        'admin-123',
+        UserRole.SUPERADMIN,
+      );
+
+      // Assert
+      expect(prisma.eventInvitation.delete).toHaveBeenCalled();
     });
   });
 });

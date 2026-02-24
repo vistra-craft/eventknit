@@ -20,6 +20,10 @@ export const extendedProfileValidations = {
   upsertOrganizerProfile: Joi.object({
     website: Joi.string().trim().uri().max(500).optional().allow(null, ''),
     description: Joi.string().trim().max(2000).optional().allow(null, ''),
+    socialLinks: Joi.object().pattern(
+      Joi.string().valid('facebook', 'twitter', 'instagram', 'linkedin', 'youtube', 'tiktok'),
+      Joi.string().trim().uri().max(500).allow(null, ''),
+    ).optional().allow(null),
     businessLicense: Joi.string().trim().max(200).optional().allow(null, ''),
     taxId: Joi.string().trim().max(100).optional().allow(null, ''),
     bankAccountLast4: Joi.string().trim().length(4).pattern(/^\d{4}$/).optional().allow(null, '').messages({
@@ -30,6 +34,7 @@ export const extendedProfileValidations = {
     totalEvents: Joi.number().integer().min(0).optional(),
     totalRevenue: Joi.number().min(0).optional(),
     rating: Joi.number().min(0).max(5).optional().allow(null),
+    markComplete: Joi.boolean().optional(),
   }),
 
   upsertEmergencyContact: Joi.object({

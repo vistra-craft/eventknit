@@ -13,6 +13,13 @@ export interface TicketSelection {
   [ticketName: string]: number;
 }
 
+export interface PromoDiscount {
+  code: string;
+  discountAmount: number;
+  discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+  discountValue: number;
+}
+
 interface UnifiedRegistrationModalProps {
   event: EventData;
   isOpen: boolean;
@@ -50,6 +57,7 @@ export const UnifiedRegistrationModal = ({
   const [selectedTickets, setSelectedTickets] = useState<TicketSelection>({});
   const [registrationData, setRegistrationData] = useState<RegistrationData | null>(null);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [promoDiscount, setPromoDiscount] = useState<PromoDiscount | null>(null);
 
   // Determine if we should skip ticket selection for free events or single ticket types
   const shouldSkipTicketSelection = 
@@ -120,6 +128,7 @@ export const UnifiedRegistrationModal = ({
         setSelectedTickets({});
         setRegistrationData(null);
         setPaymentData(null);
+        setPromoDiscount(null);
       }, 300);
     } else {
       // Confirm before closing if in middle of process
@@ -129,10 +138,11 @@ export const UnifiedRegistrationModal = ({
     }
   };
 
-  const totalPrice = event.ticketTypes?.reduce(
+  const subtotal = event.ticketTypes?.reduce(
     (sum, ticket) => sum + (ticket.price || 0) * (selectedTickets[ticket.name] || 0),
     0
   ) || 0;
+  const totalPrice = Math.max(0, subtotal - (promoDiscount?.discountAmount || 0));
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -177,6 +187,8 @@ export const UnifiedRegistrationModal = ({
               selectedTickets={selectedTickets}
               onTicketsChange={setSelectedTickets}
               onContinue={handleTicketSelectionComplete}
+              promoDiscount={promoDiscount}
+              onPromoChange={setPromoDiscount}
             />
           )}
 
@@ -198,6 +210,7 @@ export const UnifiedRegistrationModal = ({
               registrationData={registrationData}
               onBack={handleBack}
               onContinue={handlePaymentComplete}
+              promoDiscount={promoDiscount}
             />
           )}
 
