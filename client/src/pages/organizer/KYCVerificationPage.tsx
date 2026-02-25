@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 
@@ -38,6 +38,7 @@ const STEPS: Step[] = ['entity-type', 'directors', 'documents', 'review'];
 
 const KYCVerificationPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -52,6 +53,13 @@ const KYCVerificationPage = () => {
   const [directors, setDirectors] = useState<OrganizerDirector[]>([]);
   const [requiresDirectors, setRequiresDirectors] = useState(false);
   const [minDirectors, setMinDirectors] = useState<number>();
+
+  // Get the redirect path from location state
+  const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification || "/organizer/dashboard";
+
+  const handleBackClick = () => {
+    navigate(redirectPath, { replace: true });
+  };
 
   const loadKYCData = useCallback(async () => {
     try {
@@ -135,7 +143,8 @@ const KYCVerificationPage = () => {
           description:
             'Your documents have been submitted for review. We will notify you once the review is complete.',
         });
-        navigate('/organizer/dashboard');
+        // Navigate to redirect path with replace to avoid going back to KYC page
+        navigate(redirectPath, { replace: true });
       }
     } catch (error: unknown) {
       toast({
@@ -199,7 +208,10 @@ const KYCVerificationPage = () => {
 
   return (
       <div className="container mx-auto max-w-4xl py-8 px-4">
-        <BackButton to="/organizer/dashboard" label="Back to Dashboard" />
+        <BackButton 
+          onClick={handleBackClick}
+          label="Back to Dashboard" 
+        />
 
         <h1 className="text-3xl font-bold mt-6">KYC Verification</h1>
         <p className="text-muted-foreground mb-8">

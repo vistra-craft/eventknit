@@ -53,6 +53,9 @@ export const useAuth = () => {
           setAccessToken(response.data.accessToken);
           dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user });
 
+          // Invalidate profile cache to force fresh fetch of user profile with updated avatar
+          queryClient.invalidateQueries({ queryKey: ['profile'] });
+
           // NEW: Check if user needs personalized onboarding (all new users, not just organizers)
           const role = response.data.user.role;
           const isAdminRole =

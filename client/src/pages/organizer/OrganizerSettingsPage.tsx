@@ -1172,13 +1172,27 @@ const OrganizerSettingsPage = () => {
     </div>
   );
 
+  // Handle verification tab navigation with useEffect (not during render to avoid navigation conflicts with back button)
+  useEffect(() => {
+    if (activeTab === 'verification') {
+      const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification;
+      navigate('/organizer/verification', {
+        state: { redirectAfterVerification: redirectPath || '/organizer/settings?tab=verification' },
+        replace: false
+      });
+    }
+  }, [activeTab, navigate, location.state]);
+
   const renderVerificationSettings = () => {
-    // Redirect to dedicated verification page for unified experience
-    const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification;
-    navigate('/organizer/verification', {
-      state: { redirectAfterVerification: redirectPath || '/organizer/settings?tab=verification' }
-    });
-    return null;
+    // Return loading state while useEffect handles navigation
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+          <p className="text-muted-foreground">Redirecting to verification...</p>
+        </div>
+      </div>
+    );
   };
 
   const renderTabContent = () => {

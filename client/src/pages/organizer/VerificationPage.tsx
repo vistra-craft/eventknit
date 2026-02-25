@@ -1,113 +1,23 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle2 } from 'lucide-react';
-import BackButton from '@/components/BackButton';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import VerificationForm from '@/components/verification/VerificationForm';
+
 const VerificationPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [accountType, setAccountType] = useState<'individual' | 'business' | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
 
-  // Get redirect path from location state or query params
-  const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification ||
-                      new URLSearchParams(location.search).get('redirect') ||
-                      '/organizer/dashboard';
+  useEffect(() => {
+    // Get redirect path from location state or query params
+    const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification ||
+                        new URLSearchParams(location.search).get('redirect');
+    
+    // Redirect to KYCVerificationPage with the same redirect path
+    navigate('/organizer/kyc', {
+      state: redirectPath ? { redirectAfterVerification: redirectPath } : {},
+      replace: true
+    });
+  }, [navigate, location]);
 
-  const handleAccountTypeSelect = (type: 'individual' | 'business') => {
-    setAccountType(type);
-  };
-
-  const handleVerificationSuccess = () => {
-    setShowSuccess(true);
-    // Close page after 2 seconds
-    setTimeout(() => {
-      navigate(redirectPath);
-    }, 2000);
-  };
-
-  if (showSuccess) {
-    return (
-        <div className="max-w-2xl mx-auto p-6">
-          <Card className="border-success bg-success/5">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
-                  <CheckCircle2 className="w-8 h-8 text-success" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-green-900 mb-2">Verification Submitted!</h2>
-                  <p className="text-success">
-                    Your verification has been submitted successfully. You'll be redirected shortly...
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-    );
-  }
-
-  return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="mb-6">
-          <BackButton label="Back" className="mb-4" />
-          <h1 className="text-3xl font-bold">Identity Verification</h1>
-          <p className="text-muted-foreground mt-2">
-            Complete verification to receive payouts from ticket sales
-          </p>
-        </div>
-
-        {!accountType ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Type</CardTitle>
-              <CardDescription>
-                Are you registering as an individual or a business?
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <RadioGroup
-                value={accountType || ''}
-                onValueChange={(value) => handleAccountTypeSelect(value as 'individual' | 'business')}
-              >
-                <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="individual" id="individual" />
-                  <Label htmlFor="individual" className="flex-1 cursor-pointer">
-                    <div>
-                      <div className="font-medium">Individual</div>
-                      <div className="text-sm text-muted-foreground">
-                        I'm registering as an individual person
-                      </div>
-                    </div>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="business" id="business" />
-                  <Label htmlFor="business" className="flex-1 cursor-pointer">
-                    <div>
-                      <div className="font-medium">Business</div>
-                      <div className="text-sm text-muted-foreground">
-                        I'm registering as a business or organization
-                      </div>
-                    </div>
-                  </Label>
-                </div>
-              </RadioGroup>
-            </CardContent>
-          </Card>
-        ) : (
-          <VerificationForm
-            redirectAfterBusinessVerification={redirectPath}
-            accountType={accountType}
-            onSuccess={handleVerificationSuccess}
-          />
-        )}
-      </div>
-  );
+  return null; // No UI needed as we're redirecting
 };
 
 export default VerificationPage;
