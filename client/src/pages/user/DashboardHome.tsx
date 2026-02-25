@@ -4,8 +4,8 @@
  * Displays all events in a unified interface
  */
 
-import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Download, Share2, Plus, Heart } from 'lucide-react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { Calendar, MapPin, Download, Share2, Plus, Heart, Clock } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
@@ -13,6 +13,8 @@ import EmptyState from '../../components/EmptyState';
 import { OrganizingEventCard } from '../../components/OrganizingEventCard';
 import { OrganizerQuickActions } from '../../components/OrganizerQuickActions';
 import { useMyEvents } from '../../hooks/useMyEvents';
+import { useAuth } from '../../hooks/useAuth';
+import { UserRole, UserStatus } from '../../types/auth';
 import { shareEvent } from '../../lib/utils/share';
 import { downloadTicket } from '../../lib/utils/ticket';
 import { useToast } from '../../hooks/useToast';
@@ -38,6 +40,7 @@ export interface DashboardHomeProps {
 const DashboardHome = ({ user }: DashboardHomeProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user: authUser } = useAuth();
   const {
     attendingEvents,
     organizingEvents,
@@ -49,6 +52,15 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
     setActiveTab,
     canOrganize,
   } = useMyEvents();
+
+  const isPendingOrganizer =
+    authUser?.role === UserRole.ORGANIZER && authUser?.status === UserStatus.PENDING_APPROVAL;
+
+  // Active organizers belong on the organizer dashboard, not here.
+  // This catches: approval while offline, login routing edge cases, direct navigation.
+  if (authUser?.role === UserRole.ORGANIZER && authUser?.status === UserStatus.ACTIVE) {
+    return <Navigate to="/organizer/dashboard" replace />;
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -83,15 +95,32 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
     }
   };
 
+  // Hide organizing features if organizer is pending approval
+  const showOrganizing = canOrganize && !isPendingOrganizer;
+
   // Tabs configuration
   const tabs = [
     { key: 'attending' as const, label: TAB_LABELS.ATTENDING },
-    ...(canOrganize ? [{ key: 'organizing' as const, label: TAB_LABELS.ORGANIZING }] : []),
+    ...(showOrganizing ? [{ key: 'organizing' as const, label: TAB_LABELS.ORGANIZING }] : []),
     { key: 'saved' as const, label: TAB_LABELS.SAVED },
   ];
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
+      {/* Pending Approval Banner */}
+      {isPendingOrganizer && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+          <Clock className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-foreground">Your organizer application is under review</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Our team is reviewing your application. You'll be notified once your account is approved.
+              In the meantime, you can browse and attend events.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
@@ -103,17 +132,15 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
               {activeTab === 'saved' && "Events you've saved"}
             </p>
           </div>
-          {canOrganize && (
-            <Button
-              onClick={() => navigate('/user/create-event')}
-              size="default"
-              className="w-full sm:w-auto gap-2"
-              aria-label={CTA_LABELS.CREATE_EVENT}
-            >
-              <Plus className="h-4 w-4" />
-              {CTA_LABELS.CREATE_EVENT}
-            </Button>
-          )}
+          <Button
+            onClick={() => navigate('/user/create-event')}
+            size="default"
+            className="w-full sm:w-auto gap-2"
+            aria-label={CTA_LABELS.CREATE_EVENT}
+          >
+            <Plus className="h-4 w-4" />
+            {CTA_LABELS.CREATE_EVENT}
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -242,7 +269,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
             ) : (
               <>
                 {/* Organizer Quick Actions */}
-                {canOrganize && (
+                {showOrganizing && (
                   <div className="mb-6">
                     <OrganizerQuickActions />
                   </div>

@@ -37,6 +37,7 @@ interface TicketEmailData {
       isOnline: boolean;
       onlineLink: string | null;
       image: string | null;
+      currency?: string;
       organizer: {
         id: string;
         firstName: string | null;
@@ -226,6 +227,7 @@ export class TicketService {
   static async sendTicketEmail(registration: TicketEmailData['registration']): Promise<void> {
     try {
       const { event, attendee } = registration;
+      const currency = event.currency || 'USD';
 
       // Use stored QR code if available (generated at registration time, like Eventbrite/vf-ticket)
       // Otherwise generate on-the-fly (backward compatibility for existing registrations)
@@ -379,7 +381,7 @@ export class TicketService {
                                   <div style="padding: 6px 0; ${index < registration.ticketLineItems!.length - 1 ? 'border-bottom: 1px solid #f0f0f0;' : ''}">
                                     <span style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${item.ticketType}</span>
                                     <span style="color: #666; font-size: 14px; margin-left: 8px;">x${item.quantity}</span>
-                                    <span style="color: #1a1a1a; font-size: 14px; font-weight: 600; float: right;">$${item.totalPrice.toFixed(2)}</span>
+                                    <span style="color: #1a1a1a; font-size: 14px; font-weight: 600; float: right;">${currency} ${item.totalPrice.toFixed(2)}</span>
                                   </div>
                                 `).join('')}
                               </div>
@@ -398,7 +400,7 @@ export class TicketService {
                           ${Number(registration.totalAmount) > 0 ? `
                           <tr>
                             <td style="padding: 8px 0; color: #666; font-size: 14px;">💰 Amount Paid</td>
-                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">$${Number(registration.totalAmount).toFixed(2)}</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${currency} ${Number(registration.totalAmount).toFixed(2)}</td>
                           </tr>
                           ` : ''}
                         </table>
@@ -656,6 +658,7 @@ export class TicketService {
   static async sendPaymentPendingEmail(registration: TicketEmailData['registration'], paymentUrl?: string): Promise<void> {
     try {
       const { event, attendee } = registration;
+      const currency = event.currency || 'USD';
 
       // Format event date
       const eventDate = this.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime);
@@ -735,7 +738,7 @@ export class TicketService {
                           </tr>
                           <tr>
                             <td style="padding: 8px 0; color: #666; font-size: 14px;">💰 Amount Due</td>
-                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">$${Number(registration.totalAmount).toFixed(2)}</td>
+                            <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${currency} ${Number(registration.totalAmount).toFixed(2)}</td>
                           </tr>
                         </table>
                       </div>
@@ -831,6 +834,7 @@ export class TicketService {
     const registration = await prisma.eventRegistration.findUnique({
       where: { id: registrationId },
       include: {
+        ticketLineItems: true,
         event: {
           include: {
             organizer: {
@@ -898,6 +902,13 @@ export class TicketService {
       attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim() || registration.attendee.email || '',
       attendeeEmail: registration.attendee.email || '',
       ticketType: registration.ticketType || undefined,
+      ticketLineItems: registration.ticketLineItems?.map(item => ({
+        ticketType: item.ticketType,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPrice),
+        totalPrice: Number(item.totalPrice),
+      })),
+      currency: registration.event.currency || 'USD',
       qrCode: qrCodeDataUrl,
       backupCode: registration.backupCode || undefined,
       createdAt: registration.createdAt.toISOString(),
@@ -927,11 +938,13 @@ export class TicketService {
       // Otherwise, return HTML that frontend can convert to PDF
       const registrationForHTML: TicketEmailData['registration'] = {
         ...registration,
+        ticketLineItems: ticketData.ticketLineItems,
         registrationData: registration.registrationData && typeof registration.registrationData === 'object' && !Array.isArray(registration.registrationData)
           ? registration.registrationData as Record<string, unknown>
           : null,
       };
-      const htmlContent = this.generateTicketHTML(registrationForHTML, event, attendee, eventDate, qrCode);
+      const currency = ticketData.currency || 'USD';
+      const htmlContent = this.generateTicketHTML(registrationForHTML, event, attendee, eventDate, qrCode, currency);
 
       // Try to use puppeteer for PDF generation (if available)
       // Check if puppeteer module exists using dynamic import
@@ -985,6 +998,7 @@ export class TicketService {
     attendee: TicketEmailData['registration']['attendee'],
     eventDate: string,
     qrCode: string,
+    currency = 'USD',
   ): string {
     return `
       <!DOCTYPE html>
@@ -1193,6 +1207,14 @@ export class TicketService {
               <span class="info-value">${attendee.companyAffiliation}</span>
             </div>
             ` : ''}
+            ${registration.ticketLineItems && registration.ticketLineItems.length > 0 ? `
+            ${registration.ticketLineItems.map(item => `
+            <div class="info-row">
+              <span class="info-label">🎫 ${item.ticketType}</span>
+              <span class="info-value">x${item.quantity}${item.totalPrice > 0 ? ` — ${currency} ${item.totalPrice.toFixed(2)}` : ''}</span>
+            </div>
+            `).join('')}
+            ` : `
             <div class="info-row">
               <span class="info-label">🎫 Ticket Type</span>
               <span class="info-value">${registration.ticketType || 'General Admission'}</span>
@@ -1201,10 +1223,11 @@ export class TicketService {
               <span class="info-label">🔢 Quantity</span>
               <span class="info-value">${registration.quantity}</span>
             </div>
+            `}
             ${Number(registration.totalAmount) > 0 ? `
             <div class="info-row">
               <span class="info-label">💰 Amount Paid</span>
-              <span class="info-value">$${Number(registration.totalAmount).toFixed(2)}</span>
+              <span class="info-value">${currency} ${Number(registration.totalAmount).toFixed(2)}</span>
             </div>
             ` : ''}
           </div>

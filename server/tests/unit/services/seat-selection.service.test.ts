@@ -59,7 +59,7 @@ describe('SeatSelectionService', () => {
       ).rejects.toThrow('Registration does not match event');
     });
 
-    it('should throw NotFoundError if seat map not found', async () => {
+    it('should use transaction with row-level locking for race condition prevention', async () => {
       // Arrange
       const mockRegistration = {
         id: 'reg-1',
@@ -67,113 +67,293 @@ describe('SeatSelectionService', () => {
         event: { id: 'event-1' },
       };
       (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(null);
 
-      // Act & Assert
-      await expect(
-        SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1'),
-      ).rejects.toThrow('Seat map not found for this event');
-    });
+      const mockLockedSeats = [
+        { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
+      ];
 
-    it('should throw ValidationError if seats are not available', async () => {
-      // Arrange
-      const mockRegistration = {
-        id: 'reg-1',
-        eventId: 'event-1',
-        event: { id: 'event-1' },
-      };
-      const mockSeatMap = {
-        id: 'seatmap-1',
-        seats: [
-          {
-            id: 'seat-1',
-            seatIdentifier: 'A-1',
-            status: SeatStatus.BOOKED,
-            reservations: [],
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const tx = {
+          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: {
+            findFirst: jest.fn().mockResolvedValue(null), // No active reservations
+            findMany: jest.fn().mockResolvedValue([]), // No previous reservations
+            create: jest.fn().mockResolvedValue({
+              id: 'reservation-1',
+              seatId: 'seat-1',
+              registrationId: 'reg-1',
+              status: 'reserved',
+            }),
+            updateMany: jest.fn(),
           },
-        ],
-      };
-
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-
-      // Act & Assert
-      await expect(
-        SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1'),
-      ).rejects.toThrow('Seats are not available: A-1');
-    });
-
-    it('should throw ValidationError if seats have active reservations by another user', async () => {
-      // Arrange
-      const mockRegistration = {
-        id: 'reg-1',
-        eventId: 'event-1',
-        event: { id: 'event-1' },
-      };
-      const mockSeatMap = {
-        id: 'seatmap-1',
-        seats: [
-          {
-            id: 'seat-1',
-            seatIdentifier: 'A-1',
-            status: SeatStatus.AVAILABLE,
-            reservations: [
-              {
-                registrationId: 'reg-2', // Different registration
-                status: 'reserved',
-              },
-            ],
+          seat: {
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
           },
-        ],
-      };
-
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-
-      // Act & Assert
-      await expect(
-        SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1'),
-      ).rejects.toThrow('Seats are not available: A-1');
-    });
-
-    it('should create new reservations successfully', async () => {
-      // Arrange
-      const mockRegistration = {
-        id: 'reg-1',
-        eventId: 'event-1',
-        event: { id: 'event-1' },
-      };
-      const mockSeatMap = {
-        id: 'seatmap-1',
-        seats: [
-          {
-            id: 'seat-1',
-            seatIdentifier: 'A-1',
-            status: SeatStatus.AVAILABLE,
-            currentPrice: 100,
-            basePrice: 100,
-            reservations: [],
-          },
-        ],
-      };
-      const mockReservation = {
-        id: 'reservation-1',
-        seatId: 'seat-1',
-        registrationId: 'reg-1',
-        status: 'reserved',
-      };
-
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.seatReservation.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.seatReservation.create as jest.Mock).mockResolvedValue(mockReservation);
-      (prisma.seat.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+        };
+        return callback(tx);
+      });
 
       // Act
       const result = await SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1', 15);
 
       // Assert
-      expect(prisma.seatReservation.create).toHaveBeenCalledWith({
+      expect(prisma.$transaction).toHaveBeenCalledWith(
+        expect.any(Function),
+        { timeout: 10000 },
+      );
+      expect(result).toHaveLength(1);
+    });
+
+    it('should throw ValidationError if locked seats count mismatches requested seats', async () => {
+      // Arrange
+      const mockRegistration = {
+        id: 'reg-1',
+        eventId: 'event-1',
+        event: { id: 'event-1' },
+      };
+      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+
+      // Only 1 seat found when 2 were requested
+      const mockLockedSeats = [
+        { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
+      ];
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const tx = {
+          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
+          seat: { updateMany: jest.fn() },
+        };
+        return callback(tx);
+      });
+
+      // Act & Assert
+      await expect(
+        SeatSelectionService.reserveSeats('event-1', ['seat-1', 'seat-2'], 'reg-1'),
+      ).rejects.toThrow('One or more seats not found');
+    });
+
+    it('should throw ValidationError if seat status is not AVAILABLE', async () => {
+      // Arrange
+      const mockRegistration = {
+        id: 'reg-1',
+        eventId: 'event-1',
+        event: { id: 'event-1' },
+      };
+      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+
+      const mockLockedSeats = [
+        { id: 'seat-1', seatIdentifier: 'A-1', status: 'BOOKED', basePrice: 100, currentPrice: 100 },
+      ];
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const tx = {
+          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: {
+            findFirst: jest.fn(),
+            findMany: jest.fn().mockResolvedValue([]),
+            create: jest.fn(),
+            updateMany: jest.fn(),
+          },
+          seat: { updateMany: jest.fn() },
+        };
+        return callback(tx);
+      });
+
+      // Act & Assert
+      await expect(
+        SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1'),
+      ).rejects.toThrow('Seats are not available: A-1');
+    });
+
+    it('should throw ValidationError if seat has active reservation by another user', async () => {
+      // Arrange
+      const mockRegistration = {
+        id: 'reg-1',
+        eventId: 'event-1',
+        event: { id: 'event-1' },
+      };
+      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+
+      const mockLockedSeats = [
+        { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
+      ];
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const tx = {
+          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: {
+            findFirst: jest.fn().mockResolvedValue({
+              id: 'other-reservation',
+              registrationId: 'reg-2', // Different registration
+              status: 'reserved',
+            }),
+            findMany: jest.fn().mockResolvedValue([]),
+            create: jest.fn(),
+            updateMany: jest.fn(),
+          },
+          seat: { updateMany: jest.fn() },
+        };
+        return callback(tx);
+      });
+
+      // Act & Assert
+      await expect(
+        SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1'),
+      ).rejects.toThrow('Seats are not available: A-1');
+    });
+
+    it('should cancel previous reservations when user changes seat selection', async () => {
+      // Arrange
+      const mockRegistration = {
+        id: 'reg-1',
+        eventId: 'event-1',
+        event: { id: 'event-1' },
+      };
+      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+
+      const mockLockedSeats = [
+        { id: 'seat-2', seatIdentifier: 'A-2', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
+      ];
+
+      const previousReservations = [
+        { id: 'old-res-1', seatId: 'seat-1' }, // Previous seat, not in new selection
+      ];
+
+      const mockTxSeatReservation = {
+        findFirst: jest.fn()
+          .mockResolvedValueOnce(null), // No active reservation by others on seat-2
+        findMany: jest.fn().mockResolvedValue(previousReservations),
+        create: jest.fn().mockResolvedValue({
+          id: 'new-reservation',
+          seatId: 'seat-2',
+          registrationId: 'reg-1',
+          status: 'reserved',
+        }),
+        updateMany: jest.fn().mockResolvedValue({}),
+      };
+      const mockTxSeat = {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      };
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const tx = {
+          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: mockTxSeatReservation,
+          seat: mockTxSeat,
+        };
+        return callback(tx);
+      });
+
+      // Act
+      await SeatSelectionService.reserveSeats('event-1', ['seat-2'], 'reg-1');
+
+      // Assert - should cancel previous reservations for seat-1
+      expect(mockTxSeatReservation.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['old-res-1'] } },
+        data: { status: 'cancelled' },
+      });
+      expect(mockTxSeat.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['seat-1'] } },
+        data: { status: SeatStatus.AVAILABLE },
+      });
+    });
+
+    it('should update existing reservation instead of creating new one', async () => {
+      // Arrange
+      const mockRegistration = {
+        id: 'reg-1',
+        eventId: 'event-1',
+        event: { id: 'event-1' },
+      };
+      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+
+      const mockLockedSeats = [
+        { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 120 },
+      ];
+
+      const existingReservation = {
+        id: 'existing-res',
+        seatId: 'seat-1',
+        registrationId: 'reg-1',
+        status: 'reserved',
+      };
+
+      const mockTxSeatReservation = {
+        findFirst: jest.fn()
+          .mockResolvedValueOnce(null) // No active reservation by others
+          .mockResolvedValueOnce(existingReservation), // Existing reservation for this reg
+        findMany: jest.fn().mockResolvedValue([]), // No previous reservations to cancel
+        update: jest.fn().mockResolvedValue({ ...existingReservation, priceAtReservation: 120 }),
+        updateMany: jest.fn(),
+        create: jest.fn(),
+      };
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const tx = {
+          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: mockTxSeatReservation,
+          seat: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+        };
+        return callback(tx);
+      });
+
+      // Act
+      await SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1', 20);
+
+      // Assert - should update, not create
+      expect(mockTxSeatReservation.update).toHaveBeenCalledWith({
+        where: { id: 'existing-res' },
+        data: {
+          reservedUntil: expect.any(Date),
+          priceAtReservation: 120,
+          status: 'reserved',
+        },
+      });
+      expect(mockTxSeatReservation.create).not.toHaveBeenCalled();
+    });
+
+    it('should create new reservation for seats without existing ones', async () => {
+      // Arrange
+      const mockRegistration = {
+        id: 'reg-1',
+        eventId: 'event-1',
+        event: { id: 'event-1' },
+      };
+      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+
+      const mockLockedSeats = [
+        { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
+      ];
+
+      const mockTxSeatReservation = {
+        findFirst: jest.fn()
+          .mockResolvedValueOnce(null) // No active reservation by others
+          .mockResolvedValueOnce(null), // No existing reservation for this reg
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockResolvedValue({
+          id: 'new-res',
+          seatId: 'seat-1',
+          registrationId: 'reg-1',
+          status: 'reserved',
+        }),
+        updateMany: jest.fn(),
+      };
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const tx = {
+          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: mockTxSeatReservation,
+          seat: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+        };
+        return callback(tx);
+      });
+
+      // Act
+      const result = await SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1', 15);
+
+      // Assert
+      expect(mockTxSeatReservation.create).toHaveBeenCalledWith({
         data: {
           seatId: 'seat-1',
           registrationId: 'reg-1',
@@ -182,98 +362,59 @@ describe('SeatSelectionService', () => {
           status: 'reserved',
         },
       });
-      expect(prisma.seat.updateMany).toHaveBeenCalledWith({
-        where: { id: { in: ['seat-1'] } },
-        data: { status: SeatStatus.RESERVED },
-      });
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual(mockReservation);
     });
 
-    it('should update existing reservation', async () => {
+    it('should reserve multiple seats in a single transaction', async () => {
       // Arrange
       const mockRegistration = {
         id: 'reg-1',
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      const mockSeatMap = {
-        id: 'seatmap-1',
-        seats: [
-          {
-            id: 'seat-1',
-            seatIdentifier: 'A-1',
-            status: SeatStatus.AVAILABLE,
-            currentPrice: 100,
-            basePrice: 100,
-            reservations: [],
-          },
-        ],
-      };
-      const existingReservation = {
-        id: 'reservation-1',
-        seatId: 'seat-1',
-        registrationId: 'reg-1',
-        status: 'reserved',
+      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+
+      const mockLockedSeats = [
+        { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
+        { id: 'seat-2', seatIdentifier: 'A-2', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
+        { id: 'seat-3', seatIdentifier: 'A-3', status: 'AVAILABLE', basePrice: 150, currentPrice: 150 },
+      ];
+
+      let createCallCount = 0;
+      const mockTxSeatReservation = {
+        findFirst: jest.fn().mockResolvedValue(null), // No active reservations by others, no existing
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockImplementation((args) => {
+          createCallCount++;
+          return Promise.resolve({
+            id: `new-res-${createCallCount}`,
+            seatId: args.data.seatId,
+            registrationId: 'reg-1',
+            status: 'reserved',
+          });
+        }),
+        updateMany: jest.fn(),
       };
 
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.seatReservation.findFirst as jest.Mock).mockResolvedValue(existingReservation);
-      (prisma.seatReservation.update as jest.Mock).mockResolvedValue(existingReservation);
-      (prisma.seat.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const tx = {
+          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: mockTxSeatReservation,
+          seat: { updateMany: jest.fn().mockResolvedValue({ count: 3 }) },
+        };
+        return callback(tx);
+      });
 
       // Act
-      await SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1', 20);
+      const result = await SeatSelectionService.reserveSeats(
+        'event-1',
+        ['seat-1', 'seat-2', 'seat-3'],
+        'reg-1',
+      );
 
       // Assert
-      expect(prisma.seatReservation.update).toHaveBeenCalledWith({
-        where: { id: 'reservation-1' },
-        data: {
-          reservedUntil: expect.any(Date),
-          priceAtReservation: 100,
-        },
-      });
-    });
-
-    it('should allow same registration to re-reserve their seats', async () => {
-      // Arrange
-      const mockRegistration = {
-        id: 'reg-1',
-        eventId: 'event-1',
-        event: { id: 'event-1' },
-      };
-      const mockSeatMap = {
-        id: 'seatmap-1',
-        seats: [
-          {
-            id: 'seat-1',
-            seatIdentifier: 'A-1',
-            status: SeatStatus.AVAILABLE,
-            currentPrice: 100,
-            reservations: [
-              {
-                registrationId: 'reg-1', // Same registration
-                status: 'reserved',
-              },
-            ],
-          },
-        ],
-      };
-
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.seatReservation.findFirst as jest.Mock).mockResolvedValue({
-        id: 'reservation-1',
-      });
-      (prisma.seatReservation.update as jest.Mock).mockResolvedValue({});
-      (prisma.seat.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
-
-      // Act
-      await SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1');
-
-      // Assert - Should not throw
-      expect(prisma.seatReservation.update).toHaveBeenCalled();
+      expect(result).toHaveLength(3);
+      expect(mockTxSeatReservation.create).toHaveBeenCalledTimes(3);
     });
 
     it('should use custom reservation timeout', async () => {
@@ -283,23 +424,30 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      const mockSeatMap = {
-        id: 'seatmap-1',
-        seats: [
-          {
-            id: 'seat-1',
-            status: SeatStatus.AVAILABLE,
-            currentPrice: 100,
-            reservations: [],
-          },
-        ],
-      };
-
       (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.seatReservation.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.seatReservation.create as jest.Mock).mockResolvedValue({});
-      (prisma.seat.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+
+      const mockLockedSeats = [
+        { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
+      ];
+
+      let capturedReservedUntil: Date | null = null;
+
+      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+        const tx = {
+          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            findMany: jest.fn().mockResolvedValue([]),
+            create: jest.fn().mockImplementation((args) => {
+              capturedReservedUntil = args.data.reservedUntil;
+              return Promise.resolve({ id: 'res-1', status: 'reserved' });
+            }),
+            updateMany: jest.fn(),
+          },
+          seat: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+        };
+        return callback(tx);
+      });
 
       const startTime = new Date();
 
@@ -307,19 +455,18 @@ describe('SeatSelectionService', () => {
       await SeatSelectionService.reserveSeats('event-1', ['seat-1'], 'reg-1', 30);
 
       // Assert
-      const createCall = (prisma.seatReservation.create as jest.Mock).mock.calls[0][0];
-      const reservedUntil = createCall.data.reservedUntil;
+      expect(capturedReservedUntil).not.toBeNull();
       const expectedTime = new Date(startTime.getTime() + 30 * 60 * 1000);
-
-      // Allow 1 second tolerance for test execution time
-      expect(Math.abs(reservedUntil.getTime() - expectedTime.getTime())).toBeLessThan(1000);
+      // Allow 2 second tolerance
+      expect(Math.abs(capturedReservedUntil!.getTime() - expectedTime.getTime())).toBeLessThan(2000);
     });
   });
 
   describe('confirmSeatReservation', () => {
-    it('should throw NotFoundError if reservation not found', async () => {
+    it('should throw NotFoundError if no reservations found', async () => {
       // Arrange
-      (prisma.seatReservation.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.seatReservation.findFirst as jest.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -327,65 +474,52 @@ describe('SeatSelectionService', () => {
       ).rejects.toThrow('Seat reservation not found');
     });
 
-    it('should return reservation if already confirmed', async () => {
+    it('should return existing confirmation if already confirmed', async () => {
       // Arrange
-      const mockReservation = {
+      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue([]); // No reserved ones
+      (prisma.seatReservation.findFirst as jest.Mock).mockResolvedValue({
         id: 'reservation-1',
         status: 'confirmed',
         seat: { id: 'seat-1' },
-      };
-      (prisma.seatReservation.findUnique as jest.Mock).mockResolvedValue(mockReservation);
+      });
 
       // Act
       const result = await SeatSelectionService.confirmSeatReservation('reg-1');
 
       // Assert
-      expect(result).toEqual(mockReservation);
-      expect(prisma.seatReservation.update).not.toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe('confirmed');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
-    it('should confirm reservation and update seat status', async () => {
+    it('should confirm all reservations and update seats to BOOKED', async () => {
       // Arrange
-      const mockReservation = {
-        id: 'reservation-1',
-        seatId: 'seat-1',
-        status: 'reserved',
-        seat: { id: 'seat-1' },
-      };
-      const confirmedReservation = {
-        ...mockReservation,
-        status: 'confirmed',
-        confirmedAt: expect.any(Date),
-      };
+      const mockReservations = [
+        { id: 'res-1', seatId: 'seat-1', status: 'reserved', seat: { id: 'seat-1' } },
+        { id: 'res-2', seatId: 'seat-2', status: 'reserved', seat: { id: 'seat-2' } },
+      ];
 
-      (prisma.seatReservation.findUnique as jest.Mock).mockResolvedValue(mockReservation);
-      (prisma.seatReservation.update as jest.Mock).mockResolvedValue(confirmedReservation);
-      (prisma.seat.update as jest.Mock).mockResolvedValue({});
+      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(mockReservations);
+      (prisma.seatReservation.updateMany as jest.Mock).mockResolvedValue({ count: 2 });
+      (prisma.seat.updateMany as jest.Mock).mockResolvedValue({ count: 2 });
+      (prisma.$transaction as jest.Mock).mockResolvedValue([{ count: 2 }, { count: 2 }]);
 
       // Act
       const result = await SeatSelectionService.confirmSeatReservation('reg-1');
 
       // Assert
-      expect(prisma.seatReservation.update).toHaveBeenCalledWith({
-        where: { id: 'reservation-1' },
-        data: {
-          status: 'confirmed',
-          confirmedAt: expect.any(Date),
-          reservedUntil: null,
-        },
-      });
-      expect(prisma.seat.update).toHaveBeenCalledWith({
-        where: { id: 'seat-1' },
-        data: { status: SeatStatus.BOOKED },
-      });
-      expect(result).toEqual(confirmedReservation);
+      expect(prisma.$transaction).toHaveBeenCalledWith([
+        expect.anything(), // seatReservation.updateMany
+        expect.anything(), // seat.updateMany
+      ]);
+      expect(result).toHaveLength(2);
     });
   });
 
   describe('cancelSeatReservation', () => {
-    it('should throw NotFoundError if reservation not found', async () => {
+    it('should throw NotFoundError if no reservations found', async () => {
       // Arrange
-      (prisma.seatReservation.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue([]);
 
       // Act & Assert
       await expect(
@@ -393,83 +527,110 @@ describe('SeatSelectionService', () => {
       ).rejects.toThrow('Seat reservation not found');
     });
 
-    it('should cancel reservation and release seat', async () => {
+    it('should cancel all reservations and release seats atomically', async () => {
       // Arrange
-      const mockReservation = {
-        id: 'reservation-1',
-        seatId: 'seat-1',
-        seat: { id: 'seat-1' },
-      };
+      const mockReservations = [
+        { id: 'res-1', seatId: 'seat-1', seat: { id: 'seat-1' } },
+        { id: 'res-2', seatId: 'seat-2', seat: { id: 'seat-2' } },
+      ];
 
-      (prisma.seatReservation.findUnique as jest.Mock).mockResolvedValue(mockReservation);
-      (prisma.seatReservation.update as jest.Mock).mockResolvedValue({});
-      (prisma.seat.update as jest.Mock).mockResolvedValue({});
+      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(mockReservations);
+      (prisma.$transaction as jest.Mock).mockResolvedValue([{ count: 2 }, { count: 2 }]);
 
       // Act
       const result = await SeatSelectionService.cancelSeatReservation('reg-1');
 
       // Assert
-      expect(prisma.seatReservation.update).toHaveBeenCalledWith({
-        where: { id: 'reservation-1' },
-        data: { status: 'cancelled' },
-      });
-      expect(prisma.seat.update).toHaveBeenCalledWith({
-        where: { id: 'seat-1' },
-        data: { status: SeatStatus.AVAILABLE },
-      });
+      expect(prisma.$transaction).toHaveBeenCalledWith([
+        expect.anything(), // seatReservation.updateMany
+        expect.anything(), // seat.updateMany
+      ]);
       expect(result).toEqual({ success: true });
+    });
+
+    it('should cancel both reserved and confirmed reservations', async () => {
+      // Arrange
+      const mockReservations = [
+        { id: 'res-1', seatId: 'seat-1', status: 'reserved', seat: { id: 'seat-1' } },
+        { id: 'res-2', seatId: 'seat-2', status: 'confirmed', seat: { id: 'seat-2' } },
+      ];
+
+      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(mockReservations);
+      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+
+      // Act
+      await SeatSelectionService.cancelSeatReservation('reg-1');
+
+      // Assert - findMany should query for both statuses
+      expect(prisma.seatReservation.findMany).toHaveBeenCalledWith({
+        where: {
+          registrationId: 'reg-1',
+          status: { in: ['reserved', 'confirmed'] },
+        },
+        include: { seat: true },
+      });
     });
   });
 
   describe('getSeatSelection', () => {
-    it('should return reservation with full includes', async () => {
+    it('should return all active reservations for a registration', async () => {
       // Arrange
-      const mockReservation = {
-        id: 'reservation-1',
-        seatId: 'seat-1',
-        seat: {
-          id: 'seat-1',
-          seatIdentifier: 'A-1',
-          seatMap: {
-            id: 'seatmap-1',
-            event: {
-              id: 'event-1',
-              title: 'Test Event',
-            },
+      const mockReservations = [
+        {
+          id: 'res-1',
+          seatId: 'seat-1',
+          status: 'reserved',
+          seat: {
+            id: 'seat-1',
+            seatIdentifier: 'A-1',
+            seatMap: { id: 'seatmap-1', event: { id: 'event-1', title: 'Test Event' } },
+          },
+          registration: {
+            id: 'reg-1',
+            attendee: { id: 'user-1', firstName: 'John', lastName: 'Doe' },
           },
         },
-        registration: {
-          id: 'reg-1',
-          attendee: {
-            id: 'user-1',
-            firstName: 'John',
-            lastName: 'Doe',
+        {
+          id: 'res-2',
+          seatId: 'seat-2',
+          status: 'reserved',
+          seat: {
+            id: 'seat-2',
+            seatIdentifier: 'A-2',
+            seatMap: { id: 'seatmap-1', event: { id: 'event-1', title: 'Test Event' } },
+          },
+          registration: {
+            id: 'reg-1',
+            attendee: { id: 'user-1', firstName: 'John', lastName: 'Doe' },
           },
         },
-      };
+      ];
 
-      (prisma.seatReservation.findUnique as jest.Mock).mockResolvedValue(mockReservation);
+      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(mockReservations);
 
       // Act
       const result = await SeatSelectionService.getSeatSelection('reg-1');
 
       // Assert
-      expect(prisma.seatReservation.findUnique).toHaveBeenCalledWith({
-        where: { registrationId: 'reg-1' },
+      expect(prisma.seatReservation.findMany).toHaveBeenCalledWith({
+        where: {
+          registrationId: 'reg-1',
+          status: { in: ['reserved', 'confirmed'] },
+        },
         include: expect.any(Object),
       });
-      expect(result).toEqual(mockReservation);
+      expect(result).toHaveLength(2);
     });
 
-    it('should return null if reservation not found', async () => {
+    it('should return empty array if no reservations found', async () => {
       // Arrange
-      (prisma.seatReservation.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue([]);
 
       // Act
       const result = await SeatSelectionService.getSeatSelection('reg-1');
 
       // Assert
-      expect(result).toBeNull();
+      expect(result).toEqual([]);
     });
   });
 

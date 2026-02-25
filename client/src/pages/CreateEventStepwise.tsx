@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
-  Users,
   Ticket,
   CheckCircle,
   Calendar,
@@ -21,15 +20,15 @@ import {
   Save,
   Eye,
   MapPin,
-  Clock,
   Shield,
-  Layout,
+  LayoutList,
   ArrowRight,
   ArrowLeft,
   X,
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
+import { becomeOrganizer, requestOrganizerApproval } from '@/lib/user-dashboard-api';
 import { EVENT_CATEGORIES } from '@/lib/event-categories';
 import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData, type BackendEvent } from '@/lib/event-utils';
@@ -37,14 +36,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
 import { applyTemplate } from '@/lib/organizer-dashboard-api';
 import { useToast } from '@/hooks/useToast';
-import { SocialConnectionsStep } from '@/components/event-wizard/SocialConnectionsStep';
-import { AgendaBuilderStep } from '@/components/event-wizard/AgendaBuilderStep';
+import { getMyOrganizerProfile } from '@/lib/organizer-profile-api';
 import { BasicInfoStep } from '@/components/event-wizard/BasicInfoStep';
 import BackButton from '@/components/BackButton';
 import { DateLocationStep } from '@/components/event-wizard/DateLocationStep';
 import { MediaStep } from '@/components/event-wizard/MediaStep';
 import { TicketsStep } from '@/components/event-wizard/TicketsStep';
-import { RegistrationDetailsStep } from '@/components/event-wizard/RegistrationDetailsStep';
+import { ExtrasStep } from '@/components/event-wizard/ExtrasStep';
 import { ReviewStep } from '@/components/event-wizard/ReviewStep';
 import type { TicketType, RegistrationField, AgendaItem, SpeakerItem, ExhibitorItem, SponsorItem, EventFormData } from '@/components/event-wizard/types';
 import { DEFAULT_CURRENCY } from '@/components/event-wizard/types';
@@ -57,7 +55,7 @@ interface TemplateDataResponse {
 
 interface TemplateData {
   description?: string;
-  fullDescription?: string;
+
   organizerDescription?: string;
   location?: string;
   venue?: string;
@@ -110,23 +108,20 @@ interface RegistrationFieldData {
 
 const DRAFT_STORAGE_KEY = 'eventknit_event_draft';
 
-/* Step definitions — ordered to match industry standard event creation flow */
+/* Step definitions — consolidated 5-step wizard */
 const steps = [
-  { title: "Basic Info", icon: FileText },       // 1: Title, description, category, tags
-  { title: "Date & Location", icon: Calendar },   // 2: Date/time, venue type, venue/link
-  { title: "Media", icon: Camera },               // 3: Cover image (moved up — visual identity)
-  { title: "Tickets", icon: Ticket },             // 4: Ticket types, pricing, currency, capacity
-  { title: "Agenda", icon: Clock },               // 5: Schedule, speakers, exhibitors, sponsors
-  { title: "Registration", icon: Users },         // 6: Custom fields, privacy, requirements
-  { title: "Social", icon: Layout },              // 7: Social links, FAQs
-  { title: "Review", icon: CheckCircle }          // 8: Final review
+  { title: "Details", icon: FileText },       // 1: Basic info + date/location combined
+  { title: "Media", icon: Camera },           // 2: Cover image, tags, requirements, FAQs
+  { title: "Tickets", icon: Ticket },         // 3: Ticket types, pricing, currency, capacity
+  { title: "Extras", icon: LayoutList },      // 4: Agenda + Registration + Social (collapsible)
+  { title: "Review", icon: CheckCircle },     // 5: Final review
 ];
 
 export default function CreateEventStepwise() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
-  
+  const { user, refreshProfile } = useAuth();
+
   // Check for edit mode and template from URL query params
   const searchParams = new URLSearchParams(location.search);
   const editEventId = searchParams.get('edit');
@@ -141,7 +136,7 @@ export default function CreateEventStepwise() {
   const [currentStep, setCurrentStep] = useState(() => {
     if (stepParam) {
       const step = parseInt(stepParam, 10);
-      return step >= 1 && step <= 8 ? step : 1;
+      return step >= 1 && step <= 5 ? step : 1;
     }
     return 1;
   });
@@ -177,11 +172,41 @@ export default function CreateEventStepwise() {
     fetchVerification();
   }, [user]);
 
+  // Auto-populate organizer fields from profile (for existing organizers)
+  useEffect(() => {
+    const fetchOrganizerProfile = async () => {
+      if (user && !isEditMode && ['ORGANIZER', 'ORGANIZER_STAFF'].includes(user.role)) {
+        try {
+          // Set organizer name from user profile
+          if (user.organizationName) {
+            setEventData(prev => ({
+              ...prev,
+              organizer: prev.organizer || user.organizationName || '',
+            }));
+          }
+          // Fetch extended profile for description
+          const response = await getMyOrganizerProfile();
+          if (response.success && response.data?.organizerProfile?.description) {
+            setEventData(prev => ({
+              ...prev,
+              organizerDescription: prev.organizerDescription || response.data!.organizerProfile!.description || '',
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to fetch organizer profile:', error);
+        }
+      }
+    };
+    fetchOrganizerProfile();
+  }, [user, isEditMode]);
+
   const [eventType, setEventType] = useState("in-person");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showPreview, setShowPreview] = useState(false);
+  const [showOrgNameDialog, setShowOrgNameDialog] = useState(false);
+  const [orgNameInput, setOrgNameInput] = useState('');
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [eventId] = useState<string | null>(editEventId);
@@ -202,7 +227,7 @@ export default function CreateEventStepwise() {
         title: "",
         organizer: "",
         description: "",
-        fullDescription: "",
+
         organizerDescription: "",
         date: "",
         time: "",
@@ -242,7 +267,7 @@ export default function CreateEventStepwise() {
         title: "",
         organizer: "",
         description: "",
-        fullDescription: "",
+
         organizerDescription: "",
         date: "",
         time: "",
@@ -285,7 +310,7 @@ export default function CreateEventStepwise() {
             title: draftData.title || "",
             organizer: draftData.organizer || "",
             description: draftData.description || "",
-            fullDescription: draftData.fullDescription || "",
+
             organizerDescription: draftData.organizerDescription || "",
             date: draftData.date || "",
             time: draftData.time || "",
@@ -327,7 +352,6 @@ export default function CreateEventStepwise() {
       title: "",
       organizer: "",
       description: "",
-      fullDescription: "",
       organizerDescription: "",
       date: "",
       time: "",
@@ -379,7 +403,6 @@ export default function CreateEventStepwise() {
       title: "",
       organizer: "",
       description: "",
-      fullDescription: "",
       organizerDescription: "",
       date: "",
       time: "",
@@ -638,7 +661,7 @@ export default function CreateEventStepwise() {
             title: transformedEvent.title || "",
             organizer: transformedEvent.organizerName || user?.organizationName || "",
             description: transformedEvent.description || "",
-            fullDescription: transformedEvent.fullDescription || "",
+
             organizerDescription: transformedEvent.organizerDescription || "",
             date: parseDate(transformedEvent.startDate) || transformedEvent.date || "",
             time: parseTime(transformedEvent.startTime) || transformedEvent.time || "",
@@ -852,7 +875,7 @@ export default function CreateEventStepwise() {
             title: "", // Always clear title - user must enter new one
             organizer: user?.organizationName || "",
             description: templateData.description || "",
-            fullDescription: templateData.fullDescription || "",
+
             organizerDescription: templateData.organizerDescription || "",
             date: "", // Clear dates - user must enter new ones
             time: "",
@@ -1286,16 +1309,15 @@ export default function CreateEventStepwise() {
   const validateStep = useCallback((step: number) => {
     const errors: Record<string, string> = {};
 
-    if (step === 1) { // Basic Info
+    if (step === 1) { // Details (Basic Info + Date & Location combined)
+      // Basic Info validation
       if (!eventData.title?.trim()) errors.title = 'Event title is required';
       if (!eventData.description?.trim()) errors.description = 'Event description is required';
       if (eventData.description && eventData.description.length < 10) {
         errors.description = 'Description must be at least 10 characters';
       }
       if (!eventData.category) errors.category = 'Category is required';
-    }
-
-    if (step === 2) { // Date & Location
+      // Date & Location validation
       if (!eventData.date) errors.date = 'Event date is required';
       if (!eventData.time) errors.time = 'Start time is required';
       if ((eventType === 'in-person' || eventType === 'hybrid') && !eventData.venue?.trim()) {
@@ -1315,9 +1337,9 @@ export default function CreateEventStepwise() {
       }
     }
 
-    // Step 3 (Media) — no strict validation needed
+    // Step 2 (Media) — no strict validation needed
 
-    if (step === 4) { // Tickets
+    if (step === 3) { // Tickets
       if (ticketTypes.length === 0) {
         errors.tickets = 'At least one ticket type is required';
       }
@@ -1359,8 +1381,8 @@ export default function CreateEventStepwise() {
           
           // Only validate if at least one ticket has a quantity set
           if (totalTicketQuantity > 0 && totalTicketQuantity !== capacity) {
-            errors.capacity = `Event capacity (${capacity}) must match the sum of ticket quantities (${totalTicketQuantity}). Please adjust either the capacity or ticket quantities.`;
-            errors.tickets = errors.tickets || 'Ticket quantities must match event capacity';
+            errors.capacity = `Event capacity (${capacity}) doesn't match total ticket quantities (${totalTicketQuantity}). Adjust either value above.`;
+            errors.tickets = errors.tickets || `Total ticket quantities (${totalTicketQuantity}) must equal event capacity (${capacity}).`;
           }
         }
       }
@@ -1417,7 +1439,7 @@ export default function CreateEventStepwise() {
     const apiData: CreateEventData = {
       title: eventData.title.trim(),
       description: eventData.description.trim(),
-      fullDescription: eventData.fullDescription?.trim() || undefined,
+
       organizerDescription: eventData.organizerDescription?.trim() || undefined,
       category: eventData.category || undefined,
       tags: tags.length > 0 ? tags : undefined,
@@ -1529,7 +1551,7 @@ export default function CreateEventStepwise() {
 
   const handleSubmit = useCallback(async () => {
     // Final validation — check ALL steps that have validation rules
-    const stepsWithValidation = [1, 2, 4]; // Basic Info, Date & Location, Tickets
+    const stepsWithValidation = [1, 3]; // Details (Basic Info + Date & Location), Tickets
     for (const step of stepsWithValidation) {
       if (!validateStep(step)) {
         setError(`Please fix the errors in the "${steps[step - 1]?.title || `Step ${step}`}" section before submitting`);
@@ -1547,17 +1569,47 @@ export default function CreateEventStepwise() {
     // Check if user is an organizer or admin
     const isOrganizerRole = ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
     const isAdminRole = ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'].includes(user.role);
-    
-    if (!isOrganizerRole && !isAdminRole) {
-      setError('Only organizers and admins can create events');
+
+    // Track if this user was an attendee before upgrade (used for approval flow after event creation)
+    const wasAttendee = !isOrganizerRole && !isAdminRole;
+
+    // If ATTENDEE, prompt for organization name before proceeding
+    if (wasAttendee && !orgNameInput.trim()) {
+      setShowOrgNameDialog(true);
       return;
+    }
+
+    // Show loading state from the start — covers both the upgrade and create steps
+    setIsSubmitting(true);
+    setError(null);
+
+    // If ATTENDEE, upgrade to organizer using the collected org name
+    if (wasAttendee) {
+      const orgName = orgNameInput.trim();
+      if (orgName.length < 2) {
+        setError('Organization name must be at least 2 characters.');
+        setIsSubmitting(false);
+        return;
+      }
+      try {
+        const upgradeResponse = await becomeOrganizer({ organizationName: orgName });
+        if (!upgradeResponse.success) {
+          throw new Error(upgradeResponse.message || 'Failed to set up organizer account');
+        }
+        await refreshProfile();
+      } catch (upgradeError) {
+        setError(
+          upgradeError instanceof Error
+            ? upgradeError.message
+            : 'Failed to set up organizer account. Please try again.'
+        );
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     // Eventbrite-style: No verification required to CREATE events
     // Verification is only required to RECEIVE payouts (handled in disbursement service)
-
-    setIsSubmitting(true);
-    setError(null);
 
     try {
       const apiData = transformFormDataToAPI();
@@ -1599,35 +1651,43 @@ export default function CreateEventStepwise() {
           sessionStorage.setItem('event_just_created', 'true');
           // Reset form state
           resetForm();
-          // Success! Navigate based on current route
-          const isAdminRoute = location.pathname.startsWith('/admin');
-          const isStandaloneRoute = location.pathname.includes('/create-standalone');
-          
-          if (isAdminRoute) {
-            navigate('/admin/dashboard', {
-              state: { message: 'Event created successfully! It is pending admin approval.' }
-            });
-          } else if (isStandaloneRoute) {
-            // For standalone creation, navigate to dashboard with success message and verification reminder
-            const needsVerification = verificationStatus && !verificationStatus.identityVerified;
-            const successMessage = 'Event created successfully! It is pending admin approval. You will receive an email when it\'s approved.';
-            const verificationMessage = needsVerification 
-              ? 'Complete identity verification to help speed up approval and receive payouts from ticket sales.'
-              : null;
-            
-            navigate('/organizer/dashboard', {
-              state: { 
-                message: successMessage,
-                verificationReminder: verificationMessage,
-                eventCreated: true,
-                needsVerification: needsVerification
+
+          // If this was an attendee who just became an organizer, trigger the approval flow
+          if (wasAttendee) {
+            try {
+              await requestOrganizerApproval();
+            } catch (approvalErr) {
+              // Non-blocking — event was already created, log but don't fail
+              console.error('Failed to request organizer approval:', approvalErr);
+            }
+            await refreshProfile();
+            navigate('/user/dashboard', {
+              state: {
+                message: 'Your event has been submitted! Your organizer account is now pending admin approval. You will receive an email once approved.',
               }
             });
           } else {
-            // Created from dashboard - go back to dashboard
-            navigate('/organizer/dashboard', {
-              state: { message: 'Event created successfully! It is pending admin approval.' }
-            });
+            // Existing organizer or admin — navigate normally
+            const isAdminRoute = location.pathname.startsWith('/admin');
+
+            if (isAdminRoute) {
+              navigate('/admin/dashboard', {
+                state: { message: 'Event created successfully! It is pending admin approval.' }
+              });
+            } else if (!user?.profileCompleted) {
+              // First-time organizer: redirect to profile setup
+              navigate('/organizer/profile-setup', {
+                state: {
+                  message: 'Event created successfully! Now set up your organizer profile to build trust with attendees.',
+                  eventCreated: true,
+                  fromEventCreation: true,
+                }
+              });
+            } else {
+              navigate('/organizer/dashboard', {
+                state: { message: 'Event created successfully! It is pending admin approval.' }
+              });
+            }
           }
         } else {
           setError(response.message || 'Failed to create event. Please try again.');
@@ -1641,10 +1701,10 @@ export default function CreateEventStepwise() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, verificationStatus]);
+  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput]);
 
   const handleNext = useCallback(() => {
-    if (currentStep < 8) {
+    if (currentStep < 5) {
       if (validateStep(currentStep)) {
         setError(null);
         // Save draft before navigating to next step
@@ -1678,8 +1738,8 @@ export default function CreateEventStepwise() {
   // Step rendering functions extracted to @/components/event-wizard/*
   // Render preview modal
   const renderPreview = () => {
-    // Show registration form preview if on step 6 (Registration step)
-    if (currentStep === 6) {
+    // Show registration form preview if on step 4 (Extras step — contains registration)
+    if (currentStep === 4) {
       return (
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -2055,29 +2115,40 @@ export default function CreateEventStepwise() {
         {/* Form Content */}
         <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
           <CardContent className="p-5 sm:p-6 lg:p-8">
+            {/* Step 1: Details (Basic Info + Date & Location) */}
             {currentStep === 1 && (
-              <BasicInfoStep
-                eventData={eventData}
-                onInputChange={handleInputChange}
-                validationErrors={validationErrors}
-                setValidationErrors={setValidationErrors}
-                eventType={eventType}
-                setEventType={setEventType}
-                eventCategories={eventCategories}
-              />
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-lg font-semibold mb-1">Event Information</h2>
+                  <p className="text-sm text-muted-foreground mb-4">Title, description, and category</p>
+                  <BasicInfoStep
+                    eventData={eventData}
+                    onInputChange={handleInputChange}
+                    validationErrors={validationErrors}
+                    setValidationErrors={setValidationErrors}
+                    eventType={eventType}
+                    setEventType={setEventType}
+                    eventCategories={eventCategories}
+                  />
+                </div>
+                <div className="border-t border-border" />
+                <div>
+                  <h2 className="text-lg font-semibold mb-1">Date & Location</h2>
+                  <p className="text-sm text-muted-foreground mb-4">When and where your event takes place</p>
+                  <DateLocationStep
+                    eventData={eventData}
+                    onInputChange={handleInputChange}
+                    validationErrors={validationErrors}
+                    setValidationErrors={setValidationErrors}
+                    eventType={eventType}
+                    timezone={timezone}
+                    setTimezone={setTimezone}
+                  />
+                </div>
+              </div>
             )}
+            {/* Step 2: Media */}
             {currentStep === 2 && (
-              <DateLocationStep
-                eventData={eventData}
-                onInputChange={handleInputChange}
-                validationErrors={validationErrors}
-                setValidationErrors={setValidationErrors}
-                eventType={eventType}
-                timezone={timezone}
-                setTimezone={setTimezone}
-              />
-            )}
-            {currentStep === 3 && (
               <MediaStep
                 eventData={eventData}
                 onInputChange={handleInputChange}
@@ -2105,7 +2176,8 @@ export default function CreateEventStepwise() {
                 handleFaqChange={handleFaqChange}
               />
             )}
-            {currentStep === 4 && (
+            {/* Step 3: Tickets */}
+            {currentStep === 3 && (
               <TicketsStep
                 eventData={eventData}
                 onInputChange={handleInputChange}
@@ -2115,14 +2187,16 @@ export default function CreateEventStepwise() {
                 setTicketTypes={setTicketTypes}
               />
             )}
-            {currentStep === 5 && (
-              <AgendaBuilderStep
+            {/* Step 4: Extras (Agenda + Registration + Social — collapsible) */}
+            {currentStep === 4 && (
+              <ExtrasStep
                 agenda={agenda}
                 speakers={speakers}
                 exhibitors={exhibitors}
                 sponsors={sponsors}
                 eventStartDate={eventData.date}
-                onUpdate={(field, value) => {
+                eventEndDate={eventData.endDate}
+                onAgendaUpdate={(field, value) => {
                   if (field === 'agenda') {
                     const agendaValue = value as AgendaItem[];
                     setAgenda(agendaValue);
@@ -2141,10 +2215,6 @@ export default function CreateEventStepwise() {
                     setEventData(prev => ({ ...prev, sponsors: sponsorsValue }));
                   }
                 }}
-              />
-            )}
-            {currentStep === 6 && (
-              <RegistrationDetailsStep
                 eventData={eventData}
                 onInputChange={handleInputChange}
                 validationErrors={validationErrors}
@@ -2153,15 +2223,12 @@ export default function CreateEventStepwise() {
                 setRegistrationFields={setRegistrationFields}
                 useDragAndDrop={useDragAndDrop}
                 setUseDragAndDrop={setUseDragAndDrop}
-              />
-            )}
-            {currentStep === 7 && (
-              <SocialConnectionsStep
                 socialLinks={socialLinks}
-                onChange={setSocialLinks}
+                onSocialLinksChange={setSocialLinks}
               />
             )}
-            {currentStep === 8 && (
+            {/* Step 5: Review */}
+            {currentStep === 5 && (
               <ReviewStep
                 eventData={eventData}
                 onInputChange={handleInputChange}
@@ -2171,6 +2238,17 @@ export default function CreateEventStepwise() {
                 eventType={eventType}
                 isPrivate={isPrivate}
                 setIsPrivate={setIsPrivate}
+                tags={tags}
+                requirements={requirements}
+                faqs={faqs}
+                agenda={agenda}
+                speakers={speakers}
+                exhibitors={exhibitors}
+                sponsors={sponsors}
+                registrationFields={registrationFields}
+                socialLinks={socialLinks}
+                timezone={timezone}
+                imagePreview={imagePreview}
               />
             )}
 
@@ -2196,8 +2274,8 @@ export default function CreateEventStepwise() {
 
               {/* Right side - Preview (middle) and Next (right) */}
               <div className="flex items-center gap-3">
-                {/* Preview Button - Show from step 3 onwards */}
-                {currentStep >= 3 && (
+                {/* Preview Button - Show from step 2 onwards */}
+                {currentStep >= 2 && (
                   <Button
                     variant="secondary"
                     size="default"
@@ -2218,7 +2296,7 @@ export default function CreateEventStepwise() {
                     disabled={isSubmitting}
                   >
                     <Loader size="sm" className="mr-2" />
-                    {currentStep === 8 ? 'Publishing...' : 'Validating...'}
+                    {currentStep === 5 ? 'Publishing...' : 'Validating...'}
                   </Button>
                 ) : (
                   <Button
@@ -2229,8 +2307,8 @@ export default function CreateEventStepwise() {
                     disabled={isSubmitting}
                     className="min-w-[140px]"
                   >
-                    <span>{currentStep === 8 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'}</span>
-                    {currentStep !== 8 && <ArrowRight className="w-4 h-4 ml-2" />}
+                    <span>{currentStep === 5 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'}</span>
+                    {currentStep !== 5 && <ArrowRight className="w-4 h-4 ml-2" />}
                   </Button>
                 )}
               </div>
@@ -2241,6 +2319,52 @@ export default function CreateEventStepwise() {
       
       {/* Preview Modal */}
       {renderPreview()}
+
+      {/* Organization Name Dialog — shown when attendee clicks Publish */}
+      <Dialog open={showOrgNameDialog} onOpenChange={setShowOrgNameDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set Up Your Organizer Profile</DialogTitle>
+            <DialogDescription>
+              To publish events, you need an organizer account. Enter your organization or brand name below. You can update this later in your profile settings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="orgNameDialog">Organization Name *</Label>
+              <Input
+                id="orgNameDialog"
+                placeholder="Your organization or brand name"
+                value={orgNameInput}
+                onChange={(e) => setOrgNameInput(e.target.value)}
+                className="h-12"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && orgNameInput.trim().length >= 2) {
+                    setShowOrgNameDialog(false);
+                    handleSubmit();
+                  }
+                }}
+              />
+              {orgNameInput.trim().length > 0 && orgNameInput.trim().length < 2 && (
+                <p className="text-xs text-destructive">Must be at least 2 characters</p>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowOrgNameDialog(false)}>Cancel</Button>
+              <Button
+                onClick={() => {
+                  setShowOrgNameDialog(false);
+                  handleSubmit();
+                }}
+                disabled={orgNameInput.trim().length < 2}
+              >
+                Continue & Publish
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

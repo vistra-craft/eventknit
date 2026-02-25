@@ -29,30 +29,21 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
   };
 
   return (
-    <header className="bg-card border-b border-border py-4 px-4 sm:px-6 lg:px-8 sticky top-0 z-40">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+    <header className="sticky top-0 z-40 flex h-16 items-center border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 sm:px-6">
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center">
           {onMenuToggle && (
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={onMenuToggle}
-              className="lg:hidden"
+              className="lg:hidden p-2 rounded-lg hover:bg-accent transition-colors"
+              aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
-            </Button>
+            </button>
           )}
-            <div>
-              <h1 className="text-lg sm:text-xl font-semibold text-foreground">
-                Organizer Dashboard
-              </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                Welcome back, {userName}
-              </p>
-            </div>
         </div>
-        
-        <div className="flex items-center space-x-4">
+
+        <div className="flex items-center gap-2">
           {/* Theme Toggle */}
           <ThemeToggle />
 

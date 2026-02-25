@@ -151,7 +151,7 @@ export const generateInvoiceHTML = async (invoiceId: string): Promise<string> =>
   const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/user-dashboard/invoices/${invoiceId}/html`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
     },
   });
   if (!response.ok) throw new Error('Failed to generate invoice HTML');
@@ -162,7 +162,7 @@ export const downloadInvoice = async (invoiceId: string): Promise<void> => {
   const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/user-dashboard/invoices/${invoiceId}/download`, {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
     },
   });
   if (!response.ok) throw new Error('Failed to download invoice');

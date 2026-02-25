@@ -41,6 +41,7 @@ import unifiedMessagingRoutes from './routes/unified-messaging.routes.js';
 import feedbackRoutes from './routes/feedback.routes.js';
 import adminFeedbackRoutes from './routes/admin-feedback.routes.js';
 import adminPromoCodeRoutes from './routes/admin-promo-code.routes.js';
+import { organizerRouter as promoCodeRequestOrganizerRoutes, adminRouter as promoCodeRequestAdminRoutes } from './routes/promo-code-request.routes.js';
 import { smsRouter, ussdRouter, mpesaRouter } from './routes/ussd-sms.routes.js';
 import userDashboardRoutes from './routes/user-dashboard.routes.js';
 import organizerDashboardRoutes from './routes/organizer-dashboard.routes.js';
@@ -57,6 +58,9 @@ import gdprRoutes from './routes/gdpr.routes.js';
 import creditRoutes from './routes/credit.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import configurationRoutes from './routes/configuration.routes.js';
+import eventReportAdminRoutes from './routes/event-report-admin.routes.js';
+import extendedProfileRoutes from './routes/extended-profile.routes.js';
+import uploadRoutes from './routes/upload.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
 
@@ -212,16 +216,21 @@ app.use('/api/v1/ussd', ussdRouter);
 app.use('/api/v1/mpesa', mpesaRouter);
 app.use('/api/v1/feedback', feedbackRoutes);
 app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
+app.use('/api/v1/admin/promo-codes/requests', promoCodeRequestAdminRoutes);
 app.use('/api/v1/admin/promo-codes', adminPromoCodeRoutes);
+app.use('/api/v1/promo-codes/requests', promoCodeRequestOrganizerRoutes);
 app.use('/api/v1/events', attendeeImportRoutes);
 app.use('/api/v1/events', servicePointRegistrationRoutes);
 app.use('/api/v1/mobile', mobileRoutes);
 app.use('/api/v1/careers', careerRoutes);
+app.use('/api/v1/admin/event-reports', eventReportAdminRoutes);
 app.use('/api/v1/unsubscribe', unsubscribeRoutes); // Public route for email unsubscribe (no auth required)
 app.use('/api/v1/gdpr', gdprRoutes); // GDPR data export and account deletion
 app.use('/api/v1/credits', creditRoutes); // Credit/Voucher system
 app.use('/api/v1/cart', cartRoutes); // Cart reservation system
 app.use('/api/v1/configuration', configurationRoutes); // System configuration (mailTrap, maintenance mode)
+app.use('/api/v1/profile', extendedProfileRoutes); // Extended profile (organizer profile, staff profile)
+app.use('/api/v1/uploads', uploadRoutes); // Generic image upload (Cloudinary)
 
 // Error handler middleware (must be last)
 app.use(errorHandler);

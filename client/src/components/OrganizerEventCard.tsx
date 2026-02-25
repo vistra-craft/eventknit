@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Users,
@@ -42,6 +43,7 @@ interface EventCardProps {
 }
 
 const OrganizerEventCard = ({ event }: EventCardProps) => {
+  const navigate = useNavigate();
 
   // Use real event data for metrics
   const metrics = {
@@ -147,7 +149,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              window.location.href = `/organizer/event/${event.id}`;
+              navigate(`/organizer/event/${event.id}`);
             }}
           >
             Manage Event

@@ -119,7 +119,7 @@ export class EventController {
    */
   static async getEventById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const event = await EventService.getEventById((req.params.id as string));
+      const event = await EventService.getEventById((req.params.id as string), (req as any).user?.id);
 
       res.status(200).json({
         success: true,

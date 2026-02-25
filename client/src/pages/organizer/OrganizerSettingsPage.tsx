@@ -13,6 +13,9 @@ import {
   EyeOff,
   Key,
   Mail,
+  Globe,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +40,22 @@ import { SettingsSection, ThemeSelector } from "@/components/settings";
 import VerificationForm from "@/components/verification/VerificationForm";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { useUploadAvatar } from "@/hooks/useUploadAvatar";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
+import { getMyOrganizerProfile, updateMyOrganizerProfile } from "@/lib/organizer-profile-api";
+
+const SOCIAL_PLATFORMS = [
+  { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/yourpage' },
+  { key: 'twitter', label: 'X (Twitter)', placeholder: 'https://x.com/yourhandle' },
+  { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/yourhandle' },
+  { key: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/company/yourcompany' },
+  { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@yourchannel' },
+  { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@yourhandle' },
+];
+
+const getTextLength = (html: string): number => {
+  const text = html.replace(/<[^>]*>/g, '').trim();
+  return text.length;
+};
 
 interface OrganizerSettingsData {
   // Profile Settings
@@ -51,6 +70,10 @@ interface OrganizerSettingsData {
   organizationName: string;
   businessEmail: string;
   kycStatus: string | null;
+  // Extended organizer profile
+  description: string;
+  website: string;
+  socialLinks: Record<string, string>;
   
   // Notification Settings
   emailNotifications: boolean;
@@ -95,6 +118,7 @@ const OrganizerSettingsPage = () => {
   // Avatar upload state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [showSocialLinks, setShowSocialLinks] = useState(false);
   
   // Determine active tab from URL
   const getActiveTabFromUrl = useCallback(() => {
@@ -129,8 +153,10 @@ const OrganizerSettingsPage = () => {
           const prefs = response.data.preferences;
           setSettings(prev => ({
             ...prev,
-            // Appearance
-            theme: prefs.theme || "system",
+            // Appearance — use current ThemeContext value, not API value.
+            // ThemeContext (backed by localStorage) is the active source of truth.
+            // Only explicit user actions (ThemeSelector) should change the theme.
+            theme: currentTheme,
             // Security
             twoFactorAuth: prefs.twoFactorAuth ?? false,
             sessionTimeout: prefs.sessionTimeout || 30,
@@ -143,11 +169,6 @@ const OrganizerSettingsPage = () => {
             marketingEmails: prefs.marketingEmails ?? false,
             weeklyDigest: prefs.weeklyDigest ?? true,
           }));
-
-          // Sync theme with ThemeContext
-          if (prefs.theme && prefs.theme !== currentTheme) {
-            setThemeContext(prefs.theme);
-          }
         }
       } catch (error) {
         console.error("Failed to load preferences:", error);
@@ -214,7 +235,32 @@ const OrganizerSettingsPage = () => {
 
     loadProfile();
   }, [user]);
-  
+
+  // Load organizer profile (description, website, socialLinks)
+  useEffect(() => {
+    const loadOrganizerProfile = async () => {
+      try {
+        const response = await getMyOrganizerProfile();
+        if (response.success && response.data?.organizerProfile) {
+          const profile = response.data.organizerProfile;
+          setSettings(prev => ({
+            ...prev,
+            description: profile.description || '',
+            website: profile.website || '',
+            socialLinks: (profile.socialLinks as Record<string, string>) || {},
+          }));
+          // Auto-expand social links if any exist
+          if (profile.socialLinks && Object.values(profile.socialLinks as Record<string, string>).some(v => v?.trim())) {
+            setShowSocialLinks(true);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load organizer profile:', error);
+      }
+    };
+    if (user) loadOrganizerProfile();
+  }, [user]);
+
   // Account info (read-only)
   const [accountInfo, setAccountInfo] = useState({
     role: "" as UserRole | "",
@@ -241,6 +287,9 @@ const OrganizerSettingsPage = () => {
     organizationName: "",
     businessEmail: "",
     kycStatus: null,
+    description: "",
+    website: "",
+    socialLinks: {},
     emailNotifications: true,
     eventUpdates: true,
     attendeeRegistrations: true,
@@ -346,7 +395,7 @@ const OrganizerSettingsPage = () => {
 
     try {
       if (activeTab === "profile") {
-        // If avatar file is selected, use FormData; otherwise use JSON
+        // 1. Save user profile (auth fields)
         if (avatarFile) {
           const formData = new FormData();
           formData.append('image', avatarFile);
@@ -359,19 +408,13 @@ const OrganizerSettingsPage = () => {
           if (settings.businessEmail) formData.append('businessEmail', settings.businessEmail);
 
           const response = await authApi.updateProfile(formData);
-          
+
           if (response.success) {
-            // Clear avatar upload state
             setAvatarFile(null);
-            // Refresh user profile in context
-            await refreshProfile();
-            setSaveStatus("success");
-            setSaveMessage("Profile updated successfully");
           } else {
             throw new Error("Failed to update profile");
           }
         } else {
-          // Update profile without avatar
           const profileData: Partial<authApi.RegisterData> = {
             firstName: settings.firstName,
             lastName: settings.lastName,
@@ -383,16 +426,26 @@ const OrganizerSettingsPage = () => {
           };
 
           const response = await authApi.updateProfile(profileData);
-          
-          if (response.success) {
-            // Refresh user profile in context
-            await refreshProfile();
-            setSaveStatus("success");
-            setSaveMessage("Profile updated successfully");
-          } else {
+
+          if (!response.success) {
             throw new Error("Failed to update profile");
           }
         }
+
+        // 2. Save organizer profile (description, website, socialLinks)
+        const filteredSocialLinks = Object.fromEntries(
+          Object.entries(settings.socialLinks).filter(([, v]) => v && v.trim())
+        );
+        await updateMyOrganizerProfile({
+          description: settings.description || undefined,
+          website: settings.website || undefined,
+          socialLinks: Object.keys(filteredSocialLinks).length > 0 ? filteredSocialLinks : undefined,
+        });
+
+        // 3. Refresh auth context
+        await refreshProfile();
+        setSaveStatus("success");
+        setSaveMessage("Profile updated successfully");
       } else if (activeTab === "appearance" || activeTab === "security") {
         // Save appearance and security preferences
         const preferencesToUpdate: Partial<UserPreferencesType> = {};
@@ -629,6 +682,74 @@ const OrganizerSettingsPage = () => {
             onChange={(e) => updateSetting("businessEmail", e.target.value)}
             placeholder="Enter business email address"
           />
+        </div>
+
+        <div className="mt-4">
+          <Label htmlFor="description">About Your Organization</Label>
+          <div className="mt-1">
+            <RichTextEditor
+              content={settings.description}
+              onChange={(value) => updateSetting("description", value)}
+              placeholder="Tell attendees about your organization, what events you host, and what makes them special..."
+              minHeight="120px"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {getTextLength(settings.description)}/2000 characters. This will appear on your event pages.
+          </p>
+        </div>
+
+        <div className="mt-4">
+          <Label htmlFor="website">Website</Label>
+          <div className="relative mt-1">
+            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="website"
+              type="url"
+              value={settings.website}
+              onChange={(e) => updateSetting("website", e.target.value)}
+              placeholder="https://yourwebsite.com"
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setShowSocialLinks(!showSocialLinks)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showSocialLinks ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            Social Media Links
+            {Object.values(settings.socialLinks).filter(v => v?.trim()).length > 0 && (
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                {Object.values(settings.socialLinks).filter(v => v?.trim()).length} added
+              </span>
+            )}
+          </button>
+
+          {showSocialLinks && (
+            <div className="space-y-3 mt-3">
+              {SOCIAL_PLATFORMS.map(platform => (
+                <div key={platform.key} className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground w-24 shrink-0">{platform.label}</span>
+                  <Input
+                    value={settings.socialLinks[platform.key] || ''}
+                    onChange={(e) => setSettings(prev => ({
+                      ...prev,
+                      socialLinks: {
+                        ...prev.socialLinks,
+                        [platform.key]: e.target.value,
+                      },
+                    }))}
+                    placeholder={platform.placeholder}
+                    className="flex-1"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-4">

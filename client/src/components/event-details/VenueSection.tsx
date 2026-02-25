@@ -6,12 +6,13 @@ import { getVenueType } from "@/types/event";
 interface VenueSectionProps {
   venue?: string | null;
   location: string;
+  address?: string | null;
   coordinates?: { lat: number; lng: number } | null;
   isOnline?: boolean;
   onlineLink?: string | null;
 }
 
-export const VenueSection = ({ venue, location, coordinates, isOnline, onlineLink }: VenueSectionProps) => {
+export const VenueSection = ({ venue, location, address, coordinates, isOnline, onlineLink }: VenueSectionProps) => {
   const venueType = getVenueType({ isOnline, venue, onlineLink });
 
   const handleGetDirections = () => {
@@ -70,7 +71,10 @@ export const VenueSection = ({ venue, location, coordinates, isOnline, onlineLin
           <h3 className="text-section-header mb-2">{venue || 'Event Location'}</h3>
           <div className="flex items-start gap-2 text-muted-foreground">
             <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <p className="text-sm">{location}</p>
+            <div>
+              <p className="text-sm">{location}</p>
+              {address && <p className="text-sm mt-1">{address}</p>}
+            </div>
           </div>
         </div>
       </div>

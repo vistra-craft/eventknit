@@ -1289,7 +1289,7 @@ class EmailService {
             ${data.itemsHtml}
 
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/dashboard"
+              <a href="${config.frontend.url}/dashboard"
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
                 View All Updates
               </a>
@@ -1299,7 +1299,7 @@ class EmailService {
 
             <p style="font-size: 12px; color: #888; text-align: center;">
               You're receiving this because you've opted in to ${data.digestType.toLowerCase()} digests.
-              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/settings/notifications" style="color: #667eea;">
+              <a href="${config.frontend.url}/settings/notifications" style="color: #667eea;">
                 Manage preferences
               </a>
             </p>
@@ -1396,7 +1396,7 @@ class EmailService {
 
             <p style="font-size: 12px; color: #888; text-align: center;">
               This is an automated payout processed after your event ended.
-              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/organizer/payouts" style="color: #667eea;">
+              <a href="${config.frontend.url}/organizer/payouts" style="color: #667eea;">
                 Manage payout preferences
               </a>
             </p>
@@ -1488,7 +1488,7 @@ class EmailService {
 
             <p style="font-size: 12px; color: #888; text-align: center;">
               This is an automated email from EventKnit.
-              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/organizer/payouts" style="color: #667eea;">
+              <a href="${config.frontend.url}/organizer/payouts" style="color: #667eea;">
                 Manage payout preferences
               </a>
             </p>
@@ -1502,6 +1502,525 @@ class EmailService {
       subject: `Payout Completed: ${data.amount} for "${data.eventTitle}"`,
       html,
     });
+  }
+  /**
+   * Send notification to organizer that their application is under review
+   */
+  async sendOrganizerPendingEmail(email: string, firstName: string): Promise<void> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Application Under Review</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">Welcome to EventKnit, ${firstName}!</h1>
+            <p>Thank you for registering as an organizer on EventKnit.</p>
+            <p>Your application is currently <strong>under review</strong> by our team. This process ensures the quality and safety of events on our platform.</p>
+            <div style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0;"><strong>What happens next?</strong></p>
+              <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Our team will review your application</li>
+                <li>You'll receive an email once your account is approved</li>
+                <li>You can still log in and browse events while you wait</li>
+              </ul>
+            </div>
+            <p>If you have any questions, please don't hesitate to contact our support team.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: 'Your EventKnit Organizer Application is Under Review',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send organizer pending email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send notification to admin about a new organizer registration
+   */
+  async sendAdminNewOrganizerNotification(
+    adminEmail: string,
+    adminName: string,
+    organizer: { firstName: string; lastName: string; email: string; organizationName?: string | null },
+  ): Promise<void> {
+    const reviewUrl = `${config.frontend.url}/admin/users/organizers`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>New Organizer Registration</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">New Organizer Registration</h1>
+            <p>Hi ${adminName},</p>
+            <p>A new organizer has registered on EventKnit and is awaiting approval.</p>
+            <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 5px 0;"><strong>Name:</strong> ${organizer.firstName} ${organizer.lastName}</p>
+              <p style="margin: 5px 0;"><strong>Email:</strong> ${organizer.email}</p>
+              ${organizer.organizationName ? `<p style="margin: 5px 0;"><strong>Organization:</strong> ${organizer.organizationName}</p>` : ''}
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${reviewUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Review Application</a>
+            </div>
+            <p>Or visit: <a href="${reviewUrl}" style="color: #4a6cf7;">${reviewUrl}</a></p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: adminEmail,
+      subject: `New Organizer Registration: ${organizer.firstName} ${organizer.lastName}`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send admin notification to ${adminEmail}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send notification to organizer that their account has been approved
+   */
+  async sendOrganizerApprovedEmail(email: string, firstName: string): Promise<void> {
+    const loginUrl = `${config.frontend.url}/auth/signin`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Account Approved</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">Congratulations, ${firstName}!</h1>
+            <p>Your organizer account on EventKnit has been <strong>approved</strong>.</p>
+            <p>You now have full access to create and manage events on our platform.</p>
+            <div style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0;"><strong>You can now:</strong></p>
+              <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+                <li>Create and publish events</li>
+                <li>Manage ticket sales</li>
+                <li>Access organizer analytics</li>
+                <li>Manage your event team</li>
+              </ul>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${loginUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Get Started</a>
+            </div>
+            <p>Or visit: <a href="${loginUrl}" style="color: #4a6cf7;">${loginUrl}</a></p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: 'Your EventKnit Organizer Account Has Been Approved',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send organizer approved email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send notification to admin about a new promo code request
+   */
+  async sendPromoCodeRequestNotification(
+    adminEmail: string,
+    adminName: string,
+    organizer: { name: string; email: string; organizationName?: string | null },
+    eventTitle?: string | null,
+    message?: string | null,
+  ): Promise<void> {
+    const reviewUrl = `${config.frontend.url}/admin/marketing/promo-codes?tab=requests`;
+
+    const messageBlock = message
+      ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 20px 0;">
+          <tr>
+            <td style="padding: 16px 20px; background-color: #fafafa; border-left: 3px solid #d1d5db; border-radius: 0 6px 6px 0;">
+              <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600;">Message from organizer</p>
+              <p style="margin: 0; font-size: 14px; color: #374151; font-style: italic; line-height: 1.5;">"${message}"</p>
+            </td>
+          </tr>
+        </table>`
+      : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="560" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 32px 32px 0 32px;">
+                      <p style="margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600;">Promo Code Request</p>
+                      <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3;">New request from ${organizer.name}</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding: 24px 32px;">
+                      <p style="margin: 0 0 20px 0; font-size: 14px; color: #374151; line-height: 1.6;">Hi ${adminName}, an organizer has requested a promo code and needs your review.</p>
+
+                      <!-- Details table -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; border-collapse: collapse;">
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; width: 120px; vertical-align: top;">Organizer</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500;">${organizer.name}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; vertical-align: top;">Email</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827;">${organizer.email}</td>
+                        </tr>
+                        ${organizer.organizationName ? `
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; vertical-align: top;">Organization</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827;">${organizer.organizationName}</td>
+                        </tr>` : ''}
+                        ${eventTitle ? `
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; vertical-align: top;">Event</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500;">${eventTitle}</td>
+                        </tr>` : ''}
+                      </table>
+
+                      ${messageBlock}
+
+                      <!-- CTA -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0 0 0;">
+                        <tr>
+                          <td>
+                            <a href="${reviewUrl}" style="display: inline-block; padding: 10px 20px; background-color: #111827; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">Review Request</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 20px 32px; border-top: 1px solid #f3f4f6;">
+                      <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">This is an automated notification from EventKnit. You're receiving this because you're an administrator.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: adminEmail,
+      subject: `Promo Code Request \u2014 ${organizer.name}`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send promo code request notification to ${adminEmail}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send approval notification to organizer
+   */
+  async sendPromoCodeRequestApproved(
+    organizerEmail: string,
+    firstName: string,
+    promoCode: { code: string; discountType: string; discountValue: unknown; validFrom?: Date; validUntil?: Date },
+    eventTitle?: string | null,
+  ): Promise<void> {
+    const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
+
+    const discountDisplay = promoCode.discountType === 'PERCENTAGE'
+      ? `${promoCode.discountValue}%`
+      : `$${promoCode.discountValue}`;
+
+    const validityInfo = promoCode.validFrom && promoCode.validUntil
+      ? `<tr>
+           <td style="padding: 10px 0; color: #6b7280; vertical-align: top;">Valid</td>
+           <td style="padding: 10px 0; color: #111827;">${new Date(promoCode.validFrom).toLocaleDateString()} \u2013 ${new Date(promoCode.validUntil).toLocaleDateString()}</td>
+         </tr>`
+      : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="560" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 32px 32px 0 32px;">
+                      <p style="margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #059669; font-weight: 600;">Approved</p>
+                      <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3;">Your promo code is ready</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding: 24px 32px;">
+                      <p style="margin: 0 0 20px 0; font-size: 14px; color: #374151; line-height: 1.6;">Hi ${firstName}, your promo code request${eventTitle ? ` for <strong>${eventTitle}</strong>` : ''} has been approved.</p>
+
+                      <!-- Code display -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px 0;">
+                        <tr>
+                          <td style="padding: 20px; background-color: #f9fafb; border-radius: 8px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600;">Your promo code</p>
+                            <p style="margin: 0; font-size: 28px; font-weight: 700; color: #111827; font-family: 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 2px;">${promoCode.code}</p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Details -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; border-collapse: collapse;">
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; width: 120px; vertical-align: top;">Discount</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500;">${discountDisplay} off</td>
+                        </tr>
+                        ${eventTitle ? `
+                        <tr>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #6b7280; vertical-align: top;">Event</td>
+                          <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; color: #111827;">${eventTitle}</td>
+                        </tr>` : ''}
+                        ${validityInfo}
+                      </table>
+
+                      <p style="margin: 24px 0 0 0; font-size: 14px; color: #374151; line-height: 1.6;">This code is now active and available in your dashboard. Share it with your attendees to start offering discounts.</p>
+
+                      <!-- CTA -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0 0 0;">
+                        <tr>
+                          <td>
+                            <a href="${viewUrl}" style="display: inline-block; padding: 10px 20px; background-color: #111827; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">View in Dashboard</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 20px 32px; border-top: 1px solid #f3f4f6;">
+                      <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">This is an automated notification from EventKnit.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: organizerEmail,
+      subject: `Promo Code Approved \u2014 ${promoCode.code}`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send promo code approval email to ${organizerEmail}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send rejection notification to organizer
+   */
+  async sendPromoCodeRequestRejected(
+    organizerEmail: string,
+    firstName: string,
+    reason?: string | null,
+    eventTitle?: string | null,
+  ): Promise<void> {
+    const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
+
+    const reasonBlock = reason
+      ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin: 20px 0;">
+          <tr>
+            <td style="padding: 16px 20px; background-color: #fef2f2; border-left: 3px solid #fca5a5; border-radius: 0 6px 6px 0;">
+              <p style="margin: 0 0 4px 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #991b1b; font-weight: 600;">Reason</p>
+              <p style="margin: 0; font-size: 14px; color: #7f1d1d; line-height: 1.5;">${reason}</p>
+            </td>
+          </tr>
+        </table>`
+      : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"></head>
+        <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="560" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+                  <!-- Header -->
+                  <tr>
+                    <td style="padding: 32px 32px 0 32px;">
+                      <p style="margin: 0 0 4px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; font-weight: 600;">Request Update</p>
+                      <h1 style="margin: 0; font-size: 20px; font-weight: 600; color: #111827; line-height: 1.3;">Regarding your promo code request</h1>
+                    </td>
+                  </tr>
+
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding: 24px 32px;">
+                      <p style="margin: 0 0 16px 0; font-size: 14px; color: #374151; line-height: 1.6;">Hi ${firstName}, we've reviewed your promo code request${eventTitle ? ` for <strong>${eventTitle}</strong>` : ''} and we're unable to approve it at this time.</p>
+
+                      ${reasonBlock}
+
+                      <p style="margin: 16px 0 0 0; font-size: 14px; color: #374151; line-height: 1.6;">You're welcome to submit a new request if your circumstances change. If you have questions, please reach out to our support team.</p>
+
+                      <!-- CTA -->
+                      <table width="100%" cellpadding="0" cellspacing="0" style="margin: 28px 0 0 0;">
+                        <tr>
+                          <td>
+                            <a href="${viewUrl}" style="display: inline-block; padding: 10px 20px; background-color: #111827; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">View Promo Codes</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 20px 32px; border-top: 1px solid #f3f4f6;">
+                      <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">This is an automated notification from EventKnit.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: organizerEmail,
+      subject: `Update on Your Promo Code Request${eventTitle ? ` \u2014 ${eventTitle}` : ''}`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send promo code rejection email to ${organizerEmail}: ${result.error?.message}`);
+    }
+  }
+  /**
+   * Send notification email to seller when their resale ticket is sold
+   */
+  async sendTicketResaleSoldEmail(
+    sellerEmail: string,
+    data: {
+      sellerName: string;
+      buyerFirstName: string;
+      eventTitle: string;
+      eventDate: string;
+      salePrice: number;
+      platformFee: number;
+      sellerPayout: number;
+      currency: string;
+    },
+  ): Promise<EmailResult> {
+    const formatAmount = (amount: number) => `${data.currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Ticket Sold!</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px 12px 0 0; padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">Your Ticket Has Been Sold!</h1>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <p style="font-size: 16px;">Hello ${data.sellerName},</p>
+
+              <p><strong>${data.buyerFirstName}</strong> has purchased your ticket for:</p>
+
+              <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <h2 style="margin: 0 0 10px 0; color: #059669; font-size: 20px;">${data.eventTitle}</h2>
+                <p style="margin: 5px 0; color: #666;">📅 ${data.eventDate}</p>
+              </div>
+
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">Sale Summary</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #666;">Sale Price</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">${formatAmount(data.salePrice)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666;">Platform Fee (10%)</td>
+                    <td style="padding: 8px 0; text-align: right; color: #ef4444;">-${formatAmount(data.platformFee)}</td>
+                  </tr>
+                  <tr style="border-top: 2px solid #e5e7eb;">
+                    <td style="padding: 12px 0; font-weight: bold; color: #059669;">Your Payout</td>
+                    <td style="padding: 12px 0; text-align: right; font-weight: bold; font-size: 18px; color: #059669;">${formatAmount(data.sellerPayout)}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+              <p style="font-size: 12px; color: #666; text-align: center;">
+                Your original ticket is no longer valid. Thank you for using EventKnit.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: sellerEmail,
+      subject: `🎉 Your ticket for "${data.eventTitle}" has been sold!`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send resale sold email to ${sellerEmail}: ${result.error?.message}`);
+    }
+
+    return result;
   }
 }
 

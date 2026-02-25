@@ -51,7 +51,7 @@ jobs:
           echo "NODE_ENV=test" >> $GITHUB_ENV
           echo "MONGODB_URI=mongodb://localhost:27017/eventknit-test" >> $GITHUB_ENV
           echo "JWT_SECRET=test-secret-key-for-ci" >> $GITHUB_ENV
-          echo "PORT=3001" >> $GITHUB_ENV
+          echo "PORT=3010" >> $GITHUB_ENV
           echo "REDIS_URL=redis://localhost:6379" >> $GITHUB_ENV
 
       - name: Install server dependencies

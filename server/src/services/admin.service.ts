@@ -14,6 +14,7 @@ import {
 import { createAuditLog, AuditActions } from '../utils/audit.js';
 import { logger } from '../utils/logger.js';
 import { emailService } from './email.service.js';
+import { websocketService } from './websocket.service.js';
 
 export interface CreateUserData {
   email: string;
@@ -395,30 +396,56 @@ export class AdminService {
     }
 
     if (filters.search) {
-      where.OR = [
+      const searchConditions: Array<Record<string, { contains: string; mode: 'insensitive' }>> = [
         { email: { contains: filters.search, mode: 'insensitive' } },
         { firstName: { contains: filters.search, mode: 'insensitive' } },
         { lastName: { contains: filters.search, mode: 'insensitive' } },
       ];
+      // Also search by organization name for organizers
+      if (filters.role === UserRole.ORGANIZER) {
+        searchConditions.push({ organizationName: { contains: filters.search, mode: 'insensitive' } });
+      }
+      where.OR = searchConditions as typeof where.OR;
     }
+
+    // Base fields for all user types
+    const baseSelect = {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phoneNumber: true,
+      role: true,
+      status: true,
+      isEmailVerified: true,
+      organizationName: true,
+      businessEmail: true,
+      createdAt: true,
+      updatedAt: true,
+    };
+
+    // Additional fields when fetching organizers
+    const organizerSelect = filters.role === UserRole.ORGANIZER ? {
+      avatar: true,
+      verificationLevel: true,
+      kycStatus: true,
+      isIdentityVerified: true,
+      organizerEntityType: true,
+      organizerIndustry: true,
+      profileCompleted: true,
+      lastLoginAt: true,
+      _count: {
+        select: {
+          eventsCreated: true,
+          eventRegistrations: true,
+        },
+      },
+    } : {};
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          phoneNumber: true,
-          role: true,
-          status: true,
-          isEmailVerified: true,
-          organizationName: true,
-          businessEmail: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: { ...baseSelect, ...organizerSelect },
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -434,6 +461,102 @@ export class AdminService {
         total,
         totalPages: Math.ceil(total / limit),
       },
+    };
+  }
+
+  /**
+   * Get enriched organizer details for admin panel
+   */
+  static async getOrganizerDetails(userId: string) {
+    const [user, recentEvents, organizerProfile, kycDocumentSummary] = await Promise.all([
+      // Full user data with relation counts
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
+          role: true,
+          status: true,
+          isEmailVerified: true,
+          organizationName: true,
+          businessEmail: true,
+          avatar: true,
+          verificationLevel: true,
+          kycStatus: true,
+          kycSubmittedAt: true,
+          kycApprovedAt: true,
+          isIdentityVerified: true,
+          organizerEntityType: true,
+          organizerIndustry: true,
+          organizerBusinessName: true,
+          profileCompleted: true,
+          lastLoginAt: true,
+          payoutLimit: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              eventsCreated: true,
+              eventRegistrations: true,
+              kycDocuments: true,
+            },
+          },
+        },
+      }),
+      // Recent events (last 5)
+      prisma.event.findMany({
+        where: { organizerId: userId, deletedAt: null },
+        select: {
+          id: true,
+          title: true,
+          startDate: true,
+          status: true,
+          _count: { select: { registrations: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      // Organizer profile data
+      prisma.organizerProfile.findUnique({
+        where: { userId },
+        select: {
+          website: true,
+          description: true,
+          socialLinks: true,
+          bankAccountLast4: true,
+          location: true,
+        },
+      }),
+      // KYC documents count grouped by status
+      prisma.kYCDocument.groupBy({
+        by: ['status'],
+        where: { userId },
+        _count: { status: true },
+      }),
+    ]);
+
+    if (!user) {
+      throw new NotFoundError('Organizer not found');
+    }
+
+    // Compute total revenue from their events
+    const revenueResult = await prisma.eventRegistration.aggregate({
+      _sum: { totalAmount: true },
+      where: {
+        event: { organizerId: userId, deletedAt: null },
+        status: { in: ['CONFIRMED'] },
+      },
+    });
+
+    return {
+      user,
+      recentEvents,
+      organizerProfile,
+      kycDocumentSummary,
+      totalRevenue: revenueResult._sum?.totalAmount?.toString() || '0',
     };
   }
 
@@ -715,6 +838,92 @@ export class AdminService {
     });
 
     logger.info(`User activated by admin: ${targetUser.email}`);
+    return updatedUser;
+  }
+
+  /**
+   * Approve a pending organizer (PENDING_APPROVAL → ACTIVE)
+   */
+  static async approveOrganizer(
+    userId: string,
+    approvedBy: string,
+    approvedByRole: UserRole,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Get target user
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundError('User not found');
+    }
+
+    // Validate: must be an organizer
+    if (targetUser.role !== UserRole.ORGANIZER) {
+      throw new ValidationError('Only organizer accounts can be approved');
+    }
+
+    // Validate: must be PENDING_APPROVAL
+    if (targetUser.status !== UserStatus.PENDING_APPROVAL) {
+      throw new ValidationError(`Cannot approve organizer with status ${targetUser.status}`);
+    }
+
+    // Validate permission
+    validateUserModification(approvedByRole, targetUser.role);
+
+    // Update status to ACTIVE
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: UserStatus.ACTIVE,
+        updatedBy: approvedBy,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        updatedAt: true,
+      },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: approvedBy,
+      action: AuditActions.ADMIN_ORGANIZER_APPROVED,
+      entity: 'User',
+      entityId: userId,
+      metadata: {
+        organizerEmail: targetUser.email,
+        organizerName: `${targetUser.firstName} ${targetUser.lastName}`,
+        oldStatus: UserStatus.PENDING_APPROVAL,
+        newStatus: UserStatus.ACTIVE,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    // Fire-and-forget: send approval email
+    emailService.sendOrganizerApprovedEmail(targetUser.email, targetUser.firstName || '').catch((err) => {
+      logger.error('Failed to send organizer approved email:', err);
+    });
+
+    // Emit Socket.IO event for real-time notification
+    websocketService.emitToRoom(
+      `user:${userId}:notifications`,
+      'organizer:approved',
+      {
+        userId,
+        status: 'ACTIVE',
+        message: 'Your organizer account has been approved!',
+      },
+    );
+
+    logger.info(`Organizer approved by admin: ${targetUser.email}`);
     return updatedUser;
   }
 

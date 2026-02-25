@@ -22,7 +22,6 @@ import { AttendeeCommunicationService } from './attendee-communication.service.j
 export interface CreateEventData {
   title: string;
   description: string;
-  fullDescription?: string;
   organizerDescription?: string;
   category?: string;
   tags?: string[];
@@ -60,6 +59,8 @@ export interface CreateEventData {
   }>;
   capacity?: number | string;
   image?: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
   images?: string[];
   type?: EventType;
   requirements?: string[];
@@ -118,6 +119,8 @@ export interface RegisterForEventData {
   registrationData?: Record<string, unknown>;
   invitationId?: string; // For complementary tickets
   promoCode?: string; // Promo code to apply
+  // Seat selection
+  seatIds?: string[];
   // Consent data
   consent?: {
     operationalConsent?: boolean; // Default: true (required)
@@ -241,6 +244,8 @@ export class EventService {
       select: {
         id: true,
         role: true,
+        status: true,
+        profileCompleted: true,
         isIdentityVerified: true,
         verificationLevel: true,
         payoutLimit: true,
@@ -258,6 +263,22 @@ export class EventService {
       actualRole !== UserRole.SUPERADMIN &&
       actualRole !== UserRole.ADMIN_STAFF) {
       throw new AuthorizationError('Only organizers and admins can create events');
+    }
+
+    // Check account status - only ACTIVE organizers can create events
+    if (organizer.status === UserStatus.PENDING_APPROVAL) {
+      throw new AuthorizationError('Your organizer account is pending approval. You cannot create events yet.');
+    }
+    if (organizer.status === UserStatus.DEACTIVATED) {
+      throw new AuthorizationError('Your account has been deactivated. Please contact support.');
+    }
+    if (organizer.status === UserStatus.SUSPENDED) {
+      throw new AuthorizationError('Your account has been suspended. Please contact support.');
+    }
+
+    // Require profile completion before creating events (skip for admins)
+    if (actualRole === UserRole.ORGANIZER && !organizer.profileCompleted) {
+      throw new ValidationError('You must complete your organizer profile before creating events. Please visit your profile settings.');
     }
 
     // Note: Eventbrite-style approach - no verification required to CREATE events
@@ -334,7 +355,6 @@ export class EventService {
       data: {
         title: data.title.trim(),
         description: data.description.trim(),
-        fullDescription: data.fullDescription?.trim(),
         organizerDescription: data.organizerDescription?.trim(),
         category: data.category?.trim(),
         tags: data.tags || [],
@@ -355,6 +375,8 @@ export class EventService {
         capacity,
         availableSlots,
         image: data.image?.trim(),
+        imageFocalX: data.imageFocalX ?? 50,
+        imageFocalY: data.imageFocalY ?? 50,
         images: data.images || [],
         timezone: data.timezone || null,
         type: data.type || EventType.PUBLIC,
@@ -565,7 +587,7 @@ export class EventService {
   /**
    * Get event by ID
    */
-  static async getEventById(eventId: string) {
+  static async getEventById(eventId: string, requestingUserId?: string) {
     const event = await prisma.event.findFirst({
       where: {
         id: eventId,
@@ -593,12 +615,27 @@ export class EventService {
             },
           },
         },
+        seatMap: {
+          select: { id: true },
+        },
       },
       // All fields are included by default, including JSON fields (agenda, exhibitors, speakers, sponsors, socialLinks)
     });
 
     if (!event) {
       throw new NotFoundError('Event not found');
+    }
+
+    // Access control: non-approved events visible only to organizer and admins
+    const isOrganizer = requestingUserId && event.organizerId === requestingUserId;
+    if (!isOrganizer && event.status !== 'APPROVED') {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Hide organizer email/personal info from public API responses
+    if (!isOrganizer && event.organizer) {
+      event.organizer.email = '';
+      event.organizer.businessEmail = null as any;
     }
 
     return event;
@@ -797,7 +834,7 @@ export class EventService {
     // Determine if status should be reset to PENDING
     // Only reset for significant changes, not minor updates like adding an image
     const significantFields = [
-      'title', 'description', 'fullDescription', 'startDate', 'endDate',
+      'title', 'description', 'startDate', 'endDate',
       'startTime', 'endTime', 'venue', 'location', 'address', 'isOnline',
       'onlineLink', 'price', 'ticketTypes', 'capacity', 'category', 'type',
       'requirements', 'ageRestriction', 'duration', 'speakers', 'sponsors',
@@ -819,7 +856,6 @@ export class EventService {
 
     if (data.title !== undefined) updateData.title = data.title.trim();
     if (data.description !== undefined) updateData.description = data.description.trim();
-    if (data.fullDescription !== undefined) updateData.fullDescription = data.fullDescription?.trim();
     if (data.organizerDescription !== undefined) updateData.organizerDescription = data.organizerDescription?.trim();
     if (data.category !== undefined) updateData.category = data.category?.trim();
     if (data.tags !== undefined) updateData.tags = data.tags;
@@ -841,20 +877,23 @@ export class EventService {
     if (data.capacity !== undefined) {
       const capacity = data.capacity ? Number(data.capacity) : null;
       updateData.capacity = capacity;
-      // Recalculate available slots based on current registrations
-      const currentRegistrations = await prisma.eventRegistration.count({
+      // Recalculate available slots based on actual ticket quantities (not just registration count)
+      const ticketAggregation = await prisma.ticketLineItem.aggregate({
+        _sum: { quantity: true },
         where: {
-          eventId,
-          status: {
-            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          registration: {
+            eventId,
+            status: { in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING] },
           },
         },
       });
-      updateData.availableSlots = capacity ? capacity - currentRegistrations : null;
+      const totalTicketsSold = ticketAggregation._sum?.quantity || 0;
+      updateData.availableSlots = capacity ? Math.max(0, capacity - totalTicketsSold) : null;
     }
     if (data.image !== undefined) updateData.image = data.image?.trim();
-    if (data.image !== undefined) updateData.image = data.image?.trim();
     if (data.images !== undefined) updateData.images = data.images;
+    if (data.imageFocalX !== undefined) updateData.imageFocalX = data.imageFocalX;
+    if (data.imageFocalY !== undefined) updateData.imageFocalY = data.imageFocalY;
     if (data.timezone !== undefined) updateData.timezone = data.timezone;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.requirements !== undefined) updateData.requirements = data.requirements;
@@ -994,7 +1033,7 @@ export class EventService {
     if (data.title !== undefined) changes.push('title');
     if (data.startDate !== undefined || data.startTime !== undefined) changes.push('date/time');
     if (data.venue !== undefined || data.location !== undefined || data.address !== undefined) changes.push('venue/location');
-    if (data.description !== undefined || data.fullDescription !== undefined) changes.push('description');
+    if (data.description !== undefined) changes.push('description');
     if (data.capacity !== undefined) changes.push('capacity');
     if (data.price !== undefined || data.ticketTypes !== undefined) changes.push('pricing');
 
@@ -1585,6 +1624,7 @@ export class EventService {
               isOnline: true,
               onlineLink: true,
               image: true,
+              currency: true,
               organizer: {
                 select: {
                   id: true,
@@ -1630,6 +1670,23 @@ export class EventService {
       // Timeout after 10 seconds to prevent deadlocks
       timeout: 10000,
     });
+
+    // Reserve seats if seat IDs were provided
+    if (data.seatIds?.length) {
+      try {
+        const { SeatSelectionService } = await import('./seat-selection.service.js');
+        await SeatSelectionService.reserveSeats(
+          eventId,
+          data.seatIds,
+          registration.id,
+          15, // 15-minute reservation timeout
+        );
+        logger.info(`[registerForEvent] Reserved ${data.seatIds.length} seats for registration ${registration.id}`);
+      } catch (seatError) {
+        logger.error(`[registerForEvent] Failed to reserve seats for registration ${registration.id}:`, seatError);
+        // Don't fail registration — seats can be selected later
+      }
+    }
 
     // Generate QR code immediately at registration time (like Eventbrite/vf-ticket)
     // This ensures QR code is always available and stored for fast access
@@ -2026,10 +2083,22 @@ export class EventService {
             lastName: true,
             email: true,
             organizationName: true,
+            status: true,
           },
         },
       },
     });
+
+    // Auto-activate organizer account if still pending approval
+    if (approvedEvent.organizer.status === UserStatus.PENDING_APPROVAL) {
+      await prisma.user.update({
+        where: { id: approvedEvent.organizerId },
+        data: { status: UserStatus.ACTIVE },
+      });
+      logger.info(
+        `Auto-activated organizer account ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) on event approval`,
+      );
+    }
 
     // Audit log
     await createAuditLog({
@@ -3679,6 +3748,7 @@ export class EventService {
                 isOnline: true,
                 onlineLink: true,
                 image: true,
+                currency: true,
                 organizer: {
                   select: {
                     id: true,
@@ -3739,6 +3809,7 @@ export class EventService {
                 isOnline: true,
                 onlineLink: true,
                 image: true,
+                currency: true,
                 organizer: {
                   select: {
                     id: true,
@@ -4142,7 +4213,6 @@ export class EventService {
       // Determine which fields to copy
       const copyFields = data?.copyFields || [
         'description',
-        'fullDescription',
         'organizerDescription',
         'category',
         'tags',
@@ -4185,9 +4255,6 @@ export class EventService {
       // Copy selected fields
       if (copyFields.includes('description') && !excludeFields.includes('description')) {
         newEventData.description = originalEvent.description;
-      }
-      if (copyFields.includes('fullDescription') && !excludeFields.includes('fullDescription')) {
-        newEventData.fullDescription = originalEvent.fullDescription;
       }
       if (copyFields.includes('organizerDescription') && !excludeFields.includes('organizerDescription')) {
         newEventData.organizerDescription = originalEvent.organizerDescription;

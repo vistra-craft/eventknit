@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,8 @@ interface EventTemplate {
   updatedAt: string;
 }
 
-const EventTemplatesManagement = () => {
+const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) => {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<EventTemplate[]>([]);
   const [publicTemplates, setPublicTemplates] = useState<EventTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,7 +163,7 @@ const EventTemplatesManagement = () => {
       const response = await applyTemplate(templateId);
       if (response.success && response.data) {
         // Navigate to create event page with template data
-        window.location.href = `/organizer/create-event?template=${templateId}`;
+        navigate(`/organizer/create-event?template=${templateId}`);
       }
     } catch (error) {
       console.error("Error using template:", error);
@@ -249,31 +251,55 @@ const EventTemplatesManagement = () => {
 
   return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-page-title">Event Templates</h1>
-            <p className="text-muted-foreground mt-1">
-              Save and reuse event configurations
-            </p>
+        {!embedded && (
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-page-title">Event Templates</h1>
+              <p className="text-muted-foreground mt-1">
+                Save and reuse event configurations
+              </p>
+            </div>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Template
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Create Event Template</DialogTitle>
+                </DialogHeader>
+                <CreateTemplateForm
+                  onSubmit={handleCreateTemplate}
+                  onCancel={() => setIsCreateDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Template
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create Event Template</DialogTitle>
-              </DialogHeader>
-              <CreateTemplateForm
-                onSubmit={handleCreateTemplate}
-                onCancel={() => setIsCreateDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+        )}
+
+        {embedded && (
+          <div className="flex justify-end">
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Template
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Create Event Template</DialogTitle>
+                </DialogHeader>
+                <CreateTemplateForm
+                  onSubmit={handleCreateTemplate}
+                  onCancel={() => setIsCreateDialogOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>

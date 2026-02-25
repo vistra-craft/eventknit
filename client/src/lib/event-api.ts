@@ -50,7 +50,6 @@ export interface EventFilters {
 export interface CreateEventData {
   title: string;
   description: string;
-  fullDescription?: string;
   organizerDescription?: string;
   category?: string;
   tags?: string[];
@@ -180,6 +179,8 @@ export interface RegisterForEventData {
   registrationData?: Record<string, unknown>;
   invitationId?: string;
   promoCode?: string;
+  // Seat selection
+  seatIds?: string[];
   // Consent data
   consent?: {
     operationalConsent?: boolean; // Default: true (required)

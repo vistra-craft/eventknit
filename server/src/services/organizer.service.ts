@@ -443,6 +443,11 @@ export class OrganizerService {
       },
     });
 
+    // Revoke all refresh tokens to force immediate session termination
+    await prisma.refreshToken.deleteMany({
+      where: { userId: staffId },
+    });
+
     // Audit log
     await createAuditLog({
       userId: organizerId,
@@ -453,12 +458,13 @@ export class OrganizerService {
         staffRole: staff.role,
         staffEmail: staff.email,
         organizerId,
+        sessionsRevoked: true,
       },
       ipAddress,
       userAgent,
     });
 
-    logger.info(`Staff deleted by organizer: ${staff.email}`);
+    logger.info(`Staff deleted by organizer: ${staff.email}, sessions revoked`);
   }
 
   /**
@@ -481,6 +487,11 @@ export class OrganizerService {
       userAgent,
     );
 
+    // Revoke all refresh tokens to force immediate session termination
+    await prisma.refreshToken.deleteMany({
+      where: { userId: staffId },
+    });
+
     // Additional audit log for deactivation
     await createAuditLog({
       userId: organizerId,
@@ -489,6 +500,7 @@ export class OrganizerService {
       entityId: staffId,
       metadata: {
         organizerId,
+        sessionsRevoked: true,
       },
       ipAddress,
       userAgent,

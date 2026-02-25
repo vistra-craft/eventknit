@@ -6,11 +6,11 @@
 
 | Service | Port | Configuration File | Notes |
 |---------|------|-------------------|-------|
-| **Backend API** | `3001` | `server/.env.development` | Main Node.js/Express server |
+| **Backend API** | `3010` | `server/.env.development` | Main Node.js/Express server |
 | **Frontend Web** | `5173` | `client/vite.config.ts` | Vite dev server (default) |
-| **Mobile App** | N/A | `eventknit_mobile/lib/api/endpoints.dart` | Connects to backend on 3001 |
+| **Mobile App** | N/A | `eventknit_mobile/lib/api/endpoints.dart` | Connects to backend on 3010 |
 | **PostgreSQL** | `5432` | `server/.env.development` | Database |
-| **Redis** | `6379` | `server/.env.development` | Cache & sessions |
+| **Redis** | `6380` | `server/.env.development` | Cache & sessions |
 | **PgAdmin** | `8080` | `server/.env.development` | Database admin UI |
 
 ## Port Configuration Files
@@ -18,9 +18,9 @@
 ### Backend Server
 **File:** `server/.env.development`
 ```env
-PORT=3001
+PORT=3010
 POSTGRES_PORT=5432
-REDIS_PORT=6379
+REDIS_PORT=6380
 PGADMIN_PORT=8080
 SMTP_PORT=587
 ```
@@ -33,7 +33,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001', // Must match backend PORT
+        target: 'http://localhost:3010', // Must match backend PORT
         changeOrigin: true,
       },
     },
@@ -45,7 +45,7 @@ export default defineConfig({
 **File:** `eventknit_mobile/lib/api/endpoints.dart`
 ```dart
 class ApiEndpoints {
-  static const String localUrl = 'http://localhost:3001/api/v1';  // Must match backend PORT
+  static const String localUrl = 'http://localhost:3010/api/v1';  // Must match backend PORT
   // ...
 }
 ```
@@ -81,7 +81,7 @@ class ApiEndpoints {
 | Backend API | `80/443` | Behind reverse proxy (NGINX) |
 | Frontend Web | `80/443` | Served as static files via CDN |
 | PostgreSQL | `5432` | Not exposed publicly |
-| Redis | `6379` | Not exposed publicly |
+| Redis | `6380` | Not exposed publicly |
 
 ## Port Conflicts
 
@@ -89,7 +89,7 @@ If you encounter "Port already in use" errors:
 
 ```bash
 # Find what's using the port
-lsof -i :3001
+lsof -i :3010
 
 # Kill the process (replace PID)
 kill -9 <PID>
@@ -97,7 +97,7 @@ kill -9 <PID>
 
 ## Notes
 
-- **Frontend (5173)** proxies API requests to backend (3001) during development
-- **Mobile app** connects directly to backend (3001) - no proxy
+- **Frontend (5173)** proxies API requests to backend (3010) during development
+- **Mobile app** connects directly to backend (3010) - no proxy
 - **Production** uses standard HTTP/HTTPS ports (80/443) with reverse proxy
 - Always keep this file updated when changing ports

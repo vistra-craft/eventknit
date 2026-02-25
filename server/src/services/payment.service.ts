@@ -1,6 +1,6 @@
 import { config } from '../config/index.js';
 import { prisma } from '../config/database.js';
-import { RegistrationStatus, Prisma } from '@prisma/client';
+import { RegistrationStatus, Prisma, SeatStatus } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { TicketService } from './ticket.service.js';
@@ -628,6 +628,18 @@ export class PaymentService {
 
           logger.info(`Payment transaction created: ${paymentTransaction.id} for registration: ${registration.id}`);
 
+          // Confirm seat reservation if one exists for this registration
+          try {
+            const { SeatSelectionService } = await import('./seat-selection.service.js');
+            await SeatSelectionService.confirmSeatReservation(registration.id);
+            logger.info(`Seat reservation confirmed for registration: ${registration.id}`);
+          } catch (seatError: any) {
+            // Only log if it's a real error — missing reservations are expected for non-seated events
+            if (seatError?.message !== 'Seat reservation not found') {
+              logger.error(`Failed to confirm seat reservation for registration ${registration.id}:`, seatError);
+            }
+          }
+
           // Automatically calculate and create platform fee
           try {
             await PlatformFeeService.createPlatformFee(paymentTransaction.id);
@@ -876,11 +888,13 @@ export class PaymentService {
             select: {
               id: true,
               status: true,
+              quantity: true,
+              eventId: true,
             },
           });
 
           if (registration) {
-            // Get full registration details for notification
+            // Get full registration details for notification and capacity restoration
             const fullRegistration = await prisma.eventRegistration.findUnique({
               where: { id: registration.id },
               include: {
@@ -888,6 +902,8 @@ export class PaymentService {
                   select: {
                     id: true,
                     title: true,
+                    capacity: true,
+                    availableSlots: true,
                   },
                 },
                 attendee: {
@@ -904,14 +920,53 @@ export class PaymentService {
               registration.status,
               'PENDING', // Current payment status before failure
               'FAILED',
+              RegistrationStatus.CANCELLED,
             );
 
-            await prisma.eventRegistration.update({
-              where: { id: registration.id },
-              data: {
-                status: syncedStatus.status,
-                paymentStatus: syncedStatus.paymentStatus,
-              },
+            // Cancel registration and restore capacity atomically
+            await prisma.$transaction(async (tx) => {
+              // Cancel the registration
+              await tx.eventRegistration.update({
+                where: { id: registration.id },
+                data: {
+                  status: syncedStatus.status,
+                  paymentStatus: syncedStatus.paymentStatus,
+                  cancelledAt: new Date(),
+                },
+              });
+
+              // Restore event capacity
+              if (fullRegistration?.event.capacity !== null && fullRegistration?.event.capacity !== undefined) {
+                const newAvailableSlots = (fullRegistration.event.availableSlots || fullRegistration.event.capacity) + registration.quantity;
+                await tx.event.update({
+                  where: { id: registration.eventId },
+                  data: {
+                    availableSlots: Math.min(fullRegistration.event.capacity, newAvailableSlots),
+                  },
+                });
+                logger.info(`Restored ${registration.quantity} capacity slot(s) for event ${registration.eventId} after payment failure`);
+              }
+
+              // Release any seat reservations
+              const seatReservations = await tx.seatReservation.findMany({
+                where: {
+                  registrationId: registration.id,
+                  status: { in: ['reserved'] },
+                },
+                select: { id: true, seatId: true },
+              });
+
+              if (seatReservations.length > 0) {
+                await tx.seatReservation.updateMany({
+                  where: { id: { in: seatReservations.map(r => r.id) } },
+                  data: { status: 'cancelled' },
+                });
+                await tx.seat.updateMany({
+                  where: { id: { in: seatReservations.map(r => r.seatId) } },
+                  data: { status: SeatStatus.AVAILABLE },
+                });
+                logger.info(`Released ${seatReservations.length} seat(s) for registration ${registration.id} after payment failure`);
+              }
             });
 
             // Send payment failed notification
@@ -921,7 +976,7 @@ export class PaymentService {
                   userId: fullRegistration.attendeeId,
                   type: NotificationType.PAYMENT_FAILED,
                   title: `Payment Failed: ${fullRegistration.event.title}`,
-                  message: `Your payment for "${fullRegistration.event.title}" has failed. Please try again or contact support if the issue persists.`,
+                  message: `Your payment for "${fullRegistration.event.title}" has failed. Your registration has been cancelled and the tickets have been released. Please try again or contact support if the issue persists.`,
                   priority: NotificationPriority.HIGH,
                   eventId: fullRegistration.eventId,
                   registrationId: registration.id,
@@ -934,7 +989,7 @@ export class PaymentService {
               }
             }
 
-            logger.info(`Payment failed: ${reference} for registration: ${registration.id}`);
+            logger.info(`Payment failed: ${reference} for registration: ${registration.id} — registration cancelled, capacity restored`);
 
             // Update webhook event status to PROCESSED for payment failure
             if (webhookEventId) {

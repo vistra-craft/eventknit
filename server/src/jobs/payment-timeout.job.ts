@@ -7,13 +7,13 @@ import { EventService } from '../services/event.service.js';
 /**
  * Payment Timeout Job
  *
- * Cancels abandoned registrations with PENDING payment status older than 24 hours
+ * Cancels abandoned registrations with PENDING payment status older than 30 minutes
  * Restores event capacity for cancelled registrations
- * Runs every hour
+ * Runs every 5 minutes
  */
 export class PaymentTimeoutJob {
-  private static readonly TIMEOUT_HOURS = 24;
-  private static readonly CRON_SCHEDULE = '0 * * * *'; // Every hour at minute 0
+  private static readonly TIMEOUT_MINUTES = 30;
+  private static readonly CRON_SCHEDULE = '*/5 * * * *'; // Every 5 minutes
   private static task: cron.ScheduledTask | null = null;
 
   /**
@@ -41,7 +41,7 @@ export class PaymentTimeoutJob {
       }
 
       const cutoffDate = new Date();
-      cutoffDate.setHours(cutoffDate.getHours() - this.TIMEOUT_HOURS);
+      cutoffDate.setMinutes(cutoffDate.getMinutes() - this.TIMEOUT_MINUTES);
 
       logger.info(`Starting payment timeout job - cancelling payments pending since before ${cutoffDate.toISOString()}`);
 
@@ -141,6 +141,28 @@ export class PaymentTimeoutJob {
               capacityRestoredCount++;
             }
 
+            // Release any seat reservations for this registration
+            const seatReservations = await tx.seatReservation.findMany({
+              where: {
+                registrationId: registration.id,
+                status: { in: ['reserved'] },
+              },
+              select: { id: true, seatId: true },
+            });
+
+            if (seatReservations.length > 0) {
+              await tx.seatReservation.updateMany({
+                where: { id: { in: seatReservations.map(r => r.id) } },
+                data: { status: 'cancelled' },
+              });
+              // Import SeatStatus at top of file
+              await tx.seat.updateMany({
+                where: { id: { in: seatReservations.map(r => r.seatId) } },
+                data: { status: 'AVAILABLE' },
+              });
+              logger.info(`Released ${seatReservations.length} seat(s) for abandoned registration ${registration.id}`);
+            }
+
             cancelledCount++;
             logger.info(`Cancelled abandoned payment: registration ${registration.id} for event: ${registration.event.title}`);
           });
@@ -195,7 +217,7 @@ export class PaymentTimeoutJob {
     );
 
     logger.info(
-      `Payment timeout job scheduled: Every hour (cancels payments pending > ${this.TIMEOUT_HOURS} hours)`,
+      `Payment timeout job scheduled: Every 5 minutes (cancels payments pending > ${this.TIMEOUT_MINUTES} minutes)`,
     );
   }
 
@@ -218,7 +240,7 @@ export class PaymentTimeoutJob {
     timeoutDate: Date;
   }> {
     const timeoutDate = new Date();
-    timeoutDate.setHours(timeoutDate.getHours() - this.TIMEOUT_HOURS);
+    timeoutDate.setMinutes(timeoutDate.getMinutes() - this.TIMEOUT_MINUTES);
 
     try {
       const abandonedPaymentsCount = await prisma.eventRegistration.count({

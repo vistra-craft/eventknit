@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ interface Exhibitor {
 
 const ExhibitorDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -270,7 +271,7 @@ const ExhibitorDetails: React.FC = () => {
                     <div 
                       key={related.id}
                       className="flex items-center justify-between p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => window.location.href = `/user/dashboard?section=exhibitors&view=${related.id}`}
+                      onClick={() => navigate(`/user/dashboard?section=exhibitors&view=${related.id}`)}
                     >
                       <div>
                         <h4 className="font-medium text-foreground">{related.name}</h4>

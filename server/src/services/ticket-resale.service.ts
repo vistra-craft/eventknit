@@ -2,6 +2,11 @@ import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { Decimal } from '@prisma/client/runtime/library';
+import { RegistrationStatus } from '@prisma/client';
+import { TicketService } from './ticket.service.js';
+import { emailService } from './email.service.js';
+import { getPaymentGatewayManager } from './payment-gateway-manager.js';
+import crypto from 'crypto';
 
 export class TicketResaleService {
   /**
@@ -25,6 +30,7 @@ export class TicketResaleService {
               startDate: true,
               endDate: true,
               currency: true,
+              allowResale: true,
               ticketTypes: true, // Include ticket types to check for name-locked
             },
           },
@@ -37,6 +43,11 @@ export class TicketResaleService {
 
       if (registration.attendeeId !== userId) {
         throw new ValidationError('You can only resell your own tickets');
+      }
+
+      // Check if event allows resale
+      if (registration.event.allowResale === false) {
+        throw new ValidationError('Resale is disabled for this event');
       }
 
       // Check if ticket is name-locked
@@ -251,15 +262,24 @@ export class TicketResaleService {
   }
 
   /**
-   * Purchase a resale ticket
+   * Initialize payment for a resale ticket purchase
    */
-  static async purchaseResaleTicket(userId: string, resaleId: string) {
+  static async initializeResalePayment(userId: string, resaleId: string, email: string) {
     try {
       const resale = await prisma.ticketResale.findUnique({
         where: { id: resaleId },
         include: {
           registration: {
-            include: { event: true },
+            include: {
+              event: {
+                select: {
+                  id: true,
+                  title: true,
+                  startDate: true,
+                  currency: true,
+                },
+              },
+            },
           },
         },
       });
@@ -280,40 +300,219 @@ export class TicketResaleService {
         throw new ValidationError('This listing has expired');
       }
 
-      // Update registration to new owner
-      await prisma.$transaction(async (tx) => {
-        // Update registration
-        await tx.eventRegistration.update({
-          where: { id: resale.registrationId },
-          data: {
-            attendeeId: userId,
-            updatedAt: new Date(),
-          },
-        });
+      // Reserve the listing to prevent double-purchase
+      const reference = `RESALE-${resaleId}-${Date.now()}`;
 
-        // Update resale status
-        await tx.ticketResale.update({
-          where: { id: resaleId },
-          data: {
-            status: 'SOLD',
-            buyerId: userId,
-            soldAt: new Date(),
-          },
-        });
-
-        // Create payment transaction (if needed)
-        // This would integrate with your payment system
+      await prisma.ticketResale.update({
+        where: { id: resaleId },
+        data: {
+          status: 'RESERVED',
+          reservedAt: new Date(),
+          paymentReference: reference,
+          paymentStatus: 'PENDING',
+        },
       });
 
-      logger.info(`Ticket resale purchased: ${resaleId} by user ${userId}`);
-      return { success: true, message: 'Ticket purchased successfully' };
+      // Initialize payment via gateway
+      const gateway = getPaymentGatewayManager().getDefaultGateway();
+      const paymentResult = await gateway.initializePayment({
+        amount: Number(resale.resalePrice),
+        currency: resale.currency,
+        email,
+        reference,
+        metadata: {
+          type: 'resale',
+          resaleId,
+          eventId: resale.registration.event.id,
+          eventTitle: resale.registration.event.title,
+        },
+      });
+
+      if (!paymentResult.success) {
+        // Revert reservation
+        await prisma.ticketResale.update({
+          where: { id: resaleId },
+          data: {
+            status: 'LISTED',
+            reservedAt: null,
+            paymentReference: null,
+            paymentStatus: null,
+          },
+        });
+        throw new ValidationError('Failed to initialize payment');
+      }
+
+      logger.info(`Resale payment initialized: ${reference} for resale ${resaleId}`);
+      return {
+        authorizationUrl: paymentResult.authorizationUrl,
+        accessCode: paymentResult.accessCode,
+        reference: paymentResult.reference,
+      };
     } catch (error: any) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
-      logger.error('Error purchasing resale ticket:', error);
-      throw new ValidationError(`Failed to purchase ticket: ${error.message}`);
+      logger.error('Error initializing resale payment:', error);
+      throw new ValidationError(`Failed to initialize payment: ${error.message}`);
     }
+  }
+
+  /**
+   * Verify payment and complete resale purchase
+   */
+  static async verifyResalePayment(reference: string, userId: string) {
+    try {
+      const resale = await prisma.ticketResale.findFirst({
+        where: { paymentReference: reference },
+        include: {
+          registration: {
+            include: {
+              event: {
+                select: {
+                  id: true,
+                  title: true,
+                  startDate: true,
+                  venue: true,
+                  location: true,
+                },
+              },
+              ticketLineItems: true,
+            },
+          },
+          seller: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!resale) {
+        throw new NotFoundError('Resale not found for this payment reference');
+      }
+
+      if (resale.status !== 'RESERVED') {
+        throw new ValidationError(`Cannot verify payment: listing status is ${resale.status}`);
+      }
+
+      // Verify payment with gateway
+      const gateway = getPaymentGatewayManager().getDefaultGateway();
+      const verification = await gateway.verifyPayment({ reference });
+
+      if (!verification.success || verification.status !== 'success') {
+        // Payment failed — revert to LISTED
+        await prisma.ticketResale.update({
+          where: { id: resale.id },
+          data: {
+            status: 'LISTED',
+            reservedAt: null,
+            paymentReference: null,
+            paymentStatus: 'FAILED',
+          },
+        });
+        throw new ValidationError('Payment verification failed. The listing has been made available again.');
+      }
+
+      // Payment succeeded — transfer ownership in a transaction
+      const result = await prisma.$transaction(async (tx) => {
+        const oldRegistration = resale.registration;
+
+        // 1. Create new registration for buyer
+        const newRegistration = await tx.eventRegistration.create({
+          data: {
+            eventId: oldRegistration.eventId,
+            attendeeId: userId,
+            quantity: oldRegistration.quantity,
+            totalAmount: resale.resalePrice,
+            status: RegistrationStatus.CONFIRMED,
+            paymentStatus: oldRegistration.paymentStatus,
+            ticketType: oldRegistration.ticketType,
+            registrationData: (oldRegistration.registrationData as any) || undefined,
+            backupCode: TicketService.generateBackupTicketCode(),
+            qrSecret: crypto.randomUUID(),
+          },
+        });
+
+        // 2. Copy ticket line items
+        if (oldRegistration.ticketLineItems.length > 0) {
+          await tx.ticketLineItem.createMany({
+            data: oldRegistration.ticketLineItems.map((item) => ({
+              registrationId: newRegistration.id,
+              ticketType: item.ticketType,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              totalPrice: item.totalPrice,
+            })),
+          });
+        }
+
+        // 3. Cancel old registration
+        await tx.eventRegistration.update({
+          where: { id: oldRegistration.id },
+          data: {
+            status: RegistrationStatus.CANCELLED,
+            qrCodeDataUrl: null,
+          },
+        });
+
+        // 4. Mark resale as SOLD
+        await tx.ticketResale.update({
+          where: { id: resale.id },
+          data: {
+            status: 'SOLD',
+            buyerId: userId,
+            soldAt: new Date(),
+            paymentStatus: 'COMPLETED',
+          },
+        });
+
+        return newRegistration;
+      });
+
+      // Send seller notification email asynchronously
+      if (resale.seller?.email) {
+        const buyer = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { firstName: true, lastName: true },
+        });
+
+        const eventDate = resale.registration.event.startDate.toLocaleDateString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        });
+
+        emailService.sendTicketResaleSoldEmail(resale.seller.email, {
+          sellerName: `${resale.seller.firstName} ${resale.seller.lastName}`.trim(),
+          buyerFirstName: buyer?.firstName || 'A buyer',
+          eventTitle: resale.registration.event.title,
+          eventDate,
+          salePrice: Number(resale.resalePrice),
+          platformFee: Number(resale.platformFee),
+          sellerPayout: Number(resale.sellerPayout),
+          currency: resale.currency,
+        }).catch((err) => {
+          logger.error(`Error sending resale sold email to ${resale.seller!.email}:`, err);
+        });
+      }
+
+      logger.info(`Resale payment verified and completed: ${reference}, resale ${resale.id}`);
+      return { success: true, message: 'Ticket purchased successfully', registrationId: result.id };
+    } catch (error: any) {
+      if (error instanceof NotFoundError || error instanceof ValidationError) {
+        throw error;
+      }
+      logger.error('Error verifying resale payment:', error);
+      throw new ValidationError(`Failed to verify payment: ${error.message}`);
+    }
+  }
+
+  /**
+   * @deprecated Use initializeResalePayment + verifyResalePayment instead
+   */
+  static async purchaseResaleTicket(_userId: string, _resaleId: string) {
+    throw new ValidationError('Direct purchase is no longer supported. Use the payment flow via initializeResalePayment.');
   }
 
   /**

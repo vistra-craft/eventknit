@@ -1,15 +1,15 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
+import { uploadImage, type UploadFolder } from '@/lib/upload-api';
 
 interface ImageUploadFieldProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  placeholder?: string;
+  folder?: UploadFolder;
   previewSize?: 'sm' | 'md' | 'lg';
   aspectRatio?: 'square' | 'wide' | 'auto';
 }
@@ -18,13 +18,13 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   label,
   value,
   onChange,
-  placeholder = 'https://...',
+  folder,
   previewSize = 'md',
   aspectRatio = 'square',
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const sizeClasses = {
     sm: 'h-16 w-16',
@@ -42,39 +42,34 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
+      setError('Only image files are allowed');
       return;
     }
 
-    // Validate file size (max 2MB for profile pics / logos)
-    if (file.size > 2 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File too large. Maximum 5MB.');
       return;
     }
 
     setIsUploading(true);
+    setError(null);
 
     try {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        onChange(base64String);
-        setIsUploading(false);
-        setShowUrlInput(false);
-      };
-      reader.onerror = () => {
-        setIsUploading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch {
+      const url = await uploadImage(file, folder);
+      onChange(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleClear = () => {
     onChange('');
+    setError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
-    setShowUrlInput(false);
   };
 
   return (
@@ -112,57 +107,40 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
               size="sm"
               className="h-auto p-0 text-xs"
               onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
             >
-              Change image
+              {isUploading ? 'Uploading...' : 'Change image'}
             </Button>
           </div>
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="flex-1"
-            >
-              {isUploading ? (
-                <>
-                  <Loader size="sm" className="mr-2" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload
-                </>
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowUrlInput(!showUrlInput)}
-              className="text-muted-foreground"
-            >
-              <ImageIcon className="h-4 w-4 mr-1" />
-              URL
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <>
+                <Loader size="sm" className="mr-2" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4 mr-2" />
+                Upload
+              </>
+            )}
+          </Button>
 
-          {showUrlInput && (
-            <Input
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder={placeholder}
-              className="text-sm"
-            />
+          {error && (
+            <p className="text-xs text-destructive">{error}</p>
           )}
 
           <p className="text-xs text-muted-foreground">
-            Max 2MB. JPG, PNG, or GIF
+            Max 5MB. JPG, PNG, or GIF
           </p>
         </div>
       )}

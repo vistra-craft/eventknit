@@ -12,7 +12,7 @@ import { PDFService } from './pdf.service.js';
 import { CloudinaryService } from './cloudinary.service.js';
 
 // Redis configuration for BullMQ
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6380';
 const QUEUE_NAME = 'ticket-pdf-generation';
 
 // Parse Redis URL to get connection options
@@ -21,11 +21,11 @@ const parseRedisUrl = (url: string) => {
     const parsed = new URL(url);
     return {
       host: parsed.hostname || 'localhost',
-      port: parseInt(parsed.port || '6379', 10),
+      port: parseInt(parsed.port || '6380', 10),
       password: parsed.password || undefined,
     };
   } catch {
-    return { host: 'localhost', port: 6379 };
+    return { host: 'localhost', port: 6380 };
   }
 };
 

@@ -3,6 +3,7 @@ import { RegistrationStatus, UserRole, UserStatus } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { ValidationError, ConflictError, NotFoundError } from '../utils/errors.js';
 import { createAuditLog, AuditActions } from '../utils/audit.js';
+import { emailService } from './email.service.js';
 
 export class UserService {
   /**
@@ -186,7 +187,7 @@ export class UserService {
         role: UserRole.ORGANIZER,
         organizationName: data.organizationName.trim(),
         businessEmail: data.businessEmail?.trim() || user.email,
-        onboardingCompleted: false, // Reset onboarding for new organizers
+        onboardingCompleted: true, // Skip onboarding stepper — approval flow handles gating
       },
       select: {
         id: true,
@@ -224,6 +225,118 @@ export class UserService {
     logger.info(`User ${userId} switched from ATTENDEE to ORGANIZER`);
 
     return updatedUser;
+  }
+
+  /**
+   * Request organizer approval — sets status to PENDING_APPROVAL and notifies admins.
+   * Called after an ATTENDEE has been upgraded to ORGANIZER and created their first event.
+   */
+  static async requestOrganizerApproval(
+    userId: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (user.role !== UserRole.ORGANIZER) {
+      throw new ValidationError('Only organizers can request approval');
+    }
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new ValidationError('User must be in ACTIVE status to request approval');
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { status: UserStatus.PENDING_APPROVAL },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        isEmailVerified: true,
+        organizationName: true,
+        businessEmail: true,
+        onboardingCompleted: true,
+        avatar: true,
+        companyAffiliation: true,
+        phoneNumber: true,
+      },
+    });
+
+    // Fire-and-forget: send pending email to the organizer
+    emailService.sendOrganizerPendingEmail(user.email, user.firstName || '').catch((err) => {
+      logger.error('Failed to send organizer pending email:', err);
+    });
+
+    // Fire-and-forget: notify admins of new organizer
+    this.notifyAdminsOfNewOrganizer(user).catch((err) => {
+      logger.error('Failed to notify admins of new organizer:', err);
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId,
+      action: AuditActions.USER_STATUS_CHANGED,
+      entity: 'User',
+      entityId: userId,
+      metadata: {
+        previousStatus: UserStatus.ACTIVE,
+        newStatus: UserStatus.PENDING_APPROVAL,
+        reason: 'Organizer approval requested after first event creation',
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    logger.info(`User ${userId} requested organizer approval — status set to PENDING_APPROVAL`);
+
+    return updatedUser;
+  }
+
+  /**
+   * Notify all active admins about a new organizer requiring approval
+   */
+  private static async notifyAdminsOfNewOrganizer(organizer: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    organizationName: string | null;
+  }): Promise<void> {
+    const admins = await prisma.user.findMany({
+      where: {
+        role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF] },
+        status: UserStatus.ACTIVE,
+        deletedAt: null,
+      },
+      select: { email: true, firstName: true },
+    });
+
+    if (admins.length === 0) {
+      logger.warn('No active admins found to notify about new organizer');
+      return;
+    }
+
+    await Promise.allSettled(
+      admins.map((admin) =>
+        emailService.sendAdminNewOrganizerNotification(
+          admin.email,
+          admin.firstName || 'Admin',
+          {
+            firstName: organizer.firstName || '',
+            lastName: organizer.lastName || '',
+            email: organizer.email,
+            organizationName: organizer.organizationName,
+          },
+        ),
+      ),
+    );
   }
 
   /**

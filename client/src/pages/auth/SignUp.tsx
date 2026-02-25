@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent } from '@/components/ui/card';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
@@ -15,6 +14,7 @@ import { requestRegistrationCode, verifyRegistrationCode } from '@/lib/auth-api'
 import { extractErrorMessage } from '@/lib/utils/error';
 import BackButton from '@/components/BackButton';
 import Logo from '@/components/Logo';
+import signupImage from '@/assets/event-concert.jpg';
 
 type Step = 'email' | 'verify';
 
@@ -158,67 +158,82 @@ const SignUp = () => {
       setStep('email');
       setCode('');
     }
-    // No longer need to go back from 'email' step (type step removed)
   };
 
-  // Step progress (2 steps now: email, verify)
+  // Step progress (2 steps: email, verify)
   const stepNumber = step === 'email' ? 1 : 2;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-muted/10 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            {step === 'email' ? (
-              <BackButton to="/" label="Back to home" />
-            ) : (
-              <button
-                onClick={handleBack}
-                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </button>
-            )}
-            <Logo />
-          </div>
+    <div className="bg-background min-h-screen flex items-center justify-center">
+      <div className="p-4 w-full">
+        <div className="w-full max-w-4xl mx-auto">
+          <div className="bg-card-surface rounded-2xl shadow-md overflow-hidden flex flex-col lg:flex-row">
+            {/* Left Panel - Image with Overlay */}
+            <div className="hidden lg:block lg:w-1/2 relative">
+              <div className="absolute inset-0">
+                <img
+                  src={signupImage}
+                  alt="Join EventKnit"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center p-8 bg-black/30">
+                  <div className="text-center">
+                    <h2 className="text-white text-3xl font-bold mb-2">Join the Community</h2>
+                    <p className="text-white/90 text-lg">Create, discover, and manage amazing events</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-          {/* Step Progress (2 steps) */}
-          <div className="flex gap-2 mb-5 max-w-xs">
-            {[1, 2].map((s) => (
-              <div
-                key={s}
-                className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                  s <= stepNumber ? 'bg-primary' : 'bg-border'
-                }`}
-              />
-            ))}
-          </div>
+            {/* Right Panel - Sign Up Form */}
+            <div className="w-full lg:w-1/2 p-5 lg:p-6">
+              <div className="w-full max-w-md mx-auto">
+                {/* Header */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    {step === 'email' ? (
+                      <BackButton to="/" label="Back to home" />
+                    ) : (
+                      <button
+                        onClick={handleBack}
+                        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-colors"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                      </button>
+                    )}
+                    <Logo />
+                  </div>
 
-          <h1 className="text-2xl font-bold text-foreground mb-1">
-            {step === 'email' && 'Create your account'}
-            {step === 'verify' && 'Complete your profile'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {step === 'email' && 'Sign up to discover and create amazing events.'}
-            {step === 'verify' && (
-              <>We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span></>
-            )}
-          </p>
-        </div>
+                  {/* Step Progress */}
+                  <div className="flex gap-2 mb-4 max-w-xs">
+                    {[1, 2].map((s) => (
+                      <div
+                        key={s}
+                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                          s <= stepNumber ? 'bg-primary' : 'bg-border'
+                        }`}
+                      />
+                    ))}
+                  </div>
 
-        {/* ===== Form Card (Email & Verify Steps) ===== */}
-        {(step === 'email' || step === 'verify') && (
-          <div className="max-w-md mx-auto">
-            <Card className="border border-border bg-card-surface rounded-2xl shadow-none">
-              <CardContent className="p-6 sm:p-8">
+                  <h1 className="text-2xl font-bold text-foreground mb-1">
+                    {step === 'email' && 'Create your account'}
+                    {step === 'verify' && 'Complete your profile'}
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    {step === 'email' && 'Sign up to discover and create amazing events.'}
+                    {step === 'verify' && (
+                      <>We sent a 6-digit code to <span className="font-medium text-foreground">{email}</span></>
+                    )}
+                  </p>
+                </div>
 
-                {/* Step 2: Email / Social Login */}
+                {/* ===== Email Step ===== */}
                 {step === 'email' && (
                   <>
                     {/* Social Login Buttons */}
-                    <div className="flex gap-3 mb-4">
+                    <div className="mb-4 flex gap-3">
                       <Button
                         variant="outline"
                         className="flex-1 h-11"
@@ -234,7 +249,6 @@ const SignUp = () => {
                         </svg>
                         Google
                       </Button>
-
                       <Button
                         variant="outline"
                         className="flex-1 h-11"
@@ -255,26 +269,204 @@ const SignUp = () => {
                         <div className="w-full border-t border-border"></div>
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-card-surface px-2 text-muted-foreground">or</span>
+                        <span className="bg-card-surface px-2 text-muted-foreground">Or continue with email</span>
                       </div>
                     </div>
 
                     {/* Email Form */}
-                    <form onSubmit={handleSendCode} className="space-y-4">
+                    <div className="space-y-4">
+                      <form onSubmit={handleSendCode} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="email" className="text-sm font-medium text-foreground">Email address</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            placeholder="you@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="h-11 border-border focus:border-primary focus:ring-primary"
+                            required
+                            disabled={isLoading}
+                            autoComplete="email"
+                            autoFocus
+                          />
+                        </div>
+
+                        {error && (
+                          <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
+                            {error}
+                          </div>
+                        )}
+
+                        <Button
+                          type="submit"
+                          variant="default"
+                          className="w-full h-11"
+                          disabled={isLoading || !email}
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader size="sm" className="mr-2" />
+                              Sending code...
+                            </>
+                          ) : (
+                            'Continue with email'
+                          )}
+                        </Button>
+                      </form>
+
+                      {/* Sign in link */}
+                      <div className="text-center pt-1">
+                        <p className="text-sm text-muted-foreground">
+                          Already have an account?{' '}
+                          <Button
+                            variant="link"
+                            className="p-0 h-auto font-medium"
+                            asChild
+                          >
+                            <Link to="/auth/signin">Log in</Link>
+                          </Button>
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ===== Verify Step ===== */}
+                {step === 'verify' && (
+                  <div className="space-y-4">
+                    <form onSubmit={handleCreateAccount} className="space-y-4">
+                      {/* Verification Code */}
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm font-medium">Email address</Label>
+                        <Label htmlFor="code" className="text-sm font-medium text-foreground">Verification code</Label>
                         <Input
-                          id="email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="h-11"
+                          id="code"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="Enter 6-digit code"
+                          value={code}
+                          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="h-11 text-center text-lg tracking-widest border-border focus:border-primary focus:ring-primary"
+                          maxLength={6}
                           required
                           disabled={isLoading}
-                          autoComplete="email"
                           autoFocus
                         />
+                        <button
+                          type="button"
+                          onClick={handleResendCode}
+                          className="text-xs text-primary hover:underline"
+                          disabled={isLoading}
+                        >
+                          Didn't get a code? Resend
+                        </button>
+                      </div>
+
+                      {/* Name Fields */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="firstName" className="text-sm font-medium text-foreground">First name</Label>
+                          <Input
+                            id="firstName"
+                            placeholder="First name"
+                            value={firstName}
+                            onChange={(e) => setFirstName(e.target.value)}
+                            className="h-11 border-border focus:border-primary focus:ring-primary"
+                            required
+                            disabled={isLoading}
+                            autoComplete="given-name"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="lastName" className="text-sm font-medium text-foreground">Last name</Label>
+                          <Input
+                            id="lastName"
+                            placeholder="Last name"
+                            value={lastName}
+                            onChange={(e) => setLastName(e.target.value)}
+                            className="h-11 border-border focus:border-primary focus:ring-primary"
+                            required
+                            disabled={isLoading}
+                            autoComplete="family-name"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Password */}
+                      <div className="space-y-2">
+                        <Label htmlFor="password" className="text-sm font-medium text-foreground">Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Create a password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="h-11 pr-10 border-border focus:border-primary focus:ring-primary"
+                            required
+                            disabled={isLoading}
+                            autoComplete="new-password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          </button>
+                        </div>
+                        {password && (
+                          <div className="flex gap-3 text-xs text-muted-foreground">
+                            <span className={password.length >= 8 ? 'text-success' : ''}>
+                              {password.length >= 8 ? '\u2713' : '\u25CB'} 8+ chars
+                            </span>
+                            <span className={/[a-zA-Z]/.test(password) ? 'text-success' : ''}>
+                              {/[a-zA-Z]/.test(password) ? '\u2713' : '\u25CB'} Letter
+                            </span>
+                            <span className={/\d/.test(password) ? 'text-success' : ''}>
+                              {/\d/.test(password) ? '\u2713' : '\u25CB'} Number
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Confirm Password */}
+                      <div className="space-y-2">
+                        <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">Confirm password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="Confirm your password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="h-11 border-border focus:border-primary focus:ring-primary"
+                          required
+                          disabled={isLoading}
+                          autoComplete="new-password"
+                        />
+                      </div>
+
+                      {/* Terms of Service */}
+                      <div className="flex items-start space-x-2">
+                        <Checkbox
+                          id="terms"
+                          checked={agreedToTerms}
+                          onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
+                          className="mt-0.5"
+                        />
+                        <Label
+                          htmlFor="terms"
+                          className="text-sm font-normal text-muted-foreground leading-snug cursor-pointer"
+                        >
+                          I agree to the{' '}
+                          <Link to="/terms" className="text-primary hover:underline" target="_blank">
+                            Terms of Service
+                          </Link>{' '}
+                          and{' '}
+                          <Link to="/privacy" className="text-primary hover:underline" target="_blank">
+                            Privacy Policy
+                          </Link>
+                        </Label>
                       </div>
 
                       {error && (
@@ -287,194 +479,38 @@ const SignUp = () => {
                         type="submit"
                         variant="default"
                         className="w-full h-11"
-                        disabled={isLoading || !email}
+                        disabled={isLoading || code.length !== 6 || !agreedToTerms}
                       >
                         {isLoading ? (
                           <>
                             <Loader size="sm" className="mr-2" />
-                            Sending code...
+                            Creating account...
                           </>
                         ) : (
-                          'Continue with email'
+                          'Create account'
                         )}
                       </Button>
                     </form>
-                  </>
-                )}
 
-                {/* Step 3: Verify & Complete */}
-                {step === 'verify' && (
-                  <form onSubmit={handleCreateAccount} className="space-y-4">
-                    {/* Verification Code */}
-                    <div className="space-y-2">
-                      <Label htmlFor="code" className="text-sm font-medium">Verification code</Label>
-                      <Input
-                        id="code"
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="Enter 6-digit code"
-                        value={code}
-                        onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="h-11 text-center text-lg tracking-widest"
-                        maxLength={6}
-                        required
-                        disabled={isLoading}
-                        autoFocus
-                      />
-                      <button
-                        type="button"
-                        onClick={handleResendCode}
-                        className="text-xs text-primary hover:underline"
-                        disabled={isLoading}
-                      >
-                        Didn't get a code? Resend
-                      </button>
-                    </div>
-
-                    {/* Name Fields */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="firstName" className="text-sm font-medium">First name</Label>
-                        <Input
-                          id="firstName"
-                          placeholder="First name"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          className="h-11"
-                          required
-                          disabled={isLoading}
-                          autoComplete="given-name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-sm font-medium">Last name</Label>
-                        <Input
-                          id="lastName"
-                          placeholder="Last name"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          className="h-11"
-                          required
-                          disabled={isLoading}
-                          autoComplete="family-name"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Password */}
-                    <div className="space-y-2">
-                      <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Create a password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="h-11 pr-10"
-                          required
-                          disabled={isLoading}
-                          autoComplete="new-password"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    {/* Sign in link */}
+                    <div className="text-center pt-1">
+                      <p className="text-sm text-muted-foreground">
+                        Already have an account?{' '}
+                        <Button
+                          variant="link"
+                          className="p-0 h-auto font-medium"
+                          asChild
                         >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                      {password && (
-                        <div className="flex gap-3 text-xs text-muted-foreground">
-                          <span className={password.length >= 8 ? 'text-success' : ''}>
-                            {password.length >= 8 ? '\u2713' : '\u25CB'} 8+ chars
-                          </span>
-                          <span className={/[a-zA-Z]/.test(password) ? 'text-success' : ''}>
-                            {/[a-zA-Z]/.test(password) ? '\u2713' : '\u25CB'} Letter
-                          </span>
-                          <span className={/\d/.test(password) ? 'text-success' : ''}>
-                            {/\d/.test(password) ? '\u2713' : '\u25CB'} Number
-                          </span>
-                        </div>
-                      )}
+                          <Link to="/auth/signin">Log in</Link>
+                        </Button>
+                      </p>
                     </div>
-
-                    {/* Confirm Password */}
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm password</Label>
-                      <Input
-                        id="confirmPassword"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Confirm your password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="h-11"
-                        required
-                        disabled={isLoading}
-                        autoComplete="new-password"
-                      />
-                    </div>
-
-                    {/* Terms of Service */}
-                    <div className="flex items-start space-x-2">
-                      <Checkbox
-                        id="terms"
-                        checked={agreedToTerms}
-                        onCheckedChange={(checked) => setAgreedToTerms(checked === true)}
-                        className="mt-0.5"
-                      />
-                      <Label
-                        htmlFor="terms"
-                        className="text-sm font-normal text-muted-foreground leading-snug cursor-pointer"
-                      >
-                        I agree to the{' '}
-                        <Link to="/terms" className="text-primary hover:underline" target="_blank">
-                          Terms of Service
-                        </Link>{' '}
-                        and{' '}
-                        <Link to="/privacy" className="text-primary hover:underline" target="_blank">
-                          Privacy Policy
-                        </Link>
-                      </Label>
-                    </div>
-
-                    {error && (
-                      <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
-                        {error}
-                      </div>
-                    )}
-
-                    <Button
-                      type="submit"
-                      variant="default"
-                      className="w-full h-11"
-                      disabled={isLoading || code.length !== 6 || !agreedToTerms}
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader size="sm" className="mr-2" />
-                          Creating account...
-                        </>
-                      ) : (
-                        'Create account'
-                      )}
-                    </Button>
-                  </form>
+                  </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Sign in link */}
-            <div className="text-center mt-6">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{' '}
-                <Link to="/auth/signin" className="text-primary font-medium hover:underline">
-                  Log in
-                </Link>
-              </p>
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -112,9 +112,11 @@ describe('useAuth', () => {
     });
 
     it('should call logout API (fire-and-forget)', async () => {
-      const mockLogoutApi = vi.spyOn(authApi, 'logout').mockResolvedValue({
-        success: true,
-      } as authApi.ApiResponse<void>);
+      // Mock getAccessToken to return a token so the fetch branch executes
+      const { getAccessToken } = await import('../lib/api');
+      vi.mocked(getAccessToken).mockReturnValue('mock-token');
+
+      const mockFetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response());
 
       const { result } = renderHook(() => useAuth(), {
         wrapper: TestWrapper,
@@ -124,15 +126,24 @@ describe('useAuth', () => {
         result.current.logout();
       });
 
-      // API call should be made (but not awaited)
+      // Raw fetch should be called (fire-and-forget, not authApi.logout)
       await waitFor(() => {
-        expect(mockLogoutApi).toHaveBeenCalled();
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining('/auth/logout'),
+          expect.objectContaining({ method: 'POST' }),
+        );
       });
+
+      mockFetch.mockRestore();
     });
 
     it('should not block navigation if logout API fails', async () => {
-      const mockLogoutApi = vi
-        .spyOn(authApi, 'logout')
+      // Mock getAccessToken to return a token so the fetch branch executes
+      const { getAccessToken } = await import('../lib/api');
+      vi.mocked(getAccessToken).mockReturnValue('mock-token');
+
+      const mockFetch = vi
+        .spyOn(globalThis, 'fetch')
         .mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useAuth(), {
@@ -145,15 +156,20 @@ describe('useAuth', () => {
 
       // Navigation should still happen immediately
       expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
-      
+
       // State should still be cleared
       expect(result.current.isAuthenticated).toBe(false);
       expect(result.current.user).toBe(null);
 
-      // API call should fail but not block
+      // Fetch should have been called even though it fails
       await waitFor(() => {
-        expect(mockLogoutApi).toHaveBeenCalled();
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining('/auth/logout'),
+          expect.objectContaining({ method: 'POST' }),
+        );
       });
+
+      mockFetch.mockRestore();
     });
 
     it('should dispatch tokenChange event', () => {

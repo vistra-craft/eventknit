@@ -31,6 +31,13 @@ import type {
 } from "@/types/user-dashboard";
 
 /**
+ * Check if user is registered for an event
+ */
+export const getRegistrationStatus = async (eventId: string): Promise<ApiResponse<{ isRegistered: boolean; registrationId: string | null; status: string | null }>> => {
+  return apiGet(`/user-dashboard/registration-status/${eventId}`);
+};
+
+/**
  * Get personalized event recommendations
  */
 export const getPersonalizedRecommendations = async (limit?: number): Promise<ApiResponse<{ recommendations: EventRecommendation[] }>> => {
@@ -128,6 +135,31 @@ export const getEventReviews = async (eventId: string, filters?: {
  */
 export const markReviewHelpful = async (reviewId: string): Promise<ApiResponse<{ review: EventReview }>> => {
   return apiPost(`/user-dashboard/reviews/${reviewId}/helpful`);
+};
+
+/**
+ * Get transfer details by token (public, no auth required)
+ */
+export const getTransferByToken = async (token: string): Promise<ApiResponse<{ transfer: {
+  id: string;
+  status: string;
+  expiresAt: string;
+  message?: string;
+  ticketType?: string;
+  quantity: number;
+  fromUser: { firstName: string; lastName: string };
+  event: {
+    id: string;
+    title: string;
+    image?: string;
+    startDate: string;
+    endDate?: string;
+    venue?: string;
+    location?: string;
+  };
+  createdAt: string;
+} }>> => {
+  return apiGet(`/user-dashboard/transfers/token/${token}`);
 };
 
 /**
@@ -521,8 +553,25 @@ export const getUserResales = async (status?: string): Promise<ApiResponse<{ res
   return apiGet(endpoint);
 };
 
+/** @deprecated Use initializeResalePayment + verifyResalePayment instead */
 export const purchaseResaleTicket = async (resaleId: string): Promise<ApiResponse<{ message: string }>> => {
   return apiPost(`/user-dashboard/resale/${resaleId}/purchase`, {});
+};
+
+export const initializeResalePayment = async (resaleId: string): Promise<ApiResponse<{
+  authorizationUrl: string;
+  accessCode: string;
+  reference: string;
+}>> => {
+  return apiPost(`/user-dashboard/resale/${resaleId}/initialize-payment`, {});
+};
+
+export const verifyResalePayment = async (reference: string): Promise<ApiResponse<{
+  success: boolean;
+  message: string;
+  registrationId: string;
+}>> => {
+  return apiGet(`/user-dashboard/resale/verify-payment?reference=${encodeURIComponent(reference)}`);
 };
 
 export const cancelResale = async (resaleId: string): Promise<ApiResponse<{ success: boolean }>> => {
@@ -658,6 +707,13 @@ export const becomeOrganizer = async (data: {
   businessEmail?: string;
 }): Promise<ApiResponse<{ user: User }>> => {
   return apiPost('/user/role-switch/become-organizer', data);
+};
+
+/**
+ * Request organizer approval (sets status to PENDING_APPROVAL, triggers emails)
+ */
+export const requestOrganizerApproval = async (): Promise<ApiResponse<{ user: User }>> => {
+  return apiPost('/user/role-switch/request-approval', {});
 };
 
 /**

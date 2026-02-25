@@ -612,6 +612,12 @@ export class EventStaffService {
       },
     });
 
+    // Revoke staff member's refresh tokens to force re-authentication
+    // This ensures removed staff cannot continue using cached permissions
+    await prisma.refreshToken.deleteMany({
+      where: { userId: staffId },
+    });
+
     // Audit log
     await createAuditLog({
       userId: removedBy,
@@ -621,12 +627,13 @@ export class EventStaffService {
       metadata: {
         eventId,
         staffId,
+        sessionsRevoked: true,
       },
       ipAddress,
       userAgent,
     });
 
-    logger.info(`Staff ${staffId} removed from event ${eventId}`);
+    logger.info(`Staff ${staffId} removed from event ${eventId}, sessions revoked`);
 
     // Send notification to staff member (Section 3 Phase 3 integration)
     try {

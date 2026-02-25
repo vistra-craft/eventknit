@@ -143,6 +143,15 @@ export interface EventData {
     phoneNumber?: string | null;
   };
 
+  // Refund policy
+  refundPolicy?: string | null; // 'no_refunds' | 'full_refund' | 'partial_refund' | 'custom'
+  refundDeadlineDays?: number | null;
+  refundPolicyText?: string | null;
+  autoRefundEnabled?: boolean;
+
+  // Seating
+  hasSeatMap?: boolean; // Whether a seat map is configured for this event
+
   // Computed fields
   organizerName?: string; // Computed from organizer
   registrationCount?: number; // From _count

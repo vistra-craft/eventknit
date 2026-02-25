@@ -16,6 +16,7 @@ import {
   LogOut,
   Palette,
   Ticket,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -43,6 +44,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     tickets: location.pathname.startsWith('/admin/tickets'),
     // Auto-expand users section if on users pages
     users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
+    // Auto-expand KYC section if on KYC pages
+    kyc: location.pathname.startsWith('/admin/kyc'),
     // Auto-expand settings section if on settings pages
     settings: location.pathname.startsWith('/admin/settings'),
     // Auto-expand branding section if on branding pages
@@ -89,9 +92,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "User Roles", href: "/admin/users/roles" },
       ]
     },
-    { 
-      id: "analytics", 
-      label: "Analytics", 
+    {
+      id: "kyc",
+      label: "KYC Review",
+      icon: ShieldCheck,
+      href: "/admin/kyc",
+      group: "main",
+    },
+    {
+      id: "analytics",
+      label: "Analytics",
       icon: TrendingUp,
       group: "main",
       children: [

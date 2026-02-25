@@ -15,17 +15,22 @@ export const CompletionScreen = () => {
   const navigate = useNavigate();
   const { state } = useAuthContext();
 
+  const role = state.user?.role;
+  const isOrganizerRole =
+    role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER';
+  const dashboardRoute = isOrganizerRole ? '/organizer/dashboard' : '/dashboard';
+
   // Auto-redirect after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/dashboard');
+      navigate(dashboardRoute);
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, [navigate, dashboardRoute]);
 
   const handleContinue = () => {
-    navigate('/dashboard');
+    navigate(dashboardRoute);
   };
 
   const firstName = state.user?.firstName || 'there';

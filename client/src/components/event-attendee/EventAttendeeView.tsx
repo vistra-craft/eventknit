@@ -59,8 +59,11 @@ export interface AgendaItem {
   startTime: string;
   endTime: string;
   location?: string;
-  type?: 'keynote' | 'panel' | 'workshop' | 'networking' | 'break' | 'session';
+  room?: string;
+  type?: string;
+  sessionType?: string;
   speakers?: string[];
+  speakerIds?: string[];
   speakerDetails?: Speaker[];
 }
 

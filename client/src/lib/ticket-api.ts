@@ -5,6 +5,13 @@
 import { API_BASE_URL, getAccessToken } from './api';
 import type { ApiResponse } from './api';
 
+export interface TicketLineItem {
+  ticketType: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
+
 export interface TicketData {
   id: string;
   registrationId: string;
@@ -13,6 +20,8 @@ export interface TicketData {
   attendeeName: string;
   attendeeEmail: string;
   ticketType?: string;
+  ticketLineItems?: TicketLineItem[];
+  currency?: string;
   qrCode?: string;
   backupCode?: string;
   createdAt: string;
@@ -116,6 +125,72 @@ export const downloadTicketPDF = async (registrationId: string): Promise<void> =
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   }
+};
+
+/**
+ * Refund eligibility response
+ */
+export interface RefundEligibility {
+  eligible: boolean;
+  refundPercentage: number;
+  refundAmount: number;
+  currency: string;
+  message: string;
+  policyType: string;
+  policyText?: string;
+  daysUntilEvent: number;
+  deadline?: string;
+}
+
+/**
+ * Check refund eligibility for a registration
+ */
+export const checkRefundEligibility = async (registrationId: string): Promise<ApiResponse<RefundEligibility>> => {
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error('Authentication required');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tickets/${registrationId}/refund-eligibility`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to check refund eligibility' }));
+    throw new Error(error.message || 'Failed to check refund eligibility');
+  }
+
+  return response.json();
+};
+
+/**
+ * Request a refund for a registration
+ */
+export const requestRefund = async (registrationId: string, refundReason: string): Promise<ApiResponse<unknown>> => {
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error('Authentication required');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/tickets/${registrationId}/request-refund`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ refundReason }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to request refund' }));
+    throw new Error(error.message || 'Failed to request refund');
+  }
+
+  return response.json();
 };
 
 /**

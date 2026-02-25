@@ -239,6 +239,7 @@ const AdminProfilePage = () => {
       [UserStatus.ACTIVE]: "ACTIVE",
       [UserStatus.SUSPENDED]: "SUSPENDED",
       [UserStatus.DEACTIVATED]: "DEACTIVATED",
+      [UserStatus.PENDING_APPROVAL]: "PENDING_APPROVAL",
     };
     const mappedStatus = statusMap[status] || status;
     return <Badge className={getEventStatusBadgeClass(mappedStatus)}>{status}</Badge>;

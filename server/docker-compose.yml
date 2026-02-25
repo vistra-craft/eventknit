@@ -54,7 +54,7 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "${REDIS_PORT:-6380}:6379"
     networks:
       - eventknit-network
     healthcheck:
@@ -87,7 +87,7 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}
-      PORT: 3001
+      PORT: 3010
       
       # Database Configuration
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-eventknit}:${POSTGRES_PASSWORD:-eventknit123}@postgres:5432/${POSTGRES_DB:-eventknit}?schema=public}
@@ -124,7 +124,7 @@ services:
       # Logging
       LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
-      - "${PORT:-3001}:3001"
+      - "${PORT:-3010}:3010"
     networks:
       - eventknit-network
     depends_on:
@@ -135,7 +135,7 @@ services:
     volumes:
       - ./logs:/app/logs
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3010/health"]
       interval: 30s
       timeout: 10s
       retries: 3

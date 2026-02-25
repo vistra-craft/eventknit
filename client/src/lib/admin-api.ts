@@ -250,7 +250,7 @@ export const bulkUpdateOrganizerDataAccess = async (
 /**
  * User Status Management Types
  */
-export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED';
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED' | 'PENDING_APPROVAL';
 export type UserRole = 'SUPERADMIN' | 'ADMIN_STAFF' | 'ORGANIZER' | 'ATTENDEE';
 
 export interface User {
@@ -266,6 +266,61 @@ export interface User {
   businessEmail?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type KYCStatusType = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface OrganizerUser extends User {
+  avatar?: string | null;
+  verificationLevel?: number;
+  kycStatus?: KYCStatusType | null;
+  isIdentityVerified?: boolean;
+  organizerEntityType?: string | null;
+  organizerIndustry?: string | null;
+  profileCompleted?: boolean;
+  lastLoginAt?: string | null;
+  _count?: {
+    eventsCreated: number;
+    eventRegistrations: number;
+  };
+}
+
+export interface OrganizerDetailsEvent {
+  id: string;
+  title: string;
+  startDate: string;
+  status: string;
+  _count: { registrations: number };
+}
+
+export interface OrganizerDetailsResponse {
+  success: boolean;
+  data: {
+    user: OrganizerUser & {
+      kycSubmittedAt?: string | null;
+      kycApprovedAt?: string | null;
+      organizerBusinessName?: string | null;
+      payoutLimit?: string | null;
+      _count: {
+        eventsCreated: number;
+        eventRegistrations: number;
+        kycDocuments: number;
+      };
+    };
+    recentEvents: OrganizerDetailsEvent[];
+    organizerProfile: {
+      website?: string | null;
+      description?: string | null;
+      socialLinks?: Record<string, string> | null;
+      bankAccountLast4?: string | null;
+      location?: string | null;
+    } | null;
+    kycDocumentSummary: Array<{
+      status: string;
+      _count: { status: number };
+    }>;
+    totalRevenue: string;
+  };
 }
 
 export interface EventRegistration {
@@ -351,6 +406,19 @@ export interface GetUsersResponse {
   };
 }
 
+export interface GetOrganizersResponse {
+  success: boolean;
+  data: {
+    users: OrganizerUser[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
 /**
  * Create User Response
  */
@@ -404,6 +472,15 @@ export const activateUser = async (
   userId: string
 ): Promise<ActivateUserResponse> => {
   return apiPost<ActivateUserResponse>(`/admin/users/${userId}/activate`, {});
+};
+
+/**
+ * Approve a pending organizer (PENDING_APPROVAL → ACTIVE)
+ */
+export const approveOrganizer = async (
+  userId: string
+): Promise<ActivateUserResponse> => {
+  return apiPost<ActivateUserResponse>(`/admin/users/${userId}/approve`, {});
 };
 
 /**
@@ -491,6 +568,33 @@ export const getUsers = async (filters?: {
 
   const queryString = params.toString();
   return apiGet<GetUsersResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Get organizers (convenience wrapper with enriched data)
+ */
+export const getOrganizers = async (filters?: {
+  status?: UserStatus;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<GetOrganizersResponse> => {
+  const params = new URLSearchParams();
+  params.append('role', 'ORGANIZER');
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.page) params.append('page', filters.page.toString());
+  if (filters?.limit) params.append('limit', filters.limit.toString());
+
+  const queryString = params.toString();
+  return apiGet<GetOrganizersResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Get organizer details (enriched with events, profile, KYC, revenue)
+ */
+export const getOrganizerDetails = async (userId: string): Promise<OrganizerDetailsResponse> => {
+  return apiGet<OrganizerDetailsResponse>(`/admin/users/${userId}/organizer-details`);
 };
 
 /**
@@ -941,5 +1045,172 @@ export const deleteEmergencyContact = async (
   userId: string
 ): Promise<{ success: boolean; message: string }> => {
   return apiDelete(`/admin/users/${userId}/emergency-contact`);
+};
+
+// ─── KYC Review & Approval ────────────────────────────────────────────
+
+export interface KYCSubmissionSummary {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  organizationName: string | null;
+  entityType: string | null;
+  businessName: string | null;
+  industry: string | null;
+  kycStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  submittedAt: string | null;
+  approvedAt: string | null;
+  verificationLevel: number;
+  avatar: string | null;
+  documentCount: number;
+}
+
+export interface KYCDocument {
+  id: string;
+  userId: string;
+  documentType: string;
+  documentNumber: string | null;
+  documentUrl: string | null;
+  documentCategory: string | null;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  issueDate: string | null;
+  expiryDate: string | null;
+  isRequired: boolean;
+  isConditional: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KYCDirector {
+  id: string;
+  userId: string;
+  fullName: string;
+  nationality: string;
+  dateOfBirth: string;
+  documentType: string;
+  documentNumber: string;
+  kraPin: string | null;
+  sharePercentage: number | null;
+  isTopFive: boolean;
+  position: string | null;
+}
+
+export interface KYCRequirementStatus {
+  documentType: string;
+  description: string;
+  category: string;
+  isRequired: boolean;
+  minQuantity: number;
+  uploadedCount: number;
+  approvedCount: number;
+  pendingCount: number;
+  rejectedCount: number;
+  isComplete: boolean;
+}
+
+export interface KYCOrganizerDetails {
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string | null;
+    organizationName: string | null;
+    entityType: string | null;
+    businessName: string | null;
+    industry: string | null;
+    country: string;
+    registrationNumber: string | null;
+    kycStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | null;
+    submittedAt: string | null;
+    approvedAt: string | null;
+    verificationLevel: number;
+    isIdentityVerified: boolean;
+    avatar: string | null;
+    createdAt: string;
+  };
+  documents: KYCDocument[];
+  directors: KYCDirector[];
+  requirementsStatus: KYCRequirementStatus[];
+}
+
+export interface KYCStats {
+  totalPending: number;
+  approvedThisMonth: number;
+  rejectedThisMonth: number;
+  totalSubmissions: number;
+}
+
+export const getKYCStats = async (): Promise<{
+  success: boolean;
+  data: { stats: KYCStats };
+}> => {
+  return apiGet('/admin/kyc/stats');
+};
+
+export const getKYCSubmissions = async (filters?: {
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  entityType?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}): Promise<{
+  success: boolean;
+  data: {
+    submissions: KYCSubmissionSummary[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  };
+}> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.entityType) params.append('entityType', filters.entityType);
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.page) params.append('page', filters.page.toString());
+  if (filters?.limit) params.append('limit', filters.limit.toString());
+  if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+  if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder);
+  const qs = params.toString();
+  return apiGet(`/admin/kyc/submissions${qs ? `?${qs}` : ''}`);
+};
+
+export const getOrganizerKYCDetails = async (userId: string): Promise<{
+  success: boolean;
+  data: KYCOrganizerDetails;
+}> => {
+  return apiGet(`/admin/kyc/users/${userId}`);
+};
+
+export const approveKYCDocument = async (documentId: string): Promise<{
+  success: boolean;
+  data: { document: KYCDocument };
+}> => {
+  return apiPost(`/admin/kyc/documents/${documentId}/approve`, {});
+};
+
+export const rejectKYCDocument = async (documentId: string, rejectionReason: string): Promise<{
+  success: boolean;
+  data: { document: KYCDocument };
+}> => {
+  return apiPost(`/admin/kyc/documents/${documentId}/reject`, { rejectionReason });
+};
+
+export const approveOrganizerKYC = async (userId: string): Promise<{
+  success: boolean;
+  data: { message: string };
+}> => {
+  return apiPost(`/admin/kyc/users/${userId}/approve`, {});
+};
+
+export const rejectOrganizerKYC = async (userId: string, reason: string): Promise<{
+  success: boolean;
+  data: { message: string };
+}> => {
+  return apiPost(`/admin/kyc/users/${userId}/reject`, { reason });
 };
 

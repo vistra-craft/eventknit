@@ -8,19 +8,47 @@ import type { RegistrationField } from '@/types/event';
 // Re-export for convenience
 export type { RegistrationField };
 
-// Session types for agenda items
-export type SessionType = 'keynote' | 'workshop' | 'panel' | 'breakout' | 'networking' | 'break' | 'lunch' | 'registration' | 'other';
+// Session types for agenda items (string allows custom values)
+export type SessionType = string;
 
-export const SESSION_TYPES: { value: SessionType; label: string }[] = [
+export const SESSION_TYPES: { value: string; label: string }[] = [
+  // Content sessions
   { value: 'keynote', label: 'Keynote' },
   { value: 'workshop', label: 'Workshop' },
   { value: 'panel', label: 'Panel Discussion' },
   { value: 'breakout', label: 'Breakout Session' },
+  { value: 'fireside-chat', label: 'Fireside Chat' },
+  { value: 'lightning-talk', label: 'Lightning Talk' },
+  { value: 'demo', label: 'Demo / Product Demo' },
+  { value: 'qa', label: 'Q&A Session' },
+  { value: 'roundtable', label: 'Roundtable' },
+  { value: 'tutorial', label: 'Tutorial' },
+  // Ceremonies & social
+  { value: 'opening-ceremony', label: 'Opening Ceremony' },
+  { value: 'closing-ceremony', label: 'Closing Ceremony' },
+  { value: 'awards', label: 'Awards Ceremony' },
+  { value: 'entertainment', label: 'Entertainment' },
+  { value: 'social', label: 'Social Event' },
   { value: 'networking', label: 'Networking' },
+  // Logistics
   { value: 'break', label: 'Break' },
   { value: 'lunch', label: 'Lunch/Refreshments' },
   { value: 'registration', label: 'Registration' },
   { value: 'other', label: 'Other' },
+];
+
+// Sponsorship levels
+export const SPONSORSHIP_LEVELS: { value: string; label: string }[] = [
+  { value: 'title', label: 'Title Sponsor' },
+  { value: 'presenting', label: 'Presenting Sponsor' },
+  { value: 'diamond', label: 'Diamond' },
+  { value: 'platinum', label: 'Platinum' },
+  { value: 'gold', label: 'Gold' },
+  { value: 'silver', label: 'Silver' },
+  { value: 'bronze', label: 'Bronze' },
+  { value: 'partner', label: 'Community Partner' },
+  { value: 'media', label: 'Media Partner' },
+  { value: 'technology', label: 'Technology Partner' },
 ];
 
 export interface AgendaItem {
@@ -111,7 +139,6 @@ export interface EventFormData {
   title: string;
   organizer: string;
   description: string;
-  fullDescription: string;
   organizerDescription?: string;
   date: string;
   time: string;

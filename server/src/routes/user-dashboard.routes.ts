@@ -20,8 +20,17 @@ import {
   createPaymentPlanSchema,
   processInstallmentPaymentSchema,
 } from '../validations/payment-plan.validations.js';
+import { EventReportController } from '../controllers/event-report.controller.js';
+import { eventReportValidations } from '../validations/event-report.validations.js';
 
 const router = Router();
+
+// Registration status check
+router.get(
+  '/registration-status/:eventId',
+  authenticate,
+  UserDashboardController.getRegistrationStatus,
+);
 
 // Recommendations
 router.get(
@@ -61,7 +70,13 @@ router.post(
   UserDashboardController.markReviewHelpful,
 );
 
-// Ticket Transfers
+// Ticket Transfers - Public token lookup (NO auth, must be BEFORE authenticated transfer routes)
+router.get(
+  '/transfers/token/:transferToken',
+  validateParams(Joi.object({ transferToken: Joi.string().required() })),
+  UserDashboardController.getTransferByToken,
+);
+
 router.post(
   '/transfers/:registrationId',
   authenticate,
@@ -277,6 +292,21 @@ router.get(
   UserDashboardController.getUserProfile,
 );
 
+// Event Reports
+router.post(
+  '/events/:eventId/reports',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  authenticate,
+  validate(eventReportValidations.createReport),
+  EventReportController.createReport,
+);
+router.get(
+  '/events/:eventId/report-status',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  authenticate,
+  EventReportController.getReportStatus,
+);
+
 // Event Sharing
 router.post(
   '/events/:eventId/share',
@@ -301,6 +331,14 @@ router.post(
 );
 router.get('/resale/marketplace', UserFeaturesController.getMarketplaceTickets);
 router.get('/resale/my-listings', authenticate, UserFeaturesController.getUserResales);
+// Static path must come BEFORE :resaleId params to avoid Express matching "verify-payment" as a resaleId
+router.get('/resale/verify-payment', authenticate, UserFeaturesController.verifyResalePayment);
+router.post(
+  '/resale/:resaleId/initialize-payment',
+  authenticate,
+  validateParams(Joi.object({ resaleId: Joi.string().uuid().required() })),
+  UserFeaturesController.initializeResalePayment,
+);
 router.post(
   '/resale/:resaleId/purchase',
   authenticate,

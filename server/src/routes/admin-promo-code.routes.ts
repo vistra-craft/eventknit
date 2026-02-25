@@ -37,6 +37,7 @@ const createPromoCodeSchema = Joi.object({
   isActive: Joi.boolean().default(true),
   firstTimeOnly: Joi.boolean().default(false),
   isStackable: Joi.boolean().default(false),
+  organizerId: Joi.string().uuid().optional(),
 });
 
 const updatePromoCodeSchema = Joi.object({
@@ -96,6 +97,20 @@ router.get('/', AdminPromoCodeController.getPromoCodes);
  * @access  Private (ADMIN_STAFF+)
  */
 router.get('/stats', AdminPromoCodeController.getStats);
+
+/**
+ * @route   GET /api/v1/admin/promo-codes/check-availability
+ * @desc    Check if a promo code is available
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/check-availability', AdminPromoCodeController.checkAvailability);
+
+/**
+ * @route   GET /api/v1/admin/promo-codes/generate-code
+ * @desc    Generate a unique promo code
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/generate-code', AdminPromoCodeController.generateCode);
 
 /**
  * @route   GET /api/v1/admin/promo-codes/batch/:batchId

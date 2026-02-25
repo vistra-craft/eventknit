@@ -249,6 +249,17 @@ export class TicketTransferService {
         throw new ValidationError('You are not the recipient of this transfer');
       }
 
+      // If transfer was sent to an email (no toUserId), verify the accepting user's email matches
+      if (!transfer.toUserId && transfer.toEmail) {
+        const acceptingUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true },
+        });
+        if (!acceptingUser || acceptingUser.email.toLowerCase() !== transfer.toEmail.toLowerCase()) {
+          throw new ValidationError('You are not the recipient of this transfer');
+        }
+      }
+
       // Void old and Generate new registration
       const result = await prisma.$transaction(async (tx) => {
         const oldRegistration = transfer.registration;
@@ -478,6 +489,64 @@ export class TicketTransferService {
       return updated;
     } catch (error) {
       logger.error('Error cancelling transfer:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get transfer details by token (public, no auth required)
+   * Used by the transfer acceptance page to display transfer info
+   */
+  static async getTransferByToken(transferToken: string) {
+    try {
+      const transfer = await prisma.ticketTransfer.findUnique({
+        where: { transferToken },
+        include: {
+          registration: {
+            include: {
+              event: {
+                select: {
+                  id: true,
+                  title: true,
+                  image: true,
+                  startDate: true,
+                  endDate: true,
+                  venue: true,
+                  location: true,
+                },
+              },
+            },
+          },
+          fromUser: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      if (!transfer) {
+        throw new ValidationError('Transfer not found');
+      }
+
+      // Return sanitized data (no sensitive fields)
+      return {
+        id: transfer.id,
+        status: transfer.status,
+        expiresAt: transfer.expiresAt,
+        message: transfer.message,
+        ticketType: transfer.registration.ticketType,
+        quantity: transfer.registration.quantity,
+        fromUser: {
+          firstName: transfer.fromUser.firstName,
+          lastName: transfer.fromUser.lastName,
+        },
+        event: transfer.registration.event,
+        createdAt: transfer.createdAt,
+      };
+    } catch (error) {
+      logger.error('Error getting transfer by token:', error);
       throw error;
     }
   }
