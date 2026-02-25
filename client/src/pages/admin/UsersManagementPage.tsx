@@ -15,11 +15,6 @@ const UsersManagementPage = () => {
   // Fetch user stats
   const { data: statsData, isLoading: statsLoading, error: statsError } = useUsersStats(timeRange);
 
-  // Debug logging
-  console.log('Stats Data:', statsData);
-  console.log('Stats Loading:', statsLoading);
-  console.log('Stats Error:', statsError);
-
   // Transform stats data for rendering
   const stats = statsData ? [
     {

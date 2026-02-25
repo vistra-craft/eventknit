@@ -16,13 +16,11 @@ import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../compon
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
-import { Clock } from 'lucide-react';
+import { Clock, ArrowRight, Sparkles } from 'lucide-react';
 
 /**
  * Loading component for suspense fallback
@@ -74,31 +72,62 @@ const UserLayout = () => {
   return (
     <DashboardModeProvider>
       {/* Organizer Approval Modal */}
-      <Dialog open={showApprovalModal} onOpenChange={(open) => { if (!open) handleApprovalAcknowledged(); }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl">Your Organizer Account is Approved!</DialogTitle>
-            <DialogDescription className="text-center">
-              Congratulations! An admin has approved your organizer account.
-              You can now manage your events, track ticket sales, and access the full organizer dashboard.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-center">
-            <Button
-              onClick={() => {
-                handleApprovalAcknowledged();
-                navigate('/organizer/dashboard');
-              }}
-            >
-              Go to Organizer Dashboard
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleApprovalAcknowledged()}
-            >
-              Stay Here
-            </Button>
-          </DialogFooter>
+      <Dialog open={showApprovalModal} onOpenChange={() => {}}>
+        <DialogContent
+          className="sm:max-w-lg border-0 bg-transparent shadow-none p-0 [&>button]:hidden"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogTitle className="sr-only">Account Approved</DialogTitle>
+          <DialogDescription className="sr-only">Your organizer account has been approved.</DialogDescription>
+          <div className="relative overflow-hidden rounded-2xl bg-card border border-border/40 shadow-2xl">
+            {/* Decorative top gradient */}
+            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-emerald-500 to-primary" />
+
+            {/* Animated glow ring */}
+            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-primary/10 blur-3xl animate-pulse" />
+
+            <div className="relative px-8 pt-10 pb-8 text-center">
+              {/* Icon */}
+              <div className="mx-auto mb-6 w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-emerald-500/20 flex items-center justify-center ring-4 ring-primary/10">
+                <Sparkles className="w-9 h-9 text-primary" />
+              </div>
+
+              {/* Content */}
+              <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">
+                You're Approved!
+              </h2>
+              <p className="text-muted-foreground leading-relaxed max-w-sm mx-auto">
+                Your event has been reviewed and approved. Your organizer dashboard is now fully unlocked.
+              </p>
+
+              {/* Feature pills */}
+              <div className="flex flex-wrap items-center justify-center gap-2 mt-5 mb-8">
+                {['Manage Events', 'Track Sales', 'View Analytics'].map((label) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-primary" />
+                    {label}
+                  </span>
+                ))}
+              </div>
+
+              {/* Proceed button */}
+              <Button
+                size="lg"
+                className="w-full gap-2 text-base font-semibold h-12 rounded-xl"
+                onClick={() => {
+                  handleApprovalAcknowledged();
+                  navigate('/organizer/dashboard');
+                }}
+              >
+                Proceed to Dashboard
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

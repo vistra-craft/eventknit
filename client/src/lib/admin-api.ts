@@ -268,6 +268,61 @@ export interface User {
   updatedAt: string;
 }
 
+export type KYCStatusType = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface OrganizerUser extends User {
+  avatar?: string | null;
+  verificationLevel?: number;
+  kycStatus?: KYCStatusType | null;
+  isIdentityVerified?: boolean;
+  organizerEntityType?: string | null;
+  organizerIndustry?: string | null;
+  profileCompleted?: boolean;
+  lastLoginAt?: string | null;
+  _count?: {
+    eventsCreated: number;
+    eventRegistrations: number;
+  };
+}
+
+export interface OrganizerDetailsEvent {
+  id: string;
+  title: string;
+  startDate: string;
+  status: string;
+  _count: { registrations: number };
+}
+
+export interface OrganizerDetailsResponse {
+  success: boolean;
+  data: {
+    user: OrganizerUser & {
+      kycSubmittedAt?: string | null;
+      kycApprovedAt?: string | null;
+      organizerBusinessName?: string | null;
+      payoutLimit?: string | null;
+      _count: {
+        eventsCreated: number;
+        eventRegistrations: number;
+        kycDocuments: number;
+      };
+    };
+    recentEvents: OrganizerDetailsEvent[];
+    organizerProfile: {
+      website?: string | null;
+      description?: string | null;
+      socialLinks?: Record<string, string> | null;
+      bankAccountLast4?: string | null;
+      location?: string | null;
+    } | null;
+    kycDocumentSummary: Array<{
+      status: string;
+      _count: { status: number };
+    }>;
+    totalRevenue: string;
+  };
+}
+
 export interface EventRegistration {
   id: string;
   eventId: string;
@@ -342,6 +397,19 @@ export interface GetUsersResponse {
   success: boolean;
   data: {
     users: User[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+export interface GetOrganizersResponse {
+  success: boolean;
+  data: {
+    users: OrganizerUser[];
     pagination: {
       page: number;
       limit: number;
@@ -500,6 +568,33 @@ export const getUsers = async (filters?: {
 
   const queryString = params.toString();
   return apiGet<GetUsersResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Get organizers (convenience wrapper with enriched data)
+ */
+export const getOrganizers = async (filters?: {
+  status?: UserStatus;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<GetOrganizersResponse> => {
+  const params = new URLSearchParams();
+  params.append('role', 'ORGANIZER');
+  if (filters?.status) params.append('status', filters.status);
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.page) params.append('page', filters.page.toString());
+  if (filters?.limit) params.append('limit', filters.limit.toString());
+
+  const queryString = params.toString();
+  return apiGet<GetOrganizersResponse>(`/admin/users${queryString ? `?${queryString}` : ''}`);
+};
+
+/**
+ * Get organizer details (enriched with events, profile, KYC, revenue)
+ */
+export const getOrganizerDetails = async (userId: string): Promise<OrganizerDetailsResponse> => {
+  return apiGet<OrganizerDetailsResponse>(`/admin/users/${userId}/organizer-details`);
 };
 
 /**

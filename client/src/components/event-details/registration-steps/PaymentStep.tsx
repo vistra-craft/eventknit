@@ -39,6 +39,7 @@ interface PaymentStepProps {
   onBack: () => void;
   onContinue: (data: PaymentResult) => void;
   promoDiscount?: PromoDiscount | null;
+  selectedSeatIds?: string[];
 }
 
 // Paystack popup handler type
@@ -66,6 +67,7 @@ export const PaymentStep = ({
   onBack,
   onContinue,
   promoDiscount,
+  selectedSeatIds,
 }: PaymentStepProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +125,7 @@ export const PaymentStep = ({
         tickets,
         registrationData: registrationData.registrationData,
         ...(promoDiscount?.code ? { promoCode: promoDiscount.code } : {}),
+        ...(selectedSeatIds?.length ? { seatIds: selectedSeatIds } : {}),
       });
 
       if (response.success && response.data?.registration?.id) {
@@ -132,7 +135,7 @@ export const PaymentStep = ({
     } catch (err) {
       throw err instanceof Error ? err : new Error('Registration failed');
     }
-  }, [event.id, selectedTickets, registrationData, promoDiscount?.code]);
+  }, [event.id, selectedTickets, registrationData, promoDiscount?.code, selectedSeatIds]);
 
   // Handle Paystack popup payment
   const handlePaystackPayment = useCallback(async (regId: string) => {

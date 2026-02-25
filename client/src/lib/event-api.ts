@@ -179,6 +179,8 @@ export interface RegisterForEventData {
   registrationData?: Record<string, unknown>;
   invitationId?: string;
   promoCode?: string;
+  // Seat selection
+  seatIds?: string[];
   // Consent data
   consent?: {
     operationalConsent?: boolean; // Default: true (required)

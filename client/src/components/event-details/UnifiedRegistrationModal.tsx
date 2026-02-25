@@ -7,6 +7,7 @@ import { TicketSelectionStep } from './registration-steps/TicketSelectionStep';
 import { RegistrationStep } from './registration-steps/RegistrationStep';
 import { PaymentStep } from './registration-steps/PaymentStep';
 import { ConfirmationStep } from './registration-steps/ConfirmationStep';
+import { SeatSelectionStep } from './registration-steps/SeatSelectionStep';
 import type { EventData } from '@/types/event';
 
 export interface TicketSelection {
@@ -27,7 +28,7 @@ interface UnifiedRegistrationModalProps {
   userAlreadyRegistered?: boolean;
 }
 
-type Step = 'tickets' | 'registration' | 'payment' | 'confirmation';
+type Step = 'tickets' | 'seats' | 'registration' | 'payment' | 'confirmation';
 
 interface RegistrationData {
   userId?: string;
@@ -58,19 +59,23 @@ export const UnifiedRegistrationModal = ({
   const [registrationData, setRegistrationData] = useState<RegistrationData | null>(null);
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [promoDiscount, setPromoDiscount] = useState<PromoDiscount | null>(null);
+  const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
+  const [seatTotalPrice, setSeatTotalPrice] = useState(0);
 
   // Determine if we should skip ticket selection for free events or single ticket types
-  const shouldSkipTicketSelection = 
-    event.isFree || 
-    !event.ticketTypes || 
+  const shouldSkipTicketSelection =
+    event.isFree ||
+    !event.ticketTypes ||
     event.ticketTypes.length === 0 ||
     (event.ticketTypes.length === 1 && event.isFree);
+
+  const hasSeatMap = !!event.hasSeatMap;
 
   // Reset to appropriate step when modal opens
   useEffect(() => {
     if (isOpen) {
       if (shouldSkipTicketSelection) {
-        setCurrentStep('registration');
+        setCurrentStep(hasSeatMap ? 'seats' : 'registration');
         // Auto-select single free ticket
         if (event.ticketTypes && event.ticketTypes.length === 1) {
           setSelectedTickets({ [event.ticketTypes[0].name]: 1 });
@@ -79,20 +84,36 @@ export const UnifiedRegistrationModal = ({
         setCurrentStep('tickets');
       }
     }
-  }, [isOpen, shouldSkipTicketSelection, event.ticketTypes]);
+  }, [isOpen, shouldSkipTicketSelection, hasSeatMap, event.ticketTypes]);
 
-  const steps: { key: Step; label: string; number: number }[] = [
-    ...(shouldSkipTicketSelection ? [] : [{ key: 'tickets' as Step, label: 'Tickets', number: 1 }]),
-    { key: 'registration' as Step, label: 'Registration', number: shouldSkipTicketSelection ? 1 : 2 },
-    ...(event.isFree ? [] : [{ key: 'payment' as Step, label: 'Payment', number: shouldSkipTicketSelection ? 2 : 3 }]),
-    { key: 'confirmation' as Step, label: 'Confirmation', number: event.isFree ? (shouldSkipTicketSelection ? 2 : 3) : (shouldSkipTicketSelection ? 3 : 4) },
-  ];
+  // Build steps array dynamically based on event configuration
+  const steps: { key: Step; label: string; number: number }[] = (() => {
+    const list: { key: Step; label: string }[] = [];
+    if (!shouldSkipTicketSelection) list.push({ key: 'tickets', label: 'Tickets' });
+    if (hasSeatMap) list.push({ key: 'seats', label: 'Seats' });
+    list.push({ key: 'registration', label: 'Registration' });
+    if (!event.isFree) list.push({ key: 'payment', label: 'Payment' });
+    list.push({ key: 'confirmation', label: 'Confirmation' });
+    return list.map((s, i) => ({ ...s, number: i + 1 }));
+  })();
 
   const currentStepIndex = steps.findIndex(s => s.key === currentStep);
   const progress = ((currentStepIndex + 1) / steps.length) * 100;
 
   const handleTicketSelectionComplete = (tickets: TicketSelection) => {
     setSelectedTickets(tickets);
+    setCurrentStep(hasSeatMap ? 'seats' : 'registration');
+  };
+
+  const handleSeatSelectionComplete = (seatIds: string[], totalPrice: number) => {
+    setSelectedSeatIds(seatIds);
+    setSeatTotalPrice(totalPrice);
+    setCurrentStep('registration');
+  };
+
+  const handleSeatSkip = () => {
+    setSelectedSeatIds([]);
+    setSeatTotalPrice(0);
     setCurrentStep('registration');
   };
 
@@ -124,11 +145,13 @@ export const UnifiedRegistrationModal = ({
       onClose();
       // Reset state
       setTimeout(() => {
-        setCurrentStep(shouldSkipTicketSelection ? 'registration' : 'tickets');
+        setCurrentStep(shouldSkipTicketSelection ? (hasSeatMap ? 'seats' : 'registration') : 'tickets');
         setSelectedTickets({});
         setRegistrationData(null);
         setPaymentData(null);
         setPromoDiscount(null);
+        setSelectedSeatIds([]);
+        setSeatTotalPrice(0);
       }, 300);
     } else {
       // Confirm before closing if in middle of process
@@ -142,7 +165,8 @@ export const UnifiedRegistrationModal = ({
     (sum, ticket) => sum + (ticket.price || 0) * (selectedTickets[ticket.name] || 0),
     0
   ) || 0;
-  const totalPrice = Math.max(0, subtotal - (promoDiscount?.discountAmount || 0));
+  const totalPrice = Math.max(0, subtotal + seatTotalPrice - (promoDiscount?.discountAmount || 0));
+  const totalTickets = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -192,12 +216,21 @@ export const UnifiedRegistrationModal = ({
             />
           )}
 
+          {currentStep === 'seats' && (
+            <SeatSelectionStep
+              event={event}
+              totalTickets={Math.max(1, totalTickets)}
+              onContinue={handleSeatSelectionComplete}
+              onSkip={handleSeatSkip}
+            />
+          )}
+
           {currentStep === 'registration' && (
             <RegistrationStep
               event={event}
               selectedTickets={selectedTickets}
               totalPrice={totalPrice}
-              totalTickets={Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0)}
+              totalTickets={totalTickets}
               onContinue={handleRegistrationComplete}
             />
           )}
@@ -211,6 +244,7 @@ export const UnifiedRegistrationModal = ({
               onBack={handleBack}
               onContinue={handlePaymentComplete}
               promoDiscount={promoDiscount}
+              selectedSeatIds={selectedSeatIds}
             />
           )}
 
@@ -242,4 +276,3 @@ export const UnifiedRegistrationModal = ({
     </Dialog>
   );
 };
-

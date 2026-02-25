@@ -149,6 +149,9 @@ export interface EventData {
   refundPolicyText?: string | null;
   autoRefundEnabled?: boolean;
 
+  // Seating
+  hasSeatMap?: boolean; // Whether a seat map is configured for this event
+
   // Computed fields
   organizerName?: string; // Computed from organizer
   registrationCount?: number; // From _count

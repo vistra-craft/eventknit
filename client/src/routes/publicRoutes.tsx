@@ -26,6 +26,7 @@ const PublicEventForm = lazy(() => import('../pages/PublicEventForm'));
 const FeedbackPage = lazy(() => import('../pages/FeedbackPage'));
 const ExhibitorDetails = lazy(() => import('../pages/user/ExhibitorDetails'));
 const Support = lazy(() => import('../pages/Support'));
+const TransferAccept = lazy(() => import('../pages/TransferAccept'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 
 /**
@@ -121,6 +122,12 @@ export const publicRoutes: RouteConfig[] = [
   {
     path: 'support',
     element: createElement(Support),
+  },
+
+  // Ticket transfer acceptance (public, works with or without auth)
+  {
+    path: 'tickets/transfer/accept',
+    element: createElement(TransferAccept),
   },
 
   // 404 - Catch all unknown routes

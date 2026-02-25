@@ -7,6 +7,9 @@
  *
  * Only active when user is an organizer with PENDING_APPROVAL status.
  * On approval: refreshes auth state and exposes a modal flag.
+ *
+ * The "show modal" flag is persisted to sessionStorage so it survives
+ * component remounts caused by route redirects (e.g. onboarding guard).
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -14,6 +17,8 @@ import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { refreshAccessToken, getAccessToken } from '../lib/api';
 import { UserRole, UserStatus } from '../types/auth';
+
+const STORAGE_KEY = 'organizer_approval_pending';
 
 /**
  * Check if an access token's payload is expired (with a small buffer).
@@ -32,21 +37,34 @@ const POLL_INTERVAL_MS = 30_000; // 30 seconds
 
 export const useOrganizerApproval = () => {
   const { user, refreshProfile } = useAuth();
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
+
+  // Initialise from sessionStorage so the modal survives remounts
+  const [showApprovalModal, setShowApprovalModal] = useState(
+    () => sessionStorage.getItem(STORAGE_KEY) === '1',
+  );
+
   const socketRef = useRef<Socket | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const approvedRef = useRef(false);
-  const wasPendingRef = useRef(false);
+  const approvedRef = useRef(showApprovalModal); // sync with initial state
 
   const isPendingOrganizer =
     user?.role === UserRole.ORGANIZER && user?.status === UserStatus.PENDING_APPROVAL;
 
   // Track that we were pending (so we can detect the transition)
+  const wasPendingRef = useRef(isPendingOrganizer);
   useEffect(() => {
     if (isPendingOrganizer) {
       wasPendingRef.current = true;
     }
   }, [isPendingOrganizer]);
+
+  // Helper: show the modal and persist the flag
+  const triggerModal = useCallback(() => {
+    if (approvedRef.current) return;
+    approvedRef.current = true;
+    sessionStorage.setItem(STORAGE_KEY, '1');
+    setShowApprovalModal(true);
+  }, []);
 
   // Detect status transition: PENDING_APPROVAL → ACTIVE
   // This fires when polling's refreshProfile() updates the auth state
@@ -57,10 +75,9 @@ export const useOrganizerApproval = () => {
       user?.role === UserRole.ORGANIZER &&
       user?.status === UserStatus.ACTIVE
     ) {
-      approvedRef.current = true;
-      setShowApprovalModal(true);
+      triggerModal();
     }
-  }, [user?.status, user?.role]);
+  }, [user?.status, user?.role, triggerModal]);
 
   // Socket.IO real-time listener
   useEffect(() => {
@@ -107,11 +124,9 @@ export const useOrganizerApproval = () => {
       });
 
       socket.on('organizer:approved', () => {
-        if (approvedRef.current) return;
-        approvedRef.current = true;
         // Refresh auth state to get ACTIVE status, then show modal
         refreshProfile().then(() => {
-          setShowApprovalModal(true);
+          triggerModal();
         });
       });
 
@@ -142,7 +157,7 @@ export const useOrganizerApproval = () => {
       }
       socketRef.current = null;
     };
-  }, [isPendingOrganizer, refreshProfile]);
+  }, [isPendingOrganizer, refreshProfile, triggerModal]);
 
   // Polling fallback — checks profile periodically
   useEffect(() => {
@@ -175,6 +190,7 @@ export const useOrganizerApproval = () => {
   }, [isPendingOrganizer, refreshProfile]);
 
   const handleApprovalAcknowledged = useCallback(() => {
+    sessionStorage.removeItem(STORAGE_KEY);
     setShowApprovalModal(false);
   }, []);
 

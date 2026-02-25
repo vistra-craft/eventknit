@@ -10,8 +10,9 @@ import {
   ChevronRight,
   LogOut,
   Megaphone,
-  Wallet,
   Ticket,
+  DollarSign,
+  Paintbrush,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -36,6 +37,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     analytics: location.pathname.startsWith('/organizer/analytics'),
     marketing: location.pathname.startsWith('/organizer/marketing'),
+    finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
     settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
   });
 
@@ -68,6 +70,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       group: "main",
       children: [
         { name: "Promo Codes", href: "/organizer/marketing/promo-codes" },
+        { name: "Affiliate Program", href: "/organizer/marketing/affiliate" },
       ]
     },
     {
@@ -83,11 +86,21 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       ]
     },
     {
-      id: "payouts",
-      label: "Payouts",
-      href: "/organizer/payouts",
-      icon: Wallet,
-      group: "main"
+      id: "finance",
+      label: "Finance",
+      icon: DollarSign,
+      group: "main",
+      children: [
+        { name: "Overview", href: "/organizer/financial" },
+        { name: "Payouts", href: "/organizer/payouts" },
+      ]
+    },
+    {
+      id: "branding",
+      label: "Branding",
+      href: "/organizer/branding",
+      icon: Paintbrush,
+      group: "management",
     },
     {
       id: "settings",
@@ -117,6 +130,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         ...prev,
         analytics: location.pathname.startsWith('/organizer/analytics'),
         marketing: location.pathname.startsWith('/organizer/marketing'),
+        finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
         settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
       }));
     }

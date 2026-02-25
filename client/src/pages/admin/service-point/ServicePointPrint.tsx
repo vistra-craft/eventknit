@@ -326,7 +326,8 @@ const ServicePointPrint: React.FC = () => {
           `;
 
           if (element.type === 'text') {
-            return `<div style="${elementStyle}"><span style="white-space: pre-wrap; word-break: break-word;">${content}</span></div>`;
+            const safeContent = content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            return `<div style="${elementStyle}"><span style="white-space: pre-wrap; word-break: break-word;">${safeContent}</span></div>`;
           } else if (element.type === 'qr') {
             return `<div style="${elementStyle}"><img src="${qrCodeDataUrl}" style="width: 100%; height: 100%; object-fit: contain;" /></div>`;
           } else if (element.type === 'shape') {

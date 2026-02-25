@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Download, Share2, QrCode } from "lucide-react";
+import { Calendar, MapPin, Download, Share2, QrCode, Send, DollarSign } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Loader } from "../../components/ui/loader";
@@ -180,6 +180,28 @@ const MyTickets: React.FC = () => {
                     <Share2 className="w-3.5 h-3.5 mr-1" />
                     Share
                   </Button>
+                  {ticket.status === 'upcoming' && ticket.registrationId && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={(e) => { e.stopPropagation(); navigate('/user/ticket-transfer', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
+                      >
+                        <Send className="w-3.5 h-3.5 mr-1" />
+                        Transfer
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={(e) => { e.stopPropagation(); navigate('/user/ticket-resale', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
+                      >
+                        <DollarSign className="w-3.5 h-3.5 mr-1" />
+                        Resell
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

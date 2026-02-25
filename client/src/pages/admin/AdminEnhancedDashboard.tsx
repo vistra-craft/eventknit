@@ -349,10 +349,16 @@ const AdminEnhancedDashboard = () => {
                         </h3>
                         <p className="text-sm text-muted-foreground mt-0.5">Total revenue generated</p>
                       </div>
-                      <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                        <TrendingUp className="h-3.5 w-3.5" />
-                        +12.5%
-                      </div>
+                      {statsData?.stats.platformRevenue.change && (
+                        <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
+                          statsData.stats.platformRevenue.changeType === 'positive'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-destructive/10 text-destructive'
+                        }`}>
+                          <TrendingUp className="h-3.5 w-3.5" />
+                          {statsData.stats.platformRevenue.change}
+                        </div>
+                      )}
                     </div>
                     <div className="h-56 flex items-center justify-center">
                       {filteredGrowth.revenue.length === 0 ? (

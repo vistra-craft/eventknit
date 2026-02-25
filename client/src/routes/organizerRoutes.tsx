@@ -29,7 +29,6 @@ const AnalyticsOverview = lazy(() => import('../pages/organizer/analytics').then
 const EventPerformance = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.EventPerformance })));
 const AttendeeInsights = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.AttendeeInsights })));
 const RevenueReports = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.RevenueReports })));
-const TestAnalytics = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.TestAnalytics })));
 
 // Team Management
 const StaffManagementPage = lazy(() => import('../pages/organizer/team').then(m => ({ default: m.StaffManagementPage })));
@@ -55,10 +54,18 @@ const AttendeeCommunication = lazy(() => import('../pages/organizer/AttendeeComm
 
 // Marketing
 const OrganizerPromoCodeManager = lazy(() => import('../pages/organizer/marketing/OrganizerPromoCodeManager'));
+const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'));
 
-// Financial (if needed)
-// const FinancialManagement = lazy(() => import('../pages/organizer/FinancialManagement'));
-// const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'));
+// Financial
+const FinancialManagement = lazy(() => import('../pages/organizer/FinancialManagement'));
+const PayoutManagement = lazy(() => import('../pages/organizer/PayoutManagement'));
+
+// Advanced Tickets & Pricing
+const AdvancedTicketTypes = lazy(() => import('../pages/organizer/AdvancedTicketTypes'));
+const DynamicPricing = lazy(() => import('../pages/organizer/DynamicPricing'));
+
+// Branding
+const OrganizerBrandingPage = lazy(() => import('../pages/organizer/OrganizerBrandingPage'));
 
 /**
  * Common role combinations
@@ -196,12 +203,6 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     element: createElement(RevenueReports),
     allowedRoles: NON_TELLER_ROLES,
   },
-  {
-    path: 'analytics/test',
-    element: createElement(TestAnalytics),
-    allowedRoles: NON_TELLER_ROLES,
-  },
-
   // Team Management
   {
     path: 'team/staff',
@@ -300,5 +301,41 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     path: 'marketing/promo-codes',
     element: createElement(OrganizerPromoCodeManager),
     allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'marketing/affiliate',
+    element: createElement(AffiliateProgram),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Financial
+  {
+    path: 'financial',
+    element: createElement(FinancialManagement),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'payouts',
+    element: createElement(PayoutManagement),
+    allowedRoles: ORGANIZER_ADMIN_ONLY,
+  },
+
+  // Advanced Tickets & Pricing (event-scoped)
+  {
+    path: 'event/:eventId/tickets/advanced',
+    element: createElement(AdvancedTicketTypes),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'event/:eventId/pricing',
+    element: createElement(DynamicPricing),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Branding
+  {
+    path: 'branding',
+    element: createElement(OrganizerBrandingPage),
+    allowedRoles: ORGANIZER_ADMIN_ONLY,
   },
 ];

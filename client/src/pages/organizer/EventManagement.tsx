@@ -30,6 +30,7 @@ import {
   Ticket,
   Link2,
   Copy as CopyIcon,
+  Grid3X3,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -57,6 +58,7 @@ import { ConsentStatisticsCard } from "../../components/organizer/ConsentStatist
 import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTierBadge";
 import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
 import BackButton from "@/components/BackButton";
+import { EventSeatMapManager } from "@/components/organizer/EventSeatMapManager";
 
 interface CommunicationMessage {
   id: string;
@@ -594,6 +596,7 @@ const EventManagement = () => {
   const navigationSections = [
     { key: "overview", label: "Overview", icon: BarChart3 },
     { key: "tickets", label: "Tickets", icon: Ticket },
+    { key: "seating", label: "Seating", icon: Grid3X3 },
     { key: "attendees", label: "Attendees", icon: Users },
     { key: "invitations", label: "Invitations", icon: Link2 },
     { key: "communication", label: "Communication", icon: MessageSquare },
@@ -1769,6 +1772,11 @@ const EventManagement = () => {
               />
             )}
           </div>
+        );
+
+      case "seating":
+        return (
+          <EventSeatMapManager eventId={eventId!} />
         );
     }
   };

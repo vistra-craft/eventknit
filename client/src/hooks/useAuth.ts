@@ -72,7 +72,13 @@ export const useAuth = () => {
             role === 'ORGANIZER_STAFF' ||
             role === 'ORGANIZER_TELLER';
 
-          if (response.data.user.status === 'PENDING_APPROVAL') {
+          // Check for returnTo query param (e.g., from transfer accept page)
+          const searchParams = new URLSearchParams(window.location.search);
+          const returnTo = searchParams.get('returnTo');
+
+          if (returnTo && returnTo.startsWith('/')) {
+            navigate(returnTo);
+          } else if (response.data.user.status === 'PENDING_APPROVAL') {
             // Pending organizers go to user dashboard (limited access, shows pending banner)
             navigate('/user/dashboard');
           } else if (isOrganizerRole) {
@@ -204,8 +210,9 @@ export const useAuth = () => {
    */
   const refreshProfile = useCallback(async () => {
     try {
-      dispatch({ type: 'AUTH_START' });
-
+      // Don't dispatch AUTH_START here — it sets isLoading: true which
+      // causes ProtectedRoute to unmount the layout (losing modal state).
+      // UPDATE_USER already handles setting the new user data.
       const response = await authApi.getProfile();
 
       if (response.success && response.data) {
@@ -214,11 +221,6 @@ export const useAuth = () => {
         throw new Error('Failed to fetch profile');
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error && typeof error === 'object' && 'message' in error
-          ? (error.message as string)
-          : 'Failed to refresh profile';
-      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       // If unauthorized, logout
       if (error && typeof error === 'object' && 'message' in error) {
         const msg = error.message as string;
