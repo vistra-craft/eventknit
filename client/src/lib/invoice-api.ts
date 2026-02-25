@@ -2,7 +2,7 @@
  * Invoice API Functions
  */
 
-import { apiGet, apiPost, apiPut, apiDelete, type ApiResponse } from './api';
+import { apiGet, apiPost, apiPut, apiDelete, apiFetch, type ApiResponse } from './api';
 
 // ==================== Types ====================
 
@@ -148,23 +148,13 @@ export const getEventInvoices = async (eventId: string, filters?: {
 };
 
 export const generateInvoiceHTML = async (invoiceId: string): Promise<string> => {
-  const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/user-dashboard/invoices/${invoiceId}/html`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
+  const response = await apiFetch(`/user-dashboard/invoices/${invoiceId}/html`);
   if (!response.ok) throw new Error('Failed to generate invoice HTML');
   return response.text();
 };
 
 export const downloadInvoice = async (invoiceId: string): Promise<void> => {
-  const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/v1/user-dashboard/invoices/${invoiceId}/download`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
+  const response = await apiFetch(`/user-dashboard/invoices/${invoiceId}/download`);
   if (!response.ok) throw new Error('Failed to download invoice');
   const blob = await response.blob();
   const url = window.URL.createObjectURL(blob);

@@ -165,7 +165,34 @@ const EventDetails = () => {
     return false;
   })();
 
-  const isSoldOut = event?.availableSlots !== null && event?.availableSlots !== undefined && event?.availableSlots <= 0;
+  // Check if event is sold out by checking ticket types first, then overall capacity
+  const ticketAvailability = (() => {
+    if (!event) return { isSoldOut: false, availableTicketCount: 0, totalTicketTypes: 0 };
+    
+    // If event has specific ticket types, check each one
+    if (event.ticketTypes && event.ticketTypes.length > 0) {
+      const totalTypes = event.ticketTypes.length;
+      const soldOutCount = event.ticketTypes.filter(t => t.isSoldOut === true).length;
+      const availableCount = totalTypes - soldOutCount;
+      
+      return {
+        isSoldOut: soldOutCount === totalTypes, // All tickets sold out
+        availableTicketCount: availableCount,
+        totalTicketTypes: totalTypes,
+        hasPartialAvailability: availableCount > 0 && soldOutCount > 0,
+      };
+    }
+    
+    // Fall back to checking overall capacity if no ticket types
+    const capacitySoldOut = event.availableSlots !== null && event.availableSlots !== undefined && event.availableSlots <= 0;
+    return {
+      isSoldOut: capacitySoldOut,
+      availableTicketCount: capacitySoldOut ? 0 : 1,
+      totalTicketTypes: 1,
+    };
+  })();
+
+  const isSoldOut = ticketAvailability.isSoldOut;
 
   // Meta tags
   const getFrontendUrl = () => {
@@ -282,6 +309,50 @@ const EventDetails = () => {
             onSave={handleSave}
             onShare={handleShare}
           />
+
+          {/* Sold Out / Limited Availability Alert Banner */}
+          {isSoldOut ? (
+            <div className="mt-6 mb-4">
+              <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4 sm:p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+                      <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-red-900 dark:text-red-100 mb-1">
+                      This Event is Sold Out
+                    </h3>
+                    <p className="text-sm text-red-700 dark:text-red-200 leading-relaxed">
+                      All tickets for this event have been claimed. Registration is no longer available.
+                      {ticketAvailability.totalTicketTypes > 1 && ` All ${ticketAvailability.totalTicketTypes} ticket types are currently unavailable.`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : ticketAvailability.hasPartialAvailability && (
+            <div className="mt-6 mb-4">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                      <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-amber-900 dark:text-amber-100 mb-1">
+                      Limited Availability
+                    </h3>
+                    <p className="text-sm text-amber-700 dark:text-amber-200 leading-relaxed">
+                      Some ticket types are sold out. Only {ticketAvailability.availableTicketCount} of {ticketAvailability.totalTicketTypes} ticket {ticketAvailability.availableTicketCount === 1 ? 'type is' : 'types are'} still available. Register soon to secure your spot.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Two-column layout */}
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 mt-6">

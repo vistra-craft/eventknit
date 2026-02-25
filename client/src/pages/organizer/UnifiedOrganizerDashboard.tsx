@@ -41,6 +41,7 @@ import {
 } from "@/hooks/queries/useOrganizerDashboardData";
 import { useOrganizerRevenueAnalytics } from "@/hooks/queries/useOrganizerRevenueAnalytics";
 import type { OrganizerDashboardEvent } from "@/lib/organizer-api";
+import { getVerificationStatus, type VerificationStatus } from "@/lib/verification-api";
 
 const UnifiedOrganizerDashboard = () => {
   const location = useLocation();
@@ -50,6 +51,10 @@ const UnifiedOrganizerDashboard = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [verificationReminder, setVerificationReminder] = useState<string | null>(null);
   const [showVerificationReminder, setShowVerificationReminder] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
+  const [kycBannerDismissed, setKycBannerDismissed] = useState(
+    () => sessionStorage.getItem('kyc_banner_dismissed') === 'true'
+  );
 
   // Infinite scroll state
   const [page, setPage] = useState(1);
@@ -97,6 +102,15 @@ const UnifiedOrganizerDashboard = () => {
       setShowVerificationReminder(true);
     }
   }, [location.state]);
+
+  // Load verification status once on mount to power the persistent KYC banner
+  useEffect(() => {
+    getVerificationStatus()
+      .then((res) => {
+        if (res.success && res.data) setVerificationStatus(res.data);
+      })
+      .catch(() => { /* non-critical — banner simply won't show */ });
+  }, []);
 
   // Intersection Observer for infinite scroll
   const handleLoadMore = useCallback(() => {
@@ -267,6 +281,62 @@ const UnifiedOrganizerDashboard = () => {
           </Alert>
         )}
 
+        {/* KYC / Identity Verification Nudge */}
+        {!kycBannerDismissed && verificationStatus && !verificationStatus.identityVerified && (
+          <Alert className="mb-6 border-primary/20 bg-primary/5">
+            <Shield className="h-4 w-4 text-primary" />
+            <AlertDescription className="flex items-start justify-between flex-wrap gap-2">
+              <div className="flex-1">
+                <strong>Verify your identity to receive payments</strong>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Identity verification (KYC) is required before payouts are enabled for paid events. Free events are not affected.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/organizer/verification")}
+                >
+                  Verify Identity
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    sessionStorage.setItem('kyc_banner_dismissed', 'true');
+                    setKycBannerDismissed(true);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* KYC Pending Badge — visible once submitted, until approved */}
+        {!kycBannerDismissed && verificationStatus?.identityVerified && verificationStatus?.kycStatus && verificationStatus.kycStatus !== 'APPROVED' && (
+          <Alert className="mb-6 border-amber-500/20 bg-amber-500/5">
+            <Clock className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+              <span className="text-foreground flex-1">
+                <strong>KYC verification in progress</strong> — your documents are under review. Payouts will be enabled once approved.
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  sessionStorage.setItem('kyc_banner_dismissed', 'true');
+                  setKycBannerDismissed(true);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
@@ -376,7 +446,62 @@ const UnifiedOrganizerDashboard = () => {
           </div>
         </section>
 
-        {/* Attention Strip — Pending events or urgent deadlines */}
+        {/* Profile & Verification Setup Section — moved here for better flow */}
+        <section className="mb-8 space-y-3">
+          {/* Profile Completion Nudge */}
+          {user && !user.profileCompleted && (
+            <Alert className="border-amber-500/20 bg-amber-500/5">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-foreground flex-1">
+                  <strong>Complete your organizer profile</strong> to build trust with attendees and improve your event visibility.
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/organizer/profile-setup")}
+                  className="border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10 shrink-0"
+                >
+                  Set Up Profile
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* KYC / Identity Verification Nudge */}
+          {!kycBannerDismissed && verificationStatus && !verificationStatus.identityVerified && (
+            <Alert className="border-primary/20 bg-primary/5">
+              <Shield className="h-4 w-4 text-primary" />
+              <AlertDescription className="flex items-start justify-between flex-wrap gap-2">
+                <div className="flex-1">
+                  <strong>Verify your identity to receive payments</strong>
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    Identity verification (KYC) is required before payouts are enabled for paid events. Free events are not affected.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/organizer/verification")}
+                  >
+                    Verify Identity
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      sessionStorage.setItem('kyc_banner_dismissed', 'true');
+                      setKycBannerDismissed(true);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+        </section>
         {(hasPendingEvents || urgentDeadlines.length > 0) && (
           <section className="mb-8 space-y-3">
             {hasPendingEvents && (
@@ -447,87 +572,100 @@ const UnifiedOrganizerDashboard = () => {
 
           {/* Insights Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Performance Insights */}
-            <Card className="border border-border/40 bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all">
-              <CardHeader className="border-b border-border/40">
-                <CardTitle>Performance Insights</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Best Performing Event
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {stats?.performanceInsights?.bestPerformingEvent?.title ??
-                        "N/A"}
-                    </p>
+            {/* Performance Insights - Only show if there's data */}
+            {stats?.performanceInsights?.bestPerformingEvent ? (
+              <Card className="border border-border/40 bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all">
+                <CardHeader className="border-b border-border/40">
+                  <CardTitle>Performance Insights</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        Best Performing Event
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {stats?.performanceInsights?.bestPerformingEvent
+                          ?.title ?? "N/A"}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-primary">
+                        {stats?.performanceInsights?.bestPerformingEvent?.conversionRate.toFixed(
+                          1
+                        ) ?? "0"}
+                        %
+                      </p>
+                      <p className="text-xs text-muted-foreground">conversion</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-primary">
-                      {stats?.performanceInsights?.bestPerformingEvent?.conversionRate.toFixed(
-                        1
-                      ) ?? "0"}
-                      %
-                    </p>
-                    <p className="text-xs text-muted-foreground">conversion</p>
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Total Revenue Growth
-                    </p>
-                    <p className="text-xs text-muted-foreground">Last 30 days</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        Total Revenue Growth
+                      </p>
+                      <p className="text-xs text-muted-foreground">Last 30 days</p>
+                    </div>
+                    <div className="text-right">
+                      <p
+                        className={`text-sm font-bold ${
+                          (stats?.performanceInsights?.revenueGrowth
+                            .percentage ?? 0) >= 0
+                            ? "text-primary"
+                            : "text-destructive"
+                        }`}
+                      >
+                        {(stats?.performanceInsights?.revenueGrowth.percentage ??
+                          0) >= 0
+                          ? "+"
+                          : ""}
+                        {stats?.performanceInsights?.revenueGrowth.percentage.toFixed(
+                          0
+                        ) ?? "0"}
+                        %
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        vs last month
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p
-                      className={`text-sm font-bold ${
-                        (stats?.performanceInsights?.revenueGrowth
-                          .percentage ?? 0) >= 0
-                          ? "text-primary"
-                          : "text-destructive"
-                      }`}
-                    >
-                      {(stats?.performanceInsights?.revenueGrowth.percentage ??
-                        0) >= 0
-                        ? "+"
-                        : ""}
-                      {stats?.performanceInsights?.revenueGrowth.percentage.toFixed(
-                        0
-                      ) ?? "0"}
-                      %
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      vs last month
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Average Attendance
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {stats?.performanceInsights?.averageAttendance
-                        .totalEvents ?? 0}{" "}
-                      events
-                    </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        Average Attendance
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {stats?.performanceInsights?.averageAttendance
+                          .totalEvents ?? 0}{" "}
+                        events
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-primary">
+                        {stats?.performanceInsights?.averageAttendance.percentage.toFixed(
+                          1
+                        ) ?? "0"}
+                        %
+                      </p>
+                      <p className="text-xs text-muted-foreground">capacity</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-primary">
-                      {stats?.performanceInsights?.averageAttendance.percentage.toFixed(
-                        1
-                      ) ?? "0"}
-                      %
-                    </p>
-                    <p className="text-xs text-muted-foreground">capacity</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border border-border/40 bg-card rounded-2xl shadow-lg">
+                <CardHeader className="border-b border-border/40">
+                  <CardTitle>Performance Insights</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Performance data will appear once your events have registrations
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Upcoming Deadlines */}
             <Card className="border border-border/40 bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all">

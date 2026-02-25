@@ -245,7 +245,6 @@ export class EventService {
         id: true,
         role: true,
         status: true,
-        profileCompleted: true,
         isIdentityVerified: true,
         verificationLevel: true,
         payoutLimit: true,
@@ -274,11 +273,6 @@ export class EventService {
     }
     if (organizer.status === UserStatus.SUSPENDED) {
       throw new AuthorizationError('Your account has been suspended. Please contact support.');
-    }
-
-    // Require profile completion before creating events (skip for admins)
-    if (actualRole === UserRole.ORGANIZER && !organizer.profileCompleted) {
-      throw new ValidationError('You must complete your organizer profile before creating events. Please visit your profile settings.');
     }
 
     // Note: Eventbrite-style approach - no verification required to CREATE events
@@ -628,7 +622,10 @@ export class EventService {
 
     // Access control: non-approved events visible only to organizer and admins
     const isOrganizer = requestingUserId && event.organizerId === requestingUserId;
+    console.log(`[EventService.getEventById] Event ${eventId}: status=${event.status}, requestingUserId=${requestingUserId}, organizerId=${event.organizerId}, isOrganizer=${isOrganizer}`);
+    
     if (!isOrganizer && event.status !== 'APPROVED') {
+      console.log(`[EventService.getEventById] Access denied: user is not organizer and event status is not APPROVED`);
       throw new NotFoundError('Event not found');
     }
 
@@ -636,6 +633,47 @@ export class EventService {
     if (!isOrganizer && event.organizer) {
       event.organizer.email = '';
       event.organizer.businessEmail = null as any;
+    }
+
+    // Add sold-out status for each ticket type (without exposing exact counts)
+    if (event.ticketTypes && Array.isArray(event.ticketTypes)) {
+      const ticketTypesWithStatus = await Promise.all(
+        (event.ticketTypes as any[]).map(async (ticket: any) => {
+          // Only check capacity if quantity is defined
+          if (ticket.quantity !== null && ticket.quantity !== undefined) {
+            const soldCount = await prisma.ticketLineItem.aggregate({
+              where: {
+                registration: {
+                  eventId: event.id,
+                  status: {
+                    in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+                  },
+                },
+                ticketType: ticket.name,
+              },
+              _sum: {
+                quantity: true,
+              },
+            });
+
+            const sold = soldCount._sum.quantity || 0;
+            const remaining = ticket.quantity - sold;
+
+            return {
+              ...ticket,
+              isSoldOut: remaining <= 0,
+            };
+          }
+
+          // Unlimited tickets - never sold out
+          return {
+            ...ticket,
+            isSoldOut: false,
+          };
+        })
+      );
+
+      (event as any).ticketTypes = ticketTypesWithStatus;
     }
 
     return event;

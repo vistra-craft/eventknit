@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { Calendar, ClipboardList, Share2, ChevronRight } from 'lucide-react';
+import { Calendar, Share2, ChevronRight } from 'lucide-react';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { AgendaBuilderStep } from './AgendaBuilderStep';
-import { RegistrationDetailsStep } from './RegistrationDetailsStep';
 import { SocialConnectionsStep } from './SocialConnectionsStep';
-import type { EventFormData, AgendaItem, SpeakerItem, ExhibitorItem, SponsorItem, RegistrationField } from './types';
+import type { AgendaItem, SpeakerItem, ExhibitorItem, SponsorItem } from './types';
 
 interface ExtrasStepProps {
   // AgendaBuilderStep props
@@ -19,15 +18,6 @@ interface ExtrasStepProps {
     field: 'agenda' | 'speakers' | 'exhibitors' | 'sponsors',
     value: AgendaItem[] | SpeakerItem[] | ExhibitorItem[] | SponsorItem[]
   ) => void;
-  // RegistrationDetailsStep props
-  eventData: EventFormData;
-  onInputChange: (field: string, value: string | boolean | number) => void;
-  validationErrors: Record<string, string>;
-  setValidationErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  registrationFields: RegistrationField[];
-  setRegistrationFields: React.Dispatch<React.SetStateAction<RegistrationField[]>>;
-  useDragAndDrop: boolean;
-  setUseDragAndDrop: (v: boolean) => void;
   // SocialConnectionsStep props
   socialLinks: Record<string, string>;
   onSocialLinksChange: (links: Record<string, string>) => void;
@@ -41,14 +31,6 @@ export function ExtrasStep({
   eventStartDate,
   eventEndDate,
   onAgendaUpdate,
-  eventData,
-  onInputChange,
-  validationErrors,
-  setValidationErrors,
-  registrationFields,
-  setRegistrationFields,
-  useDragAndDrop,
-  setUseDragAndDrop,
   socialLinks,
   onSocialLinksChange,
 }: ExtrasStepProps) {
@@ -68,7 +50,6 @@ export function ExtrasStep({
 
   // Count items for each section
   const programCount = agenda.length + speakers.length + exhibitors.length + sponsors.length;
-  const registrationCount = registrationFields.length;
   const socialCount = Object.values(socialLinks).filter(v => v.trim() !== '').length;
 
   const sections = [
@@ -79,14 +60,6 @@ export function ExtrasStep({
       description: 'Add sessions, speakers, exhibitors, and sponsors',
       count: programCount,
       countLabel: programCount === 1 ? 'item' : 'items',
-    },
-    {
-      id: 'registration',
-      icon: ClipboardList,
-      title: 'Registration Form',
-      description: 'Customize what info you collect from attendees',
-      count: registrationCount,
-      countLabel: registrationCount === 1 ? 'field' : 'fields',
     },
     {
       id: 'social',
@@ -161,18 +134,6 @@ export function ExtrasStep({
                       eventStartDate={eventStartDate}
                       eventEndDate={eventEndDate}
                       onUpdate={onAgendaUpdate}
-                    />
-                  )}
-                  {section.id === 'registration' && (
-                    <RegistrationDetailsStep
-                      eventData={eventData}
-                      onInputChange={onInputChange}
-                      validationErrors={validationErrors}
-                      setValidationErrors={setValidationErrors}
-                      registrationFields={registrationFields}
-                      setRegistrationFields={setRegistrationFields}
-                      useDragAndDrop={useDragAndDrop}
-                      setUseDragAndDrop={setUseDragAndDrop}
                     />
                   )}
                   {section.id === 'social' && (

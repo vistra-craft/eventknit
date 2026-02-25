@@ -400,6 +400,7 @@ const EventManagement = () => {
           setSubscription(subscriptionResponse.data.subscription);
         }
       } catch (err: unknown) {
+        console.error('[EventManagement] Error fetching event:', err);
         const errorMessage = err && typeof err === 'object' && 'message' in err
           ? (err.message as string)
           : 'Failed to load event data. Please try again.';
@@ -1780,6 +1781,52 @@ const EventManagement = () => {
         );
     }
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader size="default" />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6 p-6">
+        <BackButton />
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="font-semibold">{error}</p>
+              {error.toLowerCase().includes("not found") && (
+                <div className="mt-3 p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                  <p className="text-sm">
+                    <strong>Note:</strong> If you just created this event, it may still be pending admin approval. 
+                    Pending events will appear here once they're approved.
+                  </p>
+                  <p className="text-sm mt-2">
+                    You can edit your event while it's pending. <a href="/organizer/dashboard" className="underline font-semibold">Go back to dashboard</a>
+                  </p>
+                </div>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Show content only if event data is loaded
+  if (!eventData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader size="default" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

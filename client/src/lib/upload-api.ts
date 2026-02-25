@@ -19,6 +19,12 @@ export async function uploadImage(file: File, folder?: UploadFolder): Promise<st
     body: formData,
   });
 
+  if (res.status === 401) {
+    localStorage.removeItem('accessToken');
+    window.location.href = '/auth/signin?reason=session_expired';
+    throw new Error('Your session has expired. Please sign in again.');
+  }
+
   const json = await res.json();
 
   if (!res.ok || !json.success) {

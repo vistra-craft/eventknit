@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Globe, Calendar, X, MapPin } from 'lucide-react';
+import { Globe, Calendar, X, MapPin, Clock } from 'lucide-react';
 import type { StepComponentProps } from './types';
 import { TIMEZONES, getCurrentTimezone, getTimezoneLabel } from './types';
 
@@ -12,6 +13,112 @@ interface DateLocationStepProps extends StepComponentProps {
   eventType: string;
   timezone: string;
   setTimezone: (tz: string) => void;
+}
+
+// Time Picker Component
+function TimePicker({ value, onChange, label, id }: { value: string; onChange: (val: string) => void; label: string; id: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
+  
+  const [selectedHour, selectedMinute] = value ? value.split(':') : ['00', '00'];
+
+  const handleTimeSelect = (hour: string, minute: string) => {
+    const newTime = `${hour}:${minute}`;
+    onChange(newTime);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Input
+            id={id}
+            type="time"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className={`h-12 pr-10`}
+            placeholder="HH:MM"
+          />
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            <Clock className="h-4 w-4" />
+          </button>
+        </div>
+        {value && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-muted"
+            onClick={() => onChange("")}
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+            <span className="sr-only">Clear time</span>
+          </Button>
+        )}
+      </div>
+
+      {/* Time Picker Dropdown */}
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 bg-popover border border-border rounded-lg shadow-lg p-3 z-50 w-64">
+          <div className="grid grid-cols-2 gap-3">
+            {/* Hours */}
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Hour</Label>
+              <div className="border border-border rounded-lg h-48 overflow-y-auto">
+                {hours.map((hour) => (
+                  <button
+                    key={hour}
+                    type="button"
+                    onClick={() => handleTimeSelect(hour, selectedMinute)}
+                    className={`w-full px-3 py-2 text-sm text-left hover:bg-accent transition-colors ${
+                      selectedHour === hour ? 'bg-primary text-primary-foreground font-semibold' : ''
+                    }`}
+                  >
+                    {hour}:00
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Minutes */}
+            <div>
+              <Label className="text-xs font-semibold text-muted-foreground mb-2 block">Minute</Label>
+              <div className="border border-border rounded-lg h-48 overflow-y-auto">
+                {['00', '15', '30', '45'].map((minute) => (
+                  <button
+                    key={minute}
+                    type="button"
+                    onClick={() => handleTimeSelect(selectedHour, minute)}
+                    className={`w-full px-3 py-2 text-sm text-left hover:bg-accent transition-colors ${
+                      selectedMinute === minute ? 'bg-primary text-primary-foreground font-semibold' : ''
+                    }`}
+                  >
+                    :{minute}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full mt-2"
+            onClick={() => setIsOpen(false)}
+          >
+            Done
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function DateLocationStep({
@@ -29,6 +136,7 @@ export function DateLocationStep({
 
   return (
     <div className="space-y-6">
+      {/* Event Date & Start Time */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="date">Event Date *</Label>
@@ -38,6 +146,10 @@ export function DateLocationStep({
             value={eventData.date}
             onChange={(e) => {
               handleInputChange("date", e.target.value);
+              // Clear end date if it's before start date
+              if (eventData.endDate && e.target.value > eventData.endDate) {
+                handleInputChange("endDate", "");
+              }
               if (validationErrors.date) setValidationErrors(prev => ({ ...prev, date: '' }));
             }}
             className={`h-12 ${validationErrors.date ? 'border-destructive' : ''}`}
@@ -48,42 +160,72 @@ export function DateLocationStep({
         </div>
         <div className="space-y-2">
           <Label htmlFor="time">Start Time *</Label>
-          <div className="relative">
-            <Input
-              id="time"
-              type="time"
-              value={eventData.time}
-              onChange={(e) => {
-                handleInputChange("time", e.target.value);
-                if (validationErrors.time) setValidationErrors(prev => ({ ...prev, time: '' }));
-              }}
-              className={`h-12 pr-10 ${validationErrors.time ? 'border-destructive' : ''}`}
-            />
-            {eventData.time && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
-                onClick={() => handleInputChange("time", "")}
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-                <span className="sr-only">Clear time</span>
-              </Button>
-            )}
-          </div>
+          <TimePicker
+            id="time"
+            value={eventData.time}
+            onChange={(value) => {
+              handleInputChange("time", value);
+              if (validationErrors.time) setValidationErrors(prev => ({ ...prev, time: '' }));
+            }}
+            label="Start Time"
+          />
           {validationErrors.time && (
             <p className="text-sm text-destructive">{validationErrors.time}</p>
           )}
         </div>
       </div>
 
+      {/* Timezone - Positioned early for context */}
+      <div className="space-y-2">
+        <Label htmlFor="timezone" className="flex items-center gap-2">
+          <Globe className="w-4 h-4" />
+          Timezone *
+        </Label>
+        <Select
+          value={timezone}
+          onValueChange={(value) => {
+            if (value === '__local__') {
+              // Use the detected local timezone
+              setTimezone(getCurrentTimezone());
+            } else {
+              setTimezone(value);
+            }
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select timezone">
+              {timezone ? getTimezoneLabel(timezone) : "Select timezone"}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {/* Local timezone option */}
+            <SelectItem value="__local__" className="font-medium">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span>Use current timezone ({getCurrentTimezone().replace(/_/g, ' ')})</span>
+              </div>
+            </SelectItem>
+            <div className="my-1 border-t border-border" />
+            {TIMEZONES.map((tz) => (
+              <SelectItem key={tz.value} value={tz.value}>
+                {tz.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-sm text-muted-foreground">
+          All event times will be displayed and stored in this timezone
+        </p>
+      </div>
+
+      {/* End Date & Time */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="endDate">End Date</Label>
           <Input
             id="endDate"
             type="date"
+            min={eventData.date || undefined}
             value={eventData.endDate}
             onChange={(e) => {
               handleInputChange("endDate", e.target.value);
@@ -94,30 +236,20 @@ export function DateLocationStep({
           {validationErrors.endDate && (
             <p className="text-sm text-destructive">{validationErrors.endDate}</p>
           )}
+          {eventData.date && !eventData.endDate && (
+            <p className="text-xs text-muted-foreground">
+              Minimum date: {new Date(eventData.date).toLocaleDateString()}
+            </p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="endTime">End Time</Label>
-          <div className="relative">
-            <Input
-              id="endTime"
-              type="time"
-              value={eventData.endTime}
-              onChange={(e) => handleInputChange("endTime", e.target.value)}
-              className="h-12 pr-10"
-            />
-            {eventData.endTime && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
-                onClick={() => handleInputChange("endTime", "")}
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-                <span className="sr-only">Clear end time</span>
-              </Button>
-            )}
-          </div>
+          <TimePicker
+            id="endTime"
+            value={eventData.endTime}
+            onChange={(value) => handleInputChange("endTime", value)}
+            label="End Time"
+          />
         </div>
       </div>
 
@@ -200,48 +332,6 @@ export function DateLocationStep({
             </p>
           </div>
         )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="timezone" className="flex items-center gap-2">
-          <Globe className="w-4 h-4" />
-          Timezone *
-        </Label>
-        <Select
-          value={timezone}
-          onValueChange={(value) => {
-            if (value === '__local__') {
-              // Use the detected local timezone
-              setTimezone(getCurrentTimezone());
-            } else {
-              setTimezone(value);
-            }
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select timezone">
-              {timezone ? getTimezoneLabel(timezone) : "Select timezone"}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {/* Local timezone option */}
-            <SelectItem value="__local__" className="font-medium">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                <span>Use current timezone ({getCurrentTimezone().replace(/_/g, ' ')})</span>
-              </div>
-            </SelectItem>
-            <div className="my-1 border-t border-border" />
-            {TIMEZONES.map((tz) => (
-              <SelectItem key={tz.value} value={tz.value}>
-                {tz.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-sm text-muted-foreground">
-          Event time will be displayed in this timezone
-        </p>
       </div>
 
       {/* Venue fields for in-person and hybrid */}

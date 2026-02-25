@@ -705,6 +705,7 @@ export const getRoleSwitchOptions = async (): Promise<ApiResponse<RoleSwitchOpti
 export const becomeOrganizer = async (data: {
   organizationName: string;
   businessEmail?: string;
+  description?: string;
 }): Promise<ApiResponse<{ user: User }>> => {
   return apiPost('/user/role-switch/become-organizer', data);
 };

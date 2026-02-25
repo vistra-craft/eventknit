@@ -5,7 +5,7 @@
  */
 
 import { useNavigate, Navigate } from 'react-router-dom';
-import { Calendar, MapPin, Download, Share2, Plus, Heart, Clock } from 'lucide-react';
+import { Calendar, MapPin, Download, Share2, Plus, Heart, Clock, Shield, User } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
@@ -109,13 +109,41 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
       {/* Pending Approval Banner */}
       {isPendingOrganizer && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
-          <Clock className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-foreground">Your organizer application is under review</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Our team is reviewing your application. You'll be notified once your account is approved.
-              In the meantime, you can browse and attend events.
+        <div className="mb-6 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <Clock className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Your organizer application is under review</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Our team is reviewing your application. You'll receive an email once approved — usually within 24 hours.
+              </p>
+            </div>
+          </div>
+          {/* What to do while waiting */}
+          <div className="pl-8 space-y-2">
+            <p className="text-xs font-medium text-foreground uppercase tracking-wide">While you wait</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 justify-start border-amber-500/30 hover:bg-amber-500/10 text-foreground"
+                onClick={() => navigate('/organizer/profile-setup')}
+              >
+                <User className="h-3.5 w-3.5" />
+                Complete your organizer profile
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 justify-start border-amber-500/30 hover:bg-amber-500/10 text-foreground"
+                onClick={() => navigate('/organizer/verification')}
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Start identity verification (KYC)
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              For paid events, identity verification is required before payouts are enabled. You can complete it now so you're ready.
             </p>
           </div>
         </div>

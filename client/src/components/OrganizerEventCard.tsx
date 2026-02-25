@@ -45,6 +45,11 @@ interface EventCardProps {
 const OrganizerEventCard = ({ event }: EventCardProps) => {
   const navigate = useNavigate();
 
+  // Strip HTML tags from description for clean display
+  const cleanDescription = (html: string): string => {
+    return html.replace(/<[^>]*>/g, '').trim();
+  };
+
   // Use real event data for metrics
   const metrics = {
     attendees: typeof event.attendees === 'number' ? event.attendees : 0,
@@ -140,7 +145,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
         </div>
         
         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-          {event.description}
+          {cleanDescription(event.description)}
         </p>
         
         <div className="flex items-center justify-end">

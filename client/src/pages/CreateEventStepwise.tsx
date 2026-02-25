@@ -22,9 +22,12 @@ import {
   MapPin,
   Shield,
   LayoutList,
+  ClipboardList,
   ArrowRight,
   ArrowLeft,
   X,
+  User,
+  Building2,
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
@@ -37,7 +40,9 @@ import { getVerificationStatus, type VerificationStatus } from '@/lib/verificati
 import { applyTemplate } from '@/lib/organizer-dashboard-api';
 import { useToast } from '@/hooks/useToast';
 import { getMyOrganizerProfile } from '@/lib/organizer-profile-api';
+import { uploadImage } from '@/lib/upload-api';
 import { BasicInfoStep } from '@/components/event-wizard/BasicInfoStep';
+import { RegistrationDetailsStep } from '@/components/event-wizard/RegistrationDetailsStep';
 import BackButton from '@/components/BackButton';
 import { DateLocationStep } from '@/components/event-wizard/DateLocationStep';
 import { MediaStep } from '@/components/event-wizard/MediaStep';
@@ -108,13 +113,14 @@ interface RegistrationFieldData {
 
 const DRAFT_STORAGE_KEY = 'eventknit_event_draft';
 
-/* Step definitions — consolidated 5-step wizard */
+/* Step definitions — consolidated 6-step wizard */
 const steps = [
-  { title: "Details", icon: FileText },       // 1: Basic info + date/location combined
-  { title: "Media", icon: Camera },           // 2: Cover image, tags, requirements, FAQs
-  { title: "Tickets", icon: Ticket },         // 3: Ticket types, pricing, currency, capacity
-  { title: "Extras", icon: LayoutList },      // 4: Agenda + Registration + Social (collapsible)
-  { title: "Review", icon: CheckCircle },     // 5: Final review
+  { title: "Details", icon: FileText },           // 1: Basic info + date/location combined
+  { title: "Media", icon: Camera },               // 2: Cover image, tags, requirements, FAQs
+  { title: "Tickets", icon: Ticket },             // 3: Ticket types, pricing, currency, capacity
+  { title: "Registration", icon: ClipboardList }, // 4: Registration form builder
+  { title: "Extras", icon: LayoutList },          // 5: Agenda + Social (collapsible)
+  { title: "Review", icon: CheckCircle },         // 6: Final review
 ];
 
 export default function CreateEventStepwise() {
@@ -130,13 +136,12 @@ export default function CreateEventStepwise() {
   const isEditMode = !!editEventId;
   const [isLoadingEvent, setIsLoadingEvent] = useState(isEditMode);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(!!templateId && !isEditMode);
-  const [useDragAndDrop, setUseDragAndDrop] = useState(false);
   const { toast } = useToast();
   
   const [currentStep, setCurrentStep] = useState(() => {
     if (stepParam) {
       const step = parseInt(stepParam, 10);
-      return step >= 1 && step <= 5 ? step : 1;
+      return step >= 1 && step <= 6 ? step : 1;
     }
     return 1;
   });
@@ -207,6 +212,8 @@ export default function CreateEventStepwise() {
   const [showPreview, setShowPreview] = useState(false);
   const [showOrgNameDialog, setShowOrgNameDialog] = useState(false);
   const [orgNameInput, setOrgNameInput] = useState('');
+  const [orgDescInput, setOrgDescInput] = useState('');
+  const [orgSetupType, setOrgSetupType] = useState<'individual' | 'organization'>('individual');
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [eventId] = useState<string | null>(editEventId);
@@ -1048,7 +1055,7 @@ export default function CreateEventStepwise() {
         }
       } catch (err) {
         console.error('Error loading template:', err);
-        setError('Failed to load template data. Please try again.');
+        setError('Unable to load the template. Please try selecting a different template.');
         toast({
           title: "Error",
           description: "Failed to load template. Please try again.",
@@ -1201,15 +1208,13 @@ export default function CreateEventStepwise() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
+      setError('Please select an image file (JPG, PNG, GIF, or WebP)');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setError('Image size must be less than 5MB');
+      setError('Image size must be less than 5MB. Please choose a smaller file.');
       return;
     }
 
@@ -1217,22 +1222,14 @@ export default function CreateEventStepwise() {
     setError(null);
 
     try {
-      // Convert to base64 for now (in production, upload to cloud storage)
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
-        setEventData(prev => ({ ...prev, image: base64String }));
-        setIsUploadingImage(false);
-      };
-      reader.onerror = () => {
-        setError('Failed to read image file');
-        setIsUploadingImage(false);
-      };
-      reader.readAsDataURL(file);
+      const url = await uploadImage(file, 'events');
+      setImagePreview(url);
+      setEventData(prev => ({ ...prev, image: url }));
     } catch {
-      setError('Failed to upload image');
+      setError('Failed to upload image. Please try again.');
+    } finally {
       setIsUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -1587,12 +1584,15 @@ export default function CreateEventStepwise() {
     if (wasAttendee) {
       const orgName = orgNameInput.trim();
       if (orgName.length < 2) {
-        setError('Organization name must be at least 2 characters.');
+        setError('Organization name must be at least 2 characters long.');
         setIsSubmitting(false);
         return;
       }
       try {
-        const upgradeResponse = await becomeOrganizer({ organizationName: orgName });
+        const upgradeResponse = await becomeOrganizer({
+          organizationName: orgName,
+          description: orgDescInput.trim() || undefined,
+        });
         if (!upgradeResponse.success) {
           throw new Error(upgradeResponse.message || 'Failed to set up organizer account');
         }
@@ -1633,7 +1633,7 @@ export default function CreateEventStepwise() {
             state: { message: 'Event updated successfully!' }
           });
         } else {
-          setError(response.message || 'Failed to update event. Please try again.');
+          setError(response.message || 'Unable to update the event. Please check your information and try again.');
         }
       } else {
         // Create new event
@@ -1674,29 +1674,45 @@ export default function CreateEventStepwise() {
               navigate('/admin/dashboard', {
                 state: { message: 'Event created successfully! It is pending admin approval.' }
               });
-            } else if (!user?.profileCompleted) {
-              // First-time organizer: redirect to profile setup
-              navigate('/organizer/profile-setup', {
-                state: {
-                  message: 'Event created successfully! Now set up your organizer profile to build trust with attendees.',
-                  eventCreated: true,
-                  fromEventCreation: true,
-                }
-              });
             } else {
               navigate('/organizer/dashboard', {
-                state: { message: 'Event created successfully! It is pending admin approval.' }
+                state: {
+                  message: 'Event created successfully! It is pending admin approval.',
+                  fromEventCreation: true,
+                }
               });
             }
           }
         } else {
-          setError(response.message || 'Failed to create event. Please try again.');
+          setError(response.message || 'Unable to create the event. Please check your information and try again.');
         }
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
-        : 'An unexpected error occurred. Please try again.';
+      // Improved error message handling for better user experience
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (err && typeof err === 'object' && 'message' in err) {
+        const rawMessage = err.message as string;
+        
+        // Parse and improve common validation errors
+        if (rawMessage.includes('registrationFields') && rawMessage.includes('type')) {
+          errorMessage = 'Invalid registration field type detected. Please check your custom form fields.';
+        } else if (rawMessage.includes('validation') || rawMessage.includes('required')) {
+          errorMessage = 'Please check all required fields and ensure they are filled correctly.';
+        } else if (rawMessage.includes('price') || rawMessage.includes('ticket')) {
+          errorMessage = 'Please check your ticket pricing and availability settings.';
+        } else if (rawMessage.includes('date') || rawMessage.includes('time')) {
+          errorMessage = 'Please check your event date and time settings.';
+        } else if (rawMessage.includes('unauthorized') || rawMessage.includes('authentication')) {
+          errorMessage = 'Your session has expired. Please refresh the page and try again.';
+        } else {
+          // Use the original message if it's user-friendly (not too technical)
+          errorMessage = rawMessage.length < 200 && !rawMessage.includes('Error:') 
+            ? rawMessage 
+            : 'Failed to save event. Please check your input and try again.';
+        }
+      }
+      
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -1704,7 +1720,7 @@ export default function CreateEventStepwise() {
   }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput]);
 
   const handleNext = useCallback(() => {
-    if (currentStep < 5) {
+    if (currentStep < 6) {
       if (validateStep(currentStep)) {
         setError(null);
         // Save draft before navigating to next step
@@ -1738,7 +1754,7 @@ export default function CreateEventStepwise() {
   // Step rendering functions extracted to @/components/event-wizard/*
   // Render preview modal
   const renderPreview = () => {
-    // Show registration form preview if on step 4 (Extras step — contains registration)
+    // Show registration form preview on step 4 (Registration step)
     if (currentStep === 4) {
       return (
         <Dialog open={showPreview} onOpenChange={setShowPreview}>
@@ -2187,8 +2203,27 @@ export default function CreateEventStepwise() {
                 setTicketTypes={setTicketTypes}
               />
             )}
-            {/* Step 4: Extras (Agenda + Registration + Social — collapsible) */}
+            {/* Step 4: Registration Form */}
             {currentStep === 4 && (
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold">Registration Form</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Customize what information you collect from attendees
+                  </p>
+                </div>
+                <RegistrationDetailsStep
+                  eventData={eventData}
+                  onInputChange={handleInputChange}
+                  validationErrors={validationErrors}
+                  setValidationErrors={setValidationErrors}
+                  registrationFields={registrationFields}
+                  setRegistrationFields={setRegistrationFields}
+                />
+              </div>
+            )}
+            {/* Step 5: Extras (Agenda + Social — collapsible) */}
+            {currentStep === 5 && (
               <ExtrasStep
                 agenda={agenda}
                 speakers={speakers}
@@ -2215,20 +2250,12 @@ export default function CreateEventStepwise() {
                     setEventData(prev => ({ ...prev, sponsors: sponsorsValue }));
                   }
                 }}
-                eventData={eventData}
-                onInputChange={handleInputChange}
-                validationErrors={validationErrors}
-                setValidationErrors={setValidationErrors}
-                registrationFields={registrationFields}
-                setRegistrationFields={setRegistrationFields}
-                useDragAndDrop={useDragAndDrop}
-                setUseDragAndDrop={setUseDragAndDrop}
                 socialLinks={socialLinks}
                 onSocialLinksChange={setSocialLinks}
               />
             )}
-            {/* Step 5: Review */}
-            {currentStep === 5 && (
+            {/* Step 6: Review */}
+            {currentStep === 6 && (
               <ReviewStep
                 eventData={eventData}
                 onInputChange={handleInputChange}
@@ -2296,7 +2323,7 @@ export default function CreateEventStepwise() {
                     disabled={isSubmitting}
                   >
                     <Loader size="sm" className="mr-2" />
-                    {currentStep === 5 ? 'Publishing...' : 'Validating...'}
+                    {currentStep === 6 ? 'Publishing...' : 'Validating...'}
                   </Button>
                 ) : (
                   <Button
@@ -2307,7 +2334,7 @@ export default function CreateEventStepwise() {
                     disabled={isSubmitting}
                     className="min-w-[140px]"
                   >
-                    <span>{currentStep === 5 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'}</span>
+                    <span>{currentStep === 6 ? (isEditMode ? 'Update Event' : 'Publish Event') : 'Next'}</span>
                     {currentStep !== 5 && <ArrowRight className="w-4 h-4 ml-2" />}
                   </Button>
                 )}
@@ -2320,24 +2347,65 @@ export default function CreateEventStepwise() {
       {/* Preview Modal */}
       {renderPreview()}
 
-      {/* Organization Name Dialog — shown when attendee clicks Publish */}
+      {/* Organizer setup dialog — shown when attendee clicks Publish */}
       <Dialog open={showOrgNameDialog} onOpenChange={setShowOrgNameDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Set Up Your Organizer Profile</DialogTitle>
+            <DialogTitle>One last step before publishing</DialogTitle>
             <DialogDescription>
-              To publish events, you need an organizer account. Enter your organization or brand name below. You can update this later in your profile settings.
+              Set up your organizer account. This is what attendees will see on your events.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
+
+            {/* Account type selector */}
             <div className="space-y-2">
-              <Label htmlFor="orgNameDialog">Organization Name *</Label>
+              <Label>I'm organizing as</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOrgSetupType('individual')}
+                  className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-sm transition-colors text-left ${
+                    orgSetupType === 'individual'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  }`}
+                >
+                  <User className="h-4 w-4 self-center" />
+                  <span className="font-medium self-center">Individual</span>
+                  <span className="text-xs text-center leading-tight">Freelancer or personal events</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrgSetupType('organization')}
+                  className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-sm transition-colors text-left ${
+                    orgSetupType === 'organization'
+                      ? 'border-primary bg-primary/5 text-primary'
+                      : 'border-border text-muted-foreground hover:border-primary/50'
+                  }`}
+                >
+                  <Building2 className="h-4 w-4 self-center" />
+                  <span className="font-medium self-center">Organization</span>
+                  <span className="text-xs text-center leading-tight">Company, nonprofit or group</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Display name input */}
+            <div className="space-y-1.5">
+              <Label htmlFor="orgNameDialog">
+                {orgSetupType === 'individual' ? 'Your name or brand' : 'Organization name'} *
+              </Label>
               <Input
                 id="orgNameDialog"
-                placeholder="Your organization or brand name"
+                placeholder={
+                  orgSetupType === 'individual'
+                    ? 'e.g. "Jane Kamau" or "Jane\'s Workshops"'
+                    : 'e.g. "Nairobi Tech Hub" or "Acme Events"'
+                }
                 value={orgNameInput}
                 onChange={(e) => setOrgNameInput(e.target.value)}
-                className="h-12"
+                className="h-11"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && orgNameInput.trim().length >= 2) {
@@ -2349,8 +2417,59 @@ export default function CreateEventStepwise() {
               {orgNameInput.trim().length > 0 && orgNameInput.trim().length < 2 && (
                 <p className="text-xs text-destructive">Must be at least 2 characters</p>
               )}
+              <p className="text-xs text-muted-foreground">
+                This is what attendees see on your events. You can update it later in your profile.
+              </p>
             </div>
-            <div className="flex justify-end gap-2">
+
+            {/* Bio / description */}
+            <div className="space-y-1.5">
+              <Label htmlFor="orgDescDialog">
+                {orgSetupType === 'individual' ? 'About you' : 'About your organization'}
+                <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+              </Label>
+              <Textarea
+                id="orgDescDialog"
+                placeholder={
+                  orgSetupType === 'individual'
+                    ? 'A short intro — what kind of events you run, your experience, etc.'
+                    : 'What your organization does, your mission, the type of events you host…'
+                }
+                value={orgDescInput}
+                onChange={(e) => setOrgDescInput(e.target.value)}
+                className="text-sm resize-none"
+                rows={3}
+              />
+            </div>
+
+            {/* What happens next — KYC awareness */}
+            <div className={`rounded-lg border p-3 text-sm ${hasPaidTickets() ? 'border-amber-500/40 bg-amber-500/5' : 'border-border bg-muted/30'}`}>
+              <p className="font-medium text-foreground mb-2">What happens after you publish</p>
+              <ul className="space-y-1.5">
+                <li className="flex items-start gap-2 text-muted-foreground">
+                  <CheckCircle className="h-3.5 w-3.5 mt-0.5 text-green-600 shrink-0" />
+                  <span>Your event is submitted for review — usually under 24 hours</span>
+                </li>
+                <li className="flex items-start gap-2 text-muted-foreground">
+                  <CheckCircle className="h-3.5 w-3.5 mt-0.5 text-green-600 shrink-0" />
+                  {hasPaidTickets() ? (
+                    <span>
+                      You can publish now and start collecting registrations.{' '}
+                      <strong className="text-foreground">To receive payments</strong>, complete identity verification from your dashboard.
+                    </span>
+                  ) : (
+                    <span>No further verification needed for free events</span>
+                  )}
+                </li>
+              </ul>
+              {hasPaidTickets() && (
+                <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+                  This event has paid tickets — KYC verification will be required before payouts are enabled.
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-1">
               <Button variant="outline" onClick={() => setShowOrgNameDialog(false)}>Cancel</Button>
               <Button
                 onClick={() => {
@@ -2359,7 +2478,7 @@ export default function CreateEventStepwise() {
                 }}
                 disabled={orgNameInput.trim().length < 2}
               >
-                Continue & Publish
+                Publish event
               </Button>
             </div>
           </div>

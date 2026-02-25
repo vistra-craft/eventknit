@@ -150,6 +150,7 @@ export class UserService {
     data: {
       organizationName: string;
       businessEmail?: string;
+      description?: string;
     },
     ipAddress?: string,
     userAgent?: string,
@@ -180,14 +181,16 @@ export class UserService {
       throw new ValidationError('Organization name is required to become an organizer');
     }
 
-    // Update user role to ORGANIZER
+    // Update user role to ORGANIZER and mark profile complete (name + bio collected in modal)
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         role: UserRole.ORGANIZER,
         organizationName: data.organizationName.trim(),
         businessEmail: data.businessEmail?.trim() || user.email,
-        onboardingCompleted: true, // Skip onboarding stepper — approval flow handles gating
+        onboardingCompleted: true,
+        profileCompleted: true,
+        profileCompletedAt: new Date(),
       },
       select: {
         id: true,
@@ -203,6 +206,20 @@ export class UserService {
         avatar: true,
         companyAffiliation: true,
         phoneNumber: true,
+      },
+    });
+
+    // Seed organizer profile with the bio provided in the modal
+    await prisma.organizerProfile.upsert({
+      where: { userId },
+      create: {
+        userId,
+        description: data.description?.trim() || null,
+        totalEvents: 0,
+        totalRevenue: 0,
+      },
+      update: {
+        ...(data.description?.trim() ? { description: data.description.trim() } : {}),
       },
     });
 

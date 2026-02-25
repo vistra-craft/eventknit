@@ -2,6 +2,24 @@ import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
 import { logger } from '../utils/logger.js';
 
+const UPLOAD_TIMEOUT_MS = 60_000; // 60 s per attempt
+const MAX_RETRIES = 2;            // 3 total attempts (initial + 2 retries)
+const RETRY_DELAY_MS = 2_000;
+
+const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+const isRetryableError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return (
+    msg.includes('timeout') ||
+    msg.includes('econnreset') ||
+    msg.includes('enotfound') ||
+    msg.includes('network') ||
+    msg.includes('socket')
+  );
+};
+
 // Configure Cloudinary (lazy initialization to allow mocking in tests)
 let cloudinaryConfigured = false;
 const configureCloudinary = (): void => {
@@ -40,38 +58,28 @@ export interface UploadResult {
   secureUrl: string;
 }
 
-/**
- * Upload image buffer to Cloudinary
- */
-export const uploadImageToCloudinary = async (
+// Single upload attempt — used by the retry wrapper below
+const attemptImageUpload = (
   buffer: Buffer,
-  folder: string = 'featured-events',
+  folder: string,
   options?: {
     width?: number;
     height?: number;
-    quality?: number | string; // Cloudinary accepts 'auto' as string or number
+    quality?: number | string;
     format?: string;
   },
 ): Promise<UploadResult> => {
-  configureCloudinary();
-
-  // Check if Cloudinary is configured before attempting upload
-  if (!cloudinaryConfigured) {
-    throw new Error(
-      'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.',
-    );
-  }
-
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
         resource_type: 'image',
+        timeout: UPLOAD_TIMEOUT_MS,
         transformation: [
           {
             width: options?.width || 1920,
             height: options?.height || 1080,
-            crop: 'limit', // Maintain aspect ratio, limit dimensions
+            crop: 'limit',
             quality: options?.quality || 'auto',
             format: options?.format || 'auto',
           },
@@ -79,16 +87,13 @@ export const uploadImageToCloudinary = async (
       },
       (error, result) => {
         if (error) {
-          logger.error('Cloudinary upload error:', error);
-          reject(new Error(`Failed to upload image: ${error.message}`));
+          reject(new Error(error.message));
           return;
         }
-
         if (!result) {
-          reject(new Error('Upload failed: No result from Cloudinary'));
+          reject(new Error('No result from Cloudinary'));
           return;
         }
-
         resolve({
           url: result.url,
           publicId: result.public_id,
@@ -97,10 +102,49 @@ export const uploadImageToCloudinary = async (
       },
     );
 
-    // Convert buffer to stream
     const stream = Readable.from(buffer);
     stream.pipe(uploadStream);
   });
+};
+
+/**
+ * Upload image buffer to Cloudinary with automatic retry on transient network errors.
+ */
+export const uploadImageToCloudinary = async (
+  buffer: Buffer,
+  folder: string = 'featured-events',
+  options?: {
+    width?: number;
+    height?: number;
+    quality?: number | string;
+    format?: string;
+  },
+): Promise<UploadResult> => {
+  configureCloudinary();
+
+  if (!cloudinaryConfigured) {
+    throw new Error(
+      'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.',
+    );
+  }
+
+  let lastError: Error = new Error('Upload failed');
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        logger.warn(`Retrying Cloudinary upload (attempt ${attempt + 1}/${MAX_RETRIES + 1})...`);
+        await delay(RETRY_DELAY_MS * attempt);
+      }
+      return await attemptImageUpload(buffer, folder, options);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      logger.error(`Cloudinary upload error (attempt ${attempt + 1}/${MAX_RETRIES + 1}):`, lastError.message);
+      if (!isRetryableError(lastError) || attempt === MAX_RETRIES) break;
+    }
+  }
+
+  throw new Error(`Failed to upload image: ${lastError.message}`);
 };
 
 /**

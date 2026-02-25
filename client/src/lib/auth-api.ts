@@ -2,7 +2,7 @@
  * Authentication API Functions
  */
 
-import { apiPost, apiGet, apiPut, API_BASE_URL, type ApiResponse } from './api';
+import { apiPost, apiGet, apiPut, type ApiResponse } from './api';
 import { UserRole, UserStatus } from '../types/auth';
 
 export interface User {
@@ -251,21 +251,8 @@ export const resendAccountInvitation = async (email: string): Promise<ResendInvi
  */
 export const uploadAvatar = async (file: File): Promise<ApiResponse<{ avatar: string }>> => {
   const formData = new FormData();
-  formData.append('avatar', file);
-  
-  return fetch(`${API_BASE_URL}/auth/profile`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: formData,
-  })
-    .then(res => res.json())
-    .catch(error => ({
-      success: false,
-      message: 'Failed to upload avatar',
-      error,
-    }));
+  formData.append('image', file);
+  return apiPut<ApiResponse<{ avatar: string }>>('/auth/profile', formData);
 };
 
 

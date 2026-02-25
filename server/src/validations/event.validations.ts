@@ -98,14 +98,18 @@ export const eventValidations = {
       'number.min': 'Capacity must be at least 1',
       'number.base': 'Capacity must be a valid number',
     }),
-    image: Joi.string().uri().optional().allow('', null).messages({
-      'string.uri': 'Image URL must be a valid URL',
-    }),
+    // OPTIONAL: URL Upload Feature (Currently Disabled for Quality Control)
+    // To enable URL uploads, uncomment the line below and ensure frontend URL input is enabled.
+    // image: Joi.string().uri().optional().allow('', null).messages({
+    //   'string.uri': 'Image URL must be a valid URL',
+    // }),
+    image: Joi.string().optional().allow('', null), // Only file uploads allowed
     imageFocalX: Joi.number().integer().min(0).max(100).optional().default(50),
     imageFocalY: Joi.number().integer().min(0).max(100).optional().default(50),
-    images: Joi.array().items(Joi.string().uri()).optional().messages({
-      'array.max': 'Images array is too large',
-    }),
+    // images: Joi.array().items(Joi.string().uri()).optional().messages({
+    //   'array.max': 'Images array is too large',
+    // }),
+    images: Joi.array().items(Joi.string()).optional(), // URL validation disabled
     type: Joi.string().valid(...EventTypeValues).optional().default('PUBLIC').messages({
       'any.only': `Event type must be one of: ${EventTypeValues.join(', ')}`,
     }),
@@ -123,14 +127,16 @@ export const eventValidations = {
         name: Joi.string().trim().min(1).max(200).required(),
         title: Joi.string().trim().max(200).optional().allow('', null),
         bio: Joi.string().trim().max(2000).optional().allow('', null),
-        image: Joi.string().uri().optional().allow('', null),
+        // image: Joi.string().uri().optional().allow('', null), // URL validation disabled
+        image: Joi.string().optional().allow('', null), // Only file uploads allowed
       }),
     ).optional(),
     sponsors: Joi.array().items(
       Joi.object({
         name: Joi.string().trim().min(1).max(200).required(),
         level: Joi.string().trim().max(50).optional().allow('', null),
-        logo: Joi.string().uri().optional().allow('', null),
+        // logo: Joi.string().uri().optional().allow('', null), // URL validation disabled
+        logo: Joi.string().optional().allow('', null), // Only file uploads allowed
       }),
     ).optional(),
     faqs: Joi.array().items(
@@ -144,7 +150,7 @@ export const eventValidations = {
         id: Joi.string().trim().min(1).max(100).required(),
         name: Joi.string().trim().min(1).max(100).required(),
         label: Joi.string().trim().min(1).max(200).required(),
-        type: Joi.string().valid('text', 'email', 'tel', 'select', 'radio', 'checkbox', 'textarea', 'date', 'number').required(),
+        type: Joi.string().valid('text', 'email', 'phone', 'select', 'radio', 'checkbox', 'textarea', 'date', 'number').required(),
         required: Joi.boolean().required(),
         placeholder: Joi.string().trim().max(200).optional().allow('', null),
         options: Joi.array().items(Joi.string().trim().max(200)).optional(),
@@ -256,12 +262,16 @@ export const eventValidations = {
       }, 'ticket type validation'),
     ).optional(),
     capacity: Joi.number().integer().min(1).optional().allow(null),
-    image: Joi.string().uri().optional().allow('', null).messages({
-      'string.uri': 'Image URL must be a valid URL',
-    }),
+    // OPTIONAL: URL Upload Feature (Currently Disabled for Quality Control)
+    // To enable URL uploads, uncomment the line below and ensure frontend URL input is enabled.
+    // image: Joi.string().uri().optional().allow('', null).messages({
+    //   'string.uri': 'Image URL must be a valid URL',
+    // }),
+    image: Joi.string().optional().allow('', null), // Only file uploads allowed
     imageFocalX: Joi.number().integer().min(0).max(100).optional(),
     imageFocalY: Joi.number().integer().min(0).max(100).optional(),
-    images: Joi.array().items(Joi.string().uri()).optional(),
+    // images: Joi.array().items(Joi.string().uri()).optional(),
+    images: Joi.array().items(Joi.string()).optional(), // URL validation disabled
     type: Joi.string().valid(...EventTypeValues).optional(),
     requirements: Joi.array().items(Joi.string().trim().max(500)).optional(),
     ageRestriction: Joi.string().trim().max(50).optional().allow('', null),
@@ -271,14 +281,16 @@ export const eventValidations = {
         name: Joi.string().trim().min(1).max(200).required(),
         title: Joi.string().trim().max(200).optional().allow('', null),
         bio: Joi.string().trim().max(2000).optional().allow('', null),
-        image: Joi.string().uri().optional().allow('', null),
+        // image: Joi.string().uri().optional().allow('', null), // URL validation disabled
+        image: Joi.string().optional().allow('', null), // Only file uploads allowed
       }),
     ).optional(),
     sponsors: Joi.array().items(
       Joi.object({
         name: Joi.string().trim().min(1).max(200).required(),
         level: Joi.string().trim().max(50).optional().allow('', null),
-        logo: Joi.string().uri().optional().allow('', null),
+        // logo: Joi.string().uri().optional().allow('', null), // URL validation disabled
+        logo: Joi.string().optional().allow('', null), // Only file uploads allowed
       }),
     ).optional(),
     faqs: Joi.array().items(
@@ -292,7 +304,7 @@ export const eventValidations = {
         id: Joi.string().trim().min(1).max(100).required(),
         name: Joi.string().trim().min(1).max(100).required(),
         label: Joi.string().trim().min(1).max(200).required(),
-        type: Joi.string().valid('text', 'email', 'tel', 'select', 'radio', 'checkbox', 'textarea', 'date', 'number').required(),
+        type: Joi.string().valid('text', 'email', 'phone', 'select', 'radio', 'checkbox', 'textarea', 'date', 'number').required(),
         required: Joi.boolean().required(),
         placeholder: Joi.string().trim().max(200).optional().allow('', null),
         options: Joi.array().items(Joi.string().trim().max(200)).optional(),

@@ -120,6 +120,11 @@ export function MediaStep({
               <p className="text-xs text-muted-foreground mt-2">Max 5MB. JPG, PNG, or GIF</p>
             </div>
 
+            {/* OPTIONAL: URL Upload Feature (Currently Disabled for Quality Control)
+                To enable this feature, uncomment the code below and ensure backend URL validation is enabled.
+                See: src/validations/event.validations.ts for backend URL validation schema.
+            */}
+            {/*
             <div className="space-y-2">
               <Label htmlFor="imageUrl" className="text-sm">Or provide image URL</Label>
               <Input
@@ -130,6 +135,7 @@ export function MediaStep({
                 onChange={(e) => onInputChange("image", e.target.value)}
               />
             </div>
+            */}
           </div>
         )}
       </div>

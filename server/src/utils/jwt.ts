@@ -34,8 +34,11 @@ export const generateRefreshToken = (payload: Omit<TokenPayload, 'iat' | 'exp'>)
 export const verifyAccessToken = (token: string): TokenPayload => {
   try {
     return jwt.verify(token, config.jwt.secret) as TokenPayload;
-  } catch {
-    throw new AuthenticationError('Invalid or expired access token');
+  } catch (err) {
+    if (err instanceof jwt.TokenExpiredError) {
+      throw new AuthenticationError('Your session has expired. Please sign in again.');
+    }
+    throw new AuthenticationError('Your session is invalid. Please sign in again.');
   }
 };
 

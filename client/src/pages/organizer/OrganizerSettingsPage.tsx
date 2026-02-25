@@ -25,7 +25,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
 import { useTheme } from "@/hooks/useTheme";
@@ -754,7 +753,7 @@ const OrganizerSettingsPage = () => {
 
         <div className="mt-4">
           <Label>KYC Status</Label>
-          <div className="mt-1">
+          <div className="mt-1 flex items-center justify-between">
             {accountInfo.kycStatus ? (
               <Badge variant={
                 accountInfo.kycStatus === 'APPROVED' ? 'default' :
@@ -765,6 +764,20 @@ const OrganizerSettingsPage = () => {
               </Badge>
             ) : (
               <span className="text-sm text-muted-foreground">Not submitted</span>
+            )}
+            {!accountInfo.kycStatus && (
+              <Button 
+                size="sm"
+                onClick={() => {
+                  setActiveTab('verification');
+                  // Update URL without navigation
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'verification');
+                  window.history.pushState({}, '', url);
+                }}
+              >
+                Submit KYC
+              </Button>
             )}
           </div>
         </div>
@@ -839,6 +852,18 @@ const OrganizerSettingsPage = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Save Button at Bottom */}
+      <div className="border-t pt-6 mt-6 flex justify-end">
+        <Button onClick={handleSave} disabled={isSaving || isLoading}>
+          {isSaving ? (
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Button>
       </div>
     </div>
   );
@@ -1158,21 +1183,11 @@ const OrganizerSettingsPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            {activeTab !== "security" && (
-              <>
-                <Button variant="outline" onClick={handleReset}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reset
-                </Button>
-                <Button onClick={handleSave} disabled={isSaving || isLoading}>
-                  {isSaving ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
-              </>
+            {activeTab === "security" && (
+              <Button variant="outline" onClick={handleReset}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reset
+              </Button>
             )}
           </div>
         </div>
@@ -1256,8 +1271,6 @@ const OrganizerSettingsPage = () => {
                 </nav>
               </CardContent>
             </Card>
-            
-            {activeTab === "profile" && <RoleSwitcher />}
           </div>
         </div>
       </div>

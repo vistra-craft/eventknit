@@ -65,11 +65,11 @@ export class UserController {
         return;
       }
 
-      const { organizationName, businessEmail } = req.body;
+      const { organizationName, businessEmail, description } = req.body;
 
       const user = await UserService.becomeOrganizer(
         req.user.id,
-        { organizationName, businessEmail },
+        { organizationName, businessEmail, description },
         req.ip,
         req.headers['user-agent'],
       );
