@@ -304,7 +304,7 @@ const EventRegistration = () => {
           }
           
           // Phone number
-          if (field.type === 'tel' && value && !phoneNumber) {
+          if (field.type === 'phone' && value && !phoneNumber) {
             phoneNumber = value;
           }
         }
@@ -534,12 +534,12 @@ const EventRegistration = () => {
     const value = formData[field.id] || '';
     const fieldId = `field-${field.id}`;
 
-    const fieldType = field.type as 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'radio' | 'checkbox';
+    const fieldType = field.type as 'text' | 'email' | 'phone' | 'textarea' | 'select' | 'radio' | 'checkbox';
     
     switch (fieldType) {
       case "text":
       case "email":
-      case "tel":
+      case "phone":
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={fieldId} className="mb-1">
@@ -1249,7 +1249,7 @@ const EventRegistration = () => {
                                 We'll never share your email.
                               </p>
                             )}
-                            {field.type === "tel" && (
+                            {field.type === "phone" && (
                               <p className="text-xs text-muted-foreground">
                                 Format: +1 (555) 123-4567
                               </p>

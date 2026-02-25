@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
@@ -6,6 +7,7 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  XCircle,
   Image as ImageIcon,
 } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
@@ -27,6 +29,7 @@ interface EventCardProps {
     organizer: string;
     price: string;
     category: string;
+    status?: string;
     description: string;
     fullDescription: string;
     duration: string;
@@ -44,25 +47,34 @@ interface EventCardProps {
 
 const OrganizerEventCard = ({ event }: EventCardProps) => {
   const navigate = useNavigate();
+  const [showStatusMessage, setShowStatusMessage] = useState(false);
+
+  const status = (event.status ?? "").toUpperCase();
+  const isApproved = status === "APPROVED";
 
   // Strip HTML tags from description for clean display
   const cleanDescription = (html: string): string => {
-    return html.replace(/<[^>]*>/g, '').trim();
+    return html.replace(/<[^>]*>/g, "").trim();
   };
 
   // Use real event data for metrics
   const metrics = {
-    attendees: typeof event.attendees === 'number' ? event.attendees : 0,
-    capacity: typeof event.capacity === 'number' ? event.capacity : 0,
-    revenue: typeof event.revenue === 'number' ? event.revenue : 0,
-    views: typeof event.views === 'number' ? event.views : 0,
-    conversion: typeof event.conversion === 'string' ? parseFloat(event.conversion) : (typeof event.conversion === 'number' ? event.conversion : 0),
-    speakers: typeof event.speakers === 'number' ? event.speakers : 0,
-    exhibitors: typeof event.exhibitors === 'number' ? event.exhibitors : 0,
-    sponsors: typeof event.sponsors === 'number' ? event.sponsors : 0,
+    attendees: typeof event.attendees === "number" ? event.attendees : 0,
+    capacity: typeof event.capacity === "number" ? event.capacity : 0,
+    revenue: typeof event.revenue === "number" ? event.revenue : 0,
+    views: typeof event.views === "number" ? event.views : 0,
+    conversion:
+      typeof event.conversion === "string"
+        ? parseFloat(event.conversion)
+        : typeof event.conversion === "number"
+        ? event.conversion
+        : 0,
+    speakers: typeof event.speakers === "number" ? event.speakers : 0,
+    exhibitors: typeof event.exhibitors === "number" ? event.exhibitors : 0,
+    sponsors: typeof event.sponsors === "number" ? event.sponsors : 0,
   };
 
-  const getStatusColor = (category: string) => {
+  const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
       case "music":
         return "bg-primary/10 text-primary border-primary/20";
@@ -77,23 +89,65 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
     }
   };
 
-  const getStatusIcon = (category: string) => {
-    switch (category.toLowerCase()) {
-      case "music":
-        return <CheckCircle className="h-4 w-4" />;
-      case "comedy":
-        return <Clock className="h-4 w-4" />;
-      case "sports":
-        return <CheckCircle className="h-4 w-4" />;
-      case "arts":
-        return <CheckCircle className="h-4 w-4" />;
+  const getStatusBadge = () => {
+    switch (status) {
+      case "PENDING":
+        return (
+          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 gap-1">
+            <Clock className="h-3 w-3" />
+            Pending Approval
+          </Badge>
+        );
+      case "APPROVED":
+        return (
+          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 gap-1">
+            <CheckCircle className="h-3 w-3" />
+            Approved
+          </Badge>
+        );
+      case "REJECTED":
+        return (
+          <Badge className="bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/30 gap-1">
+            <XCircle className="h-3 w-3" />
+            Rejected
+          </Badge>
+        );
+      case "CANCELLED":
+        return (
+          <Badge className="bg-muted text-muted-foreground border border-border gap-1">
+            <XCircle className="h-3 w-3" />
+            Cancelled
+          </Badge>
+        );
       default:
-        return <AlertCircle className="h-4 w-4" />;
+        return null;
+    }
+  };
+
+  const getStatusMessage = () => {
+    switch (status) {
+      case "PENDING":
+        return "Your event is pending admin approval. Management tools will be available once it's approved.";
+      case "REJECTED":
+        return "This event was not approved. Please review the feedback, make the required changes, and resubmit.";
+      case "CANCELLED":
+        return "This event has been cancelled and can no longer be managed.";
+      default:
+        return "This event is not yet available for management.";
+    }
+  };
+
+  const handleManageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isApproved) {
+      navigate(`/organizer/event/${event.id}`);
+    } else {
+      setShowStatusMessage((prev) => !prev);
     }
   };
 
   return (
-    <Card className="group cursor-pointer border border-border bg-card-surface rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
+    <Card className="group border border-border bg-card-surface rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden">
       {/* Event Image */}
       <div className="relative w-full h-48 overflow-hidden bg-muted">
         <EventImage
@@ -113,22 +167,25 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
       </div>
+
       <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-medium text-foreground">
+        {/* Title + status badge */}
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <h3 className="text-xl font-medium text-foreground leading-tight">
             {event.title}
           </h3>
-          {/* Hide category badge for specific events */}
-          {!["Tech Innovation Summit 2024", "Business Leadership Workshop", "Food & Wine Expo"].includes(event.title) && (
-            <Badge className={`${getStatusColor(event.category)} border-0`}>
-              <div className="flex items-center gap-1">
-                {getStatusIcon(event.category)}
-                <span className="capitalize">{event.category}</span>
-              </div>
-            </Badge>
-          )}
+          {getStatusBadge()}
         </div>
-        
+
+        {/* Category badge */}
+        {!["Tech Innovation Summit 2024", "Business Leadership Workshop", "Food & Wine Expo"].includes(event.title) && (
+          <div className="mb-4">
+            <Badge className={`${getCategoryColor(event.category)} border-0`}>
+              <span className="capitalize">{event.category}</span>
+            </Badge>
+          </div>
+        )}
+
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4" />
@@ -140,22 +197,27 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="w-4 h-4" />
-            <span>{metrics.attendees}/{metrics.capacity || '∞'} attendees</span>
+            <span>{metrics.attendees}/{metrics.capacity || "∞"} attendees</span>
           </div>
         </div>
-        
+
         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
           {cleanDescription(event.description)}
         </p>
-        
+
+        {/* Status message — shown on click for non-approved events */}
+        {showStatusMessage && !isApproved && (
+          <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-sm text-amber-800 dark:text-amber-300">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>{getStatusMessage()}</span>
+          </div>
+        )}
+
         <div className="flex items-center justify-end">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/organizer/event/${event.id}`);
-            }}
+            onClick={handleManageClick}
           >
             Manage Event
           </Button>

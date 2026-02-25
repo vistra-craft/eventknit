@@ -1120,8 +1120,10 @@ export interface KYCOrganizerDetails {
     email: string;
     phoneNumber: string | null;
     organizationName: string | null;
+    companyAffiliation?: string | null;
     entityType: string | null;
     businessName: string | null;
+    businessEmail?: string | null;
     industry: string | null;
     country: string;
     registrationNumber: string | null;

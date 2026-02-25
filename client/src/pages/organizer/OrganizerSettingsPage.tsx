@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   User,
   Bell,
@@ -36,7 +36,6 @@ import {
   type UserPreferences as UserPreferencesType,
 } from "@/lib/user-preferences-api";
 import { SettingsSection, ThemeSelector } from "@/components/settings";
-import VerificationForm from "@/components/verification/VerificationForm";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { useUploadAvatar } from "@/hooks/useUploadAvatar";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
@@ -94,6 +93,7 @@ interface OrganizerSettingsData {
 
 const OrganizerSettingsPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const uploadAvatarMutation = useUploadAvatar();
   const { theme: currentTheme, setTheme: setThemeContext } = useTheme();
@@ -203,7 +203,7 @@ const OrganizerSettingsPage = () => {
             otherName: userData.otherName || "",
             email: userData.email || "",
             phone: userData.phoneNumber || "",
-            companyAffiliation: "", // Not in User interface yet
+            companyAffiliation: userData.companyAffiliation || "",
             organizationName: userData.organizationName || "",
             businessEmail: userData.businessEmail || "",
             avatar: userData.avatar || "",
@@ -445,6 +445,10 @@ const OrganizerSettingsPage = () => {
         await refreshProfile();
         setSaveStatus("success");
         setSaveMessage("Profile updated successfully");
+        toast({
+          title: "Success",
+          description: "Your profile has been updated successfully.",
+        });
       } else if (activeTab === "appearance" || activeTab === "security") {
         // Save appearance and security preferences
         const preferencesToUpdate: Partial<UserPreferencesType> = {};
@@ -466,6 +470,10 @@ const OrganizerSettingsPage = () => {
           }
           setSaveStatus("success");
           setSaveMessage("Settings saved successfully");
+          toast({
+            title: "Success",
+            description: activeTab === "appearance" ? "Appearance settings saved." : "Security settings saved.",
+          });
         } else {
           throw new Error("Failed to update preferences");
         }
@@ -485,6 +493,10 @@ const OrganizerSettingsPage = () => {
         if (response.success) {
           setSaveStatus("success");
           setSaveMessage("Settings saved successfully");
+          toast({
+            title: "Success",
+            description: "Notification preferences saved successfully.",
+          });
         } else {
           throw new Error("Failed to update preferences");
         }
@@ -500,6 +512,11 @@ const OrganizerSettingsPage = () => {
         : 'Failed to save settings';
       setSaveStatus("error");
       setSaveMessage(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
       setTimeout(() => {
         setSaveStatus("idle");
         setSaveMessage("");
@@ -1156,9 +1173,12 @@ const OrganizerSettingsPage = () => {
   );
 
   const renderVerificationSettings = () => {
-    // Check if user came from event creation page (via location state)
+    // Redirect to dedicated verification page for unified experience
     const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification;
-    return <VerificationForm redirectAfterBusinessVerification={redirectPath} />;
+    navigate('/organizer/verification', {
+      state: { redirectAfterVerification: redirectPath || '/organizer/settings?tab=verification' }
+    });
+    return null;
   };
 
   const renderTabContent = () => {

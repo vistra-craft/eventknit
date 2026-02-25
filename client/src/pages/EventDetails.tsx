@@ -14,7 +14,7 @@ import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, Building2, Award } from "lucide-react";
+import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, Building2, Award, AlertCircle } from "lucide-react";
 import { FAQsAccordion } from "@/components/event-details/FAQsAccordion";
 import { RefundPolicy } from "@/components/event-details/RefundPolicy";
 import ResaleListings from "@/components/event-details/ResaleListings";

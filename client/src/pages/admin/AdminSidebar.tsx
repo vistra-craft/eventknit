@@ -96,8 +96,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       id: "kyc",
       label: "KYC Review",
       icon: ShieldCheck,
-      href: "/admin/kyc",
       group: "main",
+      children: [
+        { name: "Submissions", href: "/admin/kyc" },
+        { name: "Entity Management", href: "/admin/kyc/entity-management" },
+      ]
     },
     {
       id: "analytics",

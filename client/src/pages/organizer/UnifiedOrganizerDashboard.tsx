@@ -6,19 +6,15 @@ import {
   DollarSign,
   Activity,
   Plus,
-  BarChart3,
   ArrowUpRight,
   CheckCircle2,
   Shield,
   X,
-  Lock,
   AlertCircle,
   Clock,
-  TrendingUp,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -29,7 +25,6 @@ import {
 import OrganizerEventCard from "@/components/OrganizerEventCard";
 import { SubscriptionTierBadge } from "@/components/organizer/SubscriptionTierBadge";
 import { UpgradePrompt } from "@/components/organizer/UpgradePrompt";
-import { CustomAreaChart } from "@/components/charts/ChartComponents";
 import { DashboardSkeleton } from "@/components/loaders/DashboardSkeleton";
 import { Loader } from "@/components/ui/loader";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,7 +34,6 @@ import {
   useOrganizerSubscription,
   useOrganizerDashboardAccess,
 } from "@/hooks/queries/useOrganizerDashboardData";
-import { useOrganizerRevenueAnalytics } from "@/hooks/queries/useOrganizerRevenueAnalytics";
 import type { OrganizerDashboardEvent } from "@/lib/organizer-api";
 import { getVerificationStatus, type VerificationStatus } from "@/lib/verification-api";
 
@@ -66,7 +60,6 @@ const UnifiedOrganizerDashboard = () => {
   const { data: eventsData, isLoading: eventsLoading } = useOrganizerDashboardEvents(page);
   const { data: subscription, isLoading: subscriptionLoading } = useOrganizerSubscription();
   const { data: accessData } = useOrganizerDashboardAccess();
-  const { data: revenueData } = useOrganizerRevenueAnalytics();
 
   // Accumulate events across pages for infinite scroll
   useEffect(() => {
@@ -173,39 +166,6 @@ const UnifiedOrganizerDashboard = () => {
     (d) => d.daysRemaining <= 3
   );
 
-  // Revenue chart data
-  const revenueChartData = revenueData?.summary?.dailyRevenue ?? revenueData?.summary?.monthlyRevenue ?? [];
-
-  // Helper functions for deadlines
-  const formatDeadlineType = (type: string) => {
-    switch (type) {
-      case "registration_deadline":
-        return "Registration Deadline";
-      case "early_bird_pricing":
-        return "Early Bird Pricing";
-      case "speaker_confirmation":
-        return "Speaker Confirmations";
-      case "abstract_submission":
-        return "Abstract Submissions";
-      default:
-        return type
-          .replace(/_/g, " ")
-          .replace(/\b\w/g, (l) => l.toUpperCase());
-    }
-  };
-
-  const formatDaysRemaining = (days: number) => {
-    if (days < 7) {
-      return `${days} ${days === 1 ? "day" : "days"}`;
-    } else if (days < 30) {
-      const weeks = Math.floor(days / 7);
-      return `${weeks} ${weeks === 1 ? "week" : "weeks"}`;
-    } else {
-      const months = Math.floor(days / 30);
-      return `${months} ${months === 1 ? "month" : "months"}`;
-    }
-  };
-
   if (statsLoading) {
     return (
       <div className="bg-gradient-to-br from-background via-background to-muted/20">
@@ -253,60 +213,6 @@ const UnifiedOrganizerDashboard = () => {
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowVerificationReminder(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Profile Completion Nudge */}
-        {user && !user.profileCompleted && (
-          <Alert className="mb-6 border-amber-500/20 bg-amber-500/5">
-            <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-              <span className="text-foreground flex-1">
-                <strong>Complete your organizer profile</strong> to build trust with attendees and improve your event visibility.
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/organizer/profile-setup")}
-                className="border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
-              >
-                Set Up Profile
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* KYC / Identity Verification Nudge */}
-        {!kycBannerDismissed && verificationStatus && !verificationStatus.identityVerified && (
-          <Alert className="mb-6 border-primary/20 bg-primary/5">
-            <Shield className="h-4 w-4 text-primary" />
-            <AlertDescription className="flex items-start justify-between flex-wrap gap-2">
-              <div className="flex-1">
-                <strong>Verify your identity to receive payments</strong>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Identity verification (KYC) is required before payouts are enabled for paid events. Free events are not affected.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate("/organizer/verification")}
-                >
-                  Verify Identity
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    sessionStorage.setItem('kyc_banner_dismissed', 'true');
-                    setKycBannerDismissed(true);
-                  }}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -534,371 +440,8 @@ const UnifiedOrganizerDashboard = () => {
           </section>
         )}
 
-        <div className="space-y-8">
-          {/* Revenue Chart */}
-          <Card className="rounded-2xl border border-border/40 bg-card shadow-lg">
-            <CardHeader className="border-b border-border/40">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Revenue Overview
-                </CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              {revenueChartData.length > 0 ? (
-                <CustomAreaChart
-                  data={revenueChartData}
-                  dataKey="revenue"
-                  xAxisKey="date"
-                  height={300}
-                  formatter={(value) =>
-                    `$${Number(value).toLocaleString()}`
-                  }
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center mb-3">
-                    <DollarSign className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Revenue data will appear once your first event gets ticket
-                    sales
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Insights Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Performance Insights - Only show if there's data */}
-            {stats?.performanceInsights?.bestPerformingEvent ? (
-              <Card className="border border-border/40 bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all">
-                <CardHeader className="border-b border-border/40">
-                  <CardTitle>Performance Insights</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        Best Performing Event
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {stats?.performanceInsights?.bestPerformingEvent
-                          ?.title ?? "N/A"}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-primary">
-                        {stats?.performanceInsights?.bestPerformingEvent?.conversionRate.toFixed(
-                          1
-                        ) ?? "0"}
-                        %
-                      </p>
-                      <p className="text-xs text-muted-foreground">conversion</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        Total Revenue Growth
-                      </p>
-                      <p className="text-xs text-muted-foreground">Last 30 days</p>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className={`text-sm font-bold ${
-                          (stats?.performanceInsights?.revenueGrowth
-                            .percentage ?? 0) >= 0
-                            ? "text-primary"
-                            : "text-destructive"
-                        }`}
-                      >
-                        {(stats?.performanceInsights?.revenueGrowth.percentage ??
-                          0) >= 0
-                          ? "+"
-                          : ""}
-                        {stats?.performanceInsights?.revenueGrowth.percentage.toFixed(
-                          0
-                        ) ?? "0"}
-                        %
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        vs last month
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        Average Attendance
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {stats?.performanceInsights?.averageAttendance
-                          .totalEvents ?? 0}{" "}
-                        events
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-primary">
-                        {stats?.performanceInsights?.averageAttendance.percentage.toFixed(
-                          1
-                        ) ?? "0"}
-                        %
-                      </p>
-                      <p className="text-xs text-muted-foreground">capacity</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border border-border/40 bg-card rounded-2xl shadow-lg">
-                <CardHeader className="border-b border-border/40">
-                  <CardTitle>Performance Insights</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    Performance data will appear once your events have registrations
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Upcoming Deadlines */}
-            <Card className="border border-border/40 bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all">
-              <CardHeader className="border-b border-border/40">
-                <CardTitle>Upcoming Deadlines</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                {(stats?.upcomingDeadlines ?? []).length > 0 ? (
-                  (stats?.upcomingDeadlines ?? [])
-                    .slice(0, 3)
-                    .map((deadline, index) => {
-                      const isUrgent = deadline.daysRemaining <= 7;
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="text-sm font-medium text-foreground">
-                              {formatDeadlineType(deadline.type)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {deadline.eventTitle}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p
-                              className={`text-sm font-bold ${
-                                isUrgent
-                                  ? "text-destructive"
-                                  : "text-primary"
-                              }`}
-                            >
-                              {formatDaysRemaining(deadline.daysRemaining)}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              left
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-sm text-muted-foreground">
-                      No upcoming deadlines
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Event Health Score */}
-            <Card className="border border-border/40 bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all">
-              <CardHeader className="border-b border-border/40">
-                <CardTitle>Event Health Score</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="text-center mb-4">
-                  <div className="w-20 h-20 mx-auto bg-gradient-to-r from-primary to-primary/80 rounded-full flex items-center justify-center mb-2">
-                    <span className="text-xl font-bold text-white">
-                      {stats?.healthScore?.overall ?? 0}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Overall Health
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Registration Rate
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-muted rounded-full">
-                        <div
-                          className="h-full bg-primary rounded-full"
-                          style={{
-                            width: `${Math.min(
-                              stats?.healthScore?.components
-                                .registrationRate ?? 0,
-                              100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">
-                        {stats?.healthScore?.components.registrationRate?.toFixed(
-                          0
-                        ) ?? 0}
-                        %
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Speaker Confirmation
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-muted rounded-full">
-                        <div
-                          className="h-full bg-primary rounded-full"
-                          style={{
-                            width: `${Math.min(
-                              stats?.healthScore?.components
-                                .speakerConfirmation ?? 0,
-                              100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">
-                        {stats?.healthScore?.components.speakerConfirmation?.toFixed(
-                          0
-                        ) ?? 0}
-                        %
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      Sponsor Engagement
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-muted rounded-full">
-                        <div
-                          className="h-full bg-primary rounded-full"
-                          style={{
-                            width: `${Math.min(
-                              stats?.healthScore?.components
-                                .sponsorEngagement ?? 0,
-                              100
-                            )}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-sm font-medium">
-                        {stats?.healthScore?.components.sponsorEngagement?.toFixed(
-                          0
-                        ) ?? 0}
-                        %
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
-          <Card className="border border-border/40 bg-card rounded-2xl shadow-lg hover:shadow-xl transition-all">
-            <CardContent className="p-6">
-              <h3 className="text-card-title mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="flex items-center p-4 border border-border/40 rounded-lg bg-card">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                    <Calendar className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">Total Events</p>
-                    <p className="text-sm text-muted-foreground">
-                      {stats?.totalEvents ?? 0}{" "}
-                      {(stats?.totalEvents ?? 0) === 1 ? "event" : "events"}
-                    </p>
-                  </div>
-                </div>
-
-                <Link
-                  to="/organizer/analytics"
-                  className="flex items-center p-4 border border-border/40 rounded-lg hover:border-primary/30 hover:bg-muted transition-colors duration-200"
-                >
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">
-                      View Analytics
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Performance insights
-                    </p>
-                  </div>
-                </Link>
-
-                <Link
-                  to="/organizer/attendees"
-                  className={`flex items-center p-4 border border-border/40 rounded-lg hover:border-primary/30 hover:bg-muted transition-colors duration-200 ${
-                    subscription?.tier === "BASIC" ? "relative" : ""
-                  }`}
-                >
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground flex items-center gap-2">
-                      Manage Attendees
-                      {subscription?.tier === "BASIC" && (
-                        <Lock className="h-3 w-3 text-muted-foreground" />
-                      )}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {subscription?.tier === "BASIC"
-                        ? "Upgrade to view"
-                        : "View and manage"}
-                    </p>
-                  </div>
-                </Link>
-
-                <Link
-                  to="/organizer/tickets/scanner"
-                  className="flex items-center p-4 border border-border/40 rounded-lg hover:border-primary/30 hover:bg-muted transition-colors duration-200"
-                >
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mr-3">
-                    <Calendar className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">
-                      Ticket Scanner
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Check-in attendees
-                    </p>
-                  </div>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Events Grid */}
-          <div>
+        {/* Events Grid */}
+        <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-section-header">My Events</h2>
               <Link
@@ -956,7 +499,6 @@ const UnifiedOrganizerDashboard = () => {
               </div>
             )}
           </div>
-        </div>
       </div>
     </div>
   );

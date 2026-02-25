@@ -174,7 +174,7 @@ export const RegistrationStep = ({
     const fieldType = field.type as
       | 'text'
       | 'email'
-      | 'tel'
+      | 'phone'
       | 'textarea'
       | 'select'
       | 'radio'
@@ -183,7 +183,7 @@ export const RegistrationStep = ({
     switch (fieldType) {
       case 'text':
       case 'email':
-      case 'tel':
+      case 'phone':
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={fieldId} className="text-sm font-medium">
@@ -192,7 +192,7 @@ export const RegistrationStep = ({
             </Label>
             <Input
               id={fieldId}
-              type={field.type}
+              type={field.type === 'phone' ? 'tel' : field.type}
               placeholder={field.placeholder}
               value={String(value)}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
@@ -207,7 +207,7 @@ export const RegistrationStep = ({
                 Your ticket will be sent to this email address.
               </p>
             )}
-            {field.type === 'tel' && (
+            {field.type === 'phone' && (
               <p className="text-xs text-muted-foreground">
                 Format: +1 (555) 123-4567
               </p>

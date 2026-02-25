@@ -16,6 +16,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import { refreshAccessToken, getAccessToken } from '../lib/api';
+import * as authApi from '../lib/auth-api';
 import { UserRole, UserStatus } from '../types/auth';
 
 const STORAGE_KEY = 'organizer_approval_pending';
@@ -173,9 +174,19 @@ export const useOrganizerApproval = () => {
       if (approvedRef.current) return;
 
       try {
-        // refreshProfile updates auth state; the status transition
-        // effect above will detect PENDING_APPROVAL → ACTIVE
-        await refreshProfile();
+        // Call the API directly (without touching React state) so we can
+        // set sessionStorage synchronously BEFORE refreshProfile() triggers
+        // a re-render. ProtectedRoute reads sessionStorage at render time,
+        // so the flag must be set before the render that sees ACTIVE status.
+        const response = await authApi.getProfile();
+        if (
+          response.success &&
+          response.data?.user?.status === UserStatus.ACTIVE &&
+          wasPendingRef.current
+        ) {
+          triggerModal(); // sets sessionStorage['organizer_approval_pending'] = '1'
+          await refreshProfile(); // now update React auth state → triggers re-render
+        }
       } catch {
         // Silently ignore — will retry on next interval
       }
@@ -187,7 +198,7 @@ export const useOrganizerApproval = () => {
         pollRef.current = null;
       }
     };
-  }, [isPendingOrganizer, refreshProfile]);
+  }, [isPendingOrganizer, refreshProfile, triggerModal]);
 
   const handleApprovalAcknowledged = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);

@@ -227,7 +227,9 @@ export default function KYCOrganizerReviewPage() {
             <InfoField icon={User} label="Name" value={`${orgUser.firstName} ${orgUser.lastName}`} />
             <InfoField icon={Mail} label="Email" value={orgUser.email} />
             <InfoField icon={Phone} label="Phone" value={orgUser.phoneNumber || '—'} />
-            <InfoField icon={Building2} label="Organization" value={orgUser.organizationName || '—'} />
+            <InfoField icon={Building2} label="Organization Name" value={orgUser.organizationName || '—'} />
+            <InfoField icon={Building2} label="Company Affiliation" value={orgUser.companyAffiliation || '—'} />
+            <InfoField icon={Mail} label="Business Email" value={orgUser.businessEmail || '—'} />
             <InfoField icon={Shield} label="Entity Type" value={formatEntityType(orgUser.entityType)} />
             <InfoField icon={Building2} label="Business Name" value={orgUser.businessName || '—'} />
             <InfoField icon={Globe} label="Country" value={orgUser.country} />

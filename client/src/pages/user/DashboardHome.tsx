@@ -4,7 +4,7 @@
  * Displays all events in a unified interface
  */
 
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Download, Share2, Plus, Heart, Clock, Shield, User } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Loader } from '../../components/ui/loader';
@@ -55,12 +55,6 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
 
   const isPendingOrganizer =
     authUser?.role === UserRole.ORGANIZER && authUser?.status === UserStatus.PENDING_APPROVAL;
-
-  // Active organizers belong on the organizer dashboard, not here.
-  // This catches: approval while offline, login routing edge cases, direct navigation.
-  if (authUser?.role === UserRole.ORGANIZER && authUser?.status === UserStatus.ACTIVE) {
-    return <Navigate to="/organizer/dashboard" replace />;
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

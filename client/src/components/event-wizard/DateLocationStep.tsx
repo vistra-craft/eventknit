@@ -16,11 +16,10 @@ interface DateLocationStepProps extends StepComponentProps {
 }
 
 // Time Picker Component
-function TimePicker({ value, onChange, label, id }: { value: string; onChange: (val: string) => void; label: string; id: string }) {
+function TimePicker({ value, onChange, id }: { value: string; onChange: (val: string) => void; id: string }) {
   const [isOpen, setIsOpen] = useState(false);
   
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-  const minutes = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
   
   const [selectedHour, selectedMinute] = value ? value.split(':') : ['00', '00'];
 
@@ -167,7 +166,6 @@ export function DateLocationStep({
               handleInputChange("time", value);
               if (validationErrors.time) setValidationErrors(prev => ({ ...prev, time: '' }));
             }}
-            label="Start Time"
           />
           {validationErrors.time && (
             <p className="text-sm text-destructive">{validationErrors.time}</p>
@@ -248,7 +246,6 @@ export function DateLocationStep({
             id="endTime"
             value={eventData.endTime}
             onChange={(value) => handleInputChange("endTime", value)}
-            label="End Time"
           />
         </div>
       </div>

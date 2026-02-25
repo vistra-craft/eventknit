@@ -485,6 +485,47 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
         </CardContent>
       </Card>
       
+      {/* Progress Indicator */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          {/* Step 1 */}
+          <div className="flex flex-col items-center flex-1">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              status?.identityVerified 
+                ? 'bg-success text-white' 
+                : 'bg-primary text-primary-foreground'
+            }`}>
+              {status?.identityVerified ? <CheckCircle2 className="h-5 w-5" /> : '1'}
+            </div>
+            <span className="mt-2 text-xs font-medium">Identity</span>
+          </div>
+          
+          {/* Connector */}
+          <div className={`h-0.5 flex-1 mx-2 ${
+            status?.identityVerified ? 'bg-success' : 'bg-muted'
+          }`} />
+          
+          {/* Step 2 */}
+          <div className="flex flex-col items-center flex-1">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              status?.verificationLevel === 3
+                ? 'bg-success text-white'
+                : status?.identityVerified
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              {status?.verificationLevel === 3 ? <CheckCircle2 className="h-5 w-5" /> : '2'}
+            </div>
+            <span className="mt-2 text-xs font-medium">Business</span>
+          </div>
+        </div>
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          {!status?.identityVerified && 'Complete Step 1 to unlock Step 2'}
+          {status?.identityVerified && status?.verificationLevel !== 3 && 'Step 2 is optional but recommended'}
+          {status?.verificationLevel === 3 && 'All verification steps completed!'}
+        </p>
+      </div>
+
       {/* Verification Steps */}
       <div className="space-y-4">
         {/* Step 1: Identity Verification */}
@@ -501,7 +542,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                 </CardDescription>
               </div>
               {status?.identityVerified && (
-                <Badge className="bg-primary/10 text-primary border-primary/20">
+                <Badge className="bg-success/10 text-success border-success/20">
                   <CheckCircle2 className="h-3 w-3 mr-1" />Completed
                 </Badge>
               )}

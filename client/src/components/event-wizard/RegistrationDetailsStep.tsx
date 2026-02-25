@@ -9,17 +9,19 @@ import {
   Plus, X, Check, GripVertical, ChevronDown,
   Type, Mail, Phone, AlignLeft, List, CheckSquare, Calendar, Hash, Eye, Users,
 } from 'lucide-react';
-import type { StepComponentProps, RegistrationField, FormFieldType } from './types';
+import type { StepComponentProps, RegistrationField } from './types';
 
 // ─────────────────────────────────────────────
 // Field meta
 // ─────────────────────────────────────────────
 
-const FIELD_ICONS: Record<string, React.ReactNode> = {
+type RegistrationFieldType = RegistrationField['type'];
+
+const FIELD_ICONS: Record<RegistrationFieldType, React.ReactNode> = {
   text:     <Type className="h-3 w-3" />,
   email:    <Mail className="h-3 w-3" />,
   phone:    <Phone className="h-3 w-3" />,
-  tel:      <Phone className="h-3 w-3" />,
+  // removed 'tel', use 'phone' only
   textarea: <AlignLeft className="h-3 w-3" />,
   select:   <List className="h-3 w-3" />,
   checkbox: <CheckSquare className="h-3 w-3" />,
@@ -28,11 +30,11 @@ const FIELD_ICONS: Record<string, React.ReactNode> = {
   radio:    <CheckSquare className="h-3 w-3" />,
 };
 
-const FIELD_TYPE_LABELS: Record<string, string> = {
+const FIELD_TYPE_LABELS: Record<RegistrationFieldType, string> = {
   text:     'Short text',
   email:    'Email',
   phone:    'Phone',
-  tel:      'Phone',
+  // removed 'tel', use 'phone' only
   textarea: 'Long text',
   select:   'Dropdown',
   checkbox: 'Checkbox',
@@ -77,7 +79,7 @@ const SUGGESTION_GROUPS: Record<string, SuggestionField[]> = {
 // Sidebar add-field types
 // ─────────────────────────────────────────────
 
-const SIDEBAR_TYPES: { type: FormFieldType; label: string; icon: React.ReactNode }[] = [
+const SIDEBAR_TYPES: { type: RegistrationFieldType; label: string; icon: React.ReactNode }[] = [
   { type: 'text',     label: 'Short answer',    icon: <Type className="h-3.5 w-3.5" /> },
   { type: 'textarea', label: 'Long answer',     icon: <AlignLeft className="h-3.5 w-3.5" /> },
   { type: 'select',   label: 'Dropdown',        icon: <List className="h-3.5 w-3.5" /> },
@@ -119,7 +121,7 @@ export function RegistrationDetailsStep({
     setExpandedFieldId(field.id);
   };
 
-  const addCustomField = (type: FormFieldType = 'text') => {
+  const addCustomField = (type: RegistrationFieldType = 'text') => {
     const id = `field_${Date.now()}`;
     const newField: RegistrationField = {
       id,

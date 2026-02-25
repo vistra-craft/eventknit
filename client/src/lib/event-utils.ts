@@ -119,7 +119,7 @@ export interface BackendEvent {
     id: string;
     name: string;
     label: string;
-    type: string;
+    type: 'text' | 'email' | 'phone' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'date' | 'number';
     required: boolean;
     placeholder?: string;
     options?: string[];
@@ -251,7 +251,7 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
           id: string;
           name: string;
           label: string;
-          type: 'text' | 'email' | 'tel' | 'select' | 'radio' | 'checkbox' | 'textarea';
+          type: 'text' | 'email' | 'phone' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'date' | 'number';
           required: boolean;
           placeholder?: string;
           options?: string[];

@@ -78,6 +78,34 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/user/dashboard" replace />;
   }
 
+  // Gate: PENDING_APPROVAL organizers cannot create additional events
+  if (
+    user.role === UserRole.ORGANIZER &&
+    user.status === UserStatus.PENDING_APPROVAL &&
+    location.pathname.includes('create-event')
+  ) {
+    return (
+      <Navigate
+        to="/user/dashboard"
+        state={{ message: 'Your organizer account is pending approval. You cannot create additional events until approved.' }}
+        replace
+      />
+    );
+  }
+
+  // Gate: ACTIVE organizers belong on the organizer dashboard, not /user/*
+  // Exception: allow them to stay on /user/* while the approval modal is pending
+  // (so UserLayout can display the "You're Approved!" modal before redirecting)
+  const hasPendingApprovalModal = sessionStorage.getItem('organizer_approval_pending') === '1';
+  if (
+    user.role === UserRole.ORGANIZER &&
+    user.status === UserStatus.ACTIVE &&
+    location.pathname.startsWith('/user') &&
+    !hasPendingApprovalModal
+  ) {
+    return <Navigate to="/organizer/dashboard" replace />;
+  }
+
   // Check onboarding status for organizers (except on onboarding page itself)
   // Skip for PENDING_APPROVAL organizers — they stay on /user/dashboard until approved
   const isOrganizer = [

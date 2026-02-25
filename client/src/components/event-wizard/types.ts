@@ -132,7 +132,7 @@ export interface PromoCode {
   isActive?: boolean;
 }
 
-export type FormFieldType = 'text' | 'email' | 'tel' | 'phone' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'date' | 'number';
+export type FormFieldType = 'text' | 'email' | 'phone' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'date' | 'number';
 
 /** Local form state interface — distinct from shared EventData which matches the DB */
 export interface EventFormData {

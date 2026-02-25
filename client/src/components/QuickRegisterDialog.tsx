@@ -169,8 +169,8 @@ export function QuickRegisterDialog({
     switch (field.type) {
       case 'text':
       case 'email':
-      case 'tel':
       case 'phone':
+       // removed 'tel', use 'phone' only
         return (
           <div key={fieldId} className="space-y-2">
             <Label htmlFor={fieldId}>

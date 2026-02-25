@@ -31,7 +31,7 @@ import {
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
-import { becomeOrganizer, requestOrganizerApproval } from '@/lib/user-dashboard-api';
+import { becomeOrganizer } from '@/lib/user-dashboard-api';
 import { EVENT_CATEGORIES } from '@/lib/event-categories';
 import { getOrganizerEventById } from '@/lib/organizer-api';
 import { transformEventData, type BackendEvent } from '@/lib/event-utils';
@@ -1596,7 +1596,10 @@ export default function CreateEventStepwise() {
         if (!upgradeResponse.success) {
           throw new Error(upgradeResponse.message || 'Failed to set up organizer account');
         }
-        await refreshProfile();
+        // Do NOT refreshProfile() here — the server already sets status=PENDING_APPROVAL
+        // atomically inside becomeOrganizer(). Refreshing here would make React see
+        // ORGANIZER+PENDING_APPROVAL and the ProtectedRoute would block /user/create-event.
+        // The refreshProfile() after createEvent() (below) handles the state update.
       } catch (upgradeError) {
         setError(
           upgradeError instanceof Error
@@ -1652,14 +1655,9 @@ export default function CreateEventStepwise() {
           // Reset form state
           resetForm();
 
-          // If this was an attendee who just became an organizer, trigger the approval flow
+          // If this was an attendee who just became an organizer, refresh auth state
+          // (becomeOrganizer() already set status=PENDING_APPROVAL server-side)
           if (wasAttendee) {
-            try {
-              await requestOrganizerApproval();
-            } catch (approvalErr) {
-              // Non-blocking — event was already created, log but don't fail
-              console.error('Failed to request organizer approval:', approvalErr);
-            }
             await refreshProfile();
             navigate('/user/dashboard', {
               state: {
@@ -1717,7 +1715,7 @@ export default function CreateEventStepwise() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput]);
+  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput, orgDescInput]);
 
   const handleNext = useCallback(() => {
     if (currentStep < 6) {

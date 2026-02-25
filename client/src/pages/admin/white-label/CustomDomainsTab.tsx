@@ -268,7 +268,7 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
           <CardContent className="pt-6">
             <div className="text-center py-8">
               <Globe className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-              <h3 className="font-semibold mb-1">No domains found</h3>
+              <h3 className="text-base font-medium mb-2">No domains found</h3>
               <p className="text-sm text-muted-foreground">
                 {activeTab === 'pending' ? 'No pending domain verifications' : 'No domains match your search'}
               </p>
