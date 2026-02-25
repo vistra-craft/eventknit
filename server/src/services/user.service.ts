@@ -181,11 +181,15 @@ export class UserService {
       throw new ValidationError('Organization name is required to become an organizer');
     }
 
-    // Update user role to ORGANIZER and mark profile complete (name + bio collected in modal)
+    // Update user role to ORGANIZER, set PENDING_APPROVAL, and mark profile complete.
+    // Status is set to PENDING_APPROVAL immediately so there is no window where the
+    // user is ORGANIZER+ACTIVE before the approval request is made. This makes the
+    // operation atomic — no separate requestOrganizerApproval() call needed.
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         role: UserRole.ORGANIZER,
+        status: UserStatus.PENDING_APPROVAL,
         organizationName: data.organizationName.trim(),
         businessEmail: data.businessEmail?.trim() || user.email,
         onboardingCompleted: true,
@@ -239,7 +243,22 @@ export class UserService {
       userAgent,
     });
 
-    logger.info(`User ${userId} switched from ATTENDEE to ORGANIZER`);
+    // Fire-and-forget: send pending-approval email to the new organizer
+    emailService.sendOrganizerPendingEmail(user.email, user.firstName || '').catch((err) => {
+      logger.error('Failed to send organizer pending email:', err);
+    });
+
+    // Fire-and-forget: notify admins of new organizer requiring approval
+    this.notifyAdminsOfNewOrganizer({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      organizationName: data.organizationName.trim(),
+    }).catch((err) => {
+      logger.error('Failed to notify admins of new organizer:', err);
+    });
+
+    logger.info(`User ${userId} switched from ATTENDEE to ORGANIZER (status: PENDING_APPROVAL)`);
 
     return updatedUser;
   }

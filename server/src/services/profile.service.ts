@@ -21,6 +21,7 @@ export interface ProfileUpdateResult {
   firstName: string | null;
   lastName: string | null;
   phoneNumber: string | null;
+  companyAffiliation: string | null;
   role: string;
   status: string;
   isEmailVerified: boolean;
@@ -116,6 +117,7 @@ export class ProfileService {
         firstName: true,
         lastName: true,
         phoneNumber: true,
+        companyAffiliation: true,
         role: true,
         status: true,
         isEmailVerified: true,
@@ -144,6 +146,7 @@ export class ProfileService {
         firstName: true,
         lastName: true,
         phoneNumber: true,
+        companyAffiliation: true,
         role: true,
         status: true,
         isEmailVerified: true,

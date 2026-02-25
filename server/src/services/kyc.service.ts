@@ -8,6 +8,7 @@ import {
   requiresDirectorsOrShareholders,
   DocumentRequirement,
 } from '../config/kyc-requirements.config.js';
+import { DEFAULT_KYC_REQUIREMENTS } from '../config/default-kyc-requirements.js';
 
 export interface CreateKYCDocumentData {
   documentType: KYCDocumentType;
@@ -929,7 +930,142 @@ export class KYCService {
       totalSubmissions,
     };
   }
+
+  // ─── Entity Requirements Management ─────────────────────────────────────
+
+  /**
+   * Get all entity types
+   */
+  static async getAllEntityTypes() {
+    // Return all enum values from OrganizerEntityType
+    return Object.values(OrganizerEntityType);
+  }
+
+  /**
+   * Get document requirements for a specific entity type
+   * Returns stored requirements, or defaults from kyc_document.md if none exist
+   */
+  static async getEntityRequirements(entityType: OrganizerEntityType) {
+    let requirements = await prisma.entityRequirement.findMany({
+      where: { entityType },
+      orderBy: [{ displayOrder: 'asc' }, { documentType: 'asc' }],
+    });
+
+    // If no requirements exist, create them from defaults
+    if (requirements.length === 0) {
+      const defaults = DEFAULT_KYC_REQUIREMENTS[entityType];
+      if (defaults && defaults.length > 0) {
+        logger.info(`Creating default requirements for ${entityType}`);
+        
+        // Create all default requirements
+        const created = await Promise.all(
+          defaults.map((req, index) =>
+            prisma.entityRequirement.create({
+              data: {
+                entityType,
+                documentType: req.documentType,
+                description: req.description,
+                isRequired: req.isRequired,
+                displayOrder: index,
+              },
+            }),
+          ),
+        );
+        
+        requirements = created;
+      }
+    }
+
+    return requirements;
+  }
+
+  /**
+   * Add a document requirement for an entity type
+   */
+  static async addEntityRequirement(
+    entityType: OrganizerEntityType,
+    documentType: string,
+    description?: string,
+    isRequired: boolean = true,
+  ) {
+    // Check if requirement already exists
+    const existing = await prisma.entityRequirement.findUnique({
+      where: {
+        entityType_documentType: {
+          entityType,
+          documentType,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new ValidationError(`Requirement for ${documentType} already exists for ${entityType}`);
+    }
+
+    // Get the max display order for this entity type
+    const maxOrder = await prisma.entityRequirement.aggregate({
+      where: { entityType },
+      _max: { displayOrder: true },
+    });
+
+    const requirement = await prisma.entityRequirement.create({
+      data: {
+        entityType,
+        documentType,
+        description,
+        isRequired,
+        displayOrder: (maxOrder._max.displayOrder || 0) + 1,
+      },
+    });
+
+    logger.info(`Added requirement ${documentType} for ${entityType}`);
+    return requirement;
+  }
+
+  /**
+   * Update a document requirement
+   */
+  static async updateEntityRequirement(
+    requirementId: string,
+    description?: string,
+    isRequired?: boolean,
+  ) {
+    const requirement = await prisma.entityRequirement.findUnique({
+      where: { id: requirementId },
+    });
+
+    if (!requirement) {
+      throw new NotFoundError('Requirement not found');
+    }
+
+    const updated = await prisma.entityRequirement.update({
+      where: { id: requirementId },
+      data: {
+        ...(description !== undefined && { description }),
+        ...(isRequired !== undefined && { isRequired }),
+      },
+    });
+
+    logger.info(`Updated requirement ${requirementId}`);
+    return updated;
+  }
+
+  /**
+   * Delete a document requirement
+   */
+  static async deleteEntityRequirement(requirementId: string) {
+    const requirement = await prisma.entityRequirement.findUnique({
+      where: { id: requirementId },
+    });
+
+    if (!requirement) {
+      throw new NotFoundError('Requirement not found');
+    }
+
+    await prisma.entityRequirement.delete({
+      where: { id: requirementId },
+    });
+
+    logger.info(`Deleted requirement ${requirementId}`);
+  }
 }
-
-
-

@@ -18,6 +18,7 @@ import { NotificationType, NotificationPriority } from '@prisma/client';
 import { EventCollaborationService } from './event-collaboration.service.js';
 import { RefundService } from './refund.service.js';
 import { AttendeeCommunicationService } from './attendee-communication.service.js';
+import { websocketService } from './websocket.service.js';
 
 export interface CreateEventData {
   title: string;
@@ -264,10 +265,10 @@ export class EventService {
       throw new AuthorizationError('Only organizers and admins can create events');
     }
 
-    // Check account status - only ACTIVE organizers can create events
-    if (organizer.status === UserStatus.PENDING_APPROVAL) {
-      throw new AuthorizationError('Your organizer account is pending approval. You cannot create events yet.');
-    }
+    // Check account status
+    // PENDING_APPROVAL organizers can create their first event — it enters the
+    // event approval workflow regardless. Blocking here would break the atomic
+    // becomeOrganizer() flow where status is set to PENDING_APPROVAL immediately.
     if (organizer.status === UserStatus.DEACTIVATED) {
       throw new AuthorizationError('Your account has been deactivated. Please contact support.');
     }
@@ -625,7 +626,7 @@ export class EventService {
     console.log(`[EventService.getEventById] Event ${eventId}: status=${event.status}, requestingUserId=${requestingUserId}, organizerId=${event.organizerId}, isOrganizer=${isOrganizer}`);
     
     if (!isOrganizer && event.status !== 'APPROVED') {
-      console.log(`[EventService.getEventById] Access denied: user is not organizer and event status is not APPROVED`);
+      console.log('[EventService.getEventById] Access denied: user is not organizer and event status is not APPROVED');
       throw new NotFoundError('Event not found');
     }
 
@@ -670,7 +671,7 @@ export class EventService {
             ...ticket,
             isSoldOut: false,
           };
-        })
+        }),
       );
 
       (event as any).ticketTypes = ticketTypesWithStatus;
@@ -2135,6 +2136,19 @@ export class EventService {
       });
       logger.info(
         `Auto-activated organizer account ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) on event approval`,
+      );
+
+      // Emit the same socket event that the direct organizer-approval admin action emits.
+      // Without this, the client's useOrganizerApproval hook (socket + polling path) never
+      // detects the status transition, and the "You're Approved!" modal never shows.
+      websocketService.emitToRoom(
+        `user:${approvedEvent.organizerId}:notifications`,
+        'organizer:approved',
+        {
+          userId: approvedEvent.organizerId,
+          status: 'ACTIVE',
+          message: 'Your organizer account has been approved!',
+        },
       );
     }
 

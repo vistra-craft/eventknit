@@ -278,11 +278,26 @@ router.get('/profile', AuthController.getProfile);
 
 /**
  * Wrapper for multer middleware to handle errors
+ * Only runs multer if the request is multipart/form-data
  */
 const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
+  // Skip multer if not a multipart request
+  const contentType = req.get('content-type') || '';
+  if (!contentType.includes('multipart/form-data')) {
+    next();
+    return;
+  }
+
   import('../utils/upload.js').then(({ uploadSingleImage }) => {
     uploadSingleImage(req, res, (err: unknown) => {
-      if (err instanceof (multer as any).MulterError || (err as any).code?.startsWith('LIMIT_')) {
+      // If no error, proceed to next middleware
+      if (!err) {
+        next();
+        return;
+      }
+
+      // Handle multer-specific errors
+      if (err instanceof (multer as any).MulterError) {
         const multerErr = err as any;
         if (multerErr.code === 'LIMIT_FILE_SIZE') {
           res.status(413).json({
@@ -305,22 +320,29 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
         return;
       }
 
-      if (err instanceof Error) {
-        // Handle file filter errors (e.g., "Only image files are allowed")
-        if (err.message.includes('Only image files are allowed')) {
+      // Handle other errors with code property
+      if (err && typeof err === 'object' && 'code' in err) {
+        const errWithCode = err as any;
+        if (errWithCode.code?.startsWith?.('LIMIT_')) {
           res.status(400).json({
             success: false,
-            message: err.message,
+            message: errWithCode.message || 'File upload limit exceeded',
           });
           return;
         }
       }
 
-      if (err) {
-        return next(err);
+      // Handle file filter errors (e.g., "Only image files are allowed")
+      if (err instanceof Error && err.message.includes('Only image files are allowed')) {
+        res.status(400).json({
+          success: false,
+          message: err.message,
+        });
+        return;
       }
 
-      next();
+      // Pass any other errors to the error handler
+      next(err);
     });
   }).catch(next);
 };

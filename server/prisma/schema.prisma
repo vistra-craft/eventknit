@@ -387,6 +387,7 @@ model User {
   organizerVouchers  Voucher[]           @relation("OrganizerVouchers")
   voucherRedemptions VoucherRedemption[] @relation("VoucherRedemptions")
   emailDigestQueue   EmailDigestQueue[]  @relation("UserDigestQueue")
+  eventReports       EventReport[]       @relation("EventReports")
 
   @@index([email])
   @@index([role])
@@ -627,6 +628,22 @@ model OrganizerDirector {
   @@index([userId, isTopFive])
 }
 
+model EntityRequirement {
+  id                 String                @id @default(uuid())
+  entityType         OrganizerEntityType
+  documentType       String // e.g., "PP_NEW_CONTRACT", "NATIONAL_ID", etc.
+  description        String? // Human-readable description (e.g., "Valid national ID card")
+  isRequired         Boolean               @default(true) // Required vs optional
+  displayOrder       Int                   @default(0) // For UI ordering
+  validityPeriodDays Int? // Document validity period in days
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([entityType, documentType]) // Each entity type can only have one requirement per document type
+  @@index([entityType])
+}
+
 model AuditLog {
   id          String   @id @default(uuid())
   userId      String?
@@ -835,6 +852,11 @@ model Event {
   attendeeImports        AttendeeImport[]          @relation("EventAttendeeImports")
   // Cart Reservation System
   cartItems              CartItem[]                @relation("CartEvents")
+  // Event Reports
+  reports                EventReport[]             @relation("EventReports")
+
+  // Resale settings
+  allowResale            Boolean                   @default(true)
 
   @@index([organizerId])
   @@index([status])
@@ -3255,9 +3277,12 @@ model TicketResale {
   currency      String  @default("NGN")
 
   // Status
-  status   String    @default("LISTED") // LISTED, SOLD, CANCELLED, EXPIRED
-  listedAt DateTime  @default(now())
-  soldAt   DateTime?
+  status           String    @default("LISTED") // LISTED, RESERVED, SOLD, CANCELLED, EXPIRED
+  listedAt         DateTime  @default(now())
+  soldAt           DateTime?
+  reservedAt       DateTime? // When a buyer reserved the listing
+  paymentReference String?   // Payment gateway reference
+  paymentStatus    String?   // PENDING, COMPLETED, FAILED
 
   // Buyer (if sold)
   buyerId String?
@@ -3278,6 +3303,34 @@ model TicketResale {
   @@index([status])
   @@index([listedAt])
   @@index([expiresAt])
+}
+
+// Event Report (user-submitted reports about events)
+model EventReport {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation("EventReports", fields: [eventId], references: [id], onDelete: Cascade)
+  reportedBy  String
+  reporter    User     @relation("EventReports", fields: [reportedBy], references: [id], onDelete: Cascade)
+
+  category    String   // e.g. SPAM, FRAUD, INAPPROPRIATE, OTHER
+  description String?
+  status      String   @default("PENDING") // PENDING, INVESTIGATING, RESOLVED, DISMISSED
+  submittedIp String?
+  userAgent   String?
+
+  reviewNotes String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, reportedBy])
+  @@index([eventId])
+  @@index([reportedBy])
+  @@index([status])
+  @@index([category])
 }
 
 // User Credit Balance

@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { KYCService } from '../services/kyc.service.js';
 import { KYCStatus, OrganizerEntityType } from '@prisma/client';
 
 // ─── Typed request shapes ───────────────────────────────────────────────
 
-interface ListKYCQuery {
+interface _ListKYCQuery {
   status?: KYCStatus;
   entityType?: OrganizerEntityType;
   search?: string;
@@ -20,6 +21,17 @@ interface RejectDocumentBody {
 
 interface RejectOrganizerBody {
   reason: string;
+}
+
+interface CreateRequirementBody {
+  documentType: string;
+  description?: string;
+  isRequired: boolean;
+}
+
+interface UpdateRequirementBody {
+  description?: string;
+  isRequired?: boolean;
 }
 
 // ─── Controller ─────────────────────────────────────────────────────────
@@ -41,21 +53,28 @@ export class AdminKYCController {
    * List KYC submissions with pagination and filters
    */
   static async listKYCSubmissions(
-    req: Request<Record<string, never>, unknown, unknown, ListKYCQuery>,
+    req: Request,
     res: Response,
     next: NextFunction,
   ) {
     try {
-      const { status, entityType, search, page, limit, sortBy, sortOrder } = req.query;
+      const query = req.query as Record<string, any>;
+      const status = typeof query.status === 'string' ? query.status : undefined;
+      const entityType = typeof query.entityType === 'string' ? query.entityType : undefined;
+      const search = typeof query.search === 'string' ? query.search : undefined;
+      const page = typeof query.page === 'string' ? query.page : undefined;
+      const limit = typeof query.limit === 'string' ? query.limit : undefined;
+      const sortBy = typeof query.sortBy === 'string' ? query.sortBy : undefined;
+      const sortOrder = typeof query.sortOrder === 'string' ? query.sortOrder : undefined;
 
       const result = await KYCService.listKYCSubmissions({
-        status,
-        entityType,
+        status: status as any,
+        entityType: entityType as any,
         search,
         page: page ? parseInt(page, 10) : undefined,
         limit: limit ? parseInt(limit, 10) : undefined,
-        sortBy,
-        sortOrder,
+        sortBy: sortBy || undefined,
+        sortOrder: sortOrder as any,
       });
 
       res.json({ success: true, data: result });
@@ -68,12 +87,13 @@ export class AdminKYCController {
    * Get full KYC details for a specific organizer
    */
   static async getOrganizerKYCDetails(
-    req: Request<{ userId: string }>,
+    req: Request,
     res: Response,
     next: NextFunction,
   ) {
     try {
-      const result = await KYCService.getOrganizerKYCDetails(req.params.userId);
+      const userId = (req.params as Record<string, string>).userId;
+      const result = await KYCService.getOrganizerKYCDetails(userId);
       res.json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -84,13 +104,14 @@ export class AdminKYCController {
    * Approve a single KYC document
    */
   static async approveDocument(
-    req: Request<{ documentId: string }>,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ) {
     try {
       const adminId = req.user!.id;
-      const document = await KYCService.approveKYCDocument(req.params.documentId, adminId);
+      const documentId = req.params.documentId as string;
+      const document = await KYCService.approveKYCDocument(documentId, adminId);
       res.json({ success: true, data: { document } });
     } catch (error) {
       next(error);
@@ -101,14 +122,15 @@ export class AdminKYCController {
    * Reject a single KYC document
    */
   static async rejectDocument(
-    req: Request<{ documentId: string }, unknown, RejectDocumentBody>,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ) {
     try {
       const adminId = req.user!.id;
-      const { rejectionReason } = req.body;
-      const document = await KYCService.rejectKYCDocument(req.params.documentId, adminId, rejectionReason);
+      const documentId = req.params.documentId as string;
+      const { rejectionReason } = req.body as RejectDocumentBody;
+      const document = await KYCService.rejectKYCDocument(documentId, adminId, rejectionReason);
       res.json({ success: true, data: { document } });
     } catch (error) {
       next(error);
@@ -119,13 +141,14 @@ export class AdminKYCController {
    * Approve an organizer's entire KYC
    */
   static async approveOrganizerKYC(
-    req: Request<{ userId: string }>,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ) {
     try {
       const adminId = req.user!.id;
-      const result = await KYCService.approveOrganizerKYC(req.params.userId, adminId);
+      const userId = req.params.userId as string;
+      const result = await KYCService.approveOrganizerKYC(userId, adminId);
       res.json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -136,15 +159,107 @@ export class AdminKYCController {
    * Reject an organizer's entire KYC
    */
   static async rejectOrganizerKYC(
-    req: Request<{ userId: string }, unknown, RejectOrganizerBody>,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ) {
     try {
       const adminId = req.user!.id;
-      const { reason } = req.body;
-      const result = await KYCService.rejectOrganizerKYC(req.params.userId, adminId, reason);
+      const userId = req.params.userId as string;
+      const { reason } = req.body as RejectOrganizerBody;
+      const result = await KYCService.rejectOrganizerKYC(userId, adminId, reason);
       res.json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get all entity types
+   */
+  static async getEntityTypes(_req: Request, res: Response, next: NextFunction) {
+    try {
+      const entityTypes = await KYCService.getAllEntityTypes();
+      res.json({ success: true, data: { entityTypes } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get document requirements for a specific entity type
+   */
+  static async getEntityRequirements(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const entityType = (req.params as Record<string, string>).entityType as OrganizerEntityType;
+      const requirements = await KYCService.getEntityRequirements(entityType);
+      res.json({ success: true, data: { requirements } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Add a document requirement for an entity type
+   */
+  static async addEntityRequirement(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { documentType, description, isRequired } = req.body as CreateRequirementBody;
+      const entityType = (req.params as Record<string, string>).entityType as OrganizerEntityType;
+      const requirement = await KYCService.addEntityRequirement(
+        entityType,
+        documentType,
+        description,
+        isRequired,
+      );
+      res.json({ success: true, data: { requirement } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update a document requirement
+   */
+  static async updateEntityRequirement(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { description, isRequired } = req.body as UpdateRequirementBody;
+      const requirementId = (req.params as Record<string, string>).requirementId;
+      const requirement = await KYCService.updateEntityRequirement(
+        requirementId,
+        description,
+        isRequired,
+      );
+      res.json({ success: true, data: { requirement } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Delete a document requirement
+   */
+  static async deleteEntityRequirement(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const requirementId = (req.params as Record<string, string>).requirementId;
+      await KYCService.deleteEntityRequirement(requirementId);
+      res.json({ success: true, message: 'Requirement deleted successfully' });
     } catch (error) {
       next(error);
     }

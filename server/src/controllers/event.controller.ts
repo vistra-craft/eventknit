@@ -131,7 +131,7 @@ export class EventController {
         data: { event },
       });
     } catch (error) {
-      logger.error(`[EventController.getEventById] Error:`, error);
+      logger.error('[EventController.getEventById] Error:', error);
       next(error);
     }
   }

@@ -1185,4 +1185,47 @@ router.post(
   AdminKYCController.rejectOrganizerKYC,
 );
 
+// ─── KYC Entity Management Routes ──────────────────────────────────────
+
+/**
+ * @route   GET /api/v1/admin/kyc/entity-types
+ * @desc    Get all entity types
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.get('/kyc/entity-types', AdminKYCController.getEntityTypes);
+
+/**
+ * @route   GET /api/v1/admin/kyc/entity-types/:entityType/requirements
+ * @desc    Get document requirements for a specific entity type
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.get('/kyc/entity-types/:entityType/requirements', AdminKYCController.getEntityRequirements);
+
+/**
+ * @route   POST /api/v1/admin/kyc/entity-types/:entityType/requirements
+ * @desc    Add a document requirement for an entity type
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.post('/kyc/entity-types/:entityType/requirements', AdminKYCController.addEntityRequirement);
+
+/**
+ * @route   PUT /api/v1/admin/kyc/entity-types/:entityType/requirements/:requirementId
+ * @desc    Update a document requirement
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.put(
+  '/kyc/entity-types/:entityType/requirements/:requirementId',
+  AdminKYCController.updateEntityRequirement,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/kyc/entity-types/:entityType/requirements/:requirementId
+ * @desc    Delete a document requirement
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.delete(
+  '/kyc/entity-types/:entityType/requirements/:requirementId',
+  AdminKYCController.deleteEntityRequirement,
+);
+
 export default router;
