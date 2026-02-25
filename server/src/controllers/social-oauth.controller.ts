@@ -6,6 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { SocialMediaOAuthService } from '../services/social-media/oauth.service.js';
+import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
@@ -77,12 +78,10 @@ export class SocialOAuthController {
       );
 
       // Redirect to frontend with success
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      res.redirect(`${frontendUrl}/organizer/social-media?connected=${platform}&success=true`);
+      res.redirect(`${config.frontend.url}/organizer/social-media?connected=${platform}&success=true`);
     } catch (error) {
       logger.error('OAuth callback error:', error);
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      res.redirect(`${frontendUrl}/organizer/social-media?error=connection_failed`);
+      res.redirect(`${config.frontend.url}/organizer/social-media?error=connection_failed`);
     }
   }
 

@@ -97,6 +97,14 @@ router.get('/users/stats', AdminController.getUsersStats);
 router.get('/users/attendees', AdminController.getAttendees);
 
 /**
+ * @route   GET /api/v1/admin/users/:id/organizer-details
+ * @desc    Get enriched organizer details for admin slide-over panel
+ * @access  Private (ADMIN_STAFF+)
+ * @note    Must be defined before /users/:id to avoid route conflict
+ */
+router.get('/users/:id/organizer-details', AdminController.getOrganizerDetails);
+
+/**
  * @route   GET /api/v1/admin/users/:id
  * @desc    Get user by ID
  * @access  Private (ADMIN_STAFF+)
@@ -119,10 +127,12 @@ router.delete('/users/:id', AdminController.deleteUser);
 
 /**
  * @route   POST /api/v1/admin/seed-test-users
- * @desc    Seed test users (temporary endpoint for production setup)
+ * @desc    Seed test users (development only)
  * @access  Private (ADMIN_STAFF+)
  */
-router.post('/seed-test-users', AdminController.seedTestUsers);
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/seed-test-users', AdminController.seedTestUsers);
+}
 
 /**
  * @route   POST /api/v1/admin/users/:id/password

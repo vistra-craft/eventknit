@@ -58,6 +58,7 @@ import gdprRoutes from './routes/gdpr.routes.js';
 import creditRoutes from './routes/credit.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import configurationRoutes from './routes/configuration.routes.js';
+import eventReportAdminRoutes from './routes/event-report-admin.routes.js';
 import extendedProfileRoutes from './routes/extended-profile.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
@@ -222,6 +223,7 @@ app.use('/api/v1/events', attendeeImportRoutes);
 app.use('/api/v1/events', servicePointRegistrationRoutes);
 app.use('/api/v1/mobile', mobileRoutes);
 app.use('/api/v1/careers', careerRoutes);
+app.use('/api/v1/admin/event-reports', eventReportAdminRoutes);
 app.use('/api/v1/unsubscribe', unsubscribeRoutes); // Public route for email unsubscribe (no auth required)
 app.use('/api/v1/gdpr', gdprRoutes); // GDPR data export and account deletion
 app.use('/api/v1/credits', creditRoutes); // Credit/Voucher system

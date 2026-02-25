@@ -84,6 +84,22 @@ export class AdminController {
   }
 
   /**
+   * Get enriched organizer details (for admin slide-over panel)
+   */
+  static async getOrganizerDetails(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const result = await AdminService.getOrganizerDetails(req.params.id as string);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update user
    */
   static async updateUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

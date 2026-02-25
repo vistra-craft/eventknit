@@ -119,6 +119,8 @@ export interface RegisterForEventData {
   registrationData?: Record<string, unknown>;
   invitationId?: string; // For complementary tickets
   promoCode?: string; // Promo code to apply
+  // Seat selection
+  seatIds?: string[];
   // Consent data
   consent?: {
     operationalConsent?: boolean; // Default: true (required)
@@ -242,6 +244,8 @@ export class EventService {
       select: {
         id: true,
         role: true,
+        status: true,
+        profileCompleted: true,
         isIdentityVerified: true,
         verificationLevel: true,
         payoutLimit: true,
@@ -259,6 +263,22 @@ export class EventService {
       actualRole !== UserRole.SUPERADMIN &&
       actualRole !== UserRole.ADMIN_STAFF) {
       throw new AuthorizationError('Only organizers and admins can create events');
+    }
+
+    // Check account status - only ACTIVE organizers can create events
+    if (organizer.status === UserStatus.PENDING_APPROVAL) {
+      throw new AuthorizationError('Your organizer account is pending approval. You cannot create events yet.');
+    }
+    if (organizer.status === UserStatus.DEACTIVATED) {
+      throw new AuthorizationError('Your account has been deactivated. Please contact support.');
+    }
+    if (organizer.status === UserStatus.SUSPENDED) {
+      throw new AuthorizationError('Your account has been suspended. Please contact support.');
+    }
+
+    // Require profile completion before creating events (skip for admins)
+    if (actualRole === UserRole.ORGANIZER && !organizer.profileCompleted) {
+      throw new ValidationError('You must complete your organizer profile before creating events. Please visit your profile settings.');
     }
 
     // Note: Eventbrite-style approach - no verification required to CREATE events
@@ -567,7 +587,7 @@ export class EventService {
   /**
    * Get event by ID
    */
-  static async getEventById(eventId: string) {
+  static async getEventById(eventId: string, requestingUserId?: string) {
     const event = await prisma.event.findFirst({
       where: {
         id: eventId,
@@ -595,12 +615,27 @@ export class EventService {
             },
           },
         },
+        seatMap: {
+          select: { id: true },
+        },
       },
       // All fields are included by default, including JSON fields (agenda, exhibitors, speakers, sponsors, socialLinks)
     });
 
     if (!event) {
       throw new NotFoundError('Event not found');
+    }
+
+    // Access control: non-approved events visible only to organizer and admins
+    const isOrganizer = requestingUserId && event.organizerId === requestingUserId;
+    if (!isOrganizer && event.status !== 'APPROVED') {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Hide organizer email/personal info from public API responses
+    if (!isOrganizer && event.organizer) {
+      event.organizer.email = '';
+      event.organizer.businessEmail = null as any;
     }
 
     return event;
@@ -842,18 +877,19 @@ export class EventService {
     if (data.capacity !== undefined) {
       const capacity = data.capacity ? Number(data.capacity) : null;
       updateData.capacity = capacity;
-      // Recalculate available slots based on current registrations
-      const currentRegistrations = await prisma.eventRegistration.count({
+      // Recalculate available slots based on actual ticket quantities (not just registration count)
+      const ticketAggregation = await prisma.ticketLineItem.aggregate({
+        _sum: { quantity: true },
         where: {
-          eventId,
-          status: {
-            in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          registration: {
+            eventId,
+            status: { in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING] },
           },
         },
       });
-      updateData.availableSlots = capacity ? capacity - currentRegistrations : null;
+      const totalTicketsSold = ticketAggregation._sum?.quantity || 0;
+      updateData.availableSlots = capacity ? Math.max(0, capacity - totalTicketsSold) : null;
     }
-    if (data.image !== undefined) updateData.image = data.image?.trim();
     if (data.image !== undefined) updateData.image = data.image?.trim();
     if (data.images !== undefined) updateData.images = data.images;
     if (data.imageFocalX !== undefined) updateData.imageFocalX = data.imageFocalX;
@@ -1635,6 +1671,23 @@ export class EventService {
       timeout: 10000,
     });
 
+    // Reserve seats if seat IDs were provided
+    if (data.seatIds?.length) {
+      try {
+        const { SeatSelectionService } = await import('./seat-selection.service.js');
+        await SeatSelectionService.reserveSeats(
+          eventId,
+          data.seatIds,
+          registration.id,
+          15, // 15-minute reservation timeout
+        );
+        logger.info(`[registerForEvent] Reserved ${data.seatIds.length} seats for registration ${registration.id}`);
+      } catch (seatError) {
+        logger.error(`[registerForEvent] Failed to reserve seats for registration ${registration.id}:`, seatError);
+        // Don't fail registration — seats can be selected later
+      }
+    }
+
     // Generate QR code immediately at registration time (like Eventbrite/vf-ticket)
     // This ensures QR code is always available and stored for fast access
     try {
@@ -2030,10 +2083,22 @@ export class EventService {
             lastName: true,
             email: true,
             organizationName: true,
+            status: true,
           },
         },
       },
     });
+
+    // Auto-activate organizer account if still pending approval
+    if (approvedEvent.organizer.status === UserStatus.PENDING_APPROVAL) {
+      await prisma.user.update({
+        where: { id: approvedEvent.organizerId },
+        data: { status: UserStatus.ACTIVE },
+      });
+      logger.info(
+        `Auto-activated organizer account ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) on event approval`,
+      );
+    }
 
     // Audit log
     await createAuditLog({

@@ -37,9 +37,12 @@ export const eventValidations = {
     endTime: Joi.string().trim().max(20).optional().allow('', null).messages({
       'string.max': 'End time must not exceed 20 characters',
     }),
-    registrationDeadline: Joi.date().iso().optional().allow(null).messages({
-      'date.base': 'Registration deadline must be a valid date',
-    }),
+    registrationDeadline: Joi.date().iso().optional().allow(null)
+      .less(Joi.ref('startDate'))
+      .messages({
+        'date.base': 'Registration deadline must be a valid date',
+        'date.less': 'Registration deadline must be before the event start date',
+      }),
     venue: Joi.string().trim().max(200).optional().allow('', null).messages({
       'string.max': 'Venue must not exceed 200 characters',
     }),
@@ -182,7 +185,13 @@ export const eventValidations = {
     }),
     startTime: Joi.string().trim().max(20).optional().allow('', null),
     endTime: Joi.string().trim().max(20).optional().allow('', null),
-    registrationDeadline: Joi.date().iso().optional().allow(null),
+    registrationDeadline: Joi.date().iso().optional().allow(null)
+      .when('startDate', {
+        is: Joi.exist(),
+        then: Joi.date().iso().less(Joi.ref('startDate')).optional().allow(null).messages({
+          'date.less': 'Registration deadline must be before the event start date',
+        }),
+      }),
     venue: Joi.string().trim().max(200).optional().allow('', null),
     location: Joi.string().trim().min(2).max(200).optional().messages({
       'string.min': 'Location must be at least 2 characters long',

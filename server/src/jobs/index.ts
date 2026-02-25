@@ -8,6 +8,8 @@ import { PostEventSurveyJob } from './post-event-survey.job.js';
 import { EmailDigestJob } from './email-digest.job.js';
 import { CartCleanupJob } from './cart-cleanup.job.js';
 import { AutoPayoutJob } from './auto-payout.job.js';
+import { SeatReservationCleanupJob } from './seat-reservation-cleanup.job.js';
+import { TicketExpirationCleanupJob } from './ticket-expiration-cleanup.job.js';
 
 /**
  * Initialize all scheduled jobs
@@ -23,8 +25,10 @@ export function initializeJobs(): void {
     EmailDigestJob.start();
     CartCleanupJob.start();
     AutoPayoutJob.start();
+    SeatReservationCleanupJob.start();
+    TicketExpirationCleanupJob.start();
 
-    logger.info('Scheduled jobs initialized (9 jobs)');
+    logger.info('Scheduled jobs initialized (11 jobs)');
   } catch (error) {
     logger.error('Failed to initialize scheduled jobs:', error);
     throw error;
@@ -45,6 +49,8 @@ export function stopJobs(): void {
     EmailDigestJob.stop();
     CartCleanupJob.stop();
     AutoPayoutJob.stop();
+    SeatReservationCleanupJob.stop();
+    TicketExpirationCleanupJob.stop();
 
     logger.info('Scheduled jobs stopped');
   } catch (error) {
@@ -62,4 +68,6 @@ export { PostEventSurveyJob } from './post-event-survey.job.js';
 export { EmailDigestJob } from './email-digest.job.js';
 export { CartCleanupJob } from './cart-cleanup.job.js';
 export { AutoPayoutJob } from './auto-payout.job.js';
+export { SeatReservationCleanupJob } from './seat-reservation-cleanup.job.js';
+export { TicketExpirationCleanupJob } from './ticket-expiration-cleanup.job.js';
 

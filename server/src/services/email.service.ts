@@ -1289,7 +1289,7 @@ class EmailService {
             ${data.itemsHtml}
 
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/dashboard"
+              <a href="${config.frontend.url}/dashboard"
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold;">
                 View All Updates
               </a>
@@ -1299,7 +1299,7 @@ class EmailService {
 
             <p style="font-size: 12px; color: #888; text-align: center;">
               You're receiving this because you've opted in to ${data.digestType.toLowerCase()} digests.
-              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/settings/notifications" style="color: #667eea;">
+              <a href="${config.frontend.url}/settings/notifications" style="color: #667eea;">
                 Manage preferences
               </a>
             </p>
@@ -1396,7 +1396,7 @@ class EmailService {
 
             <p style="font-size: 12px; color: #888; text-align: center;">
               This is an automated payout processed after your event ended.
-              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/organizer/payouts" style="color: #667eea;">
+              <a href="${config.frontend.url}/organizer/payouts" style="color: #667eea;">
                 Manage payout preferences
               </a>
             </p>
@@ -1488,7 +1488,7 @@ class EmailService {
 
             <p style="font-size: 12px; color: #888; text-align: center;">
               This is an automated email from EventKnit.
-              <a href="${process.env.CLIENT_URL || 'https://eventknit.com'}/organizer/payouts" style="color: #667eea;">
+              <a href="${config.frontend.url}/organizer/payouts" style="color: #667eea;">
                 Manage payout preferences
               </a>
             </p>
@@ -1939,6 +1939,88 @@ class EmailService {
     if (!result.success) {
       logger.error(`Failed to send promo code rejection email to ${organizerEmail}: ${result.error?.message}`);
     }
+  }
+  /**
+   * Send notification email to seller when their resale ticket is sold
+   */
+  async sendTicketResaleSoldEmail(
+    sellerEmail: string,
+    data: {
+      sellerName: string;
+      buyerFirstName: string;
+      eventTitle: string;
+      eventDate: string;
+      salePrice: number;
+      platformFee: number;
+      sellerPayout: number;
+      currency: string;
+    },
+  ): Promise<EmailResult> {
+    const formatAmount = (amount: number) => `${data.currency} ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Ticket Sold!</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px 12px 0 0; padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">Your Ticket Has Been Sold!</h1>
+            </div>
+
+            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <p style="font-size: 16px;">Hello ${data.sellerName},</p>
+
+              <p><strong>${data.buyerFirstName}</strong> has purchased your ticket for:</p>
+
+              <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+                <h2 style="margin: 0 0 10px 0; color: #059669; font-size: 20px;">${data.eventTitle}</h2>
+                <p style="margin: 5px 0; color: #666;">📅 ${data.eventDate}</p>
+              </div>
+
+              <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #333;">Sale Summary</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #666;">Sale Price</td>
+                    <td style="padding: 8px 0; text-align: right; font-weight: bold;">${formatAmount(data.salePrice)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #666;">Platform Fee (10%)</td>
+                    <td style="padding: 8px 0; text-align: right; color: #ef4444;">-${formatAmount(data.platformFee)}</td>
+                  </tr>
+                  <tr style="border-top: 2px solid #e5e7eb;">
+                    <td style="padding: 12px 0; font-weight: bold; color: #059669;">Your Payout</td>
+                    <td style="padding: 12px 0; text-align: right; font-weight: bold; font-size: 18px; color: #059669;">${formatAmount(data.sellerPayout)}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+
+              <p style="font-size: 12px; color: #666; text-align: center;">
+                Your original ticket is no longer valid. Thank you for using EventKnit.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: sellerEmail,
+      subject: `🎉 Your ticket for "${data.eventTitle}" has been sold!`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send resale sold email to ${sellerEmail}: ${result.error?.message}`);
+    }
+
+    return result;
   }
 }
 

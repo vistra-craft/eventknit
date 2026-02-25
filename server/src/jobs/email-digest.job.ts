@@ -3,6 +3,7 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { emailService } from '../services/email.service.js';
 import { NotificationPriority } from '@prisma/client';
+import { escapeHtml } from '../utils/sanitize.js';
 
 interface DigestItem {
   id: string;
@@ -196,7 +197,7 @@ export class EmailDigestJob {
     // Build HTML content for the digest
     let itemsHtml = '';
     for (const [key, items] of eventGroups) {
-      const eventTitle = items[0]?.eventTitle || 'General Updates';
+      const eventTitle = escapeHtml(items[0]?.eventTitle || 'General Updates');
       if (key !== 'general') {
         itemsHtml += `<h3 style="color: #333; margin-top: 20px;">${eventTitle}</h3>`;
       }
@@ -206,8 +207,8 @@ export class EmailDigestJob {
           item.priority === 'MEDIUM' ? '#dd6b20' : '#718096';
         itemsHtml += `
           <div style="background: #f7fafc; border-left: 4px solid ${priorityColor}; padding: 12px; margin: 10px 0; border-radius: 4px;">
-            <strong style="color: #2d3748;">${item.title}</strong>
-            <p style="color: #4a5568; margin: 8px 0 0 0; font-size: 14px;">${item.message}</p>
+            <strong style="color: #2d3748;">${escapeHtml(item.title)}</strong>
+            <p style="color: #4a5568; margin: 8px 0 0 0; font-size: 14px;">${escapeHtml(item.message)}</p>
           </div>
         `;
       }

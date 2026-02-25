@@ -396,30 +396,56 @@ export class AdminService {
     }
 
     if (filters.search) {
-      where.OR = [
+      const searchConditions: Array<Record<string, { contains: string; mode: 'insensitive' }>> = [
         { email: { contains: filters.search, mode: 'insensitive' } },
         { firstName: { contains: filters.search, mode: 'insensitive' } },
         { lastName: { contains: filters.search, mode: 'insensitive' } },
       ];
+      // Also search by organization name for organizers
+      if (filters.role === UserRole.ORGANIZER) {
+        searchConditions.push({ organizationName: { contains: filters.search, mode: 'insensitive' } });
+      }
+      where.OR = searchConditions as typeof where.OR;
     }
+
+    // Base fields for all user types
+    const baseSelect = {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      phoneNumber: true,
+      role: true,
+      status: true,
+      isEmailVerified: true,
+      organizationName: true,
+      businessEmail: true,
+      createdAt: true,
+      updatedAt: true,
+    };
+
+    // Additional fields when fetching organizers
+    const organizerSelect = filters.role === UserRole.ORGANIZER ? {
+      avatar: true,
+      verificationLevel: true,
+      kycStatus: true,
+      isIdentityVerified: true,
+      organizerEntityType: true,
+      organizerIndustry: true,
+      profileCompleted: true,
+      lastLoginAt: true,
+      _count: {
+        select: {
+          eventsCreated: true,
+          eventRegistrations: true,
+        },
+      },
+    } : {};
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
         where,
-        select: {
-          id: true,
-          email: true,
-          firstName: true,
-          lastName: true,
-          phoneNumber: true,
-          role: true,
-          status: true,
-          isEmailVerified: true,
-          organizationName: true,
-          businessEmail: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: { ...baseSelect, ...organizerSelect },
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -435,6 +461,102 @@ export class AdminService {
         total,
         totalPages: Math.ceil(total / limit),
       },
+    };
+  }
+
+  /**
+   * Get enriched organizer details for admin panel
+   */
+  static async getOrganizerDetails(userId: string) {
+    const [user, recentEvents, organizerProfile, kycDocumentSummary] = await Promise.all([
+      // Full user data with relation counts
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phoneNumber: true,
+          role: true,
+          status: true,
+          isEmailVerified: true,
+          organizationName: true,
+          businessEmail: true,
+          avatar: true,
+          verificationLevel: true,
+          kycStatus: true,
+          kycSubmittedAt: true,
+          kycApprovedAt: true,
+          isIdentityVerified: true,
+          organizerEntityType: true,
+          organizerIndustry: true,
+          organizerBusinessName: true,
+          profileCompleted: true,
+          lastLoginAt: true,
+          payoutLimit: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              eventsCreated: true,
+              eventRegistrations: true,
+              kycDocuments: true,
+            },
+          },
+        },
+      }),
+      // Recent events (last 5)
+      prisma.event.findMany({
+        where: { organizerId: userId, deletedAt: null },
+        select: {
+          id: true,
+          title: true,
+          startDate: true,
+          status: true,
+          _count: { select: { registrations: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      // Organizer profile data
+      prisma.organizerProfile.findUnique({
+        where: { userId },
+        select: {
+          website: true,
+          description: true,
+          socialLinks: true,
+          bankAccountLast4: true,
+          location: true,
+        },
+      }),
+      // KYC documents count grouped by status
+      prisma.kYCDocument.groupBy({
+        by: ['status'],
+        where: { userId },
+        _count: { status: true },
+      }),
+    ]);
+
+    if (!user) {
+      throw new NotFoundError('Organizer not found');
+    }
+
+    // Compute total revenue from their events
+    const revenueResult = await prisma.eventRegistration.aggregate({
+      _sum: { totalAmount: true },
+      where: {
+        event: { organizerId: userId, deletedAt: null },
+        status: { in: ['CONFIRMED'] },
+      },
+    });
+
+    return {
+      user,
+      recentEvents,
+      organizerProfile,
+      kycDocumentSummary,
+      totalRevenue: revenueResult._sum?.totalAmount?.toString() || '0',
     };
   }
 

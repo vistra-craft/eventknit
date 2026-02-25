@@ -41,9 +41,7 @@ export class SeatSelectionService {
       // Verify registration exists
       const registration = await prisma.eventRegistration.findUnique({
         where: { id: registrationId },
-        include: {
-          event: true,
-        },
+        include: { event: true },
       });
 
       if (!registration) {
@@ -54,109 +52,122 @@ export class SeatSelectionService {
         throw new ValidationError('Registration does not match event');
       }
 
-      // Get seat map
-      const seatMap = await prisma.seatMap.findUnique({
-        where: { eventId },
-        include: {
-          seats: {
-            where: {
-              id: { in: seatIds },
-            },
-            include: {
-              reservations: {
-                where: {
-                  status: { in: ['reserved', 'confirmed'] },
-                  OR: [
-                    { reservedUntil: null },
-                    { reservedUntil: { gt: new Date() } },
-                  ],
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!seatMap) {
-        throw new NotFoundError('Seat map not found for this event');
-      }
-
-      // Check if seats are available
-      const unavailableSeats: string[] = [];
-      for (const seat of seatMap.seats) {
-        if (seat.status !== SeatStatus.AVAILABLE) {
-          unavailableSeats.push(seat.seatIdentifier);
-          continue;
-        }
-
-        // Check for active reservations
-        const activeReservation = seat.reservations.find(
-          r => r.status === 'reserved' || r.status === 'confirmed',
-        );
-
-        if (activeReservation && activeReservation.registrationId !== registrationId) {
-          unavailableSeats.push(seat.seatIdentifier);
-        }
-      }
-
-      if (unavailableSeats.length > 0) {
-        throw new ValidationError(
-          `Seats are not available: ${unavailableSeats.join(', ')}`,
-        );
-      }
-
-      // Create reservations
       const reservedUntil = new Date();
       reservedUntil.setMinutes(reservedUntil.getMinutes() + reservationTimeoutMinutes);
 
-      const reservations = await Promise.all(
-        seatIds.map(async (seatId) => {
-          const seat = seatMap.seats.find(s => s.id === seatId);
-          if (!seat) {
-            throw new NotFoundError(`Seat ${seatId} not found`);
+      // Use transaction with row-level locking to prevent race conditions
+      const reservations = await prisma.$transaction(async (tx) => {
+        // Lock the seat rows using FOR UPDATE to prevent concurrent reservations
+        const lockedSeats = await tx.$queryRaw<Array<{ id: string; seatIdentifier: string; status: string; basePrice: any; currentPrice: any }>>`
+          SELECT s.id, s."seatIdentifier", s.status, s."basePrice", s."currentPrice"
+          FROM "Seat" s
+          INNER JOIN "SeatMap" sm ON s."seatMapId" = sm.id
+          WHERE s.id = ANY(${seatIds}::uuid[])
+            AND sm."eventId" = ${eventId}::uuid
+          FOR UPDATE OF s
+        `;
+
+        if (lockedSeats.length !== seatIds.length) {
+          throw new ValidationError('One or more seats not found');
+        }
+
+        // Check all seats are available
+        const unavailableSeats: string[] = [];
+        for (const seat of lockedSeats) {
+          if (seat.status !== 'AVAILABLE') {
+            unavailableSeats.push(seat.seatIdentifier);
+            continue;
           }
 
-          // Check if reservation already exists
-          const existing = await prisma.seatReservation.findFirst({
+          // Check for active reservations by OTHER registrations
+          const activeReservation = await tx.seatReservation.findFirst({
             where: {
+              seatId: seat.id,
+              status: { in: ['reserved', 'confirmed'] },
+              registrationId: { not: registrationId },
+              OR: [
+                { reservedUntil: null },
+                { reservedUntil: { gt: new Date() } },
+              ],
+            },
+          });
+
+          if (activeReservation) {
+            unavailableSeats.push(seat.seatIdentifier);
+          }
+        }
+
+        if (unavailableSeats.length > 0) {
+          throw new ValidationError(
+            `Seats are not available: ${unavailableSeats.join(', ')}`,
+          );
+        }
+
+        // Cancel any previous reservations for this registration (user changing seat selection)
+        const previousReservations = await tx.seatReservation.findMany({
+          where: {
+            registrationId,
+            status: 'reserved',
+            seatId: { notIn: seatIds },
+          },
+          select: { id: true, seatId: true },
+        });
+
+        if (previousReservations.length > 0) {
+          await tx.seatReservation.updateMany({
+            where: { id: { in: previousReservations.map(r => r.id) } },
+            data: { status: 'cancelled' },
+          });
+          await tx.seat.updateMany({
+            where: { id: { in: previousReservations.map(r => r.seatId) } },
+            data: { status: SeatStatus.AVAILABLE },
+          });
+        }
+
+        // Create or update reservations for all requested seats
+        const newReservations: any[] = [];
+        for (const seat of lockedSeats) {
+          const existing = await tx.seatReservation.findFirst({
+            where: {
+              seatId: seat.id,
               registrationId,
-              seatId,
               status: { in: ['reserved', 'confirmed'] },
             },
           });
 
           if (existing) {
-            // Update existing reservation
-            return await prisma.seatReservation.update({
+            const updated = await tx.seatReservation.update({
               where: { id: existing.id },
               data: {
                 reservedUntil,
                 priceAtReservation: seat.currentPrice || seat.basePrice || 0,
+                status: 'reserved',
               },
             });
+            newReservations.push(updated);
+          } else {
+            const created = await tx.seatReservation.create({
+              data: {
+                seatId: seat.id,
+                registrationId,
+                reservedUntil,
+                priceAtReservation: seat.currentPrice || seat.basePrice || 0,
+                status: 'reserved',
+              },
+            });
+            newReservations.push(created);
           }
+        }
 
-          // Create new reservation
-          return await prisma.seatReservation.create({
-            data: {
-              seatId,
-              registrationId,
-              reservedUntil,
-              priceAtReservation: seat.currentPrice || seat.basePrice || 0,
-              status: 'reserved',
-            },
-          });
-        }),
-      );
+        // Update all seat statuses to RESERVED
+        await tx.seat.updateMany({
+          where: { id: { in: seatIds } },
+          data: { status: SeatStatus.RESERVED },
+        });
 
-      // Update seat statuses
-      await prisma.seat.updateMany({
-        where: {
-          id: { in: seatIds },
-        },
-        data: {
-          status: SeatStatus.RESERVED,
-        },
+        return newReservations;
+      }, {
+        timeout: 10000,
       });
 
       logger.info(`Reserved ${seatIds.length} seats for registration ${registrationId}`);
@@ -172,41 +183,50 @@ export class SeatSelectionService {
    */
   static async confirmSeatReservation(registrationId: string) {
     try {
-      const reservation = await prisma.seatReservation.findUnique({
-        where: { registrationId },
-        include: {
-          seat: true,
+      const reservations = await prisma.seatReservation.findMany({
+        where: {
+          registrationId,
+          status: 'reserved',
         },
+        include: { seat: true },
       });
 
-      if (!reservation) {
+      if (reservations.length === 0) {
+        // Check if already confirmed
+        const confirmed = await prisma.seatReservation.findFirst({
+          where: { registrationId, status: 'confirmed' },
+        });
+        if (confirmed) {
+          return [confirmed]; // Already confirmed
+        }
         throw new NotFoundError('Seat reservation not found');
       }
 
-      if (reservation.status === 'confirmed') {
-        return reservation; // Already confirmed
-      }
+      // Confirm all reservations atomically
+      await prisma.$transaction([
+        prisma.seatReservation.updateMany({
+          where: {
+            registrationId,
+            status: 'reserved',
+          },
+          data: {
+            status: 'confirmed',
+            confirmedAt: new Date(),
+            reservedUntil: null,
+          },
+        }),
+        prisma.seat.updateMany({
+          where: {
+            id: { in: reservations.map(r => r.seatId) },
+          },
+          data: {
+            status: SeatStatus.BOOKED,
+          },
+        }),
+      ]);
 
-      // Confirm reservation
-      const confirmed = await prisma.seatReservation.update({
-        where: { id: reservation.id },
-        data: {
-          status: 'confirmed',
-          confirmedAt: new Date(),
-          reservedUntil: null,
-        },
-      });
-
-      // Update seat status
-      await prisma.seat.update({
-        where: { id: reservation.seatId },
-        data: {
-          status: SeatStatus.BOOKED,
-        },
-      });
-
-      logger.info(`Confirmed seat reservation for registration ${registrationId}`);
-      return confirmed;
+      logger.info(`Confirmed ${reservations.length} seat reservation(s) for registration ${registrationId}`);
+      return reservations;
     } catch (error) {
       logger.error('Error confirming seat reservation:', error);
       throw error;
@@ -218,34 +238,36 @@ export class SeatSelectionService {
    */
   static async cancelSeatReservation(registrationId: string) {
     try {
-      const reservation = await prisma.seatReservation.findUnique({
-        where: { registrationId },
-        include: {
-          seat: true,
+      const reservations = await prisma.seatReservation.findMany({
+        where: {
+          registrationId,
+          status: { in: ['reserved', 'confirmed'] },
         },
+        include: { seat: true },
       });
 
-      if (!reservation) {
+      if (reservations.length === 0) {
         throw new NotFoundError('Seat reservation not found');
       }
 
-      // Cancel reservation
-      await prisma.seatReservation.update({
-        where: { id: reservation.id },
-        data: {
-          status: 'cancelled',
-        },
-      });
+      // Cancel all reservations and release seats atomically
+      await prisma.$transaction([
+        prisma.seatReservation.updateMany({
+          where: {
+            registrationId,
+            status: { in: ['reserved', 'confirmed'] },
+          },
+          data: { status: 'cancelled' },
+        }),
+        prisma.seat.updateMany({
+          where: {
+            id: { in: reservations.map(r => r.seatId) },
+          },
+          data: { status: SeatStatus.AVAILABLE },
+        }),
+      ]);
 
-      // Release seat
-      await prisma.seat.update({
-        where: { id: reservation.seatId },
-        data: {
-          status: SeatStatus.AVAILABLE,
-        },
-      });
-
-      logger.info(`Cancelled seat reservation for registration ${registrationId}`);
+      logger.info(`Cancelled ${reservations.length} seat reservation(s) for registration ${registrationId}`);
       return { success: true };
     } catch (error) {
       logger.error('Error cancelling seat reservation:', error);
@@ -258,8 +280,11 @@ export class SeatSelectionService {
    */
   static async getSeatSelection(registrationId: string) {
     try {
-      const reservation = await prisma.seatReservation.findUnique({
-        where: { registrationId },
+      const reservations = await prisma.seatReservation.findMany({
+        where: {
+          registrationId,
+          status: { in: ['reserved', 'confirmed'] },
+        },
         include: {
           seat: {
             include: {
@@ -290,7 +315,7 @@ export class SeatSelectionService {
         },
       });
 
-      return reservation;
+      return reservations;
     } catch (error) {
       logger.error('Error getting seat selection:', error);
       throw error;

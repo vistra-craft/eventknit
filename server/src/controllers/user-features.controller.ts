@@ -79,6 +79,7 @@ export class UserFeaturesController {
     }
   }
 
+  /** @deprecated Use initializeResalePayment + verifyResalePayment instead */
   static async purchaseResaleTicket(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
       const userId = req.user?.id;
@@ -87,12 +88,61 @@ export class UserFeaturesController {
         return;
       }
 
-      const resaleId = (req.params.resaleId as string) as string;
-      const result = await TicketResaleService.purchaseResaleTicket(userId, resaleId);
+      const resaleId = req.params.resaleId as string;
+      await TicketResaleService.purchaseResaleTicket(userId, resaleId);
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async initializeResalePayment(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const resaleId = req.params.resaleId as string;
+      const email = req.user?.email;
+
+      if (!email) {
+        res.status(400).json({ success: false, message: 'User email not available' });
+        return;
+      }
+
+      const result = await TicketResaleService.initializeResalePayment(userId, resaleId, email);
 
       res.status(200).json({
         success: true,
-        message: result.message,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async verifyResalePayment(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const reference = req.query.reference as string;
+      if (!reference) {
+        res.status(400).json({ success: false, message: 'Payment reference is required' });
+        return;
+      }
+
+      const result = await TicketResaleService.verifyResalePayment(reference, userId);
+
+      res.status(200).json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);

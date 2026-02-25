@@ -231,6 +231,24 @@ export class SeatMapService {
    */
   private static async generateSeatsFromLayout(seatMapId: string, layout: any) {
     try {
+      // Check for active reservations before regenerating seats
+      const activeReservations = await prisma.seatReservation.count({
+        where: {
+          seat: { seatMapId },
+          status: { in: ['reserved', 'confirmed'] },
+          OR: [
+            { reservedUntil: null },
+            { reservedUntil: { gt: new Date() } },
+          ],
+        },
+      });
+
+      if (activeReservations > 0) {
+        throw new ValidationError(
+          `Cannot update seat layout: ${activeReservations} active reservation(s) exist. Please wait for all reservations to be completed or expired before modifying the layout.`,
+        );
+      }
+
       const sections = layout.sections || [];
       const seats: any[] = [];
 

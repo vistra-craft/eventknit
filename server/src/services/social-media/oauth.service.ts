@@ -7,6 +7,7 @@
 
 import { platformManager } from './platform-manager.js';
 import { prisma } from '../../config/database.js';
+import { config } from '../../config/index.js';
 import { logger } from '../../utils/logger.js';
 import { NotFoundError, ValidationError } from '../../utils/errors.js';
 import { SocialPlatform } from '@prisma/client';
@@ -35,7 +36,7 @@ export class SocialMediaOAuthService {
     }
 
     const state = this.generateStateToken();
-    const finalRedirectUri = redirectUri || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/organizer/social-media/callback?platform=${platform}`;
+    const finalRedirectUri = redirectUri || `${config.frontend.url}/organizer/social-media/callback?platform=${platform}`;
 
     // Store state in database for verification (optional, can use session instead)
     // For now, we'll include organizerId in state token
@@ -74,7 +75,7 @@ export class SocialMediaOAuthService {
       throw new NotFoundError('Organizer not found');
     }
 
-    const finalRedirectUri = redirectUri || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/organizer/social-media/callback?platform=${platform}`;
+    const finalRedirectUri = redirectUri || `${config.frontend.url}/organizer/social-media/callback?platform=${platform}`;
 
     // Exchange code for token
     const tokenResponse = await platformAdapter.exchangeCodeForToken(code, finalRedirectUri);

@@ -9,6 +9,7 @@ import { NotFoundError, ValidationError, AuthorizationError } from '../utils/err
 import { logger } from '../utils/logger.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
+import { escapeHtml } from '../utils/sanitize.js';
 
 export interface CreateBulkMessageData {
   title: string;
@@ -517,8 +518,8 @@ export class BulkMessageService {
               await NotificationService.sendNotification({
                 userId,
                 type: notificationType,
-                title: message.title,
-                message: message.content,
+                title: escapeHtml(message.title),
+                message: escapeHtml(message.content),
                 channels: message.channels as {
                   email?: boolean;
                   sms?: boolean;

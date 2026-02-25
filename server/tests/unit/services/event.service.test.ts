@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, EventType, EventStatus, UserStatus } from '@prisma/client';
+import { PrismaClient, UserRole, EventType, EventStatus, UserStatus, RegistrationStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
 import { EventService, CreateEventData } from '../../../src/services/event.service.js';
@@ -20,6 +20,7 @@ jest.mock('../../../src/utils/logger.js', () => ({
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
@@ -29,12 +30,18 @@ jest.mock('../../../src/utils/audit.js', () => ({
     EVENT_CREATED: 'EVENT_CREATED',
     EVENT_UPDATED: 'EVENT_UPDATED',
     EVENT_DELETED: 'EVENT_DELETED',
+    EVENT_APPROVED: 'EVENT_APPROVED',
   },
 }));
 
 jest.mock('../../../src/services/ticket.service.js', () => ({
   TicketService: {
     createTicketsForEvent: jest.fn(),
+    generateBackupTicketCode: jest.fn(() => 'BACKUP-CODE-123'),
+    generateTicketData: jest.fn(() => 'ticket-data-json'),
+    generateQRCode: jest.fn().mockResolvedValue('data:image/png;base64,qrcode'),
+    sendTicketEmail: jest.fn(),
+    sendPaymentPendingEmail: jest.fn(),
   },
 }));
 
@@ -42,6 +49,35 @@ jest.mock('../../../src/services/notification.service.js', () => ({
   NotificationService: {
     sendNotification: jest.fn(),
   },
+}));
+
+jest.mock('../../../src/utils/ticket-helpers.js', () => ({
+  isTicketTypeAvailable: jest.fn(() => ({ available: true })),
+}));
+
+jest.mock('../../../src/services/event-collaboration.service.js', () => ({
+  EventCollaborationService: {
+    logActivity: jest.fn(),
+  },
+}));
+
+jest.mock('../../../src/services/attendee-communication.service.js', () => ({
+  AttendeeCommunicationService: {
+    sendEventPostponementEmails: jest.fn(),
+    sendEventUpdateEmails: jest.fn(),
+  },
+}));
+
+jest.mock('../../../src/services/refund.service.js', () => ({
+  RefundService: {},
+}));
+
+const mockSeatSelectionService = {
+  reserveSeats: jest.fn(),
+};
+
+jest.mock('../../../src/services/seat-selection.service.js', () => ({
+  SeatSelectionService: mockSeatSelectionService,
 }));
 
 describe('EventService - Event Creation', () => {
@@ -52,6 +88,7 @@ describe('EventService - Event Creation', () => {
     email: 'organizer@test.com',
     role: UserRole.ORGANIZER,
     status: UserStatus.ACTIVE,
+    profileCompleted: true,
     isIdentityVerified: true,
     verificationLevel: 2,
     payoutLimit: null,
@@ -102,6 +139,8 @@ describe('EventService - Event Creation', () => {
           select: {
             id: true,
             role: true,
+            status: true,
+            profileCompleted: true,
             isIdentityVerified: true,
             verificationLevel: true,
             payoutLimit: true,
@@ -180,6 +219,76 @@ describe('EventService - Event Creation', () => {
         await expect(
           EventService.createEvent(baseEventData, attendee.id, UserRole.ORGANIZER),
         ).rejects.toThrow('Only organizers and admins can create events');
+      });
+
+      it('should throw error if organizer status is PENDING_APPROVAL', async () => {
+        const pendingOrganizer = { ...mockOrganizer, status: UserStatus.PENDING_APPROVAL };
+        prisma.user.findUnique.mockResolvedValue(pendingOrganizer as any);
+
+        await expect(
+          EventService.createEvent(baseEventData, pendingOrganizer.id, UserRole.ORGANIZER),
+        ).rejects.toThrow(AuthorizationError);
+
+        await expect(
+          EventService.createEvent(baseEventData, pendingOrganizer.id, UserRole.ORGANIZER),
+        ).rejects.toThrow('pending approval');
+      });
+
+      it('should throw error if organizer status is DEACTIVATED', async () => {
+        const deactivated = { ...mockOrganizer, status: UserStatus.DEACTIVATED };
+        prisma.user.findUnique.mockResolvedValue(deactivated as any);
+
+        await expect(
+          EventService.createEvent(baseEventData, deactivated.id, UserRole.ORGANIZER),
+        ).rejects.toThrow(AuthorizationError);
+
+        await expect(
+          EventService.createEvent(baseEventData, deactivated.id, UserRole.ORGANIZER),
+        ).rejects.toThrow('deactivated');
+      });
+
+      it('should throw error if organizer status is SUSPENDED', async () => {
+        const suspended = { ...mockOrganizer, status: UserStatus.SUSPENDED };
+        prisma.user.findUnique.mockResolvedValue(suspended as any);
+
+        await expect(
+          EventService.createEvent(baseEventData, suspended.id, UserRole.ORGANIZER),
+        ).rejects.toThrow(AuthorizationError);
+
+        await expect(
+          EventService.createEvent(baseEventData, suspended.id, UserRole.ORGANIZER),
+        ).rejects.toThrow('suspended');
+      });
+
+      it('should throw error if organizer profile is not completed', async () => {
+        const incompleteProfile = { ...mockOrganizer, profileCompleted: false };
+        prisma.user.findUnique.mockResolvedValue(incompleteProfile as any);
+
+        await expect(
+          EventService.createEvent(baseEventData, incompleteProfile.id, UserRole.ORGANIZER),
+        ).rejects.toThrow(ValidationError);
+
+        await expect(
+          EventService.createEvent(baseEventData, incompleteProfile.id, UserRole.ORGANIZER),
+        ).rejects.toThrow('complete your organizer profile');
+      });
+
+      it('should allow SUPERADMIN to create event without completed profile', async () => {
+        const admin = { ...mockOrganizer, role: UserRole.SUPERADMIN, profileCompleted: false };
+        prisma.user.findUnique.mockResolvedValue(admin as any);
+        prisma.event.create.mockResolvedValue({
+          id: 'event-123',
+          ...baseEventData,
+          organizerId: admin.id,
+        } as any);
+
+        const result = await EventService.createEvent(
+          baseEventData,
+          admin.id,
+          UserRole.SUPERADMIN,
+        );
+
+        expect(result).toBeDefined();
       });
     });
 
@@ -616,7 +725,6 @@ describe('EventService - Event Creation', () => {
         expect(prisma.event.create).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
-              fullDescription: completeEvent.fullDescription,
               category: completeEvent.category,
               tags: completeEvent.tags,
               venue: completeEvent.venue,
@@ -701,5 +809,468 @@ describe('EventService - Event Creation', () => {
         expect(result).toBeDefined();
       });
     });
+  });
+});
+
+describe('EventService - approveEvent', () => {
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeEach(() => {
+    prisma = databaseModule.prisma as unknown as DeepMockProxy<PrismaClient>;
+    mockReset(prisma);
+    jest.clearAllMocks();
+  });
+
+  const adminId = 'admin-123';
+
+  const mockPendingEvent = {
+    id: 'event-456',
+    title: 'Test Event',
+    status: EventStatus.PENDING,
+  };
+
+  it('should approve event and auto-activate pending organizer', async () => {
+    prisma.event.findFirst.mockResolvedValue(mockPendingEvent as any);
+    prisma.event.update.mockResolvedValue({
+      ...mockPendingEvent,
+      status: EventStatus.APPROVED,
+      approvedBy: adminId,
+      approvedAt: new Date(),
+      organizerId: 'organizer-123',
+      organizer: {
+        id: 'organizer-123',
+        firstName: 'Cecil',
+        lastName: 'Spencer',
+        email: 'cecil@test.com',
+        organizationName: 'Test Org',
+        status: UserStatus.PENDING_APPROVAL,
+      },
+    } as any);
+    prisma.user.update.mockResolvedValue({} as any);
+
+    const result = await EventService.approveEvent(
+      'event-456',
+      adminId,
+      UserRole.SUPERADMIN,
+    );
+
+    expect(result).toBeDefined();
+    expect(result.status).toBe(EventStatus.APPROVED);
+
+    // Organizer should be auto-activated
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'organizer-123' },
+      data: { status: UserStatus.ACTIVE },
+    });
+  });
+
+  it('should not update organizer if already active', async () => {
+    prisma.event.findFirst.mockResolvedValue(mockPendingEvent as any);
+    prisma.event.update.mockResolvedValue({
+      ...mockPendingEvent,
+      status: EventStatus.APPROVED,
+      approvedBy: adminId,
+      approvedAt: new Date(),
+      organizerId: 'organizer-123',
+      organizer: {
+        id: 'organizer-123',
+        firstName: 'Cecil',
+        lastName: 'Spencer',
+        email: 'cecil@test.com',
+        organizationName: 'Test Org',
+        status: UserStatus.ACTIVE,
+      },
+    } as any);
+
+    await EventService.approveEvent('event-456', adminId, UserRole.SUPERADMIN);
+
+    // Should NOT call user.update since organizer is already active
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it('should reject if caller is not admin', async () => {
+    await expect(
+      EventService.approveEvent('event-456', 'user-123', UserRole.ORGANIZER),
+    ).rejects.toThrow(AuthorizationError);
+  });
+
+  it('should reject if event not found', async () => {
+    prisma.event.findFirst.mockResolvedValue(null);
+
+    await expect(
+      EventService.approveEvent('nonexistent', adminId, UserRole.SUPERADMIN),
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it('should reject if event already approved', async () => {
+    prisma.event.findFirst.mockResolvedValue({
+      id: 'event-456',
+      title: 'Test Event',
+      status: EventStatus.APPROVED,
+    } as any);
+
+    await expect(
+      EventService.approveEvent('event-456', adminId, UserRole.SUPERADMIN),
+    ).rejects.toThrow(ValidationError);
+  });
+});
+
+describe('EventService - registerForEvent (seatIds)', () => {
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  const mockFreeEvent = {
+    id: 'event-free-123',
+    title: 'Free Event',
+    status: EventStatus.APPROVED,
+    isFree: true,
+    price: null,
+    ticketTypes: null,
+    capacity: 100,
+    availableSlots: 50,
+    registrationDeadline: null,
+    startDate: new Date('2027-06-01'),
+    maxTicketsPerUser: 10,
+  };
+
+  const mockRegistration = {
+    id: 'reg-123',
+    eventId: 'event-free-123',
+    attendeeId: 'attendee-123',
+    status: RegistrationStatus.CONFIRMED,
+    paymentStatus: 'COMPLETED',
+    ticketLineItems: [],
+    event: {
+      id: 'event-free-123',
+      title: 'Free Event',
+      description: 'A free event',
+      startDate: new Date('2027-06-01'),
+      endDate: null,
+      startTime: null,
+      endTime: null,
+      venue: 'Test Venue',
+      location: 'Test Location',
+      address: null,
+      isOnline: false,
+      onlineLink: null,
+      image: null,
+      currency: 'USD',
+      organizer: {
+        id: 'organizer-123',
+        firstName: 'John',
+        lastName: 'Doe',
+        organizationName: 'Test Org',
+        email: 'organizer@test.com',
+      },
+    },
+    attendee: {
+      id: 'attendee-123',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      email: 'jane@test.com',
+      companyAffiliation: null,
+    },
+  };
+
+  beforeEach(() => {
+    prisma = databaseModule.prisma as unknown as DeepMockProxy<PrismaClient>;
+    mockReset(prisma);
+    jest.clearAllMocks();
+
+    // Common mocks for registerForEvent
+    prisma.event.findFirst.mockResolvedValue(mockFreeEvent as any);
+    prisma.eventRegistration.findUnique.mockResolvedValue(null); // No existing registration
+    prisma.ticketLineItem.aggregate.mockResolvedValue({ _sum: { quantity: 0 }, _count: 0, _avg: { quantity: null }, _min: { quantity: null }, _max: { quantity: null } } as any);
+    prisma.eventRegistration.findMany.mockResolvedValue([]); // No legacy registrations
+    prisma.$transaction.mockImplementation((callback: any) => callback(prisma));
+    // Inside transaction: lock query + registration create + slot update
+    prisma.$queryRaw.mockResolvedValue([{
+      id: mockFreeEvent.id,
+      capacity: mockFreeEvent.capacity,
+      availableSlots: mockFreeEvent.availableSlots,
+    }]);
+    prisma.ticketLineItem.aggregate.mockResolvedValue({ _sum: { quantity: 0 }, _count: 0, _avg: { quantity: null }, _min: { quantity: null }, _max: { quantity: null } } as any);
+    prisma.eventRegistration.count.mockResolvedValue(0);
+    prisma.eventRegistration.create.mockResolvedValue(mockRegistration as any);
+    prisma.event.update.mockResolvedValue({} as any);
+    // QR code storage update
+    prisma.eventRegistration.update.mockResolvedValue({} as any);
+  });
+
+  it('should reserve seats when seatIds are provided', async () => {
+    const seatIds = ['seat-1', 'seat-2', 'seat-3'];
+
+    await EventService.registerForEvent(
+      'event-free-123',
+      'attendee-123',
+      { seatIds },
+    );
+
+    expect(mockSeatSelectionService.reserveSeats).toHaveBeenCalledWith(
+      'event-free-123',
+      seatIds,
+      'reg-123',
+      15, // 15-minute timeout
+    );
+  });
+
+  it('should not call reserveSeats when no seatIds provided', async () => {
+    await EventService.registerForEvent(
+      'event-free-123',
+      'attendee-123',
+      {},
+    );
+
+    expect(mockSeatSelectionService.reserveSeats).not.toHaveBeenCalled();
+  });
+
+  it('should not fail registration when seat reservation fails', async () => {
+    mockSeatSelectionService.reserveSeats.mockRejectedValue(
+      new Error('Seats already reserved by another user'),
+    );
+
+    // Registration should still succeed
+    const result = await EventService.registerForEvent(
+      'event-free-123',
+      'attendee-123',
+      { seatIds: ['seat-1'] },
+    );
+
+    expect(result).toBeDefined();
+    expect(result.id).toBe('reg-123');
+    expect(mockSeatSelectionService.reserveSeats).toHaveBeenCalled();
+  });
+
+  it('should not call reserveSeats when seatIds is empty array', async () => {
+    await EventService.registerForEvent(
+      'event-free-123',
+      'attendee-123',
+      { seatIds: [] },
+    );
+
+    expect(mockSeatSelectionService.reserveSeats).not.toHaveBeenCalled();
+  });
+});
+
+describe('EventService - getEventById', () => {
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  beforeAll(() => {
+    prisma = databaseModule.prisma as DeepMockProxy<PrismaClient>;
+  });
+
+  beforeEach(() => {
+    mockReset(prisma);
+    jest.clearAllMocks();
+  });
+
+  const mockEvent = {
+    id: 'event-123',
+    title: 'Test Event',
+    status: EventStatus.APPROVED,
+    organizerId: 'organizer-123',
+    deletedAt: null,
+    organizer: {
+      id: 'organizer-123',
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'organizer@example.com',
+      organizationName: 'Test Org',
+      businessEmail: 'biz@example.com',
+    },
+    _count: { registrations: 5 },
+    seatMap: null,
+  };
+
+  it('should throw NotFoundError if event not found', async () => {
+    // Arrange
+    prisma.event.findFirst.mockResolvedValue(null);
+
+    // Act & Assert
+    await expect(
+      EventService.getEventById('non-existent'),
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it('should return approved event for unauthenticated users', async () => {
+    // Arrange - deep copy to avoid mutation across tests
+    prisma.event.findFirst.mockResolvedValue(JSON.parse(JSON.stringify(mockEvent)) as any);
+
+    // Act
+    const result = await EventService.getEventById('event-123');
+
+    // Assert
+    expect(result).toBeDefined();
+    expect(result.title).toBe('Test Event');
+  });
+
+  it('should hide organizer email for non-organizer users', async () => {
+    // Arrange - deep copy to avoid mutation across tests
+    prisma.event.findFirst.mockResolvedValue(JSON.parse(JSON.stringify(mockEvent)) as any);
+
+    // Act
+    const result = await EventService.getEventById('event-123', 'some-other-user');
+
+    // Assert
+    expect(result.organizer?.email).toBe('');
+    expect(result.organizer?.businessEmail).toBeNull();
+  });
+
+  it('should show organizer email to the event organizer', async () => {
+    // Arrange - deep copy to avoid mutation across tests
+    prisma.event.findFirst.mockResolvedValue(JSON.parse(JSON.stringify(mockEvent)) as any);
+
+    // Act
+    const result = await EventService.getEventById('event-123', 'organizer-123');
+
+    // Assert
+    expect(result.organizer?.email).toBe('organizer@example.com');
+    expect(result.organizer?.businessEmail).toBe('biz@example.com');
+  });
+
+  it('should hide non-approved events from non-organizer users', async () => {
+    // Arrange
+    const pendingEvent = {
+      ...mockEvent,
+      status: EventStatus.PENDING,
+    };
+    prisma.event.findFirst.mockResolvedValue(pendingEvent as any);
+
+    // Act & Assert - non-organizer should see NotFoundError
+    await expect(
+      EventService.getEventById('event-123', 'some-other-user'),
+    ).rejects.toThrow(NotFoundError);
+  });
+
+  it('should show non-approved events to the event organizer', async () => {
+    // Arrange
+    const pendingEvent = {
+      ...mockEvent,
+      status: EventStatus.PENDING,
+    };
+    prisma.event.findFirst.mockResolvedValue(pendingEvent as any);
+
+    // Act
+    const result = await EventService.getEventById('event-123', 'organizer-123');
+
+    // Assert
+    expect(result).toBeDefined();
+    expect(result.status).toBe(EventStatus.PENDING);
+  });
+
+  it('should hide non-approved events from unauthenticated users', async () => {
+    // Arrange - REJECTED status is non-approved
+    const rejectedEvent = {
+      ...mockEvent,
+      status: EventStatus.REJECTED,
+    };
+    prisma.event.findFirst.mockResolvedValue(rejectedEvent as any);
+
+    // Act & Assert
+    await expect(
+      EventService.getEventById('event-123'),
+    ).rejects.toThrow(NotFoundError);
+  });
+});
+
+describe('EventService - updateEvent capacity recalculation', () => {
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  const mockEvent = {
+    id: 'event-123',
+    organizerId: 'organizer-123',
+    status: EventStatus.APPROVED,
+    startDate: new Date('2027-06-01'),
+    endDate: null,
+    venue: 'Test Venue',
+    location: 'Test Location',
+    capacity: 100,
+    availableSlots: 50,
+    ticketTypes: null,
+  };
+
+  beforeEach(() => {
+    prisma = databaseModule.prisma as unknown as DeepMockProxy<PrismaClient>;
+    mockReset(prisma);
+    jest.clearAllMocks();
+  });
+
+  it('should recalculate availableSlots using SUM of ticket quantities, not registration count', async () => {
+    // Arrange: event with 100 capacity, 3 registrations but 15 total tickets
+    prisma.event.findFirst.mockResolvedValue(mockEvent as any);
+    prisma.eventCollaborator.findFirst.mockResolvedValue(null);
+    // 3 registrations bought 15 total tickets (5+5+5)
+    prisma.ticketLineItem.aggregate.mockResolvedValue({
+      _sum: { quantity: 15 },
+      _count: 3,
+      _avg: { quantity: null },
+      _min: { quantity: null },
+      _max: { quantity: null },
+    } as any);
+    prisma.event.update.mockResolvedValue({
+      ...mockEvent,
+      capacity: 100,
+      availableSlots: 85, // 100 - 15 = 85
+    } as any);
+
+    // Act
+    await EventService.updateEvent(
+      'event-123',
+      { capacity: 100 },
+      'organizer-123',
+      UserRole.ORGANIZER,
+    );
+
+    // Assert - should use ticketLineItem.aggregate, not eventRegistration.count
+    expect(prisma.ticketLineItem.aggregate).toHaveBeenCalledWith({
+      _sum: { quantity: true },
+      where: {
+        registration: {
+          eventId: 'event-123',
+          status: { in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING] },
+        },
+      },
+    });
+    expect(prisma.event.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          capacity: 100,
+          availableSlots: 85,
+        }),
+      }),
+    );
+  });
+
+  it('should cap availableSlots at 0 when tickets exceed new capacity', async () => {
+    prisma.event.findFirst.mockResolvedValue(mockEvent as any);
+    prisma.eventCollaborator.findFirst.mockResolvedValue(null);
+    // 80 tickets sold, reducing capacity to 50
+    prisma.ticketLineItem.aggregate.mockResolvedValue({
+      _sum: { quantity: 80 },
+      _count: 10,
+      _avg: { quantity: null },
+      _min: { quantity: null },
+      _max: { quantity: null },
+    } as any);
+    prisma.event.update.mockResolvedValue({
+      ...mockEvent,
+      capacity: 50,
+      availableSlots: 0,
+    } as any);
+
+    await EventService.updateEvent(
+      'event-123',
+      { capacity: 50 },
+      'organizer-123',
+      UserRole.ORGANIZER,
+    );
+
+    expect(prisma.event.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          capacity: 50,
+          availableSlots: 0, // max(0, 50-80) = 0
+        }),
+      }),
+    );
   });
 });

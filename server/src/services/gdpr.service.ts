@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
 import { Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { ValidationError, NotFoundError } from '../utils/errors.js';
@@ -292,7 +293,7 @@ export class GDPRService {
     });
 
     // Send email with download link
-    const downloadUrl = `${process.env.CLIENT_URL || 'https://eventknit.com'}/api/v1/gdpr/download/${exportToken}`;
+    const downloadUrl = `${config.frontend.url}/api/v1/gdpr/download/${exportToken}`;
 
     await emailService.sendDataExportReadyEmail(user.email, {
       userName: user.firstName || 'there',

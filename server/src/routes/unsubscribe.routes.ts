@@ -7,6 +7,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { verifyUnsubscribeToken } from '../utils/jwt.js';
 import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 
 const router = Router();
@@ -150,7 +151,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
           <h1>Successfully Unsubscribed</h1>
           <p>You have been unsubscribed from ${type === 'marketing' ? 'marketing emails' : 'event updates'}. You will no longer receive these types of emails from us.</p>
           <p>If you change your mind, you can always re-subscribe from your account settings.</p>
-          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/settings/notifications">Manage Email Preferences</a>
+          <a href="${config.frontend.url}/settings/notifications">Manage Email Preferences</a>
         </div>
       </body>
       </html>
