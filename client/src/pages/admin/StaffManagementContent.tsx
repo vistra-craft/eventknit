@@ -8,8 +8,7 @@ import {
   XCircle,
   Download,
   Upload,
-  Shield,
-  MoreHorizontal,
+  MoreVertical,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -424,47 +423,47 @@ const StaffManagementContent = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         View Details
                       </Button>
-                      {canModifyStaff(staff.role) ? (
-                        <Button
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleViewStaff(staff.id)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          {canModifyStaff(staff.role) && (
+                      {canModifyStaff(staff.role) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleEditStaff(staff.id)}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit Staff
                             </DropdownMenuItem>
-                          )}
-                          {canModifyStaff(staff.role) && <DropdownMenuSeparator />}
-                          {staff.status === "ACTIVE" && canModifyStaff(staff.role) && (
+                            <DropdownMenuSeparator />
+                            {staff.status === "ACTIVE" && (
+                              <>
+                                <DropdownMenuItem 
+                                  onClick={() => handleSuspendStaff(staff.id)}
+                                  disabled={actionLoading === staff.id}
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Suspend
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeactivateStaff(staff.id)}
+                                  disabled={actionLoading === staff.id}
+                                >
+                                  <XCircle className="h-4 w-4 mr-2" />
+                                  Deactivate
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && canModifyStaff(staff.role) && (
                             <>
                               <DropdownMenuItem 
-                                onClick={() => handleSuspendStaff(staff.id)}
+                                onClick={() => handleActivateStaff(staff.id)}
                                 disabled={actionLoading === staff.id}
                               >
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Suspend
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeactivateStaff(staff.id)}
-                                disabled={actionLoading === staff.id}
-                              >
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Deactivate
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Activate
                               </DropdownMenuItem>
                             </>
-                          )}
-                          {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && canModifyStaff(staff.role) && (
-                            <DropdownMenuItem 
-                              onClick={() => handleActivateStaff(staff.id)}
-                              disabled={actionLoading === staff.id}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Activate
-                            </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => {
@@ -495,6 +494,7 @@ const StaffManagementContent = () => {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                    )}
                     </div>
                   </div>
                 </div>
