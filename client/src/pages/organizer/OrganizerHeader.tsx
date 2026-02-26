@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Menu, User, ChevronDown, LogOut, Building2 } from "lucide-react";
+import { Menu, User, ChevronDown, LogOut, Building2, Settings, LayoutDashboard } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -110,12 +110,36 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                   <button
                     onClick={() => {
                       setIsProfileOpen(false);
-                      navigate('/organizer/profile');
+                      navigate('/organizer/settings/profile');
                     }}
                     className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
                   >
                     <User className="h-4 w-4" />
                     <span>View Profile</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      navigate('/organizer/settings/security');
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </button>
+                  
+                  <div className="border-t border-border my-2"></div>
+                  
+                  <button
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      navigate('/user/dashboard');
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Dashboard</span>
                   </button>
                   
                   <div className="border-t border-border my-2"></div>

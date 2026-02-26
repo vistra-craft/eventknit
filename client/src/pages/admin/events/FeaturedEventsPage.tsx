@@ -7,7 +7,7 @@ import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
-import { ConfirmationDialog } from "../../../components/ui/confirmation-dialog";
+import { ConfirmDialog } from "../../../components/ui/confirm-dialog";
 import { useToast } from "../../../hooks/useToast";
 import {
   getAllFeaturedEvents,
@@ -421,14 +421,14 @@ const FeaturedEventsPage = () => {
         )}
 
         {/* Delete Confirmation Dialog */}
-        <ConfirmationDialog
+        <ConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           title="Remove Featured Event"
           description="Are you sure you want to remove this featured event? This action cannot be undone."
           confirmText="Remove"
           cancelText="Cancel"
-          type="danger"
+          variant="danger"
           loading={deleting}
           onConfirm={handleDeleteConfirm}
         />

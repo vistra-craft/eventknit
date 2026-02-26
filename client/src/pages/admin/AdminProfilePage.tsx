@@ -23,7 +23,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import { UserRole, UserStatus } from "@/types/auth";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
@@ -656,10 +655,7 @@ const AdminProfilePage = () => {
             </Card>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <RoleSwitcher />
-          </div>
+
         </div>
       </div>
   );

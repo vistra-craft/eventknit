@@ -4,10 +4,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
-import { UserRole } from '@/types/auth';
+import { UserRole, UserStatus } from '@/types/auth';
 
 interface ProfileDropdownProps {
   onClose?: () => void;
@@ -78,45 +78,45 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
 
   if (!isAuthenticated || !user) return null;
 
-  // const getDashboardRoute = async () => {
-  //   // Use user's actual role
-  //   const roleToUse = user?.role;
+  const getDashboardRoute = async () => {
+    // Use user's actual role
+    const roleToUse = user?.role;
     
-  //   const isAdminRole = [
-  //     UserRole.SUPERADMIN,
-  //     UserRole.ADMIN_STAFF,
-  //     UserRole.MARKETER,
-  //     UserRole.SUPPORT,
-  //     UserRole.TELLER,
-  //   ].includes(roleToUse);
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(roleToUse);
     
-  //   const isOrganizerRole = [
-  //     UserRole.ORGANIZER,
-  //     UserRole.ORGANIZER_STAFF,
-  //     UserRole.ORGANIZER_TELLER,
-  //   ].includes(roleToUse);
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(roleToUse);
     
-  //   if (isAdminRole) return '/admin/dashboard';
+    if (isAdminRole) return '/admin/dashboard';
     
-  //   // For organizers, check if they have dashboard access
-  //   if (isOrganizerRole && roleToUse === UserRole.ORGANIZER) {
-  //     try {
-  //       const { getDashboardAccess } = await import('@/lib/organizer-api');
-  //       const accessResponse = await getDashboardAccess();
-  //       if (accessResponse.success && !accessResponse.data.hasAccess) {
-  //         // No event created - redirect to event creation
-  //         return '/user/create-event';
-  //       }
-  //     } catch (error) {
-  //       console.error('Error checking dashboard access:', error);
-  //       // On error, redirect to event creation to be safe
-  //       return '/user/create-event';
-  //     }
-  //   }
+    // For organizers, check if they have dashboard access
+    if (isOrganizerRole && roleToUse === UserRole.ORGANIZER) {
+      try {
+        const { getDashboardAccess } = await import('@/lib/organizer-api');
+        const accessResponse = await getDashboardAccess();
+        if (accessResponse.success && !accessResponse.data.hasAccess) {
+          // No event created - redirect to event creation
+          return '/organizer/events/create-standalone';
+        }
+      } catch (error) {
+        console.error('Error checking dashboard access:', error);
+        // On error, redirect to event creation to be safe
+        return '/organizer/events/create-standalone';
+      }
+    }
 
-  //   if (isOrganizerRole) return '/user/dashboard';
-  //   return '/user/dashboard';
-  // };
+    if (isOrganizerRole) return '/user/dashboard';
+    return '/user/dashboard';
+  };
 
   const getProfileRoute = () => {
     // Use user's actual role
@@ -136,9 +136,34 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
       UserRole.ORGANIZER_TELLER,
     ].includes(roleToUse);
     
-    if (isOrganizerRole) return '/user/profile';
+    // Active organizers use OrganizerLayout; pending/attendee stay in UserLayout
+    if (isOrganizerRole && user?.status === UserStatus.ACTIVE) return '/organizer/settings/profile';
     if (isAdminRole) return '/admin/profile';
-    return '/user/profile';
+    return '/user/settings/profile';
+  };
+
+  const getSettingsRoute = () => {
+    // Use user's actual role
+    const roleToUse = user?.role;
+    
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(roleToUse);
+    
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(roleToUse);
+    
+    // Active organizers use OrganizerLayout; pending/attendee stay in UserLayout
+    if (isOrganizerRole && user?.status === UserStatus.ACTIVE) return '/organizer/settings';
+    if (isAdminRole) return '/admin/settings';
+    return '/user/settings';
   };
 
 
@@ -183,48 +208,34 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
             </div>
 
             {/* Menu Items */}
-            {/* For organizers without events: Show simplified menu */}
-            {user.role === UserRole.ORGANIZER && hasEvent === false ? (
-              <>
-                {/* <button
-                  onClick={() => handleNavigate('/user/create-event')}
-                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Event
-                </button> */}
-              </>
-            ) : (
-              <>
-                {/* Full menu for organizers with events or non-organizers */}
-                <button
-                  onClick={() => handleNavigate(getProfileRoute())}
-                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
-                >
-                  <User className="w-4 h-4" />
-                  Profile
-                </button>
+            <button
+              onClick={() => handleNavigate(getProfileRoute())}
+              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
+            >
+              <User className="w-4 h-4" />
+              View Profile
+            </button>
 
-                {/* <button
-                  onClick={async () => {
-                    const route = await getDashboardRoute();
-                    handleNavigate(route);
-                  }}
-                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
-                >
-                  <LayoutDashboard className="w-4 h-4" />
-                  Dashboard
-                </button> */}
+            <button
+              onClick={() => handleNavigate(getSettingsRoute())}
+              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </button>
 
-                <button
-                  onClick={() => handleNavigate(getProfileRoute())}
-                  className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
-                >
-                  <Settings className="w-4 h-4" />
-                  Settings
-                </button>
-              </>
-            )}
+            <div className="border-t border-border my-1" />
+
+            <button
+              onClick={async () => {
+                const route = await getDashboardRoute();
+                handleNavigate(route);
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              Dashboard
+            </button>
 
             <div className="border-t border-border my-1" />
 

@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from "react";
-import { Menu, User, ChevronDown, LogOut, Settings, Bell } from "lucide-react";
+import { Menu, User, ChevronDown, LogOut, Settings, Bell, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { ThemeToggle } from "../../components/ThemeToggle";
@@ -165,6 +165,18 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
                 >
                   <Settings className="h-4 w-4" />
                   <span>Settings</span>
+                </button>
+              </div>
+              <div className="border-t border-border p-2">
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    navigate('/admin/dashboard');
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span>Dashboard</span>
                 </button>
               </div>
               <div className="border-t border-border p-2">

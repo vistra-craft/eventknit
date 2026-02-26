@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getUserRegisteredEvents } from '../lib/event-api';
 import { getOrganizerEvents } from '../lib/organizer-api';
+import { getSavedEvents } from '../lib/saved-events-api';
 import { useAuth } from './useAuth';
 import { UserRole } from '../types/auth';
 
@@ -186,9 +187,25 @@ export const useMyEvents = (): UseMyEventsReturn => {
     try {
       setSavedLoading(true);
       setSavedError(null);
-      // TODO: Replace with actual saved events API when available
-      // For now, using empty array
-      setSavedEvents([]);
+      const response = await getSavedEvents({ page: 1, limit: 100 });
+      if (response.success && response.data) {
+        setSavedEvents(
+          response.data.map((savedEvent) => {
+            const event = savedEvent.event;
+            return {
+              id: event.id,
+              title: event.title,
+              date: event.startDate,
+              location: event.location || '',
+              type: event.eventType || 'In-Person',
+              image:
+                event.coverImage ||
+                'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',
+              category: event.category || undefined,
+            };
+          }),
+        );
+      }
     } catch (error) {
       console.error('Error fetching saved events:', error);
       setSavedError('Failed to load saved events');

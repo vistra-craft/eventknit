@@ -4,7 +4,9 @@
  */
 
 import { lazy, createElement } from 'react';
+import { Navigate } from 'react-router-dom';
 import type { RouteConfig } from './types';
+
 
 // Lazy load user dashboard page components
 const DashboardHome = lazy(() => import('../pages/user/DashboardHome'));
@@ -198,6 +200,29 @@ export const userRoutes: RouteConfig[] = [
   {
     path: 'profile',
     element: createElement(UserProfilePage),
+  },
+
+  // Settings — rendered inline in DashboardHome via ?view=settings query param
+  // Direct URL visits are redirected to the dashboard settings view
+  {
+    path: 'settings',
+    element: createElement(Navigate, { to: '/user/dashboard?view=settings', replace: true }),
+  },
+  {
+    path: 'settings/profile',
+    element: createElement(Navigate, { to: '/user/dashboard?view=settings&tab=profile', replace: true }),
+  },
+  {
+    path: 'settings/notifications',
+    element: createElement(Navigate, { to: '/user/dashboard?view=settings&tab=notifications', replace: true }),
+  },
+  {
+    path: 'settings/security',
+    element: createElement(Navigate, { to: '/user/dashboard?view=settings&tab=security', replace: true }),
+  },
+  {
+    path: 'settings/appearance',
+    element: createElement(Navigate, { to: '/user/dashboard?view=settings&tab=appearance', replace: true }),
   },
 
   // Financial

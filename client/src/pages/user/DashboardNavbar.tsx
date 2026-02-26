@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, LogOut, User, Ticket, Heart } from "lucide-react";
+import { Home, LogOut, Settings, LayoutDashboard } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import Logo from '@/components/Logo';
 import { useAuth } from "../../hooks/useAuth";
 import { ThemeToggle } from "../../components/ThemeToggle";
+import { UserRole } from "@/types/auth";
 
 interface User {
   name: string;
@@ -20,14 +21,39 @@ interface DashboardNavbarProps {
 
 const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user: authUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
+  const getDashboardRoute = async () => {
+    if (!authUser) return '/user/dashboard';
+    
+    const roleToUse = authUser.role;
+    
+    const isAdminRole = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_STAFF,
+      UserRole.MARKETER,
+      UserRole.SUPPORT,
+      UserRole.TELLER,
+    ].includes(roleToUse);
+    
+    const isOrganizerRole = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_TELLER,
+    ].includes(roleToUse);
+    
+    if (isAdminRole) return '/admin/dashboard';
+    if (isOrganizerRole) return '/user/dashboard';
+    return '/user/dashboard';
+  };
+
   const menuItems = [
-    { label: "My Events", icon: Home, onClick: () => navigate("/user/dashboard") },
-    { label: "My Tickets", icon: Ticket, onClick: () => navigate("/user/tickets") },
-    { label: "Saved", icon: Heart, onClick: () => navigate("/user/saved") },
-    { label: "Profile", icon: User, onClick: () => navigate("/user/profile") },
+    {
+      label: "Settings",
+      icon: Settings,
+      onClick: () => navigate("/user/dashboard?view=settings"),
+    },
   ];
 
   return (
@@ -81,6 +107,20 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
                           {item.label}
                         </button>
                       ))}
+                    </div>
+
+                    <div className="border-t border-border py-1">
+                      <button
+                        onClick={async () => { 
+                          const route = await getDashboardRoute();
+                          navigate(route);
+                          setIsOpen(false); 
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-muted flex items-center gap-2"
+                      >
+                        <LayoutDashboard className="w-4 h-4 text-muted-foreground" />
+                        Dashboard
+                      </button>
                     </div>
 
                     <div className="border-t border-border py-1">

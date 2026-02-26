@@ -70,10 +70,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // Gate: PENDING_APPROVAL organizers cannot access organizer routes
+  // Exception: Allow access to settings and profile-setup so they can manage their own profile
+  const isPendingAllowedPath =
+    location.pathname.startsWith('/organizer/settings') ||
+    location.pathname.startsWith('/organizer/profile');
   if (
     user.role === UserRole.ORGANIZER &&
     user.status === UserStatus.PENDING_APPROVAL &&
-    location.pathname.startsWith('/organizer')
+    location.pathname.startsWith('/organizer') &&
+    !isPendingAllowedPath
   ) {
     return <Navigate to="/user/dashboard" replace />;
   }

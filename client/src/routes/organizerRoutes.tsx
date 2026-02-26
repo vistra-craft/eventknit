@@ -221,38 +221,38 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
   //   allowedRoles: NON_TELLER_ROLES,
   // },
 
-  // Settings
+  // Settings — open to all authenticated users (ATTENDEE sees profile/security/notifications/appearance; organizer-specific sections hidden by role)
   {
     path: 'settings',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
   {
     path: 'settings/profile',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
   {
     path: 'settings/notifications',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
   {
     path: 'settings/security',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
   {
     path: 'settings/appearance',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
 
   // Profile (legacy route, redirects to settings)
   {
     path: 'profile',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
 
   // Verification & Subscription

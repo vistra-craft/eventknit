@@ -27,6 +27,7 @@ import { SubscriptionTierBadge } from "@/components/organizer/SubscriptionTierBa
 import { UpgradePrompt } from "@/components/organizer/UpgradePrompt";
 import { DashboardSkeleton } from "@/components/loaders/DashboardSkeleton";
 import { Loader } from "@/components/ui/loader";
+import { OrganizerWelcomeScreen } from "@/components/OrganizerWelcomeScreen";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useOrganizerDashboardStats,
@@ -500,6 +501,8 @@ const UnifiedOrganizerDashboard = () => {
             )}
           </div>
       </div>
+      {/* Welcome screen for newly promoted organizers */}
+      <OrganizerWelcomeScreen />
     </div>
   );
 };

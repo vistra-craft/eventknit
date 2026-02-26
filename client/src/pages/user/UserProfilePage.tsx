@@ -22,7 +22,6 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
 import DashboardNavbar from "./DashboardNavbar";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import BackButton from "@/components/BackButton";
 import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
@@ -659,10 +658,7 @@ const UserProfilePage = () => {
         </Card>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <RoleSwitcher />
-          </div>
+
         </div>
       </div>
     </div>

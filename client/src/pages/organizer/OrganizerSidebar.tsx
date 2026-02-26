@@ -39,7 +39,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
     analytics: location.pathname.startsWith('/organizer/analytics'),
     marketing: location.pathname.startsWith('/organizer/marketing'),
     finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts') || location.pathname.startsWith('/organizer/subscription'),
-    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
+    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/verification'),
   });
 
   const navigationItems = [
@@ -114,6 +114,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Notifications", href: "/organizer/settings/notifications" },
         { name: "Security", href: "/organizer/settings/security" },
         { name: "Appearance", href: "/organizer/settings/appearance" },
+        { name: "Verification", href: "/organizer/verification" },
       ]
     },
   ];
@@ -133,7 +134,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         analytics: location.pathname.startsWith('/organizer/analytics'),
         marketing: location.pathname.startsWith('/organizer/marketing'),
         finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts') || location.pathname.startsWith('/organizer/subscription'),
-        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
+        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/verification'),
       }));
     }
   }, [location.pathname, isOrganizerStaff]);

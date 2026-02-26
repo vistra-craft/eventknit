@@ -231,6 +231,131 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 };
 
 /**
+ * Alert Dialog - Single-action dialog for informational alerts
+ */
+interface AlertDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  variant?: DialogVariant;
+  confirmText?: string;
+  onConfirm?: () => void | Promise<void>;
+  loading?: boolean;
+  icon?: LucideIcon;
+  children?: React.ReactNode;
+}
+
+const AlertDialog: React.FC<AlertDialogProps> = ({
+  open,
+  onOpenChange,
+  title,
+  description,
+  variant = "info",
+  confirmText = "OK",
+  onConfirm,
+  loading = false,
+  icon: CustomIcon,
+  children,
+}) => {
+  const [isLoading, setIsLoading] = React.useState(false);
+  const config = variantConfig[variant];
+  const Icon = CustomIcon || config.icon;
+
+  const handleConfirm = async () => {
+    setIsLoading(true);
+    try {
+      await onConfirm?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Alert action failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const showLoading = loading || isLoading;
+
+  return (
+    <AlertDialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <AlertDialogPrimitive.Portal>
+        <AlertDialogPrimitive.Overlay
+          className={cn(
+            "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+          )}
+        />
+
+        <AlertDialogPrimitive.Content
+          className={cn(
+            "fixed left-[50%] top-[50%] z-50 w-full max-w-md translate-x-[-50%] translate-y-[-50%]",
+            "bg-card-surface border border-border rounded-2xl shadow-2xl",
+            "p-0 overflow-hidden",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]",
+            "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
+            "duration-200"
+          )}
+        >
+          <div className="p-6 pt-8">
+            <div className="flex justify-center mb-4">
+              <div
+                className={cn(
+                  "w-14 h-14 rounded-full flex items-center justify-center",
+                  config.iconBg
+                )}
+              >
+                <Icon className={cn("w-7 h-7", config.iconColor)} />
+              </div>
+            </div>
+
+            <div className="text-center mb-6">
+              <AlertDialogPrimitive.Title className="text-lg font-semibold text-foreground mb-2">
+                {title}
+              </AlertDialogPrimitive.Title>
+              {description && (
+                <AlertDialogPrimitive.Description className="text-sm text-muted-foreground">
+                  {description}
+                </AlertDialogPrimitive.Description>
+              )}
+            </div>
+
+            {children && <div className="mb-6">{children}</div>}
+          </div>
+
+          <div className="px-6 pb-6">
+            <AlertDialogPrimitive.Action asChild>
+              <button
+                onClick={handleConfirm}
+                disabled={showLoading}
+                className={cn(
+                  buttonVariants({
+                    variant: config.confirmButton as "default" | "destructive" | "success",
+                  }),
+                  "w-full"
+                )}
+              >
+                {showLoading ? (
+                  <>
+                    <Loader size="sm" className="mr-2" />
+                    <span>Please wait...</span>
+                  </>
+                ) : (
+                  confirmText
+                )}
+              </button>
+            </AlertDialogPrimitive.Action>
+          </div>
+        </AlertDialogPrimitive.Content>
+      </AlertDialogPrimitive.Portal>
+    </AlertDialogPrimitive.Root>
+  );
+};
+
+/**
  * Delete Confirm Dialog - Pre-configured for delete actions
  */
 interface DeleteDialogProps {
@@ -373,6 +498,7 @@ const SuccessDialog: React.FC<SuccessDialogProps> = ({
 );
 
 export {
+  AlertDialog,
   ConfirmDialog,
   DeleteDialog,
   UnsavedChangesDialog,

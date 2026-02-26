@@ -1,17 +1,17 @@
 /**
  * Unified Navbar Component
- * Enhanced navigation bar with mode awareness
- * Supports both Attending and Organizing modes
+ * Shows role badge and navigation for authenticated users
  */
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, BarChart3, type LucideIcon } from 'lucide-react';
+import { LogOut, Settings, Home, Calendar, BarChart3, Users, Wallet, MessageSquare, Heart, type LucideIcon } from 'lucide-react';
 import Logo from './Logo';
 import { useAuth } from '../hooks/useAuth';
 import { ThemeToggle } from './ThemeToggle';
-import { useDashboardMode } from '../hooks/useDashboardMode';
+import { Badge } from './ui/badge';
 import { NAV_LABELS } from '../constants/navigationLabels';
+import { UserRole } from '@/types/auth';
 
 interface MenuItem {
   label: string;
@@ -33,29 +33,83 @@ interface UnifiedNavbarProps {
 
 const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
   const navigate = useNavigate();
-  const { logout } = useAuth();
-  const { mode, canOrganize } = useDashboardMode();
+  const { logout, user: authUser } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Menu items - context aware based on mode
+  const isOrganizer = authUser?.role === UserRole.ORGANIZER;
+  const roleDisplay = isOrganizer ? '🎪 Organizer' : '👤 Attendee';
+  const roleBadgeVariant = isOrganizer ? 'default' : 'secondary';
+
+  // Role-based menu items
   const getMenuItems = (): MenuItem[] => {
-    const baseItems: MenuItem[] = [];
+    const baseItems: MenuItem[] = [
+      {
+        label: 'Dashboard',
+        icon: Home,
+        onClick: () => navigate(isOrganizer ? '/organizer/dashboard' : '/user/dashboard'),
+      },
+    ];
 
-    // Add organizing-specific items if in organizing mode
-    if (mode === 'organizing' && canOrganize) {
-      baseItems.push(
-        { label: NAV_LABELS.ANALYTICS, icon: BarChart3, onClick: () => navigate('/user/analytics') }
-      );
+    if (isOrganizer) {
+      // Organizer menu items
+      return [
+        ...baseItems,
+        {
+          label: 'My Events',
+          icon: Calendar,
+          onClick: () => navigate('/organizer/dashboard?tab=events'),
+        },
+        {
+          label: 'Analytics',
+          icon: BarChart3,
+          onClick: () => navigate('/organizer/dashboard?tab=analytics'),
+        },
+        {
+          label: 'Team',
+          icon: Users,
+          onClick: () => navigate('/organizer/team'),
+        },
+        {
+          label: 'Payouts',
+          icon: Wallet,
+          onClick: () => navigate('/organizer/settings?section=payouts'),
+        },
+        {
+          label: 'Settings',
+          icon: Settings,
+          onClick: () => navigate('/organizer/settings'),
+        },
+      ];
+    } else {
+      // Attendee menu items
+      return [
+        ...baseItems,
+        {
+          label: 'My Tickets',
+          icon: Calendar,
+          onClick: () => navigate('/user/dashboard?view=attending'),
+        },
+        {
+          label: 'Saved Events',
+          icon: Heart,
+          onClick: () => navigate('/user/dashboard?view=saved'),
+        },
+        {
+          label: 'Messages',
+          icon: MessageSquare,
+          onClick: () => navigate('/user/messages'),
+        },
+        {
+          label: 'Settings',
+          icon: Settings,
+          onClick: () => navigate('/user/dashboard?view=settings'),
+        },
+      ];
     }
-
-    baseItems.push(
-      { label: NAV_LABELS.PROFILE, icon: User, onClick: () => navigate('/user/profile') }
-    );
-
-    return baseItems;
   };
 
   const menuItems = getMenuItems();
+
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border h-14">
@@ -65,7 +119,12 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
           <Logo />
 
           {/* Right Side */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            {/* Role Badge */}
+            <Badge variant={roleBadgeVariant as 'default' | 'secondary'}>
+              {roleDisplay}
+            </Badge>
+
             {/* Theme Toggle */}
             <ThemeToggle />
 
@@ -85,9 +144,12 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
                   <div className="absolute right-0 mt-2 w-56 bg-background border border-border rounded-lg shadow-lg py-1 z-50 animate-in fade-in-0 zoom-in-95 duration-200">
-                    <div className="px-3 py-2 border-b border-border">
+                    <div className="px-3 py-2 border-b border-border space-y-2">
                       <p className="text-sm font-medium text-foreground">{user.name}</p>
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                      <Badge variant={roleBadgeVariant as 'default' | 'secondary'} className="text-xs">
+                        {roleDisplay}
+                      </Badge>
                     </div>
 
                     <div className="py-1">

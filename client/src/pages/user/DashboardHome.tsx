@@ -4,17 +4,17 @@
  * Displays all events in a unified interface
  */
 
-import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Download, Share2, Plus, Heart, Clock, Shield, User } from 'lucide-react';
+import { lazy, Suspense, useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
+import { Calendar, MapPin, Download, Share2, Plus, Heart, Settings as SettingsIcon, Sparkles } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
 import EmptyState from '../../components/EmptyState';
 import { OrganizingEventCard } from '../../components/OrganizingEventCard';
-import { OrganizerQuickActions } from '../../components/OrganizerQuickActions';
 import { useMyEvents } from '../../hooks/useMyEvents';
 import { useAuth } from '../../hooks/useAuth';
-import { UserRole, UserStatus } from '../../types/auth';
+import { UserRole } from '../../types/auth';
 import { shareEvent } from '../../lib/utils/share';
 import { downloadTicket } from '../../lib/utils/ticket';
 import { useToast } from '../../hooks/useToast';
@@ -24,6 +24,8 @@ import {
   EMPTY_STATE_MESSAGES,
   CTA_LABELS,
 } from '../../constants/navigationLabels';
+
+const SettingsPage = lazy(() => import('../organizer/OrganizerSettingsPage'));
 
 interface User {
   name: string;
@@ -39,8 +41,16 @@ export interface DashboardHomeProps {
 
 const DashboardHome = ({ user }: DashboardHomeProps) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user: authUser } = useAuth();
+
+  // Only ATTENDEE role can access this dashboard
+  // ORGANIZER role should be redirected to /organizer/dashboard
+  if (authUser?.role === UserRole.ORGANIZER) {
+    return <Navigate to="/organizer/dashboard" replace />;
+  }
+
   const {
     attendingEvents,
     organizingEvents,
@@ -48,13 +58,28 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
     attendingLoading,
     organizingLoading,
     savedLoading,
-    activeTab,
-    setActiveTab,
-    canOrganize,
   } = useMyEvents();
 
-  const isPendingOrganizer =
-    authUser?.role === UserRole.ORGANIZER && authUser?.status === UserStatus.PENDING_APPROVAL;
+  // Filter pending events for attendees (events awaiting approval)
+  const pendingEvents = organizingEvents.filter(
+    event => event.status.toLowerCase() === 'pending'
+  );
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [currentTab, setCurrentTab] = useState<'attending' | 'my-events' | 'saved' | 'settings'>('attending');
+
+  // Handle URL query parameter for settings view
+  useEffect(() => {
+    if (searchParams.get('view') === 'settings') {
+      setCurrentTab('settings');
+      // Clean up the URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('view');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -89,94 +114,43 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
     }
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
-    if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-      try {
-        // TODO: Implement delete event API call
-        toast({ title: 'Event Deleted', description: 'Your event has been deleted successfully' });
-        // Refresh organizing events
-        // refreshOrganizing();
-      } catch {
-        toast({ title: 'Error', description: 'Failed to delete event', variant: 'destructive' });
-      }
-    }
-  };
-
-  // Hide organizing features if organizer is pending approval
-  // BUT show the organizing tab if they have created events (even as ATTENDEE with pending events)
-  const showOrganizing = canOrganize && (!isPendingOrganizer || organizingEvents.length > 0);
-
-  // Tabs configuration
+  // Tabs configuration - ATTENDEE ONLY
   const tabs = [
     { key: 'attending' as const, label: TAB_LABELS.ATTENDING },
-    ...(showOrganizing ? [{ key: 'organizing' as const, label: TAB_LABELS.ORGANIZING }] : []),
+    // Show "My Events" tab if user has pending events
+    ...(pendingEvents.length > 0 ? [
+      { key: 'my-events' as const, label: 'My Events', badge: pendingEvents.length }
+    ] : []),
     { key: 'saved' as const, label: TAB_LABELS.SAVED },
+    { key: 'settings' as const, label: 'Settings', icon: SettingsIcon },
   ];
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
-      {/* Pending Approval Banner */}
-      {isPendingOrganizer && (
-        <div className="mb-6 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <Clock className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Your organizer application is under review</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Our team is reviewing your application. You'll receive an email once approved — usually within 24 hours.
-              </p>
-            </div>
-          </div>
-          {/* What to do while waiting */}
-          <div className="pl-8 space-y-2">
-            <p className="text-xs font-medium text-foreground uppercase tracking-wide">While you wait</p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 justify-start border-amber-500/30 hover:bg-amber-500/10 text-foreground"
-                onClick={() => navigate('/organizer/profile-setup')}
-              >
-                <User className="h-3.5 w-3.5" />
-                Complete your organizer profile
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2 justify-start border-amber-500/30 hover:bg-amber-500/10 text-foreground"
-                onClick={() => navigate('/organizer/verification')}
-              >
-                <Shield className="h-3.5 w-3.5" />
-                Start identity verification (KYC)
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              For paid events, identity verification is required before payouts are enabled. You can complete it now so you're ready.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-page-title mb-1">{PAGE_TITLES.MY_EVENTS}</h1>
+            <h1 className="text-page-title mb-1">
+              {currentTab === 'settings' ? 'Settings' : PAGE_TITLES.MY_EVENTS}
+            </h1>
             <p className="text-page-subtitle">
-              {activeTab === 'attending' && "Events you're attending"}
-              {activeTab === 'organizing' && "Events you're hosting"}
-              {activeTab === 'saved' && "Events you've saved"}
+              {currentTab === 'attending' && "Events you're attending"}
+              {currentTab === 'saved' && "Events you've saved"}
+              {currentTab === 'settings' && "Manage your account settings"}
             </p>
           </div>
-          <Button
-            onClick={() => navigate('/user/create-event')}
-            size="default"
-            className="w-full sm:w-auto gap-2"
-            aria-label={CTA_LABELS.CREATE_EVENT}
-          >
-            <Plus className="h-4 w-4" />
-            {CTA_LABELS.CREATE_EVENT}
-          </Button>
+          {currentTab !== 'settings' && (
+            <Button
+              onClick={() => navigate('/user/create-event')}
+              size="default"
+              className="w-full sm:w-auto gap-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm"
+              aria-label={CTA_LABELS.CREATE_EVENT}
+            >
+              <Sparkles className="h-4 w-4" />
+              {CTA_LABELS.CREATE_EVENT}
+            </Button>
+          )}
         </div>
 
         {/* Tabs */}
@@ -184,17 +158,23 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
           {tabs.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => setCurrentTab(tab.key)}
               role="tab"
-              aria-selected={activeTab === tab.key}
+              aria-selected={currentTab === tab.key}
               aria-controls={`${tab.key}-panel`}
-              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap ${
-                activeTab === tab.key
+              className={`flex-1 sm:flex-none px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 whitespace-nowrap flex items-center gap-2 ${
+                currentTab === tab.key
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
             >
+              {tab.icon && <tab.icon className="h-4 w-4" />}
               {tab.label}
+              {'badge' in tab && tab.badge && (
+                <Badge variant="destructive" className="ml-1 h-5 w-5 rounded-full flex items-center justify-center p-0 text-xs">
+                  {tab.badge}
+                </Badge>
+              )}
             </button>
           ))}
         </div>
@@ -203,7 +183,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
       {/* Tab Content */}
       <div className="min-h-[400px]">
         {/* Attending Tab */}
-        {activeTab === 'attending' && (
+        {currentTab === 'attending' && (
           <div role="tabpanel" id="attending-panel" aria-labelledby="attending-tab">
             {attendingLoading ? (
               <div className="flex items-center justify-center py-16">
@@ -285,75 +265,63 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 ))}
               </div>
             ) : (
+              <div className="space-y-6">
+                <EmptyState
+                  icon={Calendar}
+                  title="No Events Yet"
+                  description={EMPTY_STATE_MESSAGES.NO_ATTENDING_EVENTS}
+                  action={{ label: 'Browse Events', onClick: () => navigate('/') }}
+                />
+                
+                {/* Hero CTA for creating events */}
+                <div className="rounded-lg border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10 p-8 text-center space-y-4">
+                  <h3 className="text-xl font-semibold text-foreground">Ready to Create Your Own Event?</h3>
+                  <p className="text-muted-foreground max-w-sm mx-auto">
+                    Turn your idea into reality. Create an event, get it approved by our team, and become an organizer with full dashboard access.
+                  </p>
+                  <Button 
+                    size="lg"
+                    onClick={() => navigate('/user/create-event')}
+                    className="gap-2 bg-gradient-to-r from-primary to-primary/90"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Create Your First Event
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* My Events (Pending) Tab */}
+        {currentTab === 'my-events' && (
+          <div role="tabpanel" id="my-events-panel" aria-labelledby="my-events-tab" className="mt-6">
+            {organizingLoading ? (
+              <div className="flex items-center justify-center py-16">
+                <Loader size="default" aria-label="Loading your events" />
+              </div>
+            ) : pendingEvents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pendingEvents.map((event) => (
+                  <OrganizingEventCard
+                    key={event.id}
+                    event={event}
+                  />
+                ))}
+              </div>
+            ) : (
               <EmptyState
                 icon={Calendar}
-                title="No Events Yet"
-                description={EMPTY_STATE_MESSAGES.NO_ATTENDING_EVENTS}
-                action={{ label: 'Browse Events', onClick: () => navigate('/') }}
+                title="No pending events"
+                description="Events you create will appear here while waiting for approval"
+                action={{ label: 'Create an Event', onClick: () => navigate('/user/create-event') }}
               />
             )}
           </div>
         )}
 
-        {/* Organizing Tab */}
-        {activeTab === 'organizing' && (
-          <div role="tabpanel" id="organizing-panel" aria-labelledby="organizing-tab">
-            {organizingLoading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader size="default" aria-label="Loading organizing events" />
-              </div>
-            ) : (
-              <>
-                {/* Info banner for ATTENDEE users with pending events */}
-                {authUser?.role === UserRole.ATTENDEE && organizingEvents.some(e => e.status.toLowerCase() === 'pending') && (
-                  <div className="mb-6 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
-                    <div className="flex items-start gap-3">
-                      <Clock className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">Your event is awaiting approval</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          You can edit your event details or preview how it will appear to attendees once approved.
-                          Once approved, you'll be upgraded to an organizer account and gain access to full event management features.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Organizer Quick Actions - hide for ATTENDEE with only pending events */}
-                {showOrganizing && !(authUser?.role === UserRole.ATTENDEE) && (
-                  <div className="mb-6">
-                    <OrganizerQuickActions />
-                  </div>
-                )}
-
-                {/* Events Grid or Empty State */}
-                {organizingEvents.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {organizingEvents.map((event) => (
-                      <div key={event.id}>
-                        <OrganizingEventCard event={event} onDelete={handleDeleteEvent} />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState
-                    icon={Plus}
-                    title="No Events Yet"
-                    description={EMPTY_STATE_MESSAGES.NO_ORGANIZING_EVENTS}
-                    action={{
-                      label: CTA_LABELS.CREATE_FIRST_EVENT,
-                      onClick: () => navigate('/user/create-event'),
-                    }}
-                  />
-                )}
-              </>
-            )}
-          </div>
-        )}
-
         {/* Saved Tab */}
-        {activeTab === 'saved' && (
+        {currentTab === 'saved' && (
           <div role="tabpanel" id="saved-panel" aria-labelledby="saved-tab">
             {savedLoading ? (
               <div className="flex items-center justify-center py-16">
@@ -408,6 +376,15 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 action={{ label: 'Browse Events', onClick: () => navigate('/') }}
               />
             )}
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {currentTab === 'settings' && (
+          <div role="tabpanel" id="settings-panel" aria-labelledby="settings-tab">
+            <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader size="default" /></div>}>
+              <SettingsPage />
+            </Suspense>
           </div>
         )}
       </div>

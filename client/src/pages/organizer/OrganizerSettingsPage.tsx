@@ -93,7 +93,13 @@ interface OrganizerSettingsData {
 const OrganizerSettingsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, logout } = useAuth();
+
+  const isOrganizerUser = user ? [
+    UserRole.ORGANIZER,
+    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_TELLER,
+  ].includes(user.role) : false;
   const uploadAvatarMutation = useUploadAvatar();
   const { theme: currentTheme, setTheme: setThemeContext } = useTheme();
   const { toast } = useToast();
@@ -252,7 +258,7 @@ const OrganizerSettingsPage = () => {
         console.error('Failed to load organizer profile:', error);
       }
     };
-    if (user) loadOrganizerProfile();
+    if (user && isOrganizerUser) loadOrganizerProfile();
   }, [user]);
 
   // Account info (read-only)
@@ -300,7 +306,7 @@ const OrganizerSettingsPage = () => {
 
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
-    { id: "verification", label: "Verification", icon: Shield },
+    ...(isOrganizerUser ? [{ id: "verification", label: "Verification", icon: Shield }] : []),
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "appearance", label: "Appearance", icon: Palette },
     { id: "security", label: "Security", icon: Key },
@@ -350,18 +356,21 @@ const OrganizerSettingsPage = () => {
         passwordData.newPassword
       );
       
-      setSaveStatus("success");
-      setSaveMessage("Password changed successfully");
       setPasswordData({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
       setPasswordErrors({});
+      toast({
+        title: "Password changed",
+        description: "Signing you out — please log back in with your new password.",
+      });
+      // Force re-login so the user can confirm the new password works
+      // and all sessions are cleanly terminated (server already revoked refresh tokens)
       setTimeout(() => {
-        setSaveStatus("idle");
-        setSaveMessage("");
-      }, 3000);
+        logout();
+      }, 2000);
     } catch (error: unknown) {
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? (error.message as string)
@@ -427,16 +436,18 @@ const OrganizerSettingsPage = () => {
           }
         }
 
-        // 2. Save organizer profile (description, website, location, socialLinks)
-        const filteredSocialLinks = Object.fromEntries(
-          Object.entries(settings.socialLinks).filter(([, v]) => v && v.trim())
-        );
-        await updateMyOrganizerProfile({
-          description: settings.description || undefined,
-          website: settings.website || undefined,
-          location: settings.location || undefined,
-          socialLinks: Object.keys(filteredSocialLinks).length > 0 ? filteredSocialLinks : undefined,
-        });
+        // 2. Save organizer profile (description, website, location, socialLinks) — organizer only
+        if (isOrganizerUser) {
+          const filteredSocialLinks = Object.fromEntries(
+            Object.entries(settings.socialLinks).filter(([, v]) => v && v.trim())
+          );
+          await updateMyOrganizerProfile({
+            description: settings.description || undefined,
+            website: settings.website || undefined,
+            location: settings.location || undefined,
+            socialLinks: Object.keys(filteredSocialLinks).length > 0 ? filteredSocialLinks : undefined,
+          });
+        }
 
         // 3. Refresh auth context
         await refreshProfile();
@@ -689,8 +700,8 @@ const OrganizerSettingsPage = () => {
         </div>
       )}
 
-      {/* Organizer Identity */}
-      <div className="border-t pt-6 mt-6">
+      {/* Organizer Identity, Public Profile, KYC Status — organizer roles only */}
+      {isOrganizerUser && <><div className="border-t pt-6 mt-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-section-header">Organizer Identity</h3>
           {entityType && (
@@ -831,7 +842,7 @@ const OrganizerSettingsPage = () => {
             )}
           </div>
         </div>
-      </div>
+      </div></>}
 
       {/* Account Information */}
       <div className="border-t pt-6 mt-6">
@@ -1131,7 +1142,7 @@ const OrganizerSettingsPage = () => {
             <p className="text-sm text-destructive mt-1">{passwordErrors.newPassword}</p>
           )}
           <p className="text-sm text-muted-foreground mt-1">
-            Must be at least 8 characters with uppercase, lowercase, number, and special character
+            Must be at least 8 characters with at least one letter and one number
           </p>
         </div>
 
@@ -1170,8 +1181,8 @@ const OrganizerSettingsPage = () => {
           )}
         </div>
 
-        <Button 
-          variant="outline" 
+        <Button
+          className="bg-foreground text-background hover:bg-foreground/90"
           onClick={handlePasswordChange}
           disabled={isSaving}
         >

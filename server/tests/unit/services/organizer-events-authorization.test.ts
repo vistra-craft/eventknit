@@ -75,7 +75,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        { limit: 10 }
+        { limit: 10 },
       );
 
       expect(result.events).toHaveLength(1);
@@ -96,7 +96,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
             organizerId: 'user-123',
             deletedAt: null,
           }),
-        })
+        }),
       );
     });
 
@@ -107,7 +107,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-456',
         UserRole.ATTENDEE,
-        {}
+        {},
       );
 
       expect(result.events).toEqual([]);
@@ -124,7 +124,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        { status: 'PENDING' }
+        { status: 'PENDING' },
       );
 
       expect(result.events).toHaveLength(1);
@@ -136,7 +136,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
           where: expect.objectContaining({
             status: 'PENDING',
           }),
-        })
+        }),
       );
     });
 
@@ -147,7 +147,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        { search: 'Conference' }
+        { search: 'Conference' },
       );
 
       // Verify search was applied
@@ -164,7 +164,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
           expect.objectContaining({
             location: { contains: 'Conference', mode: 'insensitive' },
           }),
-        ])
+        ]),
       );
     });
   });
@@ -179,7 +179,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ORGANIZER,
-        {}
+        {},
       );
 
       expect(result.events).toHaveLength(1);
@@ -197,7 +197,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ORGANIZER_STAFF,
-        {}
+        {},
       );
 
       expect(result.events).toHaveLength(1);
@@ -215,7 +215,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ORGANIZER_TELLER,
-        {}
+        {},
       );
 
       expect(result.events).toHaveLength(1);
@@ -233,7 +233,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.SUPERADMIN,
-        {}
+        {},
       );
 
       expect(result.events).toHaveLength(1);
@@ -247,7 +247,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ADMIN_STAFF,
-        {}
+        {},
       );
 
       expect(result.events).toHaveLength(1);
@@ -263,16 +263,16 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
         OrganizerService.getOrganizerEvents(
           'user-123',
           UserRole.MARKETER,
-          {}
-        )
+          {},
+        ),
       ).rejects.toThrow(AuthorizationError);
 
       await expect(
         OrganizerService.getOrganizerEvents(
           'user-123',
           UserRole.MARKETER,
-          {}
-        )
+          {},
+        ),
       ).rejects.toThrow('You do not have permission to view events');
 
       expect(prismaMock.event.findMany).not.toHaveBeenCalled();
@@ -283,8 +283,8 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
         OrganizerService.getOrganizerEvents(
           'user-123',
           UserRole.SUPPORT,
-          {}
-        )
+          {},
+        ),
       ).rejects.toThrow(AuthorizationError);
 
       expect(prismaMock.event.findMany).not.toHaveBeenCalled();
@@ -295,8 +295,8 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
         OrganizerService.getOrganizerEvents(
           'user-123',
           UserRole.TELLER,
-          {}
-        )
+          {},
+        ),
       ).rejects.toThrow(AuthorizationError);
 
       expect(prismaMock.event.findMany).not.toHaveBeenCalled();
@@ -307,8 +307,8 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
         OrganizerService.getOrganizerEvents(
           'user-123',
           UserRole.ADMIN,
-          {}
-        )
+          {},
+        ),
       ).rejects.toThrow(AuthorizationError);
 
       expect(prismaMock.event.findMany).not.toHaveBeenCalled();
@@ -327,7 +327,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        { status: 'APPROVED' }
+        { status: 'APPROVED' },
       );
 
       expect(prismaMock.event.findMany).toHaveBeenCalledWith(
@@ -335,7 +335,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
           where: expect.objectContaining({
             status: 'APPROVED',
           }),
-        })
+        }),
       );
     });
 
@@ -343,7 +343,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        { category: 'Technology' }
+        { category: 'Technology' },
       );
 
       expect(prismaMock.event.findMany).toHaveBeenCalledWith(
@@ -351,7 +351,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
           where: expect.objectContaining({
             category: 'Technology',
           }),
-        })
+        }),
       );
     });
 
@@ -359,7 +359,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        { upcoming: true }
+        { upcoming: true },
       );
 
       const call = prismaMock.event.findMany.mock.calls[0][0];
@@ -371,14 +371,14 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        { page: 2, limit: 20 }
+        { page: 2, limit: 20 },
       );
 
       expect(prismaMock.event.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           skip: 20, // (page - 1) * limit = (2 - 1) * 20
           take: 20,
-        })
+        }),
       );
     });
 
@@ -386,14 +386,14 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        {}
+        {},
       );
 
       expect(prismaMock.event.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           skip: 0,
           take: 50,
-        })
+        }),
       );
     });
   });
@@ -411,7 +411,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        {}
+        {},
       );
 
       expect(result.events).toHaveLength(1);
@@ -433,7 +433,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        {}
+        {},
       );
 
       // Should count confirmed registrations: 2 + 3 = 5
@@ -455,7 +455,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
         UserRole.ATTENDEE,
-        {}
+        {},
       );
 
       // Should sum confirmed registrations: 1000 + 1500 = 2500
