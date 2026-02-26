@@ -1,18 +1,22 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   Calendar,
   DollarSign,
   Star,
   Eye,
-  Edit,
   CheckCircle,
   XCircle,
   FileText,
   Shield,
   User,
-  Download,
-  AlertCircle
+  Mail,
+  Phone,
+  Globe,
+  MapPin,
+  Building2,
+  Briefcase,
+  AlertCircle,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import BackButton from "@/components/BackButton";
@@ -29,63 +33,21 @@ import {
   getEmergencyContact,
   type User as ApiUser,
   type OrganizerProfile,
-  type EmergencyContact
+  type EmergencyContact,
 } from "@/lib/admin-api";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 
-interface OrganizerDetails {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  company: string;
-  status: "verified" | "pending" | "suspended" | "rejected";
-  verificationDate?: string;
-  totalEvents: number;
-  totalRevenue: number;
-  rating: number;
-  joinDate: string;
-  lastActive: string;
-  location: string;
-  website?: string;
-  description?: string;
-  avatar?: string;
-  businessLicense?: string;
-  taxId?: string;
-  bankAccount?: string;
-  emergencyContact?: {
-    name: string;
-    phone: string;
-    relationship: string;
-  };
-  supportTickets?: Array<{
-    id: string;
-    subject: string;
-    status: "open" | "in_progress" | "resolved" | "closed";
-    priority: "low" | "medium" | "high" | "urgent";
-    createdAt: string;
-    updatedAt: string;
-  }>;
-}
-
-interface OrganizerEvent {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  attendees: number;
-  revenue: number;
-  status: "active" | "completed" | "cancelled" | "pending";
-  category: string;
-  ticketPrice: number;
-  totalTickets: number;
-  soldTickets: number;
-}
+const SOCIAL_PLATFORM_LABELS: Record<string, string> = {
+  facebook: "Facebook",
+  twitter: "X (Twitter)",
+  instagram: "Instagram",
+  linkedin: "LinkedIn",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+};
 
 const OrganizerDetailsPage = () => {
   const { organizerId } = useParams();
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [userData, setUserData] = useState<ApiUser | null>(null);
   const [organizerProfileData, setOrganizerProfileData] = useState<OrganizerProfile | null>(null);
@@ -94,9 +56,8 @@ const OrganizerDetailsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Fetch user data on mount
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchData = async () => {
       if (!organizerId) {
         setError("Organizer ID not provided");
         setLoading(false);
@@ -106,18 +67,18 @@ const OrganizerDetailsPage = () => {
       try {
         setLoading(true);
         setError(null);
+
         const response = await getUserById(organizerId);
         if (response.success && response.data?.user) {
           setUserData(response.data.user);
 
-          // Fetch extended profile data
           try {
             const profileResponse = await getOrganizerProfile(organizerId);
             if (profileResponse.success && profileResponse.data?.organizerProfile) {
               setOrganizerProfileData(profileResponse.data.organizerProfile);
             }
           } catch {
-            console.log("No organizer profile found, using defaults");
+            // No organizer profile yet — fine
           }
 
           try {
@@ -126,168 +87,20 @@ const OrganizerDetailsPage = () => {
               setEmergencyContactData(contactResponse.data.emergencyContact);
             }
           } catch {
-            console.log("No emergency contact found");
+            // No emergency contact — fine
           }
         } else {
           setError("Organizer not found");
         }
-      } catch (err) {
-        console.error("Error fetching organizer:", err);
+      } catch {
         setError("Failed to load organizer details");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData();
+    fetchData();
   }, [organizerId]);
-
-  // Build organizerData from API response + extended profile data
-  const organizerData: OrganizerDetails = {
-    id: userData?.id || organizerId || "",
-    firstName: userData?.firstName || "",
-    lastName: userData?.lastName || "",
-    email: userData?.email || "",
-    phone: userData?.phoneNumber || undefined,
-    company: userData?.organizationName || "Not specified",
-    status: userData?.status === "ACTIVE" ? "verified" : userData?.status === "SUSPENDED" ? "suspended" : "pending",
-    verificationDate: userData?.isEmailVerified ? userData.createdAt : undefined,
-    totalEvents: organizerProfileData?.totalEvents || 0,
-    totalRevenue: organizerProfileData?.totalRevenue ? Number(organizerProfileData.totalRevenue) : 0,
-    rating: organizerProfileData?.rating ? Number(organizerProfileData.rating) : 0,
-    joinDate: userData?.createdAt || new Date().toISOString(),
-    lastActive: userData?.updatedAt || new Date().toISOString(),
-    location: organizerProfileData?.location || "Not specified",
-    website: organizerProfileData?.website || undefined,
-    description: organizerProfileData?.description || undefined,
-    avatar: undefined,
-    businessLicense: organizerProfileData?.businessLicense || undefined,
-    taxId: organizerProfileData?.taxId || undefined,
-    bankAccount: organizerProfileData?.bankAccountLast4 ? `****${organizerProfileData.bankAccountLast4}` : undefined,
-    emergencyContact: emergencyContactData ? {
-      name: emergencyContactData.name,
-      phone: emergencyContactData.phone,
-      relationship: emergencyContactData.relationship
-    } : undefined,
-    supportTickets: []
-  };
-
-  // Mock events data
-  const organizerEvents: OrganizerEvent[] = [
-    {
-      id: "EVT-001",
-      title: "Tech Innovation Summit 2024",
-      date: "2024-03-15",
-      location: "San Francisco, CA",
-      attendees: 1250,
-      revenue: 45000,
-      status: "active",
-      category: "Technology",
-      ticketPrice: 299,
-      totalTickets: 1500,
-      soldTickets: 1250
-    },
-    {
-      id: "EVT-002",
-      title: "AI & Machine Learning Workshop",
-      date: "2024-02-20",
-      location: "San Francisco, CA",
-      attendees: 300,
-      revenue: 15000,
-      status: "completed",
-      category: "Technology",
-      ticketPrice: 199,
-      totalTickets: 350,
-      soldTickets: 300
-    },
-    {
-      id: "EVT-003",
-      title: "Startup Networking Event",
-      date: "2024-01-25",
-      location: "San Francisco, CA",
-      attendees: 200,
-      revenue: 8000,
-      status: "completed",
-      category: "Business",
-      ticketPrice: 99,
-      totalTickets: 250,
-      soldTickets: 200
-    },
-    {
-      id: "EVT-004",
-      title: "Future of Web Development",
-      date: "2024-04-10",
-      location: "San Francisco, CA",
-      attendees: 0,
-      revenue: 0,
-      status: "pending",
-      category: "Technology",
-      ticketPrice: 149,
-      totalTickets: 400,
-      soldTickets: 0
-    }
-  ];
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, string> = {
-      verified: "APPROVED",
-      pending: "PENDING",
-      suspended: "SUSPENDED",
-      rejected: "DECLINED"
-    };
-    const mappedStatus = statusMap[status] || status;
-    return getEventStatusBadgeClass(mappedStatus);
-  };
-
-  const getEventStatusBadge = (eventStatus: string) => {
-    const statusMap: Record<string, string> = {
-      active: "ACTIVE",
-      completed: "APPROVED",
-      cancelled: "DECLINED",
-      pending: "PENDING"
-    };
-    const mappedStatus = statusMap[eventStatus] || eventStatus;
-    return getEventStatusBadgeClass(mappedStatus);
-  };
-
-  const getTicketStatusBadge = (status: string) => {
-    const variants = {
-      open: "bg-destructive/10 text-destructive border-destructive",
-      in_progress: "bg-warning/10 text-warning border-warning",
-      resolved: "bg-success/10 text-success border-success",
-      closed: "bg-muted text-foreground border-border"
-    };
-    return variants[status as keyof typeof variants] || "bg-muted text-foreground border-border";
-  };
-
-  const getPriorityBadge = (priority: string) => {
-    const variants = {
-      low: "bg-muted text-foreground border-border",
-      medium: "bg-primary/10 text-primary border-primary",
-      high: "bg-orange-100 text-orange-800 border-orange-200",
-      urgent: "bg-destructive/10 text-destructive border-destructive"
-    };
-    return variants[priority as keyof typeof variants] || "bg-muted text-foreground border-border";
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const handleEdit = () => {
-    navigate(`/admin/users/organizers/${organizerData.id}/edit`);
-  };
 
   const handleVerify = async () => {
     if (!organizerId) return;
@@ -297,8 +110,8 @@ const OrganizerDetailsPage = () => {
       if (response.success) {
         setUserData(prev => prev ? { ...prev, status: "ACTIVE" as const } : null);
       }
-    } catch (err) {
-      console.error("Error verifying organizer:", err);
+    } catch {
+      // handle silently
     } finally {
       setActionLoading(false);
     }
@@ -312,417 +125,408 @@ const OrganizerDetailsPage = () => {
       if (response.success) {
         setUserData(prev => prev ? { ...prev, status: "SUSPENDED" as const } : null);
       }
-    } catch (err) {
-      console.error("Error suspending organizer:", err);
+    } catch {
+      // handle silently
     } finally {
       setActionLoading(false);
     }
   };
 
-  // Loading state
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, string> = {
+      ACTIVE: "APPROVED",
+      SUSPENDED: "SUSPENDED",
+      PENDING_APPROVAL: "PENDING",
+      DEACTIVATED: "DECLINED",
+    };
+    return getEventStatusBadgeClass(statusMap[status] || status);
+  };
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+  const socialLinks = organizerProfileData
+    ? (organizerProfileData as unknown as { socialLinks?: Record<string, string> }).socialLinks
+    : null;
+
+  const filledSocialLinks = socialLinks
+    ? Object.entries(socialLinks).filter(([, v]) => v?.trim())
+    : [];
+
   if (loading) {
     return (
-        <div className="flex items-center justify-center h-96">
-          <Loader />
-          <span className="ml-2 text-muted-foreground">Loading organizer details...</span>
-        </div>
+      <div className="flex items-center justify-center h-96">
+        <Loader />
+        <span className="ml-2 text-muted-foreground">Loading organizer details...</span>
+      </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-        <div className="space-y-6">
-          <BackButton to="/admin/users/organizers" label="Back to Organizers" />
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        </div>
+      <div className="space-y-6">
+        <BackButton to="/admin/users/organizers" label="Back to Organizers" />
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
+  if (!userData) return null;
+
+  const status = userData.status;
+  const totalRevenue = organizerProfileData?.totalRevenue ? Number(organizerProfileData.totalRevenue) : 0;
+  const rating = organizerProfileData?.rating ? Number(organizerProfileData.rating) : null;
+  const totalEvents = organizerProfileData?.totalEvents || 0;
+
   return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <BackButton to="/admin/users/organizers" label="Back to Organizers" />
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">
-                {organizerData.firstName} {organizerData.lastName}
-              </h1>
-              <p className="text-muted-foreground">{organizerData.company}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export Data
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleEdit}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Details
-            </Button>
-            {organizerData.status === 'pending' && (
-              <Button size="sm" onClick={handleVerify} disabled={actionLoading}>
-                {actionLoading ? <Loader className="inline mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                Verify
-              </Button>
-            )}
-            {organizerData.status === 'verified' && (
-              <Button variant="destructive" size="sm" onClick={handleSuspend} disabled={actionLoading}>
-                {actionLoading ? <Loader className="inline mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
-                Suspend
-              </Button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <BackButton to="/admin/users/organizers" label="Back to Organizers" />
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">
+              {userData.firstName} {userData.lastName}
+            </h1>
+            {userData.organizationName && (
+              <p className="text-sm text-muted-foreground">{userData.organizationName}</p>
             )}
           </div>
         </div>
 
-        {/* Organizer Status and Basic Info */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Shield className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Status</span>
-              </div>
-              <Badge className={`text-xs ${getStatusBadge(organizerData.status)}`}>
-                {organizerData.status}
-              </Badge>
-            </CardContent>
-          </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Calendar className="h-5 w-5 text-success" />
-                <span className="text-sm font-medium">Events</span>
-              </div>
-              <p className="text-lg font-bold text-primary">{organizerData.totalEvents}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <DollarSign className="h-5 w-5 text-success" />
-                <span className="text-sm font-medium">Revenue</span>
-              </div>
-              <p className="text-lg font-bold text-foreground">{formatCurrency(organizerData.totalRevenue)}</p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Star className="h-5 w-5 text-warning" />
-                <span className="text-sm font-medium">Rating</span>
-              </div>
-              <p className="text-lg font-bold text-primary">{organizerData.rating}</p>
-            </CardContent>
-          </Card>
+        <div className="flex items-center gap-3">
+          {status === "PENDING_APPROVAL" && (
+            <Button size="sm" onClick={handleVerify} disabled={actionLoading}>
+              {actionLoading ? <Loader className="inline mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+              Approve
+            </Button>
+          )}
+          {status === "ACTIVE" && (
+            <Button variant="destructive" size="sm" onClick={handleSuspend} disabled={actionLoading}>
+              {actionLoading ? <Loader className="inline mr-2" /> : <XCircle className="h-4 w-4 mr-2" />}
+              Suspend
+            </Button>
+          )}
+          {status === "SUSPENDED" && (
+            <Button size="sm" onClick={handleVerify} disabled={actionLoading}>
+              {actionLoading ? <Loader className="inline mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+              Reactivate
+            </Button>
+          )}
         </div>
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="support">Support</TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Organizer Information */}
-              <div className="lg:col-span-2 space-y-6">
-                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-                  <CardHeader>
-                    <CardTitle>Organizer Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center overflow-hidden">
-                        {organizerData.avatar ? (
-                          <img
-                            src={organizerData.avatar}
-                            alt={`${organizerData.firstName} ${organizerData.lastName}`}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="h-8 w-8 text-primary" />
-                        )}
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-foreground">
-                          {organizerData.firstName} {organizerData.lastName}
-                        </h3>
-                        <p className="text-muted-foreground">{organizerData.company}</p>
-                        <Badge className={`text-xs ${getStatusBadge(organizerData.status)}`}>
-                          {organizerData.status}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Email</label>
-                        <p className="text-sm text-foreground">{organizerData.email}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                        <p className="text-sm text-foreground">{organizerData.phone || "Not provided"}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Location</label>
-                        <p className="text-sm text-foreground">{organizerData.location}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Website</label>
-                        <p className="text-sm text-foreground">
-                          {organizerData.website ? (
-                            <a href={organizerData.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                              {organizerData.website}
-                            </a>
-                          ) : "Not provided"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {organizerData.description && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Description</label>
-                        <p className="text-sm text-foreground mt-1">{organizerData.description}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Business Information */}
-                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-                  <CardHeader>
-                    <CardTitle>Business Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Business License</label>
-                        <p className="text-sm text-foreground">{organizerData.businessLicense || "Not provided"}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Tax ID</label>
-                        <p className="text-sm text-foreground">{organizerData.taxId || "Not provided"}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Bank Account</label>
-                        <p className="text-sm text-foreground">{organizerData.bankAccount || "Not provided"}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Join Date</label>
-                        <p className="text-sm text-foreground">{formatDate(organizerData.joinDate)}</p>
-                      </div>
-                    </div>
-
-                    {organizerData.verificationDate && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Verification Date</label>
-                        <p className="text-sm text-foreground">{formatDate(organizerData.verificationDate)}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Emergency Contact */}
-                {organizerData.emergencyContact && (
-                  <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-                    <CardHeader>
-                      <CardTitle>Emergency Contact</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">Name</label>
-                          <p className="text-sm text-foreground">{organizerData.emergencyContact.name}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                          <p className="text-sm text-foreground">{organizerData.emergencyContact.phone}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">Relationship</label>
-                          <p className="text-sm text-foreground">{organizerData.emergencyContact.relationship}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-
-              {/* Statistics and Activity */}
-              <div className="space-y-6">
-                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-                  <CardHeader>
-                    <CardTitle>Statistics</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Total Events</span>
-                      <span className="text-sm font-medium text-foreground">{organizerData.totalEvents}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Total Revenue</span>
-                      <span className="text-sm font-medium text-foreground">{formatCurrency(organizerData.totalRevenue)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Average Rating</span>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-warning fill-current" />
-                        <span className="text-sm font-medium text-foreground">{organizerData.rating}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Last Active</span>
-                      <span className="text-sm font-medium text-foreground">{formatDateTime(organizerData.lastActive)}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-                  <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-success/50 rounded-full mt-2"></div>
-                      <div>
-                        <p className="text-sm text-foreground">Event "Tech Innovation Summit" published</p>
-                        <p className="text-xs text-muted-foreground">2 hours ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-primary/50 rounded-full mt-2"></div>
-                      <div>
-                        <p className="text-sm text-foreground">Payment received: $45,000</p>
-                        <p className="text-xs text-muted-foreground">1 day ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-warning/50 rounded-full mt-2"></div>
-                      <div>
-                        <p className="text-sm text-foreground">Support ticket resolved</p>
-                        <p className="text-xs text-muted-foreground">3 days ago</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Events Tab */}
-          <TabsContent value="events" className="space-y-6">
-            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-              <CardHeader>
-                <CardTitle>Organizer Events ({organizerEvents.length})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {organizerEvents.map((event) => (
-                    <div key={event.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <Calendar className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-foreground">{event.title}</h4>
-                          <p className="text-sm text-muted-foreground">{event.date} • {event.location}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge className={`text-xs ${getEventStatusBadge(event.status)}`}>
-                              {event.status}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">{event.category}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-foreground">
-                            {event.attendees} attendees
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {formatCurrency(event.revenue)}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {event.soldTickets}/{event.totalTickets} tickets
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Support Tab */}
-          <TabsContent value="support" className="space-y-6">
-            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-              <CardHeader>
-                <CardTitle>Support Tickets ({organizerData.supportTickets?.length || 0})</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {organizerData.supportTickets?.map((ticket) => (
-                    <div key={ticket.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <FileText className="h-5 w-5 text-primary" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-foreground">{ticket.subject}</h4>
-                          <p className="text-sm text-muted-foreground">Ticket #{ticket.id}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge className={`text-xs ${getTicketStatusBadge(ticket.status)}`}>
-                              {ticket.status}
-                            </Badge>
-                            <Badge className={`text-xs ${getPriorityBadge(ticket.priority)}`}>
-                              {ticket.priority}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="text-sm text-muted-foreground">
-                            Created: {formatDateTime(ticket.createdAt)}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Updated: {formatDateTime(ticket.updatedAt)}
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )) || (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <p>No support tickets found</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">Status</span>
+            </div>
+            <Badge className={`text-xs ${getStatusBadge(status)}`}>
+              {status === "PENDING_APPROVAL" ? "Pending" : status === "ACTIVE" ? "Active" : status.charAt(0) + status.slice(1).toLowerCase()}
+            </Badge>
+          </CardContent>
+        </Card>
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Calendar className="h-5 w-5 text-success" />
+              <span className="text-sm font-medium">Events</span>
+            </div>
+            <p className="text-lg font-bold text-primary">{totalEvents}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <DollarSign className="h-5 w-5 text-success" />
+              <span className="text-sm font-medium">Revenue</span>
+            </div>
+            <p className="text-lg font-bold text-foreground">{formatCurrency(totalRevenue)}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Star className="h-5 w-5 text-warning" />
+              <span className="text-sm font-medium">Rating</span>
+            </div>
+            <p className="text-lg font-bold text-primary">{rating ?? "—"}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="events">Events</TabsTrigger>
+          <TabsTrigger value="support">Support</TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+
+              {/* Section 1: Personal Identity */}
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    Personal Identity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-0 divide-y divide-border/40">
+                  <InfoRow icon={User} label="Full Name" value={`${userData.firstName} ${userData.lastName}`} />
+                  <InfoRow icon={Mail} label="Login Email" value={userData.email} />
+                  {userData.phoneNumber && (
+                    <InfoRow icon={Phone} label="Phone" value={userData.phoneNumber} />
+                  )}
+                  {userData.companyAffiliation && (
+                    <InfoRow icon={Briefcase} label="Company Affiliation" value={userData.companyAffiliation} />
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Section 2: Organizer Identity */}
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    Organizer Identity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-0 divide-y divide-border/40">
+                  <InfoRow
+                    icon={Building2}
+                    label="Organizer / Brand Name"
+                    value={userData.organizationName || "—"}
+                  />
+                  {userData.businessEmail && (
+                    <InfoRow icon={Mail} label="Business Email" value={userData.businessEmail} />
+                  )}
+                  {organizerProfileData?.location && (
+                    <InfoRow icon={MapPin} label="Location" value={organizerProfileData.location} />
+                  )}
+                  <InfoRow icon={Calendar} label="Joined" value={formatDate(userData.createdAt)} />
+                </CardContent>
+              </Card>
+
+              {/* Section 3: Public Profile */}
+              {(organizerProfileData?.description || organizerProfileData?.website || filledSocialLinks.length > 0) && (
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      Public Profile
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {organizerProfileData?.description && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">About</p>
+                        <p
+                          className="text-sm text-foreground leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: organizerProfileData.description }}
+                        />
+                      </div>
+                    )}
+                    {organizerProfileData?.website && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Website</p>
+                        <a
+                          href={organizerProfileData.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline"
+                        >
+                          {organizerProfileData.website}
+                        </a>
+                      </div>
+                    )}
+                    {filledSocialLinks.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Social Media</p>
+                        <div className="space-y-1">
+                          {filledSocialLinks.map(([key, url]) => (
+                            <div key={key} className="flex items-center gap-3">
+                              <span className="text-xs text-muted-foreground w-24 shrink-0">
+                                {SOCIAL_PLATFORM_LABELS[key] || key}
+                              </span>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary hover:underline truncate"
+                              >
+                                {url}
+                              </a>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Section 4: Business / KYC */}
+              {(organizerProfileData?.businessLicense || organizerProfileData?.taxId || organizerProfileData?.bankAccountLast4) && (
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      Business / KYC Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-0 divide-y divide-border/40">
+                    {organizerProfileData?.businessLicense && (
+                      <InfoRow icon={FileText} label="Business License" value={organizerProfileData.businessLicense} />
+                    )}
+                    {organizerProfileData?.taxId && (
+                      <InfoRow icon={FileText} label="Tax ID" value={organizerProfileData.taxId} />
+                    )}
+                    {organizerProfileData?.bankAccountLast4 && (
+                      <InfoRow icon={FileText} label="Bank Account" value={`****${organizerProfileData.bankAccountLast4}`} />
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Emergency Contact */}
+              {emergencyContactData && (
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      Emergency Contact
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-0 divide-y divide-border/40">
+                    <InfoRow icon={User} label="Name" value={emergencyContactData.name} />
+                    <InfoRow icon={Phone} label="Phone" value={emergencyContactData.phone} />
+                    <InfoRow icon={User} label="Relationship" value={emergencyContactData.relationship} />
+                    {emergencyContactData.email && (
+                      <InfoRow icon={Mail} label="Email" value={emergencyContactData.email} />
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Right sidebar: Statistics */}
+            <div className="space-y-6">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base">Account Statistics</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <StatRow label="Total Events" value={totalEvents.toString()} />
+                  <StatRow label="Total Revenue" value={formatCurrency(totalRevenue)} />
+                  {rating !== null && (
+                    <StatRow
+                      label="Average Rating"
+                      value={
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3.5 w-3.5 text-warning fill-current" />
+                          <span>{rating}</span>
+                        </div>
+                      }
+                    />
+                  )}
+                  <StatRow label="Email Verified" value={userData.isEmailVerified ? "Yes" : "No"} />
+                  <StatRow
+                    label="Last Updated"
+                    value={formatDate(userData.updatedAt)}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Events Tab */}
+        <TabsContent value="events" className="space-y-6">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle>Organizer Events</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12 text-muted-foreground">
+                <Calendar className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="text-sm">Event history will appear here.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Support Tab */}
+        <TabsContent value="support" className="space-y-6">
+          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+            <CardHeader>
+              <CardTitle>Support Tickets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12 text-muted-foreground">
+                <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+                <p className="text-sm">No support tickets found.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
+// ─── Small helpers ────────────────────────────────────────────────────────────
+
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.FC<{ className?: string }>;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between py-3 gap-4">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </div>
+      <div className="text-sm text-foreground text-right">{value}</div>
+    </div>
+  );
+}
+
+function StatRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium text-foreground">{value}</span>
+    </div>
+  );
+}
+
 export default OrganizerDetailsPage;
-
-
-
-

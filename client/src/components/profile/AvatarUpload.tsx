@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Upload, X, User } from "lucide-react";
+import { Upload, Pencil, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader } from "@/components/ui/loader";
@@ -88,15 +88,16 @@ export function AvatarUpload({
               </div>
             )}
 
-            {/* Remove Button */}
+            {/* Edit Button */}
             {preview && (
               <button
                 type="button"
-                onClick={handleRemove}
+                onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="absolute top-2 right-2 p-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+                className="absolute top-2 right-2 p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-md transition-all"
+                title="Change photo"
               >
-                <X className="w-4 h-4" />
+                <Pencil className="w-4 h-4" />
               </button>
             )}
           </div>

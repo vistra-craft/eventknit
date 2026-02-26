@@ -14,8 +14,6 @@ import {
   Key,
   Mail,
   Globe,
-  ChevronDown,
-  ChevronUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,6 +69,7 @@ interface OrganizerSettingsData {
   // Extended organizer profile
   description: string;
   website: string;
+  location: string;
   socialLinks: Record<string, string>;
   
   // Notification Settings
@@ -117,7 +116,6 @@ const OrganizerSettingsPage = () => {
   // Avatar upload state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [showSocialLinks, setShowSocialLinks] = useState(false);
   
   // Determine active tab from URL
   const getActiveTabFromUrl = useCallback(() => {
@@ -246,12 +244,9 @@ const OrganizerSettingsPage = () => {
             ...prev,
             description: profile.description || '',
             website: profile.website || '',
+            location: profile.location || '',
             socialLinks: (profile.socialLinks as Record<string, string>) || {},
           }));
-          // Auto-expand social links if any exist
-          if (profile.socialLinks && Object.values(profile.socialLinks as Record<string, string>).some(v => v?.trim())) {
-            setShowSocialLinks(true);
-          }
         }
       } catch (error) {
         console.error('Failed to load organizer profile:', error);
@@ -288,6 +283,7 @@ const OrganizerSettingsPage = () => {
     kycStatus: null,
     description: "",
     website: "",
+    location: "",
     socialLinks: {},
     emailNotifications: true,
     eventUpdates: true,
@@ -431,13 +427,14 @@ const OrganizerSettingsPage = () => {
           }
         }
 
-        // 2. Save organizer profile (description, website, socialLinks)
+        // 2. Save organizer profile (description, website, location, socialLinks)
         const filteredSocialLinks = Object.fromEntries(
           Object.entries(settings.socialLinks).filter(([, v]) => v && v.trim())
         );
         await updateMyOrganizerProfile({
           description: settings.description || undefined,
           website: settings.website || undefined,
+          location: settings.location || undefined,
           socialLinks: Object.keys(filteredSocialLinks).length > 0 ? filteredSocialLinks : undefined,
         });
 
@@ -666,41 +663,59 @@ const OrganizerSettingsPage = () => {
       </div>
 
       <div>
-        <Label htmlFor="companyAffiliation">Company Affiliation</Label>
+        <Label htmlFor="companyAffiliation">Company Affiliation <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
         <Input
           id="companyAffiliation"
           value={settings.companyAffiliation}
           onChange={(e) => updateSetting("companyAffiliation", e.target.value)}
-          placeholder="Enter company or institutional affiliation"
+          placeholder="Your employer or institutional affiliation"
         />
+        <p className="text-xs text-muted-foreground mt-1">Your day-job employer or affiliated institution, if different from your organizer name.</p>
       </div>
 
-      {/* Organizer-Specific Information */}
+      {/* Organizer Identity */}
       <div className="border-t pt-6 mt-6">
-        <h3 className="text-section-header mb-4">Organizer Information</h3>
-        
+        <h3 className="text-section-header mb-4">Organizer Identity</h3>
+
         <div>
-          <Label htmlFor="organizationName">Organization Name</Label>
+          <Label htmlFor="organizationName">Organizer / Brand Name</Label>
           <Input
             id="organizationName"
             value={settings.organizationName}
             onChange={(e) => updateSetting("organizationName", e.target.value)}
-            placeholder="Enter organization name"
+            placeholder="Your organization or brand name"
           />
+          <p className="text-xs text-muted-foreground mt-1">This is how attendees will identify you on event pages.</p>
         </div>
 
         <div className="mt-4">
-          <Label htmlFor="businessEmail">Business Email</Label>
+          <Label htmlFor="businessEmail">Business Email <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
           <Input
             id="businessEmail"
             type="email"
             value={settings.businessEmail}
             onChange={(e) => updateSetting("businessEmail", e.target.value)}
-            placeholder="Enter business email address"
+            placeholder="contact@yourorganization.com"
           />
+          <p className="text-xs text-muted-foreground mt-1">Public-facing contact email for attendees. Defaults to your login email if left blank.</p>
         </div>
 
         <div className="mt-4">
+          <Label htmlFor="location">Location <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+          <Input
+            id="location"
+            value={settings.location}
+            onChange={(e) => updateSetting("location", e.target.value)}
+            placeholder="Nairobi, Kenya"
+          />
+        </div>
+      </div>
+
+      {/* Public Profile */}
+      <div className="border-t pt-6 mt-6">
+        <h3 className="text-section-header mb-4">Public Profile</h3>
+
+        <div>
           <Label htmlFor="description">About Your Organization</Label>
           <div className="mt-1">
             <RichTextEditor
@@ -731,32 +746,18 @@ const OrganizerSettingsPage = () => {
         </div>
 
         <div className="mt-4">
-          <button
-            type="button"
-            onClick={() => setShowSocialLinks(!showSocialLinks)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            {showSocialLinks ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            Social Media Links
-            {Object.values(settings.socialLinks).filter(v => v?.trim()).length > 0 && (
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                {Object.values(settings.socialLinks).filter(v => v?.trim()).length} added
-              </span>
-            )}
-          </button>
-
-          {showSocialLinks && (
-            <div className="space-y-3 mt-3">
-              {SOCIAL_PLATFORMS.map(platform => (
-                <div key={platform.key} className="flex items-center gap-3">
-                  <span className="text-sm text-muted-foreground w-24 shrink-0">{platform.label}</span>
-                  <Input
-                    value={settings.socialLinks[platform.key] || ''}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      socialLinks: {
-                        ...prev.socialLinks,
-                        [platform.key]: e.target.value,
+          <Label className="mb-3 block">Social Media Links</Label>
+          <div className="space-y-3">
+            {SOCIAL_PLATFORMS.map(platform => (
+              <div key={platform.key} className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground w-24 shrink-0">{platform.label}</span>
+                <Input
+                  value={settings.socialLinks[platform.key] || ''}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    socialLinks: {
+                      ...prev.socialLinks,
+                      [platform.key]: e.target.value,
                       },
                     }))}
                     placeholder={platform.placeholder}
@@ -765,10 +766,13 @@ const OrganizerSettingsPage = () => {
                 </div>
               ))}
             </div>
-          )}
         </div>
+      </div>
 
-        <div className="mt-4">
+      {/* KYC Status */}
+      <div className="border-t pt-6 mt-6">
+        <h3 className="text-section-header mb-4">Verification</h3>
+        <div>
           <Label>KYC Status</Label>
           <div className="mt-1 flex items-center justify-between">
             {accountInfo.kycStatus ? (

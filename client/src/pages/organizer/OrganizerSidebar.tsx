@@ -13,6 +13,7 @@ import {
   Ticket,
   DollarSign,
   Paintbrush,
+  Crown,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -37,7 +38,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     analytics: location.pathname.startsWith('/organizer/analytics'),
     marketing: location.pathname.startsWith('/organizer/marketing'),
-    finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
+    finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts') || location.pathname.startsWith('/organizer/subscription'),
     settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
   });
 
@@ -93,6 +94,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       children: [
         { name: "Overview", href: "/organizer/financial" },
         { name: "Payouts", href: "/organizer/payouts" },
+        { name: "Subscription", href: "/organizer/subscription" },
       ]
     },
     {
@@ -130,7 +132,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         ...prev,
         analytics: location.pathname.startsWith('/organizer/analytics'),
         marketing: location.pathname.startsWith('/organizer/marketing'),
-        finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
+        finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts') || location.pathname.startsWith('/organizer/subscription'),
         settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
       }));
     }

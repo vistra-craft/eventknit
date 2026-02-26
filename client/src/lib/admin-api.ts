@@ -264,6 +264,7 @@ export interface User {
   isEmailVerified: boolean;
   organizationName?: string | null;
   businessEmail?: string | null;
+  companyAffiliation?: string | null;
   createdAt: string;
   updatedAt: string;
 }

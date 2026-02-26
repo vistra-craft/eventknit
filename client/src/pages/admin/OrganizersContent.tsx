@@ -7,7 +7,6 @@ import {
   Upload,
   MoreHorizontal,
   Eye,
-  Edit,
   CheckCircle,
   XCircle,
   Users,
@@ -510,12 +509,6 @@ const OrganizersContent = () => {
                                 <Eye className="h-4 w-4 mr-2" />
                                 Full Preview
                               </DropdownMenuItem>
-                              {canModifyOrganizer && (
-                                <DropdownMenuItem onClick={() => navigate(`/admin/users/organizers/${org.id}/edit`)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                              )}
                               <DropdownMenuSeparator />
                               {org.status === 'PENDING_APPROVAL' && canModifyOrganizer && (
                                 <DropdownMenuItem onClick={() => approveMutation.mutate(org.id)}>

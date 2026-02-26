@@ -54,6 +54,8 @@ const MaintenancePage = lazy(() => import('../pages/admin/system').then(m => ({ 
 
 // Moderation
 const ModerationPage = lazy(() => import('../pages/admin/ModerationPage'));
+const FlaggedEventsPage = lazy(() => import('../pages/admin/FlaggedEventsPage'));
+const CareersPage = lazy(() => import('../pages/admin/CareersPage'));
 
 // Communications
 const AdminCommunicationsPage = lazy(() => import('../pages/admin/CommunicationsPage'));
@@ -324,6 +326,16 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'moderation',
     element: createElement(ModerationPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'flagged-events',
+    element: createElement(FlaggedEventsPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'careers',
+    element: createElement(CareersPage),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
 

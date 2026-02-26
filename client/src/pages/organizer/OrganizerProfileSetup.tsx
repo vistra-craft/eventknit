@@ -16,8 +16,6 @@ import {
   Shield,
   ArrowRight,
   Globe,
-  ChevronDown,
-  ChevronUp,
   Loader2,
 } from 'lucide-react';
 
@@ -49,16 +47,22 @@ export default function OrganizerProfileSetup() {
     fromEventCreation?: boolean;
   } | null;
 
-  // Form state
-  const [organizationName, setOrganizationName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [description, setDescription] = useState('');
-  const [website, setWebsite] = useState('');
-  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
+  // Personal fields
   const [avatar, setAvatar] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [showSocialLinks, setShowSocialLinks] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [companyAffiliation, setCompanyAffiliation] = useState('');
+
+  // Organizer identity fields
+  const [organizationName, setOrganizationName] = useState('');
+  const [businessEmail, setBusinessEmail] = useState('');
+  const [location2, setLocation2] = useState('');
+
+  // Public profile fields
+  const [description, setDescription] = useState('');
+  const [website, setWebsite] = useState('');
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
 
   // Loading/saving state
   const [isLoading, setIsLoading] = useState(true);
@@ -68,20 +72,21 @@ export default function OrganizerProfileSetup() {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        // Pre-fill from user auth context
         if (user) {
           setOrganizationName(user.organizationName || '');
           setPhone(user.phoneNumber || '');
           setAvatar(user.avatar || null);
+          setCompanyAffiliation(user.companyAffiliation || '');
+          setBusinessEmail(user.businessEmail || '');
         }
 
-        // Fetch extended profile
         const response = await getMyOrganizerProfile();
         if (response.success && response.data?.organizerProfile) {
           const profile = response.data.organizerProfile;
           setDescription(profile.description || '');
           setWebsite(profile.website || '');
           setSocialLinks((profile.socialLinks as Record<string, string>) || {});
+          setLocation2(profile.location || '');
         }
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -102,7 +107,6 @@ export default function OrganizerProfileSetup() {
   const handleAvatarChange = async (file: File | null) => {
     if (file) {
       setAvatarFile(file);
-      // Show preview immediately
       const reader = new FileReader();
       reader.onloadend = () => setAvatar(reader.result as string);
       reader.readAsDataURL(file);
@@ -113,13 +117,15 @@ export default function OrganizerProfileSetup() {
     setIsSaving(true);
 
     try {
-      // 1. Update User fields (organizationName, phone, avatar)
+      // 1. Update User fields
       if (avatarFile) {
         setIsUploadingAvatar(true);
         const formData = new FormData();
         formData.append('avatar', avatarFile);
         formData.append('organizationName', organizationName);
         formData.append('phoneNumber', phone);
+        if (companyAffiliation) formData.append('companyAffiliation', companyAffiliation);
+        if (businessEmail) formData.append('businessEmail', businessEmail);
         await authApi.updateProfile(formData);
         setIsUploadingAvatar(false);
         setAvatarFile(null);
@@ -127,16 +133,19 @@ export default function OrganizerProfileSetup() {
         await authApi.updateProfile({
           organizationName: organizationName || undefined,
           phoneNumber: phone || undefined,
+          companyAffiliation: companyAffiliation || undefined,
+          businessEmail: businessEmail || undefined,
         });
       }
 
-      // 2. Update OrganizerProfile (description, website, socialLinks)
+      // 2. Update OrganizerProfile
       const filteredSocialLinks = Object.fromEntries(
         Object.entries(socialLinks).filter(([, v]) => v && v.trim())
       );
       await updateMyOrganizerProfile({
         description: description || undefined,
         website: website || undefined,
+        location: location2 || undefined,
         socialLinks: Object.keys(filteredSocialLinks).length > 0 ? filteredSocialLinks : undefined,
         markComplete: true,
       });
@@ -199,33 +208,18 @@ export default function OrganizerProfileSetup() {
         </p>
       </div>
 
-      {/* Form */}
       <div className="space-y-6">
-        {/* Avatar */}
-        <div className="rounded-2xl border border-border/40 bg-card p-6">
-          <h3 className="text-sm font-medium text-foreground mb-4">Profile Picture</h3>
+
+        {/* Section 1: Personal Identity */}
+        <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
+          <h3 className="text-sm font-semibold text-foreground">Personal Identity</h3>
+
           <AvatarUpload
             currentAvatar={avatar}
             onAvatarChange={handleAvatarChange}
             isUploading={isUploadingAvatar || uploadAvatarMutation.isPending}
             userName={organizationName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
           />
-        </div>
-
-        {/* Organization Details */}
-        <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
-          <h3 className="text-sm font-medium text-foreground mb-2">Organization Details</h3>
-
-          <div>
-            <Label htmlFor="orgName">Organization Name *</Label>
-            <Input
-              id="orgName"
-              value={organizationName}
-              onChange={(e) => setOrganizationName(e.target.value)}
-              placeholder="Your organization or brand name"
-              className="mt-1"
-            />
-          </div>
 
           <div>
             <Label htmlFor="phone">Phone Number</Label>
@@ -243,6 +237,70 @@ export default function OrganizerProfileSetup() {
           </div>
 
           <div>
+            <Label htmlFor="companyAffiliation">Company Affiliation <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Input
+              id="companyAffiliation"
+              value={companyAffiliation}
+              onChange={(e) => setCompanyAffiliation(e.target.value)}
+              placeholder="Your employer or institutional affiliation"
+              className="mt-1"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Your day-job employer or affiliated institution, if different from your organizer name.
+            </p>
+          </div>
+        </div>
+
+        {/* Section 2: Organizer Identity */}
+        <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
+          <h3 className="text-sm font-semibold text-foreground">Organizer Identity</h3>
+
+          <div>
+            <Label htmlFor="orgName">Organizer / Brand Name <span className="text-destructive">*</span></Label>
+            <Input
+              id="orgName"
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
+              placeholder="Your organization or brand name"
+              className="mt-1"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              This is how attendees will identify you on event pages.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="businessEmail">Business Email <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Input
+              id="businessEmail"
+              type="email"
+              value={businessEmail}
+              onChange={(e) => setBusinessEmail(e.target.value)}
+              placeholder="contact@yourorganization.com"
+              className="mt-1"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Public-facing contact email for attendees. Defaults to your login email if left blank.
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="location">Location <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            <Input
+              id="location"
+              value={location2}
+              onChange={(e) => setLocation2(e.target.value)}
+              placeholder="Nairobi, Kenya"
+              className="mt-1"
+            />
+          </div>
+        </div>
+
+        {/* Section 3: Public Profile */}
+        <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
+          <h3 className="text-sm font-semibold text-foreground">Public Profile</h3>
+
+          <div>
             <Label htmlFor="description">About Your Organization</Label>
             <div className="mt-1">
               <RichTextEditor
@@ -256,11 +314,6 @@ export default function OrganizerProfileSetup() {
               {getTextLength(description)}/2000 characters. This will appear on all your event pages.
             </p>
           </div>
-        </div>
-
-        {/* Website & Social Links */}
-        <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
-          <h3 className="text-sm font-medium text-foreground mb-2">Online Presence</h3>
 
           <div>
             <Label htmlFor="website">Website</Label>
@@ -277,40 +330,25 @@ export default function OrganizerProfileSetup() {
             </div>
           </div>
 
-          {/* Social links toggle */}
+          {/* Social links — always visible */}
           <div>
-            <button
-              type="button"
-              onClick={() => setShowSocialLinks(!showSocialLinks)}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {showSocialLinks ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              Social Media Links
-              {Object.values(socialLinks).filter(v => v?.trim()).length > 0 && (
-                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                  {Object.values(socialLinks).filter(v => v?.trim()).length} added
-                </span>
-              )}
-            </button>
-
-            {showSocialLinks && (
-              <div className="space-y-3 mt-3">
-                {SOCIAL_PLATFORMS.map(platform => (
-                  <div key={platform.key} className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground w-24 shrink-0">{platform.label}</span>
-                    <Input
-                      value={socialLinks[platform.key] || ''}
-                      onChange={(e) => setSocialLinks(prev => ({
-                        ...prev,
-                        [platform.key]: e.target.value,
-                      }))}
-                      placeholder={platform.placeholder}
-                      className="flex-1"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            <Label className="mb-3 block">Social Media Links</Label>
+            <div className="space-y-3">
+              {SOCIAL_PLATFORMS.map(platform => (
+                <div key={platform.key} className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground w-24 shrink-0">{platform.label}</span>
+                  <Input
+                    value={socialLinks[platform.key] || ''}
+                    onChange={(e) => setSocialLinks(prev => ({
+                      ...prev,
+                      [platform.key]: e.target.value,
+                    }))}
+                    placeholder={platform.placeholder}
+                    className="flex-1"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

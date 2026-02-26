@@ -51,7 +51,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     // Auto-expand branding section if on branding pages
     branding: location.pathname === '/admin/white-label',
     // Auto-expand support section if on support pages
-    support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback',
+    support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
     // Auto-expand service point section if on service-point pages
     workstation: location.pathname.startsWith('/admin/service-point')
   });
@@ -199,6 +199,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Support Services", href: "/admin/support" },
         { name: "Communications", href: "/admin/communications" },
         { name: "Platform Feedback", href: "/admin/feedback" },
+        { name: "Flagged Events", href: "/admin/flagged-events" },
+        { name: "Career Interest", href: "/admin/careers" },
         { name: "Notification Settings", href: "/admin/notification-settings" },
       ]
     },
@@ -229,7 +231,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       users: location.pathname.startsWith('/admin/users'),
       settings: location.pathname.startsWith('/admin/settings'),
       branding: location.pathname === '/admin/white-label',
-      support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback',
+      support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
       workstation: location.pathname.startsWith('/admin/service-point')
     }));
   }, [location.pathname]);

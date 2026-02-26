@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit, Mail, Building2, Calendar } from "lucide-react";
+import { ArrowLeft, Mail, Building2, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -98,13 +98,6 @@ const OrganizerPreviewPage = () => {
             <h1 className="text-lg font-semibold text-foreground">Organizer Preview</h1>
             <p className="text-sm text-muted-foreground">View organizer details</p>
           </div>
-          <Button
-            variant="default"
-            onClick={() => navigate(`/admin/users/organizers/${organizerId}/edit`)}
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Organizer
-          </Button>
         </div>
 
         {/* Organizer Details Card */}
