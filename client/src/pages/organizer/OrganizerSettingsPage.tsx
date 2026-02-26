@@ -259,7 +259,7 @@ const OrganizerSettingsPage = () => {
       }
     };
     if (user && isOrganizerUser) loadOrganizerProfile();
-  }, [user]);
+  }, [user, isOrganizerUser]);
 
   // Account info (read-only)
   const [accountInfo, setAccountInfo] = useState({

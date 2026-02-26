@@ -17,7 +17,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [hasEvent, setHasEvent] = useState<boolean | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -44,37 +43,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
     }
   }, [isAuthenticated, user]);
 
-  // Check if organizer has created an event when dropdown opens
-  useEffect(() => {
-    const checkHasEvent = async () => {
-      if (!isOpen || !user) return;
-      
-      const isOrganizerRole = [
-        UserRole.ORGANIZER,
-        UserRole.ORGANIZER_STAFF,
-        UserRole.ORGANIZER_TELLER,
-      ].includes(user.role);
-      
-      // Only check for full organizers (not staff/teller)
-      if (isOrganizerRole && user.role === UserRole.ORGANIZER) {
-        try {
-          const { getDashboardAccess } = await import('@/lib/organizer-api');
-          const accessResponse = await getDashboardAccess();
-          if (accessResponse.success) {
-            setHasEvent(accessResponse.data.hasAccess);
-          }
-        } catch (error) {
-          console.error('Error checking dashboard access:', error);
-          setHasEvent(false);
-        }
-      } else {
-        // Non-organizers or staff/teller always have access (or don't need it)
-        setHasEvent(true);
-      }
-    };
-
-    checkHasEvent();
-  }, [isOpen, user]);
 
   if (!isAuthenticated || !user) return null;
 

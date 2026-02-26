@@ -13,7 +13,7 @@ import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { RichTextContent } from './ui/RichTextContent';
 import { Loader } from './ui/loader';
-import { getEventById } from '../lib/event-api';
+import { getOrganizerEventById } from '../lib/organizer-api';
 import type { OrganizingEvent } from '../hooks/useMyEvents';
 import type { EventData } from '../types/event';
 
@@ -82,7 +82,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
       try {
         setPreviewLoading(true);
         setPreviewError(null);
-        const response = await getEventById(event.id);
+        const response = await getOrganizerEventById(event.id);
         if (!isActive) return;
         if (response.success && response.data?.event) {
           setPreviewEvent(response.data.event);
@@ -90,7 +90,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
           setPreviewEvent(null);
           setPreviewError('Unable to load event details.');
         }
-      } catch (error) {
+      } catch {
         if (!isActive) return;
         setPreviewEvent(null);
         setPreviewError('Unable to load event details.');

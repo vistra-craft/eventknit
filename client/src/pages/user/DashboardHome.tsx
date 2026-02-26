@@ -6,7 +6,7 @@
 
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
-import { Calendar, MapPin, Download, Share2, Plus, Heart, Settings as SettingsIcon, Sparkles } from 'lucide-react';
+import { Calendar, MapPin, Download, Share2, Heart, Settings as SettingsIcon, Sparkles } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
@@ -45,12 +45,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
   const { toast } = useToast();
   const { user: authUser } = useAuth();
 
-  // Only ATTENDEE role can access this dashboard
-  // ORGANIZER role should be redirected to /organizer/dashboard
-  if (authUser?.role === UserRole.ORGANIZER) {
-    return <Navigate to="/organizer/dashboard" replace />;
-  }
-
+  // All hooks must be called unconditionally before any early return
   const {
     attendingEvents,
     organizingEvents,
@@ -60,14 +55,6 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
     savedLoading,
   } = useMyEvents();
 
-  // Filter pending events for attendees (events awaiting approval)
-  const pendingEvents = organizingEvents.filter(
-    event => event.status.toLowerCase() === 'pending'
-  );
-
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [currentTab, setCurrentTab] = useState<'attending' | 'my-events' | 'saved' | 'settings'>('attending');
 
   // Handle URL query parameter for settings view
@@ -80,6 +67,17 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
       setSearchParams(newParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  // Only ATTENDEE role can access this dashboard
+  // ORGANIZER role should be redirected to /organizer/dashboard
+  if (authUser?.role === UserRole.ORGANIZER) {
+    return <Navigate to="/organizer/dashboard" replace />;
+  }
+
+  // Filter pending events for attendees (events awaiting approval)
+  const pendingEvents = organizingEvents.filter(
+    event => event.status.toLowerCase() === 'pending'
+  );
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

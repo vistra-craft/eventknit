@@ -13,7 +13,6 @@ import {
   Ticket,
   DollarSign,
   Paintbrush,
-  Crown,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";

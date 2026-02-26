@@ -1,4 +1,4 @@
-import { Shield, AlertTriangle, CheckCircle2, Briefcase, Mail, Clock, TrendingUp } from 'lucide-react';
+import { Shield, CheckCircle2, Briefcase, Mail, Clock, TrendingUp } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import CareerInquiriesTab from '@/components/admin/moderation/CareerInquiriesTab';
 import { useCareerInquiries } from '@/hooks/queries/useCareerInquiries';

@@ -14,13 +14,16 @@ import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, Building2, Award, AlertCircle } from "lucide-react";
+import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, Building2, AlertCircle } from "lucide-react";
 import { FAQsAccordion } from "@/components/event-details/FAQsAccordion";
 import { RefundPolicy } from "@/components/event-details/RefundPolicy";
 import ResaleListings from "@/components/event-details/ResaleListings";
 import { ReportEventSection } from "@/components/event-details/ReportEventSection";
+import { AgendaTimeline } from "@/components/event-details/AgendaTimeline";
+import { SpeakersShowcase } from "@/components/event-details/SpeakersShowcase";
+import { SponsorsShowcase } from "@/components/event-details/SponsorsShowcase";
+import { ExhibitorsGrid } from "@/components/event-details/ExhibitorsGrid";
 import { Loader } from "@/components/ui/loader";
-import { Card } from "@/components/ui/card";
 import { getRegistrationStatus } from "@/lib/user-dashboard-api";
 import { getVenueType } from "@/types/event";
 
@@ -47,86 +50,6 @@ const formatTimeForDisplay = (timeStr: string): string => {
   return timeStr;
 };
 
-// Helper function to generate agenda summary
-const generateAgendaSummary = (agenda: { title?: string; startTime?: string }[] | null | undefined) => {
-  if (!agenda || agenda.length === 0) return null;
-
-  const sessionGroups = new Map<string, { times: string[], count: number }>();
-
-  agenda.forEach((item) => {
-    const title = item.title || '';
-    const lower = title.toLowerCase();
-
-    let sessionType = 'Session';
-    if (lower.includes('keynote')) sessionType = 'Keynote';
-    else if (lower.includes('workshop')) sessionType = 'Workshop';
-    else if (lower.includes('panel')) sessionType = 'Panel';
-    else if (lower.includes('networking') || lower.includes('meet')) sessionType = 'Networking';
-    else if (lower.includes('break') || lower.includes('coffee')) sessionType = 'Break';
-    else if (lower.includes('lunch') || lower.includes('meal') || lower.includes('dinner') || lower.includes('breakfast')) sessionType = 'Meal';
-    else if (lower.includes('registration') || lower.includes('check-in') || lower.includes('badge')) sessionType = 'Registration';
-    else if (lower.includes('closing') || lower.includes('wrap') || lower.includes('remark')) sessionType = 'Closing';
-    else if (lower.includes('intro') || lower.includes('welcome') || lower.includes('opening')) sessionType = 'Opening';
-    else if (lower.includes('demo') || lower.includes('showcase')) sessionType = 'Demo';
-    else if (lower.includes('qa') || lower.includes('q&a') || lower.includes('question')) sessionType = 'Q&A';
-
-    if (!sessionGroups.has(sessionType)) {
-      sessionGroups.set(sessionType, { times: [], count: 0 });
-    }
-
-    const group = sessionGroups.get(sessionType)!;
-    if (item.startTime) {
-      const formattedTime = formatTimeForDisplay(item.startTime);
-      if (formattedTime && !group.times.includes(formattedTime)) {
-        group.times.push(formattedTime);
-      }
-    }
-    group.count += 1;
-  });
-
-  const summaryParts: string[] = [];
-
-  sessionGroups.forEach((group, type) => {
-    if (group.times.length === 0) {
-      if (group.count === 1) {
-        summaryParts.push(`${type}`);
-      } else {
-        summaryParts.push(`${group.count} ${type}s`);
-      }
-    } else if (group.times.length === 1) {
-      summaryParts.push(`${type} at ${group.times[0]}`);
-    } else if (group.times.length === 2) {
-      summaryParts.push(`${type} at ${group.times[0]} & ${group.times[1]}`);
-    } else if (group.count === 1) {
-      summaryParts.push(`${type} at ${group.times[0]}`);
-    } else {
-      const sortedTimes = group.times.sort((a, b) => {
-        const parseTime = (time: string): number => {
-          const ampmMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-          if (ampmMatch) {
-            let hours = parseInt(ampmMatch[1], 10);
-            const minutes = parseInt(ampmMatch[2], 10);
-            const period = ampmMatch[3].toUpperCase();
-            if (period === 'PM' && hours !== 12) hours += 12;
-            if (period === 'AM' && hours === 12) hours = 0;
-            return hours * 60 + minutes;
-          }
-          const hhmmMatch = time.match(/(\d{1,2}):(\d{2})/);
-          if (hhmmMatch) {
-            const hours = parseInt(hhmmMatch[1], 10);
-            const minutes = parseInt(hhmmMatch[2], 10);
-            return hours * 60 + minutes;
-          }
-          return 0;
-        };
-        return parseTime(a) - parseTime(b);
-      });
-      summaryParts.push(`${type}s from ${sortedTimes[0]} to ${sortedTimes[sortedTimes.length - 1]}`);
-    }
-  });
-
-  return summaryParts.length > 0 ? summaryParts.join(', ') : null;
-};
 
 const EventDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -407,34 +330,20 @@ const EventDetails = () => {
                 />
               </section>
 
-              {/* Event Agenda Summary */}
+              {/* Event Schedule */}
               {(() => {
                 let agendaData = event.agenda;
                 if (typeof agendaData === 'string') {
                   try { agendaData = JSON.parse(agendaData); } catch { agendaData = null; }
                 }
-                const hasAgenda = agendaData && Array.isArray(agendaData) && agendaData.length > 0;
-                if (!hasAgenda) return null;
-
-                const summary = generateAgendaSummary(agendaData);
+                if (!agendaData || !Array.isArray(agendaData) || agendaData.length === 0) return null;
                 return (
                   <section className="pt-8 pb-8 border-b border-border/40">
                     <h2 className="text-page-title mb-6">Event Schedule</h2>
-                    <Card className="border border-border bg-background rounded-2xl shadow-sm p-6">
-                      <div className="space-y-3">
-                        <p className="text-muted-foreground leading-relaxed text-lg">
-                          {summary && summary.trim() !== ''
-                            ? summary
-                            : 'Full schedule with multiple sessions and activities throughout the event.'}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-4 pt-4 border-t border-border/50">
-                          <strong>Full agenda with detailed session descriptions, speaker information, and session locations available in your attendee dashboard after registration.</strong>
-                        </p>
-                      </div>
-                    </Card>
-                    <p className="text-sm text-center text-muted-foreground mt-2 italic">
-                      * Full detailed agenda available after registration
-                    </p>
+                    <AgendaTimeline
+                      agenda={agendaData}
+                      eventStartDate={event.startDate || event.date || ''}
+                    />
                   </section>
                 );
               })()}
@@ -495,32 +404,11 @@ const EventDetails = () => {
                 if (typeof speakersData === 'string') {
                   try { speakersData = JSON.parse(speakersData); } catch { speakersData = null; }
                 }
-                const hasSpeakers = speakersData && Array.isArray(speakersData) && speakersData.length > 0;
-                if (!hasSpeakers) return null;
-                const safeSpeakers = speakersData as { name?: string; title?: string; image?: string }[];
+                if (!speakersData || !Array.isArray(speakersData) || speakersData.length === 0) return null;
                 return (
                   <section className="pt-8 pb-8 border-b border-border/40">
-                    <h2 className="text-page-title mb-4">Featured Speakers</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {safeSpeakers.slice(0, 6).map((speaker, index: number) => (
-                        <div key={index} className="p-4 flex flex-col items-center text-center rounded-lg border border-border bg-background shadow-sm transition-all">
-                          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-3">
-                            {speaker?.image ? (
-                              <img src={speaker.image} alt={speaker.name || 'Speaker'} className="w-full h-full object-cover" />
-                            ) : (
-                              <Users className="w-8 h-8 text-muted-foreground" />
-                            )}
-                          </div>
-                          <h4 className="text-card-title text-sm mb-1">{speaker?.name || 'Speaker'}</h4>
-                          <p className="text-primary font-medium text-xs line-clamp-2">{speaker?.title || ''}</p>
-                        </div>
-                      ))}
-                    </div>
-                    {safeSpeakers.length > 6 && (
-                      <p className="text-sm text-muted-foreground mt-4 text-center">
-                        + {safeSpeakers.length - 6} more speakers. Full profiles available after registration.
-                      </p>
-                    )}
+                    <h2 className="text-page-title mb-6">Featured Speakers</h2>
+                    <SpeakersShowcase speakers={speakersData} />
                   </section>
                 );
               })()}
@@ -531,57 +419,11 @@ const EventDetails = () => {
                 if (typeof sponsorsData === 'string') {
                   try { sponsorsData = JSON.parse(sponsorsData); } catch { sponsorsData = null; }
                 }
-                const hasSponsors = sponsorsData && Array.isArray(sponsorsData) && sponsorsData.length > 0;
-                if (!hasSponsors) return null;
-                const safeSponsors = sponsorsData as { name?: string; level?: string; logo?: string; website?: string }[];
-
-                const tierOrder = ['title', 'presenting', 'diamond', 'platinum', 'gold', 'silver', 'bronze', 'partner', 'media', 'technology', 'community', 'associate'];
-                const tierLabels: Record<string, string> = {
-                  title: 'Title Sponsor', presenting: 'Presenting', diamond: 'Diamond', platinum: 'Platinum',
-                  gold: 'Gold', silver: 'Silver', bronze: 'Bronze', partner: 'Partner',
-                  media: 'Media Partner', technology: 'Technology Partner', community: 'Community', associate: 'Associate',
-                };
-                const grouped: Record<string, typeof safeSponsors> = {};
-                safeSponsors.forEach(s => {
-                  const tier = (s.level || 'associate').toLowerCase();
-                  if (!grouped[tier]) grouped[tier] = [];
-                  grouped[tier].push(s);
-                });
-                const orderedTiers = tierOrder.filter(t => grouped[t]?.length > 0);
-
+                if (!sponsorsData || !Array.isArray(sponsorsData) || sponsorsData.length === 0) return null;
                 return (
                   <section className="pt-8 pb-8 border-b border-border/40">
-                    <h2 className="text-page-title mb-4">Sponsors</h2>
-                    <div className="space-y-6">
-                      {orderedTiers.map(tier => (
-                        <div key={tier}>
-                          <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3 flex items-center gap-1.5">
-                            <Award className="w-3.5 h-3.5" />
-                            {tierLabels[tier] || tier}
-                          </p>
-                          <div className="flex flex-wrap gap-4">
-                            {grouped[tier].map((sponsor, i) => (
-                              <a
-                                key={i}
-                                href={sponsor.website ? (sponsor.website.startsWith('http') ? sponsor.website : `https://${sponsor.website}`) : undefined}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-background hover:shadow-md transition-all"
-                              >
-                                {sponsor.logo ? (
-                                  <img src={sponsor.logo} alt={sponsor.name || 'Sponsor'} className="w-10 h-10 rounded-lg object-contain" />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <Award className="w-5 h-5 text-primary" />
-                                  </div>
-                                )}
-                                <span className="text-sm font-medium text-foreground">{sponsor.name}</span>
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <h2 className="text-page-title mb-6">Sponsors</h2>
+                    <SponsorsShowcase sponsors={sponsorsData} />
                   </section>
                 );
               })()}
@@ -592,34 +434,11 @@ const EventDetails = () => {
                 if (typeof exhibitorsData === 'string') {
                   try { exhibitorsData = JSON.parse(exhibitorsData); } catch { exhibitorsData = null; }
                 }
-                const hasExhibitors = exhibitorsData && Array.isArray(exhibitorsData) && exhibitorsData.length > 0;
-                if (!hasExhibitors) return null;
-                const safeExhibitors = exhibitorsData as { name?: string; logo?: string; category?: string; booth?: string }[];
+                if (!exhibitorsData || !Array.isArray(exhibitorsData) || exhibitorsData.length === 0) return null;
                 return (
                   <section className="pt-8 pb-8 border-b border-border/40">
-                    <h2 className="text-page-title mb-4">Exhibitors</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {safeExhibitors.slice(0, 9).map((exhibitor, index: number) => (
-                        <div key={index} className="p-3 flex flex-col items-center text-center rounded-lg border border-border bg-background shadow-sm">
-                          <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center overflow-hidden flex-shrink-0 mb-2">
-                            {exhibitor?.logo ? (
-                              <img src={exhibitor.logo} alt={exhibitor.name || 'Exhibitor'} className="w-full h-full object-contain p-1" />
-                            ) : (
-                              <Building2 className="w-6 h-6 text-muted-foreground" />
-                            )}
-                          </div>
-                          <h4 className="text-card-title text-xs mb-0.5 line-clamp-1">{exhibitor?.name || 'Exhibitor'}</h4>
-                          {exhibitor?.category && (
-                            <p className="text-[10px] text-muted-foreground">{exhibitor.category}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    {safeExhibitors.length > 9 && (
-                      <p className="text-sm text-muted-foreground mt-3 text-center">
-                        + {safeExhibitors.length - 9} more exhibitors. Full details available after registration.
-                      </p>
-                    )}
+                    <h2 className="text-page-title mb-6">Exhibitors</h2>
+                    <ExhibitorsGrid exhibitors={exhibitorsData} />
                   </section>
                 );
               })()}

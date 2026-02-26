@@ -10,7 +10,6 @@ import Logo from './Logo';
 import { useAuth } from '../hooks/useAuth';
 import { ThemeToggle } from './ThemeToggle';
 import { Badge } from './ui/badge';
-import { NAV_LABELS } from '../constants/navigationLabels';
 import { UserRole } from '@/types/auth';
 
 interface MenuItem {

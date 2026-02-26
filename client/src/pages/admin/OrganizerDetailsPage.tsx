@@ -4,7 +4,6 @@ import {
   Calendar,
   DollarSign,
   Star,
-  Eye,
   CheckCircle,
   XCircle,
   FileText,
