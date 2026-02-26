@@ -36,6 +36,7 @@ import {
   type EmergencyContact,
 } from "@/lib/admin-api";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 
 const SOCIAL_PLATFORM_LABELS: Record<string, string> = {
   facebook: "Facebook",
@@ -338,9 +339,9 @@ const OrganizerDetailsPage = () => {
                     {organizerProfileData?.description && (
                       <div>
                         <p className="text-xs font-medium text-muted-foreground mb-1">About</p>
-                        <p
+                        <RichTextContent
+                          content={organizerProfileData.description}
                           className="text-sm text-foreground leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: organizerProfileData.description }}
                         />
                       </div>
                     )}

@@ -87,7 +87,9 @@ export const useMyEvents = (): UseMyEventsReturn => {
   const { user } = useAuth();
 
   // Check if user can organize
-  const canOrganize = user?.role === UserRole.ORGANIZER ||
+  // Now includes ATTENDEE users (who may have created pending events)
+  const canOrganize = user?.role === UserRole.ATTENDEE ||
+                     user?.role === UserRole.ORGANIZER ||
                      user?.role === UserRole.ORGANIZER_STAFF ||
                      user?.role === UserRole.ORGANIZER_TELLER;
 
@@ -136,15 +138,18 @@ export const useMyEvents = (): UseMyEventsReturn => {
   const fetchOrganizing = useCallback(async () => {
     if (!canOrganize) {
       setOrganizingEvents([]);
+      setOrganizingLoading(false);
       return;
     }
 
     try {
       setOrganizingLoading(true);
       setOrganizingError(null);
+      console.log('[useMyEvents] Fetching organizing events for user role:', user?.role);
       const response = await getOrganizerEvents({ limit: 100 });
+      console.log('[useMyEvents] Organizing events response:', response);
       if (response.success && response.data) {
-        setOrganizingEvents(response.data.events.map(event => ({
+        const mappedEvents = response.data.events.map(event => ({
           id: event.id,
           title: event.title,
           date: event.date || '',
@@ -162,7 +167,11 @@ export const useMyEvents = (): UseMyEventsReturn => {
           category: event.category || '',
           ticketsSold: event.attendees || 0,
           checkedIn: Math.floor((event.attendees || 0) * 0.7), // Estimate for now
-        })));
+        }));
+        console.log('[useMyEvents] Mapped organizing events:', mappedEvents);
+        setOrganizingEvents(mappedEvents);
+      } else {
+        console.warn('[useMyEvents] No organizing events data:', response);
       }
     } catch (error) {
       console.error('Error fetching organizing events:', error);
@@ -170,7 +179,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
     } finally {
       setOrganizingLoading(false);
     }
-  }, [canOrganize]);
+  }, [canOrganize, user?.role]);
 
   // Fetch saved events
   const fetchSaved = useCallback(async () => {

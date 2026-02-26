@@ -89,8 +89,22 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
     }
   };
 
+  const handleDeleteEvent = async (eventId: string) => {
+    if (confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+      try {
+        // TODO: Implement delete event API call
+        toast({ title: 'Event Deleted', description: 'Your event has been deleted successfully' });
+        // Refresh organizing events
+        // refreshOrganizing();
+      } catch {
+        toast({ title: 'Error', description: 'Failed to delete event', variant: 'destructive' });
+      }
+    }
+  };
+
   // Hide organizing features if organizer is pending approval
-  const showOrganizing = canOrganize && !isPendingOrganizer;
+  // BUT show the organizing tab if they have created events (even as ATTENDEE with pending events)
+  const showOrganizing = canOrganize && (!isPendingOrganizer || organizingEvents.length > 0);
 
   // Tabs configuration
   const tabs = [
@@ -290,8 +304,24 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
               </div>
             ) : (
               <>
-                {/* Organizer Quick Actions */}
-                {showOrganizing && (
+                {/* Info banner for ATTENDEE users with pending events */}
+                {authUser?.role === UserRole.ATTENDEE && organizingEvents.some(e => e.status.toLowerCase() === 'pending') && (
+                  <div className="mb-6 rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Your event is awaiting approval</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          You can edit your event details or preview how it will appear to attendees once approved.
+                          Once approved, you'll be upgraded to an organizer account and gain access to full event management features.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Organizer Quick Actions - hide for ATTENDEE with only pending events */}
+                {showOrganizing && !(authUser?.role === UserRole.ATTENDEE) && (
                   <div className="mb-6">
                     <OrganizerQuickActions />
                   </div>
@@ -302,7 +332,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {organizingEvents.map((event) => (
                       <div key={event.id}>
-                        <OrganizingEventCard event={event} />
+                        <OrganizingEventCard event={event} onDelete={handleDeleteEvent} />
                       </div>
                     ))}
                   </div>

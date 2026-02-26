@@ -1016,6 +1016,7 @@ export class OrganizerService {
 
   /**
    * Get all organizer events (with filters)
+   * Now supports ATTENDEE users who have created events (pending approval)
    */
   static async getOrganizerEvents(
     organizerId: string,
@@ -1030,11 +1031,15 @@ export class OrganizerService {
       upcoming?: boolean; // true for upcoming, false for past
     } = {},
   ) {
-    // Validate organizer can view events
-    if (organizerRole !== UserRole.ORGANIZER &&
+    // Validate user can view events they created
+    // Allow ATTENDEE (who created pending events), ORGANIZER, and admin roles
+    if (organizerRole !== UserRole.ATTENDEE &&
+      organizerRole !== UserRole.ORGANIZER &&
+      organizerRole !== UserRole.ORGANIZER_STAFF &&
+      organizerRole !== UserRole.ORGANIZER_TELLER &&
       organizerRole !== UserRole.SUPERADMIN &&
       organizerRole !== UserRole.ADMIN_STAFF) {
-      throw new AuthorizationError('Only organizers can view their events');
+      throw new AuthorizationError('You do not have permission to view events');
     }
 
     const where: Record<string, unknown> = {

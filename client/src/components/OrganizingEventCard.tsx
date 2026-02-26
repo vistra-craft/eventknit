@@ -6,7 +6,7 @@
 
 import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, CheckCircle, DollarSign, BarChart3, MoreVertical } from 'lucide-react';
+import { Calendar, MapPin, Users, CheckCircle, DollarSign, BarChart3, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -16,9 +16,10 @@ import type { OrganizingEvent } from '../hooks/useMyEvents';
 interface OrganizingEventCardProps {
   event: OrganizingEvent;
   onManage?: (eventId: string) => void;
+  onDelete?: (eventId: string) => void;
 }
 
-const OrganizingEventCardComponent = ({ event, onManage }: OrganizingEventCardProps) => {
+const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingEventCardProps) => {
   const navigate = useNavigate();
 
   const formatDate = (dateString: string) => {
@@ -40,10 +41,11 @@ const OrganizingEventCardComponent = ({ event, onManage }: OrganizingEventCardPr
 
   const getStatusColor = (status: string) => {
     const statusLower = status.toLowerCase();
-    if (statusLower === 'published' || statusLower === 'upcoming') return 'default';
+    if (statusLower === 'published' || statusLower === 'upcoming' || statusLower === 'approved') return 'default';
     if (statusLower === 'draft') return 'secondary';
     if (statusLower === 'completed' || statusLower === 'past') return 'outline';
-    if (statusLower === 'cancelled') return 'destructive';
+    if (statusLower === 'cancelled' || statusLower === 'rejected') return 'destructive';
+    if (statusLower === 'pending') return 'secondary';
     return 'default';
   };
 
@@ -54,6 +56,23 @@ const OrganizingEventCardComponent = ({ event, onManage }: OrganizingEventCardPr
       navigate(`/organizer/event/${event.id}`);
     }
   };
+
+  const handleEditClick = () => {
+    navigate(`/user/edit-event/${event.id}`);
+  };
+
+  const handlePreviewClick = () => {
+    navigate(`/event/${event.id}`);
+  };
+
+  const handleDeleteClick = () => {
+    if (onDelete) {
+      onDelete(event.id);
+    }
+  };
+
+  // Check if event is pending approval
+  const isPending = event.status.toLowerCase() === 'pending';
 
   const attendancePercentage = event.capacity > 0
     ? Math.round((event.ticketsSold || event.attendees) / event.capacity * 100)
@@ -156,32 +175,71 @@ const OrganizingEventCardComponent = ({ event, onManage }: OrganizingEventCardPr
 
         {/* Quick Actions */}
         <div className="flex items-center gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleManageClick}
-            className="flex-1 hover:scale-105 active:scale-95 transition-transform duration-200"
-            aria-label={`Manage ${event.title}`}
-          >
-            Manage Event
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/organizer/event/${event.id}?tab=analytics`)}
-            className="px-2 hover:scale-105 active:scale-95 transition-transform duration-200"
-            aria-label={`View analytics for ${event.title}`}
-          >
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="px-2 hover:scale-105 active:scale-95 transition-transform duration-200"
-            aria-label={`More options for ${event.title}`}
-          >
-            <MoreVertical className="h-4 w-4" />
-          </Button>
+          {isPending ? (
+            // Actions for pending events: Edit, Preview, Delete
+            <>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleEditClick}
+                className="flex-1 hover:scale-105 active:scale-95 transition-transform duration-200 gap-1.5"
+                aria-label={`Edit ${event.title}`}
+              >
+                <Edit className="h-3.5 w-3.5" />
+                Edit Event
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePreviewClick}
+                className="px-3 hover:scale-105 active:scale-95 transition-transform duration-200"
+                aria-label={`Preview ${event.title}`}
+                title="See how your event will look once approved"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDeleteClick}
+                className="px-3 hover:scale-105 active:scale-95 transition-transform duration-200 text-destructive hover:text-destructive"
+                aria-label={`Delete ${event.title}`}
+                title="Delete this event"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            // Actions for approved events: Manage, Analytics, More
+            <>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleManageClick}
+                className="flex-1 hover:scale-105 active:scale-95 transition-transform duration-200"
+                aria-label={`Manage ${event.title}`}
+              >
+                Manage Event
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/organizer/event/${event.id}?tab=analytics`)}
+                className="px-2 hover:scale-105 active:scale-95 transition-transform duration-200"
+                aria-label={`View analytics for ${event.title}`}
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="px-2 hover:scale-105 active:scale-95 transition-transform duration-200"
+                aria-label={`More options for ${event.title}`}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

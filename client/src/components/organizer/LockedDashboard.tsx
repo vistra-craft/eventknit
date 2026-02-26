@@ -133,15 +133,15 @@ export const LockedDashboard = ({ tier = 0, pendingEvents = [] }: LockedDashboar
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/organizer/events/${event.id}`)}
+                        onClick={() => navigate(`/organizer/event/${event.id}`)}
                       >
                         <Eye className="w-4 h-4 mr-1" />
-                        View
+                        Manage
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/organizer/events/${event.id}/edit`)}
+                        onClick={() => navigate(`/organizer/events/create?edit=${event.id}`)}
                       >
                         <Edit className="w-4 h-4 mr-1" />
                         Edit

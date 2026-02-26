@@ -833,17 +833,29 @@ const AllEventsPage = () => {
         }}>
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
             {previewLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Loader size="lg" className="h-8 w-8 mx-auto mb-4" />
-                  <p className="text-sm text-muted-foreground">Loading event details...</p>
+              <>
+                <DialogHeader>
+                  <DialogTitle>Loading Event</DialogTitle>
+                  <DialogDescription>Fetching event details...</DialogDescription>
+                </DialogHeader>
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Loader size="lg" className="h-8 w-8 mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground">Loading event details...</p>
+                  </div>
                 </div>
-              </div>
+              </>
             ) : !previewEventData ? (
-              <div className="text-center py-12">
-                <AlertCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="text-muted-foreground">Event not found</p>
-              </div>
+              <>
+                <DialogHeader>
+                  <DialogTitle>Event Not Found</DialogTitle>
+                  <DialogDescription>The requested event could not be loaded.</DialogDescription>
+                </DialogHeader>
+                <div className="text-center py-12">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
+                  <p className="text-muted-foreground">Event not found</p>
+                </div>
+              </>
             ) : (
               <>
                 <DialogHeader className="space-y-3">

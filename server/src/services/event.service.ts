@@ -582,7 +582,7 @@ export class EventService {
   /**
    * Get event by ID
    */
-  static async getEventById(eventId: string, requestingUserId?: string) {
+  static async getEventById(eventId: string, requestingUserId?: string, isAdmin = false) {
     const event = await prisma.event.findFirst({
       where: {
         id: eventId,
@@ -623,15 +623,13 @@ export class EventService {
 
     // Access control: non-approved events visible only to organizer and admins
     const isOrganizer = requestingUserId && event.organizerId === requestingUserId;
-    console.log(`[EventService.getEventById] Event ${eventId}: status=${event.status}, requestingUserId=${requestingUserId}, organizerId=${event.organizerId}, isOrganizer=${isOrganizer}`);
-    
-    if (!isOrganizer && event.status !== 'APPROVED') {
-      console.log('[EventService.getEventById] Access denied: user is not organizer and event status is not APPROVED');
+
+    if (!isOrganizer && !isAdmin && event.status !== 'APPROVED') {
       throw new NotFoundError('Event not found');
     }
 
     // Hide organizer email/personal info from public API responses
-    if (!isOrganizer && event.organizer) {
+    if (!isOrganizer && !isAdmin && event.organizer) {
       event.organizer.email = '';
       event.organizer.businessEmail = null as any;
     }
@@ -2123,16 +2121,30 @@ export class EventService {
             email: true,
             organizationName: true,
             status: true,
+            role: true, // Include role to check for ATTENDEE -> ORGANIZER upgrade
           },
         },
       },
     });
 
     // Auto-activate organizer account if still pending approval
+    // Also upgrade role from ATTENDEE to ORGANIZER on first event approval
     if (approvedEvent.organizer.status === UserStatus.PENDING_APPROVAL) {
+      const updateData: { status: UserStatus; role?: UserRole } = {
+        status: UserStatus.ACTIVE,
+      };
+      
+      // If user is still ATTENDEE, upgrade them to ORGANIZER
+      if (approvedEvent.organizer.role === UserRole.ATTENDEE) {
+        updateData.role = UserRole.ORGANIZER;
+        logger.info(
+          `Upgrading user ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) from ATTENDEE to ORGANIZER on event approval`,
+        );
+      }
+      
       await prisma.user.update({
         where: { id: approvedEvent.organizerId },
-        data: { status: UserStatus.ACTIVE },
+        data: updateData,
       });
       logger.info(
         `Auto-activated organizer account ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) on event approval`,

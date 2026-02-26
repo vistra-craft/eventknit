@@ -19,6 +19,8 @@ import { useToast } from "../../../hooks/useToast";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
+
 interface Event {
   id: string;
   title: string;
@@ -419,7 +421,7 @@ const PendingApprovalPage = () => {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{stripHtml(event.description)}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">
                     <Button variant="outline" size="sm" onClick={() => navigate(`/admin/events/${event.id}/preview`)} className="border-primary text-primary hover:bg-muted">

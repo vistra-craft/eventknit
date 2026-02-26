@@ -181,14 +181,14 @@ export class UserService {
       throw new ValidationError('Organization name is required to become an organizer');
     }
 
-    // Update user role to ORGANIZER, set PENDING_APPROVAL, and mark profile complete.
-    // Status is set to PENDING_APPROVAL immediately so there is no window where the
-    // user is ORGANIZER+ACTIVE before the approval request is made. This makes the
-    // operation atomic — no separate requestOrganizerApproval() call needed.
+    // Keep user as ATTENDEE until their first event is approved.
+    // Status is set to PENDING_APPROVAL to indicate they have a pending event.
+    // Role will be upgraded from ATTENDEE to ORGANIZER when their first event is approved.
+    // This ensures users don't access the advanced organizer dashboard prematurely.
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        role: UserRole.ORGANIZER,
+        role: UserRole.ATTENDEE, // Keep as ATTENDEE, upgrade happens on event approval
         status: UserStatus.PENDING_APPROVAL,
         organizationName: data.organizationName.trim(),
         businessEmail: data.businessEmail?.trim() || user.email,
@@ -235,9 +235,11 @@ export class UserService {
       entityId: userId,
       metadata: {
         previousRole: UserRole.ATTENDEE,
-        newRole: UserRole.ORGANIZER,
+        newRole: UserRole.ATTENDEE, // Role stays ATTENDEE until event approved
+        statusChange: 'PENDING_APPROVAL',
         organizationName: data.organizationName,
         selfInitiated: true,
+        note: 'User will be upgraded to ORGANIZER when first event is approved',
       },
       ipAddress,
       userAgent,
@@ -258,7 +260,7 @@ export class UserService {
       logger.error('Failed to notify admins of new organizer:', err);
     });
 
-    logger.info(`User ${userId} switched from ATTENDEE to ORGANIZER (status: PENDING_APPROVAL)`);
+    logger.info(`User ${userId} set up organizer profile (remains ATTENDEE with PENDING_APPROVAL status until event approved)`);
 
     return updatedUser;
   }

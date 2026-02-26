@@ -121,9 +121,12 @@ export class EventController {
     try {
       const eventId = req.params.id as string;
       const userId = (req as any).user?.id;
-      logger.info(`[EventController.getEventById] Fetching event ${eventId} for user ${userId}`);
-      
-      const event = await EventService.getEventById(eventId, userId);
+      const userRole = (req as any).user?.role as string | undefined;
+      const isAdmin = userRole
+        ? ['SUPERADMIN', 'ADMIN_STAFF', 'ADMIN_SUPPORT', 'ADMIN_FINANCE', 'ADMIN_MARKETING'].includes(userRole)
+        : false;
+
+      const event = await EventService.getEventById(eventId, userId, isAdmin);
 
       logger.info(`[EventController.getEventById] Successfully fetched event ${eventId}`);
       res.status(200).json({

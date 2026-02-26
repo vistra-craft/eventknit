@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { EventController } from '../controllers/event.controller.js';
 import { SeatSelectionController } from '../controllers/seat-map.controller.js';
 import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
-import { authenticate, requireMinRole } from '../middleware/auth.middleware.js';
+import { authenticate, optionalAuth, requireMinRole } from '../middleware/auth.middleware.js';
 import { eventValidations } from '../validations/event.validations.js';
 import { reserveSeatsSchema } from '../validations/venue.validations.js';
 import { guestRegistrationRateLimiter } from '../middleware/rateLimiter.middleware.js';
@@ -20,10 +20,10 @@ router.get('/', EventController.getEvents);
 
 /**
  * @route   GET /api/v1/events/:id
- * @desc    Get event by ID (public)
+ * @desc    Get event by ID (public; auth optional — organizers/admins can view own pending events)
  * @access  Public
  */
-router.get('/:id', EventController.getEventById);
+router.get('/:id', optionalAuth, EventController.getEventById);
 
 /**
  * @route   GET /api/v1/events/:id/related

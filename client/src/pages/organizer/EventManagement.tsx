@@ -59,6 +59,9 @@ import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTi
 import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
 import BackButton from "@/components/BackButton";
 import { EventSeatMapManager } from "@/components/organizer/EventSeatMapManager";
+import { RichTextContent } from "@/components/ui/RichTextContent";
+
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
 
 interface CommunicationMessage {
   id: string;
@@ -1470,9 +1473,10 @@ const EventManagement = () => {
                   <h1 className="text-lg font-semibold text-foreground mb-2">
                     {eventData.title}
                   </h1>
-                  <p className="text-lg text-muted-foreground mb-4">
-                    {eventData.description}
-                  </p>
+                  <RichTextContent
+                    content={eventData.description}
+                    className="text-muted-foreground mb-4"
+                  />
                   
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
@@ -1861,10 +1865,12 @@ const EventManagement = () => {
                   <Eye className="h-4 w-4 mr-2" />
                   Preview Event
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => window.open(`/event/${eventId}`, '_blank')}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Public Page
-                </DropdownMenuItem>
+                {eventData?.status?.toUpperCase() === 'APPROVED' && (
+                  <DropdownMenuItem onClick={() => window.open(`/event/${eventId}`, '_blank')}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Public Page
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
                   <Settings className="h-4 w-4 mr-2" />
@@ -1976,7 +1982,7 @@ const EventManagement = () => {
               )}
               {eventData?.description && (
                 <p className="text-muted-foreground line-clamp-2 mt-2">
-                  {eventData.description}
+                  {stripHtml(eventData.description)}
                 </p>
               )}
             </div>
@@ -2158,7 +2164,10 @@ const EventManagement = () => {
               {eventData.description && (
                 <div>
                   <h3 className="font-semibold mb-2">Description</h3>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{String(eventData.description ?? '')}</p>
+                  <RichTextContent
+                    content={eventData.description}
+                    className="text-muted-foreground"
+                  />
                 </div>
               )}
 

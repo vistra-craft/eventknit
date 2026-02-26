@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
@@ -39,11 +39,6 @@ const RoleViewWrapper = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Redirect component for organizer event routes
-const OrganizerEventRedirect = () => {
-  const { eventId } = useParams<{ eventId: string }>();
-  return <Navigate to={`/user/manage-events/${eventId}`} replace />;
-};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -54,9 +49,6 @@ const App = () => (
             <Routes>
               {/* Dashboard Redirect - Unified dashboard for all non-admin users */}
               <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
-
-              {/* Legacy Organizer Route Redirects */}
-              <Route path="/organizer/event/:eventId" element={<OrganizerEventRedirect />} />
 
               {/* User Routes */}
               <Route path="/user/*" element={
