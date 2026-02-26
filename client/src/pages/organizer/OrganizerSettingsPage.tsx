@@ -594,14 +594,28 @@ const OrganizerSettingsPage = () => {
     }
   };
 
-  const renderProfileSettings = () => (
+  const renderProfileSettings = () => {
+    const entityType = user?.organizerEntityType;
+    const isIndividual = !entityType || entityType === 'INDIVIDUAL';
+
+    const formatEntityType = (type: string) =>
+      type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    return (
     <div className="space-y-6">
-      {/* Avatar Upload */}
+      {/* Avatar / Logo Upload */}
       <AvatarUpload
         currentAvatar={settings.avatar || null}
         onAvatarChange={handleAvatarChange}
         isUploading={isUploadingAvatar || uploadAvatarMutation.isPending}
         userName={`${settings.firstName} ${settings.lastName}`.trim()}
+        isLogo={!isIndividual}
+        label={isIndividual ? "Profile Photo" : "Company / Organization Logo"}
+        hint={
+          isIndividual
+            ? "Your photo will be displayed on your profile and in event communications."
+            : "Your logo will appear on all your event pages and public profile. Square format recommended."
+        }
       />
 
       {/* Personal Information */}
@@ -662,30 +676,45 @@ const OrganizerSettingsPage = () => {
         />
       </div>
 
-      <div>
-        <Label htmlFor="companyAffiliation">Company Affiliation <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
-        <Input
-          id="companyAffiliation"
-          value={settings.companyAffiliation}
-          onChange={(e) => updateSetting("companyAffiliation", e.target.value)}
-          placeholder="Your employer or institutional affiliation"
-        />
-        <p className="text-xs text-muted-foreground mt-1">Your day-job employer or affiliated institution, if different from your organizer name.</p>
-      </div>
+      {isIndividual && (
+        <div>
+          <Label htmlFor="companyAffiliation">Company Affiliation <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
+          <Input
+            id="companyAffiliation"
+            value={settings.companyAffiliation}
+            onChange={(e) => updateSetting("companyAffiliation", e.target.value)}
+            placeholder="Your employer or institutional affiliation"
+          />
+          <p className="text-xs text-muted-foreground mt-1">Your day-job employer or affiliated institution, if different from your organizer name.</p>
+        </div>
+      )}
 
       {/* Organizer Identity */}
       <div className="border-t pt-6 mt-6">
-        <h3 className="text-section-header mb-4">Organizer Identity</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-section-header">Organizer Identity</h3>
+          {entityType && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+              {formatEntityType(entityType)}
+            </span>
+          )}
+        </div>
 
         <div>
-          <Label htmlFor="organizationName">Organizer / Brand Name</Label>
+          <Label htmlFor="organizationName">
+            {isIndividual ? "Organizer / Brand Name" : "Legal / Registered Name"}
+          </Label>
           <Input
             id="organizationName"
             value={settings.organizationName}
             onChange={(e) => updateSetting("organizationName", e.target.value)}
-            placeholder="Your organization or brand name"
+            placeholder={isIndividual ? "Your organizer or brand name" : "Your organization's registered name"}
           />
-          <p className="text-xs text-muted-foreground mt-1">This is how attendees will identify you on event pages.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {isIndividual
+              ? "This is how attendees will identify you on event pages."
+              : "Must match your KYC documents. This is your organization's official registered name."}
+          </p>
         </div>
 
         <div className="mt-4">
@@ -888,6 +917,7 @@ const OrganizerSettingsPage = () => {
       </div>
     </div>
   );
+  };
 
   const renderNotificationSettings = () => (
     <div className="space-y-6">

@@ -505,10 +505,6 @@ const OrganizersContent = () => {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => navigate(`/admin/users/organizers/${org.id}/preview`)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                Full Preview
-                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               {org.status === 'PENDING_APPROVAL' && canModifyOrganizer && (
                                 <DropdownMenuItem onClick={() => approveMutation.mutate(org.id)}>

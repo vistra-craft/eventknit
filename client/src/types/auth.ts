@@ -30,6 +30,8 @@ export interface User {
   otherName?: string | null;
   phoneNumber?: string | null;
   companyAffiliation?: string | null;
+  organizerEntityType?: string | null;
+  organizerIndustry?: string | null;
   role: UserRole;
   status: UserStatus;
   isEmailVerified: boolean;

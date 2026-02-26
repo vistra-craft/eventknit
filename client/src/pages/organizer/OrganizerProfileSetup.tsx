@@ -104,12 +104,14 @@ export default function OrganizerProfileSetup() {
     }
   }, [state]);
 
-  const handleAvatarChange = async (file: File | null) => {
-    if (file) {
+  const handleAvatarChange = (file: File, preview: string) => {
+    if (file.size > 0) {
       setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setAvatar(reader.result as string);
-      reader.readAsDataURL(file);
+      setAvatar(preview);
+    } else {
+      // Remove triggered
+      setAvatarFile(null);
+      setAvatar(null);
     }
   };
 
@@ -180,6 +182,11 @@ export default function OrganizerProfileSetup() {
     }
   };
 
+  const entityType = user?.organizerEntityType;
+  const isIndividual = !entityType || entityType === 'INDIVIDUAL';
+  const formatEntityType = (type: string) =>
+    type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -219,6 +226,13 @@ export default function OrganizerProfileSetup() {
             onAvatarChange={handleAvatarChange}
             isUploading={isUploadingAvatar || uploadAvatarMutation.isPending}
             userName={organizationName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
+            isLogo={!isIndividual}
+            label={isIndividual ? 'Profile Photo' : 'Company / Organization Logo'}
+            hint={
+              isIndividual
+                ? 'Your photo will be displayed on your profile and in event communications.'
+                : 'Your logo will appear on all your event pages and in attendee communications.'
+            }
           />
 
           <div>
@@ -236,36 +250,50 @@ export default function OrganizerProfileSetup() {
             </p>
           </div>
 
-          <div>
-            <Label htmlFor="companyAffiliation">Company Affiliation <span className="text-muted-foreground font-normal">(optional)</span></Label>
-            <Input
-              id="companyAffiliation"
-              value={companyAffiliation}
-              onChange={(e) => setCompanyAffiliation(e.target.value)}
-              placeholder="Your employer or institutional affiliation"
-              className="mt-1"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Your day-job employer or affiliated institution, if different from your organizer name.
-            </p>
-          </div>
+          {isIndividual && (
+            <div>
+              <Label htmlFor="companyAffiliation">Company Affiliation <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Input
+                id="companyAffiliation"
+                value={companyAffiliation}
+                onChange={(e) => setCompanyAffiliation(e.target.value)}
+                placeholder="Your employer or institutional affiliation"
+                className="mt-1"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Your day-job employer or affiliated institution, if different from your organizer name.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Section 2: Organizer Identity */}
         <div className="rounded-2xl border border-border/40 bg-card p-6 space-y-4">
-          <h3 className="text-sm font-semibold text-foreground">Organizer Identity</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">Organizer Identity</h3>
+            {entityType && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                {formatEntityType(entityType)}
+              </span>
+            )}
+          </div>
 
           <div>
-            <Label htmlFor="orgName">Organizer / Brand Name <span className="text-destructive">*</span></Label>
+            <Label htmlFor="orgName">
+              {isIndividual ? 'Organizer / Brand Name' : 'Legal / Registered Name'}{' '}
+              <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="orgName"
               value={organizationName}
               onChange={(e) => setOrganizationName(e.target.value)}
-              placeholder="Your organization or brand name"
+              placeholder={isIndividual ? 'Your name or brand name' : 'Your registered company or organization name'}
               className="mt-1"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              This is how attendees will identify you on event pages.
+              {isIndividual
+                ? 'This is how attendees will identify you on event pages.'
+                : 'Your official registered name as it appears on legal documents.'}
             </p>
           </div>
 
