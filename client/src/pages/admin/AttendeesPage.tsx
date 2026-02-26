@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import {
   Search,
   Eye,
-  Edit,
+  CheckCircle,
+  XCircle,
   Calendar,
   DollarSign,
   Download,
@@ -23,7 +24,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/useToast";
-import { getAttendees, type Attendee, type UserStatus } from "@/lib/admin-api";
+import { getAttendees, suspendUser, deactivateUser, activateUser, type Attendee, type UserStatus } from "@/lib/admin-api";
 import { getEvents } from "@/lib/event-api";
 import { exportAttendeeData } from "@/lib/utils/export";
 
@@ -47,6 +48,7 @@ const AttendeesPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [previewAttendee, setPreviewAttendee] = useState<Attendee | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Fetch events for filter dropdown
   useEffect(() => {
@@ -136,8 +138,79 @@ const AttendeesPage = () => {
     navigate(`/admin/users/attendees/${id}`);
   };
 
-  const handleEditAttendee = (id: string) => {
-    navigate(`/admin/users/attendees/${id}/edit`);
+  const handleSuspendAttendee = async (id: string) => {
+    try {
+      setActionLoading(id);
+      const response = await suspendUser(id);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Attendee suspended successfully",
+        });
+        setAttendees((prev) => prev.map((attendee) => (
+          attendee.id === id ? { ...attendee, status: "SUSPENDED" } : attendee
+        )));
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to suspend attendee";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeactivateAttendee = async (id: string) => {
+    try {
+      setActionLoading(id);
+      const response = await deactivateUser(id);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Attendee deactivated successfully",
+        });
+        setAttendees((prev) => prev.map((attendee) => (
+          attendee.id === id ? { ...attendee, status: "DEACTIVATED" } : attendee
+        )));
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to deactivate attendee";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleActivateAttendee = async (id: string) => {
+    try {
+      setActionLoading(id);
+      const response = await activateUser(id);
+      if (response.success) {
+        toast({
+          title: "Success",
+          description: "Attendee activated successfully",
+        });
+        setAttendees((prev) => prev.map((attendee) => (
+          attendee.id === id ? { ...attendee, status: "ACTIVE" } : attendee
+        )));
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to activate attendee";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   if (loading && attendees.length === 0) {
@@ -352,15 +425,30 @@ const AttendeesPage = () => {
                         <Eye className="h-4 w-4 mr-1" />
                         Preview
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditAttendee(attendee.id)}
-                        className="border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
+                      {attendee.status === "ACTIVE" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSuspendAttendee(attendee.id)}
+                          className="text-destructive border-destructive hover:bg-destructive/5"
+                          disabled={actionLoading === attendee.id}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Suspend
+                        </Button>
+                      )}
+                      {(attendee.status === "SUSPENDED" || attendee.status === "DEACTIVATED") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleActivateAttendee(attendee.id)}
+                          className="text-success border-success hover:bg-success/5"
+                          disabled={actionLoading === attendee.id}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Activate
+                        </Button>
+                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -372,10 +460,34 @@ const AttendeesPage = () => {
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditAttendee(attendee.id)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit Attendee
-                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {attendee.status === "ACTIVE" && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => handleSuspendAttendee(attendee.id)}
+                                disabled={actionLoading === attendee.id}
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Suspend
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeactivateAttendee(attendee.id)}
+                                disabled={actionLoading === attendee.id}
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Deactivate
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {(attendee.status === "SUSPENDED" || attendee.status === "DEACTIVATED") && (
+                            <DropdownMenuItem
+                              onClick={() => handleActivateAttendee(attendee.id)}
+                              disabled={actionLoading === attendee.id}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Activate
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           {attendee.registrations.length > 0 && (
                             <DropdownMenuItem onClick={() => {
@@ -557,13 +669,6 @@ const AttendeesPage = () => {
               <DialogFooter>
                 <Button variant="outline" onClick={() => setPreviewAttendee(null)}>
                   Close
-                </Button>
-                <Button onClick={() => {
-                  setPreviewAttendee(null);
-                  handleEditAttendee(previewAttendee.id);
-                }}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Attendee
                 </Button>
               </DialogFooter>
             </div>

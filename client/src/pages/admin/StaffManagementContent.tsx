@@ -10,9 +10,6 @@ import {
   Upload,
   Shield,
   MoreHorizontal,
-  Mail,
-  Phone,
-  Calendar,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/hooks/useToast";
@@ -43,7 +39,6 @@ const StaffManagementContent = () => {
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
   const [roleFilter, setRoleFilter] = useState<UserRole | "all">("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [previewStaff, setPreviewStaff] = useState<User | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
@@ -423,89 +418,14 @@ const StaffManagementContent = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPreviewStaff(staff)}
+                        onClick={() => handleViewStaff(staff.id)}
                         className="hover:bg-gray-900 hover:text-white transition-colors"
                       >
                         <Eye className="h-4 w-4 mr-1" />
-                        Preview
+                        View Details
                       </Button>
                       {canModifyStaff(staff.role) ? (
                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditStaff(staff.id)}
-                          className="hover:bg-gray-900 hover:text-white transition-colors"
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled
-                          title={`You do not have permission to modify ${staff.role} users`}
-                          className="hover:bg-gray-900 hover:text-white transition-colors"
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Button>
-                      )}
-                      {staff.status === "ACTIVE" && (
-                        canModifyStaff(staff.role) ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSuspendStaff(staff.id)}
-                            className="text-destructive border-destructive hover:bg-destructive/5"
-                            title="Suspend Staff"
-                            disabled={actionLoading === staff.id}
-                          >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Suspend
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled
-                            title={`You do not have permission to suspend ${staff.role} users`}
-                          >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Suspend
-                          </Button>
-                        )
-                      )}
-                      {(staff.status === "SUSPENDED" || staff.status === "DEACTIVATED") && (
-                        canModifyStaff(staff.role) ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleActivateStaff(staff.id)}
-                            className="text-success border-success hover:bg-success/5"
-                            title="Activate Staff"
-                            disabled={actionLoading === staff.id}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Activate
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled
-                            title={`You do not have permission to activate ${staff.role} users`}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Activate
-                          </Button>
-                        )
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleViewStaff(staff.id)}>
@@ -598,97 +518,6 @@ const StaffManagementContent = () => {
         </div>
       )}
 
-      {/* Staff Preview Dialog */}
-      <Dialog 
-        open={!!previewStaff} 
-        onOpenChange={(open) => {
-          if (!open) {
-            setPreviewStaff(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Staff Preview</DialogTitle>
-            <DialogDescription>
-              View staff member details
-            </DialogDescription>
-          </DialogHeader>
-          {previewStaff && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar
-                  src={undefined} // Profile image URL if available in future
-                  name={`${previewStaff.firstName} ${previewStaff.lastName}`}
-                  alt={`${previewStaff.firstName} ${previewStaff.lastName}`}
-                  size="xl"
-                />
-                <div className="flex-1">
-                  <h2 className="text-base font-semibold text-foreground mb-2">
-                    {previewStaff.firstName} {previewStaff.lastName}
-                  </h2>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className={`${getRoleBadge(previewStaff.role)}`}>
-                      {previewStaff.role.replace("_", " ")}
-                    </Badge>
-                    <Badge className={`${getStatusBadge(previewStaff.status)}`}>
-                      {previewStaff.status}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{previewStaff.email}</p>
-                  </div>
-                </div>
-                {previewStaff.phoneNumber && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Phone</p>
-                      <p className="font-medium">{previewStaff.phoneNumber}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Role</p>
-                    <p className="font-medium">{previewStaff.role.replace("_", " ")}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Joined</p>
-                    <p className="font-medium">{formatDate(previewStaff.createdAt)}</p>
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setPreviewStaff(null)}>
-                  Close
-                </Button>
-                {previewStaff && canModifyStaff(previewStaff.role) && (
-                  <Button onClick={() => {
-                    setPreviewStaff(null);
-                    handleEditStaff(previewStaff.id);
-                  }}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Staff
-                  </Button>
-                )}
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

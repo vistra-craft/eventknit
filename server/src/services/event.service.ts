@@ -1280,6 +1280,7 @@ export class EventService {
       select: {
         id: true,
         title: true,
+        organizerId: true,
         status: true,
         isFree: true,
         price: true,
@@ -1294,6 +1295,10 @@ export class EventService {
 
     if (!event) {
       throw new NotFoundError('Event not found');
+    }
+
+    if (event.organizerId === attendeeId) {
+      throw new ValidationError('Organizers cannot register for their own events');
     }
 
     // Check if event is approved
