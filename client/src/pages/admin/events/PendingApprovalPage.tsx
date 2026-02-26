@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield } from "lucide-react";
+import { useAuthContext } from "../../../hooks/useAuthContext";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -48,6 +49,8 @@ interface Event {
 const PendingApprovalPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { state: authState } = useAuthContext();
+  const currentUserId = authState.user?.id;
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
