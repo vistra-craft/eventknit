@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EventPreviewModal } from "@/components/EventPreviewModal";
 import { getEventById, type EventData } from "@/lib/event-api";

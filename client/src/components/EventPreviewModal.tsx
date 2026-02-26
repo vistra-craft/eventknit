@@ -227,8 +227,8 @@ export const EventPreviewModal = ({
                       <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <div>
                           <p className="font-medium text-sm">{ticket.name}</p>
-                          {ticket.description && (
-                            <p className="text-xs text-muted-foreground">{ticket.description}</p>
+                          {ticket.discountLabel && (
+                            <p className="text-xs text-muted-foreground">{ticket.discountLabel}</p>
                           )}
                         </div>
                         <div className="text-right">

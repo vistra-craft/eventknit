@@ -178,7 +178,7 @@ const PastEventsPage = () => {
         setPreviewLoading(true);
         const response = await getEventById(previewEventId);
         if (response.success && response.data) {
-          setPreviewEventData(response.data);
+          setPreviewEventData(response.data.event || null);
         }
       } catch (err) {
         console.error('Error fetching event details:', err);
