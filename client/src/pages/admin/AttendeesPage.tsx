@@ -135,7 +135,8 @@ const AttendeesPage = () => {
   };
 
   const handleViewAttendee = (id: string) => {
-    navigate(`/admin/users/attendees/${id}`);
+    const attendee = attendees.find((a) => a.id === id);
+    navigate(`/admin/users/attendees/${id}`, { state: { attendee } });
   };
 
   const handleSuspendAttendee = async (id: string) => {
@@ -270,13 +271,13 @@ const AttendeesPage = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-semibold text-primary mb-2">{total || attendees.length}</div>
             <p className="text-sm text-muted-foreground">Total Attendees</p>
           </CardContent>
         </Card>
-        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-semibold text-primary mb-2">
               {attendees.filter((a) => a.status === "ACTIVE").length}
@@ -284,7 +285,7 @@ const AttendeesPage = () => {
             <p className="text-sm text-muted-foreground">Active</p>
           </CardContent>
         </Card>
-        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-semibold text-destructive mb-2">
               {attendees.filter((a) => a.status === "SUSPENDED").length}
@@ -292,7 +293,7 @@ const AttendeesPage = () => {
             <p className="text-sm text-muted-foreground">Suspended</p>
           </CardContent>
         </Card>
-        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+        <Card className="border-border bg-card">
           <CardContent className="p-4 text-center">
             <div className="text-lg font-semibold text-primary mb-2">
               {attendees.reduce((sum, a) => sum + a.registrations.length, 0)}
@@ -303,7 +304,7 @@ const AttendeesPage = () => {
       </div>
 
       {/* Filters */}
-      <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+      <Card className="border-border bg-card">
         <CardContent className="p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="lg:col-span-2">
@@ -361,7 +362,7 @@ const AttendeesPage = () => {
       </Card>
 
       {/* Attendees List */}
-      <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+      <Card className="border-border bg-card">
         <CardHeader>
           <CardTitle>Attendees ({attendees.length})</CardTitle>
         </CardHeader>
@@ -373,7 +374,7 @@ const AttendeesPage = () => {
               {attendees.map((attendee) => (
                 <div
                   key={attendee.id}
-                  className="flex items-center justify-between p-4 border-0 rounded-2xl bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <Avatar

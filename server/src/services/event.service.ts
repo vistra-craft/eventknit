@@ -2132,29 +2132,36 @@ export class EventService {
       },
     });
 
-    // Auto-activate organizer account if still pending approval
-    // Also upgrade role from ATTENDEE to ORGANIZER on first event approval
+    // Auto-activate organizer account if still pending approval.
+    // Also upgrade role from ATTENDEE to ORGANIZER whenever an attendee's event is approved,
+    // regardless of whether their account is PENDING or already ACTIVE.
+    const userUpdateData: { status?: UserStatus; role?: UserRole } = {};
+
     if (approvedEvent.organizer.status === UserStatus.PENDING_APPROVAL) {
-      const updateData: { status: UserStatus; role?: UserRole } = {
-        status: UserStatus.ACTIVE,
-      };
-      
-      // If user is still ATTENDEE, upgrade them to ORGANIZER
-      if (approvedEvent.organizer.role === UserRole.ATTENDEE) {
-        updateData.role = UserRole.ORGANIZER;
-        logger.info(
-          `Upgrading user ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) from ATTENDEE to ORGANIZER on event approval`,
-        );
-      }
-      
+      userUpdateData.status = UserStatus.ACTIVE;
+    }
+
+    if (approvedEvent.organizer.role === UserRole.ATTENDEE) {
+      userUpdateData.role = UserRole.ORGANIZER;
+      logger.info(
+        `Upgrading user ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) from ATTENDEE to ORGANIZER on event approval`,
+      );
+    }
+
+    if (Object.keys(userUpdateData).length > 0) {
       await prisma.user.update({
         where: { id: approvedEvent.organizerId },
-        data: updateData,
+        data: userUpdateData,
       });
       logger.info(
-        `Auto-activated organizer account ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) on event approval`,
+        `Updated organizer account ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) on event approval`,
       );
+    }
 
+    if (
+      approvedEvent.organizer.status === UserStatus.PENDING_APPROVAL ||
+      approvedEvent.organizer.role === UserRole.ATTENDEE
+    ) {
       // Emit the same socket event that the direct organizer-approval admin action emits.
       // Without this, the client's useOrganizerApproval hook (socket + polling path) never
       // detects the status transition, and the "You're Approved!" modal never shows.

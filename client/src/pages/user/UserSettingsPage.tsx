@@ -36,8 +36,10 @@ import * as authApi from "@/lib/auth-api";
 import { getVerificationStatus, type VerificationStatus } from "@/lib/verification-api";
 import { getUserPreferences, updateUserPreferences } from "@/lib/user-preferences-api";
 import KYCVerificationSection from "@/components/kyc/KYCVerificationSection";
+import { KYCRequiredBanner } from "@/components/KYCRequiredBanner";
 import { UserStatus, UserRole } from "@/types/auth";
 import { ROLE_LABELS } from "@/constants/roleLabels";
+import { useMyEvents } from "@/hooks/useMyEvents";
 
 const UserSettingsPage = () => {
   const { user, logout, refreshProfile } = useAuth();
@@ -45,6 +47,7 @@ const UserSettingsPage = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const { theme: currentTheme, setTheme } = useTheme();
+  const { organizingEvents } = useMyEvents();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -895,9 +898,15 @@ const UserSettingsPage = () => {
     }
   };
 
+  // Check if user has approved events (events that are not pending)
+  const hasApprovedEvents = organizingEvents.some(event => event.status.toLowerCase() !== 'pending');
+  
+  // Check if KYC is incomplete
+  const isKYCIncomplete = !verificationStatus?.kycStatus || verificationStatus.kycStatus !== 'APPROVED';
+
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
-    { id: "verification", label: "Verification", icon: Shield },
+    ...(hasApprovedEvents ? [{ id: "verification", label: "Verification", icon: Shield }] : []),
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "appearance", label: "Appearance", icon: Palette },
     { id: "security", label: "Security", icon: Key },
@@ -915,6 +924,34 @@ const UserSettingsPage = () => {
     <div className="container mx-auto max-w-4xl py-8 px-4">
       <h1 className="text-3xl font-bold mb-2">Settings</h1>
       <p className="text-muted-foreground mb-8">Manage your account and preferences</p>
+
+      {/* KYC Required Banner */}
+      {hasApprovedEvents && isKYCIncomplete && (
+        <div className="mb-6">
+          <KYCRequiredBanner
+            hasApprovedEvents={hasApprovedEvents}
+            isKYCIncomplete={isKYCIncomplete}
+            variant="card"
+          />
+        </div>
+      )}
+
+      {/* Show message if no approved events yet */}
+      {!hasApprovedEvents && (
+        <div className="bg-blue-50/30 dark:bg-blue-500/5 border border-blue-200/50 dark:border-blue-500/20 rounded-lg p-4 mb-6">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                Verification tab will appear after your first event is approved
+              </p>
+              <p className="text-xs text-blue-800 dark:text-blue-200 mt-1">
+                Create a paid event to start the verification process and enable payouts.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Save Status Messages */}
       {saveStatus === "success" && (
@@ -937,7 +974,7 @@ const UserSettingsPage = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-8">
+        <TabsList className={`grid w-full grid-cols-${tabs.length} mb-8`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (

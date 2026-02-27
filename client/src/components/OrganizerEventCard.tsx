@@ -6,7 +6,6 @@ import {
   MapPin,
   CheckCircle,
   Clock,
-  AlertCircle,
   XCircle,
   Image as ImageIcon,
   Eye,
@@ -60,7 +59,6 @@ interface EventCardProps {
 
 const OrganizerEventCard = ({ event }: EventCardProps) => {
   const navigate = useNavigate();
-  const [showStatusMessage, setShowStatusMessage] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [viewEvent, setViewEvent] = useState<EventData | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
@@ -150,26 +148,9 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
     }
   };
 
-  const getStatusMessage = () => {
-    switch (status) {
-      case "PENDING":
-        return "Your event is pending admin approval. Management tools will be available once it's approved.";
-      case "REJECTED":
-        return "This event was not approved. Please review the feedback, make the required changes, and resubmit.";
-      case "CANCELLED":
-        return "This event has been cancelled and can no longer be managed.";
-      default:
-        return "This event is not yet available for management.";
-    }
-  };
-
   const handleManageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isApproved) {
-      navigate(`/organizer/event/${event.id}`);
-    } else {
-      setShowStatusMessage((prev) => !prev);
-    }
+    navigate(`/organizer/event/${event.id}`);
   };
 
   const handleEditClick = (e?: React.MouseEvent) => {
@@ -281,14 +262,6 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
           <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
             {cleanDescription(event.description)}
           </p>
-
-          {/* Status message — shown on click for non-approved events */}
-          {showStatusMessage && !isApproved && (
-            <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-sm text-amber-800 dark:text-amber-300">
-              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
-              <span>{getStatusMessage()}</span>
-            </div>
-          )}
 
           {/* Actions: View + Edit + Manage */}
           <div className="flex items-center gap-2">

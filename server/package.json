@@ -32,7 +32,8 @@
     "seed:events": "node scripts/seed-events.js",
     "list-users": "node scripts/list-users.js",
     "delete-user": "node scripts/delete-user.js",
-    "verify-test-users": "node scripts/verify-test-users.js"
+    "verify-test-users": "node scripts/verify-test-users.js",
+    "backfill:attendee-to-organizer": "npx dotenv-cli -e .env.development -- npx tsx scripts/backfill-attendee-to-organizer.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

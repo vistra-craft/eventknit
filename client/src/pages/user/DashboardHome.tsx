@@ -12,12 +12,14 @@ import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
 import EmptyState from '../../components/EmptyState';
 import { OrganizingEventCard } from '../../components/OrganizingEventCard';
+import { KYCRequiredBanner } from '../../components/KYCRequiredBanner';
 import { useMyEvents } from '../../hooks/useMyEvents';
 import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types/auth';
 import { shareEvent } from '../../lib/utils/share';
 import { downloadTicket } from '../../lib/utils/ticket';
 import { useToast } from '../../hooks/useToast';
+import { getVerificationStatus, type VerificationStatus } from '../../lib/verification-api';
 import {
   PAGE_TITLES,
   TAB_LABELS,
@@ -25,7 +27,7 @@ import {
   CTA_LABELS,
 } from '../../constants/navigationLabels';
 
-const SettingsPage = lazy(() => import('../organizer/OrganizerSettingsPage'));
+const SettingsPage = lazy(() => import('./UserSettingsPage'));
 
 interface User {
   name: string;
@@ -56,6 +58,23 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
   } = useMyEvents();
 
   const [currentTab, setCurrentTab] = useState<'attending' | 'my-events' | 'saved' | 'settings'>('attending');
+
+  // Load verification status
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
+
+  useEffect(() => {
+    const loadVerification = async () => {
+      try {
+        const res = await getVerificationStatus();
+        if (res.success) {
+          setVerificationStatus(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load verification status:', err);
+      }
+    };
+    loadVerification();
+  }, []);
 
   // Handle URL query parameter for settings view
   useEffect(() => {
@@ -125,6 +144,28 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
+      {/* KYC Required Banner */}
+      {currentTab !== 'settings' && (
+        <>
+          {(() => {
+            const hasApprovedEvents = organizingEvents.some(event => event.status.toLowerCase() !== 'pending');
+            const isKYCIncomplete = !verificationStatus?.kycStatus || verificationStatus.kycStatus !== 'APPROVED';
+            return (
+              <KYCRequiredBanner
+                hasApprovedEvents={hasApprovedEvents}
+                isKYCIncomplete={isKYCIncomplete}
+                variant="banner"
+                onNavigateToKYC={() => setCurrentTab('settings')}
+              />
+            );
+          })()}
+          {organizingEvents.some(event => event.status.toLowerCase() !== 'pending') && 
+           (!verificationStatus?.kycStatus || verificationStatus.kycStatus !== 'APPROVED') && (
+            <div className="mb-6" />
+          )}
+        </>
+      )}
+
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">

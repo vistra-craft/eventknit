@@ -380,7 +380,7 @@ const StaffManagementContent = () => {
               {filteredStaff.map((staff) => (
                 <div
                   key={staff.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex items-center gap-4 flex-1">
                     <Avatar
@@ -418,7 +418,7 @@ const StaffManagementContent = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleViewStaff(staff.id)}
-                        className="hover:bg-gray-900 hover:text-white transition-colors"
+                        className="hover:bg-primary hover:text-primary-foreground transition-colors"
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         View Details

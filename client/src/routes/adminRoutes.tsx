@@ -31,6 +31,7 @@ const EventDetailsPage = lazy(() => import('../pages/admin/events/EventDetailsPa
 // Users
 const UsersManagementPage = lazy(() => import('../pages/admin/UsersManagementPage'));
 const AttendeesPage = lazy(() => import('../pages/admin/AttendeesPage'));
+const AttendeeDetailsPage = lazy(() => import('../pages/admin/AttendeeDetailsPage'));
 const AdminStaffManagementPage = lazy(() => import('../pages/admin/StaffManagementPage'));
 const StaffDetailsPage = lazy(() => import('../pages/admin/StaffDetailsPage'));
 const StaffEditPage = lazy(() => import('../pages/admin/StaffEditPage'));
@@ -230,6 +231,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'users/attendees',
     element: createElement(AttendeesPage),
+    allowedRoles: SUPPORT_ROLES,
+  },
+  {
+    path: 'users/attendees/:attendeeId',
+    element: createElement(AttendeeDetailsPage),
     allowedRoles: SUPPORT_ROLES,
   },
   {

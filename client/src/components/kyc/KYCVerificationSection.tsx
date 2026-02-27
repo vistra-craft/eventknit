@@ -129,12 +129,12 @@ const KYCVerificationSection: React.FC<KYCVerificationSectionProps> = ({
               <Badge
                 className={
                   kycStatus === 'APPROVED'
-                    ? 'bg-success'
+                    ? 'bg-success text-white'
                     : kycStatus === 'PENDING'
-                    ? 'bg-amber-600'
+                    ? 'bg-amber-600 text-white'
                     : kycStatus === 'REJECTED'
-                    ? 'bg-destructive'
-                    : 'bg-muted'
+                    ? 'bg-destructive text-white'
+                    : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
                 }
               >
                 {kycStatus || 'Not Started'}
@@ -223,33 +223,33 @@ const KYCVerificationSection: React.FC<KYCVerificationSectionProps> = ({
       {!kycStatus || kycStatus === 'PENDING' || kycStatus === 'REJECTED' ? (
         <>
           {kycStatus === 'PENDING' && (
-            <Alert className="border-amber-500/20 bg-amber-500/5">
-              <Clock className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800">
+            <Alert className="border-amber-500/20 bg-amber-500/10 dark:bg-amber-500/5">
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
                 Your KYC submission is under review. This usually takes 1-3 business days. You'll be notified once your verification is complete.
               </AlertDescription>
             </Alert>
           )}
 
           {kycStatus === 'REJECTED' && (
-            <Alert className="border-destructive/20 bg-destructive/5">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-              <AlertDescription className="text-destructive">
+            <Alert className="border-destructive/20 bg-destructive/10 dark:bg-destructive/5">
+              <AlertTriangle className="h-4 w-4 text-destructive dark:text-red-400" />
+              <AlertDescription className="text-destructive dark:text-red-200">
                 Your KYC submission was rejected. Please review the feedback and resubmit with corrected information.
               </AlertDescription>
             </Alert>
           )}
 
           {!kycStatus && (
-            <Alert className="border-blue-500/20 bg-blue-500/5">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
+            <Alert className="border-blue-500/20 bg-blue-500/10 dark:bg-blue-500/5">
+              <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-blue-800 dark:text-blue-200">
                 Complete KYC verification to create paid events and receive payouts from ticket sales.
               </AlertDescription>
             </Alert>
           )}
 
-          <Card className="border-blue-200/50 bg-blue-50/30">
+          <Card className="border-blue-200/50 bg-blue-50/30 dark:border-blue-500/20 dark:bg-blue-500/5">
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
                 <FileText className="h-5 w-5" />
