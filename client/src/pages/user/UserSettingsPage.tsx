@@ -206,7 +206,6 @@ const UserSettingsPage = () => {
     };
 
     loadPreferences();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, currentTheme]);
 
   // Handle profile save
@@ -858,10 +857,10 @@ const UserSettingsPage = () => {
           <div>
             <Label className="text-base font-medium mb-4 block">Theme</Label>
             <div className="flex gap-4">
-              {["light", "dark", "system"].map((theme) => (
+              {(['light', 'dark', 'system'] as const).map((theme) => (
                 <button
                   key={theme}
-                  onClick={() => setTheme(theme as any)}
+                  onClick={() => setTheme(theme)}
                   className={`px-4 py-2 rounded-lg font-medium transition-all ${
                     currentTheme === theme
                       ? "bg-primary text-primary-foreground"

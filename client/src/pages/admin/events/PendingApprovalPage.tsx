@@ -49,7 +49,7 @@ interface Event {
 const PendingApprovalPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { state: _authState } = useAuthContext();
+  useAuthContext();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

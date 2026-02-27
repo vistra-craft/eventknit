@@ -62,8 +62,6 @@ import { EventSeatMapManager } from "@/components/organizer/EventSeatMapManager"
 import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
 
-const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
-
 interface CommunicationMessage {
   id: string;
   subject: string;
@@ -2462,12 +2460,6 @@ const EventManagement = () => {
                     View Public Page
                   </Button>
                 )}
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-                </Button>
               </DialogFooter>
             </div>
           )}

@@ -110,7 +110,7 @@ export const EventApprovalDialog = ({
     }
   };
 
-  const handleRequestInfo = async (_message: string, _missingDocuments: string[]) => {
+  const handleRequestInfo = async () => {
     if (!event) return;
 
     try {

@@ -1,8 +1,4 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-import { EventApprovalMessageService } from '../../src/services/event-approval-message.service.js';
-import { EventService } from '../../src/services/event.service.js';
-import { UserService } from '../../src/services/user.service.js';
-import { KYCService } from '../../src/services/kyc.service.js';
 import { prisma } from '../../src/config/database.js';
 import { UserRole, UserStatus, OrganizerEntityType, EventStatus } from '@prisma/client';
 import { EventApprovalMessageService as MessageService } from '../../src/services/event-approval-message.service.js';
@@ -95,7 +91,7 @@ describe('EventApprovalMessageService', () => {
         eventId,
         organizerId,
         'Admin User',
-        'admin@test.com'
+        'admin@test.com',
       );
 
       expect(message.type).toBe('APPROVED');
@@ -109,7 +105,7 @@ describe('EventApprovalMessageService', () => {
         organizerId,
         'Event does not meet our guidelines',
         'Admin User',
-        'admin@test.com'
+        'admin@test.com',
       );
 
       expect(message.type).toBe('REJECTED');
@@ -129,7 +125,7 @@ describe('EventApprovalMessageService', () => {
           message: 'Test message',
           senderRole: 'ADMIN',
           senderName: 'Admin',
-        })
+        }),
       ).rejects.toThrow('not found');
     });
   });
@@ -146,7 +142,7 @@ describe('EventApprovalMessageService', () => {
         'First request',
         ['NATIONAL_ID'],
         'Admin',
-        'admin@test.com'
+        'admin@test.com',
       );
       messageId1 = msg1.id;
 
@@ -154,7 +150,7 @@ describe('EventApprovalMessageService', () => {
         eventId,
         organizerId,
         'Admin',
-        'admin@test.com'
+        'admin@test.com',
       );
       messageId2 = msg2.id;
     });
@@ -200,7 +196,7 @@ describe('EventApprovalMessageService', () => {
         'Test request',
         ['NATIONAL_ID'],
         'Admin',
-        'admin@test.com'
+        'admin@test.com',
       );
       messageId = message.id;
     });
@@ -219,7 +215,7 @@ describe('EventApprovalMessageService', () => {
         MessageService.updateMessageStatus({
           messageId: 'invalid-id',
           status: 'VIEWED',
-        })
+        }),
       ).rejects.toThrow('not found');
     });
 
@@ -238,7 +234,7 @@ describe('EventApprovalMessageService', () => {
         'Please provide documents',
         ['NATIONAL_ID', 'KRA_PIN'],
         'Admin',
-        'admin@test.com'
+        'admin@test.com',
       );
       messageId = message.id;
     });
@@ -260,14 +256,14 @@ describe('EventApprovalMessageService', () => {
         eventId,
         organizerId,
         'Admin',
-        'admin@test.com'
+        'admin@test.com',
       );
 
       await expect(
         MessageService.respondToMessage({
           messageId: approvedMsg.id,
           responseMessage: 'Cannot respond to approval',
-        })
+        }),
       ).rejects.toThrow('REQUEST_INFO');
     });
 
@@ -288,7 +284,7 @@ describe('EventApprovalMessageService', () => {
         'Test request',
         ['NATIONAL_ID'],
         'Admin',
-        'admin@test.com'
+        'admin@test.com',
       );
       messageId = message.id;
     });
@@ -320,7 +316,7 @@ describe('EventApprovalMessageService', () => {
         'Please provide documents',
         ['NATIONAL_ID'],
         'Admin',
-        'admin@test.com'
+        'admin@test.com',
       );
 
       const messages = await MessageService.getPendingMessagesForOrganizer(organizerId);
@@ -339,7 +335,7 @@ describe('EventApprovalMessageService', () => {
         'Initial request',
         ['NATIONAL_ID'],
         'Admin',
-        'admin@test.com'
+        'admin@test.com',
       );
 
       await new Promise(resolve => setTimeout(resolve, 100)); // Slight delay
@@ -348,7 +344,7 @@ describe('EventApprovalMessageService', () => {
         eventId,
         organizerId,
         'Admin',
-        'admin@test.com'
+        'admin@test.com',
       );
 
       const history = await MessageService.getApprovalHistory(eventId);
@@ -425,7 +421,7 @@ describe('Event Approval Workflow Integration', () => {
       'Please provide KYC documents',
       ['NATIONAL_ID', 'KRA_PIN'],
       'Admin Workflow',
-      'admin@test.com'
+      'admin@test.com',
     );
 
     expect(requestMsg.type).toBe('REQUEST_INFO');
@@ -448,7 +444,7 @@ describe('Event Approval Workflow Integration', () => {
       eventId,
       organizerId,
       'Admin Workflow',
-      'admin@test.com'
+      'admin@test.com',
     );
 
     expect(approvalMsg.type).toBe('APPROVED');
@@ -482,7 +478,7 @@ describe('Event Approval Workflow Integration', () => {
       'Issues with event details',
       [],
       'Admin Workflow',
-      'admin@test.com'
+      'admin@test.com',
     );
 
     // Admin decides to reject
@@ -491,7 +487,7 @@ describe('Event Approval Workflow Integration', () => {
       organizerId,
       'Event violates terms of service',
       'Admin Workflow',
-      'admin@test.com'
+      'admin@test.com',
     );
 
     expect(rejectionMsg.type).toBe('REJECTED');

@@ -47,7 +47,7 @@ export class EventApprovalMessageService {
    * @returns Created approval message
    */
   static async createMessage(
-    input: CreateApprovalMessageInput
+    input: CreateApprovalMessageInput,
   ): Promise<EventApprovalMessage> {
     try {
       // Verify event and organizer exist
@@ -65,7 +65,7 @@ export class EventApprovalMessageService {
 
       if (!organizer) {
         throw new NotFoundError(
-          `Organizer with ID ${input.organizerId} not found`
+          `Organizer with ID ${input.organizerId} not found`,
         );
       }
 
@@ -85,7 +85,7 @@ export class EventApprovalMessageService {
       });
 
       logger.info(
-        `Created approval message: ${message.id} for event: ${input.eventId}`
+        `Created approval message: ${message.id} for event: ${input.eventId}`,
       );
       return message;
     } catch (error) {
@@ -100,7 +100,7 @@ export class EventApprovalMessageService {
    * @returns Array of approval messages
    */
   static async getEventMessages(
-    params: GetApprovalMessagesParams
+    params: GetApprovalMessagesParams,
   ): Promise<{
     messages: EventApprovalMessage[];
     total: number;
@@ -142,7 +142,7 @@ export class EventApprovalMessageService {
    * @returns Updated message
    */
   static async updateMessageStatus(
-    input: UpdateMessageStatusInput
+    input: UpdateMessageStatusInput,
   ): Promise<EventApprovalMessage> {
     try {
       const message = await prisma.eventApprovalMessage.findUnique({
@@ -151,7 +151,7 @@ export class EventApprovalMessageService {
 
       if (!message) {
         throw new NotFoundError(
-          `Message with ID ${input.messageId} not found`
+          `Message with ID ${input.messageId} not found`,
         );
       }
 
@@ -163,7 +163,7 @@ export class EventApprovalMessageService {
       });
 
       logger.info(
-        `Updated message status: ${input.messageId} → ${input.status}`
+        `Updated message status: ${input.messageId} → ${input.status}`,
       );
       return updated;
     } catch (error) {
@@ -178,7 +178,7 @@ export class EventApprovalMessageService {
    * @returns Updated message
    */
   static async respondToMessage(
-    input: RespondToMessageInput
+    input: RespondToMessageInput,
   ): Promise<EventApprovalMessage> {
     try {
       const message = await prisma.eventApprovalMessage.findUnique({
@@ -187,7 +187,7 @@ export class EventApprovalMessageService {
 
       if (!message) {
         throw new NotFoundError(
-          `Message with ID ${input.messageId} not found`
+          `Message with ID ${input.messageId} not found`,
         );
       }
 
@@ -225,7 +225,7 @@ export class EventApprovalMessageService {
 
       if (!message) {
         throw new NotFoundError(
-          `Message with ID ${messageId} not found`
+          `Message with ID ${messageId} not found`,
         );
       }
 
@@ -252,7 +252,7 @@ export class EventApprovalMessageService {
    * @returns Array of pending REQUEST_INFO messages
    */
   static async getPendingMessagesForOrganizer(
-    organizerId: string
+    organizerId: string,
   ): Promise<EventApprovalMessage[]> {
     try {
       const messages = await prisma.eventApprovalMessage.findMany({
@@ -268,7 +268,7 @@ export class EventApprovalMessageService {
     } catch (error) {
       logger.error(
         'Error fetching pending messages for organizer:',
-        error
+        error,
       );
       throw error;
     }
@@ -314,7 +314,7 @@ export class EventApprovalMessageService {
     eventId: string,
     organizerId: string,
     adminName: string,
-    adminEmail: string
+    adminEmail: string,
   ): Promise<EventApprovalMessage> {
     return this.createMessage({
       eventId,
@@ -342,7 +342,7 @@ export class EventApprovalMessageService {
     organizerId: string,
     rejectionReason: string,
     adminName: string,
-    adminEmail: string
+    adminEmail: string,
   ): Promise<EventApprovalMessage> {
     return this.createMessage({
       eventId,
@@ -372,7 +372,7 @@ export class EventApprovalMessageService {
     message: string,
     missingDocuments: string[],
     adminName: string,
-    adminEmail: string
+    adminEmail: string,
   ): Promise<EventApprovalMessage> {
     return this.createMessage({
       eventId,

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { EventService } from '../../src/services/event.service.js';
 import { prisma } from '../../src/config/database.js';
 import { UserRole, UserStatus, OrganizerEntityType } from '@prisma/client';
-import { AuthorizationError } from '../../src/utils/errors.js';
+import { AuthorizationError as _AuthorizationError } from '../../src/utils/errors.js';
 
 describe('Event Creation & Organizer Status Restrictions', () => {
   let pendingOrgId: string;
@@ -94,7 +94,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
       const event = await EventService.createEvent(
         eventData,
         pendingOrgId,
-        UserRole.ORGANIZER
+        UserRole.ORGANIZER,
       );
 
       expect(event.id).toBeDefined();
@@ -117,7 +117,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
       const event = await EventService.createEvent(
         eventData,
         pendingOrgId,
-        UserRole.ORGANIZER
+        UserRole.ORGANIZER,
       );
 
       expect(event.status).toBe('PENDING'); // Not automatically approved
@@ -142,7 +142,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
       const event = await EventService.createEvent(
         eventData,
         activeOrgId,
-        UserRole.ORGANIZER
+        UserRole.ORGANIZER,
       );
 
       expect(event.id).toBeDefined();
@@ -162,7 +162,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
           isFree: true,
         },
         activeOrgId,
-        UserRole.ORGANIZER
+        UserRole.ORGANIZER,
       );
 
       const event2 = await EventService.createEvent(
@@ -175,7 +175,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
           price: 50,
         },
         activeOrgId,
-        UserRole.ORGANIZER
+        UserRole.ORGANIZER,
       );
 
       expect(event1.id).toBeDefined();
@@ -203,8 +203,8 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         EventService.createEvent(
           eventData,
           suspendedOrgId,
-          UserRole.ORGANIZER
-        )
+          UserRole.ORGANIZER,
+        ),
       ).rejects.toThrow('suspended');
     });
   });
@@ -223,8 +223,8 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         EventService.createEvent(
           eventData,
           deactivatedOrgId,
-          UserRole.ORGANIZER
-        )
+          UserRole.ORGANIZER,
+        ),
       ).rejects.toThrow('deactivated');
     });
   });
@@ -253,8 +253,8 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         EventService.createEvent(
           eventData,
           attendee.id,
-          UserRole.ATTENDEE
-        )
+          UserRole.ATTENDEE,
+        ),
       ).rejects.toThrow('organizers and admins');
 
       // Cleanup
@@ -285,7 +285,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
           isFree: true,
         },
         individual.id,
-        UserRole.ORGANIZER
+        UserRole.ORGANIZER,
       );
 
       expect(event.organizerId).toBe(individual.id);
@@ -319,7 +319,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
           price: 150,
         },
         company.id,
-        UserRole.ORGANIZER
+        UserRole.ORGANIZER,
       );
 
       expect(event.organizerId).toBe(company.id);

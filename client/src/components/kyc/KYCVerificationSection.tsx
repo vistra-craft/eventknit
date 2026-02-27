@@ -161,12 +161,10 @@ const KYCVerificationSection: React.FC<KYCVerificationSectionProps> = ({
         <CardContent className="space-y-3">
           <div className="flex items-start gap-3 pb-3 border-b last:border-b-0 last:pb-0">
             <CheckCircle
-              className={`h-5 w-5 mt-0.5 flex-shrink-0 ${
-                true ? 'text-success' : 'text-muted-foreground'
-              }`}
+              className="h-5 w-5 mt-0.5 flex-shrink-0 text-success"
             />
             <div>
-              <p className={`font-medium ${true ? 'text-foreground' : 'text-muted-foreground'}`}>
+              <p className="font-medium text-foreground">
                 Create Free Events
               </p>
               <p className="text-sm text-muted-foreground">Always available</p>

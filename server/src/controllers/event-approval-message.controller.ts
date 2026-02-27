@@ -37,7 +37,7 @@ export class EventApprovalMessageController {
   static async getEventMessages(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) {
     try {
       const eventId = (req.params as Record<string, string>).eventId;
@@ -74,7 +74,7 @@ export class EventApprovalMessageController {
   static async requestMoreInfo(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       const eventId = (req.params as Record<string, string>).eventId;
@@ -110,7 +110,7 @@ export class EventApprovalMessageController {
         body.message,
         body.missingDocuments,
         admin.email, // Use email as sender name for now
-        admin.email
+        admin.email,
       );
 
       // TODO: Send email notification to organizer
@@ -133,7 +133,7 @@ export class EventApprovalMessageController {
   static async sendMessage(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ): Promise<void> {
     try {
       const eventId = (req.params as Record<string, string>).eventId;
@@ -187,7 +187,7 @@ export class EventApprovalMessageController {
   static async respondToMessage(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) {
     try {
       const messageId = (req.params as Record<string, string>).messageId;
@@ -218,7 +218,7 @@ export class EventApprovalMessageController {
   static async markAsViewed(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) {
     try {
       const messageId = (req.params as Record<string, string>).messageId;
@@ -242,13 +242,13 @@ export class EventApprovalMessageController {
   static async getPendingMessages(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) {
     try {
       const organizerId = (req.params as Record<string, string>).organizerId;
 
       const messages = await EventApprovalMessageService.getPendingMessagesForOrganizer(
-        organizerId
+        organizerId,
       );
 
       res.json({
@@ -268,7 +268,7 @@ export class EventApprovalMessageController {
   static async getApprovalHistory(
     req: AuthenticatedRequest,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
   ) {
     try {
       const eventId = (req.params as Record<string, string>).eventId;
