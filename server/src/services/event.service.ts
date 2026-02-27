@@ -636,8 +636,20 @@ export class EventService {
 
     // Add sold-out status for each ticket type (without exposing exact counts)
     if (event.ticketTypes && Array.isArray(event.ticketTypes)) {
+      const normalizedTicketTypes = Array.from(
+        (event.ticketTypes as any[]).reduce((map: Map<string, any>, ticket: any) => {
+          const name = typeof ticket?.name === 'string' ? ticket.name.trim() : '';
+          if (!name) return map;
+          const key = name.toLowerCase();
+          if (!map.has(key)) {
+            map.set(key, ticket);
+          }
+          return map;
+        }, new Map<string, any>()),
+      ).map(([, ticket]) => ticket);
+
       const ticketTypesWithStatus = await Promise.all(
-        (event.ticketTypes as any[]).map(async (ticket: any) => {
+        normalizedTicketTypes.map(async (ticket: any) => {
           // Only check capacity if quantity is defined
           if (ticket.quantity !== null && ticket.quantity !== undefined) {
             const soldCount = await prisma.ticketLineItem.aggregate({
