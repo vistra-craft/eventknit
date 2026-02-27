@@ -1485,7 +1485,8 @@ export class EventService {
         // Check ticket quantity limit
         if (ticketConfig.quantity !== null && ticketConfig.quantity !== undefined) {
           // Count existing registrations for this ticket type
-          const existingTickets = await prisma.ticketLineItem.count({
+          const existingTicketsAggregate = await prisma.ticketLineItem.aggregate({
+            _sum: { quantity: true },
             where: {
               registration: {
                 eventId,
@@ -1496,6 +1497,7 @@ export class EventService {
               ticketType: selection.ticketType,
             },
           });
+          const existingTickets = existingTicketsAggregate._sum.quantity || 0;
 
           if (existingTickets + selection.quantity > ticketConfig.quantity) {
             throw new ValidationError(
@@ -3680,7 +3682,8 @@ export class EventService {
         // Check ticket quantity limit
         if (ticketConfig.quantity !== null && ticketConfig.quantity !== undefined) {
           // Count existing tickets for this ticket type
-          const existingTickets = await prisma.ticketLineItem.count({
+          const existingTicketsAggregate = await prisma.ticketLineItem.aggregate({
+            _sum: { quantity: true },
             where: {
               registration: {
                 eventId,
@@ -3691,6 +3694,7 @@ export class EventService {
               ticketType: selection.ticketType,
             },
           });
+          const existingTickets = existingTicketsAggregate._sum.quantity || 0;
 
           if (existingTickets + selection.quantity > ticketConfig.quantity) {
             throw new ValidationError(

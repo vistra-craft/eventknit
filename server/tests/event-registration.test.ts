@@ -393,13 +393,13 @@ describe('Event Registration System', () => {
       
       expect(vipLineItem).toBeDefined();
       expect(vipLineItem?.quantity).toBe(2);
-      expect(vipLineItem?.unitPrice).toBe(100);
-      expect(vipLineItem?.totalPrice).toBe(200);
+      expect(Number(vipLineItem?.unitPrice)).toBe(100);
+      expect(Number(vipLineItem?.totalPrice)).toBe(200);
       
       expect(regularLineItem).toBeDefined();
       expect(regularLineItem?.quantity).toBe(3);
-      expect(regularLineItem?.unitPrice).toBe(50);
-      expect(regularLineItem?.totalPrice).toBe(150);
+      expect(Number(regularLineItem?.unitPrice)).toBe(50);
+      expect(Number(regularLineItem?.totalPrice)).toBe(150);
     });
 
     it('should fail registration with invalid ticket type in tickets array', async () => {
