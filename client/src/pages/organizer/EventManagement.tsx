@@ -60,6 +60,7 @@ import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
 import BackButton from "@/components/BackButton";
 import { EventSeatMapManager } from "@/components/organizer/EventSeatMapManager";
 import { RichTextContent } from "@/components/ui/RichTextContent";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
 
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
 
@@ -312,6 +313,10 @@ const EventManagement = () => {
   const [refundSummary, setRefundSummary] = useState<OrganizerRefundSummary | null>(null);
   const [refundsLoading, setRefundsLoading] = useState(false);
   const [refundStatusFilter, setRefundStatusFilter] = useState<string>('all');
+  // Attendee detail sheet state
+  const [selectedAttendee, setSelectedAttendee] = useState<typeof attendees[number] | null>(null);
+  const [attendeeSheetOpen, setAttendeeSheetOpen] = useState(false);
+
   // Invitation state
   type InvitationItem = InvitationsListResponse['data']['invitations'][number];
   const [invitations, setInvitations] = useState<InvitationItem[]>([]);
@@ -599,16 +604,19 @@ const EventManagement = () => {
 
   const navigationSections = [
     { key: "overview", label: "Overview", icon: BarChart3 },
-    { key: "tickets", label: "Tickets", icon: Ticket },
-    { key: "seating", label: "Seating", icon: Grid3X3 },
     { key: "attendees", label: "Attendees", icon: Users },
+    { key: "tickets", label: "Tickets", icon: Ticket },
+    { key: "communication", label: "Messages", icon: MessageSquare },
+    { key: "analytics", label: "Analytics", icon: TrendingUp },
+  ];
+
+  const moreMenuSections = [
     { key: "invitations", label: "Invitations", icon: Link2 },
-    { key: "communication", label: "Communication", icon: MessageSquare },
-    { key: "speakers", label: "Speakers", icon: Mic },
-    { key: "sponsors", label: "Sponsors", icon: Star },
-    { key: "revenue", label: "Revenue", icon: DollarSign },
-    { key: "refunds", label: "Refunds", icon: RotateCcw },
-    { key: "staff", label: "Assigned Staff", icon: UserPlus },
+    { key: "refunds", label: "Refunds", icon: RotateCcw, badge: refunds.length > 0 ? refunds.filter(r => r.status === 'pending').length : 0 },
+    { key: "staff", label: "Staff Assignment", icon: UserPlus },
+    { key: "seating", label: "Seating", icon: Grid3X3, conditional: true },
+    { key: "speakers", label: "Speakers", icon: Mic, conditional: true },
+    { key: "sponsors", label: "Sponsors", icon: Star, conditional: true },
   ];
 
   const getStatusColor = (status: string) => {
@@ -648,117 +656,84 @@ const EventManagement = () => {
         const totalCapacity = eventData.capacity || 0;
 
         return (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-lg font-semibold">Ticket Types</h3>
                 <p className="text-sm text-muted-foreground">
-                  {ticketTypes.length} ticket type{ticketTypes.length !== 1 ? 's' : ''} configured
+                  {totalSold} sold · {totalCapacity || '∞'} capacity · {ticketTypes.length} type{ticketTypes.length !== 1 ? 's' : ''}
                 </p>
               </div>
-              <Button size="sm" variant="outline" onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
+              <Button size="sm" onClick={() => setActiveSection('settings')}>
                 <Settings className="w-4 h-4 mr-2" />
-                Edit Tickets
+                Manage Tickets
               </Button>
             </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground uppercase">Total Sold</p>
-                  <p className="text-lg font-bold mt-1">{totalSold}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground uppercase">Capacity</p>
-                  <p className="text-lg font-bold mt-1">{totalCapacity || '∞'}</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground uppercase">Remaining</p>
-                  <p className="text-lg font-bold mt-1">
-                    {totalCapacity ? Math.max(0, totalCapacity - totalSold) : '∞'}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-4">
-                  <p className="text-xs text-muted-foreground uppercase">Fill Rate</p>
-                  <p className="text-lg font-bold mt-1">
-                    {totalCapacity > 0 ? `${((totalSold / totalCapacity) * 100).toFixed(0)}%` : 'N/A'}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Ticket Type List */}
+            <Card>
+              <CardContent className="p-0">
+                {ticketTypes.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <Ticket className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                    <p className="text-sm font-medium text-muted-foreground">No ticket types configured</p>
+                    <p className="text-xs text-muted-foreground mt-1">Configure tickets in event settings</p>
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {ticketTypes.map((ticket, idx) => {
+                      const soldForType = attendees.filter(a => a.ticketType === ticket.name).length;
+                      const available = ticket.quantity || 0;
+                      const fillPct = available > 0 ? Math.min(100, (soldForType / available) * 100) : 0;
 
-            {/* Ticket Type Breakdown */}
-            {ticketTypes.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Ticket className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-                  <p className="text-sm font-medium text-muted-foreground">No ticket types configured</p>
-                  <p className="text-xs text-muted-foreground mt-1">Add ticket types in the event editor</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {ticketTypes.map((ticket, idx) => {
-                  const soldForType = attendees.filter(a => a.ticketType === ticket.name).length;
-                  const available = ticket.quantity || 0;
-                  const fillPct = available > 0 ? Math.min(100, (soldForType / available) * 100) : 0;
-
-                  return (
-                    <Card key={`${ticket.name}-${idx}`} className="border-border/40">
-                      <CardContent className="p-4">
-                        <div className="flex flex-col sm:flex-row justify-between gap-3">
-                          <div className="space-y-1.5 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold">{ticket.name}</span>
-                              {ticket.isComplementary && (
-                                <Badge variant="secondary" className="text-xs">Complimentary</Badge>
-                              )}
-                              {ticket.requiresInvitation && (
-                                <Badge variant="outline" className="text-xs">Invite Only</Badge>
-                              )}
-                              {ticket.discountLabel && (
-                                <Badge variant="destructive" className="text-xs">{ticket.discountLabel}</Badge>
-                              )}
-                            </div>
-                            {/* Progress bar */}
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all ${
-                                    fillPct >= 90 ? 'bg-destructive' : fillPct >= 70 ? 'bg-amber-500' : 'bg-primary'
-                                  }`}
-                                  style={{ width: `${fillPct}%` }}
-                                />
+                      return (
+                        <div key={`${ticket.name}-${idx}`} className="p-4 hover:bg-muted/30 transition-colors">
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-semibold truncate">{ticket.name}</span>
+                                {ticket.isComplementary && (
+                                  <Badge variant="secondary" className="text-xs">Free</Badge>
+                                )}
+                                {ticket.requiresInvitation && (
+                                  <Badge variant="outline" className="text-xs">Invite Only</Badge>
+                                )}
+                                {ticket.discountLabel && (
+                                  <Badge variant="destructive" className="text-xs">{ticket.discountLabel}</Badge>
+                                )}
                               </div>
-                              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                {soldForType} / {available || '∞'}
-                              </span>
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1 max-w-xs h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      fillPct >= 90 ? 'bg-destructive' : fillPct >= 70 ? 'bg-amber-500' : 'bg-primary'
+                                    }`}
+                                    style={{ width: `${fillPct}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {soldForType} / {available || '∞'}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-sm font-bold">
-                              {ticket.price === 0 || !ticket.price ? 'Free' : `${eventData.currency || '$'} ${ticket.price}`}
-                            </p>
-                            {ticket.originalPrice && ticket.originalPrice > (ticket.price || 0) && (
-                              <p className="text-xs text-muted-foreground line-through">
-                                {eventData.currency || '$'} {ticket.originalPrice}
+                            <div className="text-right shrink-0">
+                              <p className="font-bold">
+                                {ticket.price === 0 || !ticket.price ? 'Free' : `${eventData.currency || '$'}${ticket.price}`}
                               </p>
-                            )}
+                              {ticket.originalPrice && ticket.originalPrice > (ticket.price || 0) && (
+                                <p className="text-xs text-muted-foreground line-through">
+                                  ${ticket.originalPrice}
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         );
       }
@@ -1102,35 +1077,38 @@ const EventManagement = () => {
                   <CardTitle>Attendees List</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-2">
                     {apiData.attendees.length === 0 ? (
                       <p className="text-center text-muted-foreground py-8">No attendees registered yet</p>
                     ) : (
                       paginatedAttendees.map((attendee) => (
-                        <div key={attendee.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div
+                          key={attendee.id}
+                          className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                          onClick={() => { setSelectedAttendee(attendee); setAttendeeSheetOpen(true); }}
+                        >
                           <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
                               <span className="text-sm font-bold text-primary">
-                                {(attendee.name || attendee.email || 'U').split(' ').map((n: string) => n[0]).join('')}
+                                {(attendee.name || attendee.email || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                               </span>
                             </div>
                             <div>
-                              <p className="font-medium">{attendee.name}</p>
+                              <p className="font-medium">{attendee.name || '—'}</p>
                               <p className="text-sm text-muted-foreground">{attendee.email}</p>
                               {hasPaymentDetailsAccess && attendee.totalAmount && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Amount: ${Number(attendee.totalAmount).toFixed(2)} | 
-                                  Status: {attendee.paymentStatus || 'N/A'}
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  ${Number(attendee.totalAmount).toFixed(2)} · {attendee.paymentStatus || 'N/A'}
                                 </p>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center space-x-4">
-                            <Badge variant="secondary">{attendee.ticketType}</Badge>
+                          <div className="flex items-center gap-3">
+                            <Badge variant="secondary" className="hidden sm:flex">{attendee.ticketType}</Badge>
                             <Badge className={getStatusColor(attendee.status || 'pending')}>
                               {attendee.status || 'pending'}
                             </Badge>
-                            <Button variant="outline" size="sm">View Details</Button>
+                            <Eye className="w-4 h-4 text-muted-foreground/60" />
                           </div>
                         </div>
                       ))
@@ -1151,6 +1129,63 @@ const EventManagement = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Attendee Detail Sheet */}
+            <Sheet open={attendeeSheetOpen} onOpenChange={setAttendeeSheetOpen}>
+              <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+                <SheetHeader className="mb-6">
+                  <SheetTitle>Attendee Details</SheetTitle>
+                  <SheetDescription>Registration information and ticket summary</SheetDescription>
+                </SheetHeader>
+                {selectedAttendee && (
+                  <div className="space-y-6">
+                    {/* Avatar + name */}
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                        <span className="text-lg font-bold text-primary">
+                          {(selectedAttendee.name || selectedAttendee.email || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold">{selectedAttendee.name || '—'}</p>
+                        <p className="text-sm text-muted-foreground">{selectedAttendee.email}</p>
+                      </div>
+                    </div>
+
+                    {/* Details grid */}
+                    <div className="space-y-3">
+                      {[
+                        { label: 'Ticket Type', value: selectedAttendee.ticketType },
+                        { label: 'Registration Status', value: selectedAttendee.status || 'pending' },
+                        ...(hasPaymentDetailsAccess ? [
+                          { label: 'Amount Paid', value: selectedAttendee.totalAmount ? `$${Number(selectedAttendee.totalAmount).toFixed(2)}` : '—' },
+                          { label: 'Payment Status', value: selectedAttendee.paymentStatus || '—' },
+                          { label: 'Payment Method', value: selectedAttendee.paymentMethod || '—' },
+                        ] : []),
+                        { label: 'Registered', value: selectedAttendee.createdAt ? new Date(selectedAttendee.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—' },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex items-start justify-between py-2 border-b border-border/50 last:border-0">
+                          <span className="text-sm text-muted-foreground">{label}</span>
+                          <span className="text-sm font-medium text-right max-w-[55%] capitalize">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-col gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        className="w-full gap-2"
+                        onClick={() => { setAttendeeSheetOpen(false); setActiveSection('communication'); }}
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        Send Message
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </SheetContent>
+            </Sheet>
           </div>
         );
       }
@@ -1212,7 +1247,7 @@ const EventManagement = () => {
                     <p className="text-center text-muted-foreground py-8">No speakers added yet</p>
                   ) : (
                     (apiData.speakers as Speaker[]).map((speaker) => (
-                      <div key={speaker.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div key={speaker.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex items-center space-x-4">
                           <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                             <span className="text-sm font-bold text-primary">
@@ -1307,7 +1342,7 @@ const EventManagement = () => {
                         benefits: [],
                       };
                       return (
-                    <div key={idx} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={idx} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center space-x-4">
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <span className="text-sm font-bold text-primary">
@@ -1334,21 +1369,28 @@ const EventManagement = () => {
           </div>
         );
 
-      case "revenue":
+      case "analytics":
         return (
           <div className="space-y-6">
-            <h3 className="text-xl font-semibold">Revenue Analytics</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Analytics & Revenue</h3>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/organizer/analytics/events?eventId=${eventId}`)}>
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Full Analytics
+              </Button>
+            </div>
             
             {!hasPaymentDetailsAccess && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Your data access is currently restricted. You can only see summary statistics. Contact an administrator to request access to detailed revenue information.
+                  Your data access is currently restricted. Contact an administrator to request access to detailed revenue information.
                 </AlertDescription>
               </Alert>
             )}
             
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {/* Revenue Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -1409,10 +1451,11 @@ const EventManagement = () => {
               </Card>
             </div>
 
+            {/* Revenue Breakdown */}
             {hasPaymentDetailsAccess && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Revenue Summary</CardTitle>
+                  <CardTitle>Revenue Breakdown</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -1438,174 +1481,295 @@ const EventManagement = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Registration Trend Placeholder */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Registration Timeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                  <div className="text-center">
+                    <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>Registration trend chart coming soon</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case "settings":
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Event Settings</h3>
+              <Button onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
+                <Settings className="w-4 h-4 mr-2" />
+                Edit Event
+              </Button>
+            </div>
+            
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium">Event Title</p>
+                    <p className="text-sm text-muted-foreground">{eventData?.title}</p>
+                  </div>
+                </div>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium">Date & Time</p>
+                    <p className="text-sm text-muted-foreground">{eventData?.date} {eventData?.time && `at ${eventData.time}`}</p>
+                  </div>
+                </div>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium">Location</p>
+                    <p className="text-sm text-muted-foreground">{eventData?.venue || eventData?.location}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Event Policies */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Event Policies</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium mb-1">Refund Policy</p>
+                  <p className="text-sm text-muted-foreground">
+                    {eventData?.refundPolicy === 'no_refunds' && 'No refunds — all ticket sales are final.'}
+                    {eventData?.refundPolicy === 'full_refund' && `Full refund available up to ${eventData.refundDeadlineDays || 0} days before the event.`}
+                    {eventData?.refundPolicy === 'partial_refund' && `50% partial refund available up to ${eventData.refundDeadlineDays || 0} days before the event.`}
+                    {eventData?.refundPolicy === 'custom' && (eventData.refundPolicyText || 'Custom refund policy.')}
+                    {!eventData?.refundPolicy && 'No refund policy configured.'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">Event Capacity</p>
+                  <p className="text-sm text-muted-foreground">{eventData?.capacity || 'Unlimited'} attendees</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Danger Zone */}
+            {canCancelEvent() && (
+              <Card className="border-destructive/50">
+                <CardHeader>
+                  <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">Cancel Event</p>
+                      <p className="text-sm text-muted-foreground">This action cannot be undone. All attendees will be notified.</p>
+                    </div>
+                    <Button variant="destructive" onClick={() => setShowCancelDialog(true)}>
+                      Cancel Event
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
 
       case "overview":
       default:
         return (
-          <div className="space-y-8">
-            {/* Hero Section with Image Left, Content Right */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Event Image - Left Side */}
-              <div className="lg:col-span-1">
-                <div className="relative rounded-2xl overflow-hidden shadow-xl">
-                  <img 
-                    src={eventData.image || 'https://via.placeholder.com/400x300?text=Event+Image'}
-                    alt="Event background"
-                    className="w-full h-80 lg:h-96 object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    {eventData.category && (
-                      <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30 mb-2">
-                        {eventData.category}
-                      </Badge>
+          <div className="space-y-6">
+            {/* Key Metrics - Cleaner presentation */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="border-l-4 border-l-primary">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase">Attendees</p>
+                      <p className="text-2xl font-bold text-primary mt-1">{apiData.attendees.length}</p>
+                      <p className="text-xs text-muted-foreground mt-1">of {eventData.capacity || '∞'}</p>
+                    </div>
+                    <Users className="w-10 h-10 text-primary/60" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-success">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase">Revenue</p>
+                      <p className="text-2xl font-bold text-success mt-1">
+                        ${hasPaymentDetailsAccess
+                          ? (apiData.attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)).toLocaleString()
+                          : '---'}
+                      </p>
+                    </div>
+                    <DollarSign className="w-10 h-10 text-success/60" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-primary">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase">Fill Rate</p>
+                      <p className="text-2xl font-bold text-primary mt-1">
+                        {eventData.capacity && eventData.capacity > 0
+                          ? ((apiData.attendees.length / eventData.capacity) * 100).toFixed(0)
+                          : 0}%
+                      </p>
+                    </div>
+                    <Target className="w-10 h-10 text-primary/60" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-amber-500">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase">Pending</p>
+                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{pendingAttendees}</p>
+                      <p className="text-xs text-muted-foreground mt-1">registrations</p>
+                    </div>
+                    <Clock className="w-10 h-10 text-amber-600/60 dark:text-amber-400/60" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Pending Actions Alert */}
+            {(pendingAttendees > 0 || (refunds.length > 0 && refunds.filter(r => r.status === 'pending').length > 0)) && (
+              <Alert className="border-amber-500/50 bg-amber-500/5 dark:bg-amber-950/20">
+                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p className="font-semibold text-amber-900 dark:text-amber-100">Pending Actions</p>
+                    {pendingAttendees > 0 && (
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-amber-800 dark:text-amber-200">
+                          {pendingAttendees} registration{pendingAttendees !== 1 ? 's' : ''} need{pendingAttendees === 1 ? 's' : ''} confirmation
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={() => setActiveSection('attendees')}
+                        >
+                          Review
+                        </Button>
+                      </div>
+                    )}
+                    {refunds.filter(r => r.status === 'pending').length > 0 && (
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-amber-800 dark:text-amber-200">
+                          {refunds.filter(r => r.status === 'pending').length} refund request{refunds.filter(r => r.status === 'pending').length !== 1 ? 's' : ''} waiting for review
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={() => setActiveSection('refunds')}
+                        >
+                          Review
+                        </Button>
+                      </div>
                     )}
                   </div>
-                </div>
-              </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
-              {/* Event Details - Right Side */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Event Header */}
-                <div>
-                  <h1 className="text-lg font-semibold text-foreground mb-2">
-                    {eventData.title}
-                  </h1>
-                  <RichTextContent
-                    content={eventData.description}
-                    className="text-muted-foreground mb-4"
-                  />
-                  
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary" />
-                      <span>{eventData.date || 'Date TBD'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-primary" />
-                      <span>{eventData.time || 'Time TBD'}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-primary" />
-                      <span>{eventData.venue ? `${eventData.venue}, ${eventData.location}` : eventData.location || 'Location TBD'}</span>
+            {/* Secondary Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Mic className="w-8 h-8 text-muted-foreground/60" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Speakers</p>
+                      <p className="text-xl font-semibold">{apiData.speakers.length}</p>
                     </div>
                   </div>
-                </div>
+                </CardContent>
+              </Card>
 
-                {/* Key Metrics Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card className="border-l-4 border-l-primary">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Attendees</p>
-                          <p className="text-lg font-semibold text-primary">{apiData.attendees.length}</p>
-                          <p className="text-xs text-muted-foreground">of {eventData.capacity || 0}</p>
-                        </div>
-                        <Users className="w-8 h-8 text-primary/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-8 h-8 text-success/60" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Confirmed</p>
+                      <p className="text-xl font-semibold">{confirmedAttendees}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                  <Card className="border-l-4 border-l-primary">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Speakers</p>
-                          <p className="text-lg font-semibold text-primary">{apiData.speakers.length}</p>
-                        </div>
-                        <Mic className="w-8 h-8 text-primary/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-l-4 border-l-success">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Revenue</p>
-                          <p className="text-lg font-semibold text-success">
-                            ${hasPaymentDetailsAccess
-                              ? (apiData.attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)).toLocaleString()
-                              : 'N/A'}
-                          </p>
-                        </div>
-                        <DollarSign className="w-8 h-8 text-success/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="border-l-4 border-l-primary">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Conversion</p>
-                          <p className="text-lg font-semibold text-primary">
-                            {eventData.capacity && eventData.capacity > 0
-                              ? ((apiData.attendees.length / eventData.capacity) * 100).toFixed(1)
-                              : 0}%
-                          </p>
-                        </div>
-                        <Target className="w-8 h-8 text-primary/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                {/* Additional Metrics */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Sponsors</p>
-                          <p className="text-lg font-semibold">{apiData.sponsors.length}</p>
-                        </div>
-                        <Star className="w-8 h-8 text-muted-foreground/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Confirmed</p>
-                          <p className="text-lg font-semibold">{confirmedAttendees}</p>
-                        </div>
-                        <CheckCircle className="w-8 h-8 text-success/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Pending</p>
-                          <p className="text-lg font-semibold">{pendingAttendees}</p>
-                        </div>
-                        <Clock className="w-8 h-8 text-muted-foreground/60" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-              </div>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Star className="w-8 h-8 text-muted-foreground/60" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Sponsors</p>
+                      <p className="text-xl font-semibold">{apiData.sponsors.length}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {apiData.attendees.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No recent activity</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {apiData.attendees.slice(0, 5).map((attendee, idx) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <Users className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{attendee.name} registered</p>
+                          <p className="text-xs text-muted-foreground">{attendee.ticketType}</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {attendee.registeredDate}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Consent Statistics Section */}
             {!subscriptionLoading && eventId && (
-              <div className="mt-8">
-                <ConsentStatisticsCard 
-                  eventId={eventId} 
-                  subscriptionTier={subscription?.tier}
-                />
-              </div>
+              <ConsentStatisticsCard 
+                eventId={eventId} 
+                subscriptionTier={subscription?.tier}
+              />
             )}
-
           </div>
         );
 
@@ -1833,33 +1997,64 @@ const EventManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Hero Header with Event Image and Info */}
-      <div className="relative rounded-2xl overflow-hidden border border-border bg-card shadow-sm">
-        {/* Background Image */}
-        {eventData?.image && (
-          <div className="absolute inset-0">
-            <img 
-              src={eventData.image} 
-              alt={eventData.title}
-              className="w-full h-full object-cover opacity-20"
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-background" />
-          </div>
-        )}
-        
-        <div className="relative p-6 md:p-8">
-          {/* Top Bar */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <BackButton to="/organizer/dashboard" label="Back to Dashboard" />
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                  <MoreHorizontal className="w-4 h-4" />
-                  Actions
-                </Button>
-              </DropdownMenuTrigger>
+    <div className="space-y-4">
+      {/* Compact Hero Header - Sticky */}
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="p-4">
+          <div className="flex items-center gap-4 mb-3">
+            {/* Event Image - Small */}
+            {eventData?.image && (
+              <img
+                src={eventData.image}
+                alt={eventData.title}
+                className="w-16 h-16 rounded-lg object-cover"
+              />
+            )}
+
+            {/* Event Title and Quick Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <BackButton to="/organizer/dashboard" variant="ghost" size="sm" />
+                <h1 className="text-xl font-bold text-foreground truncate">
+                  {eventData?.title || 'Event Management'}
+                </h1>
+                {eventData?.status && (
+                  <Badge className={`${getStatusColor(eventData.status)} border font-medium shrink-0`}>
+                    {getStatusLabel(eventData.status)}
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                {eventData?.date && (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {eventData.date}
+                  </span>
+                )}
+                {(eventData?.venue || eventData?.location) && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {eventData.venue || eventData.location}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5" />
+                  {apiData.attendees.length} / {eventData?.capacity || '∞'}
+                  {eventData?.capacity && eventData.capacity > 0 && (
+                    <span className="text-xs">({((apiData.attendees.length / eventData.capacity) * 100).toFixed(0)}%)</span>
+                  )}
+                </span>
+              </div>
+            </div>
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <MoreHorizontal className="w-4 h-4" />
+                    <span className="hidden sm:inline">Actions</span>
+                  </Button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => setShowPreviewModal(true)}>
                   <Eye className="h-4 w-4 mr-2" />
@@ -1872,9 +2067,9 @@ const EventManagement = () => {
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
+                <DropdownMenuItem onClick={() => setActiveSection('settings')}>
                   <Settings className="h-4 w-4 mr-2" />
-                  Edit Event Details
+                  Event Settings
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate(`/organizer/analytics/events?eventId=${eventId}`)}>
                   <BarChart3 className="h-4 w-4 mr-2" />
@@ -1958,129 +2153,127 @@ const EventManagement = () => {
                     </DropdownMenuItem>
                   </>
                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Event Title and Status */}
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                  {eventData?.title || 'Event Management'}
-                </h1>
-                {eventData?.status && (
-                  <Badge className={`${getStatusColor(eventData.status)} border font-medium`}>
-                    {getStatusLabel(eventData.status)}
-                  </Badge>
-                )}
-              </div>
-              {eventData?.category && (
-                <Badge variant="secondary" className="mb-3">
-                  {eventData.category}
-                </Badge>
-              )}
-              {eventData?.description && (
-                <p className="text-muted-foreground line-clamp-2 mt-2">
-                  {stripHtml(eventData.description)}
-                </p>
-              )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
-          {/* Event Details Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {eventData?.date && (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Calendar className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Date</p>
-                  <p className="text-sm font-medium">{eventData.date}</p>
-                  {eventData.time && (
-                    <p className="text-xs text-muted-foreground">{eventData.time}</p>
-                  )}
-                </div>
-              </div>
-            )}
-            {(eventData?.venue || eventData?.location) && (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <MapPin className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Location</p>
-                  <p className="text-sm font-medium line-clamp-1">
-                    {eventData.venue || eventData.location}
-                  </p>
-                  {eventData.venue && eventData.location && eventData.venue !== eventData.location && (
-                    <p className="text-xs text-muted-foreground line-clamp-1">{eventData.location}</p>
-                  )}
-                </div>
-              </div>
-            )}
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-              <div className="p-2 rounded-lg bg-success/10">
-                <Users className="w-5 h-5 text-success" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Attendees</p>
-                <p className="text-sm font-medium">
-                  {apiData.attendees.length} / {eventData?.capacity || '∞'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {eventData?.capacity && eventData.capacity > 0
-                    ? `${((apiData.attendees.length / eventData.capacity) * 100).toFixed(0)}% full`
-                    : 'Unlimited'}
-                </p>
-              </div>
-            </div>
-            {hasPaymentDetailsAccess && (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <DollarSign className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Revenue</p>
-                  <p className="text-sm font-medium">
-                    ${(apiData.attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)).toLocaleString()}
-                  </p>
-                </div>
-              </div>
+          {/* Quick Action Bar */}
+          <div className="flex flex-wrap gap-2 pt-3 border-t border-border/50">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(`${window.location.origin}/event/${eventId}`);
+                  toast({
+                    title: "Copied",
+                    description: "Event link copied to clipboard",
+                  });
+                } catch {
+                  toast({
+                    title: "Error",
+                    description: "Failed to copy link",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              <Copy className="w-3.5 h-3.5 mr-1.5" />
+              Copy Link
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!eventId || !eventData) return;
+                const shared = await shareEvent(eventData.title || 'Event', eventId);
+                if (shared) {
+                  toast({
+                    title: "Shared",
+                    description: "Event shared successfully",
+                  });
+                } else {
+                  toast({
+                    title: "Link Copied",
+                    description: "Event link copied to clipboard",
+                  });
+                }
+              }}
+            >
+              <Share2 className="w-3.5 h-3.5 mr-1.5" />
+              Share
+            </Button>
+            {eventData?.status?.toUpperCase() === 'APPROVED' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(`/event/${eventId}`, '_blank')}
+              >
+                <Eye className="w-3.5 h-3.5 mr-1.5" />
+                View Public
+              </Button>
             )}
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <div>
-            <div className="flex flex-wrap gap-2">
-              {navigationSections.map((section) => {
+      {/* Navigation Tabs */}
+      <div className="px-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {navigationSections.map((section) => {
+            const Icon = section.icon;
+            const isActive = activeSection === section.key;
+            return (
+              <Button
+                key={section.key}
+                onClick={() => setActiveSection(section.key)}
+                variant={isActive ? "default" : "outline"}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{section.label}</span>
+              </Button>
+            );
+          })}
+          
+          {/* More Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <MoreHorizontal className="w-4 h-4" />
+                <span className="hidden sm:inline">More</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {moreMenuSections.map((section) => {
                 const Icon = section.icon;
-                const isActive = activeSection === section.key;
+                const badge = section.badge || 0;
                 return (
-                  <Button
+                  <DropdownMenuItem
                     key={section.key}
                     onClick={() => setActiveSection(section.key)}
-                    variant={isActive ? "default" : "outline"}
-                    size="sm"
-                    className={`flex items-center gap-2 ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-primary hover:text-primary-foreground"
-                    }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="h-4 w-4 mr-2" />
                     {section.label}
-                  </Button>
+                    {badge > 0 && (
+                      <Badge variant="destructive" className="ml-auto">
+                        {badge}
+                      </Badge>
+                    )}
+                  </DropdownMenuItem>
                 );
               })}
-            </div>
-          </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
       {/* Content */}
-      {renderSection()}
+      <div className="px-4">
+        {renderSection()}
+      </div>
 
       {/* Event Preview Dialog */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
@@ -2088,86 +2281,171 @@ const EventManagement = () => {
           <DialogHeader>
             <DialogTitle>Event Preview</DialogTitle>
             <DialogDescription>
-              Preview event details
+              Complete event details and information
             </DialogDescription>
           </DialogHeader>
           {eventData && (
             <div className="space-y-6">
+              {/* Event Image */}
               {eventData.image && (
-                <div className="relative rounded-lg overflow-hidden">
+                <div className="relative overflow-hidden rounded-xl h-64">
                   <img
                     src={eventData.image}
                     alt={eventData.title}
-                    className="w-full h-64 object-cover"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                   <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <h2 className="text-lg font-semibold mb-2">{eventData.title}</h2>
+                    <h2 className="text-2xl font-bold mb-2">{eventData.title}</h2>
                     {eventData.category && (
-                      <Badge className="bg-success text-white">
+                      <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30">
                         {eventData.category}
                       </Badge>
                     )}
                   </div>
-                </div>
-              )}
-              {!eventData.image && (
-                <div>
-                  <h2 className="text-lg font-semibold mb-2">{eventData.title}</h2>
-                  {eventData.category && (
-                    <Badge className="bg-success text-white">
-                      {eventData.category}
-                    </Badge>
+                  {eventData.status && (
+                    <div className="absolute top-4 right-4">
+                      <Badge className={getStatusColor(eventData.status)}>
+                        {getStatusLabel(eventData.status)}
+                      </Badge>
+                    </div>
                   )}
                 </div>
               )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Title (if no image) */}
+              {!eventData.image && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">{eventData.title}</h2>
+                  {eventData.category && (
+                    <Badge>{eventData.category}</Badge>
+                  )}
+                </div>
+              )}
+
+              {/* Description */}
+              {eventData.description && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">About this event</h3>
+                  <RichTextContent
+                    content={eventData.description}
+                    className="text-sm text-muted-foreground"
+                  />
+                </div>
+              )}
+
+              {/* Event Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Date and Time */}
                 {eventData.date && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex gap-3">
+                    <Calendar className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium">{eventData.date}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Date & Time</p>
+                      <p className="font-medium text-sm">{eventData.date}</p>
                       {eventData.time && (
                         <p className="text-sm text-muted-foreground">{eventData.time}</p>
                       )}
                     </div>
                   </div>
                 )}
-                {eventData.location && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
+
+                {/* Location */}
+                {(eventData.venue || eventData.location) && (
+                  <div className="flex gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium">{String(eventData.venue ?? eventData.location ?? '')}</p>
-                      {eventData.venue && eventData.location && (
-                        <p className="text-sm text-muted-foreground">{String(eventData.location ?? '')}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Venue</p>
+                      <p className="font-medium text-sm">{eventData.venue || eventData.location}</p>
+                      {eventData.venue && eventData.location && eventData.venue !== eventData.location && (
+                        <p className="text-sm text-muted-foreground">{eventData.location}</p>
                       )}
                     </div>
                   </div>
                 )}
-                {totalAttendees !== undefined && (
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <p className="font-medium">
-                      {totalAttendees} / {(eventData.capacity as number | undefined) || '∞'} registered
+
+                {/* Capacity */}
+                <div className="flex gap-3">
+                  <Users className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Capacity</p>
+                    <p className="font-medium text-sm">
+                      {totalAttendees} / {eventData.capacity || '∞'} registered
                     </p>
+                    {eventData.capacity && eventData.capacity > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        {((totalAttendees / eventData.capacity) * 100).toFixed(0)}% full
+                      </p>
+                    )}
                   </div>
-                )}
-                {eventData.price && (
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <p className="font-medium">{String(eventData.price ?? '')}</p>
+                </div>
+
+                {/* Price */}
+                {(eventData.ticketTypes && eventData.ticketTypes.length > 0) && (
+                  <div className="flex gap-3">
+                    <DollarSign className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Ticket Pricing</p>
+                      {eventData.ticketTypes.map((ticket, idx) => (
+                        <p key={idx} className="text-sm">
+                          <span className="font-medium">{ticket.name}:</span>{' '}
+                          {ticket.price === 0 || !ticket.price ? 'Free' : `${eventData.currency || '$'}${ticket.price}`}
+                        </p>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
 
-              {eventData.description && (
+              {/* Ticket Types Summary */}
+              {eventData.ticketTypes && eventData.ticketTypes.length > 0 && (
                 <div>
-                  <h3 className="font-semibold mb-2">Description</h3>
-                  <RichTextContent
-                    content={eventData.description}
-                    className="text-muted-foreground"
-                  />
+                  <h3 className="text-sm font-semibold mb-3">Available Tickets</h3>
+                  <div className="grid gap-2">
+                    {eventData.ticketTypes.map((ticket, idx) => {
+                      const soldForType = attendees.filter(a => a.ticketType === ticket.name).length;
+                      const available = ticket.quantity || 0;
+                      return (
+                        <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{ticket.name}</span>
+                            {ticket.isComplementary && <Badge variant="secondary" className="text-xs">Free</Badge>}
+                            {ticket.requiresInvitation && <Badge variant="outline" className="text-xs">Invite Only</Badge>}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold">
+                              {ticket.price === 0 || !ticket.price ? 'Free' : `${eventData.currency || '$'}${ticket.price}`}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {soldForType} / {available || '∞'} sold
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Speakers (if any) */}
+              {apiData.speakers && apiData.speakers.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Speakers</h3>
+                  <div className="grid gap-2">
+                    {apiData.speakers.slice(0, 5).map((speaker: Speaker, idx: number) => (
+                      <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary">
+                            {speaker.name.split(' ').map((n: string) => n[0]).join('')}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{speaker.name}</p>
+                          {speaker.title && <p className="text-xs text-muted-foreground">{speaker.title}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -2175,12 +2453,20 @@ const EventManagement = () => {
                 <Button variant="outline" onClick={() => setShowPreviewModal(false)}>
                   Close
                 </Button>
-                <Button onClick={() => {
-                  setShowPreviewModal(false);
-                  window.open(`/event/${eventId}`, '_blank');
-                }}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Public Page
+                {eventData?.status?.toUpperCase() === 'APPROVED' && (
+                  <Button onClick={() => {
+                    setShowPreviewModal(false);
+                    window.open(`/event/${eventId}`, '_blank');
+                  }}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Public Page
+                  </Button>
+                )}
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
                 </Button>
               </DialogFooter>
             </div>
