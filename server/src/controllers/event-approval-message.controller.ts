@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { EventApprovalMessageService } from '../services/event-approval-message.service.js';
-import { EventApprovalMessageType, MessageStatus } from '@prisma/client';
+import { EventApprovalMessageType } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 
 // ─── Typed request shapes ───────────────────────────────────────────────

@@ -3,7 +3,6 @@ import {
   EventApprovalMessage,
   EventApprovalMessageType,
   MessageStatus,
-  Prisma,
 } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';

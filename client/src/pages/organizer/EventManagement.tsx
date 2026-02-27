@@ -561,7 +561,10 @@ const EventManagement = () => {
     email?: string;
     name?: string;
     paymentStatus?: string;
+    paymentMethod?: string;
     ticketType?: string;
+    createdAt?: string;
+    registeredDate?: string;
   }
   
   interface Speaker {
@@ -2012,7 +2015,7 @@ const EventManagement = () => {
             {/* Event Title and Quick Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <BackButton to="/organizer/dashboard" variant="ghost" size="sm" />
+                <BackButton to="/organizer/dashboard" />
                 <h1 className="text-xl font-bold text-foreground truncate">
                   {eventData?.title || 'Event Management'}
                 </h1>
@@ -2430,7 +2433,7 @@ const EventManagement = () => {
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Speakers</h3>
                   <div className="grid gap-2">
-                    {apiData.speakers.slice(0, 5).map((speaker: Speaker, idx: number) => (
+                    {apiData.speakers.slice(0, 5).map((speaker, idx: number) => (
                       <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                           <span className="text-sm font-bold text-primary">

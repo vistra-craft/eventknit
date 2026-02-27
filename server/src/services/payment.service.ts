@@ -201,19 +201,44 @@ export class PaymentService {
         metadata: response.metadata,
       };
     } catch (error: unknown) {
-      logger.error('Failed to initialize payment:', error);
+      const errorCode = (error as any)?.code || 'UNKNOWN_ERROR';
+      const isTransient = (error as any)?.isTransient || false;
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
-      // Rollback: Cancel registration and restore capacity if payment initialization fails
-      // This prevents orphaned registrations when payment fails
-      try {
-        await this.rollbackRegistration(data.registrationId);
-        logger.info(`Rolled back registration ${data.registrationId} due to payment initialization failure`);
-      } catch (rollbackError) {
-        logger.error(`Failed to rollback registration ${data.registrationId}:`, rollbackError);
-        // Continue to throw original error even if rollback fails
+      logger.error('Failed to initialize payment:', {
+        errorCode,
+        isTransient,
+        message: errorMessage,
+        registrationId: data.registrationId,
+        gateway: gatewayType,
+      });
+
+      // Only rollback on permanent errors (not transient)
+      // Transient errors: timeout, network, rate limit, service unavailable → allow retry
+      // Permanent errors: auth failure, config issues → rollback
+      if (!isTransient) {
+        try {
+          await this.rollbackRegistration(data.registrationId);
+          logger.info(`Rolled back registration ${data.registrationId} due to permanent payment error: ${errorCode}`);
+        } catch (rollbackError) {
+          logger.error(`Failed to rollback registration ${data.registrationId}:`, rollbackError);
+          // Continue to throw original error even if rollback fails
+        }
+      } else {
+        logger.info(`Transient payment error for registration ${data.registrationId}. Registration preserved for retry.`);
       }
 
-      throw new ValidationError(`Failed to initialize payment with ${gatewayType}. Please try again.`);
+      // Provide user-friendly but informative error message
+      let userMessage = 'Failed to initialize payment. Please try again.';
+      if (isTransient) {
+        userMessage = 'Payment service is temporarily unavailable. Please try again in a moment.';
+      } else if (errorCode === 'PAYSTACK_AUTH_ERROR') {
+        userMessage = 'Payment gateway configuration error. Please contact support.';
+      } else if (errorCode === 'INVALID_REQUEST') {
+        userMessage = 'Invalid payment request. Please check your information and try again.';
+      }
+
+      throw new ValidationError(userMessage, `PAYMENT_INIT_FAILED_${errorCode}`);
     }
   }
 

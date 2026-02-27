@@ -52,14 +52,22 @@ export class PaystackGateway implements PaymentGateway {
         reference: request.reference,
       });
 
-      const response = await this.paystack.transaction.initialize({
-        email: request.email,
-        amount: amountInSmallestUnit,
-        currency: request.currency,
-        reference: request.reference,
-        metadata: request.metadata,
-        callback_url: request.callbackUrl,
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('PAYSTACK_TIMEOUT')), 10000); // 10 second timeout
       });
+
+      const response = await Promise.race([
+        this.paystack.transaction.initialize({
+          email: request.email,
+          amount: amountInSmallestUnit,
+          currency: request.currency,
+          reference: request.reference,
+          metadata: request.metadata,
+          callback_url: request.callbackUrl,
+        }),
+        timeoutPromise,
+      ]);
 
       if ((response as any).status && (response as any).data) {
         const data: any = (response as any).data;
@@ -74,15 +82,64 @@ export class PaystackGateway implements PaymentGateway {
       }
 
       logger.error('Paystack returned unsuccessful response:', response);
-      throw new Error('Failed to initialize Paystack payment');
+      throw new Error('PAYSTACK_FAILED_RESPONSE');
     } catch (error: any) {
+      const errorCode = this.classifyPaystackError(error);
       logger.error('Paystack payment initialization error:', {
+        errorCode,
         message: error.message,
-        response: error.response?.data || error.response || 'No response data',
+        statusCode: error.response?.status,
+        responseData: error.response?.data,
+        isTransient: this.isTransientError(errorCode),
         stack: error.stack,
       });
-      throw new Error(`Paystack payment failed: ${error.message}`);
+      // Rethrow with classified error code
+      const err = new Error(error.message);
+      (err as any).code = errorCode;
+      (err as any).isTransient = this.isTransientError(errorCode);
+      throw err;
     }
+  }
+
+  /**
+   * Classify Paystack errors as transient (retryable) or permanent
+   */
+  private classifyPaystackError(error: any): string {
+    if (error.message === 'PAYSTACK_TIMEOUT') return 'PAYSTACK_TIMEOUT';
+    if (error.message === 'PAYSTACK_FAILED_RESPONSE') return 'PAYSTACK_FAILED_RESPONSE';
+    
+    const statusCode = error.response?.status;
+    
+    // Transient errors - can retry
+    if (!statusCode) return 'NETWORK_ERROR'; // Network failure
+    if (statusCode === 408) return 'REQUEST_TIMEOUT';
+    if (statusCode === 429) return 'RATE_LIMITED';
+    if (statusCode === 500 || statusCode === 502 || statusCode === 503 || statusCode === 504) return 'PAYSTACK_UNAVAILABLE';
+    
+    // Permanent errors - do not retry
+    if (statusCode === 401) return 'PAYSTACK_AUTH_ERROR'; // Invalid keys
+    if (statusCode === 400) {
+      const detail = error.response?.data?.message || '';
+      if (detail.includes('invalid_key')) return 'PAYSTACK_AUTH_ERROR';
+      return 'INVALID_REQUEST';
+    }
+    if (statusCode === 403) return 'PAYSTACK_FORBIDDEN';
+    
+    return 'UNKNOWN_ERROR';
+  }
+
+  /**
+   * Determine if error is transient (can be retried)
+   */
+  private isTransientError(errorCode: string): boolean {
+    const transientErrors = [
+      'NETWORK_ERROR',
+      'REQUEST_TIMEOUT',
+      'RATE_LIMITED',
+      'PAYSTACK_TIMEOUT',
+      'PAYSTACK_UNAVAILABLE',
+    ];
+    return transientErrors.includes(errorCode);
   }
 
   async verifyPayment(request: VerifyPaymentRequest): Promise<VerifyPaymentResponse> {
@@ -91,7 +148,15 @@ export class PaystackGateway implements PaymentGateway {
     }
 
     try {
-      const response = await this.paystack.transaction.verify(request.reference);
+      // Add timeout for verification as well
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('PAYSTACK_TIMEOUT')), 10000); // 10 second timeout
+      });
+
+      const response = await Promise.race([
+        this.paystack.transaction.verify(request.reference),
+        timeoutPromise,
+      ]);
 
       if ((response as any).status && (response as any).data) {
         const transaction: any = (response as any).data;
@@ -117,10 +182,19 @@ export class PaystackGateway implements PaymentGateway {
         };
       }
 
-      throw new Error('Failed to verify Paystack payment');
+      logger.error('Paystack verification returned unsuccessful response:', response);
+      throw new Error('PAYSTACK_FAILED_RESPONSE');
     } catch (error: any) {
-      logger.error('Paystack payment verification error:', error);
-      throw new Error(`Paystack verification failed: ${error.message}`);
+      const errorCode = this.classifyPaystackError(error);
+      logger.error('Paystack payment verification error:', {
+        errorCode,
+        message: error.message,
+        statusCode: error.response?.status,
+        reference: request.reference,
+      });
+      const err = new Error(error.message);
+      (err as any).code = errorCode;
+      throw err;
     }
   }
 
