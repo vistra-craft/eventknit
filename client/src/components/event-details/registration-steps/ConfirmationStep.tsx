@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, Calendar, MapPin, Globe, Mail, Download, Share2 } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Globe, Mail, Download, Share2, UserPlus, KeyRound } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader } from "@/components/ui/loader";
 import { useNavigate } from 'react-router-dom';
 import type { EventData } from '@/types/event';
@@ -17,6 +18,7 @@ interface RegistrationData {
   lastName?: string;
   phoneNumber?: string;
   registrationData?: Record<string, string | boolean>;
+    isNewUser?: boolean;
   [key: string]: unknown;
 }
 
@@ -122,6 +124,31 @@ export const ConfirmationStep = ({
             ? "You're all set for the event"
             : 'Your payment has been processed successfully'}
         </p>
+
+            {/* Account Creation Notification */}
+            {registrationData?.isNewUser && (
+              <Alert className="bg-success/10 border-success">
+                <UserPlus className="h-5 w-5 text-success" />
+                <AlertTitle className="text-success">Welcome! Your Account Has Been Created</AlertTitle>
+                <AlertDescription className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    We've automatically created an account for you using <strong>{registrationData.email}</strong>. 
+                    You can now access your tickets and manage your event registrations.
+                  </p>
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      className="border-success text-success hover:bg-success/10"
+                      onClick={() => navigate('/user/profile/security')}
+                    >
+                      <KeyRound className="w-4 h-4 mr-2" />
+                      Set Up Password
+                    </Button>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
       </div>
 
       {/* Event Details Card */}

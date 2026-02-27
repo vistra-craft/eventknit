@@ -21,6 +21,7 @@ interface ConfirmationData {
   paymentMethod: string;
   paymentId: string;
   date: string;
+  isNewUser?: boolean;
 }
 
 const Confirmation = () => {
@@ -33,7 +34,8 @@ const Confirmation = () => {
     totalPrice,
     paymentMethod,
     paymentId,
-    date
+    date,
+    isNewUser
   } = location.state as ConfirmationData;
 
   const handleDownloadTickets = () => {
@@ -64,6 +66,13 @@ const Confirmation = () => {
               <strong>Check your email!</strong> Your ticket confirmation with QR code has been sent to your registered email address.
             </p>
           </div>
+          {isNewUser && (
+            <div className="mt-3 p-4 bg-success/10 border border-success/30 rounded-lg max-w-md mx-auto">
+              <p className="text-sm text-success">
+                <strong>Your account has been created.</strong> Set a password in your profile to manage tickets faster next time.
+              </p>
+            </div>
+          )}
         </div>
 
         <Card className="mb-8">

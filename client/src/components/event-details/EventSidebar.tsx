@@ -37,6 +37,9 @@ export function EventSidebar({
     ? "Registration closes in"
     : "Event starts in";
 
+  // Check if event is truly free (either isFree flag or price is 0)
+  const isFreeEvent = event.isFree || lowestPrice === 0;
+
   return (
     <div className="sticky top-20 self-start space-y-5 rounded-2xl border border-border/40 bg-card p-6 shadow-lg">
       {/* Countdown */}
@@ -45,7 +48,7 @@ export function EventSidebar({
       )}
 
       {/* Price */}
-      {!event.isFree ? (
+      {!isFreeEvent ? (
         <div className="text-center pb-4 border-b border-border/30">
           <p className="text-xs text-muted-foreground mb-1">Starting from</p>
           <p className="text-3xl font-bold text-primary">
@@ -103,7 +106,7 @@ export function EventSidebar({
           <Ticket className="mr-2 h-5 w-5" />
           {userAlreadyRegistered
             ? "View My Ticket"
-            : event.isFree
+            : isFreeEvent
               ? "Register Free"
               : "Register for Event"}
         </Button>

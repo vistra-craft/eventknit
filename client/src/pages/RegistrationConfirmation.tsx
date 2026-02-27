@@ -8,6 +8,7 @@ import {
   Share2,
   Mail,
   Lock,
+  UserPlus,
   MapPin,
   Clock,
   ExternalLink,
@@ -48,6 +49,7 @@ interface ConfirmationData {
   isGuestUser?: boolean;
   userEmail?: string;
   isFreeEvent?: boolean;
+  isNewUser?: boolean;
   discount?: number;
   promoCode?: string;
 }
@@ -126,6 +128,7 @@ const RegistrationConfirmation: React.FC = () => {
   }, [eventId, confirmationData]);
 
   const isGuestUser = confirmationData?.isGuestUser ?? false;
+  const isNewUser = confirmationData?.isNewUser ?? false;
   const userEmail = confirmationData?.userEmail || user?.email || "";
   const event = eventData || confirmationData;
 
@@ -318,6 +321,20 @@ const RegistrationConfirmation: React.FC = () => {
             </p>
           )}
         </div>
+
+        {/* Account Creation Notice */}
+        {isGuestUser && isNewUser && (
+          <div className="rounded-xl border border-success/30 bg-success/10 p-4 space-y-2">
+            <div className="flex items-center gap-2 text-success">
+              <UserPlus className="w-4 h-4" />
+              <h3 className="text-sm font-semibold">Your account is ready</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              We created an account for you using <strong>{userEmail}</strong>. Set a password below to
+              manage tickets and register faster next time.
+            </p>
+          </div>
+        )}
 
         {/* Password Setup Card (Guest Users) */}
         {showPasswordSetup && (

@@ -407,6 +407,7 @@ const EventRegistration = () => {
                   price: t.price
                 })).filter(t => t.quantity > 0) || [],
                 isGuestUser: !isAuthenticated,
+                isNewUser: response.data.user.isNewUser,
                 userEmail: email || authUser?.email,
                 isFreeEvent: true,
                 date: new Date().toISOString(),
@@ -433,6 +434,7 @@ const EventRegistration = () => {
                   price: t.price
                 })).filter(t => t.quantity > 0) || [],
                 totalPrice: totalPrice,
+                isNewUser: response.data.user.isNewUser,
               }
             });
           }

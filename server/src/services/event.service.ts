@@ -3127,6 +3127,9 @@ export class EventService {
         registrationId: registration.id,
         ticketType: registration.ticketType,
         backupCode: registration.backupCode,
+        ticketEmailStatus: registration.ticketEmailStatus,
+        ticketEmailSentAt: registration.ticketEmailSentAt ? registration.ticketEmailSentAt.toISOString() : null,
+        ticketEmailError: registration.ticketEmailError,
       };
     });
 

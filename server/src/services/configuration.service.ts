@@ -25,7 +25,7 @@ export class ConfigurationService {
       configuration = await prisma.configuration.create({
         data: {
           mailTrap: {
-            trap: process.env.NODE_ENV !== 'production',
+            trap: false,
             toAddress: ['vistracraft@gmail.com'],
             ccAddress: [],
           },

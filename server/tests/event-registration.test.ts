@@ -1827,6 +1827,9 @@ describe('Event Registration System', () => {
       expect(event).toHaveProperty('image');
       expect(event).toHaveProperty('registrationDate');
       expect(event).toHaveProperty('status');
+      expect(event).toHaveProperty('ticketEmailStatus');
+      expect(event).toHaveProperty('ticketEmailSentAt');
+      expect(event).toHaveProperty('ticketEmailError');
     });
 
     it('should support pagination with page and limit', async () => {

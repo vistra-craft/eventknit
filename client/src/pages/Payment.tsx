@@ -32,6 +32,7 @@ interface PaymentData {
   totalPrice: number;
   discount?: number;
   promoCode?: string;
+  isNewUser?: boolean;
 }
 
 const PaymentPage = () => {
@@ -70,6 +71,7 @@ const PaymentPage = () => {
                 date: new Date().toISOString(),
                 isFreeEvent: false,
                 success: true,
+                isNewUser: paymentData?.isNewUser,
               },
               replace: true
             });

@@ -639,6 +639,9 @@ export interface UserRegisteredEventsResponse {
       registrationId?: string;
       ticketType?: string;
       backupCode?: string;
+      ticketEmailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null;
+      ticketEmailSentAt?: string | null;
+      ticketEmailError?: string | null;
     }>;
     total?: number;
     page?: number;

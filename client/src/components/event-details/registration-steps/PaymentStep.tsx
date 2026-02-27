@@ -219,6 +219,13 @@ export const PaymentStep = ({
     setError(null);
 
     try {
+      // Guard: Prevent payment for free events
+      if (event.isFree || totalPrice === 0) {
+        setError('This is a free event. No payment is required. Please contact support if you reached this page.');
+        setIsProcessing(false);
+        return;
+      }
+
       // Step 1: Create registration if not already created
       let regId = registrationId;
       if (!regId) {
