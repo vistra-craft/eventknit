@@ -31,6 +31,8 @@ export interface CheckOutResult {
   success: boolean;
   registrationId: string;
   checkedOutAt: Date;
+  attendeeName?: string;
+  ticketType?: string | null;
   errorCode?: string;
   errorMessage?: string;
 }
@@ -657,6 +659,13 @@ export class WorkstationService {
         select: {
           isCurrentlyInside: true,
           eventId: true,
+          ticketType: true,
+          attendee: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
         },
       });
 
@@ -750,6 +759,8 @@ export class WorkstationService {
           success: true,
           registrationId,
           checkedOutAt: now,
+          attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim(),
+          ticketType: registration.ticketType,
         };
       } finally {
         // Always release the lock if we acquired one

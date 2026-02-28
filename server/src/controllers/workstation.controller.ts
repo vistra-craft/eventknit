@@ -235,6 +235,8 @@ export class WorkstationController {
         message: 'Ticket checked out successfully',
         registrationId: result.registrationId,
         checkedOutAt: result.checkedOutAt,
+        attendeeName: result.attendeeName,
+        ticketType: result.ticketType,
         scanId: scanRecord?.id,
         scanType: scanRecord?.scanType,
         facility: facility || null,
@@ -579,6 +581,8 @@ export class WorkstationController {
       const responseData = {
         scanId: scanRecord?.id,
         registrationId: result.registrationId,
+        attendeeName: result.attendeeName,
+        ticketType: result.ticketType,
         scanType: scanRecord?.scanType,
         facility: facility || null,
         checkedOutAt: result.checkedOutAt,
