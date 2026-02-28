@@ -8,7 +8,7 @@ import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
+import { getEvents, getEventById, type EventData } from "../../../lib/event-api";
 import { approveEvent } from "../../../lib/admin-api";
 import { useToast } from "../../../hooks/useToast";
 import { shareEvent } from "../../../lib/utils/share";
