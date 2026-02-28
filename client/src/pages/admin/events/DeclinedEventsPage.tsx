@@ -93,7 +93,7 @@ const DeclinedEventsPage = () => {
             reason: event.recallReason || event.rejectionReason || 'No reason provided',
             declinedBy: event.recalledBy || event.rejectedBy ? 'Admin' : 'System', // TODO V2: Fetch admin name from recalledBy/rejectedBy ID
             isRecalled: !!event.recalledAt, // Flag to indicate if this was a recalled event
-            recallReason: event.recallReason,
+            recallReason: event.recallReason || undefined,
           }));
           setEvents(declinedEvents);
         }
