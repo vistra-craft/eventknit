@@ -388,6 +388,8 @@ model User {
   voucherRedemptions VoucherRedemption[] @relation("VoucherRedemptions")
   emailDigestQueue   EmailDigestQueue[]  @relation("UserDigestQueue")
   eventReports       EventReport[]       @relation("EventReports")
+  // Approval Messages
+  approvalMessages   EventApprovalMessage[] @relation("OrganizerApprovalMessages")
 
   @@index([email])
   @@index([role])
@@ -860,6 +862,8 @@ model Event {
   cartItems              CartItem[]                @relation("CartEvents")
   // Event Reports
   reports                EventReport[]             @relation("EventReports")
+  // Approval Messages
+  approvalMessages       EventApprovalMessage[]    @relation("EventApprovalMessages")
 
   // Resale settings
   allowResale            Boolean                   @default(true)
@@ -5402,6 +5406,49 @@ model CareerInquiry {
   updatedAt DateTime @updatedAt
 
   @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Event Approval Message Enums
+enum EventApprovalMessageType {
+  REQUEST_INFO
+  APPROVED
+  REJECTED
+  ORGANIZER_RESPONSE
+}
+
+enum MessageStatus {
+  PENDING
+  VIEWED
+  RESPONDED
+}
+
+// Event Approval Messages (admin <-> organizer communication during approval)
+model EventApprovalMessage {
+  id          String                   @id @default(uuid())
+  eventId     String
+  event       Event                    @relation("EventApprovalMessages", fields: [eventId], references: [id], onDelete: Cascade)
+  organizerId String
+  organizer   User                     @relation("OrganizerApprovalMessages", fields: [organizerId], references: [id], onDelete: Cascade)
+  type        EventApprovalMessageType
+  title       String
+  message     String                   @db.Text
+  senderRole  String
+  senderName  String
+  senderEmail String?
+
+  attachedDocuments String[]
+  status            MessageStatus @default(PENDING)
+  responseMessage   String?       @db.Text
+  respondedAt       DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([organizerId])
+  @@index([type])
   @@index([status])
   @@index([createdAt])
 }

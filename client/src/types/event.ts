@@ -164,6 +164,11 @@ export interface EventData {
   approvedBy?: string | null;
   approvedAt?: string | null;
 
+  // Recall info
+  recalledBy?: string | null;
+  recalledAt?: string | null;
+  recallReason?: string | null;
+
   // Timestamps
   createdAt?: string; // ISO date string
   updatedAt?: string; // ISO date string

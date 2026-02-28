@@ -8,7 +8,7 @@ import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
+import { getEvents, getEventById, type EventData } from "../../../lib/event-api";
 import { approveEvent } from "../../../lib/admin-api";
 import { useToast } from "../../../hooks/useToast";
 import { shareEvent } from "../../../lib/utils/share";
@@ -93,7 +93,7 @@ const DeclinedEventsPage = () => {
             reason: event.recallReason || event.rejectionReason || 'No reason provided',
             declinedBy: event.recalledBy || event.rejectedBy ? 'Admin' : 'System', // TODO V2: Fetch admin name from recalledBy/rejectedBy ID
             isRecalled: !!event.recalledAt, // Flag to indicate if this was a recalled event
-            recallReason: event.recallReason,
+            recallReason: event.recallReason || undefined,
           }));
           setEvents(declinedEvents);
         }

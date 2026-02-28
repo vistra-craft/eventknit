@@ -221,17 +221,13 @@ describe('EventService - Event Creation', () => {
         ).rejects.toThrow('Only organizers and admins can create events');
       });
 
-      it('should throw error if organizer status is PENDING_APPROVAL', async () => {
+      it('should allow PENDING_APPROVAL organizer to create events', async () => {
         const pendingOrganizer = { ...mockOrganizer, status: UserStatus.PENDING_APPROVAL };
         prisma.user.findUnique.mockResolvedValue(pendingOrganizer as any);
+        prisma.event.create.mockResolvedValue({ id: 'event-1', title: baseEventData.title, type: 'PUBLIC', isFree: baseEventData.isFree } as any);
 
-        await expect(
-          EventService.createEvent(baseEventData, pendingOrganizer.id, UserRole.ORGANIZER),
-        ).rejects.toThrow(AuthorizationError);
-
-        await expect(
-          EventService.createEvent(baseEventData, pendingOrganizer.id, UserRole.ORGANIZER),
-        ).rejects.toThrow('pending approval');
+        const result = await EventService.createEvent(baseEventData, pendingOrganizer.id, UserRole.ORGANIZER);
+        expect(result).toBeDefined();
       });
 
       it('should throw error if organizer status is DEACTIVATED', async () => {
@@ -260,17 +256,13 @@ describe('EventService - Event Creation', () => {
         ).rejects.toThrow('suspended');
       });
 
-      it('should throw error if organizer profile is not completed', async () => {
+      it('should allow organizer with incomplete profile to create events', async () => {
         const incompleteProfile = { ...mockOrganizer, profileCompleted: false };
         prisma.user.findUnique.mockResolvedValue(incompleteProfile as any);
+        prisma.event.create.mockResolvedValue({ id: 'event-1', title: baseEventData.title, type: 'PUBLIC', isFree: baseEventData.isFree } as any);
 
-        await expect(
-          EventService.createEvent(baseEventData, incompleteProfile.id, UserRole.ORGANIZER),
-        ).rejects.toThrow(ValidationError);
-
-        await expect(
-          EventService.createEvent(baseEventData, incompleteProfile.id, UserRole.ORGANIZER),
-        ).rejects.toThrow('complete your organizer profile');
+        const result = await EventService.createEvent(baseEventData, incompleteProfile.id, UserRole.ORGANIZER);
+        expect(result).toBeDefined();
       });
 
       it('should allow SUPERADMIN to create event without completed profile', async () => {
