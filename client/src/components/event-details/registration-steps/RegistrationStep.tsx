@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { Loader } from "@/components/ui/loader";
 import { Link } from 'react-router-dom';
 import type { EventData, RegistrationField } from '@/types/event';
 import type { TicketSelection } from '../UnifiedRegistrationModal';
+import { registerAsGuest } from '@/lib/event-api';
 
 interface RegistrationStepProps {
   event: EventData;
@@ -22,13 +23,16 @@ interface RegistrationStepProps {
   onContinue: (data: RegistrationData) => void;
 }
 
-interface RegistrationData {
+export interface RegistrationData {
   userId?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
   registrationData?: Record<string, string | boolean>;
+  isNewUser?: boolean;
+  requiresPasswordSetup?: boolean;
+  registrationId?: string;
   [key: string]: unknown;
 }
 
@@ -38,30 +42,26 @@ export const RegistrationStep = ({
   totalTickets,
   onContinue,
 }: RegistrationStepProps) => {
-  const { user, login, register: registerUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>(user ? 'login' : 'register');
+  const { user, loginForModal, setAuthFromGuestResponse } = useAuth();
+  const [activeTab, setActiveTab] = useState<'login' | 'guest'>(user ? 'login' : 'guest');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Record<string, string | boolean>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [isAuthenticated] = useState(!!user);
+
+  // Tracks whether this user just authenticated within this step
+  const isAlreadyAuthenticated = useRef(!!user);
 
   // Login form state
-  const [loginData, setLoginData] = useState({
-    email: '',
-    password: '',
-  });
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
 
-  // Registration form state
-  const [registerData, setRegisterData] = useState({
+  // Guest checkout form state
+  const [guestData, setGuestData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phoneNumber: '',
-    password: '',
-    confirmPassword: '',
-    agreeToTerms: false,
   });
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -70,99 +70,122 @@ export const RegistrationStep = ({
     setIsLoading(true);
 
     try {
-      await login(loginData.email, loginData.password);
-      // Login updates the user state via dispatch, check user from hook
-      // We'll use useEffect to watch for user changes
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      // loginForModal authenticates without navigating away from the event page
+      await loginForModal(loginData.email, loginData.password);
+      // onContinue is triggered by the useEffect below once user state updates
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
       setError(errorMessage);
       setIsLoading(false);
     }
   };
 
-  // Watch for user changes after login/register
+  // When the user state changes (post-login or pre-populated), auto-advance if no custom fields
   useEffect(() => {
-    if (user && isAuthenticated && !isLoading) {
-      setIsLoading(false);
-      // Pre-fill form data with user info
-      setFormData((prev) => ({
-        ...prev,
-        email: user.email || '',
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        phoneNumber: user.phoneNumber || '',
-      }));
+    if (!user || isLoading) return;
 
-      // If no custom fields, proceed immediately
-      if (!event.registrationFields || event.registrationFields.length === 0) {
-        onContinue({
-          userId: user.id,
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          phoneNumber: user.phoneNumber || undefined,
-          registrationData: {
-            email: user.email || '',
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            phoneNumber: user.phoneNumber || '',
-          },
-        });
-      }
+    setIsLoading(false);
+
+    // Pre-fill any custom field form with profile data
+    setFormData((prev) => ({
+      ...prev,
+      email: user.email || '',
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      phoneNumber: user.phoneNumber || '',
+    }));
+
+    // Auto-advance only for users who were already authenticated when the modal opened
+    // (not for users who just logged in — they'll see the summary form and click Continue)
+    if (isAlreadyAuthenticated.current && (!event.registrationFields || event.registrationFields.length === 0)) {
+      onContinue({
+        userId: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber || undefined,
+        registrationData: {
+          email: user.email || '',
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          phoneNumber: user.phoneNumber || '',
+        },
+        isNewUser: false,
+      });
     }
-  }, [user, isAuthenticated, isLoading, event.registrationFields, onContinue, event.title]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleGuestCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validation
-    if (registerData.password !== registerData.confirmPassword) {
-      setError('Passwords do not match');
+    if (!guestData.firstName.trim() || !guestData.lastName.trim() || !guestData.email.trim()) {
+      setError('First name, last name and email are required');
       return;
     }
 
-    if (!registerData.agreeToTerms) {
+    if (!agreeToTerms) {
       setError('You must agree to the terms and conditions');
-      return;
-    }
-
-    if (registerData.password.length < 8) {
-      setError('Password must be at least 8 characters');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      await registerUser({
-        email: registerData.email,
-        password: registerData.password,
-        firstName: registerData.firstName,
-        lastName: registerData.lastName,
-        phoneNumber: registerData.phoneNumber,
+      const response = await registerAsGuest(event.id, {
+        firstName: guestData.firstName.trim(),
+        lastName: guestData.lastName.trim(),
+        email: guestData.email.trim().toLowerCase(),
+        phoneNumber: guestData.phoneNumber.trim() || undefined,
       });
-      // Registration updates the user state via dispatch, check user from hook
-      // We'll use useEffect to watch for user changes
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+
+      if (!response.success || !response.data) {
+        throw new Error(response.message || 'Registration failed');
+      }
+
+      const { registration, user: guestUser, accessToken } = response.data;
+
+      // Auto-login the guest without navigating away
+      if (accessToken) {
+        await setAuthFromGuestResponse(
+          {
+            id: guestUser.id,
+            email: guestUser.email,
+            firstName: guestUser.firstName,
+            lastName: guestUser.lastName,
+          },
+          accessToken
+        );
+      }
+
+      // Registration was already created by registerAsGuest — pass the ID through
+      onContinue({
+        userId: guestUser.id,
+        email: guestUser.email,
+        firstName: guestUser.firstName,
+        lastName: guestUser.lastName,
+        registrationId: registration.id,
+        isNewUser: guestUser.isNewUser,
+        requiresPasswordSetup: guestUser.requiresPasswordSetup,
+        registrationData: {
+          email: guestUser.email,
+          firstName: guestUser.firstName,
+          lastName: guestUser.lastName,
+          phoneNumber: guestData.phoneNumber.trim() || '',
+        },
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
       setError(errorMessage);
       setIsLoading(false);
     }
   };
 
   const handleInputChange = (fieldId: string, value: string | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [fieldId]: value,
-    }));
-
-    // Clear error when user starts typing
+    setFormData((prev) => ({ ...prev, [fieldId]: value }));
     if (formErrors[fieldId]) {
-      setFormErrors((prev) => ({
-        ...prev,
-        [fieldId]: '',
-      }));
+      setFormErrors((prev) => ({ ...prev, [fieldId]: '' }));
     }
   };
 
@@ -199,18 +222,14 @@ export const RegistrationStep = ({
               className={fieldError ? 'border-destructive' : ''}
               required={field.required}
             />
-            {fieldError && (
-              <p className="text-destructive text-sm mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-destructive text-sm mt-1">{fieldError}</p>}
             {field.type === 'email' && (
               <p className="text-xs text-muted-foreground">
                 Your ticket will be sent to this email address.
               </p>
             )}
             {field.type === 'phone' && (
-              <p className="text-xs text-muted-foreground">
-                Format: +1 (555) 123-4567
-              </p>
+              <p className="text-xs text-muted-foreground">Format: +1 (555) 123-4567</p>
             )}
           </div>
         );
@@ -231,9 +250,7 @@ export const RegistrationStep = ({
               rows={3}
               required={field.required}
             />
-            {fieldError && (
-              <p className="text-destructive text-sm mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-destructive text-sm mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -258,9 +275,7 @@ export const RegistrationStep = ({
                 </option>
               ))}
             </select>
-            {fieldError && (
-              <p className="text-destructive text-sm mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-destructive text-sm mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -286,9 +301,7 @@ export const RegistrationStep = ({
                 </div>
               ))}
             </RadioGroup>
-            {fieldError && (
-              <p className="text-destructive text-sm mt-1">{fieldError}</p>
-            )}
+            {fieldError && <p className="text-destructive text-sm mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -300,26 +313,24 @@ export const RegistrationStep = ({
               {field.label}
               {field.required && <span className="text-destructive ml-1">*</span>}
             </Label>
-              <div className="space-y-2">
-                {field.options.map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`${fieldId}-${option}`}
-                      checked={formData[field.id] === option}
-                      onCheckedChange={(checked) =>
-                        handleInputChange(field.id, checked ? option : '')
-                      }
-                      className="h-4 w-4 text-primary focus:ring-primary border-border rounded focus:bg-muted"
-                    />
-                    <Label htmlFor={`${fieldId}-${option}`} className="text-sm font-normal">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            {fieldError && (
-              <p className="text-destructive text-sm mt-1">{fieldError}</p>
-            )}
+            <div className="space-y-2">
+              {field.options.map((option) => (
+                <div key={option} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`${fieldId}-${option}`}
+                    checked={formData[field.id] === option}
+                    onCheckedChange={(checked) =>
+                      handleInputChange(field.id, checked ? option : '')
+                    }
+                    className="h-4 w-4 text-primary focus:ring-primary border-border rounded focus:bg-muted"
+                  />
+                  <Label htmlFor={`${fieldId}-${option}`} className="text-sm font-normal">
+                    {option}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            {fieldError && <p className="text-destructive text-sm mt-1">{fieldError}</p>}
           </div>
         );
 
@@ -333,22 +344,17 @@ export const RegistrationStep = ({
     setError(null);
     setFormErrors({});
 
-    // Validate terms agreement
     if (!agreeToTerms) {
       setError('You must agree to the terms and conditions');
       return;
     }
 
-    // Validate required custom fields
     if (event.registrationFields) {
       const missingFields: string[] = [];
       event.registrationFields.forEach((field) => {
         if (field.required && !formData[field.id]) {
           missingFields.push(field.label);
-          setFormErrors((prev) => ({
-            ...prev,
-            [field.id]: 'This field is required',
-          }));
+          setFormErrors((prev) => ({ ...prev, [field.id]: 'This field is required' }));
         }
       });
 
@@ -358,40 +364,34 @@ export const RegistrationStep = ({
       }
     }
 
-    const getStringValue = (value: string | boolean | undefined): string | undefined => {
-      if (typeof value === 'string') return value;
-      return undefined;
-    };
+    const getStringValue = (value: string | boolean | undefined): string | undefined =>
+      typeof value === 'string' ? value : undefined;
 
-    const currentUser = user || (isAuthenticated && typeof formData.userId === 'string' ? { id: formData.userId } : null);
-    if (currentUser) {
-      // User is logged in - proceed with registration data
+    if (user) {
       onContinue({
-        userId: user?.id || getStringValue(formData.userId),
-        email: user?.email || getStringValue(formData.email),
-        firstName: user?.firstName || getStringValue(formData.firstName),
-        lastName: user?.lastName || getStringValue(formData.lastName),
-        phoneNumber: user?.phoneNumber || getStringValue(formData.phoneNumber),
+        userId: user.id,
+        email: user.email || getStringValue(formData.email as string | boolean | undefined),
+        firstName: user.firstName || getStringValue(formData.firstName as string | boolean | undefined),
+        lastName: user.lastName || getStringValue(formData.lastName as string | boolean | undefined),
+        phoneNumber: user.phoneNumber || getStringValue(formData.phoneNumber as string | boolean | undefined),
         registrationData: formData,
+        isNewUser: false,
       });
     } else {
-      // User needs to login/register first
-      setError('Please login or register to continue');
+      setError('Please log in or continue as guest to proceed');
     }
   };
 
-  if (user || isAuthenticated) {
-    // User is already logged in - show custom registration form
+  // --- Logged-in view ---
+  if (user) {
     return (
       <form onSubmit={handleFormSubmit} className="space-y-6">
-        <div>
-          <Alert>
-            <User className="h-4 w-4" />
-            <AlertDescription>
-              You're logged in as <strong>{user?.email || formData.email}</strong>
-            </AlertDescription>
-          </Alert>
-        </div>
+        <Alert>
+          <User className="h-4 w-4" />
+          <AlertDescription>
+            You're logged in as <strong>{user.email}</strong>
+          </AlertDescription>
+        </Alert>
 
         {/* Registration Summary */}
         <div className="border rounded-lg p-4 bg-muted/30">
@@ -408,7 +408,7 @@ export const RegistrationStep = ({
             <div className="flex justify-between">
               <span className="text-muted-foreground">Total:</span>
               <span className="font-bold text-primary">
-                {event.currency || '$'} {totalPrice.toFixed(2)}
+                {event.isFree ? 'Free' : `${event.currency || '$'} ${totalPrice.toFixed(2)}`}
               </span>
             </div>
           </div>
@@ -423,16 +423,10 @@ export const RegistrationStep = ({
                 Please complete the following information to finalize your registration.
               </p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {event.registrationFields.map((field) => {
-                // Long-form fields (textarea) span both columns
                 if (field.type === 'textarea') {
-                  return (
-                    <div key={field.id} className="md:col-span-2">
-                      {renderFormField(field)}
-                    </div>
-                  );
+                  return <div key={field.id} className="md:col-span-2">{renderFormField(field)}</div>;
                 }
                 return <div key={field.id}>{renderFormField(field)}</div>;
               })}
@@ -472,10 +466,7 @@ export const RegistrationStep = ({
 
         <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
           {isLoading ? (
-            <>
-              <Loader size="sm" className="mr-2" />
-              Processing...
-            </>
+            <><Loader size="sm" className="mr-2" />Processing...</>
           ) : event.isFree ? (
             'Complete Registration'
           ) : (
@@ -486,14 +477,17 @@ export const RegistrationStep = ({
     );
   }
 
+  // --- Unauthenticated view: Login | Guest Checkout ---
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-section-header mb-2">
-          {event.isFree ? 'Complete Your Registration' : 'Login or Register to Continue'}
+          {event.isFree ? 'Complete Your Registration' : 'Login or Continue as Guest'}
         </h3>
         <p className="text-card-description">
-          Create an account or log in to complete your registration
+          {event.isFree
+            ? 'Enter your details or log in to complete your free registration'
+            : 'Enter your details or log in to continue to payment'}
         </p>
       </div>
 
@@ -504,12 +498,156 @@ export const RegistrationStep = ({
         </Alert>
       )}
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'register')}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'guest')}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="login">Login</TabsTrigger>
-          <TabsTrigger value="register">Register</TabsTrigger>
+          <TabsTrigger value="guest">Continue as Guest</TabsTrigger>
+          <TabsTrigger value="login">Log In</TabsTrigger>
         </TabsList>
 
+        {/* Guest Checkout */}
+        <TabsContent value="guest" className="space-y-4 mt-4">
+          <p className="text-sm text-muted-foreground">
+            No account needed. We'll create one for you automatically.
+          </p>
+          <form onSubmit={handleGuestCheckout} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="guest-firstName">First Name</Label>
+                <div className="relative mt-1">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="guest-firstName"
+                    placeholder="John"
+                    className="pl-10"
+                    value={guestData.firstName}
+                    onChange={(e) => setGuestData({ ...guestData, firstName: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="guest-lastName">Last Name</Label>
+                <Input
+                  id="guest-lastName"
+                  placeholder="Doe"
+                  value={guestData.lastName}
+                  onChange={(e) => setGuestData({ ...guestData, lastName: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="guest-email">Email</Label>
+              <div className="relative mt-1">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="guest-email"
+                  type="email"
+                  placeholder="your@email.com"
+                  className="pl-10"
+                  value={guestData.email}
+                  onChange={(e) => setGuestData({ ...guestData, email: e.target.value })}
+                  required
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your ticket confirmation will be sent here.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="guest-phone">Phone Number (Optional)</Label>
+              <div className="relative mt-1">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="guest-phone"
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  className="pl-10"
+                  value={guestData.phoneNumber}
+                  onChange={(e) => setGuestData({ ...guestData, phoneNumber: e.target.value })}
+                />
+              </div>
+            </div>
+
+            {/* Custom registration fields for guests */}
+            {event.registrationFields && event.registrationFields.length > 0 && (
+              <div className="pt-4 border-t space-y-4">
+                <h4 className="text-card-title">Additional Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {event.registrationFields
+                    .filter(
+                      (field) =>
+                        field.type !== 'email' &&
+                        !field.name?.toLowerCase().includes('first') &&
+                        !field.name?.toLowerCase().includes('last')
+                    )
+                    .map((field) => {
+                      if (field.type === 'textarea') {
+                        return (
+                          <div key={field.id} className="md:col-span-2">
+                            {renderFormField(field)}
+                          </div>
+                        );
+                      }
+                      return <div key={field.id}>{renderFormField(field)}</div>;
+                    })}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="guest-terms"
+                checked={agreeToTerms}
+                onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+              />
+              <label htmlFor="guest-terms" className="text-sm text-muted-foreground leading-tight">
+                I agree to the{' '}
+                <Link to="/terms-of-service" className="text-primary hover:underline">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link to="/privacy-policy" className="text-primary hover:underline">
+                  Privacy Policy
+                </Link>
+              </label>
+            </div>
+
+            {/* Email preview — lets the user visually confirm before submitting */}
+            {guestData.email && (
+              <div className="rounded-md border border-border bg-muted/40 px-4 py-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm truncate">
+                    Ticket will be sent to{' '}
+                    <strong className="text-foreground">{guestData.email}</strong>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline shrink-0"
+                  onClick={() => document.getElementById('guest-email')?.focus()}
+                >
+                  Edit
+                </button>
+              </div>
+            )}
+
+            <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <><Loader size="sm" className="mr-2" />Processing...</>
+              ) : event.isFree ? (
+                'Register Free'
+              ) : (
+                'Continue to Payment'
+              )}
+            </Button>
+          </form>
+        </TabsContent>
+
+        {/* Login */}
         <TabsContent value="login" className="space-y-4 mt-4">
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -552,196 +690,14 @@ export const RegistrationStep = ({
 
             <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
               {isLoading ? (
-                <>
-                  <Loader size="sm" className="mr-2" />
-                  Logging in...
-                </>
+                <><Loader size="sm" className="mr-2" />Logging in...</>
               ) : (
                 'Login & Continue'
               )}
             </Button>
           </form>
         </TabsContent>
-
-        <TabsContent value="register" className="space-y-4 mt-4">
-          <form onSubmit={handleRegister} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName">First Name</Label>
-                <div className="relative mt-1">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="firstName"
-                    placeholder="John"
-                    className="pl-10"
-                    value={registerData.firstName}
-                    onChange={(e) =>
-                      setRegisterData({ ...registerData, firstName: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  placeholder="Doe"
-                  value={registerData.lastName}
-                  onChange={(e) => setRegisterData({ ...registerData, lastName: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="register-email">Email</Label>
-              <div className="relative mt-1">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="register-email"
-                  type="email"
-                  placeholder="your@email.com"
-                  className="pl-10"
-                  value={registerData.email}
-                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="phoneNumber">Phone Number (Optional)</Label>
-              <div className="relative mt-1">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phoneNumber"
-                  type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  className="pl-10"
-                  value={registerData.phoneNumber}
-                  onChange={(e) =>
-                    setRegisterData({ ...registerData, phoneNumber: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="register-password">Password</Label>
-              <div className="relative mt-1">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="register-password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-10"
-                  value={registerData.password}
-                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                  required
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Minimum 8 characters</p>
-            </div>
-
-            <div>
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <div className="relative mt-1">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-10"
-                  value={registerData.confirmPassword}
-                  onChange={(e) =>
-                    setRegisterData({ ...registerData, confirmPassword: e.target.value })
-                  }
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <Checkbox
-                id="terms"
-                checked={registerData.agreeToTerms}
-                onCheckedChange={(checked) =>
-                  setRegisterData({ ...registerData, agreeToTerms: checked as boolean })
-                }
-              />
-              <label htmlFor="terms" className="text-sm text-muted-foreground leading-tight">
-                I agree to the{' '}
-                <Link to="/terms-of-service" className="text-primary hover:underline">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy-policy" className="text-primary hover:underline">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-
-            {/* Show custom registration fields if event has them */}
-            {event.registrationFields && event.registrationFields.length > 0 && (
-              <div className="pt-4 border-t space-y-4">
-                <div>
-                  <h4 className="text-card-title mb-2">Additional Information</h4>
-                  <p className="text-card-description">
-                    Please provide the following information for your registration.
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {event.registrationFields
-                    .filter(
-                      (field) =>
-                        field.type !== 'email' &&
-                        !field.name?.toLowerCase().includes('first') &&
-                        !field.name?.toLowerCase().includes('last')
-                    )
-                    .map((field) => {
-                      if (field.type === 'textarea') {
-                        return (
-                          <div key={field.id} className="md:col-span-2">
-                            {renderFormField(field)}
-                          </div>
-                        );
-                      }
-                      return <div key={field.id}>{renderFormField(field)}</div>;
-                    })}
-                </div>
-              </div>
-            )}
-
-            <Button type="submit" size="lg" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <Loader size="sm" className="mr-2" />
-                  Creating account...
-                </>
-              ) : (
-                'Register & Continue'
-              )}
-            </Button>
-          </form>
-        </TabsContent>
       </Tabs>
-
-      {/* Guest Checkout Option (Future) */}
-      {/* <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">Or</span>
-        </div>
-      </div>
-
-      <Button variant="outline" size="lg" className="w-full" onClick={handleGuestContinue}>
-        Continue as Guest
-      </Button> */}
     </div>
   );
 };
-

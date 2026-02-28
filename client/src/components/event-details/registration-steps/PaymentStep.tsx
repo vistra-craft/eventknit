@@ -72,7 +72,10 @@ export const PaymentStep = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'mpesa'>('card');
-  const [registrationId, setRegistrationId] = useState<string | null>(null);
+  // Pre-populate if guest checkout already created the registration
+  const [registrationId, setRegistrationId] = useState<string | null>(
+    (registrationData.registrationId as string) || null
+  );
   const [paystackLoaded, setPaystackLoaded] = useState(false);
 
   const currency = event.currency || 'NGN';

@@ -90,11 +90,19 @@ export class WorkstationController {
       const signatureValid = validation.signatureVerified ?? false;
 
       const responseData = {
+        success: true,
+        message: 'Ticket scanned successfully',
+        ticket: {
+          id: result.registrationId,
+          attendeeName: result.attendeeName,
+          ticketType: result.ticketType,
+          orderNumber: result.registrationId,
+          status: 'CHECKED_IN',
+          checkedInAt: result.checkedInAt,
+        },
         scanId: scanRecord?.id,
         registrationId: result.registrationId,
         eventId: result.eventId,
-        attendeeName: result.attendeeName,
-        ticketType: result.ticketType,
         scanType: scanRecord?.scanType,
         facility: facility || null,
         scannedAt: result.checkedInAt,
@@ -223,11 +231,13 @@ export class WorkstationController {
       const signatureValid = checkoutValidation.signatureVerified ?? false;
 
       const responseData = {
-        scanId: scanRecord?.id,
+        success: true,
+        message: 'Ticket checked out successfully',
         registrationId: result.registrationId,
+        checkedOutAt: result.checkedOutAt,
+        scanId: scanRecord?.id,
         scanType: scanRecord?.scanType,
         facility: facility || null,
-        checkedOutAt: result.checkedOutAt,
         signatureValid,
         codeType,
       };
@@ -443,11 +453,19 @@ export class WorkstationController {
       }
 
       const responseData = {
+        success: true,
+        message: 'Manual check-in successful',
+        ticket: {
+          id: result.registrationId,
+          attendeeName: result.attendeeName,
+          ticketType: result.ticketType,
+          orderNumber: result.registrationId,
+          status: 'CHECKED_IN',
+          checkedInAt: result.checkedInAt,
+        },
         scanId: scanRecord?.id,
         registrationId: result.registrationId,
         eventId: result.eventId,
-        attendeeName: result.attendeeName,
-        ticketType: result.ticketType,
         scanType: scanRecord?.scanType,
         facility: facility || null,
         checkedInAt: result.checkedInAt,

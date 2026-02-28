@@ -274,6 +274,9 @@ describe('Workstation API Integration Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
+      expect(response.body.data.ticket).toBeDefined();
+      expect(response.body.data.ticket.attendeeName).toBeDefined();
+      expect(response.body.data.ticket.ticketType).toBeDefined();
       expect(response.body.data.registrationId).toBe(registrationId);
       expect(response.body.data.eventId).toBe(eventId);
       expect(response.body.data.scanType).toBe('CHECK_IN');
@@ -300,6 +303,7 @@ describe('Workstation API Integration Tests', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
+      expect(response.body.data.ticket).toBeDefined();
       expect(response.body.data.registrationId).toBe(registrationId);
       expect(response.body.data.codeType).toBe('BACKUP_CODE');
     });
@@ -562,6 +566,7 @@ describe('Workstation API Integration Tests', () => {
       }
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
+      expect(response.body.data.registrationId).toBe(registrationId);
       expect(response.body.data.scanType).toBe('CHECK_OUT');
     }, 120000); // Increase timeout to 120 seconds
 
@@ -626,6 +631,8 @@ describe('Workstation API Integration Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
+      expect(response.body.data.ticket).toBeDefined();
+      expect(response.body.data.ticket.attendeeName).toBeDefined();
       expect(response.body.data.scanType).toBe('MANUAL_CHECK_IN');
     });
 

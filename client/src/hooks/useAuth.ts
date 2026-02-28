@@ -209,6 +209,53 @@ export const useAuth = () => {
   }, [dispatch, navigate]);
 
   /**
+   * Login without navigation — for use inside modals/embedded flows.
+   */
+  const loginForModal = useCallback(
+    async (email: string, password: string) => {
+      dispatch({ type: 'AUTH_START' });
+      const response = await authApi.login({ email, password });
+      if (response.success && response.data) {
+        setAccessToken(response.data.accessToken);
+        dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user });
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+      } else {
+        dispatch({ type: 'AUTH_FAILURE', payload: response.message || 'Login failed' });
+        throw new Error(response.message || 'Login failed');
+      }
+    },
+    [dispatch]
+  );
+
+  /**
+   * Set auth state from a guest registration/checkout response without navigation.
+   * Stores the access token, hydrates auth context with partial user data, then
+   * fetches the full profile to fill in role and any missing fields.
+   */
+  const setAuthFromGuestResponse = useCallback(
+    async (
+      partialUser: { id: string; email: string; firstName: string; lastName: string },
+      accessToken: string
+    ) => {
+      setAccessToken(accessToken);
+      // Cast to satisfy the User type — the full profile fetch below fills in the rest
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      dispatch({ type: 'AUTH_SUCCESS', payload: partialUser as any });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      // Fetch full profile asynchronously so role and all fields are populated
+      try {
+        const profileResponse = await authApi.getProfile();
+        if (profileResponse.success && profileResponse.data) {
+          dispatch({ type: 'UPDATE_USER', payload: profileResponse.data.user });
+        }
+      } catch {
+        // Non-fatal — partial user data is sufficient for the modal flow
+      }
+    },
+    [dispatch]
+  );
+
+  /**
    * Refresh user profile
    */
   const refreshProfile = useCallback(async () => {
@@ -293,8 +340,10 @@ export const useAuth = () => {
   return {
     ...state,
     login,
+    loginForModal,
     logout,
     register,
+    setAuthFromGuestResponse,
     refreshProfile,
     clearError,
   };

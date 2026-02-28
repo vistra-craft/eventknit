@@ -18,7 +18,9 @@ interface RegistrationData {
   lastName?: string;
   phoneNumber?: string;
   registrationData?: Record<string, string | boolean>;
-    isNewUser?: boolean;
+  isNewUser?: boolean;
+  requiresPasswordSetup?: boolean;
+  registrationId?: string;
   [key: string]: unknown;
 }
 
@@ -127,25 +129,28 @@ export const ConfirmationStep = ({
 
             {/* Account Creation Notification */}
             {registrationData?.isNewUser && (
-              <Alert className="bg-success/10 border-success">
+              <Alert className="bg-success/10 border-success mt-4">
                 <UserPlus className="h-5 w-5 text-success" />
                 <AlertTitle className="text-success">Welcome! Your Account Has Been Created</AlertTitle>
                 <AlertDescription className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    We've automatically created an account for you using <strong>{registrationData.email}</strong>. 
-                    You can now access your tickets and manage your event registrations.
+                    An account has been created for you using{' '}
+                    <strong>{registrationData.email}</strong>. You can now access your tickets
+                    and manage your event registrations.
                   </p>
-                  <div className="flex gap-2 pt-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="border-success text-success hover:bg-success/10"
-                      onClick={() => navigate('/user/profile/security')}
-                    >
-                      <KeyRound className="w-4 h-4 mr-2" />
-                      Set Up Password
-                    </Button>
-                  </div>
+                  {registrationData.requiresPasswordSetup && (
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-success text-success hover:bg-success/10"
+                        onClick={() => navigate('/user/profile/security')}
+                      >
+                        <KeyRound className="w-4 h-4 mr-2" />
+                        Set Up Password
+                      </Button>
+                    </div>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
