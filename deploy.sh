@@ -121,7 +121,7 @@ verify_deployment() {
     local attempt=0
 
     while [ $attempt -lt $max_attempts ]; do
-        if docker compose -f "$COMPOSE_FILE" exec -T server curl -sf http://localhost:3001/health > /dev/null 2>&1; then
+        if docker compose -f "$COMPOSE_FILE" exec -T server curl -sf http://localhost:3010/health > /dev/null 2>&1; then
             log_info "Server API is responding!"
             return 0
         fi
