@@ -44,6 +44,9 @@ interface Event {
   createdAt: string;
   description: string;
   image?: string;
+  isRecalled?: boolean; // Flag for recalled events
+  recallReason?: string; // Reason for recall
+  recalledAt?: string; // Date when event was recalled
 }
 
 const PendingApprovalPage = () => {
@@ -68,7 +71,7 @@ const PendingApprovalPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Fetch pending events
+  // Fetch pending events (including recalled events sent back for re-approval)
   useEffect(() => {
     const fetchPendingEvents = async () => {
       try {
@@ -128,6 +131,9 @@ const PendingApprovalPage = () => {
             createdAt: event.createdAt || new Date().toISOString(),
             description: event.description || '',
             image: (event.image as string | undefined) || undefined,
+            isRecalled: Boolean(event.recalledAt), // Flag for recalled events
+            recallReason: event.recallReason as string | undefined,
+            recalledAt: event.recalledAt as string | undefined,
           }));
           setEvents(pendingEvents);
           }
@@ -383,6 +389,11 @@ const PendingApprovalPage = () => {
                       <Badge className={`${getEventStatusBadgeClass('pending')} text-xs`}>
                         Pending
                       </Badge>
+                      {event.isRecalled && (
+                        <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-xs">
+                          Recalled
+                        </Badge>
+                      )}
                       <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
                         {event.type}
                       </Badge>
@@ -423,6 +434,14 @@ const PendingApprovalPage = () => {
                         </Badge>
                       )}
                     </div>
+                    {event.isRecalled && event.recallReason && (
+                      <Alert className="mb-2 border-orange-500/20 bg-orange-500/5">
+                        <AlertCircle className="h-4 w-4 text-orange-600" />
+                        <AlertDescription className="text-sm text-orange-700">
+                          <strong>Recall Reason:</strong> {event.recallReason}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     <p className="text-sm text-muted-foreground line-clamp-2">{stripHtml(event.description)}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">

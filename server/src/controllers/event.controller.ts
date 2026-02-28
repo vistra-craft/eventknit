@@ -56,6 +56,8 @@ export class EventController {
         type?: EventType;
         dateFrom?: string;
         dateTo?: string;
+        declinedOrRecalledCancelled?: boolean;
+        recalledPending?: boolean;
       } = {};
 
       logger.debug('[EventController] Query params:', req.query);
@@ -93,6 +95,13 @@ export class EventController {
       }
       if (req.query.dateTo) {
         filters.dateTo = req.query.dateTo as string;
+      }
+      // Recalled event filters
+      if (req.query.declinedOrRecalledCancelled !== undefined) {
+        filters.declinedOrRecalledCancelled = req.query.declinedOrRecalledCancelled === 'true' || req.query.declinedOrRecalledCancelled === '1';
+      }
+      if (req.query.recalledPending !== undefined) {
+        filters.recalledPending = req.query.recalledPending === 'true' || req.query.recalledPending === '1';
       }
 
       logger.debug('[EventController] Parsed filters:', filters);

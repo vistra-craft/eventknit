@@ -747,6 +747,12 @@ model Event {
   rejectedAt      DateTime?
   rejectionReason String?   @db.Text
 
+  // Recall tracking (admin recalls approved events)
+  recalledBy      String? // Admin user ID who recalled the event
+  recalledAt      DateTime? // When event was recalled
+  recallReason    String?   @db.Text // Reason for recalling
+  recallAction    String? // "PENDING" (re-approval) or "CANCELLED" (permanent)
+
   // Organizer data access control (admin-controlled)
   organizerDataAccess DataAccessLevel @default(RESTRICTED) // What data organizers can see
 

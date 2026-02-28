@@ -30,6 +30,8 @@ interface Event {
   declinedDate: string;
   reason: string;
   declinedBy: string;
+  isRecalled?: boolean; // Flag for recalled events
+  recallReason?: string; // Reason for recall
 }
 
 const DeclinedEventsPage = () => {
@@ -48,14 +50,14 @@ const DeclinedEventsPage = () => {
   const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
-  // Fetch declined events (status = REJECTED)
+  // Fetch declined events (status = REJECTED or recalled with status = CANCELLED)
   useEffect(() => {
     const fetchDeclinedEvents = async () => {
       try {
         setLoading(true);
         setError(null);
         const filters: Record<string, unknown> = {
-          status: EventStatus.REJECTED,
+          declinedOrRecalledCancelled: true, // Custom filter for REJECTED or (CANCELLED + recalledAt)
         };
         
         if (categoryFilter !== "all") {
@@ -87,9 +89,11 @@ const DeclinedEventsPage = () => {
             category: event.category || 'Uncategorized',
             type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
             isFree: event.isFree || false,
-            declinedDate: event.rejectedAt || event.updatedAt || event.createdAt || new Date().toISOString(),
-            reason: event.rejectionReason || 'No reason provided',
-            declinedBy: event.rejectedBy ? 'Admin' : 'System', // TODO V2: Fetch admin name from rejectedBy ID
+            declinedDate: event.recalledAt || event.rejectedAt || event.updatedAt || event.createdAt || new Date().toISOString(),
+            reason: event.recallReason || event.rejectionReason || 'No reason provided',
+            declinedBy: event.recalledBy || event.rejectedBy ? 'Admin' : 'System', // TODO V2: Fetch admin name from recalledBy/rejectedBy ID
+            isRecalled: !!event.recalledAt, // Flag to indicate if this was a recalled event
+            recallReason: event.recallReason,
           }));
           setEvents(declinedEvents);
         }
@@ -304,6 +308,11 @@ const DeclinedEventsPage = () => {
                       <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs">
                         Declined
                       </Badge>
+                      {event.isRecalled && (
+                        <Badge className="bg-orange-100 text-orange-700 border-orange-300 text-xs">
+                          Recalled
+                        </Badge>
+                      )}
                       <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
                         {event.type}
                       </Badge>
@@ -326,6 +335,19 @@ const DeclinedEventsPage = () => {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">by {event.organizer}</p>
+                    
+                    {event.isRecalled && event.recallReason && (
+                      <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-2">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-orange-700">Recall Reason: {event.recallReason}</p>
+                            <p className="text-xs text-orange-600">This event was recalled and permanently cancelled</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 mb-2">
                       <div className="flex items-start gap-2">
                         <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />

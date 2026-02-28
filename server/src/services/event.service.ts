@@ -477,6 +477,8 @@ export class EventService {
     type?: EventType;
     dateFrom?: string; // ISO date string - filter events starting from this date
     dateTo?: string; // ISO date string - filter events starting before this date
+    declinedOrRecalledCancelled?: boolean; // Filter for declined (REJECTED) or recalled-cancelled (CANCELLED + recalledAt)
+    recalledPending?: boolean; // Filter for recalled-pending (PENDING + recalledAt)
   } = {}) {
     const where: Prisma.EventWhereInput = {
       deletedAt: null,
@@ -484,7 +486,23 @@ export class EventService {
 
     logger.debug('[EventService] Received filters:', filters);
 
-    if (filters.status) {
+    // Handle special filters for recalled events
+    if (filters.declinedOrRecalledCancelled) {
+      // REJECTED or (CANCELLED + recalledAt IS NOT NULL)
+      where.OR = [
+        { status: EventStatus.REJECTED },
+        {
+          AND: [
+            { status: EventStatus.CANCELLED },
+            { recalledAt: { not: null } },
+          ],
+        },
+      ];
+    } else if (filters.recalledPending) {
+      // PENDING + recalledAt IS NOT NULL
+      where.status = EventStatus.PENDING;
+      where.recalledAt = { not: null };
+    } else if (filters.status) {
       where.status = filters.status;
     }
 
@@ -2600,9 +2618,17 @@ export class EventService {
       rejectedBy?: null;
       rejectedAt?: null;
       rejectionReason?: null;
+      recalledBy: string;
+      recalledAt: Date;
+      recallReason: string;
+      recallAction: string;
     } = {
       status: action === 'PENDING' ? EventStatus.PENDING : EventStatus.CANCELLED,
       updatedBy: adminId,
+      recalledBy: adminId,
+      recalledAt: new Date(),
+      recallReason: reason || 'No reason provided',
+      recallAction: action,
     };
 
     // If setting to PENDING, clear approval fields
