@@ -25,7 +25,7 @@ export class ConfigurationService {
       configuration = await prisma.configuration.create({
         data: {
           mailTrap: {
-            trap: false,
+            trap: true, // Enable mail trap in development to redirect all emails to test address
             toAddress: ['vistracraft@gmail.com'],
             ccAddress: [],
           },

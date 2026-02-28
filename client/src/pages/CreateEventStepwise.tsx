@@ -925,7 +925,7 @@ export default function CreateEventStepwise() {
               id: index + 1,
               name: tt.name || "",
               type: (tt.price === 0 || tt.isComplementary) ? "free" as const : "paid" as const,
-              price: tt.price ? String(tt.price) : "",
+              price: tt.price !== undefined && tt.price !== null ? String(tt.price) : "",
               originalPrice: tt.originalPrice ? String(tt.originalPrice) : undefined,
               discountLabel: tt.discountLabel || undefined,
               quantity: tt.quantity ? String(tt.quantity) : "",
@@ -1342,11 +1342,11 @@ export default function CreateEventStepwise() {
       }
       const hasInvalidTickets = ticketTypes.some(ticket => {
         if (!ticket.name?.trim()) return true;
-        if (ticket.type === 'paid' && (!ticket.price || parseFloat(ticket.price) < 0)) return true;
+        if (ticket.type === 'paid' && !ticket.isComplementary && (!ticket.price || parseFloat(ticket.price) <= 0)) return true;
         return false;
       });
       if (hasInvalidTickets) {
-        errors.tickets = 'All tickets must have a name and valid price (if paid)';
+        errors.tickets = 'All tickets must have a name and a price greater than 0 (for paid tickets)';
       }
 
       // Validate early bird dates: if one is set, both must be set, and from < until

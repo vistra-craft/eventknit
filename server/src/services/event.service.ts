@@ -239,6 +239,41 @@ export class EventService {
       }
     }
 
+    // Enforce paid vs free pricing rules
+    if (data.isFree === true) {
+      if (data.price !== undefined && data.price !== null) {
+        const price = typeof data.price === 'string' ? parseFloat(data.price) : Number(data.price);
+        if (!isNaN(price) && price > 0) {
+          throw new ValidationError('Free events must have a price of 0');
+        }
+      }
+      if (data.ticketTypes && Array.isArray(data.ticketTypes)) {
+        for (const ticket of data.ticketTypes) {
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+          if (!isNaN(price) && price > 0) {
+            throw new ValidationError('Free events cannot include paid ticket types');
+          }
+        }
+      }
+    }
+    if (data.isFree === false) {
+      if (data.price !== undefined && data.price !== null) {
+        const price = typeof data.price === 'string' ? parseFloat(data.price) : Number(data.price);
+        if (!isNaN(price) && price <= 0) {
+          throw new ValidationError('Paid events must have a price greater than 0');
+        }
+      }
+      if (data.ticketTypes && Array.isArray(data.ticketTypes)) {
+        for (const ticket of data.ticketTypes) {
+          if (ticket.isComplementary === true) continue;
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+          if (!isNaN(price) && price <= 0) {
+            throw new ValidationError('Paid ticket types must have a price greater than 0');
+          }
+        }
+      }
+    }
+
     // Verify organizer exists and get verification status
     const organizer = await prisma.user.findUnique({
       where: { id: organizerId },
@@ -861,6 +896,7 @@ export class EventService {
         endDate: true,
         venue: true,
         location: true,
+        isFree: true,
       },
     });
 
@@ -872,6 +908,7 @@ export class EventService {
     const originalStartDate = event.startDate;
     const originalVenue = event.venue;
     const originalLocation = event.location;
+    const effectiveIsFree = data.isFree ?? event.isFree;
 
     // Verify organizer owns the event (unless admin)
     if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
@@ -986,11 +1023,27 @@ export class EventService {
     if (data.refundTiers !== undefined) updateData.refundTiers = data.refundTiers ? (data.refundTiers as Prisma.InputJsonValue) : Prisma.DbNull;
 
     // Validate ticket types data integrity before processing
+    if (data.price !== undefined && data.price !== null) {
+      const price = typeof data.price === 'string' ? parseFloat(data.price) : Number(data.price);
+      if (effectiveIsFree && !isNaN(price) && price > 0) {
+        throw new ValidationError('Free events must have a price of 0');
+      }
+      if (!effectiveIsFree && !isNaN(price) && price <= 0) {
+        throw new ValidationError('Paid events must have a price greater than 0');
+      }
+    }
     if (data.ticketTypes !== undefined && Array.isArray(data.ticketTypes)) {
       for (const ticket of data.ticketTypes) {
+        const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+        if (effectiveIsFree && !isNaN(price) && price > 0) {
+          throw new ValidationError('Free events cannot include paid ticket types');
+        }
+        if (!effectiveIsFree && ticket.isComplementary !== true && !isNaN(price) && price <= 0) {
+          throw new ValidationError('Paid ticket types must have a price greater than 0');
+        }
+
         // Validate complementary tickets
         if (ticket.isComplementary === true) {
-          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
           if (price !== 0 && !isNaN(price)) {
             throw new ValidationError('Complementary tickets must have price of 0');
           }

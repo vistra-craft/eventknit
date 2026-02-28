@@ -171,9 +171,15 @@ export class UserService {
       );
     }
 
-    // Check user status
-    if (user.status !== UserStatus.ACTIVE) {
-      throw new ValidationError('Only active users can switch roles');
+    // Check user status - allow ACTIVE and PENDING_APPROVAL users
+    // PENDING_APPROVAL users may have tried to become organizers before and need to retry
+    if (user.status === UserStatus.SUSPENDED || user.status === UserStatus.DEACTIVATED) {
+      throw new ValidationError('Suspended or deactivated users cannot switch roles');
+    }
+
+    // Require email verification
+    if (!user.isEmailVerified) {
+      throw new ValidationError('Email verification required before becoming an organizer');
     }
 
     // Validate required fields

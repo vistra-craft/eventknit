@@ -1512,22 +1512,22 @@ class EmailService {
       <html>
         <head>
           <meta charset="utf-8">
-          <title>Application Under Review</title>
+          <title>Event Submitted for Review</title>
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
           <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #4a6cf7;">Welcome to EventKnit, ${firstName}!</h1>
-            <p>Thank you for registering as an organizer on EventKnit.</p>
-            <p>Your application is currently <strong>under review</strong> by our team. This process ensures the quality and safety of events on our platform.</p>
+            <h1 style="color: #4a6cf7;">Your Event is Under Review, ${firstName}!</h1>
+            <p>Thank you for creating your event on EventKnit.</p>
+            <p>Your event is currently <strong>under review</strong> by our team. This process ensures the quality and safety of events on our platform.</p>
             <div style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
               <p style="margin: 0;"><strong>What happens next?</strong></p>
               <ul style="margin: 10px 0 0 0; padding-left: 20px;">
-                <li>Our team will review your application</li>
-                <li>You'll receive an email once your account is approved</li>
-                <li>You can still log in and browse events while you wait</li>
+                <li>Our team will review your event within 24-48 hours</li>
+                <li>You'll receive an email once your event is approved and goes live</li>
+                <li>You can continue browsing and attending other events while you wait</li>
               </ul>
             </div>
-            <p>If you have any questions, please don't hesitate to contact our support team.</p>
+            <p>If you have any questions about your event submission, please don't hesitate to contact our support team.</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
           </div>

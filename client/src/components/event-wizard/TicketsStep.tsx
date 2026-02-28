@@ -309,7 +309,7 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
       <div className="space-y-3">
         {ticketTypes.map((ticket, index) => {
           const nameError = ticketsError && !ticket.name.trim();
-          const priceError = ticketsError && ticket.type === 'paid' && !ticket.isComplementary && (!ticket.price || parseFloat(ticket.price) < 0);
+          const priceError = ticketsError && ticket.type === 'paid' && !ticket.isComplementary && (!ticket.price || parseFloat(ticket.price) <= 0);
           const isOpen = detailsOpen.has(ticket.id);
           const hasDetails = !!(ticket.description?.trim()) || ticket.isComplementary || !!ticket.originalPrice || ticket.isHidden || (ticket.salesChannel && ticket.salesChannel !== 'both') || ticket.availableFrom || ticket.availableUntil;
 
@@ -367,7 +367,15 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
                         placeholder="0.00"
                         value={ticket.price}
                         className={`h-9 pl-9 text-sm ${priceError ? 'border-destructive' : ''}`}
-                        onChange={(e) => updateTicket(index, { price: e.target.value })}
+                        onChange={(e) => {
+                          const nextPrice = e.target.value;
+                          const numericPrice = parseFloat(nextPrice);
+                          if (!isNaN(numericPrice) && numericPrice === 0) {
+                            updateTicket(index, { price: nextPrice, type: 'free' });
+                            return;
+                          }
+                          updateTicket(index, { price: nextPrice });
+                        }}
                       />
                     </div>
                   ) : (
@@ -401,7 +409,7 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
               {(nameError || priceError) && (
                 <div className="flex flex-wrap gap-x-4 mt-1.5">
                   {nameError && <p className="text-[11px] text-destructive">Ticket name is required</p>}
-                  {priceError && <p className="text-[11px] text-destructive">Enter a valid price</p>}
+                  {priceError && <p className="text-[11px] text-destructive">Enter a price greater than 0 (use Free for $0)</p>}
                 </div>
               )}
 

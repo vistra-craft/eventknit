@@ -185,6 +185,7 @@ const EventDetails = () => {
   const lowestPrice = event?.ticketTypes && event.ticketTypes.length > 0
     ? Math.min(...event.ticketTypes.map((t) => t.price))
     : event?.price ?? 0;
+  const isFreeEvent = event?.isFree || lowestPrice === 0;
 
 
   if (isLoading) {
@@ -311,7 +312,7 @@ const EventDetails = () => {
 
                 {/* Mobile-only price display */}
                 <div className="lg:hidden pt-1">
-                  {event.isFree ? (
+                  {isFreeEvent ? (
                     <span className="text-lg font-bold text-primary">Free</span>
                   ) : (
                     <span className="text-lg font-bold text-primary">
