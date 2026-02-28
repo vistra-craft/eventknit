@@ -82,6 +82,9 @@ RUN npm ci --only=production --ignore-scripts --no-audit && \
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
+# Copy swagger.yaml (required at runtime by app.ts)
+COPY --from=builder /app/swagger.yaml ./swagger.yaml
+
 # Copy Prisma generated client and schema
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
