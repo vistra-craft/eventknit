@@ -42,20 +42,20 @@ const TIER_LABELS: Record<string, string> = {
   associate: "Associate Sponsors",
 };
 
-// Logo display height scales with tier prominence
-const TIER_LOGO_HEIGHT: Record<string, string> = {
-  title: "h-20",
-  presenting: "h-16",
-  diamond: "h-16",
-  platinum: "h-14",
-  gold: "h-12",
-  silver: "h-10",
-  bronze: "h-8",
-  partner: "h-8",
-  media: "h-8",
-  technology: "h-8",
-  community: "h-8",
-  associate: "h-8",
+// Avatar sizes by tier — compact, proportional
+const TIER_AVATAR_SIZE: Record<string, string> = {
+  title: "h-14 w-14",
+  presenting: "h-12 w-12",
+  diamond: "h-12 w-12",
+  platinum: "h-11 w-11",
+  gold: "h-10 w-10",
+  silver: "h-9 w-9",
+  bronze: "h-9 w-9",
+  partner: "h-9 w-9",
+  media: "h-9 w-9",
+  technology: "h-9 w-9",
+  community: "h-9 w-9",
+  associate: "h-9 w-9",
 };
 
 export function SponsorsShowcase({ sponsors }: SponsorsShowcaseProps) {
@@ -75,20 +75,20 @@ export function SponsorsShowcase({ sponsors }: SponsorsShowcaseProps) {
   });
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
       {tiers.map((tier) => {
         const items = grouped.get(tier)!;
-        const heightClass = TIER_LOGO_HEIGHT[tier] || "h-8";
+        const avatarSize = TIER_AVATAR_SIZE[tier] || "h-9 w-9";
         const label = TIER_LABELS[tier] || `${tier.charAt(0).toUpperCase()}${tier.slice(1)} Sponsors`;
 
         return (
           <div key={tier}>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest text-center mb-5">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-3">
               {label}
             </p>
-            <div className="flex flex-wrap justify-center items-center gap-10">
+            <div className="flex flex-wrap items-center gap-5">
               {items.map((sponsor, i) => (
-                <SponsorItem key={sponsor.id || i} sponsor={sponsor} heightClass={heightClass} />
+                <SponsorItem key={sponsor.id || i} sponsor={sponsor} avatarSize={avatarSize} />
               ))}
             </div>
           </div>
@@ -98,17 +98,28 @@ export function SponsorsShowcase({ sponsors }: SponsorsShowcaseProps) {
   );
 }
 
-function SponsorItem({ sponsor, heightClass }: { sponsor: Sponsor; heightClass: string }) {
-  const content = sponsor.logo ? (
-    <img
-      src={sponsor.logo}
-      alt={sponsor.name}
-      className={`${heightClass} w-auto object-contain grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300`}
-    />
-  ) : (
-    <span className="inline-flex items-center px-5 py-2.5 rounded-full border border-border/40 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-border transition-colors">
-      {sponsor.name}
-    </span>
+function SponsorItem({ sponsor, avatarSize }: { sponsor: Sponsor; avatarSize: string }) {
+  const content = (
+    <div className="flex flex-col items-center gap-1.5 group w-[90px]">
+      {sponsor.logo ? (
+        <div className={`${avatarSize} rounded-full bg-muted overflow-hidden flex items-center justify-center p-1 transition-all duration-200 group-hover:shadow-sm`}>
+          <img
+            src={sponsor.logo}
+            alt={sponsor.name}
+            className="w-full h-full object-contain"
+          />
+        </div>
+      ) : (
+        <div className={`${avatarSize} rounded-full bg-primary/10 flex items-center justify-center transition-all duration-200 group-hover:shadow-sm`}>
+          <span className="text-xs font-bold text-primary">
+            {sponsor.name.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )}
+      <span className="text-[10px] text-muted-foreground font-medium group-hover:text-foreground transition-colors text-center line-clamp-1 w-full">
+        {sponsor.name}
+      </span>
+    </div>
   );
 
   if (sponsor.website) {

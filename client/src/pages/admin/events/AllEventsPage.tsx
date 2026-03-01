@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus, CheckCircle, Clock, DollarSign } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -685,18 +685,11 @@ const AllEventsPage = () => {
                       Preview
                     </Button>
                          {event.status === "active" && (
-                           <Button
-                             variant="destructive"
-                             size="sm"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               // Open recall dialog - functionality already exists in UpcomingEventsPage
-                               // For now, navigate to upcoming events page where recall is available
-                               window.open(`/admin/events/upcoming`, '_blank');
-                             }}
-                           >
-                             <X className="h-4 w-4 mr-1" />
-                             Recall
+                           <Button variant="destructive" size="sm" asChild onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                             <Link to="/admin/events/upcoming" target="_blank" rel="noopener noreferrer">
+                               <X className="h-4 w-4 mr-1" />
+                               Recall
+                             </Link>
                            </Button>
                          )}
                     <DropdownMenu>
@@ -710,20 +703,24 @@ const AllEventsPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => window.open(`/admin/events/${event.id}`, '_blank')}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Event
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Event
+                          </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Public Page
+                        <DropdownMenuItem asChild>
+                          <Link to={`/event/${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Public Page
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
-                          window.open(`/admin/analytics/events?eventId=${event.id}`, '_blank');
-                        }}>
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          View Analytics
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/analytics/events?eventId=${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Analytics
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           try {
@@ -1032,13 +1029,11 @@ const AllEventsPage = () => {
                   >
                     Close
                   </Button>
-                  <Button
-                    variant="default"
-                    onClick={() => window.open(`/event/${previewEventId}`, '_blank')}
-                    className="gap-2"
-                  >
-                    <Eye className="h-4 w-4" />
-                    View Public Page
+                  <Button variant="default" asChild className="gap-2">
+                    <Link to={`/event/${previewEventId}`} target="_blank" rel="noopener noreferrer">
+                      <Eye className="h-4 w-4" />
+                      View Public Page
+                    </Link>
                   </Button>
                 </DialogFooter>
               </>

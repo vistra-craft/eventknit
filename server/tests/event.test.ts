@@ -334,7 +334,7 @@ describe('Event System', () => {
       expect(response.body.success).toBe(false);
     });
 
-    it('should fail to create event as attendee (only organizers and admins can create events)', async () => {
+    it('should fail to create event as active attendee (only organizers and admins can create events)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -356,6 +356,53 @@ describe('Event System', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Only organizers and admins can create events');
+    });
+
+    it('should allow pending-approval attendee to create their first event (becomeOrganizer flow)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Simulate an attendee who went through becomeOrganizer():
+      // role stays ATTENDEE, status set to PENDING_APPROVAL
+      const hashedPassword = await bcrypt.hash('Test123!@$', 12);
+      const pendingAttendee = await prisma.user.create({
+        data: {
+          email: 'pending-attendee@test.com',
+          password: hashedPassword,
+          firstName: 'Pending',
+          lastName: 'Attendee',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.PENDING_APPROVAL,
+          isEmailVerified: true,
+          organizationName: 'New Org',
+          onboardingCompleted: true,
+        },
+      });
+      const pendingToken = generateAccessToken({
+        userId: pendingAttendee.id,
+        email: pendingAttendee.email,
+        role: pendingAttendee.role,
+      });
+
+      const eventData = {
+        title: 'First Event From New Organizer',
+        description: 'This is the first event from someone who just became an organizer',
+        startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        location: 'Test Location',
+        isFree: true,
+      };
+
+      const response = await request(app)
+        .post('/api/v1/events')
+        .set('Authorization', `Bearer ${pendingToken}`)
+        .send(eventData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.event.title).toBe(eventData.title);
+      expect(response.body.data.event.status).toBe(EventStatus.PENDING);
     });
 
     it('should allow admin to create events', async () => {

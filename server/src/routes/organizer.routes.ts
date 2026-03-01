@@ -5,6 +5,7 @@ import { StaffPerformanceController } from '../controllers/staff-performance.con
 import { InvoiceController } from '../controllers/invoice.controller.js';
 import { WhiteLabelController } from '../controllers/white-label.controller.js';
 import { RefundService } from '../services/refund.service.js';
+import { EventService } from '../services/event.service.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { canManageStaff } from '../utils/privileges.js';
 import { AuthorizationError, NotFoundError } from '../utils/errors.js';
@@ -113,6 +114,25 @@ router.post('/onboarding/complete', OrganizerController.completeOnboarding);
  * @access  Private (ORGANIZER+)
  */
 router.get('/events', OrganizerController.getOrganizerEvents);
+
+/**
+ * @route   GET /api/v1/organizer/events/:eventId
+ * @desc    Get single event details (authenticated — ensures token refresh works for non-approved events)
+ * @access  Private (authenticated users who own the event)
+ */
+router.get('/events/:eventId', async (req: AuthenticatedRequest & { params: { eventId: string } }, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+    const { eventId } = req.params;
+    const event = await EventService.getEventById(eventId, req.user.id, false);
+    res.json({ success: true, data: { event } });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * @route   POST /api/v1/organizer/events/:eventId/staff

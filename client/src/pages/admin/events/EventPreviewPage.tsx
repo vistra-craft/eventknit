@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EventPreviewModal } from "@/components/EventPreviewModal";
@@ -77,12 +77,11 @@ const EventPreviewPage = () => {
           </p>
         </div>
         {eventId && (
-          <Button
-            variant="default"
-            onClick={() => window.open(`/event/${eventId}`, '_blank')}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            View Public Page
+          <Button variant="default" asChild>
+            <Link to={`/event/${eventId}`} target="_blank" rel="noopener noreferrer">
+              <Eye className="h-4 w-4 mr-2" />
+              View Public Page
+            </Link>
           </Button>
         )}
       </div>

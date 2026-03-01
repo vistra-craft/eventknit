@@ -26,34 +26,11 @@ interface SpeakersShowcaseProps {
 export function SpeakersShowcase({ speakers }: SpeakersShowcaseProps) {
   const [selectedSpeaker, setSelectedSpeaker] = useState<Speaker | null>(null);
 
-  if (speakers.length <= 4) {
-    // Feature mode — larger cards
-    return (
-      <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {speakers.map((speaker, i) => (
-            <SpeakerFeatureCard
-              key={speaker.id || i}
-              speaker={speaker}
-              onClick={() => setSelectedSpeaker(speaker)}
-            />
-          ))}
-        </div>
-        <SpeakerDialog
-          speaker={selectedSpeaker}
-          open={!!selectedSpeaker}
-          onOpenChange={(open) => !open && setSelectedSpeaker(null)}
-        />
-      </>
-    );
-  }
-
-  // Compact mode — horizontal scroll
   return (
     <>
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4 snap-x snap-mandatory">
+      <div className="flex flex-wrap gap-5">
         {speakers.map((speaker, i) => (
-          <SpeakerCompactCard
+          <SpeakerCard
             key={speaker.id || i}
             speaker={speaker}
             onClick={() => setSelectedSpeaker(speaker)}
@@ -69,70 +46,31 @@ export function SpeakersShowcase({ speakers }: SpeakersShowcaseProps) {
   );
 }
 
-function SpeakerFeatureCard({ speaker, onClick }: { speaker: Speaker; onClick: () => void }) {
+function SpeakerCard({ speaker, onClick }: { speaker: Speaker; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="text-left group rounded-xl border border-border/40 bg-card overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.01]"
+      className="group flex flex-col items-center text-center w-[100px] transition-all duration-200"
     >
-      <div className="h-48 bg-muted overflow-hidden">
+      <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0">
         {speaker.image ? (
           <img
             src={speaker.image}
             alt={speaker.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center">
-            <SpeakerInitials name={speaker.name} size="lg" />
-          </div>
+          <SpeakerInitials name={speaker.name} />
         )}
       </div>
-      <div className="p-4">
-        <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-          {speaker.name}
-        </h4>
-        {(speaker.title || speaker.company) && (
-          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
-            {[speaker.title, speaker.company].filter(Boolean).join(" at ")}
-          </p>
-        )}
-        {speaker.bio && (
-          <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{speaker.bio}</p>
-        )}
-        <SocialLinks speaker={speaker} className="mt-3" />
-      </div>
-    </button>
-  );
-}
-
-function SpeakerCompactCard({ speaker, onClick }: { speaker: Speaker; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="text-left flex-shrink-0 w-[180px] snap-start group rounded-xl border border-border/40 bg-card overflow-hidden transition-all duration-300 hover:shadow-lg"
-    >
-      <div className="h-32 bg-muted overflow-hidden">
-        {speaker.image ? (
-          <img
-            src={speaker.image}
-            alt={speaker.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center">
-            <SpeakerInitials name={speaker.name} size="md" />
-          </div>
-        )}
-      </div>
-      <div className="p-3">
-        <h4 className="font-semibold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-          {speaker.name}
-        </h4>
-        {speaker.title && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{speaker.title}</p>
-        )}
-      </div>
+      <h4 className="text-xs font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors mt-1.5 w-full">
+        {speaker.name}
+      </h4>
+      {(speaker.title || speaker.company) && (
+        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1 w-full leading-tight">
+          {speaker.title || speaker.company}
+        </p>
+      )}
     </button>
   );
 }
@@ -149,22 +87,26 @@ function SpeakerDialog({
   if (!speaker) return null;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{speaker.name}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          {speaker.image && (
-            <div className="h-48 rounded-lg overflow-hidden bg-muted">
-              <img
-                src={speaker.image}
-                alt={speaker.name}
-                className="h-full w-full object-cover"
-              />
+        <div className="space-y-3">
+          <div className="flex justify-center">
+            <div className="h-16 w-16 rounded-full overflow-hidden bg-muted">
+              {speaker.image ? (
+                <img
+                  src={speaker.image}
+                  alt={speaker.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <SpeakerInitials name={speaker.name} />
+              )}
             </div>
-          )}
+          </div>
           {(speaker.title || speaker.company) && (
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-sm font-medium text-muted-foreground text-center">
               {[speaker.title, speaker.company].filter(Boolean).join(" at ")}
             </p>
           )}
@@ -178,18 +120,15 @@ function SpeakerDialog({
   );
 }
 
-function SpeakerInitials({ name, size }: { name: string; size: "md" | "lg" }) {
+function SpeakerInitials({ name }: { name: string }) {
   const initials = name
     .split(" ")
     .map((n) => n[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const sizeClass = size === "lg" ? "h-20 w-20 text-2xl" : "h-14 w-14 text-lg";
   return (
-    <div
-      className={`${sizeClass} rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold`}
-    >
+    <div className="h-full w-full rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
       {initials}
     </div>
   );
@@ -205,7 +144,7 @@ function SocialLinks({ speaker, className }: { speaker: Speaker; className?: str
   if (links.length === 0) return null;
 
   return (
-    <div className={`flex gap-2 ${className ?? ""}`}>
+    <div className={`flex justify-center gap-2 ${className ?? ""}`}>
       {links.map((link) => (
         <a
           key={link.label}
@@ -213,10 +152,10 @@ function SocialLinks({ speaker, className }: { speaker: Speaker; className?: str
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-border/40 bg-background hover:bg-muted transition-colors"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-full border border-border/40 bg-background hover:bg-muted transition-colors"
           title={link.label}
         >
-          <link.icon className="h-3.5 w-3.5 text-muted-foreground" />
+          <link.icon className="h-3 w-3 text-muted-foreground" />
         </a>
       ))}
     </div>

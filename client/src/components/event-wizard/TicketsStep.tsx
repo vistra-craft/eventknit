@@ -4,7 +4,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+
+
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,8 @@ import {
   Clock,
   Percent,
   Gift,
-  AlertCircle,
+
+
   ChevronDown,
   Copy,
   Trash2,
@@ -190,12 +192,6 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
 
   return (
     <div className="space-y-6">
-      {ticketsError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{ticketsError}</AlertDescription>
-        </Alert>
-      )}
 
       {/* ── Capacity Allocator ── */}
       <div className="space-y-3">
@@ -313,10 +309,17 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
           const isOpen = detailsOpen.has(ticket.id);
           const hasDetails = !!(ticket.description?.trim()) || ticket.isComplementary || !!ticket.originalPrice || ticket.isHidden || (ticket.salesChannel && ticket.salesChannel !== 'both') || ticket.availableFrom || ticket.availableUntil;
 
+          const hasError = nameError || priceError;
+
           return (
             <div
               key={ticket.id}
-              className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-card p-4"
+              data-ticket-card
+              className={`rounded-xl border bg-card p-4 transition-colors ${
+                hasError
+                  ? 'border-destructive/40'
+                  : 'border-gray-200 dark:border-zinc-800'
+              }`}
             >
               {/* ── Compact row: 4 core fields ── */}
               <div className="grid grid-cols-2 gap-x-3 gap-y-2 md:grid-cols-[1fr_6.5rem_8.5rem_6rem]">
@@ -408,8 +411,8 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
               {/* Inline errors */}
               {(nameError || priceError) && (
                 <div className="flex flex-wrap gap-x-4 mt-1.5">
-                  {nameError && <p className="text-[11px] text-destructive">Ticket name is required</p>}
-                  {priceError && <p className="text-[11px] text-destructive">Enter a price greater than 0 (use Free for $0)</p>}
+                  {nameError && <p className="text-[11px] text-muted-foreground">Give this ticket a name</p>}
+                  {priceError && <p className="text-[11px] text-muted-foreground">Set a price above 0, or switch to Free</p>}
                 </div>
               )}
 

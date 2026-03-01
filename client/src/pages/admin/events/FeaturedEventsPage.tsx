@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2, Radio, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -17,9 +17,9 @@ import {
 } from "../../../lib/featured-event-api";
 
 /**
- * Check if a featured event is currently live on the hero section
+ * Check if a featured event is currently displayed on the hero section
  */
-const isEventLive = (event: FeaturedEventData): boolean => {
+const isOnHero = (event: FeaturedEventData): boolean => {
   if (!event.isActive) return false;
 
   const now = new Date();
@@ -196,15 +196,15 @@ const FeaturedEventsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Featured Events</h1>
-            <p className="text-muted-foreground">Manage events featured on the platform homepage hero section</p>
+            <p className="text-sm text-muted-foreground">Manage events featured on the platform homepage hero section</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>{filteredEvents.length} of {featuredEvents.length} featured events</span>
-              {featuredEvents.filter(isEventLive).length > 0 && (
+              {featuredEvents.filter(isOnHero).length > 0 && (
                 <Badge className="bg-success text-white text-xs">
-                  <Radio className="h-3 w-3 mr-1" />
-                  {featuredEvents.filter(isEventLive).length} Live
+                  <Eye className="h-3 w-3 mr-1" />
+                  {featuredEvents.filter(isOnHero).length} On Hero
                 </Badge>
               )}
             </div>
@@ -284,11 +284,11 @@ const FeaturedEventsPage = () => {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-foreground truncate">{displayTitle}</h3>
-                          {isEventLive(featuredEvent) && (
-                            <Badge className="bg-success text-white text-xs animate-pulse">
-                              <Radio className="h-3 w-3 mr-1" />
-                              LIVE
+                          <h3 className="text-base font-semibold text-foreground truncate">{displayTitle}</h3>
+                          {isOnHero(featuredEvent) && (
+                            <Badge className="bg-success text-white text-xs">
+                              <Eye className="h-3 w-3 mr-1" />
+                              On Hero
                             </Badge>
                           )}
                           <Badge className="bg-warning/10 text-warning border-warning/20 text-xs">
@@ -414,7 +414,7 @@ const FeaturedEventsPage = () => {
               <div className="text-muted-foreground">
                 <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
                 <h3 className="text-lg font-medium mb-2">No featured events found</h3>
-                <p>Try adjusting your search or filter criteria, or add a new featured event</p>
+                <p className="text-sm">Try adjusting your search or filter criteria, or add a new featured event</p>
               </div>
             </CardContent>
           </Card>

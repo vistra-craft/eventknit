@@ -12,21 +12,65 @@ import { useOrganizerApproval } from '../hooks/useOrganizerApproval';
 import { userRoutes } from '../routes/userRoutes';
 import UnifiedNavbar from '../components/UnifiedNavbar';
 import { DashboardModeProvider } from '../contexts/DashboardModeContext';
-import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
+import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
 import OrganizerOnboardingModal from '../components/OrganizerOnboardingModal';
 import { Clock } from 'lucide-react';
 import { UserRole, UserStatus } from '../types/auth';
 
 /**
  * Loading component for suspense fallback
- * Professional skeleton loader with shimmer animations
+ * Mimics the actual user dashboard: header, tabs, and event card list
  */
 const LoadingFallback = () => (
-  <SkeletonGroup className="p-6 space-y-6">
-    <SkeletonPageHeader showActions={false} />
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <SkeletonGroup className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-7xl">
+    {/* Header */}
+    <div className="mb-6 sm:mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div style={{ animation: 'skeleton-fade-in 0.4s ease-out both', animationDelay: '0ms' }}>
+          <Skeleton className="h-8 w-40 mb-2" />
+          <Skeleton className="h-4 w-56" />
+        </div>
+        <Skeleton
+          className="h-10 w-full sm:w-36 rounded-md"
+          style={{ animation: 'skeleton-fade-in 0.4s ease-out both', animationDelay: '60ms' }}
+        />
+      </div>
+
+      {/* Tabs */}
+      <div
+        className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-full sm:w-auto border border-border"
+        style={{ animation: 'skeleton-fade-in 0.4s ease-out both', animationDelay: '120ms' }}
+      >
+        {['Attending', 'Saved', 'Settings'].map((tab) => (
+          <Skeleton key={tab} className="h-9 w-24 rounded-md" />
+        ))}
+      </div>
+    </div>
+
+    {/* Event card list */}
+    <div className="space-y-3 max-w-3xl">
       {[1, 2, 3, 4].map((i) => (
-        <SkeletonMetricCard key={i} />
+        <div
+          key={i}
+          className="flex gap-4 p-4 bg-background border border-border rounded-lg"
+          style={{ animation: 'skeleton-fade-in 0.4s ease-out both', animationDelay: `${160 + (i - 1) * 80}ms` }}
+        >
+          <Skeleton className="w-20 h-20 rounded-lg flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <div className="space-y-1 mb-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-7 w-20 rounded-md" />
+              <Skeleton className="h-7 w-16 rounded-md" />
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   </SkeletonGroup>

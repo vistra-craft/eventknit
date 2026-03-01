@@ -173,6 +173,23 @@ export class AuthService {
     firstName: string,
     lastName: string,
   ): Promise<AuthResponse> {
+    // Debug: log what we're looking up
+    logger.debug('[verifyRegistrationCode] Lookup params:', {
+      email,
+      code,
+      emailLength: email.length,
+      codeLength: code.length,
+      emailCharCodes: [...email].map(c => c.charCodeAt(0)),
+      codeCharCodes: [...code].map(c => c.charCodeAt(0)),
+    });
+
+    // Debug: check what's in the DB for this email
+    const allForEmail = await prisma.emailVerification.findMany({
+      where: { email, verified: false },
+      select: { id: true, email: true, code: true, verified: true, expiresAt: true },
+    });
+    logger.debug('[verifyRegistrationCode] DB records for email:', JSON.stringify(allForEmail));
+
     // Find verification record
     const verification = await prisma.emailVerification.findFirst({
       where: {

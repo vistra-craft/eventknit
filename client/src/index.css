@@ -785,6 +785,44 @@
   }
 
   /* ============================================================================
+   * Auth Breath Loader — ProtectedRoute loading state
+   * ============================================================================ */
+
+  /* Subtle scale + opacity pulse on the brand mark */
+  @keyframes auth-breathe {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.85;
+    }
+  }
+
+  /* Radial glow ring pulse behind the brand mark */
+  @keyframes auth-glow {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 1;
+    }
+  }
+
+  /* Thin progress bar shimmer sliding left → right */
+  @keyframes auth-progress {
+    0% {
+      transform: translateX(-150%);
+    }
+    100% {
+      transform: translateX(450%);
+    }
+  }
+
+  /* ============================================================================
    * Rich Text Content Styling
    * For safely rendered HTML content from RichTextEditor
    * ============================================================================ */

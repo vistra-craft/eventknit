@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield } from "lucide-react";
 import { useAuthContext } from "../../../hooks/useAuthContext";
 import { Card, CardContent } from "../../../components/ui/card";
@@ -479,20 +479,24 @@ const PendingApprovalPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => window.open(`/admin/events/${event.id}`, '_blank')}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Event
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Event
+                          </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Public Page
+                        <DropdownMenuItem asChild>
+                          <Link to={`/event/${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Public Page
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
-                          window.open(`/admin/analytics/events?eventId=${event.id}`, '_blank');
-                        }}>
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          View Analytics
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/analytics/events?eventId=${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Analytics
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           try {

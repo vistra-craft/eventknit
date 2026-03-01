@@ -17,7 +17,7 @@ interface ExhibitorsGridProps {
   exhibitors: Exhibitor[];
 }
 
-const INITIAL_COUNT = 6;
+const INITIAL_COUNT = 12;
 
 export function ExhibitorsGrid({ exhibitors }: ExhibitorsGridProps) {
   const [showAll, setShowAll] = useState(false);
@@ -26,18 +26,18 @@ export function ExhibitorsGrid({ exhibitors }: ExhibitorsGridProps) {
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex flex-wrap gap-5">
         {visible.map((exhibitor, i) => (
           <ExhibitorCard key={exhibitor.id || i} exhibitor={exhibitor} />
         ))}
       </div>
       {hasMore && !showAll && (
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-center mt-4">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowAll(true)}
-            className="border-border/40"
+            className="border-border/40 text-xs"
           >
             View all {exhibitors.length} exhibitors
           </Button>
@@ -49,37 +49,29 @@ export function ExhibitorsGrid({ exhibitors }: ExhibitorsGridProps) {
 
 function ExhibitorCard({ exhibitor }: { exhibitor: Exhibitor }) {
   return (
-    <div className="rounded-xl border border-border/40 bg-card p-4 transition-all duration-200 hover:shadow-md">
-      <div className="flex items-start gap-3">
-        {exhibitor.logo ? (
+    <div className="flex flex-col items-center text-center w-[100px] group">
+      {exhibitor.logo ? (
+        <div className="h-12 w-12 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 p-1">
           <img
             src={exhibitor.logo}
             alt={exhibitor.name}
-            className="h-10 w-10 rounded-lg object-contain flex-shrink-0"
+            className="w-full h-full object-contain"
           />
-        ) : (
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-primary">
-              {exhibitor.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
-        )}
-
-        <div className="flex-1 min-w-0">
-          <h4 className="text-sm font-semibold text-foreground line-clamp-1">{exhibitor.name}</h4>
-          {exhibitor.booth && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <MapPin className="h-3 w-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Booth {exhibitor.booth}</span>
-            </div>
-          )}
         </div>
-      </div>
+      ) : (
+        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <span className="text-sm font-bold text-primary">
+            {exhibitor.name.charAt(0).toUpperCase()}
+          </span>
+        </div>
+      )}
 
-      {exhibitor.description && (
-        <p className="text-xs text-muted-foreground mt-2 line-clamp-2 leading-relaxed">
-          {exhibitor.description}
-        </p>
+      <h4 className="text-xs font-semibold text-foreground line-clamp-1 mt-1.5 w-full">{exhibitor.name}</h4>
+      {exhibitor.booth && (
+        <div className="flex items-center gap-0.5 mt-0.5">
+          <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
+          <span className="text-[10px] text-muted-foreground">Booth {exhibitor.booth}</span>
+        </div>
       )}
 
       {exhibitor.website && (
@@ -87,10 +79,10 @@ function ExhibitorCard({ exhibitor }: { exhibitor: Exhibitor }) {
           href={exhibitor.website.startsWith("http") ? exhibitor.website : `https://${exhibitor.website}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-2"
+          className="inline-flex items-center gap-0.5 text-[10px] text-primary hover:underline mt-1"
         >
-          <ExternalLink className="h-3 w-3" />
-          Visit website
+          <ExternalLink className="h-2.5 w-2.5" />
+          Website
         </a>
       )}
     </div>

@@ -6,7 +6,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole, UserStatus } from '@/types/auth';
-import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '@/components/ui/Skeleton';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -22,18 +21,36 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
-  // Show loading state while checking authentication
+  // Show branded breath loader while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <SkeletonGroup className="p-6 space-y-6">
-          <SkeletonPageHeader showActions={false} />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <SkeletonMetricCard key={i} />
-            ))}
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="relative flex flex-col items-center gap-6">
+          {/* Glow ring */}
+          <div
+            className="absolute w-24 h-24 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, hsl(var(--primary-glow) / 0.25) 0%, transparent 70%)',
+              animation: 'auth-glow 2s ease-in-out infinite',
+            }}
+          />
+          {/* Brand mark */}
+          <div
+            className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary-dark))] flex items-center justify-center shadow-lg"
+            style={{ animation: 'auth-breathe 2s ease-in-out infinite' }}
+          >
+            <span className="text-lg font-bold text-primary-foreground tracking-tight select-none">
+              EK
+            </span>
           </div>
-        </SkeletonGroup>
+          {/* Progress shimmer bar */}
+          <div className="w-32 h-0.5 rounded-full bg-border overflow-hidden">
+            <div
+              className="h-full w-1/3 rounded-full bg-gradient-to-r from-transparent via-[hsl(var(--primary))] to-transparent"
+              style={{ animation: 'auth-progress 1.5s ease-in-out infinite' }}
+            />
+          </div>
+        </div>
       </div>
     );
   }

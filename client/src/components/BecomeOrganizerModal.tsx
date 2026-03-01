@@ -4,7 +4,7 @@
  * and navigates to the event creation form where the upgrade happens
  */
 
-import { Calendar, Users, BarChart3, DollarSign, CheckCircle, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -26,29 +26,6 @@ export const BecomeOrganizerModal = ({
   onClose,
   onSuccess,
 }: BecomeOrganizerModalProps) => {
-  const benefits = [
-    {
-      icon: Calendar,
-      title: 'Create Events',
-      description: 'Host your own events and build your community',
-    },
-    {
-      icon: Users,
-      title: 'Manage Attendees',
-      description: 'Track registrations, check-ins, and engage with attendees',
-    },
-    {
-      icon: BarChart3,
-      title: 'Analytics & Insights',
-      description: 'View detailed analytics and performance metrics',
-    },
-    {
-      icon: DollarSign,
-      title: 'Monetize Events',
-      description: 'Sell tickets and manage revenue seamlessly',
-    },
-  ];
-
   const handleContinue = () => {
     onClose();
     if (onSuccess) {
@@ -58,77 +35,45 @@ export const BecomeOrganizerModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Sparkles className="h-5 w-5 text-primary" />
-            </div>
-            <DialogTitle className="text-2xl">Become an Event Organizer</DialogTitle>
-          </div>
-          <DialogDescription className="text-base">
-            Start creating and managing your own events. Join thousands of organizers building communities.
+          <DialogTitle className="text-xl">Start organizing events</DialogTitle>
+          <DialogDescription className="text-sm pt-1">
+            Switch to an organizer account to create events, sell tickets, and manage attendees.
           </DialogDescription>
         </DialogHeader>
 
-        {/* Benefits */}
-        <div className="space-y-3 py-4">
-          {benefits.map((benefit) => (
-            <div
-              key={benefit.title}
-              className="flex gap-3"
-            >
-              <div className="flex-shrink-0">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <benefit.icon className="h-4 w-4 text-primary" />
-                </div>
-              </div>
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-0.5">
-                  {benefit.title}
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  {benefit.description}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* What you get */}
-        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-          <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-primary" />
-            What you get:
-          </h4>
-          <ul className="text-sm text-muted-foreground space-y-1 ml-6">
-            {[
-              'Unlimited event creation',
-              'Full event management dashboard',
-              'Attendee communication tools',
-              'Detailed analytics and reports',
-              'Ticket sales and revenue tracking'
-            ].map((item) => (
-              <li key={item}>
-                • {item}
-              </li>
-            ))}
+        <div className="py-3">
+          <p className="text-sm font-medium text-foreground mb-2.5">As an organizer, you can:</p>
+          <ul className="text-sm text-muted-foreground space-y-1.5">
+            <li className="flex items-start gap-2">
+              <span className="text-muted-foreground/60 mt-0.5">&mdash;</span>
+              Create and publish events with ticketing
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-muted-foreground/60 mt-0.5">&mdash;</span>
+              Track registrations, check-ins, and revenue
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-muted-foreground/60 mt-0.5">&mdash;</span>
+              Message attendees and view event analytics
+            </li>
           </ul>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={onClose}
           >
-            Maybe Later
+            Not now
           </Button>
           <Button
             onClick={handleContinue}
             className="gap-2"
           >
-            <Sparkles className="h-4 w-4" />
-            Become an Organizer
+            Get started
+            <ArrowRight className="h-4 w-4" />
           </Button>
         </DialogFooter>
       </DialogContent>

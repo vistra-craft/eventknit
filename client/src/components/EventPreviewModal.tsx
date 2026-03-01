@@ -5,7 +5,7 @@
  */
 
 import { useMemo } from 'react';
-import { Calendar, MapPin, Users, DollarSign } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, Globe, Clock, Lock, Linkedin, Twitter, Link as LinkIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Badge } from './ui/badge';
 import { RichTextContent } from './ui/RichTextContent';
@@ -39,10 +39,10 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const formatCurrency = (amount: number) => {
+const formatCurrency = (amount: number, currency = 'USD') => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -71,9 +71,19 @@ export const EventPreviewModal = ({
   const displayEndDate = event?.endDate || null;
   const displayEndTime = event?.endTime || null;
   const displayCapacity = event?.capacity || 0;
-  const displayTicketsSold = 0;
+  const displayTicketsSold = event?.registrationCount || 0;
   const displayPrice = event?.price ? parseFloat(event.price.toString()) : 0;
   const displayIsFree = event?.isFree || false;
+  const displayCurrency = event?.currency || 'USD';
+  const displayAddress = event?.address || '';
+  const displayOnlineLink = event?.onlineLink || '';
+  const displayRegistrationDeadline = event?.registrationDeadline || null;
+  const displayRefundPolicy = event?.refundPolicy || null;
+  const displayRefundPolicyText = event?.refundPolicyText || null;
+  const displayRefundDeadlineDays = event?.refundDeadlineDays || null;
+  const displayIsPrivate = event?.type === 'PRIVATE';
+  const displayIsOnline = event?.isOnline || false;
+  const displayAgeRestriction = event?.ageRestriction || null;
 
 
   return (
@@ -123,9 +133,24 @@ export const EventPreviewModal = ({
                 <h2 className="text-2xl font-bold text-foreground mb-2">
                   {displayTitle}
                 </h2>
-                {displayCategory && (
-                  <Badge className="mb-2">{displayCategory}</Badge>
-                )}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {displayCategory && <Badge>{displayCategory}</Badge>}
+                  {displayIsPrivate && (
+                    <Badge variant="outline" className="gap-1">
+                      <Lock className="h-3 w-3" />
+                      Private
+                    </Badge>
+                  )}
+                  {displayIsOnline && (
+                    <Badge variant="outline" className="gap-1">
+                      <Globe className="h-3 w-3" />
+                      Online
+                    </Badge>
+                  )}
+                  {displayAgeRestriction && (
+                    <Badge variant="outline">{displayAgeRestriction}</Badge>
+                  )}
+                </div>
               </div>
 
               {/* Description */}
@@ -191,6 +216,43 @@ export const EventPreviewModal = ({
                   </div>
                 )}
 
+                {displayAddress && displayAddress !== displayLocation && (
+                  <div className="flex gap-3">
+                    <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Address</p>
+                      <p className="font-medium text-sm">{displayAddress}</p>
+                    </div>
+                  </div>
+                )}
+
+                {displayOnlineLink && (
+                  <div className="flex gap-3">
+                    <Globe className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Online Link</p>
+                      <a
+                        href={displayOnlineLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-sm text-primary hover:underline break-all"
+                      >
+                        {displayOnlineLink}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                {displayRegistrationDeadline && (
+                  <div className="flex gap-3">
+                    <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Registration Deadline</p>
+                      <p className="font-medium text-sm">{formatDate(displayRegistrationDeadline)}</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Capacity */}
                 {displayCapacity > 0 && (
                   <div className="flex gap-3">
@@ -210,7 +272,7 @@ export const EventPreviewModal = ({
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Price</p>
                     <p className="font-medium text-sm">
-                      {displayIsFree ? 'Free' : formatCurrency(displayPrice)}
+                      {displayIsFree ? 'Free' : formatCurrency(displayPrice, displayCurrency)}
                     </p>
                   </div>
                 </div>
@@ -224,23 +286,32 @@ export const EventPreviewModal = ({
                   </h3>
                   <div className="space-y-2">
                     {event.ticketTypes.map((ticket, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                        <div>
-                          <p className="font-medium text-sm">{ticket.name}</p>
-                          {ticket.discountLabel && (
-                            <p className="text-xs text-muted-foreground">{ticket.discountLabel}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-sm">
-                            {ticket.price === 0 ? 'Free' : formatCurrency(Number(ticket.price))}
-                          </p>
-                          {ticket.quantity && (
-                            <p className="text-xs text-muted-foreground">
-                              {ticket.quantity} available
+                      <div key={idx} className="p-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-sm">{ticket.name}</p>
+                            {ticket.discountLabel && (
+                              <p className="text-xs text-muted-foreground">{ticket.discountLabel}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-sm">
+                              {ticket.price === 0 ? 'Free' : formatCurrency(Number(ticket.price), displayCurrency)}
                             </p>
-                          )}
+                            {ticket.quantity && (
+                              <p className="text-xs text-muted-foreground">
+                                {ticket.quantity} available
+                              </p>
+                            )}
+                          </div>
                         </div>
+                        {(ticket.availableFrom || ticket.availableUntil) && (
+                          <p className="text-xs text-muted-foreground mt-1.5">
+                            {ticket.availableFrom && `From ${formatDate(ticket.availableFrom)}`}
+                            {ticket.availableFrom && ticket.availableUntil && ' '}
+                            {ticket.availableUntil && `until ${formatDate(ticket.availableUntil)}`}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -254,7 +325,7 @@ export const EventPreviewModal = ({
                     Requirements
                   </h3>
                   <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                    {(event.requirements as string[]).map((req: string, idx: number) => (
+                    {event.requirements.map((req, idx) => (
                       <li key={idx}>{req}</li>
                     ))}
                   </ul>
@@ -293,24 +364,49 @@ export const EventPreviewModal = ({
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {event.speakers.map((speaker, idx) => (
-                      <div key={idx} className="rounded-lg border border-border p-3">
-                        {speaker.image && (
-                          <div className="mb-3 overflow-hidden rounded-lg h-32">
-                            <img
-                              src={speaker.image}
-                              alt={speaker.name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
+                      <div key={idx} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                        {speaker.image ? (
+                          <img
+                            src={speaker.image}
+                            alt={speaker.name}
+                            className="h-10 w-10 rounded-full object-cover flex-shrink-0"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-semibold text-primary">
+                              {speaker.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                            </span>
                           </div>
                         )}
-                        <p className="font-medium text-sm">{speaker.name}</p>
-                        {speaker.title && (
-                          <p className="text-xs text-muted-foreground">{speaker.title}</p>
-                        )}
-                        {speaker.bio && (
-                          <p className="text-xs text-muted-foreground mt-1">{speaker.bio}</p>
-                        )}
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm">{speaker.name}</p>
+                          {speaker.title && (
+                            <p className="text-xs text-muted-foreground">{speaker.title}</p>
+                          )}
+                          {speaker.bio && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{speaker.bio}</p>
+                          )}
+                          {(speaker.linkedin || speaker.twitter || speaker.website) && (
+                            <div className="flex gap-2 mt-2">
+                              {speaker.linkedin && (
+                                <a href={speaker.linkedin} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                                  <Linkedin className="h-3.5 w-3.5" />
+                                </a>
+                              )}
+                              {speaker.twitter && (
+                                <a href={speaker.twitter} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                                  <Twitter className="h-3.5 w-3.5" />
+                                </a>
+                              )}
+                              {speaker.website && (
+                                <a href={speaker.website} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                                  <LinkIcon className="h-3.5 w-3.5" />
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -325,24 +421,38 @@ export const EventPreviewModal = ({
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {event.sponsors.map((sponsor, idx) => (
-                      <div key={idx} className="rounded-lg border border-border p-3">
-                        {sponsor.logo && (
-                          <div className="mb-3 overflow-hidden rounded-lg h-24 bg-muted flex items-center justify-center">
+                      <div key={idx} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                        {sponsor.logo ? (
+                          <div className="h-10 w-10 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 p-1">
                             <img
                               src={sponsor.logo}
                               alt={sponsor.name}
-                              className="w-full h-full object-contain p-2"
+                              className="w-full h-full object-contain"
                               loading="lazy"
                             />
                           </div>
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-semibold text-primary">
+                              {sponsor.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
                         )}
-                        <p className="font-medium text-sm">{sponsor.name}</p>
-                        {sponsor.level && (
-                          <p className="text-xs text-muted-foreground">{sponsor.level}</p>
-                        )}
-                        {sponsor.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{sponsor.description}</p>
-                        )}
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm">{sponsor.name}</p>
+                          {sponsor.level && (
+                            <p className="text-xs text-muted-foreground">{sponsor.level}</p>
+                          )}
+                          {sponsor.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{sponsor.description}</p>
+                          )}
+                          {sponsor.website && (
+                            <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1">
+                              <LinkIcon className="h-3 w-3" />
+                              Website
+                            </a>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -357,24 +467,50 @@ export const EventPreviewModal = ({
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {event.exhibitors.map((exhibitor, idx) => (
-                      <div key={idx} className="rounded-lg border border-border p-3">
-                        {exhibitor.logo && (
-                          <div className="mb-3 overflow-hidden rounded-lg h-24 bg-muted flex items-center justify-center">
+                      <div key={idx} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                        {exhibitor.logo ? (
+                          <div className="h-10 w-10 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 p-1">
                             <img
                               src={exhibitor.logo}
                               alt={exhibitor.name}
-                              className="w-full h-full object-contain p-2"
+                              className="w-full h-full object-contain"
                               loading="lazy"
                             />
                           </div>
+                        ) : (
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs font-semibold text-primary">
+                              {exhibitor.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
                         )}
-                        <p className="font-medium text-sm">{exhibitor.name}</p>
-                        {exhibitor.booth && (
-                          <p className="text-xs text-muted-foreground">Booth {exhibitor.booth}</p>
-                        )}
-                        {exhibitor.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{exhibitor.description}</p>
-                        )}
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm">{exhibitor.name}</p>
+                          {exhibitor.booth && (
+                            <p className="text-xs text-muted-foreground">Booth {exhibitor.booth}</p>
+                          )}
+                          {exhibitor.category && (
+                            <p className="text-xs text-muted-foreground">{exhibitor.category}</p>
+                          )}
+                          {exhibitor.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{exhibitor.description}</p>
+                          )}
+                          {(exhibitor.website || exhibitor.contactEmail) && (
+                            <div className="flex gap-3 mt-1.5">
+                              {exhibitor.website && (
+                                <a href={exhibitor.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                                  <LinkIcon className="h-3 w-3" />
+                                  Website
+                                </a>
+                              )}
+                              {exhibitor.contactEmail && (
+                                <a href={`mailto:${exhibitor.contactEmail}`} className="text-xs text-primary hover:underline">
+                                  {exhibitor.contactEmail}
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -401,9 +537,52 @@ export const EventPreviewModal = ({
               {/* Tags */}
               {event.tags && Array.isArray(event.tags) && event.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {(event.tags as string[]).map((tag: string, idx: number) => (
+                  {event.tags.map((tag, idx) => (
                     <Badge key={idx} variant="outline">{tag}</Badge>
                   ))}
+                </div>
+              )}
+
+              {/* Refund Policy */}
+              {displayRefundPolicy && displayRefundPolicy !== 'no_refunds' && (
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-2">
+                    Refund Policy
+                  </h3>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p className="capitalize">{displayRefundPolicy.replace(/_/g, ' ')}</p>
+                    {displayRefundDeadlineDays && (
+                      <p>Refunds available up to {displayRefundDeadlineDays} days before the event</p>
+                    )}
+                    {displayRefundPolicyText && (
+                      <p>{displayRefundPolicyText}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Social Links */}
+              {event?.socialLinks && Object.keys(event.socialLinks).length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-2">
+                    Social Links
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(event.socialLinks).map(([platform, url]) => (
+                      url && (
+                        <a
+                          key={platform}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-muted/50 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <LinkIcon className="h-3 w-3" />
+                          {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                        </a>
+                      )
+                    ))}
+                  </div>
                 </div>
               )}
 

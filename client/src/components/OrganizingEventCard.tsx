@@ -5,8 +5,8 @@
  */
 
 import { memo, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, CheckCircle, DollarSign, BarChart3, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Calendar, MapPin, Users, CheckCircle, DollarSign, BarChart3, MoreVertical, Edit, Trash2, Eye, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -306,22 +306,11 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
 
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="flex-row items-start justify-between gap-4 pr-8">
-            <div>
-              <DialogTitle>Event Preview</DialogTitle>
-              <DialogDescription>
-                This is how your event will look once approved.
-              </DialogDescription>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => { setIsPreviewOpen(false); handleEditClick(); }}
-              className="shrink-0 gap-1.5"
-            >
-              <Edit className="h-3.5 w-3.5" />
-              Edit Event
-            </Button>
+          <DialogHeader>
+            <DialogTitle>Event Preview</DialogTitle>
+            <DialogDescription>
+              This is how your event will look once approved.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
@@ -482,10 +471,26 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
                     <h4 className="text-section-header">Speakers</h4>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {previewEvent.speakers.map((speaker, index) => (
-                        <div key={`${speaker.name}-${index}`} className="rounded-lg border border-border p-3">
-                          <div className="font-medium">{speaker.name}</div>
-                          {speaker.title && <div className="text-xs text-muted-foreground">{speaker.title}</div>}
-                          {speaker.bio && <div className="text-xs text-muted-foreground mt-1">{speaker.bio}</div>}
+                        <div key={`${speaker.name}-${index}`} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                          {speaker.image ? (
+                            <img
+                              src={speaker.image}
+                              alt={speaker.name}
+                              className="h-10 w-10 rounded-full object-cover flex-shrink-0"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-semibold text-primary">
+                                {speaker.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium">{speaker.name}</div>
+                            {speaker.title && <div className="text-xs text-muted-foreground">{speaker.title}</div>}
+                            {speaker.bio && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{speaker.bio}</div>}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -497,10 +502,28 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
                     <h4 className="text-section-header">Sponsors</h4>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {previewEvent.sponsors.map((sponsor, index) => (
-                        <div key={`${sponsor.name}-${index}`} className="rounded-lg border border-border p-3">
-                          <div className="font-medium">{sponsor.name}</div>
-                          {sponsor.level && <div className="text-xs text-muted-foreground">{sponsor.level}</div>}
-                          {sponsor.description && <div className="text-xs text-muted-foreground mt-1">{sponsor.description}</div>}
+                        <div key={`${sponsor.name}-${index}`} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                          {sponsor.logo ? (
+                            <div className="h-10 w-10 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 p-1">
+                              <img
+                                src={sponsor.logo}
+                                alt={sponsor.name}
+                                className="w-full h-full object-contain"
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-semibold text-primary">
+                                {sponsor.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium">{sponsor.name}</div>
+                            {sponsor.level && <div className="text-xs text-muted-foreground">{sponsor.level}</div>}
+                            {sponsor.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{sponsor.description}</div>}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -512,10 +535,28 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
                     <h4 className="text-section-header">Exhibitors</h4>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {previewEvent.exhibitors.map((exhibitor, index) => (
-                        <div key={`${exhibitor.name}-${index}`} className="rounded-lg border border-border p-3">
-                          <div className="font-medium">{exhibitor.name}</div>
-                          {exhibitor.booth && <div className="text-xs text-muted-foreground">Booth {exhibitor.booth}</div>}
-                          {exhibitor.description && <div className="text-xs text-muted-foreground mt-1">{exhibitor.description}</div>}
+                        <div key={`${exhibitor.name}-${index}`} className="flex items-start gap-3 rounded-lg border border-border p-3">
+                          {exhibitor.logo ? (
+                            <div className="h-10 w-10 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 p-1">
+                              <img
+                                src={exhibitor.logo}
+                                alt={exhibitor.name}
+                                className="w-full h-full object-contain"
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-semibold text-primary">
+                                {exhibitor.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium">{exhibitor.name}</div>
+                            {exhibitor.booth && <div className="text-xs text-muted-foreground">Booth {exhibitor.booth}</div>}
+                            {exhibitor.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{exhibitor.description}</div>}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -546,6 +587,17 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
               </>
             )}
           </div>
+
+          {!previewLoading && !previewError && (
+            <div className="flex justify-end pt-2 border-t border-border">
+              <Button variant="outline" size="sm" asChild className="gap-1.5">
+                <Link to={`/event/${event.id}`} target="_blank" rel="noopener noreferrer">
+                  View public page
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

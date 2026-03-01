@@ -30,11 +30,12 @@ import {
   Building2,
 } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
-import { createEvent, type CreateEventData, EventType, updateEvent, type UpdateEventData } from '@/lib/event-api';
+import { createEvent, type CreateEventData, EventType, updateEvent } from '@/lib/event-api';
 import { becomeOrganizer } from '@/lib/user-dashboard-api';
 import { EVENT_CATEGORIES } from '@/lib/event-categories';
 import { getOrganizerEventById } from '@/lib/organizer-api';
-import { transformEventData, type BackendEvent } from '@/lib/event-utils';
+
+
 import { useAuth } from '@/hooks/useAuth';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
 import { applyTemplate } from '@/lib/organizer-dashboard-api';
@@ -630,8 +631,8 @@ export default function CreateEventStepwise() {
         const response = await getOrganizerEventById(editEventId);
         
         if (response.success && response.data) {
-          const orgEvent = response.data.event;
-          const transformedEvent = transformEventData(orgEvent as unknown as BackendEvent);
+          // Already transformed by getOrganizerEventById — use directly
+          const transformedEvent = response.data.event;
           
           // Parse dates from ISO format to form format (YYYY-MM-DD)
           const parseDate = (isoDate?: string | null): string => {
@@ -674,12 +675,12 @@ export default function CreateEventStepwise() {
             time: parseTime(transformedEvent.startTime) || transformedEvent.time || "",
             endDate: parseDate(transformedEvent.endDate) || "",
             endTime: parseTime(transformedEvent.endTime) || "",
-            registrationDeadline: parseDate((transformedEvent as { registrationDeadline?: string }).registrationDeadline) || "",
-            registrationDeadlineTime: parseTime((transformedEvent as { registrationDeadline?: string }).registrationDeadline) || "",
+            registrationDeadline: parseDate(transformedEvent.registrationDeadline) || "",
+            registrationDeadlineTime: parseTime(transformedEvent.registrationDeadline) || "",
             location: transformedEvent.location || "",
             venue: transformedEvent.venue || "",
-            address: (transformedEvent as { address?: string }).address || "",
-            onlineLink: (transformedEvent as { onlineLink?: string }).onlineLink || "",
+            address: transformedEvent.address || "",
+            onlineLink: transformedEvent.onlineLink || "",
             price: transformedEvent.price?.toString() || "",
             totalSlots: transformedEvent.capacity || 0,
             image: transformedEvent.image || "",
@@ -728,7 +729,7 @@ export default function CreateEventStepwise() {
               requiresInvitation: tt.requiresInvitation,
               availableFrom: tt.availableFrom || undefined,
               availableUntil: tt.availableUntil || undefined,
-              earlyBirdQuantity: (tt as { earlyBirdQuantity?: number }).earlyBirdQuantity?.toString() || undefined,
+              earlyBirdQuantity: tt.earlyBirdQuantity?.toString() || undefined,
             }));
             setTicketTypes(mappedTicketTypes);
           }
@@ -1334,7 +1335,17 @@ export default function CreateEventStepwise() {
       }
     }
 
-    // Step 2 (Media) — no strict validation needed
+    if (step === 2) { // Media — validate FAQs if partially filled
+      faqs.forEach((faq, index) => {
+        const hasQuestion = faq.question.trim().length > 0;
+        const hasAnswer = faq.answer.trim().length > 0;
+        if (hasQuestion && !hasAnswer) {
+          errors[`faq_${index}`] = `FAQ #${index + 1} has a question but no answer.`;
+        } else if (!hasQuestion && hasAnswer) {
+          errors[`faq_${index}`] = `FAQ #${index + 1} has an answer but no question.`;
+        }
+      });
+    }
 
     if (step === 3) { // Tickets
       if (ticketTypes.length === 0) {
@@ -1346,7 +1357,7 @@ export default function CreateEventStepwise() {
         return false;
       });
       if (hasInvalidTickets) {
-        errors.tickets = 'All tickets must have a name and a price greater than 0 (for paid tickets)';
+        errors.tickets = 'Some tickets need attention before you can continue.';
       }
 
       // Validate early bird dates: if one is set, both must be set, and from < until
@@ -1384,10 +1395,51 @@ export default function CreateEventStepwise() {
         }
       }
     }
-    
+
+    if (step === 4) { // Registration
+      // Only validate custom fields (beyond the 3 default: firstName, lastName, email)
+      registrationFields.slice(3).forEach((field, i) => {
+        const idx = i + 3;
+        if (!field.label?.trim()) {
+          errors[`regField_${idx}`] = `Registration field #${idx + 1} needs a label.`;
+        }
+        const validTypes = ['text', 'email', 'phone', 'select', 'radio', 'checkbox', 'textarea', 'date', 'number'];
+        if (!validTypes.includes(field.type)) {
+          errors[`regField_${idx}_type`] = `Registration field "${field.label || idx + 1}" has an invalid type.`;
+        }
+        // Select/radio must have options
+        if ((field.type === 'select' || field.type === 'radio') && (!field.options || field.options.length === 0)) {
+          errors[`regField_${idx}_options`] = `"${field.label || `Field #${idx + 1}`}" needs at least one option.`;
+        }
+      });
+    }
+
+    if (step === 5) { // Extras — speakers, sponsors, exhibitors, agenda
+      speakers.forEach((speaker, i) => {
+        if (!speaker.name?.trim()) {
+          errors[`speaker_${i}`] = `Speaker #${i + 1} needs a name.`;
+        }
+      });
+      sponsors.forEach((sponsor, i) => {
+        if (!sponsor.name?.trim()) {
+          errors[`sponsor_${i}`] = `Sponsor #${i + 1} needs a name.`;
+        }
+      });
+      exhibitors.forEach((exhibitor, i) => {
+        if (!exhibitor.name?.trim()) {
+          errors[`exhibitor_${i}`] = `Exhibitor #${i + 1} needs a name.`;
+        }
+      });
+      agenda.forEach((item, i) => {
+        if (!item.title?.trim()) {
+          errors[`agenda_${i}`] = `Agenda item #${i + 1} needs a title.`;
+        }
+      });
+    }
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [eventData, eventType, ticketTypes]);
+  }, [eventData, eventType, ticketTypes, faqs, registrationFields, speakers, sponsors, exhibitors, agenda]);
 
   const transformFormDataToAPI = useCallback((): CreateEventData => {
     // Determine if event is free
@@ -1548,10 +1600,11 @@ export default function CreateEventStepwise() {
 
   const handleSubmit = useCallback(async () => {
     // Final validation — check ALL steps that have validation rules
-    const stepsWithValidation = [1, 3]; // Details (Basic Info + Date & Location), Tickets
+    const stepsWithValidation = [1, 2, 3, 4, 5];
     for (const step of stepsWithValidation) {
       if (!validateStep(step)) {
-        setError(`Please fix the errors in the "${steps[step - 1]?.title || `Step ${step}`}" section before submitting`);
+        setError(`There are issues in the "${steps[step - 1]?.title || `Step ${step}`}" section that need your attention.`);
+        setCurrentStep(step);
         return;
       }
     }
@@ -1580,8 +1633,10 @@ export default function CreateEventStepwise() {
     setIsSubmitting(true);
     setError(null);
 
-    // If ATTENDEE, upgrade to organizer using the collected org name
-    if (wasAttendee) {
+    // If ATTENDEE, upgrade to organizer using the collected org name.
+    // Skip if user status is already PENDING_APPROVAL (upgrade succeeded on a previous attempt
+    // but event creation failed — no need to call becomeOrganizer again).
+    if (wasAttendee && user.status !== 'PENDING_APPROVAL') {
       const orgName = orgNameInput.trim();
       if (orgName.length < 2) {
         setError('Organization name must be at least 2 characters long.');
@@ -1596,10 +1651,6 @@ export default function CreateEventStepwise() {
         if (!upgradeResponse.success) {
           throw new Error(upgradeResponse.message || 'Failed to set up organizer account');
         }
-        // Do NOT refreshProfile() here — the server already sets status=PENDING_APPROVAL
-        // atomically inside becomeOrganizer(). Refreshing here would make React see
-        // ORGANIZER+PENDING_APPROVAL and the ProtectedRoute would block /user/create-event.
-        // The refreshProfile() after createEvent() (below) handles the state update.
       } catch (upgradeError) {
         setError(
           upgradeError instanceof Error
@@ -1619,7 +1670,7 @@ export default function CreateEventStepwise() {
       
       if (isEditMode && eventId) {
         // Update existing event
-        const response = await updateEvent(eventId, apiData as UpdateEventData);
+        const response = await updateEvent(eventId, apiData);
         
         if (response.success && response.data) {
           // Stop auto-save interval before clearing draft
@@ -1690,7 +1741,7 @@ export default function CreateEventStepwise() {
       let errorMessage = 'An unexpected error occurred. Please try again.';
       
       if (err && typeof err === 'object' && 'message' in err) {
-        const rawMessage = err.message as string;
+        const rawMessage = String(err.message);
         
         // Parse and improve common validation errors
         if (rawMessage.includes('registrationFields') && rawMessage.includes('type')) {
@@ -1727,7 +1778,14 @@ export default function CreateEventStepwise() {
         }
         setCurrentStep(currentStep + 1);
       } else {
-        setError('Please fix the errors before proceeding');
+        setError('Please fix the highlighted fields before continuing.');
+        // Scroll to the first invalid ticket card
+        setTimeout(() => {
+          const firstInvalid = document.querySelector('[data-ticket-card].border-destructive\\/40');
+          if (firstInvalid) {
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 0);
       }
     } else {
       handleSubmit();

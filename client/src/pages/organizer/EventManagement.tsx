@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import {
   Calendar,
   Users,
@@ -2062,9 +2062,11 @@ const EventManagement = () => {
                   Preview Event
                 </DropdownMenuItem>
                 {eventData?.status?.toUpperCase() === 'APPROVED' && (
-                  <DropdownMenuItem onClick={() => window.open(`/event/${eventId}`, '_blank')}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Public Page
+                  <DropdownMenuItem asChild>
+                    <Link to={`/event/${eventId}`} target="_blank" rel="noopener noreferrer">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Public Page
+                    </Link>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
@@ -2206,13 +2208,11 @@ const EventManagement = () => {
               Share
             </Button>
             {eventData?.status?.toUpperCase() === 'APPROVED' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(`/event/${eventId}`, '_blank')}
-              >
-                <Eye className="w-3.5 h-3.5 mr-1.5" />
-                View Public
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/event/${eventId}`} target="_blank" rel="noopener noreferrer">
+                  <Eye className="w-3.5 h-3.5 mr-1.5" />
+                  View Public
+                </Link>
               </Button>
             )}
           </div>
@@ -2455,12 +2455,11 @@ const EventManagement = () => {
                   Close
                 </Button>
                 {eventData?.status?.toUpperCase() === 'APPROVED' && (
-                  <Button onClick={() => {
-                    setShowPreviewModal(false);
-                    window.open(`/event/${eventId}`, '_blank');
-                  }}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Public Page
+                  <Button asChild onClick={() => setShowPreviewModal(false)}>
+                    <Link to={`/event/${eventId}`} target="_blank" rel="noopener noreferrer">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Public Page
+                    </Link>
                   </Button>
                 )}
               </DialogFooter>

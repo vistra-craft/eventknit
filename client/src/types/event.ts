@@ -43,6 +43,7 @@ export interface EventData {
   // Location
   venue?: string | null;
   location: string; // normalized to non-null string by transformers
+  address?: string | null;
   coordinates?: { lat: number; lng: number } | null;
   isOnline?: boolean;
   onlineLink?: string | null;

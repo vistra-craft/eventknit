@@ -180,11 +180,11 @@ export default function EventReportsTab() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => window.open(`/events/${report.eventId}`, '_blank')}
-                          >
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            View Event
+                          <DropdownMenuItem asChild>
+                            <a href={`/event/${report.eventId}`} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              View Event
+                            </a>
                           </DropdownMenuItem>
                           {report.status !== 'INVESTIGATING' && (
                             <DropdownMenuItem

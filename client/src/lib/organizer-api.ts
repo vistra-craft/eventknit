@@ -290,7 +290,7 @@ export const getOrganizerPastEvents = async (filters?: {
  * Get organizer event by ID
  */
 export const getOrganizerEventById = async (eventId: string): Promise<EventResponse> => {
-  const response = await apiGet<EventResponse>(`/events/${eventId}`);
+  const response = await apiGet<EventResponse>(`/organizer/events/${eventId}`);
 
   // Transform backend event to frontend format (same as getEventById)
   if (response.success && response.data) {

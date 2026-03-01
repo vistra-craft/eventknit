@@ -292,23 +292,26 @@ export class EventService {
       throw new NotFoundError('Organizer not found');
     }
 
-    // Verify organizer can create events (check actual role from database, not token)
-    const actualRole = organizer.role;
-    if (actualRole !== UserRole.ORGANIZER &&
-      actualRole !== UserRole.SUPERADMIN &&
-      actualRole !== UserRole.ADMIN_STAFF) {
-      throw new AuthorizationError('Only organizers and admins can create events');
-    }
-
-    // Check account status
-    // PENDING_APPROVAL organizers can create their first event — it enters the
-    // event approval workflow regardless. Blocking here would break the atomic
-    // becomeOrganizer() flow where status is set to PENDING_APPROVAL immediately.
+    // Check account status first — blocked statuses apply to everyone
     if (organizer.status === UserStatus.DEACTIVATED) {
       throw new AuthorizationError('Your account has been deactivated. Please contact support.');
     }
     if (organizer.status === UserStatus.SUSPENDED) {
       throw new AuthorizationError('Your account has been suspended. Please contact support.');
+    }
+
+    // Verify organizer can create events (check actual role from database, not token).
+    // ATTENDEE users with PENDING_APPROVAL status are allowed — they went through
+    // becomeOrganizer() which keeps role as ATTENDEE until their first event is approved.
+    const actualRole = organizer.role;
+    const isPendingAttendee = actualRole === UserRole.ATTENDEE &&
+      organizer.status === UserStatus.PENDING_APPROVAL;
+
+    if (!isPendingAttendee &&
+      actualRole !== UserRole.ORGANIZER &&
+      actualRole !== UserRole.SUPERADMIN &&
+      actualRole !== UserRole.ADMIN_STAFF) {
+      throw new AuthorizationError('Only organizers and admins can create events');
     }
 
     // Note: Eventbrite-style approach - no verification required to CREATE events
