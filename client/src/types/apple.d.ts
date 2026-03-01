@@ -1,7 +1,7 @@
 // Apple Sign In SDK TypeScript declarations
 declare global {
   interface Window {
-    AppleID: {
+    AppleID?: {
       auth: {
         init: (config: {
           clientId: string;

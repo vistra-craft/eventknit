@@ -151,15 +151,8 @@ const PendingApprovalPage = () => {
             organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             organizerName: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             organizerId: event.organizer?.id,
-            organizerVerified: Boolean(
-              event.organizer && typeof (event.organizer as { isIdentityVerified?: boolean }).isIdentityVerified === "boolean"
-                ? (event.organizer as { isIdentityVerified?: boolean }).isIdentityVerified
-                : false
-            ),
-            organizerVerificationLevel:
-              typeof (event.organizer as { verificationLevel?: number })?.verificationLevel === "number"
-                ? (event.organizer as { verificationLevel?: number }).verificationLevel
-                : 1,
+            organizerVerified: Boolean(event.organizer?.isIdentityVerified),
+            organizerVerificationLevel: event.organizer?.verificationLevel ?? 1,
             date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
             startDate: event.startDate,
             startTime: event.startTime || '',
@@ -173,10 +166,10 @@ const PendingApprovalPage = () => {
             submittedDate: event.createdAt || new Date().toISOString(),
             createdAt: event.createdAt || new Date().toISOString(),
             description: event.description || '',
-            image: (event.image as string | undefined) || undefined,
+            image: event.image || undefined,
             isRecalled: Boolean(event.recalledAt), // Flag for recalled events
-            recallReason: event.recallReason as string | undefined,
-            recalledAt: event.recalledAt as string | undefined,
+            recallReason: event.recallReason ?? undefined,
+            recalledAt: event.recalledAt ?? undefined,
           }));
           setEvents(pendingEvents);
           }
@@ -248,8 +241,8 @@ const PendingApprovalPage = () => {
         throw new Error(response.message || 'Failed to approve event');
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
+      const errorMessage = err instanceof Error
+        ? err.message
         : 'Failed to approve event. Please try again.';
       console.error('Error approving event:', err);
       toast({
@@ -295,8 +288,8 @@ const PendingApprovalPage = () => {
         throw new Error(response.message || 'Failed to reject event');
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
+      const errorMessage = err instanceof Error
+        ? err.message
         : 'Failed to reject event. Please try again.';
       console.error('Error rejecting event:', err);
       toast({

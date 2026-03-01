@@ -187,8 +187,8 @@ const DeclinedEventsPage = () => {
         throw new Error(response.message || 'Failed to re-approve event');
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
+      const errorMessage = err instanceof Error
+        ? err.message
         : 'Failed to re-approve event. Please try again.';
       console.error('Error re-approving event:', err);
       toast({

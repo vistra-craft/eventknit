@@ -531,8 +531,8 @@ const EventDetailsPage = () => {
         });
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
+      const errorMessage = err instanceof Error
+        ? err.message
         : 'Failed to update data access level';
       toast({
         title: "Error",

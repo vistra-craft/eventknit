@@ -83,13 +83,12 @@ const SignIn = () => {
 
       await login(formData.email, formData.password, rememberMe);
       // Navigation is handled by the useAuth hook
-    } catch (error) {
+    } catch (error: unknown) {
       // Extract error message and store locally so it can't be cleared
       // by concurrent auth state changes (e.g., initAuth's refreshProfile failing)
-      const errorMessage =
-        error && typeof error === 'object' && 'message' in error
-          ? (error as { message: string }).message
-          : 'Invalid email or password. Please try again.';
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Invalid email or password. Please try again.';
       setLoginError(errorMessage);
     }
   };
@@ -97,9 +96,8 @@ const SignIn = () => {
   const handleGoogleSignIn = async () => {
     clearError();
     try {
-      const win = window as unknown as { google?: { accounts: { oauth2: { initTokenClient: (config: { client_id: string; scope: string; callback: (r: { access_token: string; error?: string }) => void; error_callback?: (e: { type: string }) => void }) => { requestAccessToken: () => void } } } } };
       // Load Google Sign-In script if not already loaded
-      if (!win.google?.accounts) {
+      if (!window.google?.accounts) {
         const script = document.createElement('script');
         script.src = 'https://accounts.google.com/gsi/client';
         script.async = true;
@@ -112,7 +110,7 @@ const SignIn = () => {
         console.error('Google Client ID not configured');
         return;
       }
-      const tokenClient = win.google!.accounts.oauth2.initTokenClient({
+      const tokenClient = window.google!.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'email profile',
         callback: async (response) => {
@@ -144,9 +142,8 @@ const SignIn = () => {
   const handleAppleSignIn = async () => {
     clearError();
     try {
-      const win = window as unknown as { AppleID?: { auth: { init: (config: { clientId: string; scope: string; redirectURI: string; usePopup: boolean }) => void; signIn: () => Promise<{ authorization: { code: string; id_token: string }; user?: { name?: { firstName?: string; lastName?: string } } }> } } };
       // Load Apple Sign-In script if not already loaded
-      if (!win.AppleID) {
+      if (!window.AppleID) {
         const script = document.createElement('script');
         script.src = 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js';
         script.async = true;
@@ -159,13 +156,13 @@ const SignIn = () => {
         console.error('Apple Client ID not configured');
         return;
       }
-      win.AppleID?.auth.init({
+      window.AppleID?.auth.init({
         clientId,
         scope: 'name email',
         redirectURI: window.location.origin,
         usePopup: true,
       });
-      const response = await win.AppleID!.auth.signIn();
+      const response = await window.AppleID!.auth.signIn();
       try {
         const result = await appleAuth(
           response.authorization.code,

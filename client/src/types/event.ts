@@ -142,6 +142,8 @@ export interface EventData {
     organizationName?: string | null;
     businessEmail?: string | null;
     phoneNumber?: string | null;
+    isIdentityVerified?: boolean;
+    verificationLevel?: number;
   };
 
   // Refund policy

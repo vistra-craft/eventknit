@@ -249,8 +249,8 @@ const UpcomingEventsPage = () => {
         throw new Error(response.message || 'Failed to recall event');
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
+      const errorMessage = err instanceof Error
+        ? err.message
         : 'Failed to recall event. Please try again.';
       setError(errorMessage);
     } finally {
