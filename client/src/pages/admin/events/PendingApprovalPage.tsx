@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield } from "lucide-react";
 import { useAuthContext } from "../../../hooks/useAuthContext";
 import { Card, CardContent } from "../../../components/ui/card";
@@ -14,8 +14,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Pagination } from "../../../components/ui/pagination";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, EventStatus } from "../../../lib/event-api";
+import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
 import { approveEvent, rejectEvent } from "../../../lib/admin-api";
+import { EventPreviewModal } from "../../../components/EventPreviewModal";
 import { useToast } from "../../../hooks/useToast";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
@@ -50,7 +51,6 @@ interface Event {
 }
 
 const PendingApprovalPage = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   useAuthContext();
   const [events, setEvents] = useState<Event[]>([]);
@@ -70,6 +70,49 @@ const PendingApprovalPage = () => {
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+  const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const handlePreviewEvent = (eventId: string) => {
+    setPreviewEventId(eventId);
+    setPreviewModalOpen(true);
+  };
+
+  // Fetch event details for preview modal
+  useEffect(() => {
+    const fetchPreviewEvent = async () => {
+      if (!previewEventId || !previewModalOpen) return;
+
+      try {
+        setPreviewLoading(true);
+        const response = await getEventById(previewEventId);
+        if (response.success && response.data?.event) {
+          setPreviewEventData(response.data.event);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load event details",
+            variant: "destructive",
+          });
+          setPreviewModalOpen(false);
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to load event details";
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
+        setPreviewModalOpen(false);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewEvent();
+  }, [previewEventId, previewModalOpen, toast]);
 
   // Fetch pending events (including recalled events sent back for re-approval)
   useEffect(() => {
@@ -445,7 +488,7 @@ const PendingApprovalPage = () => {
                     <p className="text-sm text-muted-foreground line-clamp-2">{stripHtml(event.description)}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/admin/events/${event.id}/preview`)} className="border-primary text-primary hover:bg-muted">
+                    <Button variant="outline" size="sm" onClick={() => handlePreviewEvent(event.id)} className="border-primary text-primary hover:bg-muted">
                       <Eye className="h-4 w-4 mr-1" />
                       Preview
                     </Button>
@@ -579,6 +622,14 @@ const PendingApprovalPage = () => {
           </Card>
         )}
 
+
+        {/* Event Preview Modal */}
+        <EventPreviewModal
+          isOpen={previewModalOpen}
+          onOpenChange={setPreviewModalOpen}
+          event={previewEventData}
+          loading={previewLoading}
+        />
 
         {/* Approve Warning Dialog for Unverified Organizers */}
         <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>

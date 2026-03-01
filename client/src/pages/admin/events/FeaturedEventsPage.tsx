@@ -15,6 +15,8 @@ import {
   updateFeaturedEvent,
   type FeaturedEventData,
 } from "../../../lib/featured-event-api";
+import { getEventById, type EventData } from "../../../lib/event-api";
+import { EventPreviewModal } from "../../../components/EventPreviewModal";
 
 /**
  * Check if a featured event is currently displayed on the hero section
@@ -51,6 +53,49 @@ const FeaturedEventsPage = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reordering, setReordering] = useState<string | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+  const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const handlePreviewEvent = (eventId: string) => {
+    setPreviewEventId(eventId);
+    setPreviewModalOpen(true);
+  };
+
+  // Fetch event details for preview modal
+  useEffect(() => {
+    const fetchPreviewEvent = async () => {
+      if (!previewEventId || !previewModalOpen) return;
+
+      try {
+        setPreviewLoading(true);
+        const response = await getEventById(previewEventId);
+        if (response.success && response.data?.event) {
+          setPreviewEventData(response.data.event);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load event details",
+            variant: "destructive",
+          });
+          setPreviewModalOpen(false);
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Failed to load event details";
+        toast({
+          title: "Error",
+          description: message,
+          variant: "destructive",
+        });
+        setPreviewModalOpen(false);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewEvent();
+  }, [previewEventId, previewModalOpen, toast]);
 
   const fetchFeaturedEvents = useCallback(async () => {
     try {
@@ -375,7 +420,7 @@ const FeaturedEventsPage = () => {
                           size="sm"
                           onClick={() => {
                             if (featuredEvent.eventId) {
-                              navigate(`/admin/events/${featuredEvent.eventId}/preview`);
+                              handlePreviewEvent(featuredEvent.eventId);
                             }
                           }}
                           disabled={!featuredEvent.eventId}
@@ -419,6 +464,14 @@ const FeaturedEventsPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Event Preview Modal */}
+        <EventPreviewModal
+          isOpen={previewModalOpen}
+          onOpenChange={setPreviewModalOpen}
+          event={previewEventData}
+          loading={previewLoading}
+        />
 
         {/* Delete Confirmation Dialog */}
         <ConfirmDialog

@@ -5,11 +5,14 @@
  */
 
 import { useMemo } from 'react';
-import { Calendar, MapPin, Users, DollarSign, Globe, Clock, Lock, Linkedin, Twitter, Link as LinkIcon } from 'lucide-react';
+import { Calendar, MapPin, Users, DollarSign, Globe, Clock, Lock, Link as LinkIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Badge } from './ui/badge';
 import { RichTextContent } from './ui/RichTextContent';
 import { Loader } from './ui/loader';
+import { SpeakersShowcase } from './event-details/SpeakersShowcase';
+import { SponsorsShowcase } from './event-details/SponsorsShowcase';
+import { ExhibitorsGrid } from './event-details/ExhibitorsGrid';
 import type { EventData } from '../types/event';
 
 interface EventPreviewModalProps {
@@ -362,54 +365,7 @@ export const EventPreviewModal = ({
                   <h3 className="text-sm font-semibold text-foreground mb-3">
                     Speakers
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {event.speakers.map((speaker, idx) => (
-                      <div key={idx} className="flex items-start gap-3 rounded-lg border border-border p-3">
-                        {speaker.image ? (
-                          <img
-                            src={speaker.image}
-                            alt={speaker.name}
-                            className="h-10 w-10 rounded-full object-cover flex-shrink-0"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-semibold text-primary">
-                              {speaker.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm">{speaker.name}</p>
-                          {speaker.title && (
-                            <p className="text-xs text-muted-foreground">{speaker.title}</p>
-                          )}
-                          {speaker.bio && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{speaker.bio}</p>
-                          )}
-                          {(speaker.linkedin || speaker.twitter || speaker.website) && (
-                            <div className="flex gap-2 mt-2">
-                              {speaker.linkedin && (
-                                <a href={speaker.linkedin} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                                  <Linkedin className="h-3.5 w-3.5" />
-                                </a>
-                              )}
-                              {speaker.twitter && (
-                                <a href={speaker.twitter} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                                  <Twitter className="h-3.5 w-3.5" />
-                                </a>
-                              )}
-                              {speaker.website && (
-                                <a href={speaker.website} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                                  <LinkIcon className="h-3.5 w-3.5" />
-                                </a>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <SpeakersShowcase speakers={event.speakers} />
                 </div>
               )}
 
@@ -419,43 +375,7 @@ export const EventPreviewModal = ({
                   <h3 className="text-sm font-semibold text-foreground mb-3">
                     Sponsors
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {event.sponsors.map((sponsor, idx) => (
-                      <div key={idx} className="flex items-start gap-3 rounded-lg border border-border p-3">
-                        {sponsor.logo ? (
-                          <div className="h-10 w-10 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 p-1">
-                            <img
-                              src={sponsor.logo}
-                              alt={sponsor.name}
-                              className="w-full h-full object-contain"
-                              loading="lazy"
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-semibold text-primary">
-                              {sponsor.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm">{sponsor.name}</p>
-                          {sponsor.level && (
-                            <p className="text-xs text-muted-foreground">{sponsor.level}</p>
-                          )}
-                          {sponsor.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{sponsor.description}</p>
-                          )}
-                          {sponsor.website && (
-                            <a href={sponsor.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1">
-                              <LinkIcon className="h-3 w-3" />
-                              Website
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <SponsorsShowcase sponsors={event.sponsors} />
                 </div>
               )}
 
@@ -465,55 +385,7 @@ export const EventPreviewModal = ({
                   <h3 className="text-sm font-semibold text-foreground mb-3">
                     Exhibitors
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {event.exhibitors.map((exhibitor, idx) => (
-                      <div key={idx} className="flex items-start gap-3 rounded-lg border border-border p-3">
-                        {exhibitor.logo ? (
-                          <div className="h-10 w-10 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 p-1">
-                            <img
-                              src={exhibitor.logo}
-                              alt={exhibitor.name}
-                              className="w-full h-full object-contain"
-                              loading="lazy"
-                            />
-                          </div>
-                        ) : (
-                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-semibold text-primary">
-                              {exhibitor.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm">{exhibitor.name}</p>
-                          {exhibitor.booth && (
-                            <p className="text-xs text-muted-foreground">Booth {exhibitor.booth}</p>
-                          )}
-                          {exhibitor.category && (
-                            <p className="text-xs text-muted-foreground">{exhibitor.category}</p>
-                          )}
-                          {exhibitor.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{exhibitor.description}</p>
-                          )}
-                          {(exhibitor.website || exhibitor.contactEmail) && (
-                            <div className="flex gap-3 mt-1.5">
-                              {exhibitor.website && (
-                                <a href={exhibitor.website} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
-                                  <LinkIcon className="h-3 w-3" />
-                                  Website
-                                </a>
-                              )}
-                              {exhibitor.contactEmail && (
-                                <a href={`mailto:${exhibitor.contactEmail}`} className="text-xs text-primary hover:underline">
-                                  {exhibitor.contactEmail}
-                                </a>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <ExhibitorsGrid exhibitors={event.exhibitors} />
                 </div>
               )}
 
@@ -592,7 +464,7 @@ export const EventPreviewModal = ({
                   <h3 className="text-sm font-semibold text-foreground mb-3">
                     Event Organizer
                   </h3>
-                  <div className="p-3 bg-muted/50 rounded-lg">
+                  <div className="p-3 bg-muted/50 rounded-lg space-y-2">
                     <p className="font-medium text-sm">
                       {event.organizer.firstName || ''} {event.organizer.lastName || ''}
                     </p>
@@ -600,6 +472,12 @@ export const EventPreviewModal = ({
                       <p className="text-xs text-muted-foreground">
                         {event.organizer.organizationName}
                       </p>
+                    )}
+                    {event.organizerDescription && (
+                      <RichTextContent
+                        content={event.organizerDescription}
+                        className="text-xs text-muted-foreground leading-relaxed"
+                      />
                     )}
                   </div>
                 </div>
