@@ -28,12 +28,12 @@ export function SpeakersShowcase({ speakers }: SpeakersShowcaseProps) {
 
   return (
     <>
-      <div className="flex flex-wrap gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {speakers.map((speaker, i) => (
           <SpeakerCard
             key={speaker.id || i}
             speaker={speaker}
-            onClick={() => setSelectedSpeaker(speaker)}
+            onSeeMore={() => setSelectedSpeaker(speaker)}
           />
         ))}
       </div>
@@ -46,32 +46,43 @@ export function SpeakersShowcase({ speakers }: SpeakersShowcaseProps) {
   );
 }
 
-function SpeakerCard({ speaker, onClick }: { speaker: Speaker; onClick: () => void }) {
+function SpeakerCard({ speaker, onSeeMore }: { speaker: Speaker; onSeeMore: () => void }) {
+  const subtitle = [speaker.title, speaker.company].filter(Boolean).join(" at ");
+
   return (
-    <button
-      onClick={onClick}
-      className="group flex flex-col items-center text-center w-[100px] transition-all duration-200"
-    >
-      <div className="h-12 w-12 rounded-full overflow-hidden bg-muted flex-shrink-0">
+    <div className="flex gap-4 p-4 rounded-xl border border-border/40 bg-card hover:shadow-sm transition-shadow">
+      <div className="h-14 w-14 rounded-full overflow-hidden bg-muted flex-shrink-0">
         {speaker.image ? (
           <img
             src={speaker.image}
             alt={speaker.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+            className="h-full w-full object-cover"
           />
         ) : (
           <SpeakerInitials name={speaker.name} />
         )}
       </div>
-      <h4 className="text-xs font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors mt-1.5 w-full">
-        {speaker.name}
-      </h4>
-      {(speaker.title || speaker.company) && (
-        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1 w-full leading-tight">
-          {speaker.title || speaker.company}
-        </p>
-      )}
-    </button>
+      <div className="min-w-0 flex-1">
+        <h4 className="text-sm font-semibold text-foreground truncate">{speaker.name}</h4>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{subtitle}</p>
+        )}
+        {speaker.bio && (
+          <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+            {speaker.bio}
+          </p>
+        )}
+        <SocialLinks speaker={speaker} className="mt-2" />
+        {speaker.bio && speaker.bio.length > 120 && (
+          <button
+            onClick={onSeeMore}
+            className="text-xs text-primary hover:underline font-medium mt-1"
+          >
+            See more
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -113,7 +124,7 @@ function SpeakerDialog({
           {speaker.bio && (
             <p className="text-sm text-muted-foreground leading-relaxed">{speaker.bio}</p>
           )}
-          <SocialLinks speaker={speaker} />
+          <SocialLinks speaker={speaker} className="justify-center" />
         </div>
       </DialogContent>
     </Dialog>
@@ -144,7 +155,7 @@ function SocialLinks({ speaker, className }: { speaker: Speaker; className?: str
   if (links.length === 0) return null;
 
   return (
-    <div className={`flex justify-center gap-2 ${className ?? ""}`}>
+    <div className={`flex gap-2 ${className ?? ""}`}>
       {links.map((link) => (
         <a
           key={link.label}

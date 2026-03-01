@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent } from "@/hooks/useEvent";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/useToast";
 import { Button } from "@/components/ui/button";
+import { isEventSaved as checkIfSaved, toggleSaveEvent } from "@/lib/saved-events-api";
+import { shareEvent } from "@/lib/utils/share";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { EventHero } from "@/components/event-details/EventHero";
@@ -60,6 +63,8 @@ const EventDetails = () => {
 
   const [userAlreadyRegistered, setUserAlreadyRegistered] = useState(false);
   const [existingRegistrationId, setExistingRegistrationId] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!user || !id) return;
@@ -69,6 +74,12 @@ const EventDetails = () => {
         setUserAlreadyRegistered(true);
         setExistingRegistrationId(response.data.registrationId);
       }
+    }).catch(() => {
+      // Silently fail — non-critical check
+    });
+
+    checkIfSaved(id).then((response) => {
+      setIsSaved(response.data.isSaved);
     }).catch(() => {
       // Silently fail — non-critical check
     });
@@ -155,18 +166,33 @@ const EventDetails = () => {
     }
   };
 
-  const handleShare = async () => {
-    const url = `${window.location.origin}/event/${id}`;
-    if (navigator.share) {
-      try { await navigator.share({ title: event?.title, url }); } catch { /* dismissed */ }
-    } else {
-      await navigator.clipboard.writeText(url);
+  const handleShare = useCallback(async () => {
+    if (!event || !id) return;
+    const shared = await shareEvent(event.title, id);
+    if (shared) {
+      toast({ title: "Shared", description: "Event link copied to clipboard" });
     }
-  };
+  }, [event, id, toast]);
 
-  const handleSave = () => {
-    // placeholder — wire to backend favourites when ready
-  };
+  const handleSave = useCallback(async () => {
+    if (!id) return;
+    if (!user) {
+      navigate(`/auth/signin?returnTo=${encodeURIComponent(`/event/${id}`)}`);
+      return;
+    }
+    try {
+      const nowSaved = await toggleSaveEvent(id, isSaved);
+      setIsSaved(nowSaved);
+      toast({
+        title: nowSaved ? "Event saved" : "Event removed",
+        description: nowSaved
+          ? "You can find this in your saved events"
+          : "Event removed from your saved list",
+      });
+    } catch {
+      toast({ title: "Error", description: "Could not update saved status. Please try again." });
+    }
+  }, [id, user, isSaved, navigate, toast]);
 
   // Derived display values
   const displayDate = event?.date || (event?.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : '');
@@ -230,8 +256,6 @@ const EventDetails = () => {
           <EventHero
             title={event.title}
             image={event.image}
-            onSave={handleSave}
-            onShare={handleShare}
           />
 
           {/* Sold Out / Limited Availability Alert Banner */}
@@ -497,6 +521,9 @@ const EventDetails = () => {
                 isRegistrationClosed={isRegistrationClosed}
                 userAlreadyRegistered={userAlreadyRegistered}
                 onRegisterClick={handleRegisterClick}
+                onSave={handleSave}
+                onShare={handleShare}
+                isSaved={isSaved}
               />
             </div>
           </div>

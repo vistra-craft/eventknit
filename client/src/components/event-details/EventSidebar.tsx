@@ -8,6 +8,9 @@ interface EventSidebarProps {
   isRegistrationClosed: boolean;
   userAlreadyRegistered: boolean;
   onRegisterClick: () => void;
+  onSave: () => void;
+  onShare: () => void;
+  isSaved: boolean;
 }
 
 export function EventSidebar({
@@ -15,6 +18,9 @@ export function EventSidebar({
   isRegistrationClosed,
   userAlreadyRegistered,
   onRegisterClick,
+  onSave,
+  onShare,
+  isSaved,
 }: EventSidebarProps) {
   const lowestPrice =
     event.ticketTypes && event.ticketTypes.length > 0
@@ -106,9 +112,7 @@ export function EventSidebar({
           <Ticket className="mr-2 h-5 w-5" />
           {userAlreadyRegistered
             ? "View My Ticket"
-            : isFreeEvent
-              ? "Register Free"
-              : "Register for Event"}
+            : "Register for Event"}
         </Button>
       )}
 
@@ -125,15 +129,17 @@ export function EventSidebar({
         <Button
           variant="outline"
           size="sm"
-          className="gap-2 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted"
+          className={`gap-2 border-border/40 hover:bg-muted ${isSaved ? "text-red-500 hover:text-red-600" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={onSave}
         >
-          <Heart className="h-4 w-4" />
-          Save
+          <Heart className={`h-4 w-4 ${isSaved ? "fill-current" : ""}`} />
+          {isSaved ? "Saved" : "Save"}
         </Button>
         <Button
           variant="outline"
           size="sm"
           className="gap-2 border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted"
+          onClick={onShare}
         >
           <Share2 className="h-4 w-4" />
           Share

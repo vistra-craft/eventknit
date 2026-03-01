@@ -17,7 +17,7 @@ interface ExhibitorsGridProps {
   exhibitors: Exhibitor[];
 }
 
-const INITIAL_COUNT = 12;
+const INITIAL_COUNT = 6;
 
 export function ExhibitorsGrid({ exhibitors }: ExhibitorsGridProps) {
   const [showAll, setShowAll] = useState(false);
@@ -26,7 +26,7 @@ export function ExhibitorsGrid({ exhibitors }: ExhibitorsGridProps) {
 
   return (
     <div>
-      <div className="flex flex-wrap gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {visible.map((exhibitor, i) => (
           <ExhibitorCard key={exhibitor.id || i} exhibitor={exhibitor} />
         ))}
@@ -48,8 +48,11 @@ export function ExhibitorsGrid({ exhibitors }: ExhibitorsGridProps) {
 }
 
 function ExhibitorCard({ exhibitor }: { exhibitor: Exhibitor }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasLongDescription = exhibitor.description && exhibitor.description.length > 100;
+
   return (
-    <div className="flex flex-col items-center text-center w-[100px] group">
+    <div className="flex gap-4 p-4 rounded-xl border border-border/40 bg-card hover:shadow-sm transition-shadow">
       {exhibitor.logo ? (
         <div className="h-12 w-12 rounded-full bg-muted overflow-hidden flex items-center justify-center flex-shrink-0 p-1">
           <img
@@ -65,26 +68,50 @@ function ExhibitorCard({ exhibitor }: { exhibitor: Exhibitor }) {
           </span>
         </div>
       )}
-
-      <h4 className="text-xs font-semibold text-foreground line-clamp-1 mt-1.5 w-full">{exhibitor.name}</h4>
-      {exhibitor.booth && (
-        <div className="flex items-center gap-0.5 mt-0.5">
-          <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
-          <span className="text-[10px] text-muted-foreground">Booth {exhibitor.booth}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-foreground truncate">{exhibitor.name}</h4>
+          {exhibitor.category && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary flex-shrink-0">
+              {exhibitor.category}
+            </span>
+          )}
         </div>
-      )}
-
-      {exhibitor.website && (
-        <a
-          href={exhibitor.website.startsWith("http") ? exhibitor.website : `https://${exhibitor.website}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-0.5 text-[10px] text-primary hover:underline mt-1"
-        >
-          <ExternalLink className="h-2.5 w-2.5" />
-          Website
-        </a>
-      )}
+        {exhibitor.booth && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <MapPin className="h-3 w-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Booth {exhibitor.booth}</span>
+          </div>
+        )}
+        {exhibitor.description && (
+          <p className={`text-xs text-muted-foreground mt-1.5 leading-relaxed ${!expanded ? "line-clamp-2" : ""}`}>
+            {exhibitor.description}
+          </p>
+        )}
+        {exhibitor.website && (
+          <div className="mt-2">
+            <a
+              href={exhibitor.website.startsWith("http") ? exhibitor.website : `https://${exhibitor.website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Website
+            </a>
+          </div>
+        )}
+        {hasLongDescription && (
+          <div className="mt-1">
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="text-xs text-primary hover:underline font-medium"
+            >
+              {expanded ? "Show less" : "See more"}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

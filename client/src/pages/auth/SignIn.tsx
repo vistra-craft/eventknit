@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,22 @@ import loginImage from '@/assets/login.jpeg';
 const SignIn = () => {
   const { login, isLoading, error: authError, clearError } = useAuth();
   const { dispatch } = useAuthContext();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+
+  const redirectAfterLogin = (role: string) => {
+    if (returnTo) {
+      window.location.href = returnTo;
+      return;
+    }
+    if (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') {
+      window.location.href = '/organizer/dashboard';
+    } else if (role === 'SUPERADMIN' || role === 'ADMIN_STAFF' || role === 'MARKETER' || role === 'SUPPORT' || role === 'TELLER') {
+      window.location.href = '/admin/dashboard';
+    } else {
+      window.location.href = '/user/dashboard';
+    }
+  };
   const [showPassword, setShowPassword] = useState(false);
   const [emailOAuthEmail, setEmailOAuthEmail] = useState('');
   const [emailOAuthCode, setEmailOAuthCode] = useState('');
@@ -106,14 +122,7 @@ const SignIn = () => {
             if (result.success && result.data) {
               setAccessToken(result.data.accessToken);
               dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
-              const userRole = result.data.user.role;
-              if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_STAFF' || userRole === 'ORGANIZER_TELLER') {
-                window.location.href = '/organizer/dashboard';
-              } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN_STAFF' || userRole === 'MARKETER' || userRole === 'SUPPORT' || userRole === 'TELLER') {
-                window.location.href = '/admin/dashboard';
-              } else {
-                window.location.href = '/user/dashboard';
-              }
+              redirectAfterLogin(result.data.user.role);
             }
           } catch (error: unknown) {
             console.error('Google login error:', error);
@@ -167,14 +176,7 @@ const SignIn = () => {
         if (result.success && result.data) {
           setAccessToken(result.data.accessToken);
           dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
-          const userRole = result.data.user.role;
-          if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_STAFF' || userRole === 'ORGANIZER_TELLER') {
-            window.location.href = '/organizer/dashboard';
-          } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN_STAFF' || userRole === 'MARKETER' || userRole === 'SUPPORT' || userRole === 'TELLER') {
-            window.location.href = '/admin/dashboard';
-          } else {
-            window.location.href = '/user/dashboard';
-          }
+          redirectAfterLogin(result.data.user.role);
         }
       } catch (error: unknown) {
         console.error('Apple login error:', error);
@@ -214,14 +216,7 @@ const SignIn = () => {
       if (result.success && result.data) {
         setAccessToken(result.data.accessToken);
         dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
-        const userRole = result.data.user.role;
-        if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_STAFF' || userRole === 'ORGANIZER_TELLER') {
-          window.location.href = '/organizer/dashboard';
-        } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN_STAFF' || userRole === 'MARKETER' || userRole === 'SUPPORT' || userRole === 'TELLER') {
-          window.location.href = '/admin/dashboard';
-        } else {
-          window.location.href = '/user/dashboard';
-        }
+        redirectAfterLogin(result.data.user.role);
       }
     } catch (error: unknown) {
       console.error('Email OAuth verification error:', error);
