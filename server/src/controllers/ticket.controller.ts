@@ -47,7 +47,7 @@ export class TicketController {
       const isAdmin = req.user.role === 'SUPERADMIN' || req.user.role === 'ADMIN_STAFF';
 
       if (!isOwner && !isOrganizer && !isAdmin) {
-        throw new AuthorizationError('You do not have permission to view this ticket');
+        throw new AuthorizationError('You don\'t have access to this ticket.');
       }
 
       const ticket = await TicketService.getTicketByRegistrationId(registrationId);
@@ -100,7 +100,7 @@ export class TicketController {
       const registrationEmail = registration.attendee.email?.toLowerCase().trim();
 
       if (registrationEmail !== normalizedEmail) {
-        throw new AuthorizationError('Email does not match the registration');
+        throw new AuthorizationError('The email address doesn\'t match this ticket. Please use the same email you registered with.');
       }
 
       // If token is provided, verify it (optional security enhancement)
@@ -161,7 +161,7 @@ export class TicketController {
       const isAdmin = req.user.role === 'SUPERADMIN' || req.user.role === 'ADMIN_STAFF';
 
       if (!isOwner && !isOrganizer && !isAdmin) {
-        throw new AuthorizationError('You do not have permission to download this ticket');
+        throw new AuthorizationError('You don\'t have access to download this ticket.');
       }
 
       const pdfBuffer = await TicketService.generateTicketPDF(registrationId);
@@ -239,14 +239,14 @@ export class TicketController {
 
       // Verify user owns the ticket
       if (registration.attendeeId !== req.user.id) {
-        throw new AuthorizationError('You can only resend your own tickets');
+        throw new AuthorizationError('You can only resend tickets for your own registrations.');
       }
 
       // Check if registration is confirmed (only send tickets for confirmed registrations)
       if (registration.status !== 'CONFIRMED' && registration.paymentStatus !== 'COMPLETED') {
         res.status(400).json({
           success: false,
-          message: 'Ticket email can only be resent for confirmed registrations with completed payment',
+          message: 'Tickets can only be resent after your registration is confirmed and payment is complete.',
         });
         return;
       }

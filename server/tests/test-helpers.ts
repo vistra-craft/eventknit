@@ -96,11 +96,10 @@ export async function cleanupTestData(tx?: any) {
   await safeDelete(() => client.refund.deleteMany(), 'refund');
   await safeDelete(() => client.paymentReconciliation.deleteMany(), 'paymentReconciliation');
   await safeDelete(() => client.dataAccessAuditLog.deleteMany(), 'dataAccessAuditLog');
+  await safeDelete(() => client.subscriptionOverride.deleteMany(), 'subscriptionOverride');
   await safeDelete(() => client.organizerSubscription.deleteMany(), 'organizerSubscription');
   await safeDelete(() => client.attendeeConsent.deleteMany(), 'attendeeConsent');
   await safeDelete(() => client.dataAccessAuditLog.deleteMany(), 'dataAccessAuditLog');
-  await safeDelete(() => client.organizerSubscription.deleteMany(), 'organizerSubscription');
-  await safeDelete(() => client.attendeeConsent.deleteMany(), 'attendeeConsent');
   await safeDelete(() => client.organizerDirector.deleteMany(), 'organizerDirector');
   await safeDelete(() => client.kYCDocument.deleteMany(), 'kYCDocument');
   await safeDelete(() => client.notificationPreference.deleteMany(), 'notificationPreference');

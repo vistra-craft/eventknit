@@ -2,8 +2,11 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 import { NotificationService } from './notification.service.js';
-import { NotificationType, NotificationPriority } from '@prisma/client';
+import { NotificationType, NotificationPriority, UserRole } from '@prisma/client';
 import { emailService } from './email.service.js';
+
+/** Roles that bypass ownership checks */
+const ADMIN_ROLES: UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF];
 
 export class AttendeeCommunicationService {
   /**
@@ -221,34 +224,32 @@ export class AttendeeCommunicationService {
     registrationIds?: string[];
     sendEmail?: boolean;
     sendNotification?: boolean;
-  }) {
+  }, userRole?: UserRole) {
     try {
-      // Verify event belongs to organizer
-      const event = await prisma.event.findFirst({
-        where: {
-          id: eventId,
-          organizerId,
-          deletedAt: null,
-        },
-      });
+      // Verify event exists (admin skips ownership check)
+      const eventWhere: any = { id: eventId, deletedAt: null };
+      if (!userRole || !ADMIN_ROLES.includes(userRole)) {
+        eventWhere.organizerId = organizerId;
+      }
+      const event = await prisma.event.findFirst({ where: eventWhere });
 
       if (!event) {
         throw new NotFoundError('Event not found');
       }
 
-      const where: any = {
+      const regWhere: any = {
         eventId,
         status: 'CONFIRMED',
       };
 
       if (data.registrationIds && data.registrationIds.length > 0) {
-        where.id = {
+        regWhere.id = {
           in: data.registrationIds,
         };
       }
 
       const registrations = await prisma.eventRegistration.findMany({
-        where,
+        where: regWhere,
         include: {
           attendee: {
             select: {
@@ -313,16 +314,17 @@ export class AttendeeCommunicationService {
     eventId?: string;
     segmentId?: string;
     tagId?: string;
-  }) {
+  }, userRole?: UserRole) {
     try {
       const limit = filters?.limit || 20;
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      // Get bulk messages sent by organizer
-      const where: any = {
-        createdBy: organizerId,
-      };
+      // Get bulk messages (admin sees all, organizer sees own)
+      const where: any = {};
+      if (!userRole || !ADMIN_ROLES.includes(userRole)) {
+        where.createdBy = organizerId;
+      }
 
       if (filters?.eventId) {
         where.eventId = filters.eventId;

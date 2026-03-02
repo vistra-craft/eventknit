@@ -10,6 +10,7 @@ import { PlatformFeeService } from './platform-fee.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
 import { getPaymentGatewayManager, GatewayType } from './payment-gateway-manager.js';
+import type { PaymentGateway } from './payment-gateway.interface.js';
 import { DigitalWalletService } from './digital-wallet.service.js';
 
 export interface InitializePaymentData {
@@ -64,12 +65,12 @@ export class PaymentService {
     const registrationEmail = registration.attendee.email?.toLowerCase().trim();
 
     if (registrationEmail !== normalizedEmail) {
-      throw new ValidationError('Email does not match the registration');
+      throw new ValidationError('The email address doesn\'t match this registration. Please use the same email you registered with.');
     }
 
     // Check if already paid
     if (registration.paymentStatus === 'COMPLETED') {
-      throw new ValidationError('Payment already completed');
+      throw new ValidationError('Payment has already been completed for this registration.');
     }
   }
 
@@ -98,7 +99,7 @@ export class PaymentService {
           reference: existingTransaction.gatewayReference,
           gateway: existingTransaction.gateway,
           status: 'ALREADY_PAID',
-          message: 'Payment already completed',
+          message: 'Payment has already been completed for this registration.',
         };
       }
 
@@ -152,11 +153,11 @@ export class PaymentService {
     }
 
     if (registration.paymentStatus === 'COMPLETED') {
-      throw new ValidationError('Payment already completed');
+      throw new ValidationError('Payment has already been completed for this registration.');
     }
 
     if (registration.status !== RegistrationStatus.PENDING) {
-      throw new ValidationError('Can only initialize payment for pending registrations');
+      throw new ValidationError('This registration is no longer pending. Please start a new registration.');
     }
 
     // Select gateway (use specified or default)
@@ -201,8 +202,9 @@ export class PaymentService {
         metadata: response.metadata,
       };
     } catch (error: unknown) {
-      const errorCode = (error as any)?.code || 'UNKNOWN_ERROR';
-      const isTransient = (error as any)?.isTransient || false;
+      const errObj = error as Record<string, unknown> | null;
+      const errorCode = (typeof errObj?.code === 'string' ? errObj.code : 'UNKNOWN_ERROR');
+      const isTransient = (errObj?.isTransient === true);
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       logger.error('Failed to initialize payment:', {
@@ -313,7 +315,7 @@ export class PaymentService {
   async verifyPayment(reference: string, gatewayType?: GatewayType): Promise<PaymentVerificationResult> {
     try {
       // Determine gateway - try to find from transaction if not specified
-      let gateway: any;
+      let gateway: PaymentGateway;
       if (gatewayType) {
         gateway = this.gatewayManager.getGateway(gatewayType);
       } else {
@@ -349,7 +351,7 @@ export class PaymentService {
       };
     } catch (error: unknown) {
       logger.error('Failed to verify payment:', error);
-      throw new ValidationError('Failed to verify payment');
+      throw new ValidationError('We couldn\'t verify your payment. If you were charged, please contact support.');
     }
   }
 
@@ -369,7 +371,7 @@ export class PaymentService {
       }
 
       // Determine gateway type
-      let gateway: any;
+      let gateway: PaymentGateway;
       let detectedGatewayType: GatewayType;
 
       if (gatewayType) {
@@ -415,7 +417,7 @@ export class PaymentService {
           });
         } catch (createError) {
           // Unique constraint violation means another process is handling this event
-          if ((createError as any).code === 'P2002') {
+          if (createError instanceof Prisma.PrismaClientKnownRequestError && createError.code === 'P2002') {
             logger.info(`[PaymentService.handleWebhook] Race condition: webhook event being processed by another instance: ${webhookEventId}`);
             return { status: 'DUPLICATE', message: 'Webhook being processed by another instance' };
           }
@@ -658,9 +660,9 @@ export class PaymentService {
             const { SeatSelectionService } = await import('./seat-selection.service.js');
             await SeatSelectionService.confirmSeatReservation(registration.id);
             logger.info(`Seat reservation confirmed for registration: ${registration.id}`);
-          } catch (seatError: any) {
+          } catch (seatError: unknown) {
             // Only log if it's a real error — missing reservations are expected for non-seated events
-            if (seatError?.message !== 'Seat reservation not found') {
+            if (!(seatError instanceof Error && seatError.message === 'Seat reservation not found')) {
               logger.error(`Failed to confirm seat reservation for registration ${registration.id}:`, seatError);
             }
           }
@@ -721,8 +723,8 @@ export class PaymentService {
               ticketLineItems?: Array<{
                 ticketType: string;
                 quantity: number;
-                unitPrice: any; // Decimal from Prisma
-                totalPrice: any; // Decimal from Prisma
+                unitPrice: Prisma.Decimal | number;
+                totalPrice: Prisma.Decimal | number;
               }>;
             };
 
@@ -737,15 +739,15 @@ export class PaymentService {
             try {
               logger.debug('[PaymentService.handleWebhook] Extracting ticketLineItems from registration');
               // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
-              const lineItems = (registrationWithLineItems as any).ticketLineItems;
+              const lineItems = registrationWithLineItems.ticketLineItems;
               logger.debug('[PaymentService.handleWebhook] ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
 
               if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
                 ticketLineItems = lineItems.map((item: {
                   ticketType: string;
                   quantity: number;
-                  unitPrice: any;
-                  totalPrice: any;
+                  unitPrice: Prisma.Decimal | number;
+                  totalPrice: Prisma.Decimal | number;
                 }) => ({
                   ticketType: item.ticketType,
                   quantity: item.quantity,

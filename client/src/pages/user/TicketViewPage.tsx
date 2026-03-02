@@ -14,6 +14,7 @@ import { getTicket, getTicketPublic, downloadTicketPDF, checkRefundEligibility, 
 import type { TicketData, RefundEligibility } from "@/lib/ticket-api";
 import { Textarea } from "@/components/ui/textarea";
 import { getEventById } from "@/lib/event-api";
+import { extractErrorMessage } from "@/lib/utils/error";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 type TicketEventDetails = {
@@ -71,7 +72,7 @@ const TicketViewPage: React.FC = () => {
           try {
             ticketResponse = await getTicket(registrationId);
           } catch (authError) {
-            authErrorMessage = authError instanceof Error ? authError.message : null;
+            authErrorMessage = extractErrorMessage(authError, '');
             // If auth fails, try public endpoint with email from location state or user
             const email = (location.state as TicketLocationState)?.userEmail || user?.email;
             if (email) {
@@ -156,10 +157,10 @@ const TicketViewPage: React.FC = () => {
           setError(ticketResponse?.message || authErrorMessage || "Ticket not found");
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to load ticket";
-        setError(errorMessage || "Ticket not found");
+        const errorMessage = extractErrorMessage(err, "We couldn't load your ticket. Please check your connection and try again.");
+        setError(errorMessage);
         toast({
-          title: "Error",
+          title: "Couldn't load ticket",
           description: errorMessage,
           variant: "destructive",
         });
@@ -212,10 +213,9 @@ const TicketViewPage: React.FC = () => {
         });
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to request refund";
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Refund request failed",
+        description: extractErrorMessage(err, "We couldn't process your refund request. Please try again or contact support."),
         variant: "destructive",
       });
     } finally {
@@ -234,10 +234,9 @@ const TicketViewPage: React.FC = () => {
         description: "Your ticket has been downloaded successfully.",
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to download ticket";
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Download failed",
+        description: extractErrorMessage(err, "We couldn't download your ticket. Please try again or check your email for a copy."),
         variant: "destructive",
       });
     } finally {

@@ -12,6 +12,7 @@ import { ConfirmationStep } from './registration-steps/ConfirmationStep';
 import { SeatSelectionStep } from './registration-steps/SeatSelectionStep';
 import type { EventData } from '@/types/event';
 import { registerForEvent } from '@/lib/event-api';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 export interface TicketSelection {
   [ticketName: string]: number;
@@ -154,7 +155,7 @@ export const UnifiedRegistrationModal = ({
         setRegistrationData({ ...data, registrationId: regId });
         handlePaymentComplete({ method: 'free', registrationId: regId });
       } catch (err) {
-        setFreeRegError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+        setFreeRegError(extractErrorMessage(err, 'Registration failed. Please try again.'));
         setFreeRegLoading(false);
       }
     } else {

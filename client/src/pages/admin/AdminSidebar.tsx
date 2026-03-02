@@ -17,6 +17,7 @@ import {
   Palette,
   Ticket,
   ShieldCheck,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -42,6 +43,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     finance: location.pathname.startsWith('/admin/finance'),
     // Auto-expand tickets section if on tickets pages
     tickets: location.pathname.startsWith('/admin/tickets'),
+    // Auto-expand subscriptions section if on subscriptions pages
+    subscriptions: location.pathname.startsWith('/admin/subscriptions'),
     // Auto-expand users section if on users pages
     users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
     // Auto-expand KYC section if on KYC pages
@@ -133,6 +136,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Income Statement", href: "/admin/finance/income-statement" },
         { name: "Platform Fees", href: "/admin/finance/platform-fees" },
       ]
+    },
+    {
+      id: "subscriptions",
+      label: "Subscriptions",
+      icon: CreditCard,
+      href: "/admin/subscriptions",
+      group: "main",
     },
     {
       id: "tickets",
@@ -228,6 +238,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       marketing: location.pathname.startsWith('/admin/marketing'),
       finance: location.pathname.startsWith('/admin/finance'),
       tickets: location.pathname.startsWith('/admin/tickets'),
+      subscriptions: location.pathname.startsWith('/admin/subscriptions'),
       users: location.pathname.startsWith('/admin/users'),
       settings: location.pathname.startsWith('/admin/settings'),
       branding: location.pathname === '/admin/white-label',

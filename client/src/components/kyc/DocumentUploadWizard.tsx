@@ -92,6 +92,11 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
 
   const isRequirementComplete = (req: DocumentRequirement) =>
     getUploadedForType(req.documentType).filter(
+      (doc) => doc.status === 'APPROVED' || doc.status === 'PENDING'
+    ).length >= req.minQuantity;
+
+  const isRequirementApproved = (req: DocumentRequirement) =>
+    getUploadedForType(req.documentType).filter(
       (doc) => doc.status === 'APPROVED'
     ).length >= req.minQuantity;
 
@@ -242,6 +247,7 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
               const uploaded = getUploadedForType(req.documentType);
               const state = uploadStates[req.documentType];
               const isComplete = isRequirementComplete(req);
+              const isApproved = isRequirementApproved(req);
 
               return (
                 <div
@@ -253,12 +259,12 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
                     <Label className="font-semibold">{req.description}</Label>
                     {req.isRequired && (
                       <Badge
-                        variant={isComplete ? 'default' : 'destructive'}
+                        variant={isApproved ? 'default' : isComplete ? 'secondary' : 'destructive'}
                       >
-                        Required
+                        {isApproved ? 'Approved' : isComplete ? 'Pending Review' : 'Required'}
                       </Badge>
                     )}
-                    {isComplete && (
+                    {isApproved && (
                       <CheckCircle2 className="w-4 h-4 text-success" />
                     )}
                   </div>

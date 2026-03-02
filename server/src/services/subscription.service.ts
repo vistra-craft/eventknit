@@ -210,42 +210,202 @@ export class SubscriptionService {
   }
 
   /**
-   * Check if organizer has access to a feature based on tier
+   * Get the effective tier for an organizer, considering active overrides.
+   * Returns the higher of: organizer's subscription tier OR any active non-expired override tier.
    */
-  static async hasFeatureAccess(
-    organizerId: string,
-    feature: 'attendee_list' | 'export' | 'demographics' | 'analytics' | 'advanced_export',
-  ): Promise<boolean> {
+  static async getEffectiveTier(organizerId: string): Promise<SubscriptionTier> {
     const subscription = await this.getSubscription(organizerId);
+    const baseTier = subscription.tier;
 
-    switch (feature) {
-    case 'attendee_list':
-      // STANDARD and PREMIUM have access
-      return subscription.tier === SubscriptionTier.STANDARD || 
-               subscription.tier === SubscriptionTier.PREMIUM;
+    const activeOverride = await prisma.subscriptionOverride.findFirst({
+      where: {
+        organizerId,
+        isActive: true,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    case 'export':
-      // STANDARD and PREMIUM have access
-      return subscription.tier === SubscriptionTier.STANDARD || 
-               subscription.tier === SubscriptionTier.PREMIUM;
-
-    case 'demographics':
-    case 'analytics':
-    case 'advanced_export':
-      // Only PREMIUM has access
-      return subscription.tier === SubscriptionTier.PREMIUM;
-
-    default:
-      return false;
+    if (!activeOverride) {
+      return baseTier;
     }
+
+    const tierOrder: Record<SubscriptionTier, number> = {
+      [SubscriptionTier.BASIC]: 0,
+      [SubscriptionTier.STANDARD]: 1,
+      [SubscriptionTier.PREMIUM]: 2,
+    };
+
+    return tierOrder[activeOverride.tier] > tierOrder[baseTier]
+      ? activeOverride.tier
+      : baseTier;
   }
 
   /**
-   * Get subscription tier for organizer
+   * Check if organizer has access to a feature based on their effective tier.
+   * Reads allowed features from the SubscriptionPlan table.
+   */
+  static async hasFeatureAccess(
+    organizerId: string,
+    feature: string,
+  ): Promise<boolean> {
+    const effectiveTier = await this.getEffectiveTier(organizerId);
+
+    // Look up the plan from DB
+    const plan = await prisma.subscriptionPlan.findUnique({
+      where: { tier: effectiveTier },
+    });
+
+    if (!plan) {
+      // Fallback: no plan configured means no access
+      logger.warn(`No SubscriptionPlan found for tier ${effectiveTier}`);
+      return false;
+    }
+
+    return plan.features.includes(feature);
+  }
+
+  /**
+   * Get subscription tier for organizer (base tier, no override)
    */
   static async getTier(organizerId: string): Promise<SubscriptionTier> {
     const subscription = await this.getSubscription(organizerId);
     return subscription.tier;
+  }
+
+  // ─── Plan management (admin) ──────────────────────────────────────────
+
+  /**
+   * Get all subscription plans
+   */
+  static async getPlans() {
+    return prisma.subscriptionPlan.findMany({
+      orderBy: { tier: 'asc' },
+    });
+  }
+
+  /**
+   * Update a subscription plan's pricing, description, or features
+   */
+  static async updatePlan(
+    tier: SubscriptionTier,
+    data: { price?: number; description?: string; features?: string[] },
+  ) {
+    const existing = await prisma.subscriptionPlan.findUnique({
+      where: { tier },
+    });
+
+    if (!existing) {
+      throw new NotFoundError(`Subscription plan for tier ${tier} not found`);
+    }
+
+    return prisma.subscriptionPlan.update({
+      where: { tier },
+      data: {
+        ...(data.price !== undefined && { price: data.price }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.features !== undefined && { features: data.features }),
+      },
+    });
+  }
+
+  // ─── Override management (admin) ──────────────────────────────────────
+
+  /**
+   * Create a subscription override for an organizer
+   */
+  static async createOverride(
+    organizerId: string,
+    tier: SubscriptionTier,
+    grantedBy: string,
+    reason?: string,
+    expiresAt?: Date,
+  ) {
+    // Verify organizer exists
+    const organizer = await prisma.user.findUnique({
+      where: { id: organizerId },
+    });
+    if (!organizer) {
+      throw new NotFoundError('Organizer not found');
+    }
+
+    // Deactivate any existing active overrides for this organizer
+    await prisma.subscriptionOverride.updateMany({
+      where: { organizerId, isActive: true },
+      data: { isActive: false },
+    });
+
+    const override = await prisma.subscriptionOverride.create({
+      data: {
+        organizerId,
+        tier,
+        reason,
+        grantedBy,
+        expiresAt: expiresAt ?? null,
+        isActive: true,
+      },
+    });
+
+    logger.info(`Subscription override created for organizer ${organizerId}: ${tier} by ${grantedBy}`);
+    return override;
+  }
+
+  /**
+   * Remove (deactivate) a subscription override
+   */
+  static async removeOverride(overrideId: string) {
+    const override = await prisma.subscriptionOverride.findUnique({
+      where: { id: overrideId },
+    });
+
+    if (!override) {
+      throw new NotFoundError('Subscription override not found');
+    }
+
+    return prisma.subscriptionOverride.update({
+      where: { id: overrideId },
+      data: { isActive: false },
+    });
+  }
+
+  /**
+   * Get active overrides for an organizer
+   */
+  static async getOverridesForOrganizer(organizerId: string) {
+    return prisma.subscriptionOverride.findMany({
+      where: {
+        organizerId,
+        isActive: true,
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
+      },
+      include: {
+        grantedByUser: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Get a full subscription summary for an organizer (subscription + overrides + effective tier)
+   */
+  static async getOrganizerSubscriptionSummary(organizerId: string) {
+    const subscription = await this.getSubscription(organizerId);
+    const overrides = await this.getOverridesForOrganizer(organizerId);
+    const effectiveTier = await this.getEffectiveTier(organizerId);
+
+    return {
+      subscription,
+      overrides,
+      effectiveTier,
+    };
   }
 }
 

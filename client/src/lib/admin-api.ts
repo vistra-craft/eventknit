@@ -280,6 +280,7 @@ export interface OrganizerUser extends User {
   organizerIndustry?: string | null;
   profileCompleted?: boolean;
   lastLoginAt?: string | null;
+  organizerSubscription?: { tier: 'BASIC' | 'STANDARD' | 'PREMIUM' } | null;
   _count?: {
     eventsCreated: number;
     eventRegistrations: number;
@@ -1215,5 +1216,97 @@ export const rejectOrganizerKYC = async (userId: string, reason: string): Promis
   data: { message: string };
 }> => {
   return apiPost(`/admin/kyc/users/${userId}/reject`, { reason });
+};
+
+// ========== Subscription Plan Management ==========
+
+export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM';
+
+export interface SubscriptionPlan {
+  id: string;
+  tier: SubscriptionTier;
+  name: string;
+  description: string | null;
+  price: string; // Decimal comes as string from API
+  currency: string;
+  features: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionOverride {
+  id: string;
+  organizerId: string;
+  tier: SubscriptionTier;
+  reason: string | null;
+  grantedBy: string;
+  expiresAt: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  grantedByUser: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+export interface OrganizerSubscriptionSummary {
+  subscription: {
+    id: string;
+    organizerId: string;
+    tier: SubscriptionTier;
+    isActive: boolean;
+    expiresAt: string | null;
+    billingEmail: string | null;
+  };
+  overrides: SubscriptionOverride[];
+  effectiveTier: SubscriptionTier;
+}
+
+export const getSubscriptionPlans = async (): Promise<{
+  success: boolean;
+  data: { plans: SubscriptionPlan[] };
+}> => {
+  return apiGet('/admin/subscription-plans');
+};
+
+export const updateSubscriptionPlan = async (
+  tier: SubscriptionTier,
+  data: { price?: number; description?: string; features?: string[] },
+): Promise<{
+  success: boolean;
+  data: { plan: SubscriptionPlan };
+}> => {
+  return apiPut(`/admin/subscription-plans/${tier}`, data);
+};
+
+export const getOrganizerSubscription = async (organizerId: string): Promise<{
+  success: boolean;
+  data: OrganizerSubscriptionSummary;
+}> => {
+  return apiGet(`/admin/organizers/${organizerId}/subscription`);
+};
+
+export const setSubscriptionOverride = async (
+  organizerId: string,
+  data: { tier: SubscriptionTier; reason?: string; expiresAt?: string },
+): Promise<{
+  success: boolean;
+  data: { override: SubscriptionOverride };
+}> => {
+  return apiPost(`/admin/organizers/${organizerId}/subscription/override`, data);
+};
+
+export const removeSubscriptionOverride = async (
+  organizerId: string,
+  overrideId: string,
+): Promise<{
+  success: boolean;
+  data: { override: SubscriptionOverride };
+}> => {
+  return apiDelete(`/admin/organizers/${organizerId}/subscription/override/${overrideId}`);
 };
 

@@ -40,6 +40,7 @@ import { KYCRequiredBanner } from "@/components/KYCRequiredBanner";
 import { UserStatus, UserRole } from "@/types/auth";
 import { ROLE_LABELS } from "@/constants/roleLabels";
 import { useMyEvents } from "@/hooks/useMyEvents";
+import { extractErrorMessage } from "@/lib/utils/error";
 
 const UserSettingsPage = () => {
   const { user, logout, refreshProfile } = useAuth();
@@ -164,8 +165,8 @@ const UserSettingsPage = () => {
       } catch (err: unknown) {
         console.error("Failed to load profile:", err);
         toast({
-          title: "Error",
-          description: "Failed to load profile. Please try again.",
+          title: "Load failed",
+          description: extractErrorMessage(err, "Failed to load profile. Please try again."),
           variant: "destructive",
         });
       } finally {
@@ -234,7 +235,7 @@ const UserSettingsPage = () => {
     } catch (error: unknown) {
       console.error("Failed to save profile:", error);
       setSaveStatus("error");
-      setSaveMessage(error instanceof Error ? error.message : "Failed to update profile");
+      setSaveMessage(extractErrorMessage(error, "Failed to update profile. Please try again."));
     } finally {
       setIsSaving(false);
     }
@@ -298,7 +299,7 @@ const UserSettingsPage = () => {
     } catch (error: unknown) {
       console.error("Failed to change password:", error);
       setSaveStatus("error");
-      setSaveMessage(error instanceof Error ? error.message : "Failed to change password");
+      setSaveMessage(extractErrorMessage(error, "Failed to change password. Please try again."));
     } finally {
       setIsSaving(false);
     }
@@ -330,7 +331,7 @@ const UserSettingsPage = () => {
     } catch (error: unknown) {
       console.error("Failed to save preferences:", error);
       setSaveStatus("error");
-      setSaveMessage(error instanceof Error ? error.message : "Failed to save preferences");
+      setSaveMessage(extractErrorMessage(error, "Failed to save preferences. Please try again."));
     } finally {
       setIsSaving(false);
     }

@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
 import { verifyAccessToken } from '../utils/jwt.js';
 import { AuthenticationError, AuthorizationError } from '../utils/errors.js';
 import { prisma } from '../config/database.js';
 import { UserRole, UserStatus } from '@prisma/client';
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest<P = ParamsDictionary> extends Request<P> {
   user?: {
     id: string;
     email: string;

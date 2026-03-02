@@ -277,6 +277,8 @@ model User {
   organizerDirectors                OrganizerDirector[]          @relation("OrganizerDirectors")
   attendeeConsents                  AttendeeConsent[]            @relation("AttendeeConsents")
   organizerSubscription             OrganizerSubscription?       @relation("OrganizerSubscriptions")
+  subscriptionOverrides             SubscriptionOverride[]       @relation("SubscriptionOverrides")
+  subscriptionOverridesGranted      SubscriptionOverride[]       @relation("SubscriptionOverridesGranted")
   dataAccessAuditLogs               DataAccessAuditLog[]         @relation("DataAccessAuditLogs")
   auditLogs                         AuditLog[]
   eventsCreated                     Event[]                      @relation("EventOrganizer")
@@ -1050,6 +1052,43 @@ model OrganizerSubscription {
   @@index([tier])
   @@index([isActive])
   @@index([expiresAt])
+}
+
+// Subscription Plan Configuration (admin-managed)
+model SubscriptionPlan {
+  id          String           @id @default(uuid())
+  tier        SubscriptionTier @unique
+  name        String
+  description String?
+  price       Decimal          @default(0)
+  currency    String           @default("USD")
+  features    String[]
+  isActive    Boolean          @default(true)
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([tier])
+}
+
+// Subscription Override (admin grants organizer a higher tier)
+model SubscriptionOverride {
+  id          String           @id @default(uuid())
+  organizerId String
+  tier        SubscriptionTier
+  reason      String?
+  grantedBy   String
+  expiresAt   DateTime?
+  isActive    Boolean          @default(true)
+
+  organizer     User @relation("SubscriptionOverrides", fields: [organizerId], references: [id], onDelete: Cascade)
+  grantedByUser User @relation("SubscriptionOverridesGranted", fields: [grantedBy], references: [id])
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([organizerId])
+  @@index([isActive])
 }
 
 // Data Access Audit Log

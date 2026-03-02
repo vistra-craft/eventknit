@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -8,6 +9,23 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Calendar,
   Mail,
@@ -25,6 +43,9 @@ import {
   CheckCircle,
   XCircle,
   Play,
+  Crown,
+  Zap,
+  Trash2,
 } from 'lucide-react';
 import { useOrganizerDetails } from '@/hooks/queries/useOrganizers';
 import {
@@ -33,7 +54,21 @@ import {
   useDeactivateOrganizer,
   useActivateOrganizer,
 } from '@/hooks/mutations/useOrganizerActions';
-import type { OrganizerUser, UserStatus } from '@/lib/admin-api';
+import {
+  getOrganizerSubscription,
+  setSubscriptionOverride,
+  removeSubscriptionOverride,
+} from '@/lib/admin-api';
+import type {
+  OrganizerUser,
+  UserStatus,
+  OrganizerSubscriptionSummary,
+  SubscriptionTier,
+} from '@/lib/admin-api';
+import { extractErrorMessage } from '@/lib/utils/error';
+import { useToast } from '@/hooks/useToast';
+import { ButtonLoader } from '@/components/ui/loader';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 interface OrganizerDetailSheetProps {
   organizer: OrganizerUser | null;
@@ -87,6 +122,23 @@ function KYCStatusBadge({ status }: { status: string | null | undefined }) {
   };
   const { label, className } = config[status] || { label: status, className: '' };
   return <Badge className={`text-xs ${className}`}>{label}</Badge>;
+}
+
+const TIER_BADGE_MAP: Record<string, { icon: React.ElementType; className: string }> = {
+  BASIC: { icon: Shield, className: 'bg-gray-500/10 text-gray-500 border-gray-500/20' },
+  STANDARD: { icon: Zap, className: 'bg-blue-500/10 text-blue-600 border-blue-500/20' },
+  PREMIUM: { icon: Crown, className: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+};
+
+function TierBadge({ tier }: { tier: string }) {
+  const config = TIER_BADGE_MAP[tier] ?? TIER_BADGE_MAP.BASIC;
+  const Icon = config.icon;
+  return (
+    <Badge className={`text-xs ${config.className}`}>
+      <Icon className="h-3 w-3 mr-1" />
+      {tier}
+    </Badge>
+  );
 }
 
 function DetailRow({ label, value, icon: Icon }: { label: string; value: React.ReactNode; icon?: React.FC<{ className?: string }> }) {
@@ -149,7 +201,28 @@ export default function OrganizerDetailSheet({
   onOpenChange,
   canModify,
 }: OrganizerDetailSheetProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useOrganizerDetails(open ? organizer?.id ?? null : null);
+
+  // Subscription data
+  const { data: subscriptionData } = useQuery<OrganizerSubscriptionSummary | null>({
+    queryKey: ['organizer-subscription', organizer?.id],
+    queryFn: async () => {
+      if (!organizer?.id) return null;
+      const res = await getOrganizerSubscription(organizer.id);
+      return res.success ? res.data : null;
+    },
+    enabled: open && !!organizer?.id,
+  });
+
+  // Override dialog state
+  const [showOverrideDialog, setShowOverrideDialog] = useState(false);
+  const [overrideTier, setOverrideTier] = useState<SubscriptionTier>('PREMIUM');
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideExpiry, setOverrideExpiry] = useState('');
+  const [overrideSubmitting, setOverrideSubmitting] = useState(false);
+  const [removingOverrideId, setRemovingOverrideId] = useState<string | null>(null);
 
   const approveMutation = useApproveOrganizer();
   const suspendMutation = useSuspendOrganizer();
@@ -164,6 +237,49 @@ export default function OrganizerDetailSheet({
 
   const user = data?.user;
   const status = organizer?.status;
+
+  const handleGrantOverride = async () => {
+    if (!organizer) return;
+    try {
+      setOverrideSubmitting(true);
+      await setSubscriptionOverride(organizer.id, {
+        tier: overrideTier,
+        reason: overrideReason || undefined,
+        expiresAt: overrideExpiry || undefined,
+      });
+      toast({ title: 'Override granted', description: `${overrideTier} override applied to organizer` });
+      setShowOverrideDialog(false);
+      setOverrideReason('');
+      setOverrideExpiry('');
+      queryClient.invalidateQueries({ queryKey: ['organizer-subscription', organizer.id] });
+    } catch (error: unknown) {
+      toast({
+        title: 'Override failed',
+        description: extractErrorMessage(error, 'Unable to grant subscription override'),
+        variant: 'destructive',
+      });
+    } finally {
+      setOverrideSubmitting(false);
+    }
+  };
+
+  const handleRemoveOverride = async (overrideId: string) => {
+    if (!organizer) return;
+    try {
+      setRemovingOverrideId(overrideId);
+      await removeSubscriptionOverride(organizer.id, overrideId);
+      toast({ title: 'Override removed', description: 'Subscription override has been deactivated' });
+      queryClient.invalidateQueries({ queryKey: ['organizer-subscription', organizer.id] });
+    } catch (error: unknown) {
+      toast({
+        title: 'Remove failed',
+        description: extractErrorMessage(error, 'Unable to remove subscription override'),
+        variant: 'destructive',
+      });
+    } finally {
+      setRemovingOverrideId(null);
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -242,6 +358,73 @@ export default function OrganizerDetailSheet({
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* Subscription */}
+            <div className="p-6 border-b border-border/40">
+              <h4 className="text-sm font-medium text-foreground mb-3">Subscription</h4>
+              <div className="divide-y divide-border/30">
+                <DetailRow icon={Crown} label="Base Tier" value={
+                  <TierBadge tier={subscriptionData?.subscription?.tier ?? organizer.organizerSubscription?.tier ?? 'BASIC'} />
+                } />
+                {subscriptionData && subscriptionData.effectiveTier !== subscriptionData.subscription.tier && (
+                  <DetailRow icon={Zap} label="Effective Tier" value={
+                    <TierBadge tier={subscriptionData.effectiveTier} />
+                  } />
+                )}
+                {subscriptionData?.overrides && subscriptionData.overrides.length > 0 && (
+                  <div className="py-2">
+                    <p className="text-xs text-muted-foreground mb-2">Active Overrides</p>
+                    <div className="space-y-2">
+                      {subscriptionData.overrides.map((override) => (
+                        <div key={override.id} className="flex items-center justify-between p-2 rounded-lg border border-border/40 bg-muted/30">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <TierBadge tier={override.tier} />
+                              {override.expiresAt && (
+                                <span className="text-xs text-muted-foreground">
+                                  until {formatDate(override.expiresAt)}
+                                </span>
+                              )}
+                            </div>
+                            {override.reason && (
+                              <p className="text-xs text-muted-foreground mt-1 truncate">{override.reason}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              by {override.grantedByUser.firstName} {override.grantedByUser.lastName}
+                            </p>
+                          </div>
+                          {canModify && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                              onClick={() => handleRemoveOverride(override.id)}
+                              disabled={removingOverrideId === override.id}
+                            >
+                              {removingOverrideId === override.id
+                                ? <ButtonLoader />
+                                : <Trash2 className="h-3.5 w-3.5" />
+                              }
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {canModify && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full"
+                  onClick={() => setShowOverrideDialog(true)}
+                >
+                  <Crown className="h-3.5 w-3.5 mr-1.5" />
+                  Grant Override
+                </Button>
+              )}
             </div>
 
             {/* Profile Info */}
@@ -402,6 +585,77 @@ export default function OrganizerDetailSheet({
           </div>
         )}
       </SheetContent>
+
+      {/* Grant Override Dialog */}
+      <Dialog open={showOverrideDialog} onOpenChange={setShowOverrideDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Grant Subscription Override</DialogTitle>
+            <DialogDescription>
+              Override the subscription tier for {organizer?.firstName} {organizer?.lastName}.
+              This will grant them access to higher-tier features.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="overrideTier">Tier</Label>
+              <Select value={overrideTier} onValueChange={(v) => setOverrideTier(v as SubscriptionTier)}>
+                <SelectTrigger id="overrideTier">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="STANDARD">Standard</SelectItem>
+                  <SelectItem value="PREMIUM">Premium</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="overrideReason">Reason (optional)</Label>
+              <Input
+                id="overrideReason"
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                placeholder="e.g. Partnership agreement, trial period"
+              />
+            </div>
+            <div>
+              <Label htmlFor="overrideExpiry">Expires (optional)</Label>
+              <Input
+                id="overrideExpiry"
+                type="date"
+                value={overrideExpiry}
+                onChange={(e) => setOverrideExpiry(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave empty for a permanent override
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowOverrideDialog(false)}
+              disabled={overrideSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGrantOverride}
+              disabled={overrideSubmitting}
+            >
+              {overrideSubmitting ? (
+                <>
+                  <ButtonLoader />
+                  Granting...
+                </>
+              ) : (
+                'Grant Override'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }

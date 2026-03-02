@@ -101,11 +101,13 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
                         {currency} {ticket.originalPrice}
                       </span>
                       <span className="font-bold text-lg text-primary">
-                        {currency} {ticket.price}
+                        {ticket.price === 0 ? 'Free' : `${currency} ${ticket.price}`}
                       </span>
                     </div>
                   ) : (
-                    <p className="font-bold text-lg text-primary">{currency} {ticket.price}</p>
+                    <p className="font-bold text-lg text-primary">
+                      {ticket.price === 0 ? 'Free' : `${currency} ${ticket.price}`}
+                    </p>
                   )}
                 </div>
               </div>
@@ -179,7 +181,7 @@ export const TicketSelector = ({ ticketTypes, onRegister, currency = "$" }: Tick
         <div className="flex justify-between items-center mb-3">
           <span className="text-base font-semibold">Total</span>
           <span className="text-xl font-bold text-primary">
-            {currency} {totalPrice.toFixed(2)}
+            {totalPrice === 0 ? 'Free' : `${currency} ${totalPrice.toFixed(2)}`}
           </span>
         </div>
 

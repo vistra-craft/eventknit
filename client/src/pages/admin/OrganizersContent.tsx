@@ -86,6 +86,20 @@ function VerificationBadgeInline({ level }: { level: number }) {
   );
 }
 
+function TierBadgeInline({ tier }: { tier: string | null | undefined }) {
+  if (!tier) return <span className="text-xs text-muted-foreground">—</span>;
+  const map: Record<string, string> = {
+    BASIC: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
+    STANDARD: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    PREMIUM: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+  };
+  return (
+    <Badge className={`text-[10px] px-1.5 py-0 ${map[tier] || ''}`}>
+      {tier}
+    </Badge>
+  );
+}
+
 function KYCBadgeInline({ status }: { status: string | null | undefined }) {
   if (!status) return <span className="text-xs text-muted-foreground">—</span>;
   const map: Record<string, string> = {
@@ -368,6 +382,9 @@ const OrganizersContent = () => {
                     <th className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider p-3 hidden md:table-cell">
                       KYC
                     </th>
+                    <th className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider p-3 hidden lg:table-cell">
+                      Tier
+                    </th>
                     <th className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider p-3 hidden sm:table-cell">
                       Events
                     </th>
@@ -423,6 +440,11 @@ const OrganizersContent = () => {
                       {/* KYC */}
                       <td className="p-3 text-center hidden md:table-cell">
                         <KYCBadgeInline status={org.kycStatus} />
+                      </td>
+
+                      {/* Tier */}
+                      <td className="p-3 text-center hidden lg:table-cell">
+                        <TierBadgeInline tier={org.organizerSubscription?.tier} />
                       </td>
 
                       {/* Events */}
@@ -545,7 +567,7 @@ const OrganizersContent = () => {
                                   });
                                   toast({ title: 'Exported', description: 'Organizer data exported successfully' });
                                 } catch {
-                                  toast({ title: 'Error', description: 'Failed to export', variant: 'destructive' });
+                                  toast({ title: 'Export failed', description: 'Failed to export organizer data', variant: 'destructive' });
                                 }
                               }}>
                                 <Download className="h-4 w-4 mr-2" />

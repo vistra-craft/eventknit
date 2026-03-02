@@ -1228,4 +1228,74 @@ router.delete(
   AdminKYCController.deleteEntityRequirement,
 );
 
+// ═══════════════════════════════════════════════════════════════════════
+// Subscription Plan Management
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * @route   GET /api/v1/admin/subscription-plans
+ * @desc    Get all subscription plans
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/subscription-plans', AdminController.getSubscriptionPlans);
+
+/**
+ * @route   PUT /api/v1/admin/subscription-plans/:tier
+ * @desc    Update a subscription plan (pricing, description, features)
+ * @access  Private (ADMIN+)
+ */
+router.put(
+  '/subscription-plans/:tier',
+  requireMinRole(UserRole.ADMIN),
+  validate(Joi.object({
+    price: Joi.number().min(0).optional(),
+    description: Joi.string().allow('').optional(),
+    features: Joi.array().items(Joi.string()).optional(),
+  })),
+  AdminController.updateSubscriptionPlan,
+);
+
+/**
+ * @route   GET /api/v1/admin/organizers/:id/subscription
+ * @desc    Get organizer subscription summary (subscription + overrides + effective tier)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/organizers/:id/subscription',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  AdminController.getOrganizerSubscription,
+);
+
+/**
+ * @route   POST /api/v1/admin/organizers/:id/subscription/override
+ * @desc    Set a subscription override for an organizer
+ * @access  Private (ADMIN+)
+ */
+router.post(
+  '/organizers/:id/subscription/override',
+  requireMinRole(UserRole.ADMIN),
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  validate(Joi.object({
+    tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
+    reason: Joi.string().allow('').optional(),
+    expiresAt: Joi.date().iso().optional(),
+  })),
+  AdminController.setOrganizerSubscriptionOverride,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/organizers/:id/subscription/override/:overrideId
+ * @desc    Remove a subscription override
+ * @access  Private (ADMIN+)
+ */
+router.delete(
+  '/organizers/:id/subscription/override/:overrideId',
+  requireMinRole(UserRole.ADMIN),
+  validateParams(Joi.object({
+    id: Joi.string().uuid().required(),
+    overrideId: Joi.string().uuid().required(),
+  })),
+  AdminController.removeOrganizerSubscriptionOverride,
+);
+
 export default router;

@@ -74,7 +74,9 @@ export const RegistrationStep = ({
       await loginForModal(loginData.email, loginData.password);
       // onContinue is triggered by the useEffect below once user state updates
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err as { message: string }).message
+        : 'Login failed. Please check your email and password.';
       setError(errorMessage);
       setIsLoading(false);
     }
@@ -176,7 +178,9 @@ export const RegistrationStep = ({
         },
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+      const errorMessage = err && typeof err === 'object' && 'message' in err
+        ? (err as { message: string }).message
+        : 'Registration failed. Please try again.';
       setError(errorMessage);
       setIsLoading(false);
     }

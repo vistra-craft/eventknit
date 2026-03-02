@@ -33,7 +33,7 @@ export const KYCRequiredBanner = ({
     if (onNavigateToKYC) {
       onNavigateToKYC();
     } else {
-      navigate('/user/dashboard?view=settings&tab=verification');
+      navigate('/organizer/kyc');
     }
   };
 

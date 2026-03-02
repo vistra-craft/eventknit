@@ -22,15 +22,13 @@ import {
   MoreHorizontal,
   Copy,
   AlertCircle,
-  Mail,
   Plus,
-  XCircle,
-  Lock,
   RotateCcw,
   Ticket,
   Link2,
   Copy as CopyIcon,
   Grid3X3,
+  Search,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -49,9 +47,7 @@ import { shareEvent } from "../../lib/utils/share";
 import { exportEventData } from "../../lib/utils/export";
 import { useToast } from "../../hooks/useToast";
 import { EventStaffAssignment } from "../../components/EventStaffAssignment";
-import { sendToEventRegistrations, getCommunicationHistory } from "../../lib/organizer-dashboard-api";
-import { Textarea } from "../../components/ui/textarea";
-import { Switch } from "../../components/ui/switch";
+
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { ConsentStatisticsCard } from "../../components/organizer/ConsentStatisticsCard";
@@ -61,238 +57,44 @@ import BackButton from "@/components/BackButton";
 import { EventSeatMapManager } from "@/components/organizer/EventSeatMapManager";
 import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
+import { exportAttendees, quickRegisterAttendee } from "../../lib/attendee-import-api";
+import type { QuickRegisterRequest } from "../../lib/attendee-import-api";
+import { extractErrorMessage } from "../../lib/utils/error";
 
-interface CommunicationMessage {
-  id: string;
-  subject: string;
-  content: string;
-  recipientType: string;
-  sentCount: number;
-  failedCount: number;
-  createdAt: string;
-  event?: { id: string; title: string };
+// Top-level interfaces for type safety
+interface Attendee {
+  id?: string;
+  status?: string;
+  totalAmount?: number | string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  name?: string;
+  paymentStatus?: string;
+  paymentMethod?: string;
+  ticketType?: string;
+  createdAt?: string;
+  registeredDate?: string;
+  quantity?: number;
 }
 
-const EventCommunicationSection = ({ eventId, eventTitle }: { eventId: string; eventTitle: string }) => {
-  const { toast } = useToast();
-  const [messages, setMessages] = useState<CommunicationMessage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
-  const [subject, setSubject] = useState("");
-  const [content, setContent] = useState("");
-  const [sendEmail, setSendEmail] = useState(true);
-  const [sendNotification, setSendNotification] = useState(true);
-  const [sending, setSending] = useState(false);
+type SpeakerItem = NonNullable<EventData['speakers']>[number];
+type SponsorItem = NonNullable<EventData['sponsors']>[number];
 
-  useEffect(() => {
-    const loadMessages = async () => {
-      if (!eventId) return;
-      try {
-        setLoading(true);
-        const response = await getCommunicationHistory({ eventId });
-        if (response.success && response.data) {
-          setMessages(response.data.messages || []);
-        }
-      } catch (error) {
-        console.error("Error loading communication history:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadMessages();
-  }, [eventId]);
+// Extended event data with organizer-specific fields from the API
+interface OrganizerEventData extends EventData {
+  organizerDataAccess?: string;
+}
 
-  const handleSendMessage = async () => {
-    if (!eventId || !subject.trim() || !content.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in subject and content",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setSending(true);
-      const response = await sendToEventRegistrations(eventId, {
-        subject: subject.trim(),
-        content: content.trim(),
-        sendEmail,
-        sendNotification,
-      });
-
-      if (response.success && response.data) {
-        toast({
-          title: "Success",
-          description: `Message sent to ${response.data.sent} recipients`,
-        });
-        setIsSendDialogOpen(false);
-        setSubject("");
-        setContent("");
-        // Reload messages
-        const historyResponse = await getCommunicationHistory({ eventId });
-        if (historyResponse.success && historyResponse.data) {
-          setMessages(historyResponse.data.messages || []);
-        }
-      }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to send message",
-        variant: "destructive",
-      });
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold">Communication</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Send messages to all attendees of {eventTitle}
-          </p>
-        </div>
-        <Dialog open={isSendDialogOpen} onOpenChange={setIsSendDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Send Message
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Send Message to Attendees</DialogTitle>
-              <DialogDescription>
-                Send a message to all registered attendees for this event
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="subject">Subject *</Label>
-                <Input
-                  id="subject"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  placeholder="Enter message subject"
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label htmlFor="content">Message Content *</Label>
-                <Textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Enter your message..."
-                  className="mt-2 min-h-[200px]"
-                />
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="send-email"
-                    checked={sendEmail}
-                    onCheckedChange={setSendEmail}
-                  />
-                  <Label htmlFor="send-email">Send via Email</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="send-notification"
-                    checked={sendNotification}
-                    onCheckedChange={setSendNotification}
-                  />
-                  <Label htmlFor="send-notification">Send via In-App Notification</Label>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsSendDialogOpen(false);
-                  setSubject("");
-                  setContent("");
-                }}
-                disabled={sending}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleSendMessage} disabled={sending}>
-                {sending ? (
-                  <>
-                    <ButtonLoader />
-                    Sending...
-                  </>
-                ) : (
-                  "Send Message"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Communication History</h2>
-        {loading ? (
-          <div className="text-center py-8">Loading messages...</div>
-        ) : messages.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Mail className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">No messages sent yet</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <Card key={message.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{message.subject}</h3>
-                        <Badge variant="outline">Event Registrations</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                        {message.content}
-                      </p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          {message.sentCount} sent
-                        </span>
-                        {message.failedCount > 0 && (
-                          <span className="flex items-center gap-1 text-destructive">
-                            <XCircle className="h-3 w-3" />
-                            {message.failedCount} failed
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(message.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+// Shared component - imported from shared location
+import EventCommunicationSection from "../../components/EventCommunicationSection";
+import { useUserPermissions } from "../../hooks/usePermissions";
 
 const EventManagement = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { hasPermission } = useUserPermissions();
   const [activeSection, setActiveSection] = useState("overview");
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
@@ -314,6 +116,14 @@ const EventManagement = () => {
   // Attendee detail sheet state
   const [selectedAttendee, setSelectedAttendee] = useState<typeof attendees[number] | null>(null);
   const [attendeeSheetOpen, setAttendeeSheetOpen] = useState(false);
+  // Attendee search and filter
+  const [attendeeSearch, setAttendeeSearch] = useState('');
+  const [attendeeStatusFilter, setAttendeeStatusFilter] = useState<string>('all');
+  // Add attendee dialog
+  const [showAddAttendee, setShowAddAttendee] = useState(false);
+  const [addAttendeeForm, setAddAttendeeForm] = useState<QuickRegisterRequest>({ firstName: '', lastName: '', email: '' });
+  const [addingAttendee, setAddingAttendee] = useState(false);
+  const [exportingAttendees, setExportingAttendees] = useState(false);
 
   // Invitation state
   type InvitationItem = InvitationsListResponse['data']['invitations'][number];
@@ -547,48 +357,17 @@ const EventManagement = () => {
   }
 
   // Get access level from event data (if available)
-  const accessLevel = (eventData as { organizerDataAccess?: string })?.organizerDataAccess || 'RESTRICTED';
-  const hasAttendeeListAccess = accessLevel === 'STANDARD' || accessLevel === 'FULL';
+  const orgEventData = eventData as OrganizerEventData;
+  const accessLevel = orgEventData.organizerDataAccess || 'RESTRICTED';
   const hasPaymentDetailsAccess = accessLevel === 'STANDARD' || accessLevel === 'FULL';
-  
-  // Type definitions for mock data
-  interface Attendee {
-    id?: string;
-    status?: string;
-    totalAmount?: number | string;
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-    name?: string;
-    paymentStatus?: string;
-    paymentMethod?: string;
-    ticketType?: string;
-    createdAt?: string;
-    registeredDate?: string;
-  }
-  
-  interface Speaker {
-    id: string | number;
-    name: string;
-    title?: string;
-    bio?: string;
-    status?: string;
-    sessions?: number;
-  }
-  
-  interface Sponsor {
-    id: string | number;
-    name?: string;
-    level?: string;
-    amount?: number;
-  }
-  
+
 
   // Calculate summary stats (always available)
   const totalAttendees = attendees.length;
   const confirmedAttendees = attendees.filter((a) => a.status === 'confirmed' || a.status === 'CONFIRMED').length;
   const pendingAttendees = attendees.filter((a) => a.status === 'pending' || a.status === 'PENDING').length;
-  const totalRevenue = hasPaymentDetailsAccess 
+  const currency = eventData?.currency || '$';
+  const totalRevenue = hasPaymentDetailsAccess
     ? attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)
     : 0;
 
@@ -605,20 +384,20 @@ const EventManagement = () => {
 
   const navigationSections = [
     { key: "overview", label: "Overview", icon: BarChart3 },
-    { key: "attendees", label: "Attendees", icon: Users },
-    { key: "tickets", label: "Tickets", icon: Ticket },
-    { key: "communication", label: "Messages", icon: MessageSquare },
-    { key: "analytics", label: "Analytics", icon: TrendingUp },
-  ];
+    hasPermission('attendees.view') && { key: "attendees", label: "Attendees", icon: Users },
+    hasPermission('tickets.view') && { key: "tickets", label: "Tickets", icon: Ticket },
+    hasPermission('communication.send') && { key: "communication", label: "Messages", icon: MessageSquare },
+    hasPermission('analytics.view') && { key: "analytics", label: "Analytics", icon: TrendingUp },
+  ].filter(Boolean) as Array<{ key: string; label: string; icon: typeof BarChart3 }>;
 
   const moreMenuSections = [
     { key: "invitations", label: "Invitations", icon: Link2 },
-    { key: "refunds", label: "Refunds", icon: RotateCcw, badge: refunds.length > 0 ? refunds.filter(r => r.status === 'pending').length : 0 },
-    { key: "staff", label: "Staff Assignment", icon: UserPlus },
+    hasPermission('financial.view') && { key: "refunds", label: "Refunds", icon: RotateCcw, badge: refunds.length > 0 ? refunds.filter(r => r.status === 'pending').length : 0 },
+    hasPermission('team.view') && { key: "staff", label: "Staff Assignment", icon: UserPlus },
     { key: "seating", label: "Seating", icon: Grid3X3, conditional: true },
     { key: "speakers", label: "Speakers", icon: Mic, conditional: true },
     { key: "sponsors", label: "Sponsors", icon: Star, conditional: true },
-  ];
+  ].filter(Boolean) as Array<{ key: string; label: string; icon: typeof BarChart3; badge?: number; conditional?: boolean }>;
 
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
@@ -665,9 +444,9 @@ const EventManagement = () => {
                   {totalSold} sold · {totalCapacity || '∞'} capacity · {ticketTypes.length} type{ticketTypes.length !== 1 ? 's' : ''}
                 </p>
               </div>
-              <Button size="sm" onClick={() => setActiveSection('settings')}>
+              <Button size="sm" onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
                 <Settings className="w-4 h-4 mr-2" />
-                Manage Tickets
+                Edit Tickets
               </Button>
             </div>
 
@@ -713,17 +492,22 @@ const EventManagement = () => {
                                   />
                                 </div>
                                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                  {soldForType} / {available || '∞'}
+                                  {soldForType} sold / {available || '∞'}
                                 </span>
                               </div>
                             </div>
                             <div className="text-right shrink-0">
                               <p className="font-bold">
-                                {ticket.price === 0 || !ticket.price ? 'Free' : `${eventData.currency || '$'}${ticket.price}`}
+                                {ticket.price === 0 || !ticket.price ? 'Free' : `${currency} ${ticket.price}`}
                               </p>
                               {ticket.originalPrice && ticket.originalPrice > (ticket.price || 0) && (
                                 <p className="text-xs text-muted-foreground line-through">
-                                  ${ticket.originalPrice}
+                                  {currency} {ticket.originalPrice}
+                                </p>
+                              )}
+                              {hasPaymentDetailsAccess && soldForType > 0 && (ticket.price || 0) > 0 && (
+                                <p className="text-xs text-success mt-1">
+                                  {currency} {(soldForType * (ticket.price || 0)).toLocaleString()} revenue
                                 </p>
                               )}
                             </div>
@@ -758,8 +542,8 @@ const EventManagement = () => {
             if (response.success && response.data) {
               setInvitations(response.data.invitations || []);
             }
-          } catch {
-            toast({ title: "Error", description: "Failed to create invitation", variant: "destructive" });
+          } catch (err) {
+            toast({ title: "Invitation failed", description: extractErrorMessage(err, "Failed to create invitation"), variant: "destructive" });
           } finally {
             setCreatingInvitation(false);
           }
@@ -770,8 +554,8 @@ const EventManagement = () => {
             await revokeInvitation(invId);
             toast({ title: "Revoked", description: "Invitation link has been revoked" });
             setInvitations(prev => prev.map(inv => inv.id === invId ? { ...inv, isActive: false } : inv));
-          } catch {
-            toast({ title: "Error", description: "Failed to revoke invitation", variant: "destructive" });
+          } catch (err) {
+            toast({ title: "Revoke failed", description: extractErrorMessage(err, "Failed to revoke invitation"), variant: "destructive" });
           }
         };
 
@@ -949,85 +733,186 @@ const EventManagement = () => {
       }
 
       case "attendees": {
+        // Client-side search and filter
+        const filteredAttendees = apiData.attendees.filter((a) => {
+          const matchesSearch = !attendeeSearch ||
+            (a.name || '').toLowerCase().includes(attendeeSearch.toLowerCase()) ||
+            (a.email || '').toLowerCase().includes(attendeeSearch.toLowerCase());
+          const matchesStatus = attendeeStatusFilter === 'all' ||
+            (a.status || 'pending').toLowerCase() === attendeeStatusFilter.toLowerCase();
+          return matchesSearch && matchesStatus;
+        });
         const attendeesStartIndex = (attendeesPage - 1) * attendeesLimit;
         const attendeesEndIndex = attendeesStartIndex + attendeesLimit;
-        const paginatedAttendees = apiData.attendees.slice(attendeesStartIndex, attendeesEndIndex);
-        const attendeesTotalPages = Math.ceil(apiData.attendees.length / attendeesLimit);
-        
+        const paginatedAttendees = filteredAttendees.slice(attendeesStartIndex, attendeesEndIndex);
+        const attendeesTotalPages = Math.ceil(filteredAttendees.length / attendeesLimit);
+
+        const handleExportAttendees = async () => {
+          if (!eventId) return;
+          setExportingAttendees(true);
+          try {
+            await exportAttendees(eventId);
+            toast({ title: "Exported", description: "Attendee data downloaded successfully." });
+          } catch (err) {
+            toast({ title: "Export failed", description: extractErrorMessage(err, "Unable to export attendees. Please try again."), variant: "destructive" });
+          } finally {
+            setExportingAttendees(false);
+          }
+        };
+
+        const handleAddAttendee = async () => {
+          if (!eventId || !addAttendeeForm.firstName.trim() || !addAttendeeForm.email.trim()) {
+            toast({ title: "Missing fields", description: "First name and email are required.", variant: "destructive" });
+            return;
+          }
+          setAddingAttendee(true);
+          try {
+            const result = await quickRegisterAttendee(eventId, {
+              ...addAttendeeForm,
+              firstName: addAttendeeForm.firstName.trim(),
+              lastName: addAttendeeForm.lastName.trim(),
+              email: addAttendeeForm.email.trim(),
+            });
+            toast({ title: "Attendee added", description: `${result.attendeeName} has been registered.` });
+            setShowAddAttendee(false);
+            setAddAttendeeForm({ firstName: '', lastName: '', email: '' });
+            // Refresh attendees
+            const registrationsResponse = await getEventRegistrations(eventId);
+            if (registrationsResponse.success && registrationsResponse.data) {
+              interface TicketLineItemData { ticketType: string; quantity: number; unitPrice?: number; totalPrice?: number; }
+              interface Registration {
+                id: string;
+                attendee?: { firstName?: string; lastName?: string; email?: string };
+                user?: { firstName?: string; lastName?: string; email?: string };
+                ticketType?: string | null;
+                ticketLineItems?: TicketLineItemData[];
+                status?: string;
+                createdAt?: string;
+                quantity?: number;
+                totalAmount?: number | string;
+                paymentStatus?: string | null;
+                paymentMethod?: string | null;
+              }
+              const transformedAttendees = registrationsResponse.data.registrations.map((reg: Registration) => {
+                const ticketDisplay = reg.ticketLineItems && reg.ticketLineItems.length > 0
+                  ? reg.ticketLineItems.map(li => `${li.ticketType}${li.quantity > 1 ? ` x${li.quantity}` : ''}`).join(', ')
+                  : reg.ticketType || 'Standard';
+                return {
+                  id: reg.id,
+                  name: `${reg.attendee?.firstName || reg.user?.firstName || ''} ${reg.attendee?.lastName || reg.user?.lastName || ''}`.trim() || 'Guest',
+                  email: reg.attendee?.email || reg.user?.email || 'N/A',
+                  ticketType: ticketDisplay,
+                  status: reg.status?.toLowerCase() || 'pending',
+                  registeredDate: reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A',
+                  createdAt: reg.createdAt,
+                  quantity: reg.quantity || 1,
+                  totalAmount: reg.totalAmount || 0,
+                  paymentStatus: reg.paymentStatus || undefined,
+                  paymentMethod: reg.paymentMethod || undefined,
+                };
+              });
+              setAttendees(transformedAttendees);
+            }
+          } catch (err) {
+            toast({ title: "Registration failed", description: extractErrorMessage(err, "Unable to add attendee. Please try again."), variant: "destructive" });
+          } finally {
+            setAddingAttendee(false);
+          }
+        };
+
         return (
           <div className="space-y-6">
             {/* Tier Indicator Banner */}
             {!subscriptionLoading && subscription && subscription.tier === 'BASIC' && (
               <UpgradePrompt
-                message="Upgrade to Standard (free) to access detailed attendee contact information and communication tools."
+                message="Upgrade to Standard (free) to access payment details, export, and communication tools."
                 targetTier="STANDARD"
                 variant="banner"
                 dismissible={true}
               />
             )}
 
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-3 mb-1">
                   <h3 className="text-lg font-semibold">Attendees Management</h3>
                   {!subscriptionLoading && subscription && (
                     <SubscriptionTierBadge tier={subscription.tier} size="sm" />
                   )}
                 </div>
-                {/* Data Access Summary */}
-                {!subscriptionLoading && subscription && (
-                  <p className="text-sm text-muted-foreground">
-                    {subscription.tier === 'BASIC' 
-                      ? `Viewing summary data only. Upgrade to Standard to see attendee details.`
-                      : `Viewing ${apiData.attendees.length} attendee${apiData.attendees.length !== 1 ? 's' : ''} with your ${subscription.tier.charAt(0) + subscription.tier.slice(1).toLowerCase()} subscription.`
-                    }
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground">
+                  {apiData.attendees.length} attendee{apiData.attendees.length !== 1 ? 's' : ''} registered
+                </p>
               </div>
-              <div className="flex gap-2 items-center">
-                <div className="text-sm text-muted-foreground">
-                  Showing {attendeesStartIndex + 1}-{Math.min(attendeesEndIndex, apiData.attendees.length)} of {apiData.attendees.length}
-                </div>
-                <Select value={attendeesLimit.toString()} onValueChange={(value) => {
-                  setAttendeesLimit(parseInt(value, 10));
-                  setAttendeesPage(1);
-                }}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button 
-                  variant="outline" 
+              <div className="flex gap-2 items-center flex-wrap">
+                <Button
+                  variant="outline"
                   size="sm"
-                  disabled={subscription?.tier === 'BASIC'}
-                  onClick={() => {
-                    if (subscription?.tier !== 'BASIC') {
-                      // Export logic here
-                      toast({
-                        title: "Export started",
-                        description: "Your attendee data is being exported.",
-                      });
-                    }
-                  }}
+                  disabled={exportingAttendees || apiData.attendees.length === 0}
+                  onClick={handleExportAttendees}
                 >
-                  {subscription?.tier === 'BASIC' && <Lock className="w-4 h-4 mr-2" />}
-                  <Download className="w-4 h-4 mr-2" />
+                  {exportingAttendees ? <ButtonLoader /> : <Download className="w-4 h-4 mr-2" />}
                   Export
                 </Button>
-                <Button size="sm">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Add Attendee
-                </Button>
+                <Dialog open={showAddAttendee} onOpenChange={setShowAddAttendee}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Attendee
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add Attendee</DialogTitle>
+                      <DialogDescription>Manually register an attendee for this event (walk-in registration).</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="att-first">First Name *</Label>
+                          <Input id="att-first" className="mt-2" value={addAttendeeForm.firstName} onChange={(e) => setAddAttendeeForm(f => ({ ...f, firstName: e.target.value }))} placeholder="First name" />
+                        </div>
+                        <div>
+                          <Label htmlFor="att-last">Last Name</Label>
+                          <Input id="att-last" className="mt-2" value={addAttendeeForm.lastName} onChange={(e) => setAddAttendeeForm(f => ({ ...f, lastName: e.target.value }))} placeholder="Last name" />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="att-email">Email *</Label>
+                        <Input id="att-email" type="email" className="mt-2" value={addAttendeeForm.email} onChange={(e) => setAddAttendeeForm(f => ({ ...f, email: e.target.value }))} placeholder="attendee@email.com" />
+                      </div>
+                      <div>
+                        <Label htmlFor="att-phone">Phone (optional)</Label>
+                        <Input id="att-phone" className="mt-2" value={addAttendeeForm.phoneNumber || ''} onChange={(e) => setAddAttendeeForm(f => ({ ...f, phoneNumber: e.target.value || undefined }))} placeholder="+1234567890" />
+                      </div>
+                      {eventData.ticketTypes && eventData.ticketTypes.length > 0 && (
+                        <div>
+                          <Label htmlFor="att-ticket">Ticket Type</Label>
+                          <Select value={addAttendeeForm.ticketType || ''} onValueChange={(v) => setAddAttendeeForm(f => ({ ...f, ticketType: v || undefined }))}>
+                            <SelectTrigger className="mt-2">
+                              <SelectValue placeholder="Select ticket type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {eventData.ticketTypes.map((t) => (
+                                <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowAddAttendee(false)} disabled={addingAttendee}>Cancel</Button>
+                      <Button onClick={handleAddAttendee} disabled={addingAttendee}>
+                        {addingAttendee ? <><ButtonLoader /> Registering...</> : 'Register Attendee'}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -1063,73 +948,106 @@ const EventManagement = () => {
               </Card>
             </div>
 
-            {!hasAttendeeListAccess && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Your data access is currently restricted. Contact an administrator to request access to attendee details.
-                </AlertDescription>
-              </Alert>
-            )}
+            {/* Search and Filter Bar */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  className="pl-9"
+                  value={attendeeSearch}
+                  onChange={(e) => { setAttendeeSearch(e.target.value); setAttendeesPage(1); }}
+                />
+              </div>
+              <Select value={attendeeStatusFilter} onValueChange={(v) => { setAttendeeStatusFilter(v); setAttendeesPage(1); }}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  {filteredAttendees.length === apiData.attendees.length
+                    ? `${filteredAttendees.length} total`
+                    : `${filteredAttendees.length} of ${apiData.attendees.length}`}
+                </span>
+                <Select value={attendeesLimit.toString()} onValueChange={(value) => { setAttendeesLimit(parseInt(value, 10)); setAttendeesPage(1); }}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-            {hasAttendeeListAccess && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Attendees List</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {apiData.attendees.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8">No attendees registered yet</p>
-                    ) : (
-                      paginatedAttendees.map((attendee) => (
-                        <div
-                          key={attendee.id}
-                          className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                          onClick={() => { setSelectedAttendee(attendee); setAttendeeSheetOpen(true); }}
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                              <span className="text-sm font-bold text-primary">
-                                {(attendee.name || attendee.email || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium">{attendee.name || '—'}</p>
-                              <p className="text-sm text-muted-foreground">{attendee.email}</p>
-                              {hasPaymentDetailsAccess && attendee.totalAmount && (
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  ${Number(attendee.totalAmount).toFixed(2)} · {attendee.paymentStatus || 'N/A'}
-                                </p>
-                              )}
-                            </div>
+            <Card>
+              <CardContent className="p-0">
+                <div className="divide-y">
+                  {filteredAttendees.length === 0 ? (
+                    <div className="p-8 text-center">
+                      <Users className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {attendeeSearch || attendeeStatusFilter !== 'all' ? 'No attendees match your search' : 'No attendees registered yet'}
+                      </p>
+                    </div>
+                  ) : (
+                    paginatedAttendees.map((attendee) => (
+                      <div
+                        key={attendee.id}
+                        className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => { setSelectedAttendee(attendee); setAttendeeSheetOpen(true); }}
+                      >
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                            <span className="text-sm font-bold text-primary">
+                              {(attendee.name || attendee.email || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Badge variant="secondary" className="hidden sm:flex">{attendee.ticketType}</Badge>
-                            <Badge className={getStatusColor(attendee.status || 'pending')}>
-                              {attendee.status || 'pending'}
-                            </Badge>
-                            <Eye className="w-4 h-4 text-muted-foreground/60" />
+                          <div>
+                            <p className="font-medium">{attendee.name || '—'}</p>
+                            <p className="text-sm text-muted-foreground">{attendee.email}</p>
+                            {hasPaymentDetailsAccess && attendee.totalAmount && Number(attendee.totalAmount) > 0 && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {currency} {Number(attendee.totalAmount).toFixed(2)} · {attendee.paymentStatus || '—'}
+                              </p>
+                            )}
                           </div>
                         </div>
-                      ))
-                    )}
-                  </div>
-                  {attendeesTotalPages > 1 && (
-                    <div className="mt-6">
-                      <Pagination
-                        currentPage={attendeesPage}
-                        totalPages={attendeesTotalPages}
-                        onPageChange={(newPage) => {
-                          setAttendeesPage(newPage);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                      />
-                    </div>
+                        <div className="flex items-center gap-3">
+                          <Badge variant="secondary" className="hidden sm:flex">{attendee.ticketType}</Badge>
+                          <Badge className={getStatusColor(attendee.status || 'pending')}>
+                            {attendee.status || 'pending'}
+                          </Badge>
+                          <Eye className="w-4 h-4 text-muted-foreground/60" />
+                        </div>
+                      </div>
+                    ))
                   )}
-                </CardContent>
-              </Card>
-            )}
+                </div>
+                {attendeesTotalPages > 1 && (
+                  <div className="p-4 border-t">
+                    <Pagination
+                      currentPage={attendeesPage}
+                      totalPages={attendeesTotalPages}
+                      onPageChange={(newPage) => {
+                        setAttendeesPage(newPage);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Attendee Detail Sheet */}
             <Sheet open={attendeeSheetOpen} onOpenChange={setAttendeeSheetOpen}>
@@ -1159,7 +1077,7 @@ const EventManagement = () => {
                         { label: 'Ticket Type', value: selectedAttendee.ticketType },
                         { label: 'Registration Status', value: selectedAttendee.status || 'pending' },
                         ...(hasPaymentDetailsAccess ? [
-                          { label: 'Amount Paid', value: selectedAttendee.totalAmount ? `$${Number(selectedAttendee.totalAmount).toFixed(2)}` : '—' },
+                          { label: 'Amount Paid', value: selectedAttendee.totalAmount ? `${currency} ${Number(selectedAttendee.totalAmount).toFixed(2)}` : '—' },
                           { label: 'Payment Status', value: selectedAttendee.paymentStatus || '—' },
                           { label: 'Payment Method', value: selectedAttendee.paymentMethod || '—' },
                         ] : []),
@@ -1195,10 +1113,10 @@ const EventManagement = () => {
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">Speakers Management</h3>
-              <Button size="sm">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add Speaker
+              <h3 className="text-xl font-semibold">Speakers</h3>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
+                <Settings className="w-4 h-4 mr-2" />
+                Edit in Event Settings
               </Button>
             </div>
 
@@ -1218,10 +1136,10 @@ const EventManagement = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-lg font-semibold">{(apiData.speakers as Speaker[]).filter((s) => s.status === 'confirmed').length}</p>
+                      <p className="text-sm text-muted-foreground">With Company</p>
+                      <p className="text-lg font-semibold">{(apiData.speakers as SpeakerItem[]).filter((s) => s.company).length}</p>
                     </div>
-                    <CheckCircle className="w-8 h-8 text-success" />
+                    <Users className="w-8 h-8 text-primary" />
                   </div>
                 </CardContent>
               </Card>
@@ -1229,10 +1147,10 @@ const EventManagement = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Sessions</p>
-                      <p className="text-lg font-semibold">{(apiData.speakers as Speaker[]).reduce((sum: number, s) => sum + (s.sessions || 0), 0)}</p>
+                      <p className="text-sm text-muted-foreground">With Bio</p>
+                      <p className="text-lg font-semibold">{(apiData.speakers as SpeakerItem[]).filter((s) => s.bio).length}</p>
                     </div>
-                    <Calendar className="w-8 h-8 text-primary" />
+                    <CheckCircle className="w-8 h-8 text-success" />
                   </div>
                 </CardContent>
               </Card>
@@ -1245,28 +1163,35 @@ const EventManagement = () => {
               <CardContent>
                 <div className="space-y-4">
                   {apiData.speakers.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No speakers added yet</p>
+                    <p className="text-center text-muted-foreground py-8">No speakers added yet. Add speakers from the event edit page.</p>
                   ) : (
-                    (apiData.speakers as Speaker[]).map((speaker) => (
-                      <div key={speaker.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                    (apiData.speakers as SpeakerItem[]).map((speaker, idx) => (
+                      <div key={speaker.id || idx} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                         <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-bold text-primary">
-                              {speaker.name.split(' ').map((n: string) => n[0]).join('')}
-                            </span>
-                          </div>
+                          {speaker.image ? (
+                            <img src={speaker.image} alt={speaker.name} className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-bold text-primary">
+                                {speaker.name.split(' ').map((n: string) => n[0]).join('')}
+                              </span>
+                            </div>
+                          )}
                           <div>
                             <p className="font-medium">{speaker.name}</p>
-                            <p className="text-sm text-muted-foreground">{speaker.title}</p>
-                            <p className="text-xs text-muted-foreground">{speaker.bio}</p>
+                            {speaker.title && <p className="text-sm text-muted-foreground">{speaker.title}</p>}
+                            {speaker.company && <p className="text-xs text-muted-foreground">{speaker.company}</p>}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-4">
-                          <Badge variant="secondary">{(speaker.sessions || 0)} sessions</Badge>
-                          <Badge className={getStatusColor(speaker.status || 'pending')}>
-                            {speaker.status || 'pending'}
-                          </Badge>
-                          <Button variant="outline" size="sm">Manage</Button>
+                        <div className="flex items-center space-x-2">
+                          {speaker.company && <Badge variant="secondary">{speaker.company}</Badge>}
+                          {speaker.website && (
+                            <Button variant="ghost" size="sm" asChild>
+                              <a href={speaker.website} target="_blank" rel="noopener noreferrer">
+                                <Link2 className="w-4 h-4" />
+                              </a>
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))
@@ -1281,10 +1206,10 @@ const EventManagement = () => {
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold">Sponsors Management</h3>
-              <Button size="sm">
-                <Star className="w-4 h-4 mr-2" />
-                Add Sponsor
+              <h3 className="text-xl font-semibold">Sponsors</h3>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
+                <Settings className="w-4 h-4 mr-2" />
+                Edit in Event Settings
               </Button>
             </div>
 
@@ -1304,10 +1229,10 @@ const EventManagement = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Revenue</p>
-                      <p className="text-lg font-semibold">${(apiData.sponsors as unknown as Sponsor[]).reduce((sum: number, s) => sum + (s.amount || 0), 0).toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">Sponsor Tiers</p>
+                      <p className="text-lg font-semibold">{new Set((apiData.sponsors as SponsorItem[]).map(s => s.level).filter(Boolean)).size}</p>
                     </div>
-                    <DollarSign className="w-8 h-8 text-success" />
+                    <Target className="w-8 h-8 text-primary" />
                   </div>
                 </CardContent>
               </Card>
@@ -1315,10 +1240,10 @@ const EventManagement = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Gold Sponsors</p>
-                      <p className="text-lg font-semibold">{(apiData.sponsors as unknown as Sponsor[]).filter((s) => s.level?.includes('Gold') || s.name?.includes('Gold')).length}</p>
+                      <p className="text-sm text-muted-foreground">With Website</p>
+                      <p className="text-lg font-semibold">{(apiData.sponsors as SponsorItem[]).filter(s => s.website).length}</p>
                     </div>
-                    <Star className="w-8 h-8 text-muted-foreground" />
+                    <Link2 className="w-8 h-8 text-muted-foreground" />
                   </div>
                 </CardContent>
               </Card>
@@ -1331,38 +1256,38 @@ const EventManagement = () => {
               <CardContent>
                 <div className="space-y-4">
                   {apiData.sponsors.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No sponsors added yet</p>
+                    <p className="text-center text-muted-foreground py-8">No sponsors added yet. Add sponsors from the event edit page.</p>
                   ) : (
-                    (apiData.sponsors as unknown as Sponsor[]).map((sponsor, idx: number) => {
-                      // Transform API sponsor format to display format
-                      const displaySponsor = {
-                        id: idx + 1,
-                        name: sponsor.level || 'Sponsor',
-                        company: sponsor.name || 'Company',
-                        amount: 0, // Not available in API
-                        benefits: [],
-                      };
-                      return (
-                    <div key={idx} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                    (apiData.sponsors as SponsorItem[]).map((sponsor, idx: number) => (
+                    <div key={sponsor.id || idx} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">
-                            {displaySponsor.company.split(' ').map((n: string) => n[0]).join('')}
-                          </span>
-                        </div>
+                        {sponsor.logo ? (
+                          <img src={sponsor.logo} alt={sponsor.name} className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-bold text-primary">
+                              {sponsor.name.split(' ').map((n: string) => n[0]).join('')}
+                            </span>
+                          </div>
+                        )}
                         <div>
-                          <p className="font-medium">{displaySponsor.company}</p>
-                          <p className="text-sm text-muted-foreground">{displaySponsor.name}</p>
-                          <p className="text-xs text-muted-foreground">${displaySponsor.amount.toLocaleString()}</p>
+                          <p className="font-medium">{sponsor.name}</p>
+                          {sponsor.level && <p className="text-sm text-muted-foreground">{sponsor.level}</p>}
+                          {sponsor.description && <p className="text-xs text-muted-foreground line-clamp-1">{sponsor.description}</p>}
                         </div>
                       </div>
-                      <div className="flex items-center space-x-4">
-                        <Badge variant="secondary">{displaySponsor.name}</Badge>
-                        <Button variant="outline" size="sm">Manage</Button>
+                      <div className="flex items-center space-x-2">
+                        {sponsor.level && <Badge variant="secondary">{sponsor.level}</Badge>}
+                        {sponsor.website && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <a href={sponsor.website} target="_blank" rel="noopener noreferrer">
+                              <Link2 className="w-4 h-4" />
+                            </a>
+                          </Button>
+                        )}
                       </div>
                     </div>
-                      );
-                    })
+                    ))
                   )}
                 </div>
               </CardContent>
@@ -1399,7 +1324,7 @@ const EventManagement = () => {
                       <p className="text-sm text-muted-foreground">Total Revenue</p>
                       <p className="text-lg font-semibold">
                         {hasPaymentDetailsAccess
-                          ? `$${totalRevenue.toLocaleString()}`
+                          ? (totalRevenue === 0 ? 'Free' : `${currency} ${totalRevenue.toLocaleString()}`)
                           : 'N/A'}
                       </p>
                     </div>
@@ -1411,14 +1336,10 @@ const EventManagement = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Ticket Sales</p>
-                      <p className="text-lg font-semibold">
-                        {hasPaymentDetailsAccess
-                          ? `$${(totalRevenue * 0.7).toLocaleString()}`
-                          : 'N/A'}
-                      </p>
+                      <p className="text-sm text-muted-foreground">Confirmed</p>
+                      <p className="text-lg font-semibold">{confirmedAttendees}</p>
                     </div>
-                    <Users className="w-8 h-8 text-primary" />
+                    <CheckCircle className="w-8 h-8 text-success" />
                   </div>
                 </CardContent>
               </Card>
@@ -1426,14 +1347,14 @@ const EventManagement = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Platform Fee</p>
+                      <p className="text-sm text-muted-foreground">Avg. Ticket Price</p>
                       <p className="text-lg font-semibold">
-                        {hasPaymentDetailsAccess
-                          ? `$${(totalRevenue * 0.3).toLocaleString()}`
-                          : 'N/A'}
+                        {hasPaymentDetailsAccess && totalAttendees > 0
+                          ? (totalRevenue === 0 ? 'Free' : `${currency} ${(totalRevenue / totalAttendees).toFixed(2)}`)
+                          : '—'}
                       </p>
                     </div>
-                    <Star className="w-8 h-8 text-muted-foreground" />
+                    <Ticket className="w-8 h-8 text-primary" />
                   </div>
                 </CardContent>
               </Card>
@@ -1441,8 +1362,8 @@ const EventManagement = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Conversion Rate</p>
-                      <p className="text-lg font-semibold">{eventData.capacity && eventData.capacity > 0 
+                      <p className="text-sm text-muted-foreground">Fill Rate</p>
+                      <p className="text-lg font-semibold">{eventData.capacity && eventData.capacity > 0
                         ? ((totalAttendees / eventData.capacity) * 100).toFixed(1)
                         : 0}%</p>
                     </div>
@@ -1452,49 +1373,85 @@ const EventManagement = () => {
               </Card>
             </div>
 
-            {/* Revenue Breakdown */}
-            {hasPaymentDetailsAccess && (
+            {/* Revenue Breakdown by Ticket Type */}
+            {hasPaymentDetailsAccess && (eventData.ticketTypes?.length ?? 0) > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Revenue Breakdown</CardTitle>
+                  <CardTitle>Revenue by Ticket Type</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center p-4 border rounded-lg">
-                      <div>
-                        <p className="font-medium">Total Revenue</p>
-                        <p className="text-sm text-muted-foreground">From all ticket sales</p>
-                      </div>
-                      <p className="font-bold text-success">${totalRevenue.toLocaleString()}</p>
-                    </div>
-                    {apiData.sponsors.length > 0 && (
-                      <div className="flex justify-between items-center p-4 border rounded-lg">
-                        <div>
-                          <p className="font-medium">Sponsorships</p>
-                          <p className="text-sm text-muted-foreground">{apiData.sponsors.length} sponsor{apiData.sponsors.length !== 1 ? 's' : ''}</p>
+                  <div className="space-y-3">
+                    {eventData.ticketTypes?.map((ticket, idx) => {
+                      const soldForType = attendees.filter(a => a.ticketType === ticket.name).length;
+                      const typeRevenue = soldForType * (ticket.price || 0);
+                      const pctOfTotal = totalRevenue > 0 ? (typeRevenue / totalRevenue) * 100 : 0;
+                      return (
+                        <div key={`${ticket.name}-${idx}`} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm font-medium">{ticket.name}</span>
+                              <span className="text-xs text-muted-foreground">{soldForType} sold</span>
+                            </div>
+                            {totalRevenue > 0 && (
+                              <div className="h-1.5 bg-muted rounded-full overflow-hidden max-w-xs">
+                                <div className="h-full bg-primary rounded-full" style={{ width: `${pctOfTotal}%` }} />
+                              </div>
+                            )}
+                          </div>
+                          <p className="font-semibold ml-4">
+                            {typeRevenue === 0 ? 'Free' : `${currency} ${typeRevenue.toLocaleString()}`}
+                          </p>
                         </div>
-                        <p className="font-bold">
-                          ${(apiData.sponsors as unknown as Sponsor[]).reduce((sum: number, s) => sum + (s.amount || 0), 0).toLocaleString()}
-                        </p>
-                      </div>
-                    )}
+                      );
+                    })}
+                    <div className="flex justify-between items-center pt-3 border-t font-semibold">
+                      <span>Total</span>
+                      <span className="text-success">{totalRevenue === 0 ? 'Free' : `${currency} ${totalRevenue.toLocaleString()}`}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Registration Trend Placeholder */}
+            {/* Recent Registrations Timeline */}
             <Card>
               <CardHeader>
-                <CardTitle>Registration Timeline</CardTitle>
+                <CardTitle>Recent Registrations</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Registration trend chart coming soon</p>
+                {attendees.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground">
+                    <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No registrations yet</p>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    {[...attendees]
+                      .sort((a, b) => {
+                        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                        return dateB - dateA;
+                      })
+                      .slice(0, 10)
+                      .map((attendee, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <Users className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{attendee.name || 'Guest'}</p>
+                            <p className="text-xs text-muted-foreground">{attendee.ticketType}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <Badge className={`text-xs ${getStatusColor(attendee.status || 'pending')}`}>
+                              {attendee.status || 'pending'}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1">{attendee.registeredDate}</p>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -2086,10 +2043,10 @@ const EventManagement = () => {
                       title: "Copied",
                       description: "Event link copied to clipboard",
                     });
-                  } catch {
+                  } catch (err) {
                     toast({
-                      title: "Error",
-                      description: "Failed to copy link",
+                      title: "Copy failed",
+                      description: extractErrorMessage(err, "Failed to copy link"),
                       variant: "destructive",
                     });
                   }
@@ -2133,10 +2090,10 @@ const EventManagement = () => {
                       title: "Exported",
                       description: "Event data exported successfully",
                     });
-                  } catch {
+                  } catch (err) {
                     toast({
-                      title: "Error",
-                      description: "Failed to export event data",
+                      title: "Export failed",
+                      description: extractErrorMessage(err, "Failed to export event data"),
                       variant: "destructive",
                     });
                   }
@@ -2173,10 +2130,10 @@ const EventManagement = () => {
                     title: "Copied",
                     description: "Event link copied to clipboard",
                   });
-                } catch {
+                } catch (err) {
                   toast({
-                    title: "Error",
-                    description: "Failed to copy link",
+                    title: "Copy failed",
+                    description: extractErrorMessage(err, "Failed to copy link"),
                     variant: "destructive",
                   });
                 }

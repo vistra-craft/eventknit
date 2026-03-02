@@ -221,8 +221,10 @@ export class PermissionService {
   }
 
   /**
-   * Get effective permissions for a user
-   * This checks both system role and custom role permissions
+   * Get effective permissions for a user.
+   * - SUPERADMIN, ADMIN_STAFF, ORGANIZER: all permissions (full access)
+   * - ORGANIZER_STAFF, ORGANIZER_TELLER: permissions from their custom role
+   * - ATTENDEE and others: no permissions
    */
   static async getUserEffectivePermissions(userId: string): Promise<string[]> {
     try {
@@ -238,19 +240,24 @@ export class PermissionService {
         return [];
       }
 
-      const permissionKeys: string[] = [];
-
-      // If user has a custom role, get permissions from that role
-      if (user.customRoleId) {
-        const customPermissions = await this.getRolePermissions(user.customRoleId);
-        permissionKeys.push(...customPermissions.map(p => p.key));
+      // Admin roles and organizer get all permissions
+      if (
+        user.role === 'SUPERADMIN' ||
+        user.role === 'ADMIN_STAFF' ||
+        user.role === 'ORGANIZER'
+      ) {
+        const allPermissions = await prisma.permission.findMany({ select: { key: true } });
+        return allPermissions.map(p => p.key);
       }
 
-      // System role permissions (ORGANIZER_STAFF, ORGANIZER_TELLER, etc.)
-      // These are handled by the privilege system in utils/privileges.ts
-      // We return custom role permissions here, system role checks happen elsewhere
+      // Staff roles: return permissions from their custom role
+      if (user.customRoleId) {
+        const customPermissions = await this.getRolePermissions(user.customRoleId);
+        return customPermissions.map(p => p.key);
+      }
 
-      return permissionKeys;
+      // Default: no permissions
+      return [];
     } catch (error) {
       logger.error(`Error getting effective permissions for user ${userId}:`, error);
       return [];

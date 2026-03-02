@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  CheckCircle2, 
+import {
+  CheckCircle2,
   AlertCircle,
   Crown,
   Zap,
@@ -18,58 +18,59 @@ import { Badge } from '@/components/ui/badge';
 import { Loader, ButtonLoader } from '@/components/ui/loader';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getSubscription, upgradeSubscription, cancelSubscription, type SubscriptionTier, type OrganizerSubscription } from '@/lib/organizer-api';
+import { getSubscriptionPlans, type SubscriptionPlanConfig } from '@/lib/subscription-api';
+import { extractErrorMessage } from '@/lib/utils/error';
 import { useToast } from '@/hooks/useToast';
 
-const TIER_INFO = {
-  BASIC: {
-    name: 'Basic',
-    icon: Shield,
-    color: 'bg-muted text-muted-foreground border-border',
-    description: 'Free tier with aggregated data only',
-    features: [
-      'Event creation and management',
-      'Basic event analytics',
-      'Aggregated attendee counts',
-      'QR code ticket scanning',
-    ],
-    price: 'Free',
-  },
-  STANDARD: {
-    name: 'Standard',
-    icon: Zap,
-    color: 'bg-primary/10 text-primary border-primary/30',
-    description: 'Free tier with basic attendee data (requires consent)',
-    features: [
-      'Everything in Basic',
-      'Attendee list with contact info',
-      'Basic attendee data export',
-      'Email communication to consented attendees',
-      'Registration analytics',
-    ],
-    price: 'Free',
-  },
-  PREMIUM: {
-    name: 'Premium',
-    icon: Crown,
-    color: 'bg-primary/10 text-primary border-primary/30',
-    description: 'Paid tier with advanced analytics and demographics',
-    features: [
-      'Everything in Standard',
-      'Demographic data access',
-      'Engagement analytics',
-      'Advanced data exports',
-      'Geographic heatmaps',
-      'Multi-event comparisons',
-      'Priority support',
-    ],
-    price: '$10/month',
-  },
+const TIER_ICONS: Record<SubscriptionTier, React.ElementType> = {
+  BASIC: Shield,
+  STANDARD: Zap,
+  PREMIUM: Crown,
 };
+
+const TIER_COLORS: Record<SubscriptionTier, string> = {
+  BASIC: 'bg-muted text-muted-foreground border-border',
+  STANDARD: 'bg-primary/10 text-primary border-primary/30',
+  PREMIUM: 'bg-primary/10 text-primary border-primary/30',
+};
+
+/** Fallback display features when plan has none configured */
+const TIER_DISPLAY_FEATURES: Record<SubscriptionTier, string[]> = {
+  BASIC: [
+    'Event creation and management',
+    'Basic event analytics',
+    'Aggregated attendee counts',
+    'QR code ticket scanning',
+  ],
+  STANDARD: [
+    'Everything in Basic',
+    'Attendee list with contact info',
+    'Basic attendee data export',
+    'Email communication to consented attendees',
+    'Registration analytics',
+  ],
+  PREMIUM: [
+    'Everything in Standard',
+    'Demographic data access',
+    'Engagement analytics',
+    'Advanced data exports',
+    'Geographic heatmaps',
+    'Multi-event comparisons',
+    'Priority support',
+  ],
+};
+
+function formatPrice(plan: SubscriptionPlanConfig): string {
+  const price = parseFloat(plan.price);
+  if (price === 0) return 'Free';
+  return `${plan.currency} ${price}/month`;
+}
 
 const SubscriptionManagement = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<OrganizerSubscription | null>(null);
+  const [plans, setPlans] = useState<SubscriptionPlanConfig[]>([]);
   const [upgrading, setUpgrading] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
@@ -78,18 +79,24 @@ const SubscriptionManagement = () => {
   const [billingEmail, setBillingEmail] = useState('');
   const [billingEmailError, setBillingEmailError] = useState('');
 
-  const loadSubscription = React.useCallback(async () => {
+  const loadData = React.useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getSubscription();
-      if (response.success) {
-        setSubscription(response.data.subscription);
-        setBillingEmail(response.data.subscription.billingEmail || '');
+      const [subResponse, plansResponse] = await Promise.all([
+        getSubscription(),
+        getSubscriptionPlans(),
+      ]);
+      if (subResponse.success) {
+        setSubscription(subResponse.data.subscription);
+        setBillingEmail(subResponse.data.subscription.billingEmail || '');
+      }
+      if (plansResponse.success) {
+        setPlans(plansResponse.data.plans);
       }
     } catch (error: unknown) {
       toast({
         title: 'Failed to load subscription',
-        description: error instanceof Error ? error.message : 'An error occurred',
+        description: extractErrorMessage(error, 'Unable to load subscription data'),
         variant: 'destructive',
       });
     } finally {
@@ -98,8 +105,8 @@ const SubscriptionManagement = () => {
   }, [toast]);
 
   useEffect(() => {
-    loadSubscription();
-  }, [loadSubscription]);
+    loadData();
+  }, [loadData]);
 
   const handleUpgrade = (tier: SubscriptionTier) => {
     setTargetTier(tier);
@@ -133,16 +140,17 @@ const SubscriptionManagement = () => {
         setShowUpgradeDialog(false);
         setTargetTier(null);
         setBillingEmail('');
+        const planName = plans.find(p => p.tier === targetTier)?.name ?? targetTier;
         toast({
           title: 'Subscription upgraded successfully',
-          description: `You are now on the ${TIER_INFO[targetTier].name} tier`,
+          description: `You are now on the ${planName} tier`,
           variant: 'default',
         });
       }
     } catch (error: unknown) {
       toast({
         title: 'Upgrade failed',
-        description: error instanceof Error ? error.message : 'An error occurred while upgrading',
+        description: extractErrorMessage(error, 'Unable to upgrade subscription'),
         variant: 'destructive',
       });
     } finally {
@@ -158,7 +166,7 @@ const SubscriptionManagement = () => {
       const response = await cancelSubscription();
 
       if (response.success) {
-        await loadSubscription(); // Reload to get updated subscription
+        await loadData();
         setShowCancelDialog(false);
         toast({
           title: 'Subscription canceled',
@@ -169,7 +177,7 @@ const SubscriptionManagement = () => {
     } catch (error: unknown) {
       toast({
         title: 'Cancel failed',
-        description: error instanceof Error ? error.message : 'An error occurred while canceling',
+        description: extractErrorMessage(error, 'Unable to cancel subscription'),
         variant: 'destructive',
       });
     } finally {
@@ -204,7 +212,23 @@ const SubscriptionManagement = () => {
     );
   }
 
-  const currentTierInfo = TIER_INFO[subscription.tier];
+  const currentTierIcon = TIER_ICONS[subscription.tier];
+  const currentPlan = plans.find(p => p.tier === subscription.tier);
+  const currentDescription = currentPlan?.description ?? '';
+
+  // Build display data per plan: use DB plan data with static display features as fallback
+  const tierEntries = (plans.length > 0 ? plans : []).map((plan) => ({
+    tier: plan.tier,
+    name: plan.name,
+    description: plan.description ?? '',
+    price: formatPrice(plan),
+    displayFeatures: TIER_DISPLAY_FEATURES[plan.tier] ?? [],
+    icon: TIER_ICONS[plan.tier],
+    color: TIER_COLORS[plan.tier],
+  }));
+
+  const targetPlan = targetTier ? plans.find(p => p.tier === targetTier) : null;
+  const targetPrice = targetPlan ? formatPrice(targetPlan) : '';
 
   return (
       <div className="space-y-6">
@@ -221,14 +245,14 @@ const SubscriptionManagement = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {React.createElement(currentTierInfo.icon, { className: 'h-6 w-6' })}
+                {React.createElement(currentTierIcon, { className: 'h-6 w-6' })}
                 <div>
-                  <CardTitle className="text-card-title">Current Plan: {currentTierInfo.name}</CardTitle>
-                  <CardDescription>{currentTierInfo.description}</CardDescription>
+                  <CardTitle className="text-card-title">Current Plan: {currentPlan?.name ?? subscription.tier}</CardTitle>
+                  <CardDescription>{currentDescription}</CardDescription>
                 </div>
               </div>
-              <Badge className={subscription.isActive 
-                ? 'bg-success-light text-success border-success hover:bg-success-light/80 hover:border-success/80' 
+              <Badge className={subscription.isActive
+                ? 'bg-success-light text-success border-success hover:bg-success-light/80 hover:border-success/80'
                 : 'bg-muted text-muted-foreground border-muted-foreground/20 hover:bg-muted/80'
               }>
                 {subscription.isActive ? 'Active' : 'Inactive'}
@@ -278,15 +302,15 @@ const SubscriptionManagement = () => {
         <div>
           <h2 className="text-section-header mb-4">Available Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {Object.entries(TIER_INFO).map(([tier, info]) => {
-              const TierIcon = info.icon;
-              const isCurrent = isCurrentTier(tier as SubscriptionTier);
-              const canUpgrade = canUpgradeTo(tier as SubscriptionTier);
-              const isPremium = tier === 'PREMIUM';
+            {tierEntries.map((entry) => {
+              const TierIcon = entry.icon;
+              const isCurrent = isCurrentTier(entry.tier);
+              const canUpgrade = canUpgradeTo(entry.tier);
+              const isPremium = entry.tier === 'PREMIUM';
 
               return (
                 <Card
-                  key={tier}
+                  key={entry.tier}
                   className={`relative ${isCurrent ? 'ring-2 ring-primary' : ''}`}
                 >
                   {isCurrent && (
@@ -299,17 +323,17 @@ const SubscriptionManagement = () => {
                   )}
                   <CardHeader>
                     <div className="flex items-center gap-3 mb-2">
-                      <TierIcon className={`h-8 w-8 ${info.color.split(' ')[1]}`} />
-                      <CardTitle className="text-card-title">{info.name}</CardTitle>
+                      <TierIcon className={`h-8 w-8 ${entry.color.split(' ')[1]}`} />
+                      <CardTitle className="text-card-title">{entry.name}</CardTitle>
                     </div>
-                    <CardDescription>{info.description}</CardDescription>
+                    <CardDescription>{entry.description}</CardDescription>
                     <div className="mt-4">
-                      <span className="text-2xl font-bold">{info.price}</span>
+                      <span className="text-2xl font-bold">{entry.price}</span>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <ul className="space-y-3 mb-6">
-                      {info.features.map((feature, idx) => (
+                      {entry.displayFeatures.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
                           <span className="text-sm">{feature}</span>
@@ -319,7 +343,7 @@ const SubscriptionManagement = () => {
                     {canUpgrade && (
                       <Button
                         className="w-full"
-                        onClick={() => handleUpgrade(tier as SubscriptionTier)}
+                        onClick={() => handleUpgrade(entry.tier)}
                         disabled={upgrading}
                       >
                         {isPremium ? (
@@ -330,7 +354,7 @@ const SubscriptionManagement = () => {
                         ) : (
                           <>
                             <ArrowUpRight className="h-4 w-4 mr-2" />
-                            Upgrade to {info.name}
+                            Upgrade to {entry.name}
                           </>
                         )}
                       </Button>
@@ -352,11 +376,11 @@ const SubscriptionManagement = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                Upgrade to {targetTier && TIER_INFO[targetTier].name}
+                Upgrade to {targetPlan?.name ?? targetTier}
               </DialogTitle>
               <DialogDescription>
-                {targetTier === 'PREMIUM' 
-                  ? 'Please provide your billing email to complete the upgrade. Premium subscriptions are $10/month.'
+                {targetTier === 'PREMIUM'
+                  ? `Please provide your billing email to complete the upgrade. Premium subscriptions are ${targetPrice}.`
                   : 'You\'ll be upgraded to the Standard tier for free. This includes access to attendee contact information with their consent.'}
               </DialogDescription>
             </DialogHeader>
@@ -452,4 +476,3 @@ const SubscriptionManagement = () => {
 };
 
 export default SubscriptionManagement;
-

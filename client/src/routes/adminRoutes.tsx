@@ -78,6 +78,9 @@ const AdminPromotionsPage = lazy(() => import('../pages/admin/marketing').then(m
 const AdminPartnershipsPage = lazy(() => import('../pages/admin/marketing').then(m => ({ default: m.AdminPartnershipsPage })));
 const AdminPromoCodeFormPage = lazy(() => import('../pages/admin/marketing/AdminPromoCodeFormPage'));
 
+// Subscriptions
+const SubscriptionPlansPage = lazy(() => import('../pages/admin/subscriptions/SubscriptionPlansPage'));
+
 // Tickets
 const AdminAdvancedTicketTypes = lazy(() => import('../pages/admin/tickets/AdminAdvancedTicketTypes'));
 const AdminDynamicPricing = lazy(() => import('../pages/admin/tickets/AdminDynamicPricing'));
@@ -426,6 +429,13 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     path: 'marketing/partnerships',
     element: createElement(AdminPartnershipsPage),
     allowedRoles: MARKETING_ROLES,
+  },
+
+  // Subscriptions
+  {
+    path: 'subscriptions',
+    element: createElement(SubscriptionPlansPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
   },
 
   // Tickets

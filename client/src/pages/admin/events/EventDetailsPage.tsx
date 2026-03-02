@@ -15,6 +15,10 @@ import {
   RefreshCw,
   Search,
   AlertCircle,
+  Ticket,
+  Link2,
+  Copy,
+  Plus,
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,16 +30,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "@/components/ui/loader";
 import { RichTextContent } from "@/components/ui/RichTextContent";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { getEventById } from "@/lib/event-api";
 import { getEventRegistrations } from "@/lib/organizer-api";
 import { updateOrganizerDataAccess } from "@/lib/admin-api";
+import { getEventInvitations, createInvitation, revokeInvitation, getRegistrationLinkUrl, InviteType } from "@/lib/invitation-api";
 import { useToast } from "@/hooks/useToast";
+import { extractErrorMessage } from "@/lib/utils/error";
 import { exportEventData } from "@/lib/utils/export";
 import { getEventConfig, updateEventConfig, type EventScanConfig } from "@/lib/workstation-api";
 import { getRefunds, getDisbursements, type Refund, type Disbursement } from "@/lib/financial-api";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { EventStaffAssignment } from "@/components/EventStaffAssignment";
+import EventCommunicationSection from "@/components/EventCommunicationSection";
 import { usePermissionsEnhanced } from "@/hooks/usePermissions";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "@/lib/utils/event-badge-helpers";
 
@@ -83,7 +91,31 @@ interface EventDetails {
     level: "gold" | "silver" | "bronze";
     logo: string;
   }>;
+  ticketTypes?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    capacity: number;
+    sold: number;
+    description?: string;
+  }>;
   organizerDataAccess?: 'RESTRICTED' | 'STANDARD' | 'FULL';
+}
+
+interface InvitationItem {
+  id: string;
+  eventId: string;
+  inviteType: string;
+  token: string;
+  title: string | null;
+  description: string | null;
+  expiresAt: string | null;
+  maxUses: number | null;
+  usedCount: number;
+  usageCount: number;
+  isActive: boolean;
+  createdAt: string;
+  creator: { id: string; firstName: string; lastName: string; email: string };
 }
 
 interface EventMetrics {
@@ -129,7 +161,7 @@ const EventDetailsPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const permissions = usePermissionsEnhanced();
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState("overview");
   const [eventData, setEventData] = useState<EventDetails | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,6 +177,13 @@ const EventDetailsPage = () => {
   const [refundsLoading, setRefundsLoading] = useState(false);
   const [disbursements, setDisbursements] = useState<Disbursement[]>([]);
   const [disbursementsLoading, setDisbursementsLoading] = useState(false);
+  const [invitations, setInvitations] = useState<InvitationItem[]>([]);
+  const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [createInviteDialogOpen, setCreateInviteDialogOpen] = useState(false);
+  const [newInviteType, setNewInviteType] = useState<InviteType>(InviteType.ATTENDEE);
+  const [newInviteTitle, setNewInviteTitle] = useState("");
+  const [creatingInvite, setCreatingInvite] = useState(false);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const { toast } = useToast();
 
@@ -162,8 +201,8 @@ const EventDetailsPage = () => {
       } catch (error) {
         console.error('Error loading scan config:', error);
         toast({
-          title: "Error",
-          description: "Failed to load scan settings",
+          title: "Load failed",
+          description: extractErrorMessage(error, "Failed to load scan settings"),
           variant: "destructive",
         });
       } finally {
@@ -188,8 +227,8 @@ const EventDetailsPage = () => {
       } catch (error) {
         console.error('Error loading refunds:', error);
         toast({
-          title: "Error",
-          description: "Failed to load refunds",
+          title: "Load failed",
+          description: extractErrorMessage(error, "Failed to load refunds"),
           variant: "destructive",
         });
       } finally {
@@ -214,8 +253,8 @@ const EventDetailsPage = () => {
       } catch (error) {
         console.error('Error loading disbursements:', error);
         toast({
-          title: "Error",
-          description: "Failed to load disbursements",
+          title: "Load failed",
+          description: extractErrorMessage(error, "Failed to load disbursements"),
           variant: "destructive",
         });
       } finally {
@@ -224,6 +263,32 @@ const EventDetailsPage = () => {
     };
 
     loadDisbursements();
+  }, [eventId, activeTab, toast]);
+
+  // Load invitations when invitations tab is active
+  useEffect(() => {
+    const loadInvitations = async () => {
+      if (!eventId || activeTab !== 'invitations') return;
+
+      try {
+        setInvitationsLoading(true);
+        const response = await getEventInvitations(eventId);
+        if (response.success && response.data?.invitations) {
+          setInvitations(response.data.invitations);
+        }
+      } catch (error) {
+        console.error('Error loading invitations:', error);
+        toast({
+          title: "Load failed",
+          description: extractErrorMessage(error, "Failed to load invitations"),
+          variant: "destructive",
+        });
+      } finally {
+        setInvitationsLoading(false);
+      }
+    };
+
+    loadInvitations();
   }, [eventId, activeTab, toast]);
 
   // Check event access permission
@@ -318,6 +383,9 @@ const EventDetailsPage = () => {
               : undefined,
             sponsors: Array.isArray((event as { sponsors?: unknown }).sponsors)
               ? (event as { sponsors?: Array<{ id: string; name: string; level: "gold" | "silver" | "bronze"; logo: string }> }).sponsors
+              : undefined,
+            ticketTypes: Array.isArray((event as { ticketTypes?: unknown }).ticketTypes)
+              ? (event as { ticketTypes?: Array<{ id: string; name: string; price: number; capacity: number; sold: number; description?: string }> }).ticketTypes
               : undefined,
             organizerDataAccess: ((event as { organizerDataAccess?: string }).organizerDataAccess === 'RESTRICTED' || 
               (event as { organizerDataAccess?: string }).organizerDataAccess === 'STANDARD' || 
@@ -498,10 +566,10 @@ const EventDetailsPage = () => {
         title: "Exported",
         description: "Event data exported successfully",
       });
-    } catch {
+    } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to export event data",
+        title: "Export failed",
+        description: extractErrorMessage(error, "Failed to export event data"),
         variant: "destructive",
       });
     }
@@ -531,12 +599,9 @@ const EventDetailsPage = () => {
         });
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error
-        ? err.message
-        : 'Failed to update data access level';
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Update failed",
+        description: extractErrorMessage(err, 'Failed to update data access level'),
         variant: "destructive",
       });
     } finally {
@@ -621,19 +686,124 @@ const EventDetailsPage = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full ${permissions.canAccessAllEvents ? 'grid-cols-7' : 'grid-cols-5'}`}>
+          <TabsList className="flex w-full overflow-x-auto">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="attendees">Attendees</TabsTrigger>
+            <TabsTrigger value="tickets">Tickets</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
             {permissions.canAccessAllEvents && (
               <>
                 <TabsTrigger value="refunds">Refunds</TabsTrigger>
                 <TabsTrigger value="remittance">Remittance</TabsTrigger>
+                <TabsTrigger value="messages">Messages</TabsTrigger>
+                <TabsTrigger value="invitations">Invitations</TabsTrigger>
                 <TabsTrigger value="staff">Assigned Staff</TabsTrigger>
               </>
             )}
             <TabsTrigger value="scan-settings">Scan Settings</TabsTrigger>
           </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Total Attendees</span>
+                  </div>
+                  <p className="text-2xl font-bold">{eventData.attendees}</p>
+                  <p className="text-xs text-muted-foreground mt-1">of {eventData.capacity} capacity</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Total Revenue</span>
+                  </div>
+                  <p className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{metrics.successfulPayments} paid registrations</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    <span className="text-sm font-medium text-muted-foreground">Confirmed</span>
+                  </div>
+                  <p className="text-2xl font-bold">{registrations.filter(r => r.status === 'CONFIRMED').length}</p>
+                  <p className="text-xs text-muted-foreground mt-1">confirmed registrations</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Fill Rate</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {eventData.capacity > 0
+                      ? Math.round((eventData.attendees / eventData.capacity) * 100)
+                      : 0}%
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {eventData.capacity - eventData.attendees} spots remaining
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Financial Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Platform Fees</p>
+                  <p className="text-xl font-bold">{formatCurrency(metrics.platformFees)}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Organizer Amount</p>
+                  <p className="text-xl font-bold">{formatCurrency(metrics.organizerAmount)}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Avg. Ticket Price</p>
+                  <p className="text-xl font-bold">{formatCurrency(metrics.averageTicketPrice)}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Registration Status Breakdown */}
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+              <CardHeader>
+                <CardTitle>Registration Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 rounded-lg bg-success/10">
+                    <p className="text-2xl font-bold text-success">{metrics.successfulPayments}</p>
+                    <p className="text-xs text-muted-foreground">Paid</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-warning/10">
+                    <p className="text-2xl font-bold text-warning">{metrics.pendingPayments}</p>
+                    <p className="text-xs text-muted-foreground">Pending</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-destructive/10">
+                    <p className="text-2xl font-bold text-destructive">{metrics.failedPayments}</p>
+                    <p className="text-xs text-muted-foreground">Failed</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted">
+                    <p className="text-2xl font-bold">{metrics.processedRefunds}</p>
+                    <p className="text-xs text-muted-foreground">Refunded</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Details Tab */}
           <TabsContent value="details" className="space-y-6">
@@ -1577,6 +1747,290 @@ const EventDetailsPage = () => {
           </TabsContent>
           )}
 
+          {/* Tickets Tab */}
+          <TabsContent value="tickets" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold">Ticket Types</h2>
+            </div>
+            {eventData.ticketTypes && eventData.ticketTypes.length > 0 ? (
+              <div className="space-y-4">
+                {eventData.ticketTypes.map((ticket) => {
+                  const soldPercent = ticket.capacity > 0 ? Math.round((ticket.sold / ticket.capacity) * 100) : 0;
+                  const revenue = ticket.sold * ticket.price;
+                  return (
+                    <Card key={ticket.id} className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <Ticket className="h-5 w-5 text-primary" />
+                            <div>
+                              <h3 className="font-semibold">{ticket.name}</h3>
+                              {ticket.description && (
+                                <p className="text-sm text-muted-foreground">{ticket.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge variant="outline">{formatCurrency(ticket.price)}</Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Sold</span>
+                            <span className="font-medium">{ticket.sold} / {ticket.capacity}</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div
+                              className="bg-primary rounded-full h-2 transition-all"
+                              style={{ width: `${Math.min(soldPercent, 100)}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{soldPercent}% sold</span>
+                            <span className="font-medium text-primary">{formatCurrency(revenue)} revenue</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+
+                {/* Ticket Summary */}
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Types</p>
+                        <p className="text-xl font-bold">{eventData.ticketTypes.length}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Sold</p>
+                        <p className="text-xl font-bold">
+                          {eventData.ticketTypes.reduce((sum, t) => sum + t.sold, 0)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Capacity</p>
+                        <p className="text-xl font-bold">
+                          {eventData.ticketTypes.reduce((sum, t) => sum + t.capacity, 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="py-12 text-center">
+                  <Ticket className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No ticket types configured for this event</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {eventData.price === 'free' ? 'This is a free event' : `Single ticket price: ${formatCurrency(eventData.ticketPrice || 0)}`}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Messages Tab */}
+          {permissions.canAccessAllEvents && (
+            <TabsContent value="messages" className="space-y-6">
+              <EventCommunicationSection
+                eventId={eventData.id}
+                eventTitle={eventData.title}
+              />
+            </TabsContent>
+          )}
+
+          {/* Invitations Tab */}
+          {permissions.canAccessAllEvents && (
+            <TabsContent value="invitations" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-semibold">Registration Links</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create and manage invitation links for this event
+                  </p>
+                </div>
+                <Dialog open={createInviteDialogOpen} onOpenChange={setCreateInviteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Link
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create Registration Link</DialogTitle>
+                      <DialogDescription>
+                        Create a new invitation link for this event
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div>
+                        <Label htmlFor="invite-title">Title (optional)</Label>
+                        <Input
+                          id="invite-title"
+                          value={newInviteTitle}
+                          onChange={(e) => setNewInviteTitle(e.target.value)}
+                          placeholder="e.g., VIP Access, Early Bird"
+                          className="mt-2"
+                        />
+                      </div>
+                      <div>
+                        <Label>Invite Type</Label>
+                        <Select
+                          value={newInviteType}
+                          onValueChange={(v) => setNewInviteType(v as InviteType)}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={InviteType.ATTENDEE}>Attendee</SelectItem>
+                            <SelectItem value={InviteType.SPEAKER}>Speaker</SelectItem>
+                            <SelectItem value={InviteType.EXHIBITOR}>Exhibitor</SelectItem>
+                            <SelectItem value={InviteType.GUEST}>Guest</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setCreateInviteDialogOpen(false);
+                          setNewInviteTitle("");
+                        }}
+                        disabled={creatingInvite}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          if (!eventId) return;
+                          try {
+                            setCreatingInvite(true);
+                            await createInvitation(eventId, {
+                              inviteType: newInviteType,
+                              title: newInviteTitle || undefined,
+                            });
+                            toast({ title: "Success", description: "Invitation link created" });
+                            setCreateInviteDialogOpen(false);
+                            setNewInviteTitle("");
+                            // Reload invitations
+                            const response = await getEventInvitations(eventId);
+                            if (response.success && response.data?.invitations) {
+                              setInvitations(response.data.invitations);
+                            }
+                          } catch (err) {
+                            toast({
+                              title: "Failed",
+                              description: extractErrorMessage(err, "Failed to create invitation"),
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setCreatingInvite(false);
+                          }
+                        }}
+                        disabled={creatingInvite}
+                      >
+                        {creatingInvite ? "Creating..." : "Create"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {invitationsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader size="lg" className="h-8 w-8" />
+                  <span className="ml-2 text-muted-foreground">Loading invitations...</span>
+                </div>
+              ) : invitations.length === 0 ? (
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                  <CardContent className="py-12 text-center">
+                    <Link2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No invitation links created yet</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {invitations.map((inv) => {
+                    const linkUrl = getRegistrationLinkUrl(inv.token);
+                    return (
+                      <Card key={inv.id} className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Link2 className="h-4 w-4 text-primary" />
+                              <h3 className="font-semibold">{inv.title || `${inv.inviteType} Link`}</h3>
+                              <Badge variant={inv.isActive ? "default" : "secondary"}>
+                                {inv.isActive ? "Active" : "Revoked"}
+                              </Badge>
+                              <Badge variant="outline">{inv.inviteType}</Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(linkUrl);
+                                  setCopiedToken(inv.token);
+                                  setTimeout(() => setCopiedToken(null), 2000);
+                                  toast({ title: "Copied", description: "Link copied to clipboard" });
+                                }}
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                {copiedToken === inv.token ? "Copied!" : "Copy"}
+                              </Button>
+                              {inv.isActive && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      await revokeInvitation(inv.id);
+                                      toast({ title: "Revoked", description: "Invitation link revoked" });
+                                      if (eventId) {
+                                        const response = await getEventInvitations(eventId);
+                                        if (response.success && response.data?.invitations) {
+                                          setInvitations(response.data.invitations);
+                                        }
+                                      }
+                                    } catch (err) {
+                                      toast({
+                                        title: "Failed",
+                                        description: extractErrorMessage(err, "Failed to revoke invitation"),
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Revoke
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p className="truncate">{linkUrl}</p>
+                            <div className="flex gap-4 text-xs">
+                              <span>Used: {inv.usedCount || inv.usageCount || 0}{inv.maxUses ? ` / ${inv.maxUses}` : ''}</span>
+                              <span>Created by: {inv.creator.firstName} {inv.creator.lastName}</span>
+                              <span>Created: {new Date(inv.createdAt).toLocaleDateString()}</span>
+                              {inv.expiresAt && (
+                                <span>Expires: {new Date(inv.expiresAt).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+          )}
+
           {/* Scan Settings Tab */}
           <TabsContent value="scan-settings" className="space-y-6">
             <div className="flex justify-between items-center">
@@ -1720,8 +2174,8 @@ const EventDetailsPage = () => {
                         } catch (error) {
                           console.error('Error saving scan config:', error);
                           toast({
-                            title: "Error",
-                            description: "Failed to save scan settings",
+                            title: "Save failed",
+                            description: extractErrorMessage(error, "Failed to save scan settings"),
                             variant: "destructive",
                           });
                         } finally {

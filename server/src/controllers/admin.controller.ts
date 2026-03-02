@@ -1,7 +1,8 @@
 import { Response, NextFunction } from 'express';
 import { AdminService } from '../services/admin.service.js';
+import { SubscriptionService } from '../services/subscription.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserRole, UserStatus, SubscriptionTier } from '@prisma/client';
 import { roleHierarchy, canCreateRole, canModifyUser, canDeleteUser } from '../utils/privileges.js';
 
 export class AdminController {
@@ -597,6 +598,126 @@ export class AdminController {
           roles,
           currentUserRole,
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Subscription Plan Management
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Get all subscription plans
+   */
+  static async getSubscriptionPlans(_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const plans = await SubscriptionService.getPlans();
+
+      res.status(200).json({
+        success: true,
+        data: { plans },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update a subscription plan (pricing, description, features)
+   */
+  static async updateSubscriptionPlan(req: AuthenticatedRequest<{ tier: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { tier } = req.params;
+      if (!Object.values(SubscriptionTier).includes(tier as SubscriptionTier)) {
+        res.status(400).json({ success: false, message: `Invalid tier: ${tier}` });
+        return;
+      }
+
+      const { price, description, features } = req.body;
+      const plan = await SubscriptionService.updatePlan(tier as SubscriptionTier, { price, description, features });
+
+      res.status(200).json({
+        success: true,
+        message: `Subscription plan ${tier} updated successfully`,
+        data: { plan },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get organizer subscription summary (subscription + overrides + effective tier)
+   */
+  static async getOrganizerSubscription(req: AuthenticatedRequest<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id: organizerId } = req.params;
+      const summary = await SubscriptionService.getOrganizerSubscriptionSummary(organizerId);
+
+      res.status(200).json({
+        success: true,
+        data: summary,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Set a subscription override for an organizer
+   */
+  static async setOrganizerSubscriptionOverride(req: AuthenticatedRequest<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { id: organizerId } = req.params;
+      const { tier, reason, expiresAt } = req.body;
+
+      if (!tier || !Object.values(SubscriptionTier).includes(tier)) {
+        res.status(400).json({ success: false, message: `Invalid tier: ${tier}` });
+        return;
+      }
+
+      const override = await SubscriptionService.createOverride(
+        organizerId,
+        tier,
+        req.user.id,
+        reason,
+        expiresAt ? new Date(expiresAt) : undefined,
+      );
+
+      res.status(201).json({
+        success: true,
+        message: `Subscription override set to ${tier} for organizer`,
+        data: { override },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Remove a subscription override
+   */
+  static async removeOrganizerSubscriptionOverride(req: AuthenticatedRequest<{ id: string; overrideId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { overrideId } = req.params;
+      const override = await SubscriptionService.removeOverride(overrideId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Subscription override removed',
+        data: { override },
       });
     } catch (error) {
       next(error);

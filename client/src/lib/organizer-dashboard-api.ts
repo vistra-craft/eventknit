@@ -1112,3 +1112,9 @@ export const getTeamPerformanceMetrics = async (filters?: {
   return apiGet(endpoint);
 };
 
+// ==================== My Permissions ====================
+
+export const getMyPermissions = async (): Promise<ApiResponse<{ permissions: string[] }>> => {
+  return apiGet('/organizer-dashboard/my-permissions');
+};
+

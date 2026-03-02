@@ -434,6 +434,9 @@ export class AdminService {
       organizerIndustry: true,
       profileCompleted: true,
       lastLoginAt: true,
+      organizerSubscription: {
+        select: { tier: true },
+      },
       _count: {
         select: {
           eventsCreated: true,

@@ -187,7 +187,7 @@ export class KYCService {
       const uploadedDocs = documentsByType.get(req.documentType) || [];
       const approvedCount = uploadedDocs.filter((d) => d.status === KYCStatus.APPROVED).length;
       const pendingCount = uploadedDocs.filter((d) => d.status === KYCStatus.PENDING).length;
-      const isComplete = approvedCount >= req.minQuantity;
+      const isComplete = (approvedCount + pendingCount) >= req.minQuantity;
       const hasMinimum = (approvedCount + pendingCount) >= req.minQuantity;
 
       return {
@@ -203,7 +203,7 @@ export class KYCService {
     return {
       documents,
       requirementsStatus,
-      isComplete: requirementsStatus.every((req) => req.isRequired && req.isComplete),
+      isComplete: requirementsStatus.filter((req) => req.isRequired).every((req) => req.isComplete),
     };
   }
 
@@ -399,7 +399,6 @@ export class KYCService {
     });
 
     const missingDocuments: string[] = [];
-    const _incompleteDocuments: string[] = [];
 
     for (const req of requirements) {
       if (!req.isRequired || req.isConditional) continue; // Skip conditionals for now

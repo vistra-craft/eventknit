@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { PrismaClient, UserRole, UserStatus, EventStatus, EventType } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, EventStatus, EventType, SubscriptionTier } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { Decimal } from '@prisma/client/runtime/library';
 import { logger } from '../src/utils/logger';
@@ -811,6 +811,54 @@ const seedPlatformFeeSettings = async (userId: string): Promise<void> => {
 };
 
 /**
+ * Seed subscription plans for BASIC, STANDARD, PREMIUM tiers
+ */
+const seedSubscriptionPlans = async (): Promise<void> => {
+  const plans = [
+    {
+      tier: SubscriptionTier.BASIC,
+      name: 'Basic',
+      description: 'Free tier with aggregated data only. Perfect for getting started.',
+      price: new Decimal(0),
+      currency: 'USD',
+      features: [] as string[],
+    },
+    {
+      tier: SubscriptionTier.STANDARD,
+      name: 'Standard',
+      description: 'Free tier with basic attendee data and consent-based access.',
+      price: new Decimal(0),
+      currency: 'USD',
+      features: ['attendee_list', 'export'],
+    },
+    {
+      tier: SubscriptionTier.PREMIUM,
+      name: 'Premium',
+      description: 'Full access to advanced analytics, demographics, and data export.',
+      price: new Decimal(10),
+      currency: 'USD',
+      features: ['attendee_list', 'export', 'demographics', 'analytics', 'advanced_export'],
+    },
+  ];
+
+  for (const plan of plans) {
+    await prisma.subscriptionPlan.upsert({
+      where: { tier: plan.tier },
+      create: plan,
+      update: {
+        name: plan.name,
+        description: plan.description,
+        price: plan.price,
+        currency: plan.currency,
+        features: plan.features,
+      },
+    });
+  }
+
+  logger.info('Subscription plans seeded (BASIC, STANDARD, PREMIUM)');
+};
+
+/**
  * Main function
  */
 async function main(): Promise<void> {
@@ -857,6 +905,9 @@ async function main(): Promise<void> {
 
     // Seed default platform fee settings
     await seedPlatformFeeSettings(superuser.id);
+
+    // Seed subscription plans
+    await seedSubscriptionPlans();
 
     logger.info('✅ Script completed successfully');
     logger.info('📊 Summary:');

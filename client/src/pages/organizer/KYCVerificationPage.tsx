@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 
 import { EntityTypeSelector } from '@/components/kyc/EntityTypeSelector';
@@ -53,6 +53,7 @@ const KYCVerificationPage = () => {
   const [directors, setDirectors] = useState<OrganizerDirector[]>([]);
   const [requiresDirectors, setRequiresDirectors] = useState(false);
   const [minDirectors, setMinDirectors] = useState<number>();
+  const [maxDirectorsToCollect, setMaxDirectorsToCollect] = useState<number>();
 
   // Get the redirect path from location state
   const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification || "/organizer/dashboard";
@@ -84,6 +85,7 @@ const KYCVerificationPage = () => {
         setRequirements(data.documents);
         setRequiresDirectors(data.requiresDirectors);
         setMinDirectors(data.minDirectors);
+        setMaxDirectorsToCollect(data.maxDirectorsToCollect);
 
         if (data.requiresDirectors && directorsRes.data.directors.length === 0) {
           setCurrentStep('directors');
@@ -122,6 +124,7 @@ const KYCVerificationPage = () => {
         setRequirements(res.data.documents);
         setRequiresDirectors(res.data.requiresDirectors);
         setMinDirectors(res.data.minDirectors);
+        setMaxDirectorsToCollect(res.data.maxDirectorsToCollect);
         setCurrentStep(res.data.requiresDirectors ? 'directors' : 'documents');
       }
     } catch (error: unknown) {
@@ -198,6 +201,64 @@ const KYCVerificationPage = () => {
     }
   };
 
+  /* ---------------------- Step Navigation ---------------------- */
+
+  const canAdvanceFromDirectors = (): boolean => {
+    const min = minDirectors ?? 1;
+    return directors.length >= min;
+  };
+
+  const canAdvanceFromDocuments = (): boolean => {
+    const requiredDocs = requirements.filter(r => r.isRequired && !r.isConditional);
+    return requiredDocs.every(req => {
+      const uploaded = documents.filter(
+        doc => doc.documentType === req.documentType &&
+               (doc.status === 'PENDING' || doc.status === 'APPROVED')
+      );
+      return uploaded.length >= req.minQuantity;
+    });
+  };
+
+  const handleStepBack = () => {
+    const currentIndex = STEPS.indexOf(currentStep);
+    if (currentIndex <= 0) return;
+
+    let prevStep = STEPS[currentIndex - 1];
+    if (prevStep === 'directors' && !requiresDirectors) {
+      prevStep = 'entity-type';
+    }
+    setCurrentStep(prevStep);
+  };
+
+  const handleStepNext = () => {
+    const currentIndex = STEPS.indexOf(currentStep);
+    if (currentIndex >= STEPS.length - 1) return;
+
+    if (currentStep === 'directors' && !canAdvanceFromDirectors()) {
+      toast({
+        title: 'More directors needed',
+        description: `Please add at least ${minDirectors ?? 1} director(s) before continuing.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (currentStep === 'documents' && !canAdvanceFromDocuments()) {
+      toast({
+        title: 'Documents required',
+        description: 'Please upload all required documents before continuing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let nextStep = STEPS[currentIndex + 1];
+    if (nextStep === 'directors' && !requiresDirectors) {
+      nextStep = 'documents';
+    }
+    setCurrentStep(nextStep);
+  };
+
   if (loading) {
     return (
         <div className="flex justify-center min-h-[400px] items-center">
@@ -271,6 +332,7 @@ const KYCVerificationPage = () => {
               <DirectorsForm
                 directors={directors}
                 minDirectors={minDirectors}
+                maxDirectorsToCollect={maxDirectorsToCollect}
                 onAdd={handleDirectorAdd}
                 onDelete={handleDirectorDelete}
               />
@@ -300,6 +362,36 @@ const KYCVerificationPage = () => {
                   </Button>
                 </div>
               </>
+            )}
+
+            {/* Step Navigation */}
+            {currentStep !== 'entity-type' && (
+              <div className="flex items-center justify-between gap-3 mt-8 pt-6 border-t border-border">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleStepBack}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+
+                {currentStep !== 'review' && (
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="lg"
+                    onClick={handleStepNext}
+                    disabled={
+                      (currentStep === 'directors' && !canAdvanceFromDirectors()) ||
+                      (currentStep === 'documents' && !canAdvanceFromDocuments())
+                    }
+                  >
+                    Next
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>

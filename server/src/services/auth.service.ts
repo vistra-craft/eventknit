@@ -203,11 +203,11 @@ export class AuthService {
     });
 
     if (!verification) {
-      throw new ValidationError('Invalid verification code');
+      throw new ValidationError('The verification code you entered is incorrect. Please check and try again.');
     }
 
     if (verification.expiresAt < new Date()) {
-      throw new ValidationError('Verification code has expired');
+      throw new ValidationError('This verification code has expired. Please request a new one.');
     }
 
     // Check if user already exists (race condition check)
@@ -236,7 +236,7 @@ export class AuthService {
     const breachCount = await checkPasswordBreach(password);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -495,11 +495,11 @@ export class AuthService {
     });
 
     if (!verification) {
-      throw new ValidationError('Invalid verification code');
+      throw new ValidationError('The verification code you entered is incorrect. Please check and try again.');
     }
 
     if (verification.expiresAt < new Date()) {
-      throw new ValidationError('Verification code has expired');
+      throw new ValidationError('This verification code has expired. Please request a new one.');
     }
 
     // Check if user exists
@@ -620,7 +620,7 @@ export class AuthService {
         userAgent,
       });
 
-      throw new AuthenticationError('Invalid email or password');
+      throw new AuthenticationError('Incorrect email or password. Please try again.');
     }
 
     // Check if account is locked
@@ -668,7 +668,7 @@ export class AuthService {
 
     // Verify password - password is now required
     if (!user.password) {
-      throw new AuthenticationError('Invalid email or password');
+      throw new AuthenticationError('Incorrect email or password. Please try again.');
     }
 
     const isPasswordValid = await comparePassword(data.password, user.password);
@@ -702,7 +702,7 @@ export class AuthService {
         userAgent,
       });
 
-      throw new AuthenticationError('Invalid email or password');
+      throw new AuthenticationError('Incorrect email or password. Please try again.');
     }
 
     // Reset failed login attempts on successful login
@@ -860,7 +860,7 @@ export class AuthService {
     }
 
     if (verification.expiresAt < new Date()) {
-      throw new ValidationError('Verification token has expired');
+      throw new ValidationError('This verification link has expired. Please request a new one.');
     }
 
     // Verify email
@@ -939,11 +939,11 @@ export class AuthService {
     }
 
     if (reset.used) {
-      throw new ValidationError('Reset token has already been used');
+      throw new ValidationError('This password reset link has already been used. Please request a new one if needed.');
     }
 
     if (reset.expiresAt < new Date()) {
-      throw new ValidationError('Reset token has expired');
+      throw new ValidationError('This password reset link has expired. Please request a new one.');
     }
 
     // Log if reset is being used from a different IP than the one that requested it
@@ -967,7 +967,7 @@ export class AuthService {
     const breachCount = await checkPasswordBreach(newPassword);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -1129,7 +1129,7 @@ export class AuthService {
     const breachCount = await checkPasswordBreach(newPassword);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -1154,7 +1154,7 @@ export class AuthService {
     // User has existing password - verify current password
     const isCurrentPasswordValid = await comparePassword(currentPassword, user.password);
     if (!isCurrentPasswordValid) {
-      throw new ValidationError('Current password is incorrect');
+      throw new ValidationError('The current password you entered is incorrect. Please try again.');
     }
 
     // Hash new password
@@ -1188,14 +1188,14 @@ export class AuthService {
 
     // Check if password already exists
     if (user.password) {
-      throw new ValidationError('Password already set. Use change password to update it.');
+      throw new ValidationError('You already have a password. To update it, use the "Change Password" option in your settings.');
     }
 
     // Check password against known breaches
     const breachCount = await checkPasswordBreach(newPassword);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -1263,7 +1263,7 @@ export class AuthService {
 
     // Check if password already exists
     if (user.password) {
-      throw new ValidationError('Account already has a password. Use login or password reset instead.');
+      throw new ValidationError('This account already has a password. Please sign in or use "Forgot Password" to reset it.');
     }
 
     // Validate password
@@ -1275,7 +1275,7 @@ export class AuthService {
     const breachCount = await checkPasswordBreach(password);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -1342,7 +1342,7 @@ export class AuthService {
 
     // Check if user already has a password
     if (user.password) {
-      throw new ValidationError('Account already has a password. Use login or password reset instead.');
+      throw new ValidationError('This account already has a password. Please sign in or use "Forgot Password" to reset it.');
     }
 
     // Check user status
@@ -1531,11 +1531,11 @@ export class AuthService {
     });
 
     if (!verification) {
-      throw new ValidationError('Invalid verification code');
+      throw new ValidationError('The verification code you entered is incorrect. Please check and try again.');
     }
 
     if (verification.expiresAt < new Date()) {
-      throw new ValidationError('Verification code has expired');
+      throw new ValidationError('This verification code has expired. Please request a new one.');
     }
 
     // Mark verification as complete and update user
@@ -1617,17 +1617,17 @@ export class AuthService {
     });
 
     if (!magicLink) {
-      throw new AuthenticationError('Invalid magic link');
+      throw new AuthenticationError('This sign-in link is invalid. Please request a new one.');
     }
 
     // Check if already used
     if (magicLink.used) {
-      throw new AuthenticationError('This magic link has already been used');
+      throw new AuthenticationError('This sign-in link has already been used. Please request a new one.');
     }
 
     // Check if expired
     if (magicLink.expiresAt < new Date()) {
-      throw new AuthenticationError('Magic link has expired. Please request a new one.');
+      throw new AuthenticationError('This sign-in link has expired. Please request a new one.');
     }
 
     const user = magicLink.user;
@@ -1712,7 +1712,7 @@ export class AuthService {
     }
     const isPasswordValid = await comparePassword(currentPassword, user.password);
     if (!isPasswordValid) {
-      throw new ValidationError('Current password is incorrect');
+      throw new ValidationError('The current password you entered is incorrect. Please try again.');
     }
 
     // Check if new email is already taken
@@ -1785,7 +1785,7 @@ export class AuthService {
     });
 
     if (!pending) {
-      throw new ValidationError('Invalid verification code');
+      throw new ValidationError('The verification code you entered is incorrect. Please check and try again.');
     }
 
     if (pending.expiresAt < new Date()) {

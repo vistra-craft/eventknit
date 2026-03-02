@@ -119,7 +119,7 @@ const EventRegistration = () => {
       }
     } catch {
       setAppliedDiscount(null);
-      setPromoError('Failed to validate promo code');
+      setPromoError('Unable to validate promo code. Please check your connection and try again.');
     } finally {
       setApplyingCode(false);
     }
@@ -439,7 +439,7 @@ const EventRegistration = () => {
             });
           }
         } else {
-          throw new Error(response.message || 'Failed to register for event');
+          throw new Error(response.message || 'Registration failed. Please try again.');
         }
       } else {
         // Authenticated user - use regular registration
@@ -517,13 +517,13 @@ const EventRegistration = () => {
           });
         }
       } else {
-        throw new Error(response.message || 'Failed to register for event');
+        throw new Error(response.message || 'Registration failed. Please try again.');
         }
       }
     } catch (err: unknown) {
       const errorMessage = err && typeof err === 'object' && 'message' in err
         ? (err.message as string)
-        : 'Failed to register for event. Please try again.';
+        : 'Something went wrong with your registration. Please try again.';
       setSubmitError(errorMessage);
     } finally {
       setSubmitting(false);
@@ -940,12 +940,12 @@ const EventRegistration = () => {
                                       {currency} {ticket.originalPrice}
                                     </span>
                                     <span className="font-bold text-lg text-primary">
-                                      {currency} {ticket.price}
+                                      {ticket.price === 0 ? 'Free' : `${currency} ${ticket.price}`}
                                     </span>
                                   </div>
                                 ) : (
                                   <p className="font-bold text-lg text-primary">
-                                    {currency} {ticket.price}
+                                    {ticket.price === 0 ? 'Free' : `${currency} ${ticket.price}`}
                                   </p>
                                 )}
                               </div>
@@ -1027,11 +1027,13 @@ const EventRegistration = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-base font-semibold">Total Price</span>
                           <span className="text-xl font-bold text-primary">
-                            {event.currency || '$'}{' '}
-                            {event.ticketTypes?.reduce((sum, ticket) => {
-                              const qty = selectedTickets[ticket.name] || 0;
-                              return sum + (ticket.price * qty);
-                            }, 0).toFixed(2)}
+                            {(() => {
+                              const total = event.ticketTypes?.reduce((sum, ticket) => {
+                                const qty = selectedTickets[ticket.name] || 0;
+                                return sum + (ticket.price * qty);
+                              }, 0) || 0;
+                              return total === 0 ? 'Free' : `${event.currency || '$'} ${total.toFixed(2)}`;
+                            })()}
                           </span>
                         </div>
                       </div>
@@ -1138,7 +1140,7 @@ const EventRegistration = () => {
                           return (
                             <div key={name} className="flex justify-between text-sm">
                               <span className="text-foreground">{qty}× {name}</span>
-                              {ticket && <span className="font-medium">{event.currency || '$'} {(ticket.price * qty).toFixed(2)}</span>}
+                              {ticket && <span className="font-medium">{ticket.price === 0 ? 'Free' : `${event.currency || '$'} ${(ticket.price * qty).toFixed(2)}`}</span>}
                             </div>
                           );
                         })}
@@ -1147,9 +1149,10 @@ const EventRegistration = () => {
                       <div className="flex justify-between text-sm pt-2 border-t font-semibold">
                         <span>Total</span>
                         <span className="text-primary">
-                          {event.currency || '$'} {
-                            event.ticketTypes?.reduce((sum, t) => sum + (t.price * (selectedTickets[t.name] || 0)), 0).toFixed(2)
-                          }
+                          {(() => {
+                            const total = event.ticketTypes?.reduce((sum, t) => sum + (t.price * (selectedTickets[t.name] || 0)), 0) || 0;
+                            return total === 0 ? 'Free' : `${event.currency || '$'} ${total.toFixed(2)}`;
+                          })()}
                           {appliedDiscount && (
                             <span className="ml-2 text-success font-normal text-xs">(-{event.currency || '$'}{appliedDiscount.amount.toFixed(2)} promo)</span>
                           )}

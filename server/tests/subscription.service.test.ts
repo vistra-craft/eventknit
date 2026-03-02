@@ -1,6 +1,7 @@
 import { prisma } from '../src/config/database.js';
 import { SubscriptionService } from '../src/services/subscription.service.js';
 import { UserRole, UserStatus, SubscriptionTier } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import bcrypt from 'bcrypt';
 import { cleanupTestData } from './test-helpers.js';
 
@@ -11,6 +12,7 @@ const hashPassword = async (password: string): Promise<string> => {
 describe('SubscriptionService', () => {
   let dbConnected = false;
   let organizerId: string;
+  let adminId: string;
 
   beforeAll(async () => {
     try {
@@ -36,12 +38,13 @@ describe('SubscriptionService', () => {
       await cleanupTestData(tx);
     });
 
+    const password = await hashPassword('Organizer123!@$');
+
     // Create organizer
-    const organizerPassword = await hashPassword('Organizer123!@$');
     const organizer = await prisma.user.create({
       data: {
         email: 'organizer@subscription.test',
-        password: organizerPassword,
+        password,
         firstName: 'Event',
         lastName: 'Organizer',
         role: UserRole.ORGANIZER,
@@ -51,6 +54,37 @@ describe('SubscriptionService', () => {
       },
     });
     organizerId = organizer.id;
+
+    // Create admin (for override grantedBy)
+    const admin = await prisma.user.create({
+      data: {
+        email: 'admin@subscription.test',
+        password,
+        firstName: 'Admin',
+        lastName: 'User',
+        role: UserRole.ADMIN,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+    });
+    adminId = admin.id;
+
+    // Seed subscription plans
+    await prisma.subscriptionPlan.upsert({
+      where: { tier: SubscriptionTier.BASIC },
+      create: { tier: SubscriptionTier.BASIC, name: 'Basic', price: new Decimal(0), features: [] },
+      update: {},
+    });
+    await prisma.subscriptionPlan.upsert({
+      where: { tier: SubscriptionTier.STANDARD },
+      create: { tier: SubscriptionTier.STANDARD, name: 'Standard', price: new Decimal(0), features: ['attendee_list', 'export'] },
+      update: {},
+    });
+    await prisma.subscriptionPlan.upsert({
+      where: { tier: SubscriptionTier.PREMIUM },
+      create: { tier: SubscriptionTier.PREMIUM, name: 'Premium', price: new Decimal(10), features: ['attendee_list', 'export', 'demographics', 'analytics', 'advanced_export'] },
+      update: {},
+    });
   });
 
   describe('getSubscription', () => {
@@ -229,7 +263,7 @@ describe('SubscriptionService', () => {
     });
   });
 
-  describe('hasFeatureAccess', () => {
+  describe('hasFeatureAccess (DB-backed)', () => {
     it('should return false for attendee_list on BASIC tier', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
@@ -283,6 +317,27 @@ describe('SubscriptionService', () => {
       const hasAccess = await SubscriptionService.hasFeatureAccess(organizerId, 'demographics');
       expect(hasAccess).toBe(true);
     });
+
+    it('should read features from SubscriptionPlan table', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Add a custom feature to STANDARD plan
+      await prisma.subscriptionPlan.update({
+        where: { tier: SubscriptionTier.STANDARD },
+        data: { features: ['attendee_list', 'export', 'custom_feature'] },
+      });
+
+      await SubscriptionService.upgradeSubscription(organizerId, SubscriptionTier.STANDARD);
+
+      const hasCustom = await SubscriptionService.hasFeatureAccess(organizerId, 'custom_feature');
+      expect(hasCustom).toBe(true);
+
+      const hasDemographics = await SubscriptionService.hasFeatureAccess(organizerId, 'demographics');
+      expect(hasDemographics).toBe(false);
+    });
   });
 
   describe('getTier', () => {
@@ -308,5 +363,381 @@ describe('SubscriptionService', () => {
       expect(tier).toBe(SubscriptionTier.STANDARD);
     });
   });
-});
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // New tests for DB-backed plan management and overrides
+  // ═══════════════════════════════════════════════════════════════════════
+
+  describe('getPlans', () => {
+    it('should return all seeded plans', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const plans = await SubscriptionService.getPlans();
+
+      expect(plans).toHaveLength(3);
+      const tiers = plans.map(p => p.tier);
+      expect(tiers).toContain(SubscriptionTier.BASIC);
+      expect(tiers).toContain(SubscriptionTier.STANDARD);
+      expect(tiers).toContain(SubscriptionTier.PREMIUM);
+    });
+
+    it('should return correct features for each plan', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const plans = await SubscriptionService.getPlans();
+
+      const basic = plans.find(p => p.tier === SubscriptionTier.BASIC);
+      const standard = plans.find(p => p.tier === SubscriptionTier.STANDARD);
+      const premium = plans.find(p => p.tier === SubscriptionTier.PREMIUM);
+
+      expect(basic?.features).toEqual([]);
+      expect(standard?.features).toContain('attendee_list');
+      expect(standard?.features).toContain('export');
+      expect(premium?.features).toContain('demographics');
+      expect(premium?.features).toContain('analytics');
+      expect(premium?.features).toContain('advanced_export');
+    });
+  });
+
+  describe('updatePlan', () => {
+    it('should update plan pricing', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const updated = await SubscriptionService.updatePlan(SubscriptionTier.PREMIUM, {
+        price: 20,
+      });
+
+      expect(Number(updated.price)).toBe(20);
+    });
+
+    it('should update plan features', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const updated = await SubscriptionService.updatePlan(SubscriptionTier.STANDARD, {
+        features: ['attendee_list', 'export', 'new_feature'],
+      });
+
+      expect(updated.features).toContain('new_feature');
+      expect(updated.features).toHaveLength(3);
+    });
+
+    it('should update plan description', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const updated = await SubscriptionService.updatePlan(SubscriptionTier.BASIC, {
+        description: 'Updated description',
+      });
+
+      expect(updated.description).toBe('Updated description');
+    });
+
+    it('should throw NotFoundError for non-existent tier', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Delete a plan then try to update it
+      await prisma.subscriptionPlan.delete({ where: { tier: SubscriptionTier.BASIC } });
+
+      await expect(
+        SubscriptionService.updatePlan(SubscriptionTier.BASIC, { price: 5 }),
+      ).rejects.toThrow('not found');
+    });
+  });
+
+  describe('getEffectiveTier', () => {
+    it('should return base tier when no override exists', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const tier = await SubscriptionService.getEffectiveTier(organizerId);
+      expect(tier).toBe(SubscriptionTier.BASIC);
+    });
+
+    it('should return override tier when higher than base', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Base tier is BASIC, override to PREMIUM
+      await SubscriptionService.createOverride(organizerId, SubscriptionTier.PREMIUM, adminId, 'Test');
+
+      const tier = await SubscriptionService.getEffectiveTier(organizerId);
+      expect(tier).toBe(SubscriptionTier.PREMIUM);
+    });
+
+    it('should return base tier when override is lower', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Upgrade to PREMIUM first
+      await prisma.organizerSubscription.create({
+        data: {
+          organizerId,
+          tier: SubscriptionTier.PREMIUM,
+          isActive: true,
+          billingEmail: 'billing@test.com',
+        },
+      });
+
+      // Override to STANDARD (lower than PREMIUM)
+      await SubscriptionService.createOverride(organizerId, SubscriptionTier.STANDARD, adminId, 'Test');
+
+      const tier = await SubscriptionService.getEffectiveTier(organizerId);
+      expect(tier).toBe(SubscriptionTier.PREMIUM); // Should keep the higher base tier
+    });
+
+    it('should ignore expired overrides', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create an expired override
+      await prisma.subscriptionOverride.create({
+        data: {
+          organizerId,
+          tier: SubscriptionTier.PREMIUM,
+          grantedBy: adminId,
+          expiresAt: new Date(Date.now() - 1000), // Already expired
+          isActive: true,
+        },
+      });
+
+      const tier = await SubscriptionService.getEffectiveTier(organizerId);
+      expect(tier).toBe(SubscriptionTier.BASIC); // Should not use expired override
+    });
+
+    it('should ignore deactivated overrides', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await prisma.subscriptionOverride.create({
+        data: {
+          organizerId,
+          tier: SubscriptionTier.PREMIUM,
+          grantedBy: adminId,
+          isActive: false,
+        },
+      });
+
+      const tier = await SubscriptionService.getEffectiveTier(organizerId);
+      expect(tier).toBe(SubscriptionTier.BASIC);
+    });
+  });
+
+  describe('hasFeatureAccess with overrides', () => {
+    it('should grant PREMIUM features when override elevates from BASIC', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Base tier is BASIC (no features)
+      const beforeAccess = await SubscriptionService.hasFeatureAccess(organizerId, 'demographics');
+      expect(beforeAccess).toBe(false);
+
+      // Grant PREMIUM override
+      await SubscriptionService.createOverride(organizerId, SubscriptionTier.PREMIUM, adminId, 'Partnership');
+
+      const afterAccess = await SubscriptionService.hasFeatureAccess(organizerId, 'demographics');
+      expect(afterAccess).toBe(true);
+    });
+  });
+
+  describe('createOverride', () => {
+    it('should create an override', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const override = await SubscriptionService.createOverride(
+        organizerId, SubscriptionTier.PREMIUM, adminId, 'Trial period',
+      );
+
+      expect(override.organizerId).toBe(organizerId);
+      expect(override.tier).toBe(SubscriptionTier.PREMIUM);
+      expect(override.grantedBy).toBe(adminId);
+      expect(override.reason).toBe('Trial period');
+      expect(override.isActive).toBe(true);
+      expect(override.expiresAt).toBeNull();
+    });
+
+    it('should create an override with expiry', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const override = await SubscriptionService.createOverride(
+        organizerId, SubscriptionTier.PREMIUM, adminId, 'Week trial', expiresAt,
+      );
+
+      expect(override.expiresAt).toEqual(expiresAt);
+    });
+
+    it('should deactivate existing overrides when creating a new one', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const first = await SubscriptionService.createOverride(
+        organizerId, SubscriptionTier.STANDARD, adminId, 'First',
+      );
+
+      const second = await SubscriptionService.createOverride(
+        organizerId, SubscriptionTier.PREMIUM, adminId, 'Second',
+      );
+
+      // First should be deactivated
+      const firstRefreshed = await prisma.subscriptionOverride.findUnique({
+        where: { id: first.id },
+      });
+      expect(firstRefreshed?.isActive).toBe(false);
+
+      // Second should be active
+      expect(second.isActive).toBe(true);
+    });
+
+    it('should throw NotFoundError for non-existent organizer', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await expect(
+        SubscriptionService.createOverride(
+          '00000000-0000-0000-0000-000000000000', SubscriptionTier.PREMIUM, adminId,
+        ),
+      ).rejects.toThrow('not found');
+    });
+  });
+
+  describe('removeOverride', () => {
+    it('should deactivate an override', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const override = await SubscriptionService.createOverride(
+        organizerId, SubscriptionTier.PREMIUM, adminId, 'To remove',
+      );
+
+      const removed = await SubscriptionService.removeOverride(override.id);
+      expect(removed.isActive).toBe(false);
+    });
+
+    it('should throw NotFoundError for non-existent override', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await expect(
+        SubscriptionService.removeOverride('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toThrow('not found');
+    });
+  });
+
+  describe('getOverridesForOrganizer', () => {
+    it('should return active overrides', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await SubscriptionService.createOverride(
+        organizerId, SubscriptionTier.PREMIUM, adminId, 'Active override',
+      );
+
+      const overrides = await SubscriptionService.getOverridesForOrganizer(organizerId);
+
+      expect(overrides).toHaveLength(1);
+      expect(overrides[0].tier).toBe(SubscriptionTier.PREMIUM);
+      expect(overrides[0].grantedByUser).toBeDefined();
+      expect(overrides[0].grantedByUser.email).toBe('admin@subscription.test');
+    });
+
+    it('should not return deactivated overrides', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const override = await SubscriptionService.createOverride(
+        organizerId, SubscriptionTier.PREMIUM, adminId,
+      );
+      await SubscriptionService.removeOverride(override.id);
+
+      const overrides = await SubscriptionService.getOverridesForOrganizer(organizerId);
+      expect(overrides).toHaveLength(0);
+    });
+
+    it('should not return expired overrides', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await prisma.subscriptionOverride.create({
+        data: {
+          organizerId,
+          tier: SubscriptionTier.PREMIUM,
+          grantedBy: adminId,
+          expiresAt: new Date(Date.now() - 1000),
+          isActive: true,
+        },
+      });
+
+      const overrides = await SubscriptionService.getOverridesForOrganizer(organizerId);
+      expect(overrides).toHaveLength(0);
+    });
+  });
+
+  describe('getOrganizerSubscriptionSummary', () => {
+    it('should return full subscription summary', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await SubscriptionService.createOverride(
+        organizerId, SubscriptionTier.PREMIUM, adminId, 'Summary test',
+      );
+
+      const summary = await SubscriptionService.getOrganizerSubscriptionSummary(organizerId);
+
+      expect(summary.subscription).toBeDefined();
+      expect(summary.subscription.tier).toBe(SubscriptionTier.BASIC);
+      expect(summary.overrides).toHaveLength(1);
+      expect(summary.effectiveTier).toBe(SubscriptionTier.PREMIUM);
+    });
+  });
+});

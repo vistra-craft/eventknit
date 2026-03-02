@@ -22,6 +22,8 @@ import CheckoutHeader from "@/components/CheckoutHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { getEventById } from "@/lib/event-api";
 import { setupPassword } from "@/lib/auth-api";
+import { extractErrorMessage } from "@/lib/utils/error";
+import type { EventData } from "@/types/event";
 import { shareEvent } from "@/lib/utils/share";
 import { useToast } from "@/hooks/useToast";
 import { downloadTicketPDF, resendTicketEmail } from "@/lib/ticket-api";
@@ -54,22 +56,7 @@ interface ConfirmationData {
   promoCode?: string;
 }
 
-type EventApiData = {
-  startDate?: string | null;
-  endDate?: string | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  location?: string | null;
-  eventLocation?: string | null;
-  title?: string | null;
-  eventTitle?: string | null;
-  description?: string | null;
-  image?: string | null;
-  venue?: string | null;
-  currency?: string | null;
-  isFree?: boolean | null;
-  eventId?: string | null;
-} & Record<string, unknown>;
+type EventApiData = EventData;
 
 type LocationState = {
   accessToken?: string;
@@ -110,7 +97,7 @@ const RegistrationConfirmation: React.FC = () => {
         setLoading(true);
         const response = await getEventById(eventId);
         if (response.success && response.data?.event) {
-          setEventData(response.data.event as unknown as EventApiData);
+          setEventData(response.data.event);
         }
       } catch (error) {
         console.error("Error fetching event:", error);
@@ -223,7 +210,7 @@ const RegistrationConfirmation: React.FC = () => {
         throw new Error(response.message || "Failed to set password");
       }
     } catch (err: unknown) {
-      setPasswordError(err instanceof Error ? err.message : "Failed to set password");
+      setPasswordError(extractErrorMessage(err, "Failed to set password. Please try again."));
     } finally {
       setSettingPassword(false);
     }
@@ -236,7 +223,7 @@ const RegistrationConfirmation: React.FC = () => {
       await downloadTicketPDF(confirmationData.registrationId);
       toast({ title: "Downloaded!", description: "Your ticket has been downloaded." });
     } catch {
-      toast({ title: "Error", description: "Failed to download. Check your email for the ticket.", variant: "destructive" });
+      toast({ title: "Download failed", description: "We couldn't download your ticket. Please try again or check your email for a copy.", variant: "destructive" });
     } finally {
       setIsDownloading(false);
     }
@@ -249,7 +236,7 @@ const RegistrationConfirmation: React.FC = () => {
       await resendTicketEmail(confirmationData.registrationId);
       toast({ title: "Email sent!", description: "Your ticket email has been resent." });
     } catch {
-      toast({ title: "Error", description: "Failed to resend email.", variant: "destructive" });
+      toast({ title: "Couldn't resend email", description: "Please try again in a moment. Your ticket is still valid.", variant: "destructive" });
     } finally {
       setIsResending(false);
     }

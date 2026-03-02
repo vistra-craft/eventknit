@@ -57,6 +57,29 @@ export const cancelSubscription = async (): Promise<{ success: boolean; message:
   return apiPost('/organizer-dashboard/subscription/cancel', {});
 };
 
+// ========== Subscription Plans (public) ==========
+
+/**
+ * Subscription plan configuration from admin
+ */
+export interface SubscriptionPlanConfig {
+  id: string;
+  tier: SubscriptionTier;
+  name: string;
+  description: string | null;
+  price: string; // Decimal as string
+  currency: string;
+  features: string[];
+  isActive: boolean;
+}
+
+/**
+ * Get subscription plans (public endpoint for displaying pricing)
+ */
+export const getSubscriptionPlans = async (): Promise<{ success: boolean; data: { plans: SubscriptionPlanConfig[] } }> => {
+  return apiGet('/admin/subscription-plans');
+};
+
 // ========== Consent Management ==========
 
 /**

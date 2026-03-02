@@ -594,7 +594,7 @@ export class OrganizerDashboardController {
       }
 
       const eventId = (req.params.eventId as string) as string;
-      const result = await AttendeeCommunicationService.sendToEventRegistrations(req.user.id, eventId, req.body);
+      const result = await AttendeeCommunicationService.sendToEventRegistrations(req.user.id, eventId, req.body, req.user.role);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -616,7 +616,7 @@ export class OrganizerDashboardController {
         tagId: req.query.tagId as string | undefined,
       };
 
-      const result = await AttendeeCommunicationService.getCommunicationHistory(req.user.id, filters);
+      const result = await AttendeeCommunicationService.getCommunicationHistory(req.user.id, filters, req.user.role);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -1871,6 +1871,25 @@ export class OrganizerDashboardController {
 
       const subscription = await SubscriptionService.cancelSubscription(req.user.id);
       res.status(200).json({ success: true, message: 'Subscription canceled successfully', data: { subscription } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ========== My Permissions ==========
+
+  /**
+   * Get the current user's effective permissions
+   */
+  static async getMyPermissions(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const permissions = await PermissionService.getUserEffectivePermissions(req.user.id);
+      res.status(200).json({ success: true, data: { permissions } });
     } catch (error) {
       next(error);
     }
