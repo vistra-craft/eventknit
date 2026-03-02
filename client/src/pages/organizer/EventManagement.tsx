@@ -55,6 +55,9 @@ import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTi
 import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
 import BackButton from "@/components/BackButton";
 import { EventSeatMapManager } from "@/components/organizer/EventSeatMapManager";
+import { SeatManagementDashboard } from "@/components/organizer/SeatManagementDashboard";
+import { SeatAllocationOverviewCard } from "@/components/organizer/SeatAllocationOverviewCard";
+import { SeatAllocationByTypeCard } from "@/components/organizer/SeatAllocationByTypeCard";
 import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
 import { exportAttendees, quickRegisterAttendee } from "../../lib/attendee-import-api";
@@ -1647,6 +1650,14 @@ const EventManagement = () => {
               </Alert>
             )}
 
+            {/* Seat Allocation Cards - Show if event has seating */}
+            {eventData.hasSeatingMap && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SeatAllocationOverviewCard eventId={eventId!} />
+                <SeatAllocationByTypeCard eventId={eventId!} />
+              </div>
+            )}
+
             {/* Secondary Stats */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Card>
@@ -1903,7 +1914,19 @@ const EventManagement = () => {
 
       case "seating":
         return (
-          <EventSeatMapManager eventId={eventId!} />
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Seating Management</h2>
+              <p className="text-muted-foreground mt-1">
+                Manage and monitor seat allocations for this event
+              </p>
+            </div>
+            <SeatManagementDashboard eventId={eventId!} />
+            <div className="mt-6 pt-6 border-t">
+              <h3 className="text-lg font-semibold mb-4">Seat Map</h3>
+              <EventSeatMapManager eventId={eventId!} />
+            </div>
+          </div>
         );
     }
   };

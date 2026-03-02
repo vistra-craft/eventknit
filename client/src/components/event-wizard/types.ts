@@ -175,6 +175,10 @@ export interface EventFormData {
   refundPolicy?: 'no_refunds' | 'full_refund' | 'partial_refund' | 'custom';
   refundDeadlineDays?: number; // Days before event for refund eligibility
   refundPolicyText?: string; // Custom refund policy text
+  // Seating configuration
+  hasSeatingMap?: boolean;
+  seatingType?: 'CUSTOMER_SELECTS' | 'ORGANIZER_ASSIGNS' | 'HYBRID' | '';
+  seatMapRequired?: boolean;
 }
 
 /** Common props shared by all step components */

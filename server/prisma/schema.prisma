@@ -867,6 +867,11 @@ model Event {
   // Approval Messages
   approvalMessages       EventApprovalMessage[]    @relation("EventApprovalMessages")
 
+  // Seating configuration
+  hasSeatingMap  Boolean      @default(false) // Whether this event uses a seat map
+  seatingType    SeatingType? // Seating model for this event
+  seatMapRequired Boolean     @default(false) // Whether attendees must select seats
+
   // Resale settings
   allowResale            Boolean                   @default(true)
 
@@ -899,6 +904,7 @@ model EventRegistration {
 
   // Registration form data
   registrationData Json? // Custom form data submitted by attendee
+  additionalData   Json? // Additional metadata (e.g., seat preferences)
   backupCode       String? // Backup ticket code for manual entry (if QR code fails)
 
   // QR Code (generated at registration time, like Eventbrite/vf-ticket)
@@ -4541,6 +4547,12 @@ enum SeatType {
   STANDING // Standing area
 }
 
+enum SeatingType {
+  CUSTOMER_SELECTS // Customer selects seat during purchase
+  ORGANIZER_ASSIGNS // Organizer assigns seat after purchase
+  HYBRID // Mixed model per ticket type
+}
+
 model Venue {
   id          String @id @default(uuid())
   organizerId String
@@ -4685,9 +4697,16 @@ model SeatReservation {
   // Status
   status String @default("reserved") // "reserved", "confirmed", "cancelled"
 
+  // Attendee assignment info (for ORGANIZER_ASSIGNS model)
+  attendeeName     String? // Name of assigned attendee
+  attendeeEmail    String? // Email of assigned attendee
+  attendeePhone    String? // Phone of assigned attendee
+  ticketLineItemId String? // Links to specific ticket line item
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([seatId, registrationId])
   @@index([seatId])
   @@index([registrationId])
   @@index([status])

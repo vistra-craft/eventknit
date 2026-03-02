@@ -185,6 +185,12 @@ const EventDetailsPage = () => {
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
+  const ticketTypeCount = eventData?.ticketTypes?.length ?? 0;
+  const hasMultipleTicketTypes = ticketTypeCount > 1;
+  const hasComplementaryType = eventData?.ticketTypes?.some((ticket) => ticket.price === 0) ?? false;
+  const totalTicketCapacity = eventData?.ticketTypes?.reduce((sum, t) => sum + t.capacity, 0) ?? 0;
+  const totalTicketsSold = eventData?.ticketTypes?.reduce((sum, t) => sum + t.sold, 0) ?? 0;
+
   const { toast } = useToast();
 
   // Load scan config when scan-settings tab is active
@@ -1752,6 +1758,107 @@ const EventDetailsPage = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold">Ticket Types</h2>
             </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-primary" />
+                    Ticket Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Manage advanced ticket types, packages, reserved seating, and pricing rules.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => eventData?.id && navigate(`/admin/event/${eventData.id}/tickets/advanced`)}
+                    >
+                      Advanced Ticket Types
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => eventData?.id && navigate(`/admin/event/${eventData.id}/tickets/pricing`)}
+                    >
+                      Dynamic Pricing
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setActiveTab("invitations")}
+                    >
+                      Complimentary Tickets (Invitations)
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    Industry Standards Check
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Multiple ticket types</span>
+                    <Badge variant={hasMultipleTicketTypes ? "default" : "secondary"}>
+                      {hasMultipleTicketTypes ? "Configured" : "Not configured"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Complementary tickets</span>
+                    <Badge variant={hasComplementaryType ? "default" : "secondary"}>
+                      {hasComplementaryType ? "Configured" : "Available"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Dynamic pricing</span>
+                    <Badge variant="outline">Available</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Packages & bundles</span>
+                    <Badge variant="outline">Available</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Reserved seating</span>
+                    <Badge variant="outline">Available</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ticket className="h-4 w-4 text-primary" />
+                    Ticket Health
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total types</span>
+                    <span className="font-medium">{ticketTypeCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total capacity</span>
+                    <span className="font-medium">{totalTicketCapacity}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total sold</span>
+                    <span className="font-medium">{totalTicketsSold}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Availability</span>
+                    <Badge variant={totalTicketCapacity > totalTicketsSold ? "default" : "destructive"}>
+                      {totalTicketCapacity > totalTicketsSold ? "Open" : "Sold out"}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {eventData.ticketTypes && eventData.ticketTypes.length > 0 ? (
               <div className="space-y-4">
                 {eventData.ticketTypes.map((ticket) => {
@@ -1799,18 +1906,18 @@ const EventDetailsPage = () => {
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-sm text-muted-foreground">Total Types</p>
-                        <p className="text-xl font-bold">{eventData.ticketTypes.length}</p>
+                        <p className="text-xl font-bold">{ticketTypeCount}</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Total Sold</p>
                         <p className="text-xl font-bold">
-                          {eventData.ticketTypes.reduce((sum, t) => sum + t.sold, 0)}
+                          {totalTicketsSold}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Total Capacity</p>
                         <p className="text-xl font-bold">
-                          {eventData.ticketTypes.reduce((sum, t) => sum + t.capacity, 0)}
+                          {totalTicketCapacity}
                         </p>
                       </div>
                     </div>

@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import type { StepComponentProps, TicketType, CurrencyOption } from './types';
 import { CURRENCIES, DEFAULT_CURRENCY } from './types';
+import { SeatingConfigurationSection, type SeatingConfig } from '../organizer/SeatingConfigurationSection';
 
 const SEGMENT_COLORS = [
   'bg-primary',
@@ -743,6 +744,20 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
           Add ticket type
         </button>
       </div>
+
+      {/* ── Seating Configuration ── */}
+      <SeatingConfigurationSection
+        config={{
+          hasSeatingMap: eventData.hasSeatingMap || false,
+          seatingType: (eventData.seatingType || '') as SeatingConfig['seatingType'],
+          seatMapRequired: eventData.seatMapRequired || false,
+        }}
+        onConfigChange={(updates) => {
+          Object.entries(updates).forEach(([key, value]) => {
+            onInputChange(key, value);
+          });
+        }}
+      />
 
       {/* ── Refund Policy ── */}
       {hasPaidTickets && (

@@ -60,7 +60,10 @@ const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'
 const FinancialManagement = lazy(() => import('../pages/organizer/FinancialManagement'));
 const PayoutManagement = lazy(() => import('../pages/organizer/PayoutManagement'));
 
-// Advanced Tickets & Pricing
+// Tickets Management (consolidated hub)
+const TicketsManagementHub = lazy(() => import('../pages/organizer/TicketsManagementHub'));
+
+// Legacy Advanced Tickets & Pricing (kept for backward compatibility)
 const AdvancedTicketTypes = lazy(() => import('../pages/organizer/AdvancedTicketTypes'));
 const DynamicPricing = lazy(() => import('../pages/organizer/DynamicPricing'));
 
@@ -299,7 +302,7 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
   // Marketing
   {
     path: 'marketing/promo-codes',
-    element: createElement(OrganizerPromoCodeManager),
+    element: createElement(Navigate, { to: '/organizer/tickets', replace: true }),
     allowedRoles: NON_TELLER_ROLES,
   },
   {
@@ -320,15 +323,27 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     allowedRoles: ORGANIZER_ADMIN_ONLY,
   },
 
-  // Advanced Tickets & Pricing (event-scoped)
+  // Tickets Management (consolidated hub)
+  {
+    path: 'tickets',
+    element: createElement(TicketsManagementHub),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'tickets/:eventId',
+    element: createElement(TicketsManagementHub),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Legacy Advanced Tickets & Pricing (redirect to new hub)
   {
     path: 'event/:eventId/tickets/advanced',
-    element: createElement(AdvancedTicketTypes),
+    element: createElement(Navigate, { to: '/organizer/tickets/:eventId', replace: true }),
     allowedRoles: NON_TELLER_ROLES,
   },
   {
     path: 'event/:eventId/pricing',
-    element: createElement(DynamicPricing),
+    element: createElement(Navigate, { to: '/organizer/tickets/:eventId', replace: true }),
     allowedRoles: NON_TELLER_ROLES,
   },
 

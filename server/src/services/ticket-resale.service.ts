@@ -6,6 +6,7 @@ import { RegistrationStatus } from '@prisma/client';
 import { TicketService } from './ticket.service.js';
 import { emailService } from './email.service.js';
 import { getPaymentGatewayManager } from './payment-gateway-manager.js';
+import { SeatTransferHelperService } from './seat-transfer-helper.service.js';
 import crypto from 'crypto';
 
 export class TicketResaleService {
@@ -420,6 +421,23 @@ export class TicketResaleService {
       const result = await prisma.$transaction(async (tx) => {
         const oldRegistration = resale.registration;
 
+        // Get buyer details for seat transfer
+        const buyer = await tx.user.findUnique({
+          where: { id: userId },
+          select: {
+            email: true,
+            phoneNumber: true,
+            firstName: true,
+            lastName: true,
+          },
+        });
+
+        if (!buyer) {
+          throw new ValidationError('Buyer user not found');
+        }
+
+        const buyerFullName = `${buyer.firstName} ${buyer.lastName}`.trim();
+
         // 1. Create new registration for buyer
         const newRegistration = await tx.eventRegistration.create({
           data: {
@@ -449,7 +467,51 @@ export class TicketResaleService {
           });
         }
 
-        // 3. Cancel old registration
+        // 3. ✅ HANDLE SEAT ALLOCATIONS (NEW)
+        // Get event seating configuration
+        const event = await tx.event.findUnique({
+          where: { id: oldRegistration.eventId },
+          select: { hasSeatingMap: true, seatingType: true },
+        });
+
+        let needsSeatSelection = false;
+
+        if (event?.hasSeatingMap) {
+          const seatHandlingResult = await SeatTransferHelperService.handleResaleSeats(
+            tx,
+            {
+              fromRegistrationId: oldRegistration.id,
+              toRegistrationId: newRegistration.id,
+              toUserEmail: buyer.email,
+              toUserPhone: buyer.phoneNumber ?? undefined,
+              toUserName: buyerFullName,
+              eventId: oldRegistration.eventId,
+              seatingType: (event.seatingType as 'CUSTOMER_SELECTS' | 'ORGANIZER_ASSIGNS' | 'HYBRID') ?? 'CUSTOMER_SELECTS',
+            },
+          );
+
+          // If CUSTOMER_SELECTS model, buyer needs to select new seats
+          if (seatHandlingResult.action === 'RELEASED') {
+            logger.info(
+              `[TicketResale] Seats released for buyer to select. Resale ID: ${resale.id}`,
+            );
+            needsSeatSelection = true;
+          } else if (seatHandlingResult.action === 'TRANSFERRED') {
+            logger.info(
+              `[TicketResale] Successfully transferred ${seatHandlingResult.transferred} seat(s) to buyer. Resale ID: ${resale.id}`,
+            );
+          }
+
+          if (seatHandlingResult.errors.length > 0) {
+            logger.warn(
+              `[TicketResale] Seat handling completed with ${seatHandlingResult.errors.length} error(s):`,
+              seatHandlingResult.errors,
+            );
+            // Don't throw - allow resale even if some seats couldn't be handled
+          }
+        }
+
+        // 4. Cancel old registration
         await tx.eventRegistration.update({
           where: { id: oldRegistration.id },
           data: {
@@ -458,7 +520,7 @@ export class TicketResaleService {
           },
         });
 
-        // 4. Mark resale as SOLD
+        // 5. Mark resale as SOLD
         await tx.ticketResale.update({
           where: { id: resale.id },
           data: {
@@ -469,7 +531,7 @@ export class TicketResaleService {
           },
         });
 
-        return newRegistration;
+        return { registration: newRegistration, needsSeatSelection };
       });
 
       // Send seller notification email asynchronously
@@ -498,7 +560,12 @@ export class TicketResaleService {
       }
 
       logger.info(`Resale payment verified and completed: ${reference}, resale ${resale.id}`);
-      return { success: true, message: 'Ticket purchased successfully', registrationId: result.id };
+      return {
+        success: true,
+        message: 'Ticket purchased successfully',
+        registrationId: result.registration.id,
+        needsSeatSelection: result.needsSeatSelection,
+      };
     } catch (error: any) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;

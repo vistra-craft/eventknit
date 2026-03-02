@@ -264,6 +264,9 @@ export default function CreateEventStepwise() {
         sponsors: [],
         agenda: [],
         speakers: [],
+        hasSeatingMap: false,
+        seatingType: '',
+        seatMapRequired: false,
       };
     }
 
@@ -304,6 +307,9 @@ export default function CreateEventStepwise() {
         sponsors: [],
         agenda: [],
         speakers: [],
+        hasSeatingMap: false,
+        seatingType: '',
+        seatMapRequired: false,
       };
     }
 
@@ -347,6 +353,9 @@ export default function CreateEventStepwise() {
             sponsors: draftData.sponsors || [],
             agenda: draftData.agenda || [],
             speakers: draftData.speakers || [],
+            hasSeatingMap: draftData.hasSeatingMap || false,
+            seatingType: draftData.seatingType || '',
+            seatMapRequired: draftData.seatMapRequired || false,
           };
         } else {
           localStorage.removeItem(DRAFT_STORAGE_KEY);
@@ -388,6 +397,9 @@ export default function CreateEventStepwise() {
       sponsors: [],
       agenda: [],
       speakers: [],
+      hasSeatingMap: false,
+      seatingType: '',
+      seatMapRequired: false,
     };
   });
 
@@ -439,6 +451,9 @@ export default function CreateEventStepwise() {
       sponsors: [],
       agenda: [],
       speakers: [],
+      hasSeatingMap: false,
+      seatingType: '',
+      seatMapRequired: false,
     });
     setTicketTypes([{ id: 1, name: "", type: "paid", price: "", quantity: "" }]);
     setTags([]);
