@@ -53,7 +53,6 @@ const AttendeeTagsManagement = lazy(() => import('../pages/organizer/AttendeeTag
 const AttendeeCommunication = lazy(() => import('../pages/organizer/AttendeeCommunication'));
 
 // Marketing
-const OrganizerPromoCodeManager = lazy(() => import('../pages/organizer/marketing/OrganizerPromoCodeManager'));
 const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'));
 
 // Financial
@@ -62,10 +61,6 @@ const PayoutManagement = lazy(() => import('../pages/organizer/PayoutManagement'
 
 // Tickets Management (consolidated hub)
 const TicketsManagementHub = lazy(() => import('../pages/organizer/TicketsManagementHub'));
-
-// Legacy Advanced Tickets & Pricing (kept for backward compatibility)
-const AdvancedTicketTypes = lazy(() => import('../pages/organizer/AdvancedTicketTypes'));
-const DynamicPricing = lazy(() => import('../pages/organizer/DynamicPricing'));
 
 // Branding
 const OrganizerBrandingPage = lazy(() => import('../pages/organizer/OrganizerBrandingPage'));

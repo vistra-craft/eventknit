@@ -65,21 +65,16 @@ const AttendeeSegmentation = () => {
           ? response.data.segments
               .map((s) => {
                 if (!s || typeof s !== "object") return null;
-                const raw = s as Record<string, unknown>;
-                const id = raw.id ?? raw.segmentId;
-                const name = raw.name ?? raw.segmentName;
-                const createdAt = raw.createdAt ?? raw.created_at;
-                const updatedAt = raw.updatedAt ?? raw.updated_at;
-                if (!id || !name || !createdAt || !updatedAt) return null;
+                if (!s.id || !s.name || !s.createdAt || !s.updatedAt) return null;
                 return {
-                  id: String(id),
-                  name: String(name),
-                  description: typeof raw.description === "string" ? raw.description : undefined,
-                  criteria: typeof raw.criteria === "object" && raw.criteria ? (raw.criteria as Record<string, unknown>) : {},
-                  memberCount: typeof raw.memberCount === "number" ? raw.memberCount : undefined,
-                  eventId: typeof raw.eventId === "string" ? raw.eventId : undefined,
-                  createdAt: String(createdAt),
-                  updatedAt: String(updatedAt),
+                  id: String(s.id),
+                  name: String(s.name),
+                  description: s.description,
+                  criteria: s.criteria ?? {},
+                  memberCount: s.memberCount,
+                  eventId: s.eventId,
+                  createdAt: String(s.createdAt),
+                  updatedAt: String(s.updatedAt),
                 } as Segment;
               })
               .filter((seg): seg is Segment => !!seg)
@@ -380,9 +375,7 @@ const AttendeeSegmentation = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeMemberFromSegment(selectedSegment.id, {
-                              userId: member.userId,
-                            })}
+                            onClick={() => removeMemberFromSegment(selectedSegment.id, member.userId)}
                           >
                             <UserMinus className="h-4 w-4" />
                           </Button>

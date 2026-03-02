@@ -44,9 +44,9 @@ const UserDashboard = () => {
 
   // location.state originates from React Router navigation and is typed as unknown.
   // Components that consume these values are responsible for narrowing them safely.
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+   
   const registration = location.state?.registration;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+   
   const eventData = location.state?.eventData;
   const successMessage = typeof location.state?.message === 'string'
     ? (location.state.message as string)

@@ -53,9 +53,9 @@ export function SeatManagementDashboard({
     20,
   );
 
-  const summary = summaryResponse?.data;
-  const allocations = allocationsResponse?.data?.allocations || [];
-  const operations = operationsResponse?.data?.operations || [];
+  const summary = summaryResponse;
+  const allocations = allocationsResponse?.allocations || [];
+  const operations = operationsResponse?.operations || [];
 
   if (!summary?.totalSeats) {
     return (

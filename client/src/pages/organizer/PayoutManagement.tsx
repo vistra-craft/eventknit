@@ -38,35 +38,21 @@ import {
   updatePayoutPreferences,
   getPayoutHistory,
   getPayoutSummary,
+  type PayoutPreferences,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
 
-interface PayoutPreferences {
-  id: string;
-  primaryMethod: string;
-  bankName: string | null;
-  accountName: string | null;
-  accountNumber: string | null;
-  bankCode: string | null;
-  routingNumber: string | null;
-  paystackRecipientCode: string | null;
-  autoPayoutEnabled: boolean;
-  autoPayoutThreshold: number | null;
-  autoPayoutSchedule: string | null;
-  taxId: string | null;
-  taxCountry: string | null;
-}
-
 interface DisbursementRecord {
   id: string;
-  disbursementNumber: string;
-  eventId: string;
-  totalAmount: number;
+  disbursementNumber?: string;
+  eventId?: string;
+  totalAmount?: number;
+  amount: number;
   currency: string;
   status: string;
-  paymentMethod: string;
-  scheduledDate: string | null;
-  completedAt: string | null;
+  paymentMethod?: string;
+  scheduledDate?: string | null;
+  completedAt?: string | null;
   createdAt: string;
   event?: { id: string; title: string };
 }
@@ -537,7 +523,7 @@ const PayoutManagement = () => {
                             {d.event?.title || d.eventId}
                           </TableCell>
                           <TableCell className="font-medium">
-                            {formatCurrency(d.totalAmount, d.currency)}
+                            {formatCurrency(d.totalAmount ?? d.amount, d.currency)}
                           </TableCell>
                           <TableCell>
                             <Badge

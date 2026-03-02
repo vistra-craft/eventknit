@@ -84,13 +84,12 @@ const AttendeeTagsManagement = () => {
           ? response.data.users
               .map((u) => {
                 if (!u || typeof u !== "object") return null;
-                const raw = u as Record<string, unknown>;
-                if (!raw.userId && !raw.user) return null;
+                if (!u.userId && !u.user) return null;
                 return {
-                  userId: raw.userId ? String(raw.userId) : "",
-                  eventId: typeof raw.eventId === "string" ? raw.eventId : undefined,
-                  user: raw.user as TaggedUser["user"],
-                  notes: typeof raw.notes === "string" ? raw.notes : null,
+                  userId: u.userId ? String(u.userId) : "",
+                  eventId: typeof u.eventId === "string" ? u.eventId : undefined,
+                  user: u.user,
+                  notes: typeof u.notes === "string" ? u.notes : null,
                 } as TaggedUser;
               })
               .filter((t): t is TaggedUser => !!t)
@@ -160,7 +159,7 @@ const AttendeeTagsManagement = () => {
 
   const handleUntagUser = async (tagId: string, userId: string, eventId?: string) => {
     try {
-      const response = await untagUser(tagId, { userId, eventId });
+      const response = await untagUser(tagId, userId, eventId);
       if (response.success) {
         toast({
           title: "Success",

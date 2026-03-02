@@ -174,8 +174,6 @@ function CountdownStrip({ event }: CountdownStripProps) {
     );
   }
 
-  const pad = (n: number) => String(n).padStart(2, '0');
-
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1.5 text-muted-foreground">

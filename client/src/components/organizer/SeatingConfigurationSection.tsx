@@ -5,8 +5,9 @@
  * Allows organizers to enable seating and select model
  */
 
-import React from 'react';
-import { Alert, AlertDescription, AlertCircle } from '@/components/ui/alert';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -84,7 +85,7 @@ export const SeatingConfigurationSection = ({
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Label className="font-semibold">How should seats be allocated?</Label>
-            <Info className="h-4 w-4 text-muted-foreground cursor-help" title="Choose how customers interact with seating" />
+            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
           </div>
 
           <RadioGroup value={config.seatingType} onValueChange={handleSeatingTypeChange} disabled={isLoading}>

@@ -1651,7 +1651,7 @@ const EventManagement = () => {
             )}
 
             {/* Seat Allocation Cards - Show if event has seating */}
-            {eventData.hasSeatingMap && (
+            {eventData.hasSeatMap && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SeatAllocationOverviewCard eventId={eventId!} />
                 <SeatAllocationByTypeCard eventId={eventId!} />

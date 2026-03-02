@@ -152,6 +152,10 @@ export interface CommunicationMessage {
   recipientCount: number;
   status: string;
   eventId?: Id;
+  recipientType?: string;
+  sentCount?: number;
+  failedCount?: number;
+  createdAt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -342,6 +346,7 @@ export interface FinancialGoal {
   description?: string;
   targetAmount: number;
   currentAmount: number;
+  progressPercentage?: number;
   currency: string;
   eventId?: Id;
   startDate: string;
@@ -357,6 +362,7 @@ export interface FinancialPeriod {
 
 export interface FinancialTotals {
   gross: number;
+  platformFees?: number;
   net: number;
   currency: string;
 }
@@ -374,6 +380,7 @@ export interface ProfitLossSummary {
 
 export interface TaxableRevenue {
   gross: number;
+  platformFees?: number;
   net: number;
   currency: string;
 }
@@ -399,6 +406,7 @@ export interface AlternativePayoutMethod {
 }
 
 export interface PayoutPreferences {
+  id?: Id;
   primaryMethod?: string;
   bankName?: string;
   accountName?: string;
@@ -424,6 +432,10 @@ export interface Disbursement {
   processedAt?: string;
   notes?: string;
   createdAt: string;
+  disbursementNumber?: string;
+  totalAmount?: number;
+  paymentMethod?: string;
+  completedAt?: string;
 }
 
 export interface PayoutAmountSummary {
@@ -453,6 +465,10 @@ export interface Collaborator extends CollaboratorPermissions {
   status: string;
   createdAt: string;
   user?: { id: Id; firstName: string; lastName: string; email: string };
+  collaborator?: { id: Id; firstName?: string; lastName?: string; email: string };
+  invitedAt?: string;
+  acceptedAt?: string;
+  isActive?: boolean;
 }
 
 export interface ActivityLogEntry {
@@ -463,6 +479,8 @@ export interface ActivityLogEntry {
   details: Record<string, unknown>;
   createdAt: string;
   user?: { id: Id; firstName: string; lastName: string; email: string };
+  description?: string;
+  changes?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------

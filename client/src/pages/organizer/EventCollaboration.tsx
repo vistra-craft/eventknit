@@ -86,8 +86,8 @@ const EventCollaboration = () => {
     try {
       setLoading(true);
       const response = await getEventCollaborators(eventId);
-      if (response.success && response.data) {
-        setCollaborators(response.data.collaborators || []);
+      if (response.success && response.data?.collaborators) {
+        setCollaborators(response.data.collaborators.filter(c => c.collaborator !== undefined) as Collaborator[]);
       }
     } catch (error) {
       console.error("Error loading collaborators:", error);
@@ -105,8 +105,13 @@ const EventCollaboration = () => {
     if (!eventId) return;
     try {
       const response = await getEventActivityLog(eventId);
-      if (response.success && response.data) {
-        setActivityLog(response.data.activities || []);
+      if (response.success && response.data?.activities) {
+        setActivityLog(
+          response.data.activities.map(a => ({
+            ...a,
+            description: a.description || '',
+          })) as ActivityLog[]
+        );
       }
     } catch (error) {
       console.error("Error loading activity log:", error);

@@ -50,7 +50,7 @@ export function SeatAllocationByTypeCard({
     );
   }
 
-  const byType = response?.data?.byType || {};
+  const byType = response?.byType || {};
   const ticketTypes = Object.entries(byType);
 
   if (ticketTypes.length === 0) {

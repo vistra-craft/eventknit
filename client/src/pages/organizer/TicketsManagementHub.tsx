@@ -160,19 +160,6 @@ const TicketsManagementHub = () => {
     name: null,
   });
 
-  // Fetch events on mount
-  useEffect(() => {
-    fetchEvents();
-  }, []);
-
-  // Fetch data when event is selected
-  useEffect(() => {
-    if (selectedEventId) {
-      setSelectedEventId(selectedEventId);
-      fetchAllData();
-    }
-  }, [selectedEventId]);
-
   const fetchEvents = useCallback(async () => {
     try {
       const response = await getEvents({ limit: 50, status: EventStatus.APPROVED });
@@ -188,25 +175,6 @@ const TicketsManagementHub = () => {
       });
     }
   }, [toast]);
-
-  const fetchAllData = useCallback(async () => {
-    if (!selectedEventId) return;
-
-    try {
-      setLoading(true);
-      await Promise.all([fetchPricingRules(), fetchPackages(), fetchPromoCodes()]);
-      updateStats();
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load ticket management data',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedEventId]);
 
   const fetchPricingRules = useCallback(async () => {
     if (!selectedEventId) return;
@@ -243,14 +211,46 @@ const TicketsManagementHub = () => {
     }
   }, [selectedEventId]);
 
-  const updateStats = () => {
+  const updateStats = useCallback(() => {
     setStats({
       totalTicketTypes: 0,
       activePricingRules: pricingRules.filter((r) => r.isActive).length,
       activePromoCodes: promoCodes.filter((p) => p.isActive).length,
       totalPackages: packages.length,
     });
-  };
+  }, [pricingRules, promoCodes, packages]);
+
+  const fetchAllData = useCallback(async () => {
+    if (!selectedEventId) return;
+
+    try {
+      setLoading(true);
+      await Promise.all([fetchPricingRules(), fetchPackages(), fetchPromoCodes()]);
+      updateStats();
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load ticket management data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedEventId, fetchPricingRules, fetchPackages, fetchPromoCodes, updateStats, toast]);
+
+  // Fetch events on mount
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  // Fetch data when event is selected
+  useEffect(() => {
+    if (selectedEventId) {
+      setSelectedEventId(selectedEventId);
+      fetchAllData();
+    }
+  }, [selectedEventId, fetchAllData]);
 
   // ============================================================================
   // Pricing Rules Handlers
@@ -856,15 +856,15 @@ const TicketsManagementHub = () => {
 // Form Components
 // ============================================================================
 
-interface FormProps {
-  onSubmit: (data: any) => Promise<void>;
+interface FormProps<T = unknown> {
+  onSubmit: (data: T) => Promise<void>;
   onClose: () => void;
 }
 
-const PricingRuleForm = ({ onSubmit, onClose }: FormProps) => {
-  const [data, setData] = useState({
+const PricingRuleForm = ({ onSubmit, onClose }: FormProps<Partial<PricingRule>>) => {
+  const [data, setData] = useState<Partial<PricingRule>>({
     name: '',
-    type: 'time_based' as const,
+    type: 'time_based',
     priority: 0,
   });
 
@@ -888,7 +888,7 @@ const PricingRuleForm = ({ onSubmit, onClose }: FormProps) => {
       </div>
       <div>
         <Label htmlFor="type">Rule Type</Label>
-        <Select value={data.type} onValueChange={(v) => setData({ ...data, type: v as any })}>
+        <Select value={data.type} onValueChange={(v) => setData({ ...data, type: v as PricingRule['type'] })}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -910,10 +910,10 @@ const PricingRuleForm = ({ onSubmit, onClose }: FormProps) => {
   );
 };
 
-const PackageForm = ({ onSubmit, onClose }: FormProps) => {
-  const [data, setData] = useState({
+const PackageForm = ({ onSubmit, onClose }: FormProps<Partial<TicketPackage>>) => {
+  const [data, setData] = useState<Partial<TicketPackage>>({
     name: '',
-    type: 'group' as const,
+    type: 'group',
     price: 0,
   });
 
@@ -937,7 +937,7 @@ const PackageForm = ({ onSubmit, onClose }: FormProps) => {
       </div>
       <div>
         <Label htmlFor="pkg-type">Package Type</Label>
-        <Select value={data.type} onValueChange={(v) => setData({ ...data, type: v as any })}>
+        <Select value={data.type} onValueChange={(v) => setData({ ...data, type: v as TicketPackage['type'] })}>
           <SelectTrigger>
             <SelectValue />
           </SelectTrigger>
@@ -958,10 +958,10 @@ const PackageForm = ({ onSubmit, onClose }: FormProps) => {
   );
 };
 
-const PromoCodeForm = ({ onSubmit, onClose }: FormProps) => {
-  const [data, setData] = useState({
+const PromoCodeForm = ({ onSubmit, onClose }: FormProps<Partial<PromoCode>>) => {
+  const [data, setData] = useState<Partial<PromoCode>>({
     code: '',
-    discountType: 'PERCENTAGE' as const,
+    discountType: 'PERCENTAGE',
     discountValue: 10,
   });
 
@@ -987,7 +987,7 @@ const PromoCodeForm = ({ onSubmit, onClose }: FormProps) => {
         <Label htmlFor="discount-type">Discount Type</Label>
         <Select
           value={data.discountType}
-          onValueChange={(v) => setData({ ...data, discountType: v as any })}
+          onValueChange={(v) => setData({ ...data, discountType: v as PromoCode['discountType'] })}
         >
           <SelectTrigger>
             <SelectValue />

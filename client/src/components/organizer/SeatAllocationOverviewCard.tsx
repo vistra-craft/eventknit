@@ -35,7 +35,7 @@ export function SeatAllocationOverviewCard({
     );
   }
 
-  if (error || !summaryResponse?.data?.totalSeats) {
+  if (error || !summaryResponse?.totalSeats) {
     return (
       <Card className={className}>
         <CardHeader>
@@ -53,7 +53,7 @@ export function SeatAllocationOverviewCard({
     );
   }
 
-  const summary = summaryResponse.data;
+  const summary = summaryResponse;
   const allocationPercentage = summary.totalSeats > 0
     ? Math.round((summary.allocatedSeats / summary.totalSeats) * 100)
     : 0;

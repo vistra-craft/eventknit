@@ -25,43 +25,32 @@ import {
   createFinancialGoal,
   getFinancialGoals,
   getTaxSummary,
+  type Expense,
+  type FinancialGoal,
+  type FinancialPeriod,
+  type FinancialTotals,
+  type ProfitLossExpenses,
+  type ProfitLossSummary,
+  type TaxableRevenue,
+  type TaxableExpenses,
+  type TaxSummaryInfo,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
 
-interface Expense {
-  id: string;
-  category: string;
-  description: string;
-  amount: number;
-  currency: string;
-  expenseDate: string;
-  status: string;
-  event?: { id: string; title: string };
-}
-
-interface FinancialGoal {
-  id: string;
-  name: string;
-  description?: string;
-  targetAmount: number;
-  currentAmount: number;
-  progressPercentage: number;
-  startDate: string;
-  endDate: string;
-  status: string;
-}
-
 interface ProfitLossStatement {
-  revenue: { gross: number; platformFees: number; net: number };
-  expenses: { total: number; taxDeductible: number };
-  profit: { amount: number; margin: number };
+  period: FinancialPeriod;
+  revenue: FinancialTotals;
+  expenses: ProfitLossExpenses;
+  profit: number;
+  summary: ProfitLossSummary;
 }
 
 interface TaxSummary {
   year: number;
-  revenue: { gross: number; platformFees: number; net: number };
-  expenses: { taxDeductible: number };
+  revenue: TaxableRevenue;
+  expenses: TaxableExpenses;
   taxableIncome: number;
+  summary: TaxSummaryInfo;
 }
 
 type ExpensePayload = {
@@ -251,13 +240,8 @@ const FinancialManagement = () => {
                           <p className="text-sm text-muted-foreground mb-2">
                             {expense.description}
                           </p>
-                          {expense.event && (
-                            <p className="text-xs text-muted-foreground">
-                              Event: {expense.event.title}
-                            </p>
-                          )}
                           <p className="text-xs text-muted-foreground">
-                            {new Date(expense.expenseDate).toLocaleDateString()}
+                            {expense.expenseDate ? new Date(expense.expenseDate).toLocaleDateString() : 'N/A'}
                           </p>
                         </div>
                         <div className="text-right">
@@ -292,7 +276,7 @@ const FinancialManagement = () => {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Platform Fees</span>
                       <span className="text-destructive">
-                        -{formatCurrency(profitLoss.revenue.platformFees)}
+                        -{formatCurrency(profitLoss.revenue.platformFees ?? 0)}
                       </span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
@@ -316,9 +300,9 @@ const FinancialManagement = () => {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Tax Deductible</span>
-                      <span className="text-sm">
-                        {formatCurrency(profitLoss.expenses.taxDeductible)}
+                      <span className="text-muted-foreground">Gross Revenue</span>
+                      <span className="font-semibold">
+                        {formatCurrency(profitLoss.revenue.gross)}
                       </span>
                     </div>
                   </CardContent>
@@ -334,18 +318,18 @@ const FinancialManagement = () => {
                         <p className="text-muted-foreground">Net Profit</p>
                         <p
                           className={`text-3xl font-bold ${
-                            profitLoss.profit.amount >= 0
+                            profitLoss.profit >= 0
                               ? "text-success"
                               : "text-destructive"
                           }`}
                         >
-                          {formatCurrency(profitLoss.profit.amount)}
+                          {formatCurrency(profitLoss.profit)}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Margin: {profitLoss.profit.margin.toFixed(2)}%
+                          Margin: {profitLoss.summary.profitMargin.toFixed(2)}%
                         </p>
                       </div>
-                      {profitLoss.profit.amount >= 0 ? (
+                      {profitLoss.profit >= 0 ? (
                         <TrendingUp className="h-12 w-12 text-success" />
                       ) : (
                         <TrendingDown className="h-12 w-12 text-destructive" />
@@ -426,11 +410,11 @@ const FinancialManagement = () => {
                           <div className="w-full bg-muted rounded-full h-2">
                             <div
                               className="bg-primary h-2 rounded-full transition-all"
-                              style={{ width: `${Math.min(goal.progressPercentage, 100)}%` }}
+                              style={{ width: `${Math.min(goal.progressPercentage ?? 0, 100)}%` }}
                             ></div>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            {goal.progressPercentage.toFixed(1)}% complete
+                            {(goal.progressPercentage ?? 0).toFixed(1)}% complete
                           </p>
                         </div>
                         <div className="text-xs text-muted-foreground">
@@ -468,7 +452,7 @@ const FinancialManagement = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Platform Fees</span>
-                          <span>-{formatCurrency(taxSummary.revenue.platformFees)}</span>
+                          <span>-{formatCurrency(taxSummary.revenue.platformFees ?? 0)}</span>
                         </div>
                         <div className="flex justify-between border-t pt-1 font-semibold">
                           <span>Net Revenue</span>
@@ -479,7 +463,7 @@ const FinancialManagement = () => {
                     <div>
                       <h3 className="font-semibold mb-2">Deductible Expenses</h3>
                       <p className="text-2xl font-bold">
-                        {formatCurrency(taxSummary.expenses.taxDeductible)}
+                        {formatCurrency(taxSummary.expenses.deductible)}
                       </p>
                     </div>
                     <div className="border-t pt-4">

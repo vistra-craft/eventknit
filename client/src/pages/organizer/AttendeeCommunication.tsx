@@ -16,19 +16,9 @@ import {
   getCommunicationHistory,
   getOrganizerSegments,
   getOrganizerTags,
+  type CommunicationMessage,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
-
-interface CommunicationMessage {
-  id: string;
-  subject: string;
-  content: string;
-  recipientType: string;
-  sentCount: number;
-  failedCount: number;
-  createdAt: string;
-  event?: { id: string; title: string };
-}
 
 const AttendeeCommunication = () => {
   const [messages, setMessages] = useState<CommunicationMessage[]>([]);
@@ -57,7 +47,7 @@ const AttendeeCommunication = () => {
           ? segmentsRes.data.segments
               .map((s) => {
                 if (!s || typeof s !== "object") return null;
-                const raw = s as Record<string, unknown>;
+                const raw = s as unknown as Record<string, unknown>;
                 const id = raw.id ?? raw.segmentId;
                 const name = raw.name ?? raw.segmentName;
                 if (!id || !name) return null;
@@ -73,11 +63,8 @@ const AttendeeCommunication = () => {
           ? tagsRes.data.tags
               .map((t) => {
                 if (!t || typeof t !== "object") return null;
-                const raw = t as Record<string, unknown>;
-                const id = raw.id;
-                const name = raw.name;
-                if (!id || !name) return null;
-                return { id: String(id), name: String(name) };
+                if (!t.id || !t.name) return null;
+                return { id: String(t.id), name: String(t.name) };
               })
               .filter((t): t is { id: string; name: string } => !!t)
           : [];
@@ -205,17 +192,12 @@ const AttendeeCommunication = () => {
                         <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                           {message.content}
                         </p>
-                        {message.event && (
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Event: {message.event.title}
-                          </p>
-                        )}
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <CheckCircle className="h-3 w-3" />
-                            {message.sentCount} sent
+                            {message.sentCount || 0} sent
                           </span>
-                          {message.failedCount > 0 && (
+                          {message.failedCount != null && message.failedCount > 0 && (
                             <span className="flex items-center gap-1 text-destructive">
                               <XCircle className="h-3 w-3" />
                               {message.failedCount} failed
@@ -223,7 +205,7 @@ const AttendeeCommunication = () => {
                           )}
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {new Date(message.createdAt).toLocaleString()}
+                            {message.createdAt ? new Date(message.createdAt).toLocaleString() : 'N/A'}
                           </span>
                         </div>
                       </div>

@@ -24,19 +24,8 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import { Switch } from "./ui/switch";
 import { useToast } from "@/hooks/useToast";
-import { sendToEventRegistrations, getCommunicationHistory } from "@/lib/organizer-dashboard-api";
+import { sendToEventRegistrations, getCommunicationHistory, type CommunicationMessage } from "@/lib/organizer-dashboard-api";
 import { extractErrorMessage } from "@/lib/utils/error";
-
-interface CommunicationMessage {
-  id: string;
-  subject: string;
-  content: string;
-  recipientType: string;
-  sentCount: number;
-  failedCount: number;
-  createdAt: string;
-  event?: { id: string; title: string };
-}
 
 interface EventCommunicationSectionProps {
   eventId: string;
@@ -234,9 +223,9 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" />
-                          {message.sentCount} sent
+                          {message.sentCount || 0} sent
                         </span>
-                        {message.failedCount > 0 && (
+                        {message.failedCount != null && message.failedCount > 0 && (
                           <span className="flex items-center gap-1 text-destructive">
                             <XCircle className="h-3 w-3" />
                             {message.failedCount} failed
@@ -244,7 +233,7 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
                         )}
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {new Date(message.createdAt).toLocaleString()}
+                          {message.createdAt ? new Date(message.createdAt).toLocaleString() : 'N/A'}
                         </span>
                       </div>
                     </div>
