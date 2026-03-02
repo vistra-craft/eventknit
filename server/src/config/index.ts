@@ -4,8 +4,8 @@ import path from 'path';
 const env = process.env.NODE_ENV || 'development';
 const envPath = path.resolve(process.cwd(), `.env.${env}`);
 
+// Load environment-specific configuration
 dotenv.config({ path: envPath });
-dotenv.config(); // Also load .env for fallback
 
 // Determine database host - defaults to localhost for local dev, 'postgres' for Docker
 const getDatabaseHost = (): string => {

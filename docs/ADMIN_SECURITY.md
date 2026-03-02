@@ -48,7 +48,7 @@ Require admin access only from a specific subdomain.
 
 ### Environment Variables
 
-Add these to your `.env` file:
+Add these to your `.env.development` file:
 
 ```bash
 # ========== Admin Security Settings ==========
@@ -99,7 +99,7 @@ ADMIN_ALLOWED_COUNTRIES=US,KE,GB
 
 1. **Environment Configuration** (Static - requires restart):
    ```bash
-   # .env file
+   # .env.development file
    ADMIN_ALLOWED_ORIGINS=https://admin.mycompany.com
    ADMIN_ENABLE_IP_WHITELIST=true
    ADMIN_ALLOWED_IPS=203.0.113.1,192.168.1.0/24

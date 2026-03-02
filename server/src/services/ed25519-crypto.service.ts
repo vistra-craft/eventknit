@@ -104,7 +104,7 @@ export class Ed25519CryptoService {
     logger.info('Generated new Ed25519 key pair');
     logger.info(`Public key (hex): ${this.publicKeyBase64}`);
     logger.info(`Private key (hex): ${privateKeyBytes.toString('hex')}`);
-    logger.info('Add these to your .env file as TICKET_PUBLIC_KEY and TICKET_PRIVATE_KEY');
+    logger.info('Add these to your .env.development file as TICKET_PUBLIC_KEY and TICKET_PRIVATE_KEY');
 
     return {
       publicKey: this.publicKeyBase64,

@@ -12,6 +12,15 @@ export interface TicketLineItem {
   totalPrice: number;
 }
 
+export interface TicketSeatInfo {
+  seatIdentifier: string;
+  sectionId?: string;
+  rowLabel?: string;
+  seatLabel?: string;
+  seatType: string;
+  reservationStatus: string;
+}
+
 export interface TicketData {
   id: string;
   registrationId: string;
@@ -24,6 +33,7 @@ export interface TicketData {
   currency?: string;
   qrCode?: string;
   backupCode?: string;
+  seat?: TicketSeatInfo;
   createdAt: string;
 }
 

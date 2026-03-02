@@ -856,6 +856,19 @@ export class TicketService {
             lastName: true,
           },
         },
+        seatReservation: {
+          include: {
+            seat: {
+              select: {
+                seatIdentifier: true,
+                sectionId: true,
+                rowLabel: true,
+                seatLabel: true,
+                seatType: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -894,6 +907,18 @@ export class TicketService {
       }
     }
 
+    // Extract seat allocation details when the attendee has a reserved seat
+    const seatInfo = registration.seatReservation?.seat
+      ? {
+          seatIdentifier: registration.seatReservation.seat.seatIdentifier,
+          sectionId: registration.seatReservation.seat.sectionId ?? undefined,
+          rowLabel: registration.seatReservation.seat.rowLabel ?? undefined,
+          seatLabel: registration.seatReservation.seat.seatLabel ?? undefined,
+          seatType: registration.seatReservation.seat.seatType,
+          reservationStatus: registration.seatReservation.status,
+        }
+      : undefined;
+
     return {
       id: registration.id,
       registrationId: registration.id,
@@ -901,7 +926,7 @@ export class TicketService {
       eventTitle: registration.event.title || '',
       attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim() || registration.attendee.email || '',
       attendeeEmail: registration.attendee.email || '',
-      ticketType: registration.ticketType || undefined,
+      ticketType: registration.ticketType ?? undefined,
       ticketLineItems: registration.ticketLineItems?.map(item => ({
         ticketType: item.ticketType,
         quantity: item.quantity,
@@ -909,6 +934,7 @@ export class TicketService {
         totalPrice: Number(item.totalPrice),
       })),
       currency: registration.event.currency || 'USD',
+      seat: seatInfo,
       qrCode: qrCodeDataUrl,
       backupCode: registration.backupCode || undefined,
       createdAt: registration.createdAt.toISOString(),
