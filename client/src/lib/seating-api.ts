@@ -4,8 +4,7 @@
  * Functions for managing event seating, seat reservations, and allocations
  */
 
-import { apiClient } from './api-client';
-import { ExtendedError } from './utils/error';
+import { apiGet, apiPost } from './api';
 
 // ──────────────────────────────────────────────────────────────
 // Types
@@ -82,7 +81,7 @@ export interface SeatStatistics {
   reservedSeats: number;
   confirmedSeats: number;
   blockedSeats: number;
-  utilization: number; // Percentage 0-100
+  utilization: number;
 }
 
 export interface SeatingConfigRequest {
@@ -98,272 +97,240 @@ export interface SeatingValidationResponse {
   warnings: string[];
 }
 
+export interface SeatAllocationSummary {
+  totalSeats: number;
+  allocatedSeats: number;
+  availableSeats: number;
+  pendingSeats: number;
+  byStatus: Record<string, number>;
+  lastUpdated: string;
+}
+
+export interface SeatAllocation {
+  id: string;
+  registrationId: string;
+  attendeeName: string;
+  attendeeEmail: string;
+  seatId: string;
+  seatLocation: string;
+  status: 'CONFIRMED' | 'PENDING' | 'RELEASED';
+  allocatedAt: string;
+}
+
+export interface SeatAllocationByType {
+  byType: Record<string, {
+    allocated: number;
+    available: number;
+    pending: number;
+    total: number;
+  }>;
+}
+
+export interface SeatOperation {
+  id: string;
+  type: 'RELEASED' | 'ALLOCATION';
+  seatId: string;
+  seatLocation: string;
+  attendeeName: string;
+  attendeeEmail: string;
+  status: string;
+  operationDate: string;
+  registrationId: string;
+}
+
+export interface RegistrationSeat {
+  seatId: string;
+  location: string;
+  section: string;
+  row: string;
+  number: string;
+  type: string;
+  price: number;
+  status: 'CONFIRMED' | 'PENDING' | 'RELEASED';
+  allocatedAt: string;
+}
+
 // ──────────────────────────────────────────────────────────────
 // Seat Reservation APIs
 // ──────────────────────────────────────────────────────────────
 
-/**
- * Reserve seats for a customer during checkout
- * Supports multi-seat reservation with timeout
- */
 export async function reserveSeats(data: SeatReservationRequest): Promise<SeatReservationResponse> {
-  try {
-    const response = await apiClient.post<SeatReservationResponse>(
-      `/api/v1/events/${data.eventId}/seats/reserve`,
-      {
-        seatIds: data.seatIds,
-        registrationId: data.registrationId,
-        attendeeName: data.attendeeName,
-        attendeeEmail: data.attendeeEmail,
-        attendeePhone: data.attendeePhone,
-        timeoutMinutes: data.timeoutMinutes || 15,
-      },
-    );
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to reserve seats',
-      'SEAT_RESERVATION_FAILED',
-      error,
-    );
-  }
+  const response = await apiPost<{ data: SeatReservationResponse }>(
+    `/events/${data.eventId}/seats/reserve`,
+    {
+      seatIds: data.seatIds,
+      registrationId: data.registrationId,
+      attendeeName: data.attendeeName,
+      attendeeEmail: data.attendeeEmail,
+      attendeePhone: data.attendeePhone,
+      timeoutMinutes: data.timeoutMinutes ?? 15,
+    },
+  );
+  return response.data;
 }
 
-/**
- * Confirm seat reservations after payment
- * Moves reservations from RESERVED to CONFIRMED status
- */
-export async function confirmSeatReservations(
-  registrationId: string,
-): Promise<SeatReservationResponse> {
-  try {
-    const response = await apiClient.post<SeatReservationResponse>(
-      `/api/v1/registrations/${registrationId}/seats/confirm`,
-      {},
-    );
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to confirm seat reservations',
-      'SEAT_CONFIRMATION_FAILED',
-      error,
-    );
-  }
+export async function confirmSeatReservations(registrationId: string): Promise<SeatReservationResponse> {
+  const response = await apiPost<{ data: SeatReservationResponse }>(
+    `/registrations/${registrationId}/seats/confirm`,
+    {},
+  );
+  return response.data;
 }
 
-/**
- * Request to change seat assignment (for CUSTOMER_SELECTS events)
- */
 export async function requestSeatChange(
   registrationId: string,
   newSeatIds: string[],
   reason?: string,
 ): Promise<SeatReservationResponse> {
-  try {
-    const response = await apiClient.post<SeatReservationResponse>(
-      `/api/v1/registrations/${registrationId}/seats/change-request`,
-      {
-        newSeatIds,
-        reason,
-      },
-    );
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to request seat change',
-      'SEAT_CHANGE_REQUEST_FAILED',
-      error,
-    );
-  }
+  const response = await apiPost<{ data: SeatReservationResponse }>(
+    `/registrations/${registrationId}/seats/change-request`,
+    { newSeatIds, reason },
+  );
+  return response.data;
 }
 
 // ──────────────────────────────────────────────────────────────
 // Organizer Seat Assignment APIs
 // ──────────────────────────────────────────────────────────────
 
-/**
- * Assign a specific seat to an attendee (organizer action)
- * Used in ORGANIZER_ASSIGNS seating model
- */
 export async function assignSeat(
   eventId: string,
   data: Omit<SeatAssignmentRequest, 'eventId'>,
 ): Promise<SeatAssignmentResponse> {
-  try {
-    const response = await apiClient.post<SeatAssignmentResponse>(
-      `/api/v1/organizer-dashboard/events/${eventId}/seats/assign`,
-      data,
-    );
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to assign seat',
-      'SEAT_ASSIGNMENT_FAILED',
-      error,
-    );
-  }
+  const response = await apiPost<{ data: SeatAssignmentResponse }>(
+    `/organizer-dashboard/events/${eventId}/seats/assign`,
+    data,
+  );
+  return response.data;
 }
 
 // ──────────────────────────────────────────────────────────────
 // Attendee Preferences APIs
 // ──────────────────────────────────────────────────────────────
 
-/**
- * Save seating preferences for an attendee
- * Used in ORGANIZER_ASSIGNS model for preference collection
- */
 export async function saveSeatPreferences(
   data: SeatPreferencesRequest,
 ): Promise<{ success: boolean; message: string }> {
-  try {
-    const response = await apiClient.post<{ success: boolean; message: string }>(
-      `/api/v1/registrations/${data.registrationId}/seats/preferences`,
-      data.preferences,
-    );
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to save seat preferences',
-      'SAVE_PREFERENCES_FAILED',
-      error,
-    );
-  }
+  return apiPost<{ success: boolean; message: string }>(
+    `/registrations/${data.registrationId}/seats/preferences`,
+    data.preferences,
+  );
 }
 
 // ──────────────────────────────────────────────────────────────
 // Seat Query APIs
 // ──────────────────────────────────────────────────────────────
 
-/**
- * Get available seats for an event
- * Supports filtering by section, price range, accessibility
- */
 export async function getAvailableSeats(data: AvailableSeatsRequest): Promise<AvailableSeat[]> {
-  try {
-    const params = new URLSearchParams();
-    if (data.section) params.append('section', data.section);
-    if (data.priceRange) {
-      params.append('minPrice', data.priceRange.min.toString());
-      params.append('maxPrice', data.priceRange.max.toString());
-    }
-    if (data.accessibilityOnly) params.append('accessibility', 'true');
-
-    const response = await apiClient.get<AvailableSeat[]>(
-      `/api/v1/events/${data.eventId}/seats/available?${params.toString()}`,
-    );
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to fetch available seats',
-      'FETCH_SEATS_FAILED',
-      error,
-    );
+  const params = new URLSearchParams();
+  if (data.section) params.append('section', data.section);
+  if (data.priceRange) {
+    params.append('minPrice', data.priceRange.min.toString());
+    params.append('maxPrice', data.priceRange.max.toString());
   }
+  if (data.accessibilityOnly) params.append('accessibility', 'true');
+
+  const response = await apiGet<{ data: AvailableSeat[] }>(
+    `/events/${data.eventId}/seats/available?${params.toString()}`,
+  );
+  return response.data;
 }
 
-/**
- * Get seat allocation statistics for an event
- * Shows total, available, reserved, confirmed, and blocked seats
- */
 export async function getSeatStatistics(eventId: string): Promise<SeatStatistics> {
-  try {
-    const response = await apiClient.get<SeatStatistics>(
-      `/api/v1/events/${eventId}/seats/statistics`,
-    );
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to fetch seat statistics',
-      'FETCH_STATISTICS_FAILED',
-      error,
-    );
-  }
+  const response = await apiGet<{ data: SeatStatistics }>(
+    `/events/${eventId}/seats/statistics`,
+  );
+  return response.data;
+}
+
+// ──────────────────────────────────────────────────────────────
+// Dashboard APIs
+// ──────────────────────────────────────────────────────────────
+
+export async function getSeatAllocationSummary(eventId: string): Promise<SeatAllocationSummary> {
+  const response = await apiGet<{ data: SeatAllocationSummary }>(
+    `/organizer-dashboard/events/${eventId}/seats/summary`,
+  );
+  return response.data;
+}
+
+export async function getSeatAllocations(
+  eventId: string,
+  page: number,
+  limit: number,
+  status: string,
+): Promise<{ allocations: SeatAllocation[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
+  const response = await apiGet<{
+    data: {
+      allocations: SeatAllocation[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    };
+  }>(`/organizer-dashboard/events/${eventId}/seats/allocations?page=${page}&limit=${limit}&status=${status}`);
+  return response.data;
+}
+
+export async function getSeatAllocationByType(eventId: string): Promise<SeatAllocationByType> {
+  const response = await apiGet<{ data: SeatAllocationByType }>(
+    `/organizer-dashboard/events/${eventId}/seats/by-type`,
+  );
+  return response.data;
+}
+
+export async function getSeatOperations(
+  eventId: string,
+  limit: number,
+): Promise<{ operations: SeatOperation[] }> {
+  const response = await apiGet<{ data: { operations: SeatOperation[] } }>(
+    `/organizer-dashboard/events/${eventId}/seats/operations?limit=${limit}`,
+  );
+  return response.data;
+}
+
+export async function getRegistrationSeats(
+  registrationId: string,
+): Promise<{ registrationId: string; seats: RegistrationSeat[]; seatCount: number }> {
+  const response = await apiGet<{
+    data: { registrationId: string; seats: RegistrationSeat[]; seatCount: number };
+  }>(`/registrations/${registrationId}/seats`);
+  return response.data;
 }
 
 // ──────────────────────────────────────────────────────────────
 // Seating Configuration APIs
 // ──────────────────────────────────────────────────────────────
 
-/**
- * Configure seating model for an event
- * Sets CUSTOMER_SELECTS, ORGANIZER_ASSIGNS, or HYBRID
- */
 export async function configureSeating(data: SeatingConfigRequest): Promise<{ success: boolean }> {
-  try {
-    const response = await apiClient.post<{ success: boolean }>(
-      `/api/v1/organizer-dashboard/events/${data.eventId}/seating/configure`,
-      {
-        seatingType: data.seatingType,
-        seatMapRequired: data.seatMapRequired,
-        description: data.description,
-      },
-    );
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to configure seating',
-      'SEATING_CONFIG_FAILED',
-      error,
-    );
-  }
+  return apiPost<{ success: boolean }>(
+    `/organizer-dashboard/events/${data.eventId}/seating/configure`,
+    {
+      seatingType: data.seatingType,
+      seatMapRequired: data.seatMapRequired,
+      description: data.description,
+    },
+  );
 }
 
-/**
- * Validate seating configuration before event publication
- */
-export async function validateSeatingConfiguration(
-  eventId: string,
-): Promise<SeatingValidationResponse> {
-  try {
-    const response = await apiClient.post<SeatingValidationResponse>(
-      `/api/v1/organizer-dashboard/events/${eventId}/seating/validate`,
-      {},
-    );
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to validate seating configuration',
-      'SEATING_VALIDATION_FAILED',
-      error,
-    );
-  }
+export async function validateSeatingConfiguration(eventId: string): Promise<SeatingValidationResponse> {
+  const response = await apiGet<{ data: SeatingValidationResponse }>(
+    `/organizer-dashboard/events/${eventId}/seating/validate`,
+    {},
+  );
+  return response.data;
 }
 
-/**
- * Retrieve current seating configuration for an event
- */
 export async function getSeatingConfiguration(eventId: string): Promise<{
   seatingType: string;
   hasSeatingMap: boolean;
   seatMapRequired: boolean;
   description?: string;
 }> {
-  try {
-    const response = await apiClient.get<{
+  const response = await apiGet<{
+    data: {
       seatingType: string;
       hasSeatingMap: boolean;
       seatMapRequired: boolean;
       description?: string;
-    }>(`/api/v1/events/${eventId}/seating/configuration`);
-    return response.data;
-  } catch (error) {
-    throw new ExtendedError(
-      error instanceof Error ? error.message : 'Failed to fetch seating configuration',
-      'FETCH_CONFIG_FAILED',
-      error,
-    );
-  }
+    };
+  }>(`/events/${eventId}/seating/configuration`);
+  return response.data;
 }
-
-export default {
-  reserveSeats,
-  confirmSeatReservations,
-  requestSeatChange,
-  assignSeat,
-  saveSeatPreferences,
-  getAvailableSeats,
-  getSeatStatistics,
-  configureSeating,
-  validateSeatingConfiguration,
-  getSeatingConfiguration,
-};

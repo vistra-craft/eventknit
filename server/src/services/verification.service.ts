@@ -108,9 +108,9 @@ export class VerificationService {
 
     // Create or update KYC documents
     const documentTypes = [
-      { type: 'BUSINESS_LICENSE', url: data.businessLicenseUrl },
-      { type: 'TAX_ID', url: data.taxDocumentUrl, number: data.taxId },
-    ] as { type: any, url: string | undefined, number?: string }[];
+      { type: 'BUSINESS_LICENSE' as const, url: data.businessLicenseUrl },
+      { type: 'TAX_ID' as const, url: data.taxDocumentUrl, number: data.taxId },
+    ] as Array<{ type: 'BUSINESS_LICENSE' | 'TAX_ID'; url: string | undefined; number?: string }>;
 
     for (const doc of documentTypes) {
       if (doc.url) {
@@ -135,7 +135,7 @@ export class VerificationService {
           await prisma.kYCDocument.create({
             data: {
               userId,
-              documentType: doc.type as any,
+              documentType: doc.type,
               documentUrl: doc.url,
               documentNumber: doc.number,
               status: 'PENDING',

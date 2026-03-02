@@ -2,6 +2,7 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { parseMailTrapConfig, type MailTrapConfig } from '../types/configuration.types.js';
+import { Prisma } from '@prisma/client';
 
 export class ConfigurationService {
   /**
@@ -79,7 +80,7 @@ export class ConfigurationService {
     await prisma.configuration.update({
       where: { id: configuration.id },
       data: {
-        mailTrap: mailTrapConfig as any, // Prisma Json type requires any cast
+        mailTrap: mailTrapConfig as Prisma.JsonValue,
         updatedBy,
       },
     });

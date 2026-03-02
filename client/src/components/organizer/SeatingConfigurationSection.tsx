@@ -6,9 +6,7 @@
  */
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertCircle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -93,7 +91,7 @@ export const SeatingConfigurationSection = ({
             {(
               [
                 { value: 'CUSTOMER_SELECTS', label: 'Customers choose seats during purchase' },
-                { value: 'ORGANIZER_ASSIGNS', label: 'I'll assign seats after purchase' },
+                { value: 'ORGANIZER_ASSIGNS', label: "I'll assign seats after purchase" },
                 { value: 'HYBRID', label: 'Different rules for different ticket types' },
               ] as const
             ).map(({ value, label }) => (

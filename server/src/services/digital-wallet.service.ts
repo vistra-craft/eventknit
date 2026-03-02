@@ -2,6 +2,7 @@ import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { TicketService } from './ticket.service.js';
+import { Prisma } from '@prisma/client';
 
 export class DigitalWalletService {
   /**
@@ -64,9 +65,9 @@ export class DigitalWalletService {
       }
 
       return wallet;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error getting wallet:', error);
-      throw new ValidationError(`Failed to get wallet: ${error.message}`);
+      throw new ValidationError(`Failed to get wallet: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -130,12 +131,12 @@ export class DigitalWalletService {
 
       logger.info(`Ticket added to wallet: ${registrationId}`);
       return walletTicket;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error adding ticket to wallet:', error);
-      throw new ValidationError(`Failed to add ticket: ${error.message}`);
+      throw new ValidationError(`Failed to add ticket: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -171,12 +172,12 @@ export class DigitalWalletService {
 
       logger.info(`Ticket removed from wallet: ${registrationId}`);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error removing ticket from wallet:', error);
-      throw new ValidationError(`Failed to remove ticket: ${error.message}`);
+      throw new ValidationError(`Failed to remove ticket: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -203,9 +204,9 @@ export class DigitalWalletService {
       });
 
       return updated;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error updating wallet preferences:', error);
-      throw new ValidationError(`Failed to update preferences: ${error.message}`);
+      throw new ValidationError(`Failed to update preferences: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -250,7 +251,7 @@ export class DigitalWalletService {
             {
               key: 'attendee',
               label: 'Attendee',
-              value: `${(walletTicket.registration as any).attendee?.firstName || ''} ${(walletTicket.registration as any).attendee?.lastName || ''}`.trim(),
+              value: `${(walletTicket.registration as Record<string, unknown>).attendee ? `${((walletTicket.registration as Record<string, unknown>).attendee as Record<string, unknown>).firstName || ''} ${((walletTicket.registration as Record<string, unknown>).attendee as Record<string, unknown>).lastName || ''}` : ''}`.trim(),
             },
             {
               key: 'date',
@@ -275,7 +276,7 @@ export class DigitalWalletService {
           message: TicketService.generateTicketData(
             registrationId,
             walletTicket.registration.eventId,
-            (walletTicket.registration as any).attendee?.email || '',
+            ((walletTicket.registration as Record<string, unknown>).attendee as Record<string, unknown>)?.email as string || '',
           ),
           format: 'PKBarcodeFormatQR',
           messageEncoding: 'iso-8859-1',
@@ -286,18 +287,18 @@ export class DigitalWalletService {
       await prisma.walletTicket.update({
         where: { registrationId },
         data: {
-          passData: passData as any,
+          passData: passData as Prisma.JsonValue,
           lastAccessedAt: new Date(),
         },
       });
 
       return { passData, downloadUrl: `/api/v1/user/wallet/${registrationId}/apple-pass` };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error generating Apple Wallet pass:', error);
-      throw new ValidationError(`Failed to generate pass: ${error.message}`);
+      throw new ValidationError(`Failed to generate pass: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -359,18 +360,18 @@ export class DigitalWalletService {
       await prisma.walletTicket.update({
         where: { registrationId },
         data: {
-          passData: passData as any,
+          passData: passData as Prisma.JsonValue,
           lastAccessedAt: new Date(),
         },
       });
 
       return { passData, saveUrl: `/api/v1/user/wallet/${registrationId}/google-pass` };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error generating Google Pay pass:', error);
-      throw new ValidationError(`Failed to generate pass: ${error.message}`);
+      throw new ValidationError(`Failed to generate pass: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

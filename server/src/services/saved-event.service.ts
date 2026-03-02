@@ -45,7 +45,18 @@ export class SavedEventService {
     const limit = options?.limit || 20;
     const skip = (page - 1) * limit;
 
-    const where: any = {
+    const where: {
+      userId: string;
+      event: {
+        deletedAt: null;
+        OR?: Array<{
+          title?: { contains: string; mode: 'insensitive' };
+          location?: { contains: string; mode: 'insensitive' };
+          venueName?: { contains: string; mode: 'insensitive' };
+        }>;
+        category?: string;
+      };
+    } = {
       userId,
       event: {
         deletedAt: null,
@@ -225,7 +236,7 @@ export class SavedEventService {
       select: { eventId: true },
     });
 
-    const savedSet = new Set(savedEvents.map((s: any) => s.eventId));
+    const savedSet = new Set(savedEvents.map((s: { eventId: string }) => s.eventId));
     return eventIds.reduce(
       (acc, id) => {
         acc[id] = savedSet.has(id);

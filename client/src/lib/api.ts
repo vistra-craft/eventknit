@@ -302,7 +302,8 @@ export const apiRequest = async <T>(
 /**
  * GET request
  */
-export const apiGet = <T>(endpoint: string): Promise<T> => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const apiGet = <T>(endpoint: string, _options?: { params?: Record<string, string | number | boolean> }): Promise<T> => {
   return apiRequest<T>(endpoint, { method: 'GET' });
 };
 

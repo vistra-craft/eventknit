@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
 import crypto from 'crypto';
-import { RegistrationStatus, TicketStatus } from '@prisma/client';
+import { RegistrationStatus, TicketStatus, Prisma } from '@prisma/client';
 import { TicketService } from './ticket.service.js';
 import { DigitalWalletService } from './digital-wallet.service.js';
 import { emailService } from './email.service.js';
@@ -292,7 +292,7 @@ export class TicketTransferService {
             status: RegistrationStatus.CONFIRMED,
             paymentStatus: oldRegistration.paymentStatus,
             ticketType: oldRegistration.ticketType,
-            registrationData: (oldRegistration.registrationData as any) || undefined,
+            registrationData: (oldRegistration.registrationData as Prisma.JsonValue) || undefined,
             backupCode: TicketService.generateBackupTicketCode(),
             qrSecret: crypto.randomUUID(),
           },
@@ -621,7 +621,7 @@ export class TicketTransferService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {};
+      const where: { fromUserId?: string; toUserId?: string; OR?: Array<{ fromUserId: string } | { toUserId: string }> } = {};
 
       if (filters?.type === 'sent') {
         where.fromUserId = userId;

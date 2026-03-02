@@ -78,7 +78,18 @@ export class PlatformExpenseService {
     notes?: string;
     createdBy?: string;
   }) {
-    const expenseData: any = {
+    const expenseData: {
+      category: string;
+      description: string;
+      amount: Prisma.Decimal;
+      currency: string;
+      status?: string;
+      expenseDate?: Date;
+      vendorName?: string;
+      taxRate?: Prisma.Decimal;
+      notes?: string;
+      createdBy?: string;
+    } = {
       category: data.category,
       description: data.description,
       amount: new Prisma.Decimal(data.amount),
@@ -123,7 +134,17 @@ export class PlatformExpenseService {
       throw new NotFoundError('Expense not found');
     }
 
-    const updateData: any = {};
+    const updateData: Partial<{
+      category: string;
+      description: string;
+      amount: Prisma.Decimal;
+      currency: string;
+      status: string;
+      expenseDate: Date;
+      vendorName: string;
+      taxRate: Prisma.Decimal;
+      notes: string;
+    }> = {};
 
     if (data.category !== undefined) updateData.category = data.category;
     if (data.description !== undefined) updateData.description = data.description;
@@ -248,7 +269,18 @@ export class PlatformIncomeService {
     notes?: string;
     createdBy?: string;
   }) {
-    const incomeData: any = {
+    const incomeData: {
+      category: string;
+      description: string;
+      amount: Prisma.Decimal;
+      currency: string;
+      status?: string;
+      incomeDate?: Date;
+      source?: string;
+      transactionId?: string;
+      notes?: string;
+      createdBy?: string;
+    } = {
       category: data.category,
       description: data.description,
       amount: new Prisma.Decimal(data.amount),
@@ -288,7 +320,17 @@ export class PlatformIncomeService {
       throw new NotFoundError('Income not found');
     }
 
-    const updateData: any = {};
+    const updateData: Partial<{
+      category: string;
+      description: string;
+      amount: Prisma.Decimal;
+      currency: string;
+      status: string;
+      incomeDate: Date;
+      source: string;
+      transactionId: string;
+      notes: string;
+    }> = {};
 
     if (data.category !== undefined) updateData.category = data.category;
     if (data.description !== undefined) updateData.description = data.description;

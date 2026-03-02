@@ -1,11 +1,11 @@
 import multer from 'multer';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 // Configure storage
 const storage = multer.memoryStorage(); // Store files in memory for Cloudinary upload
 
 // File filter for images only
-const fileFilter = (_req: Request, file: any, cb: any) => {
+const fileFilter = (_req: Request, file: multer.File, cb: multer.FileFilterCallback) => {
   // Check if file is an image
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
@@ -15,7 +15,7 @@ const fileFilter = (_req: Request, file: any, cb: any) => {
 };
 
 // Multer configuration
-export const upload: any = multer({
+export const upload = multer({
   storage,
   fileFilter,
   limits: {

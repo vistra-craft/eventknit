@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+// Removed unused import: Prisma
 
 export class EventCalendarService {
   /**
@@ -87,12 +88,12 @@ export class EventCalendarService {
 
       logger.info(`Event synced to ${calendarType} calendar: ${registrationId}`);
       return { sync, calendarData };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error syncing to calendar:', error);
-      throw new ValidationError(`Failed to sync to calendar: ${error.message}`);
+      throw new ValidationError(`Failed to sync to calendar: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -125,9 +126,9 @@ export class EventCalendarService {
       });
 
       return syncs;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error fetching calendar syncs:', error);
-      throw new ValidationError(`Failed to fetch syncs: ${error.message}`);
+      throw new ValidationError(`Failed to fetch syncs: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -157,22 +158,23 @@ export class EventCalendarService {
 
       logger.info(`Calendar sync removed: ${syncId}`);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error removing calendar sync:', error);
-      throw new ValidationError(`Failed to remove sync: ${error.message}`);
+      throw new ValidationError(`Failed to remove sync: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
    * Generate calendar file (iCal format)
    */
-  private static generateCalendarFile(sync: any, calendarType: string) {
-    const event = sync.registration.event;
-    const startDate = new Date(event.startDate);
-    const endDate = event.endDate ? new Date(event.endDate) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+  private static generateCalendarFile(sync: Record<string, unknown>, calendarType: string) {
+    const registration = (sync.registration as Record<string, unknown>);
+    const event = (registration.event as Record<string, unknown>);
+    const startDate = new Date(event.startDate as Date);
+    const endDate = event.endDate ? new Date(event.endDate as Date) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
 
     // Generate iCal format
     const ical = [
@@ -206,8 +208,9 @@ export class EventCalendarService {
     return `${date.toISOString().replace(/[-:]/g, '').split('.')[0]  }Z`;
   }
 
-  private static generateJSONCalendar(sync: any) {
-    const event = sync.registration.event;
+  private static generateJSONCalendar(sync: Record<string, unknown>) {
+    const registration = (sync.registration as Record<string, unknown>);
+    const event = (registration.event as Record<string, unknown>);
     return {
       summary: event.title,
       description: event.description || '',

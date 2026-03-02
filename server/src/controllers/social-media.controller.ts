@@ -273,7 +273,7 @@ export class SocialMediaController {
 
       const post = await SocialMediaService.createPost(req.user.id, {
         eventId: req.body.eventId,
-        platform: platform as any,
+        platform: platform as 'facebook' | 'twitter' | 'instagram' | 'linkedin',
         content,
         mediaUrls,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : undefined,

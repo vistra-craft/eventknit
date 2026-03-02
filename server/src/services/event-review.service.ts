@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
 
@@ -105,14 +105,11 @@ export class EventReviewService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: Prisma.EventReviewWhereInput = {
         eventId,
         status: filters?.status || 'APPROVED',
+        ...(filters?.rating && { rating: filters.rating }),
       };
-
-      if (filters?.rating) {
-        where.rating = filters.rating;
-      }
 
       const [reviews, total] = await Promise.all([
         prisma.eventReview.findMany({

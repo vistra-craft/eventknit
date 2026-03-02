@@ -53,7 +53,11 @@ export class VenueController {
         return;
       }
 
-      const venues = await VenueService.getVenues(req.user.id, req.query as any);
+      const venues = await VenueService.getVenues(req.user.id, req.query as {
+        isActive?: string | boolean;
+        venueType?: string;
+        search?: string;
+      });
       res.json({
         success: true,
         data: { venues },

@@ -10,13 +10,12 @@ import { prisma } from '../src/config/database.js';
 import {
   NotFoundError,
   ValidationError,
-  AppError,
 } from '../src/utils/errors.js';
 import { SeatingType } from '@prisma/client';
 
 describe('SeatingConfigurationService', () => {
-  let testEventId = '';
-  let testTicketTypeId = '';
+  const testEventId = '';
+  const testTicketTypeId = '';
 
   beforeAll(async () => {
     // Setup: Create test event and ticket type

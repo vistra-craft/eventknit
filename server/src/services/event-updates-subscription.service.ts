@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { Prisma } from '@prisma/client';
 
 export class EventUpdatesSubscriptionService {
   /**
@@ -54,12 +55,12 @@ export class EventUpdatesSubscriptionService {
 
       logger.info(`User ${userId} subscribed to event ${eventId}`);
       return subscription;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error subscribing to event:', error);
-      throw new ValidationError(`Failed to subscribe: ${error.message}`);
+      throw new ValidationError(`Failed to subscribe: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -96,12 +97,12 @@ export class EventUpdatesSubscriptionService {
 
       logger.info(`User ${userId} unsubscribed from event ${eventId}`);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error unsubscribing:', error);
-      throw new ValidationError(`Failed to unsubscribe: ${error.message}`);
+      throw new ValidationError(`Failed to unsubscribe: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -110,10 +111,10 @@ export class EventUpdatesSubscriptionService {
    */
   static async getUserSubscriptions(userId: string, activeOnly: boolean = true) {
     try {
-      const where: any = { userId };
-      if (activeOnly) {
-        where.isActive = true;
-      }
+      const where: Prisma.EventUpdateSubscriptionWhereInput = { 
+        userId,
+        ...(activeOnly && { isActive: true }),
+      };
 
       const subscriptions = await prisma.eventUpdateSubscription.findMany({
         where,
@@ -134,9 +135,9 @@ export class EventUpdatesSubscriptionService {
       });
 
       return subscriptions;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error fetching subscriptions:', error);
-      throw new ValidationError(`Failed to fetch subscriptions: ${error.message}`);
+      throw new ValidationError(`Failed to fetch subscriptions: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -187,12 +188,12 @@ export class EventUpdatesSubscriptionService {
       });
 
       return updated;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error updating subscription:', error);
-      throw new ValidationError(`Failed to update subscription: ${error.message}`);
+      throw new ValidationError(`Failed to update subscription: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

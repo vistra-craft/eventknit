@@ -1,6 +1,5 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useSeatAllocationByType } from '@/hooks/queries/seats';
 import { AlertCircle, Users } from 'lucide-react';
 

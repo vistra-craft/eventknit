@@ -40,7 +40,7 @@ export class PayoutManagementService {
     bankCode?: string;
     routingNumber?: string;
     paystackRecipientCode?: string;
-    alternativeMethods?: any;
+    alternativeMethods?: Record<string, unknown>;
     autoPayoutEnabled?: boolean;
     autoPayoutThreshold?: number;
     autoPayoutSchedule?: string;
@@ -94,7 +94,12 @@ export class PayoutManagementService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: {
+        organizerId: string;
+        status?: string;
+        startDate?: { gte: Date };
+        endDate?: { lte: Date };
+      } = {
         organizerId,
       };
 
@@ -166,7 +171,11 @@ export class PayoutManagementService {
       }
 
       // Get pending platform fees for the organizer
-      const where: any = {
+      const where: {
+        event: { organizerId: string };
+        status: string;
+        amountOwed?: { gt: number };
+      } = {
         event: {
           organizerId,
         },

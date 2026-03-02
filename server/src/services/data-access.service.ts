@@ -43,7 +43,7 @@ export class DataAccessService {
    * Filter attendee data based on subscription tier and consent
    */
   static async filterAttendeeData(
-    registrations: any[],
+    registrations: Record<string, unknown>[],
     organizerId: string,
     eventId: string,
     ipAddress?: string,
@@ -116,7 +116,7 @@ export class DataAccessService {
         const hasDemographicsConsent = await ConsentService.hasConsent(reg.id, 'demographics');
         const hasAnalyticsConsent = await ConsentService.hasConsent(reg.id, 'analytics');
 
-        const filteredReg: any = {
+        const filteredReg: Record<string, unknown> = {
           id: reg.id,
           eventId: reg.eventId,
           attendeeId: reg.attendeeId,

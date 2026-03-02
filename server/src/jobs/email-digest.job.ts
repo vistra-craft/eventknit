@@ -243,7 +243,7 @@ export class EmailDigestJob {
         userId: data.userId,
         notificationId: data.notificationId,
         digestType: data.digestType,
-        notificationType: data.notificationType as any,
+        notificationType: data.notificationType as string,
         title: data.title,
         message: data.message,
         eventId: data.eventId,

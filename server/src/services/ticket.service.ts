@@ -910,13 +910,13 @@ export class TicketService {
     // Extract seat allocation details when the attendee has a reserved seat
     const seatInfo = registration.seatReservation?.seat
       ? {
-          seatIdentifier: registration.seatReservation.seat.seatIdentifier,
-          sectionId: registration.seatReservation.seat.sectionId ?? undefined,
-          rowLabel: registration.seatReservation.seat.rowLabel ?? undefined,
-          seatLabel: registration.seatReservation.seat.seatLabel ?? undefined,
-          seatType: registration.seatReservation.seat.seatType,
-          reservationStatus: registration.seatReservation.status,
-        }
+        seatIdentifier: registration.seatReservation.seat.seatIdentifier,
+        sectionId: registration.seatReservation.seat.sectionId ?? undefined,
+        rowLabel: registration.seatReservation.seat.rowLabel ?? undefined,
+        seatLabel: registration.seatReservation.seat.seatLabel ?? undefined,
+        seatType: registration.seatReservation.seat.seatType,
+        reservationStatus: registration.seatReservation.status,
+      }
       : undefined;
 
     return {

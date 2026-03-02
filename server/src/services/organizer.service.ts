@@ -785,7 +785,7 @@ export class OrganizerService {
               ? JSON.parse(event.ticketTypes)
               : [];
 
-          ticketTypes.forEach((ticketType: any) => {
+          ticketTypes.forEach((ticketType: { name?: string; availableUntil?: string; [key: string]: unknown }) => {
             if (ticketType.availableUntil) {
               const deadlineDate = new Date(ticketType.availableUntil);
               if (deadlineDate > now) {

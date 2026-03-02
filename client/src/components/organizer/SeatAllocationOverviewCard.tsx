@@ -1,6 +1,5 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useSeatAllocationSummary } from '@/hooks/queries/seats';
 import { AlertCircle, CheckCircle, Clock, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';

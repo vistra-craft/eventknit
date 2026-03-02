@@ -5,9 +5,12 @@
  * Ensures seats properly transition between attendees while maintaining data integrity
  */
 
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
+
+type PrismaTransactionClient = Prisma.TransactionClient;
 
 interface TransferSeatParams {
   fromRegistrationId: string;
@@ -34,7 +37,7 @@ export class SeatTransferHelperService {
    * Used when transferring tickets between users
    */
   static async transferSeats(
-    txOrClient: any, // Prisma transaction or client
+    txOrClient: PrismaTransactionClient,
     params: TransferSeatParams,
   ): Promise<{ transferred: number; errors: string[] }> {
     try {
@@ -121,7 +124,7 @@ export class SeatTransferHelperService {
    * - HYBRID: Check ticket type and apply appropriate behavior
    */
   static async handleResaleSeats(
-    txOrClient: any, // Prisma transaction or client
+    txOrClient: PrismaTransactionClient,
     params: ResaleSeatParams,
   ): Promise<{ action: string; transferred: number; released: number; errors: string[] }> {
     try {
@@ -157,16 +160,9 @@ export class SeatTransferHelperService {
 
         for (const seat of seats) {
           try {
-            // Release the seat - buyer will select a different seat
-            await txOrClient.seatReservation.update({
+            // Release the seat - delete the reservation so the buyer can select a new one
+            await txOrClient.seatReservation.delete({
               where: { id: seat.id },
-              data: {
-                status: 'RELEASED', // Mark as available
-                registrationId: null, // Unlink from registration
-                attendeeName: null,
-                attendeeEmail: null,
-                attendeePhone: null,
-              },
             });
 
             released++;

@@ -58,7 +58,7 @@ export class AdminKYCController {
     next: NextFunction,
   ) {
     try {
-      const query = req.query as Record<string, any>;
+      const query = req.query as Record<string, string | undefined>;
       const status = typeof query.status === 'string' ? query.status : undefined;
       const entityType = typeof query.entityType === 'string' ? query.entityType : undefined;
       const search = typeof query.search === 'string' ? query.search : undefined;
@@ -68,13 +68,13 @@ export class AdminKYCController {
       const sortOrder = typeof query.sortOrder === 'string' ? query.sortOrder : undefined;
 
       const result = await KYCService.listKYCSubmissions({
-        status: status as any,
-        entityType: entityType as any,
+        status: status as 'PENDING' | 'APPROVED' | 'REJECTED' | 'INCOMPLETE' | undefined,
+        entityType: entityType as 'INDIVIDUAL' | 'BUSINESS' | undefined,
         search,
         page: page ? parseInt(page, 10) : undefined,
         limit: limit ? parseInt(limit, 10) : undefined,
         sortBy: sortBy || undefined,
-        sortOrder: sortOrder as any,
+        sortOrder: sortOrder as 'asc' | 'desc' | undefined,
       });
 
       res.json({ success: true, data: result });

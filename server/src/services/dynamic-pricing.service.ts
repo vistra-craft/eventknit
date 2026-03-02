@@ -1,7 +1,7 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
-import { SeatType, SeatStatus } from '@prisma/client';
+import { SeatType, SeatStatus, Prisma } from '@prisma/client';
 
 export interface SeatPricingContext {
   eventId: string;
@@ -58,7 +58,7 @@ export class DynamicPricingService {
         threshold: data.threshold,
         priceChangeType: data.priceChangeType,
         priceChangeValue: data.priceChangeValue,
-      } as any, // metric/threshold fields may differ in schema; keep flexible for tests
+      } as Prisma.DynamicPricingRuleUncheckedCreateInput,
     });
 
     return rule;
@@ -157,18 +157,12 @@ export class DynamicPricingService {
     isActive?: boolean;
   }) {
     try {
-      const where: any = {
+      const where: Prisma.DynamicPricingRuleWhereInput = {
         eventId,
         organizerId,
+        ...(filters?.type && { type: filters.type as 'time_based' | 'demand_based' | 'group_discount' | 'loyalty' }),
+        ...(filters?.isActive !== undefined && { isActive: filters.isActive }),
       };
-
-      if (filters?.type) {
-        where.type = filters.type;
-      }
-
-      if (filters?.isActive !== undefined) {
-        where.isActive = filters.isActive;
-      }
 
       const rules = await prisma.dynamicPricingRule.findMany({
         where,
@@ -210,13 +204,13 @@ export class DynamicPricingService {
       }
 
       // Get base price from ticket types
-      const ticketTypes = event.ticketTypes as any[];
-      const ticket = ticketTypes?.find((t: any) => t.name === ticketType);
+      const ticketTypes = event.ticketTypes as Record<string, unknown>[];
+      const ticket = ticketTypes?.find((t) => (t as Record<string, unknown>).name === ticketType);
       if (!ticket) {
         throw new NotFoundError('Ticket type not found');
       }
 
-      const originalPrice = Number(ticket.price);
+      const originalPrice = Number((ticket as Record<string, unknown>).price);
       let finalPrice = originalPrice;
       const appliedRules: string[] = [];
 
@@ -618,7 +612,7 @@ export class DynamicPricingService {
       );
 
       // Price by seat type
-      const bySeatType: Record<string, any> = {};
+      const bySeatType: Record<string, Record<string, unknown>> = {};
       for (const seat of seats) {
         if (!bySeatType[seat.seatType]) {
           bySeatType[seat.seatType] = {
@@ -631,20 +625,25 @@ export class DynamicPricingService {
             totalCurrentPrice: 0,
           };
         }
-        const stats = bySeatType[seat.seatType];
-        stats.total++;
-        stats.totalBasePrice += Number(seat.basePrice || 0);
-        stats.totalCurrentPrice += Number(seat.currentPrice || seat.basePrice || 0);
-        if (seat.status === SeatStatus.AVAILABLE) stats.available++;
-        if (seat.status === SeatStatus.BOOKED) stats.sold++;
+        const stats = bySeatType[seat.seatType] as Record<string, number>;
+        stats.total = (stats.total as number) + 1;
+        stats.totalBasePrice = (stats.totalBasePrice as number) + Number(seat.basePrice || 0);
+        stats.totalCurrentPrice = (stats.totalCurrentPrice as number) + Number(seat.currentPrice || seat.basePrice || 0);
+        if (seat.status === SeatStatus.AVAILABLE) stats.available = (stats.available as number) + 1;
+        if (seat.status === SeatStatus.BOOKED) stats.sold = (stats.sold as number) + 1;
       }
 
       for (const type in bySeatType) {
-        const stats = bySeatType[type];
-        stats.avgBasePrice = stats.total > 0 ? Math.round(stats.totalBasePrice / stats.total) : 0;
-        stats.avgCurrentPrice = stats.total > 0 ? Math.round(stats.totalCurrentPrice / stats.total) : 0;
-        stats.priceUplift = stats.avgBasePrice > 0
-          ? Math.round(((stats.avgCurrentPrice - stats.avgBasePrice) / stats.avgBasePrice) * 10000) / 100
+        const stats = bySeatType[type] as Record<string, number>;
+        const total = stats.total as number;
+        const totalBasePrice = stats.totalBasePrice as number;
+        const totalCurrentPrice = stats.totalCurrentPrice as number;
+        const avgBasePrice = total > 0 ? Math.round(totalBasePrice / total) : 0;
+        const avgCurrentPrice = total > 0 ? Math.round(totalCurrentPrice / total) : 0;
+        stats.avgBasePrice = avgBasePrice;
+        stats.avgCurrentPrice = avgCurrentPrice;
+        stats.priceUplift = avgBasePrice > 0
+          ? Math.round(((avgCurrentPrice - avgBasePrice) / avgBasePrice) * 10000) / 100
           : 0;
       }
 

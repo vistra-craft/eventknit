@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
 import crypto from 'crypto';
@@ -64,10 +64,10 @@ export class EventCollectionService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = { userId };
-      if (filters?.isPublic !== undefined) {
-        where.isPublic = filters.isPublic;
-      }
+      const where: Prisma.EventCollectionWhereInput = { 
+        userId,
+        ...(filters?.isPublic !== undefined && { isPublic: filters.isPublic }),
+      };
 
       const [collections, total] = await Promise.all([
         prisma.eventCollection.findMany({

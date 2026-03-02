@@ -14,9 +14,9 @@ import {
 } from '../src/utils/errors.js';
 
 describe('SeatAllocationService', () => {
-  let testEventId = '';
-  let testRegistrationId = '';
-  let testSeatIds: string[] = [];
+  const testEventId = '';
+  const testRegistrationId = '';
+  const testSeatIds: string[] = [];
 
   beforeAll(async () => {
     // Setup: Create test event, seats, and registration

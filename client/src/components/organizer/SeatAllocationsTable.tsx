@@ -15,7 +15,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { useSeatAllocations } from '@/hooks/queries/seats';
 import { AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -34,24 +34,24 @@ export function SeatAllocationsList({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const limit = 50;
 
-  const { data: allocationsResponse, isLoading, error } = useSeatAllocations(
+  const { data: allocationsData, isLoading, error } = useSeatAllocations(
     eventId,
     page,
     limit,
     statusFilter,
   );
 
-  const allocations = allocationsResponse?.data?.allocations || [];
-  const pagination = allocationsResponse?.data?.pagination;
+  const allocations = allocationsData?.allocations || [];
+  const pagination = allocationsData?.pagination;
 
   const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; variant: any }> = {
+    const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
       CONFIRMED: { label: 'Confirmed', variant: 'default' },
       PENDING: { label: 'Pending', variant: 'secondary' },
       RELEASED: { label: 'Released', variant: 'outline' },
     };
 
-    const config = statusMap[status] || { label: status, variant: 'secondary' };
+    const config = statusMap[status] || { label: status, variant: 'secondary' as const };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 

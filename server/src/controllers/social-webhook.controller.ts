@@ -161,11 +161,11 @@ export class SocialWebhookController {
   /**
    * Process Facebook event
    */
-  private static async processFacebookEvent(event: any) {
+  private static async processFacebookEvent(event: Record<string, unknown>) {
     try {
-      if (event.messaging) {
+      if ('messaging' in event) {
         logger.info('Facebook message event received');
-      } else if (event.changes) {
+      } else if ('changes' in event && Array.isArray(event.changes)) {
         for (const change of event.changes) {
           if (change.field === 'feed') {
             await this.updatePostMetrics('facebook', change.value.post_id);
@@ -180,10 +180,10 @@ export class SocialWebhookController {
   /**
    * Process Twitter event
    */
-  private static async processTwitterEvent(event: any) {
+  private static async processTwitterEvent(event: Record<string, unknown>) {
     try {
-      if (event.in_reply_to_status_id) {
-        await this.updatePostMetrics('twitter', event.in_reply_to_status_id);
+      if ('in_reply_to_status_id' in event) {
+        await this.updatePostMetrics('twitter', event.in_reply_to_status_id as string);
       }
     } catch (error) {
       logger.error('Error processing Twitter event:', error);
@@ -193,7 +193,7 @@ export class SocialWebhookController {
   /**
    * Process Instagram event
    */
-  private static async processInstagramEvent(_event: any) {
+  private static async processInstagramEvent(_event: Record<string, unknown>) {
     try {
       logger.info('Instagram event received');
     } catch (error) {

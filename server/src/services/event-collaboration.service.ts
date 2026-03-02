@@ -325,7 +325,11 @@ export class EventCollaborationService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: {
+        eventId: string;
+        action?: string;
+        userId?: string;
+      } = {
         eventId,
       };
 
@@ -378,7 +382,7 @@ export class EventCollaborationService {
     eventId: string,
     userId: string,
     action: string,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
     ipAddress?: string,
     userAgent?: string,
   ) {
@@ -403,7 +407,7 @@ export class EventCollaborationService {
   /**
    * Get action description
    */
-  private static getActionDescription(action: string, metadata?: any): string {
+  private static getActionDescription(action: string, metadata?: Record<string, unknown>): string {
     const descriptions: Record<string, string> = {
       collaborator_invited: `Invited ${metadata?.collaboratorId} as ${metadata?.role || 'collaborator'}`,
       collaboration_accepted: 'Accepted collaboration invitation',

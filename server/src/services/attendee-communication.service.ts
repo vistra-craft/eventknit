@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 import { NotificationService } from './notification.service.js';
-import { NotificationType, NotificationPriority, UserRole } from '@prisma/client';
+import { NotificationType, NotificationPriority, UserRole, Prisma } from '@prisma/client';
 import { emailService } from './email.service.js';
 
 /** Roles that bypass ownership checks */
@@ -40,10 +40,10 @@ export class AttendeeCommunicationService {
         title: data.subject,
         content: data.content,
         type: 'announcement',
-        targetAudience: 'SPECIFIC_EVENT' as any,
+        targetAudience: 'SPECIFIC_EVENT',
         eventId: data.audienceId, // store audience/segment reference
-        channels: { email: true, inApp: true, push: false, sms: false } as any,
-        status: 'SCHEDULED' as any,
+        channels: { email: true, inApp: true, push: false, sms: false } as Prisma.JsonValue,
+        status: 'SCHEDULED',
         scheduledAt: data.scheduledFor,
         createdBy: organizerId,
       },
@@ -115,9 +115,9 @@ export class AttendeeCommunicationService {
           }
 
           results.sent++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           results.failed++;
-          results.errors.push(`Failed to send to ${member.user.email}: ${error.message}`);
+          results.errors.push(`Failed to send to ${member.user.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           logger.error(`Error sending to user ${member.userId}:`, error);
         }
       }
@@ -151,13 +151,10 @@ export class AttendeeCommunicationService {
         throw new NotFoundError('Tag not found');
       }
 
-      const where: any = {
+      const where: Prisma.AttendeeTaggedUserWhereInput = {
         tagId,
+        ...(data.eventId && { eventId: data.eventId }),
       };
-
-      if (data.eventId) {
-        where.eventId = data.eventId;
-      }
 
       const taggedUsers = await prisma.attendeeTaggedUser.findMany({
         where,
@@ -201,9 +198,9 @@ export class AttendeeCommunicationService {
           }
 
           results.sent++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           results.failed++;
-          results.errors.push(`Failed to send to ${taggedUser.user.email}: ${error.message}`);
+          results.errors.push(`Failed to send to ${taggedUser.user.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           logger.error(`Error sending to user ${taggedUser.userId}:`, error);
         }
       }
@@ -227,26 +224,24 @@ export class AttendeeCommunicationService {
   }, userRole?: UserRole) {
     try {
       // Verify event exists (admin skips ownership check)
-      const eventWhere: any = { id: eventId, deletedAt: null };
-      if (!userRole || !ADMIN_ROLES.includes(userRole)) {
-        eventWhere.organizerId = organizerId;
-      }
+      const eventWhere: Prisma.EventWhereInput = { 
+        id: eventId, 
+        deletedAt: null,
+        ...(!userRole || !ADMIN_ROLES.includes(userRole) ? { organizerId } : {}),
+      };
       const event = await prisma.event.findFirst({ where: eventWhere });
 
       if (!event) {
         throw new NotFoundError('Event not found');
       }
 
-      const regWhere: any = {
+      const regWhere: Prisma.EventRegistrationWhereInput = {
         eventId,
         status: 'CONFIRMED',
+        ...(data.registrationIds && data.registrationIds.length > 0 ? {
+          id: { in: data.registrationIds },
+        } : {}),
       };
-
-      if (data.registrationIds && data.registrationIds.length > 0) {
-        regWhere.id = {
-          in: data.registrationIds,
-        };
-      }
 
       const registrations = await prisma.eventRegistration.findMany({
         where: regWhere,
@@ -291,9 +286,9 @@ export class AttendeeCommunicationService {
           }
 
           results.sent++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           results.failed++;
-          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error.message}`);
+          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           logger.error(`Error sending to registration ${registration.id}:`, error);
         }
       }
@@ -321,14 +316,10 @@ export class AttendeeCommunicationService {
       const skip = (page - 1) * limit;
 
       // Get bulk messages (admin sees all, organizer sees own)
-      const where: any = {};
-      if (!userRole || !ADMIN_ROLES.includes(userRole)) {
-        where.createdBy = organizerId;
-      }
-
-      if (filters?.eventId) {
-        where.eventId = filters.eventId;
-      }
+      const where: Prisma.BulkMessageWhereInput = {
+        ...(!userRole || !ADMIN_ROLES.includes(userRole) ? { createdBy: organizerId } : {}),
+        ...(filters?.eventId && { eventId: filters.eventId }),
+      };
 
       const [messages, total] = await Promise.all([
         prisma.bulkMessage.findMany({
@@ -603,9 +594,9 @@ export class AttendeeCommunicationService {
           });
 
           results.sent++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           results.failed++;
-          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error.message}`);
+          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           logger.error(`Error sending cancellation email to ${registration.attendee.email}:`, error);
         }
       }
@@ -736,9 +727,9 @@ export class AttendeeCommunicationService {
           });
 
           results.sent++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           results.failed++;
-          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error.message}`);
+          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           logger.error(`Error sending postponement email to ${registration.attendee.email}:`, error);
         }
       }
@@ -859,9 +850,9 @@ export class AttendeeCommunicationService {
           });
 
           results.sent++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           results.failed++;
-          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error.message}`);
+          results.errors.push(`Failed to send to ${registration.attendee.email}: ${error instanceof Error ? error.message : 'Unknown error'}`);
           logger.error(`Error sending update email to ${registration.attendee.email}:`, error);
         }
       }

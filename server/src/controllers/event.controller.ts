@@ -129,8 +129,8 @@ export class EventController {
   static async getEventById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const eventId = req.params.id as string;
-      const userId = (req as any).user?.id;
-      const userRole = (req as any).user?.role as string | undefined;
+      const userId = (req as AuthenticatedRequest).user?.id;
+      const userRole = (req as AuthenticatedRequest).user?.role as string | undefined;
       const isAdmin = userRole
         ? ['SUPERADMIN', 'ADMIN_STAFF', 'ADMIN_SUPPORT', 'ADMIN_FINANCE', 'ADMIN_MARKETING'].includes(userRole)
         : false;

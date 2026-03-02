@@ -1,4 +1,4 @@
-                                                                                                                                              /**
+/**
  * Seat Allocation Service
  *
  * Handles seat allocation for all seating models:
@@ -23,7 +23,7 @@ import {
   ConflictError,
   AppError,
 } from '../utils/errors.js';
-import { SeatStatus, SeatingType } from '@prisma/client';
+import { SeatStatus } from '@prisma/client';
 
 export interface SeatReservationData {
   registrationId: string;
@@ -482,7 +482,17 @@ export class SeatAllocationService {
       maxPrice?: number;
       minPrice?: number;
     },
-  ): Promise<any[]> {
+  ): Promise<{
+    id: string;
+    seatIdentifier: string;
+    sectionId: string | null;
+    rowLabel: string | null;
+    rowId: string | null;
+    seatLabel: string | null;
+    basePrice: import('@prisma/client').Prisma.Decimal | null;
+    currentPrice: import('@prisma/client').Prisma.Decimal | null;
+    seatType: import('@prisma/client').SeatType;
+  }[]> {
     try {
       const seats = await prisma.seat.findMany({
         where: {

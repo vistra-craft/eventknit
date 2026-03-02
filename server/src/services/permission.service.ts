@@ -116,7 +116,7 @@ export class PermissionService {
    */
   static async getAllPermissions(category?: string) {
     try {
-      const where: any = {};
+      const where: { category?: string } = {};
       if (category) {
         where.category = category;
       }

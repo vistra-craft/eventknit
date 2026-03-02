@@ -3,18 +3,18 @@
 declare module 'swagger-ui-express' {
   import { RequestHandler } from 'express';
 
-  export function serve(...args: any[]): RequestHandler;
-  export function setup(swaggerDoc: any, options?: any): RequestHandler;
+  export function serve(...args: unknown[]): RequestHandler;
+  export function setup(swaggerDoc: Record<string, unknown>, options?: Record<string, unknown>): RequestHandler;
 }
 
 declare module 'yamljs' {
-  export function load(file: string): any;
-  export function parse(yaml: string): any;
+  export function load(file: string): Record<string, unknown>;
+  export function parse(yaml: string): Record<string, unknown>;
 }
 
 declare module 'morgan' {
   import { RequestHandler } from 'express';
 
-  function morgan(format: string, options?: any): RequestHandler;
+  function morgan(format: string, options?: Record<string, unknown>): RequestHandler;
   export = morgan;
 }

@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ConflictError } from '../utils/errors.js';
+import { Prisma } from '@prisma/client';
 
 export interface CreateReportInput {
   eventId: string;
@@ -53,8 +54,8 @@ class EventReportService {
 
       logger.info(`Event report created: ${report.id} for event ${data.eventId} by user ${data.reportedBy}`);
       return report;
-    } catch (error: any) {
-      if (error.code === 'P2002') {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
         throw new ConflictError('You have already reported this event');
       }
       throw error;
@@ -68,9 +69,10 @@ class EventReportService {
     const { status, category, page = 1, limit = 20 } = options;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (status) where.status = status;
-    if (category) where.category = category;
+    const where: Prisma.EventReportWhereInput = {
+      ...(status && { status }),
+      ...(category && { category }),
+    };
 
     const [reports, total] = await Promise.all([
       prisma.eventReport.findMany({

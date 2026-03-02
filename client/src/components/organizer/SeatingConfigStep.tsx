@@ -11,16 +11,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertCircle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Armchair, AlertTriangle, CheckCircle2, Plus, Upload } from 'lucide-react';
-import { extractErrorMessage } from '@/lib/utils/error';
+import { Armchair, CheckCircle2, Plus } from 'lucide-react';
 
 export interface SeatingConfigStepData {
   hasSeatingMap: boolean;
@@ -49,7 +45,7 @@ const SEATING_TYPE_INFO = {
     ],
   },
   ORGANIZER_ASSIGNS: {
-    title: 'I'll assign seats after purchase',
+    title: "I'll assign seats after purchase",
     description: 'Best for: Corporate events, premium experiences, theater',
     icon: '👤',
     details: [
@@ -75,10 +71,8 @@ export const SeatingConfigStep = ({
   data,
   onUpdate,
   onOpenSeatMapBuilder,
-  eventId,
   isLoading = false,
 }: SeatingConfigStepProps) => {
-  const [showBuilder, setShowBuilder] = useState(false);
   const [selectedType, setSelectedType] = useState<string>(data.seatingType || '');
   const [error, setError] = useState<string>('');
 
@@ -98,7 +92,6 @@ export const SeatingConfigStep = ({
   const handleOpenBuilder = () => {
     if (onOpenSeatMapBuilder) {
       onOpenSeatMapBuilder();
-      setShowBuilder(false);
     }
   };
 

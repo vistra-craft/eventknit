@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -123,12 +124,12 @@ export class TicketResaleService {
 
       logger.info(`Ticket listed for resale: ${resale.id}`);
       return resale;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error listing ticket for resale:', error);
-      throw new ValidationError(`Failed to list ticket: ${error.message}`);
+      throw new ValidationError(`Failed to list ticket: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -148,7 +149,13 @@ export class TicketResaleService {
       const limit = filters?.limit || 20;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: {
+        status: string;
+        expiresAt: { gt: Date };
+        registration?: { eventId: string };
+        resalePrice?: { gte?: number; lte?: number };
+        category?: string;
+      } = {
         status: 'LISTED',
         expiresAt: {
           gt: new Date(),
@@ -212,9 +219,9 @@ export class TicketResaleService {
           totalPages: Math.ceil(total / limit),
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error fetching marketplace tickets:', error);
-      throw new ValidationError(`Failed to fetch tickets: ${error.message}`);
+      throw new ValidationError(`Failed to fetch tickets: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -223,7 +230,7 @@ export class TicketResaleService {
    */
   static async getUserResales(userId: string, status?: string) {
     try {
-      const where: any = { sellerId: userId };
+      const where: { sellerId: string; status?: string } = { sellerId: userId };
       if (status) {
         where.status = status;
       }
@@ -256,9 +263,9 @@ export class TicketResaleService {
       });
 
       return resales;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error fetching user resales:', error);
-      throw new ValidationError(`Failed to fetch resales: ${error.message}`);
+      throw new ValidationError(`Failed to fetch resales: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -349,12 +356,12 @@ export class TicketResaleService {
         accessCode: paymentResult.accessCode,
         reference: paymentResult.reference,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error initializing resale payment:', error);
-      throw new ValidationError(`Failed to initialize payment: ${error.message}`);
+      throw new ValidationError(`Failed to initialize payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -448,7 +455,7 @@ export class TicketResaleService {
             status: RegistrationStatus.CONFIRMED,
             paymentStatus: oldRegistration.paymentStatus,
             ticketType: oldRegistration.ticketType,
-            registrationData: (oldRegistration.registrationData as any) || undefined,
+            registrationData: (oldRegistration.registrationData as Prisma.JsonValue) || undefined,
             backupCode: TicketService.generateBackupTicketCode(),
             qrSecret: crypto.randomUUID(),
           },
@@ -566,12 +573,12 @@ export class TicketResaleService {
         registrationId: result.registration.id,
         needsSeatSelection: result.needsSeatSelection,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error verifying resale payment:', error);
-      throw new ValidationError(`Failed to verify payment: ${error.message}`);
+      throw new ValidationError(`Failed to verify payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -612,12 +619,12 @@ export class TicketResaleService {
 
       logger.info(`Resale cancelled: ${resaleId}`);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error cancelling resale:', error);
-      throw new ValidationError(`Failed to cancel resale: ${error.message}`);
+      throw new ValidationError(`Failed to cancel resale: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

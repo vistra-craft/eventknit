@@ -78,22 +78,22 @@ export class PDFService {
 
       const ticketData: TicketPDFData = {
         registrationId: registration.id,
-        attendeeName: `${(registration as any).attendee.firstName || ''} ${(registration as any).attendee.lastName || ''}`.trim(),
-        attendeeEmail: (registration as any).attendee.email,
-        eventTitle: (registration as any).event.title,
-        eventDate: this.formatDate((registration as any).event.startDate),
-        eventTime: this.formatTime((registration as any).event.startDate),
-        eventLocation: (registration as any).event.location || 'TBD',
-        ticketType: (registration as any).ticketType || 'General',
-        ticketNumber: (registration as any).ticketNumber || registration.id.slice(-8).toUpperCase(),
-        qrCodeData: (registration as any).qrCode || registration.id,
-        organizerName: (registration as any).event.organizer?.organizationName ||
-          `${(registration as any).event.organizer?.firstName || ''} ${(registration as any).event.organizer?.lastName || ''}`.trim(),
-        eventBannerUrl: (registration as any).event.bannerImage || undefined,
+        attendeeName: `${registration.attendee?.firstName || ''} ${registration.attendee?.lastName || ''}`.trim(),
+        attendeeEmail: registration.attendee?.email || '',
+        eventTitle: registration.event?.title || '',
+        eventDate: this.formatDate(registration.event?.startDate || new Date()),
+        eventTime: this.formatTime(registration.event?.startDate || new Date()),
+        eventLocation: registration.event?.location || 'TBD',
+        ticketType: registration.ticketType || 'General',
+        ticketNumber: registration.ticketNumber || registration.id.slice(-8).toUpperCase(),
+        qrCodeData: registration.qrCode || registration.id,
+        organizerName: registration.event?.organizer?.organizationName ||
+          `${registration.event?.organizer?.firstName || ''} ${registration.event?.organizer?.lastName || ''}`.trim(),
+        eventBannerUrl: registration.event?.bannerImage || undefined,
       };
 
       return this.createTicketDocument(ticketData);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to generate ticket PDF:', error);
       throw error;
     }
@@ -302,7 +302,7 @@ export class PDFService {
           });
 
         doc.end();
-      } catch (error) {
+      } catch (error: unknown) {
         reject(error);
       }
     });
@@ -353,7 +353,7 @@ export class PDFService {
       if (!registration) continue;
 
       // Generate QR code
-      const qrCodeDataUrl = await QRCode.toDataURL((registration as any).qrCode || registration.id, {
+      const qrCodeDataUrl = await QRCode.toDataURL(registration.qrCode || registration.id, {
         width: 150,
         margin: 1,
       });
@@ -361,9 +361,9 @@ export class PDFService {
 
       ticketDataList.push({
         registration: {
-          attendee: (registration as any).attendee,
-          event: (registration as any).event,
-          ticketType: (registration as any).ticketType,
+          attendee: registration.attendee,
+          event: registration.event,
+          ticketType: registration.ticketType,
         },
         qrImageBuffer,
       });
@@ -420,7 +420,7 @@ export class PDFService {
         }
 
         doc.end();
-      } catch (error) {
+      } catch (error: unknown) {
         reject(error);
       }
     });

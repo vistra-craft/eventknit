@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/Skeleton';
 import {
   useSeatAllocationSummary,
   useSeatAllocations,
   useSeatOperations,
+  type SeatAllocation,
+  type SeatOperation,
 } from '@/hooks/queries/seats';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -36,9 +38,9 @@ export function SeatManagementDashboard({
   eventId,
 }: SeatManagementDashboardProps) {
   const [activeTab, setActiveTab] = useState<string>('overview');
-  const [allocationsPage, setAllocationsPage] = useState(1);
+  const [allocationsPage] = useState(1);
 
-  const { data: summaryResponse, isLoading: summaryLoading } =
+  const { data: summaryResponse } =
     useSeatAllocationSummary(eventId);
   const { data: allocationsResponse, isLoading: allocationsLoading } = useSeatAllocations(
     eventId,
@@ -70,19 +72,6 @@ export function SeatManagementDashboard({
       </Card>
     );
   }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-800';
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'RELEASED':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getOperationIcon = (type: string) => {
     switch (type) {
@@ -175,7 +164,7 @@ export function SeatManagementDashboard({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {allocations.map((alloc) => (
+                        {allocations.map((alloc: SeatAllocation) => (
                           <TableRow key={alloc.id} className="hover:bg-secondary/50">
                             <TableCell className="text-sm font-medium">
                               {alloc.attendeeName}
@@ -234,7 +223,7 @@ export function SeatManagementDashboard({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {operations.map((op) => (
+                  {operations.map((op: SeatOperation) => (
                     <div
                       key={op.id}
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-secondary/50"

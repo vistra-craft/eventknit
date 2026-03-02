@@ -13,7 +13,7 @@ export class SavedSearchService {
     data: {
       name: string;
       searchQuery: string;
-      filters?: any;
+      filters?: Record<string, unknown>;
       notifyOnNewEvents?: boolean;
       notificationFrequency?: string;
     },
@@ -63,7 +63,7 @@ export class SavedSearchService {
     data: {
       name?: string;
       searchQuery?: string;
-      filters?: any;
+      filters?: Record<string, unknown>;
       notifyOnNewEvents?: boolean;
       notificationFrequency?: string;
     },

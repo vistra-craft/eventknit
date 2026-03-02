@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { Prisma } from '@prisma/client';
 
 export class AttendeeSegmentationService {
   /**
@@ -10,7 +11,7 @@ export class AttendeeSegmentationService {
     name: string;
     description?: string;
     eventId?: string;
-    criteria: any;
+    criteria: Prisma.JsonValue;
     isDynamic?: boolean;
   }) {
     try {
@@ -80,13 +81,10 @@ export class AttendeeSegmentationService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: Prisma.AttendeeSegmentWhereInput = {
         organizerId,
+        ...(filters?.eventId && { eventId: filters.eventId }),
       };
-
-      if (filters?.eventId) {
-        where.eventId = filters.eventId;
-      }
 
       const [segments, total] = await Promise.all([
         prisma.attendeeSegment.findMany({
@@ -194,7 +192,7 @@ export class AttendeeSegmentationService {
   static async updateSegment(segmentId: string, organizerId: string, data: {
     name?: string;
     description?: string;
-    criteria?: any;
+    criteria?: Prisma.JsonValue;
     isDynamic?: boolean;
   }) {
     try {
@@ -245,33 +243,31 @@ export class AttendeeSegmentationService {
       }
 
       // Get all registrations for the organizer's events
-      const where: any = {
+      const where: Prisma.EventRegistrationWhereInput = {
         event: {
           organizerId: segment.organizerId,
         },
+        ...(segment.eventId && { eventId: segment.eventId }),
       };
 
-      if (segment.eventId) {
-        where.eventId = segment.eventId;
-      }
-
       // Apply criteria filters (simplified - would need more complex logic for full implementation)
-      const criteria = segment.criteria as any;
+      const criteria = segment.criteria as Record<string, unknown>;
 
       if (criteria.tags) {
         // Would need to join with AttendeeTaggedUser
       }
 
-      if (criteria.registrationDate) {
-        if (criteria.registrationDate.before) {
-          where.createdAt = {
-            lte: new Date(criteria.registrationDate.before),
-          };
+      if (criteria.registrationDate && typeof criteria.registrationDate === 'object') {
+        const regDate = criteria.registrationDate as Record<string, unknown>;
+        const createdAt: Record<string, Date> = {};
+        if (regDate.before) {
+          createdAt.lte = new Date(regDate.before as string);
         }
-        if (criteria.registrationDate.after) {
-          where.createdAt = {
-            gte: new Date(criteria.registrationDate.after),
-          };
+        if (regDate.after) {
+          createdAt.gte = new Date(regDate.after as string);
+        }
+        if (Object.keys(createdAt).length > 0) {
+          (where as Record<string, unknown>).createdAt = createdAt;
         }
       }
 

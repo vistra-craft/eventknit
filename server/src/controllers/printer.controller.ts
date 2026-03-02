@@ -309,10 +309,10 @@ export class PrinterController {
             createdBy: req.user!.id,
           });
           jobs.push(job);
-        } catch (error: any) {
+        } catch (error: unknown) {
           errors.push({
             registrationId,
-            error: error.message,
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
       }

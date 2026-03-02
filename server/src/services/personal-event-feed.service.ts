@@ -76,9 +76,9 @@ export class PersonalEventFeedService {
       }
 
       return feed;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error getting feed:', error);
-      throw new ValidationError(`Failed to get feed: ${error.message}`);
+      throw new ValidationError(`Failed to get feed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -224,9 +224,9 @@ export class PersonalEventFeedService {
 
       logger.info(`Feed refreshed for user: ${userId}`);
       return { success: true, itemsAdded: feedItems.length };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error refreshing feed:', error);
-      throw new ValidationError(`Failed to refresh feed: ${error.message}`);
+      throw new ValidationError(`Failed to refresh feed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -236,8 +236,8 @@ export class PersonalEventFeedService {
   static async updateFeedPreferences(
     userId: string,
     preferences: {
-      preferences?: any;
-      filters?: any;
+      preferences?: Record<string, unknown>;
+      filters?: Record<string, unknown>;
     },
   ) {
     try {
@@ -252,9 +252,9 @@ export class PersonalEventFeedService {
       });
 
       return updated;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error updating feed preferences:', error);
-      throw new ValidationError(`Failed to update preferences: ${error.message}`);
+      throw new ValidationError(`Failed to update preferences: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -282,12 +282,12 @@ export class PersonalEventFeedService {
       });
 
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error marking item viewed:', error);
-      throw new ValidationError(`Failed to mark item: ${error.message}`);
+      throw new ValidationError(`Failed to mark item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -315,17 +315,21 @@ export class PersonalEventFeedService {
       });
 
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error dismissing item:', error);
-      throw new ValidationError(`Failed to dismiss item: ${error.message}`);
+      throw new ValidationError(`Failed to dismiss item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   private static generateReason(
-    event: any,
+    event: {
+      category?: string;
+      tags?: string[];
+      location?: string;
+    },
     categories: Set<string>,
     tags: Set<string>,
     locations: Set<string>,

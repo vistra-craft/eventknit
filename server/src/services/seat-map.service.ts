@@ -5,16 +5,43 @@
  */
 
 import { prisma } from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { SeatStatus, SeatType } from '@prisma/client';
+
+export interface SeatConfig {
+  id?: string;
+  label?: string;
+  type?: SeatType;
+  price?: string | number;
+  x?: number;
+  y?: number;
+  angle?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface RowConfig {
+  id: string;
+  label?: string;
+  seats: SeatConfig[];
+}
+
+export interface SectionConfig {
+  id: string;
+  rows: RowConfig[];
+}
+
+export interface SeatMapLayout {
+  sections: SectionConfig[];
+}
 
 export interface CreateSeatMapData {
   eventId: string;
   venueId?: string;
   name?: string;
-  layout: any; // Seat map layout configuration
-  pricing?: any; // Pricing configuration
+  layout: SeatMapLayout;
+  pricing?: Record<string, unknown>;
   imageUrl?: string;
   width?: number;
   height?: number;
@@ -66,8 +93,8 @@ export class SeatMapService {
           eventId: data.eventId,
           venueId: data.venueId,
           name: data.name,
-          layout: data.layout as any,
-          pricing: data.pricing as any,
+          layout: data.layout as Prisma.InputJsonValue,
+          pricing: data.pricing as Prisma.InputJsonValue,
           imageUrl: data.imageUrl,
           width: data.width,
           height: data.height,
@@ -75,8 +102,8 @@ export class SeatMapService {
         update: {
           venueId: data.venueId,
           name: data.name,
-          layout: data.layout as any,
-          pricing: data.pricing as any,
+          layout: data.layout as Prisma.InputJsonValue,
+          pricing: data.pricing as Prisma.InputJsonValue,
           imageUrl: data.imageUrl,
           width: data.width,
           height: data.height,
@@ -99,8 +126,6 @@ export class SeatMapService {
    */
   static async getSeatMapByEventId(eventId: string, organizerId?: string) {
     try {
-      const _where: any = { eventId };
-      
       const seatMap = await prisma.seatMap.findUnique({
         where: { eventId },
         include: {
@@ -177,7 +202,13 @@ export class SeatMapService {
         throw new NotFoundError('Seat map not found');
       }
 
-      const where: any = {
+      const where: {
+        seatMapId: string;
+        status: SeatStatus;
+        sectionId?: string;
+        seatType?: SeatType;
+        currentPrice?: { gte?: number; lte?: number };
+      } = {
         seatMapId: seatMap.id,
         status: SeatStatus.AVAILABLE,
       };
@@ -229,7 +260,7 @@ export class SeatMapService {
   /**
    * Generate seats from layout configuration
    */
-  private static async generateSeatsFromLayout(seatMapId: string, layout: any) {
+  private static async generateSeatsFromLayout(seatMapId: string, layout: SeatMapLayout) {
     try {
       // Check for active reservations before regenerating seats
       const activeReservations = await prisma.seatReservation.count({
@@ -249,8 +280,8 @@ export class SeatMapService {
         );
       }
 
-      const sections = layout.sections || [];
-      const seats: any[] = [];
+      const sections = layout.sections;
+      const seats: Prisma.SeatCreateManyInput[] = [];
 
       for (const section of sections) {
         const rows = section.rows || [];
@@ -299,7 +330,7 @@ export class SeatMapService {
   /**
    * Validate layout structure
    */
-  private static validateLayout(layout: any) {
+  private static validateLayout(layout: SeatMapLayout) {
     if (!layout || !layout.sections || !Array.isArray(layout.sections)) {
       throw new ValidationError('Invalid layout: must have sections array');
     }

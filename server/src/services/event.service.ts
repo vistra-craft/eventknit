@@ -687,13 +687,14 @@ export class EventService {
     // Hide organizer email/personal info from public API responses
     if (!isOrganizer && !isAdmin && event.organizer) {
       event.organizer.email = '';
-      event.organizer.businessEmail = null as any;
+      event.organizer.businessEmail = null;
     }
 
     // Add sold-out status for each ticket type (without exposing exact counts)
     if (event.ticketTypes && Array.isArray(event.ticketTypes)) {
+      const ticketsArray = event.ticketTypes as Record<string, unknown>[];
       const normalizedTicketTypes = Array.from(
-        (event.ticketTypes as any[]).reduce((map: Map<string, any>, ticket: any) => {
+        ticketsArray.reduce((map: Map<string, Record<string, unknown>>, ticket: Record<string, unknown>) => {
           const name = typeof ticket?.name === 'string' ? ticket.name.trim() : '';
           if (!name) return map;
           const key = name.toLowerCase();
@@ -701,11 +702,11 @@ export class EventService {
             map.set(key, ticket);
           }
           return map;
-        }, new Map<string, any>()),
+        }, new Map<string, Record<string, unknown>>()),
       ).map(([, ticket]) => ticket);
 
       const ticketTypesWithStatus = await Promise.all(
-        normalizedTicketTypes.map(async (ticket: any) => {
+        normalizedTicketTypes.map(async (ticket: Record<string, unknown>) => {
           // Only check capacity if quantity is defined
           if (ticket.quantity !== null && ticket.quantity !== undefined) {
             const soldCount = await prisma.ticketLineItem.aggregate({
@@ -716,7 +717,7 @@ export class EventService {
                     in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
                   },
                 },
-                ticketType: ticket.name,
+                ticketType: ticket.name as string,
               },
               _sum: {
                 quantity: true,
@@ -724,7 +725,7 @@ export class EventService {
             });
 
             const sold = soldCount._sum.quantity || 0;
-            const remaining = ticket.quantity - sold;
+            const remaining = (ticket.quantity as number) - sold;
 
             return {
               ...ticket,
@@ -740,7 +741,7 @@ export class EventService {
         }),
       );
 
-      (event as any).ticketTypes = ticketTypesWithStatus;
+      (event as Record<string, unknown>).ticketTypes = ticketTypesWithStatus;
     }
 
     return event;

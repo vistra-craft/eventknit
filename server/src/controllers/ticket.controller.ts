@@ -50,7 +50,7 @@ export class TicketController {
       const isAdmin = req.user.role === 'SUPERADMIN' || req.user.role === 'ADMIN_STAFF';
 
       if (!isOwner && !isOrganizer && !isAdmin) {
-        throw new AuthorizationError("You don't have access to this ticket.");
+        throw new AuthorizationError('You don\'t have access to this ticket.');
       }
 
       const ticket = await TicketService.getTicketByRegistrationId(registrationId);
@@ -97,7 +97,7 @@ export class TicketController {
 
       if (registrationEmail !== normalizedEmail) {
         throw new AuthorizationError(
-          "The email address doesn't match this ticket. Please use the same email you registered with.",
+          'The email address doesn\'t match this ticket. Please use the same email you registered with.',
         );
       }
 
@@ -148,7 +148,7 @@ export class TicketController {
       const isAdmin = req.user.role === 'SUPERADMIN' || req.user.role === 'ADMIN_STAFF';
 
       if (!isOwner && !isOrganizer && !isAdmin) {
-        throw new AuthorizationError("You don't have access to download this ticket.");
+        throw new AuthorizationError('You don\'t have access to download this ticket.');
       }
 
       const pdfBuffer = await TicketService.generateTicketPDF(registrationId);

@@ -4,7 +4,7 @@
  * Handles seat allocation, assignment, and management endpoints
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { SeatAllocationService } from '../services/seat-allocation.service.js';
 import { SeatingConfigurationService } from '../services/seating-configuration.service.js';
@@ -15,7 +15,6 @@ import {
   AuthorizationError,
   NotFoundError,
   ValidationError,
-  AppError,
 } from '../utils/errors.js';
 
 /**
@@ -409,7 +408,7 @@ export class SeatingController {
       await SeatingConfigurationService.configureSeating({
         eventId,
         hasSeatingMap: hasSeatingMap ?? false,
-        seatingType: seatingType as any,
+        seatingType: seatingType as import('@prisma/client').SeatingType,
         seatMapRequired: seatMapRequired ?? false,
       });
 
@@ -597,8 +596,8 @@ export class SeatingController {
       }
 
       const eventId = routeParam(req.params as Record<string, string | string[]>, 'eventId');
-      const page = Math.max(1, parseInt(req.query.page as string) || 1);
-      const limit = Math.min(100, parseInt(req.query.limit as string) || 50);
+      const page = Math.max(1, parseInt(req.query.page as string, 10) || 1);
+      const limit = Math.min(100, parseInt(req.query.limit as string, 10) || 50);
       const statusFilter = (req.query.status as string) || 'all';
 
       // Verify organizer owns this event
@@ -790,7 +789,7 @@ export class SeatingController {
       }
 
       const eventId = routeParam(req.params as Record<string, string | string[]>, 'eventId');
-      const limit = Math.min(100, parseInt(req.query.limit as string) || 20);
+      const limit = Math.min(100, parseInt(req.query.limit as string, 10) || 20);
 
       // Verify organizer owns this event
       const event = await prisma.event.findUnique({

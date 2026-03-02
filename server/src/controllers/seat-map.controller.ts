@@ -89,7 +89,12 @@ export class SeatMapController {
       }
 
       const eventId = (req.params.eventId as string) as string;
-      const seats = await SeatMapService.getAvailableSeats(eventId, req.query as any);
+      const seats = await SeatMapService.getAvailableSeats(eventId, req.query as {
+        sectionId?: string;
+        seatType?: 'REGULAR' | 'VIP' | 'WHEELCHAIR_ACCESSIBLE';
+        minPrice?: string;
+        maxPrice?: string;
+      });
       res.json({
         success: true,
         data: { seats },

@@ -20,8 +20,8 @@ const FOLDER_CONFIG: Record<string, { folder: string; width: number; height: num
 // Multer error handler (reuses pattern from auth.routes.ts)
 const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
   uploadSingleImage(req, res, (err: unknown) => {
-    if (err instanceof (multer as any).MulterError || (err as any)?.code?.startsWith?.('LIMIT_')) {
-      const multerErr = err as any;
+    if (err instanceof multer.MulterError) {
+      const multerErr = err;
       if (multerErr.code === 'LIMIT_FILE_SIZE') {
         res.status(413).json({ success: false, message: 'File too large. Maximum 5MB.' });
         return;

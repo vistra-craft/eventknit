@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 
 const prisma = new PrismaClient();
@@ -81,10 +81,10 @@ export class EventShareService {
    */
   static async getEventShareAnalytics(eventId: string, userId?: string) {
     try {
-      const where: any = { eventId };
-      if (userId) {
-        where.userId = userId;
-      }
+      const where: Prisma.EventShareWhereInput = { 
+        eventId,
+        ...(userId && { userId }),
+      };
 
       const [shares, totalShares, totalClicks, totalConversions] = await Promise.all([
         prisma.eventShare.findMany({
@@ -108,7 +108,7 @@ export class EventShareService {
       ]);
 
       // Group by platform
-      const platformStats = shares.reduce((acc: any, share) => {
+      const platformStats = shares.reduce((acc: Record<string, { platform: string; count: number; clicks: number; conversions: number }>, share) => {
         if (!acc[share.platform]) {
           acc[share.platform] = {
             platform: share.platform,

@@ -297,16 +297,15 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
       }
 
       // Handle multer-specific errors
-      if (err instanceof (multer as any).MulterError) {
-        const multerErr = err as any;
-        if (multerErr.code === 'LIMIT_FILE_SIZE') {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
           res.status(413).json({
             success: false,
             message: 'File too large. Maximum file size is 5MB.',
           });
           return;
         }
-        if (multerErr.code === 'LIMIT_FILE_COUNT') {
+        if (err.code === 'LIMIT_FILE_COUNT') {
           res.status(400).json({
             success: false,
             message: 'Too many files. Only one file is allowed.',
@@ -315,15 +314,15 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
         }
         res.status(400).json({
           success: false,
-          message: multerErr.message || 'File upload error',
+          message: err.message || 'File upload error',
         });
         return;
       }
 
       // Handle other errors with code property
       if (err && typeof err === 'object' && 'code' in err) {
-        const errWithCode = err as any;
-        if (errWithCode.code?.startsWith?.('LIMIT_')) {
+        const errWithCode = err as { code?: string; message?: string };
+        if (errWithCode.code?.startsWith('LIMIT_')) {
           res.status(400).json({
             success: false,
             message: errWithCode.message || 'File upload limit exceeded',

@@ -1,7 +1,7 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
-import { DiscountType } from '@prisma/client';
+import { DiscountType, Prisma } from '@prisma/client';
 
 export class AdvancedPromoCodeService {
   /**
@@ -106,7 +106,7 @@ export class AdvancedPromoCodeService {
       );
 
       // Redemptions over time
-      const redemptionsByDate = promoCode.redemptions.reduce((acc: any, redemption) => {
+      const redemptionsByDate = promoCode.redemptions.reduce((acc: Record<string, { date: string; count: number; revenue: number }>, redemption) => {
         const date = new Date(redemption.redeemedAt).toISOString().split('T')[0];
         if (!acc[date]) {
           acc[date] = { date, count: 0, revenue: 0 };
@@ -117,7 +117,7 @@ export class AdvancedPromoCodeService {
       }, {});
 
       // Redemptions by user
-      const redemptionsByUser = promoCode.redemptions.reduce((acc: any, redemption) => {
+      const redemptionsByUser = promoCode.redemptions.reduce((acc: Record<string, { userId: string; count: number; totalDiscount: number }>, redemption) => {
         if (!acc[redemption.userId]) {
           acc[redemption.userId] = { userId: redemption.userId, count: 0, totalDiscount: 0 };
         }
@@ -156,7 +156,7 @@ export class AdvancedPromoCodeService {
         },
         redemptionsByDate: Object.values(redemptionsByDate),
         topUsers: Object.values(redemptionsByUser)
-          .sort((a: any, b: any) => b.count - a.count)
+          .sort((a, b) => b.count - a.count)
           .slice(0, 10),
         variantPerformance,
       };
@@ -175,13 +175,10 @@ export class AdvancedPromoCodeService {
     endDate?: Date;
   }) {
     try {
-      const where: any = {
+      const where: Prisma.PromoCodeWhereInput = {
         organizerId,
+        ...(filters?.eventId && { eventId: filters.eventId }),
       };
-
-      if (filters?.eventId) {
-        where.eventId = filters.eventId;
-      }
 
       const promoCodes = await prisma.promoCode.findMany({
         where,

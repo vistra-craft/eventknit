@@ -32,7 +32,7 @@ export class OnboardingController {
         select: { eventPreferences: true },
       });
 
-      const existingPreferences = user?.eventPreferences as Record<string, any> || {};
+      const existingPreferences = (user?.eventPreferences as Record<string, unknown>) || {};
       const mergedPreferences = { ...existingPreferences, ...preferences };
 
       // Update user preferences without marking onboarding as complete
@@ -84,7 +84,7 @@ export class OnboardingController {
         select: { eventPreferences: true, role: true },
       });
 
-      const existingPreferences = user?.eventPreferences as Record<string, any> || {};
+      const existingPreferences = (user?.eventPreferences as Record<string, unknown>) || {};
       const finalPreferences = preferences
         ? { ...existingPreferences, ...preferences }
         : existingPreferences;

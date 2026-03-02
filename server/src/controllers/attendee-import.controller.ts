@@ -4,6 +4,7 @@
  */
 
 import { Response } from 'express';
+import multer from 'multer';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { AttendeeImportService } from '../services/attendee-import.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -12,7 +13,7 @@ import { ValidationError } from '../utils/errors.js';
 
 // Extend AuthenticatedRequest to include multer file
 interface ImportRequest extends AuthenticatedRequest {
-  file?: any;
+  file?: multer.File;
 }
 
 /**

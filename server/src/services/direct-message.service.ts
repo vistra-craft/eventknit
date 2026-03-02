@@ -98,7 +98,11 @@ export class DirectMessageService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: {
+        recipientId: string;
+        isDeleted: boolean;
+        isRead?: boolean;
+      } = {
         recipientId: userId,
         isDeleted: false,
       };
@@ -176,7 +180,10 @@ export class DirectMessageService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: {
+        senderId: string;
+        isDeleted: boolean;
+      } = {
         senderId: userId,
         isDeleted: false,
       };
