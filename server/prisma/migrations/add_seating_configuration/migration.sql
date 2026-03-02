@@ -1,22 +1,16 @@
 -- AlterTable: Add seating configuration fields to Event
-ALTER TABLE "Event" ADD COLUMN "hasSeatingMap" BOOLEAN NOT NULL DEFAULT false;
-ALTER TABLE "Event" ADD COLUMN "seatingType" TEXT; -- 'CUSTOMER_SELECTS', 'ORGANIZER_ASSIGNS', 'HYBRID'
-ALTER TABLE "Event" ADD COLUMN "seatMapRequired" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "hasSeatingMap" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "seatingType" TEXT; -- 'CUSTOMER_SELECTS', 'ORGANIZER_ASSIGNS', 'HYBRID'
+ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "seatMapRequired" BOOLEAN NOT NULL DEFAULT false;
 
 -- AlterTable: Update SeatReservation to support multiple seats per registration
--- Remove @unique constraint on registrationId
-ALTER TABLE "SeatReservation" DROP CONSTRAINT "SeatReservation_registrationId_key";
+-- Only add columns if they don't already exist
+ALTER TABLE "SeatReservation" ADD COLUMN IF NOT EXISTS "attendeeName" VARCHAR(255);
+ALTER TABLE "SeatReservation" ADD COLUMN IF NOT EXISTS "attendeeEmail" VARCHAR(255);
+ALTER TABLE "SeatReservation" ADD COLUMN IF NOT EXISTS "attendeePhone" VARCHAR(20);
+ALTER TABLE "SeatReservation" ADD COLUMN IF NOT EXISTS "ticketLineItemId" TEXT;
 
--- Add attendee information fields
-ALTER TABLE "SeatReservation" ADD COLUMN "attendeeName" VARCHAR(255);
-ALTER TABLE "SeatReservation" ADD COLUMN "attendeeEmail" VARCHAR(255);
-ALTER TABLE "SeatReservation" ADD COLUMN "attendeePhone" VARCHAR(20);
-ALTER TABLE "SeatReservation" ADD COLUMN "ticketLineItemId" TEXT;
-
--- Add composite unique constraint for (seatId, registrationId) to allow multiple seats per registration
-ALTER TABLE "SeatReservation" ADD CONSTRAINT "SeatReservation_seatId_registrationId_key" UNIQUE("seatId", "registrationId");
-
--- Add index for efficient queries
-CREATE INDEX "SeatReservation_registrationId_idx" ON "SeatReservation"("registrationId");
-CREATE INDEX "SeatReservation_status_idx" ON "SeatReservation"("status");
-CREATE INDEX "SeatReservation_ticketLineItemId_idx" ON "SeatReservation"("ticketLineItemId");
+-- Add indexes if they don't exist
+CREATE INDEX IF NOT EXISTS "SeatReservation_registrationId_idx" ON "SeatReservation"("registrationId");
+CREATE INDEX IF NOT EXISTS "SeatReservation_status_idx" ON "SeatReservation"("status");
+CREATE INDEX IF NOT EXISTS "SeatReservation_ticketLineItemId_idx" ON "SeatReservation"("ticketLineItemId");

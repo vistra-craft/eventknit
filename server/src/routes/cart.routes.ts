@@ -12,17 +12,17 @@ import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
-// Type for optional auth request
-interface AuthRequest extends Request {
-  user?: { id: string };
-}
-
 /**
  * Get or create session ID from cookie/header
  */
 function getSessionId(req: Request, res: Response): string {
   // Check header first (for API clients)
-  let sessionId = req.headers['x-cart-session'] as string;
+  const headerValue = req.headers['x-cart-session'];
+  let sessionId = typeof headerValue === 'string'
+    ? headerValue
+    : Array.isArray(headerValue)
+      ? headerValue[0]
+      : undefined;
 
   // Fall back to cookie
   if (!sessionId) {
@@ -49,7 +49,7 @@ function getSessionId(req: Request, res: Response): string {
  * @desc    Get current cart
  * @access  Public (session-based)
  */
-router.get('/', optionalAuth, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessionId = getSessionId(req, res);
     const userId = req.user?.id;
@@ -81,7 +81,7 @@ router.get('/', optionalAuth, async (req: AuthRequest, res: Response, next: Next
  * @desc    Create a new cart
  * @access  Public (session-based)
  */
-router.post('/', optionalAuth, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessionId = getSessionId(req, res);
     const userId = req.user?.id;
@@ -108,7 +108,7 @@ router.post('/', optionalAuth, async (req: AuthRequest, res: Response, next: Nex
  * @desc    Add item to cart
  * @access  Public (session-based)
  */
-router.post('/items', optionalAuth, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post('/items', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessionId = getSessionId(req, res);
     const userId = req.user?.id;
@@ -162,11 +162,11 @@ router.post('/items', optionalAuth, async (req: AuthRequest, res: Response, next
 router.patch(
   '/items/:itemId',
   optionalAuth,
-  async (req: AuthRequest, res: Response, next: NextFunction) => {
+  async (req: Request<{ itemId: string }>, res: Response, next: NextFunction) => {
     try {
       const sessionId = getSessionId(req, res);
       const userId = req.user?.id;
-      const itemId = req.params.itemId as string;
+      const { itemId } = req.params;
       const { quantity } = req.body;
 
       const cart = await CartService.getCart(undefined, sessionId, userId);
@@ -202,11 +202,11 @@ router.patch(
 router.delete(
   '/items/:itemId',
   optionalAuth,
-  async (req: AuthRequest, res: Response, next: NextFunction) => {
+  async (req: Request<{ itemId: string }>, res: Response, next: NextFunction) => {
     try {
       const sessionId = getSessionId(req, res);
       const userId = req.user?.id;
-      const itemId = req.params.itemId as string;
+      const { itemId } = req.params;
 
       const cart = await CartService.getCart(undefined, sessionId, userId);
       if (!cart) {
@@ -234,7 +234,7 @@ router.delete(
  * @desc    Reserve cart for payment (locks inventory)
  * @access  Public (session-based)
  */
-router.post('/reserve', optionalAuth, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.post('/reserve', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessionId = getSessionId(req, res);
     const userId = req.user?.id;
@@ -264,7 +264,7 @@ router.post('/reserve', optionalAuth, async (req: AuthRequest, res: Response, ne
  * @desc    Abandon cart (releases inventory)
  * @access  Public (session-based)
  */
-router.delete('/', optionalAuth, async (req: AuthRequest, res: Response, next: NextFunction) => {
+router.delete('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sessionId = getSessionId(req, res);
     const userId = req.user?.id;

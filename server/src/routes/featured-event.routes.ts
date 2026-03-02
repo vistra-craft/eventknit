@@ -12,6 +12,17 @@ const router = Router();
  * Only processes multipart/form-data requests, skips JSON requests
  */
 const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
+  const isMulterLimitError = (value: unknown): value is { code: string; message?: string } => {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+    if (!('code' in value)) {
+      return false;
+    }
+    const codeValue = value.code;
+    return typeof codeValue === 'string' && codeValue.startsWith('LIMIT_');
+  };
+
   // Skip multer for JSON requests - only process multipart/form-data
   const contentType = req.get('content-type') || '';
   if (!contentType.includes('multipart/form-data')) {
@@ -20,15 +31,15 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
   }
 
   uploadSingleImage(req, res, (err: unknown) => {
-    if (err instanceof multer.MulterError || (err && typeof err === 'object' && 'code' in err && typeof (err as { code?: string }).code === 'string' && (err as { code: string }).code.startsWith('LIMIT_'))) {
-      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
         res.status(413).json({
           success: false,
           message: 'File too large. Maximum file size is 5MB.',
         });
         return;
       }
-      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_COUNT') {
+      if (err.code === 'LIMIT_FILE_COUNT') {
         res.status(400).json({
           success: false,
           message: 'Too many files. Only one file is allowed.',
@@ -37,7 +48,15 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
       }
       res.status(400).json({
         success: false,
-        message: err instanceof Error ? err.message : 'File upload error',
+        message: err.message || 'File upload error',
+      });
+      return;
+    }
+
+    if (isMulterLimitError(err)) {
+      res.status(400).json({
+        success: false,
+        message: typeof err.message === 'string' ? err.message : 'File upload limit exceeded',
       });
       return;
     }

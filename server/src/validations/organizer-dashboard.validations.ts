@@ -104,6 +104,63 @@ export const organizerDashboardValidations = {
     }),
   }),
 
+  // Event Session validations
+  createSession: Joi.object({
+    title: Joi.string().trim().min(1).max(200).required().messages({
+      'string.min': 'Session title must be at least 1 character long',
+      'string.max': 'Session title must not exceed 200 characters',
+      'any.required': 'Session title is required',
+    }),
+    dayOfEvent: Joi.number().integer().min(1).required().messages({
+      'number.base': 'Day of event must be a number',
+      'number.min': 'Day of event must be at least 1',
+      'any.required': 'Day of event is required',
+    }),
+    startTime: Joi.date().iso().required().messages({
+      'date.base': 'Start time must be a valid date',
+      'any.required': 'Start time is required',
+    }),
+    endTime: Joi.date().iso().required().messages({
+      'date.base': 'End time must be a valid date',
+      'any.required': 'End time is required',
+    }),
+    location: Joi.string().trim().max(200).optional().allow('', null).messages({
+      'string.max': 'Location must not exceed 200 characters',
+    }),
+    capacity: Joi.number().integer().min(1).optional().allow(null).messages({
+      'number.base': 'Capacity must be a number',
+      'number.min': 'Capacity must be at least 1',
+    }),
+  }),
+
+  updateSession: Joi.object({
+    title: Joi.string().trim().min(1).max(200).optional().messages({
+      'string.min': 'Session title must be at least 1 character long',
+      'string.max': 'Session title must not exceed 200 characters',
+    }),
+    dayOfEvent: Joi.number().integer().min(1).optional().messages({
+      'number.base': 'Day of event must be a number',
+      'number.min': 'Day of event must be at least 1',
+    }),
+    startTime: Joi.date().iso().optional().messages({
+      'date.base': 'Start time must be a valid date',
+    }),
+    endTime: Joi.date().iso().optional().messages({
+      'date.base': 'End time must be a valid date',
+    }),
+    location: Joi.string().trim().max(200).optional().allow('', null).messages({
+      'string.max': 'Location must not exceed 200 characters',
+    }),
+    capacity: Joi.number().integer().min(1).optional().allow(null).messages({
+      'number.base': 'Capacity must be a number',
+      'number.min': 'Capacity must be at least 1',
+    }),
+  }),
+
+  sessionsQuery: Joi.object({
+    dayOfEvent: Joi.number().integer().min(1).optional(),
+  }),
+
   // Attendee Segmentation validations
   createSegment: Joi.object({
     name: Joi.string().trim().min(1).max(100).required().messages({

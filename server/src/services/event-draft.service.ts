@@ -8,7 +8,7 @@ export class EventDraftService {
    * Create a new event draft
    */
   static async createDraft(organizerId: string, data: {
-    draftData: Prisma.JsonValue;
+    draftData: Prisma.InputJsonValue;
     collaborators?: string[];
   }) {
     try {
@@ -208,9 +208,9 @@ export class EventDraftService {
         data: {
           organizerId,
           parentId: draftId,
-          draftData: data.draftData || parent.draftData,
+          draftData: (data.draftData || parent.draftData) as unknown as Prisma.InputJsonValue,
           version: newVersion,
-          collaborators: parent.collaborators as Prisma.JsonValue,
+          collaborators: parent.collaborators ?? Prisma.JsonNull,
         },
       });
 

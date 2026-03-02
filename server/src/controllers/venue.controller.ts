@@ -53,10 +53,11 @@ export class VenueController {
         return;
       }
 
-      const venues = await VenueService.getVenues(req.user.id, req.query as {
-        isActive?: string | boolean;
-        venueType?: string;
-        search?: string;
+      const { isActive: isActiveStr, venueType, search } = req.query as Record<string, string | undefined>;
+      const venues = await VenueService.getVenues(req.user.id, {
+        isActive: isActiveStr !== undefined ? isActiveStr === 'true' : undefined,
+        venueType,
+        search,
       });
       res.json({
         success: true,

@@ -93,7 +93,7 @@ export class SeatMapService {
           eventId: data.eventId,
           venueId: data.venueId,
           name: data.name,
-          layout: data.layout as Prisma.InputJsonValue,
+          layout: data.layout as unknown as Prisma.InputJsonValue,
           pricing: data.pricing as Prisma.InputJsonValue,
           imageUrl: data.imageUrl,
           width: data.width,
@@ -102,7 +102,7 @@ export class SeatMapService {
         update: {
           venueId: data.venueId,
           name: data.name,
-          layout: data.layout as Prisma.InputJsonValue,
+          layout: data.layout as unknown as Prisma.InputJsonValue,
           pricing: data.pricing as Prisma.InputJsonValue,
           imageUrl: data.imageUrl,
           width: data.width,
@@ -301,12 +301,12 @@ export class SeatMapService {
               seatLabel: seatConfig.label,
               seatType: seatConfig.type || SeatType.STANDARD,
               status: SeatStatus.AVAILABLE,
-              basePrice: seatConfig.price ? parseFloat(seatConfig.price) : null,
-              currentPrice: seatConfig.price ? parseFloat(seatConfig.price) : null,
+              basePrice: seatConfig.price ? parseFloat(String(seatConfig.price)) : null,
+              currentPrice: seatConfig.price ? parseFloat(String(seatConfig.price)) : null,
               x: seatConfig.x,
               y: seatConfig.y,
               angle: seatConfig.angle,
-              metadata: seatConfig.metadata || {},
+              metadata: (seatConfig.metadata || {}) as unknown as Prisma.InputJsonValue,
             });
           }
         }
@@ -370,8 +370,8 @@ export class SeatMapService {
         data: {
           ...(data.venueId !== undefined && { venueId: data.venueId }),
           ...(data.name !== undefined && { name: data.name }),
-          ...(data.layout && { layout: data.layout as any }),
-          ...(data.pricing !== undefined && { pricing: data.pricing as any }),
+          ...(data.layout && { layout: data.layout as unknown as Prisma.InputJsonValue }),
+          ...(data.pricing !== undefined && { pricing: data.pricing as Prisma.InputJsonValue }),
           ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
           ...(data.width !== undefined && { width: data.width }),
           ...(data.height !== undefined && { height: data.height }),

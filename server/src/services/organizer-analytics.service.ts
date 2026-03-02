@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { RegistrationStatus } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 
@@ -261,14 +262,14 @@ export class OrganizerAnalyticsService {
     try {
       const where: {
         event: { organizerId: string; deletedAt: null };
-        status: string;
+        status: RegistrationStatus;
         eventId?: string;
       } = {
         event: {
           organizerId,
           deletedAt: null,
         },
-        status: 'CONFIRMED',
+        status: RegistrationStatus.CONFIRMED,
       };
 
       if (eventId) {
@@ -524,7 +525,7 @@ export class OrganizerAnalyticsService {
    */
   private static calculateTrends(data: Record<string, unknown>[], dateField: string, valueField?: string) {
     const grouped = data.reduce((acc: Record<string, { date: string; count: number; value: number }>, item) => {
-      const date = new Date(item[dateField]);
+      const date = new Date(item[dateField] as string | number | Date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       
       if (!acc[key]) {
@@ -562,7 +563,8 @@ export class OrganizerAnalyticsService {
 
     // Simple linear regression for forecasting
     const sorted = transactions.sort((a, b) =>
-      new Date(a.paymentDate || a.createdAt).getTime() - new Date(b.paymentDate || b.createdAt).getTime(),
+      new Date((a.paymentDate || a.createdAt) as string | number | Date).getTime() -
+      new Date((b.paymentDate || b.createdAt) as string | number | Date).getTime(),
     );
 
     const dailyRevenue = this.calculateTrends(sorted, 'paymentDate', 'amount');

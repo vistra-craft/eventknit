@@ -70,6 +70,7 @@ export class AdminPlatformAnalyticsService {
       const where: {
         paymentStatus: string;
         paymentDate?: { gte?: Date; lte?: Date };
+        currency?: string;
       } = {
         paymentStatus: 'success',
       };

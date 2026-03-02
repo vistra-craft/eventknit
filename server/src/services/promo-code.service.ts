@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { DiscountType, PromoCodeScope } from '@prisma/client';
+import { Prisma, DiscountType, PromoCodeScope } from '@prisma/client';
 import { ValidationError, NotFoundError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -406,7 +406,7 @@ export class PromoCodeService {
         campaignName: data.campaignName || null,
         campaignSource: data.campaignSource || null,
         isTiered: data.isTiered || false,
-        discountTiers: (data.discountTiers as any) || null,
+        discountTiers: data.discountTiers ? data.discountTiers as unknown as Prisma.InputJsonValue : Prisma.JsonNull,
       },
       include: {
         event: {
@@ -563,7 +563,7 @@ export class PromoCodeService {
             campaignName: data.campaignName || null,
             campaignSource: data.campaignSource || null,
             isTiered: data.isTiered || false,
-            discountTiers: (data.discountTiers as any) || null,
+            discountTiers: data.discountTiers ? data.discountTiers as unknown as Prisma.InputJsonValue : Prisma.JsonNull,
           },
         });
         createdCodes.push(code);

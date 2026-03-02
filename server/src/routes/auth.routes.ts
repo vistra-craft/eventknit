@@ -281,6 +281,17 @@ router.get('/profile', AuthController.getProfile);
  * Only runs multer if the request is multipart/form-data
  */
 const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
+  const isErrorWithCode = (value: unknown): value is { code: string; message?: string } => {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+    if (!('code' in value)) {
+      return false;
+    }
+    const codeValue = value.code;
+    return typeof codeValue === 'string';
+  };
+
   // Skip multer if not a multipart request
   const contentType = req.get('content-type') || '';
   if (!contentType.includes('multipart/form-data')) {
@@ -320,15 +331,12 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
       }
 
       // Handle other errors with code property
-      if (err && typeof err === 'object' && 'code' in err) {
-        const errWithCode = err as { code?: string; message?: string };
-        if (errWithCode.code?.startsWith('LIMIT_')) {
-          res.status(400).json({
-            success: false,
-            message: errWithCode.message || 'File upload limit exceeded',
-          });
-          return;
-        }
+      if (isErrorWithCode(err) && err.code.startsWith('LIMIT_')) {
+        res.status(400).json({
+          success: false,
+          message: err.message || 'File upload limit exceeded',
+        });
+        return;
       }
 
       // Handle file filter errors (e.g., "Only image files are allowed")

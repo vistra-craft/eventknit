@@ -90,6 +90,24 @@ export class WorkstationService {
   }
 
   /**
+   * Validate session belongs to event and return session metadata
+   */
+  private static async getSessionInfo(sessionId: string, eventId: string): Promise<{ id: string; dayOfEvent: number } | null> {
+    const session = await prisma.eventSession.findFirst({
+      where: {
+        id: sessionId,
+        eventId,
+      },
+      select: {
+        id: true,
+        dayOfEvent: true,
+      },
+    });
+
+    return session ? { id: session.id, dayOfEvent: session.dayOfEvent } : null;
+  }
+
+  /**
    * Parse QR code and extract registration ID
    * Supports both signed (Ed25519) and legacy (HMAC) formats
    */
@@ -379,8 +397,21 @@ export class WorkstationService {
     ipAddress?: string,
     userAgent?: string,
     location?: { lat: number; lng: number },
+    sessionId?: string,
   ): Promise<ScanResult> {
     try {
+      const sessionInfo = sessionId ? await this.getSessionInfo(sessionId, eventId) : null;
+      if (sessionId && !sessionInfo) {
+        return {
+          success: false,
+          registrationId: '',
+          eventId,
+          checkedInAt: new Date(),
+          errorCode: 'INVALID_SESSION',
+          errorMessage: 'Session not found for this event',
+        };
+      }
+
       // Validate ticket first
       const validation = await this.validateTicket(code, eventId);
 
@@ -524,6 +555,40 @@ export class WorkstationService {
 
         const now = new Date();
 
+        let sessionInfo: { id: string; dayOfEvent: number } | null = null;
+
+        if (sessionId) {
+          sessionInfo = await this.getSessionInfo(sessionId, eventId);
+          if (!sessionInfo) {
+            return {
+              success: false,
+              registrationId,
+              eventId,
+              checkedInAt: now,
+              errorCode: 'INVALID_SESSION',
+              errorMessage: 'Session not found for this event',
+            };
+          }
+        } else {
+          const activeAttendance = await prisma.sessionAttendance.findFirst({
+            where: {
+              registrationId,
+              checkedOutAt: null,
+              session: {
+                eventId,
+              },
+            },
+            orderBy: { checkedInAt: 'desc' },
+            include: {
+              session: { select: { dayOfEvent: true } },
+            },
+          });
+
+          if (activeAttendance) {
+            sessionInfo = { id: activeAttendance.sessionId, dayOfEvent: activeAttendance.session.dayOfEvent };
+          }
+        }
+
         // Find previous scan for re-entry linking
         let previousScanId: string | undefined;
         if (isReEntry) {
@@ -579,6 +644,7 @@ export class WorkstationService {
           data: {
             registrationId,
             eventId,
+            sessionId: sessionInfo?.id,
             scanType: ScanType.CHECK_IN,
             scannedBy,
             facility: facility || null,
@@ -590,8 +656,30 @@ export class WorkstationService {
             ipAddress: ipAddress || null,
             userAgent: userAgent || null,
             location: location || undefined,
+            dayOfEvent: sessionInfo?.dayOfEvent,
           },
         });
+
+        if (sessionInfo) {
+          await prisma.sessionAttendance.upsert({
+            where: {
+              sessionId_registrationId: {
+                sessionId: sessionInfo.id,
+                registrationId,
+              },
+            },
+            update: {
+              checkedInAt: now,
+              attended: true,
+            },
+            create: {
+              sessionId: sessionInfo.id,
+              registrationId,
+              checkedInAt: now,
+              attended: true,
+            },
+          });
+        }
 
         // Log signature verification status for security monitoring
         if (validation.codeType === 'QR_CODE' && validation.signatureVerified === false) {
@@ -651,6 +739,7 @@ export class WorkstationService {
     ipAddress?: string,
     userAgent?: string,
     location?: { lat: number; lng: number },
+    sessionId?: string,
   ): Promise<CheckOutResult> {
     try {
       // Validate ticket is currently inside
@@ -717,6 +806,58 @@ export class WorkstationService {
 
         const now = new Date();
 
+        // Resolve session info and compute duration for this checkout
+        let sessionInfo: { id: string; dayOfEvent: number } | null = null;
+        let attendanceCheckedInAt: Date | null = null;
+
+        if (sessionId) {
+          sessionInfo = await this.getSessionInfo(sessionId, registration.eventId);
+          if (!sessionInfo) {
+            return {
+              success: false,
+              registrationId,
+              checkedOutAt: now,
+              errorCode: 'INVALID_SESSION',
+              errorMessage: 'Session not found for this event',
+            };
+          }
+
+          const existingAttendance = await prisma.sessionAttendance.findUnique({
+            where: {
+              sessionId_registrationId: {
+                sessionId: sessionInfo.id,
+                registrationId,
+              },
+            },
+            select: { checkedInAt: true },
+          });
+
+          attendanceCheckedInAt = existingAttendance?.checkedInAt ?? null;
+        } else {
+          const activeAttendance = await prisma.sessionAttendance.findFirst({
+            where: {
+              registrationId,
+              checkedOutAt: null,
+              session: {
+                eventId: registration.eventId,
+              },
+            },
+            orderBy: { checkedInAt: 'desc' },
+            include: {
+              session: { select: { dayOfEvent: true } },
+            },
+          });
+
+          if (activeAttendance) {
+            sessionInfo = { id: activeAttendance.sessionId, dayOfEvent: activeAttendance.session.dayOfEvent };
+            attendanceCheckedInAt = activeAttendance.checkedInAt;
+          }
+        }
+
+        const durationSeconds = attendanceCheckedInAt
+          ? Math.max(0, Math.round((now.getTime() - attendanceCheckedInAt.getTime()) / 1000))
+          : undefined;
+
         // Update registration
         // Set ticketStatus to ACTIVE only if re-entry is allowed, otherwise keep it DEACTIVATED
         await prisma.eventRegistration.update({
@@ -734,6 +875,7 @@ export class WorkstationService {
           data: {
             registrationId,
             eventId: registration.eventId,
+            sessionId: sessionInfo?.id,
             scanType: ScanType.CHECK_OUT,
             scannedBy,
             facility: facility || null,
@@ -744,8 +886,42 @@ export class WorkstationService {
             ipAddress: ipAddress || null,
             userAgent: userAgent || null,
             location: location || undefined,
+            dayOfEvent: sessionInfo?.dayOfEvent,
+            durationSeconds,
           },
         });
+
+        if (sessionInfo) {
+          const attendance = await prisma.sessionAttendance.findUnique({
+            where: {
+              sessionId_registrationId: {
+                sessionId: sessionInfo.id,
+                registrationId,
+              },
+            },
+          });
+
+          if (attendance) {
+            await prisma.sessionAttendance.update({
+              where: { id: attendance.id },
+              data: {
+                checkedOutAt: now,
+                durationSeconds,
+                attended: true,
+              },
+            });
+          } else {
+            await prisma.sessionAttendance.create({
+              data: {
+                sessionId: sessionInfo.id,
+                registrationId,
+                checkedOutAt: now,
+                durationSeconds,
+                attended: true,
+              },
+            });
+          }
+        }
 
         // Update venue occupancy (decrement on check-out)
         try {
@@ -984,6 +1160,7 @@ export class WorkstationService {
     facility?: string,
     deviceId?: string,
     deviceType?: string,
+    sessionId?: string,
   ): Promise<ManualCheckInResult> {
     try {
       // Search for registration - use limit 2 to detect multiple matches
@@ -1035,6 +1212,10 @@ export class WorkstationService {
         facility,
         deviceId,
         deviceType,
+        undefined,
+        undefined,
+        undefined,
+        sessionId,
       );
 
       if (!scanResult.success) {
@@ -1090,6 +1271,7 @@ export class WorkstationService {
     facility?: string,
     deviceId?: string,
     deviceType?: string,
+    sessionId?: string,
   ): Promise<ManualCheckOutResult> {
     try {
       // Search for registration - use limit 2 to detect multiple matches
@@ -1126,6 +1308,10 @@ export class WorkstationService {
         facility,
         deviceId,
         deviceType,
+        undefined,
+        undefined,
+        undefined,
+        sessionId,
       );
 
       if (!checkoutResult.success) {

@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { SubscriptionService } from './subscription.service.js';
 import { ConsentService } from './consent.service.js';
-import { SubscriptionTier } from '@prisma/client';
+import { SubscriptionTier, Prisma } from '@prisma/client';
 
 export interface AuditLogData {
   organizerId: string;
@@ -12,7 +12,7 @@ export interface AuditLogData {
   dataType: 'ATTENDEE_LIST' | 'ANALYTICS' | 'EXPORT' | 'DEMOGRAPHICS' | 'ENGAGEMENT';
   ipAddress?: string;
   userAgent?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export class DataAccessService {
@@ -30,7 +30,7 @@ export class DataAccessService {
           dataType: data.dataType,
           ipAddress: data.ipAddress,
           userAgent: data.userAgent,
-          details: data.details ? data.details : undefined,
+          details: data.details as unknown as Prisma.InputJsonValue | undefined,
         },
       });
     } catch (error) {
@@ -48,7 +48,7 @@ export class DataAccessService {
     eventId: string,
     ipAddress?: string,
     userAgent?: string,
-  ) {
+  ): Promise<Record<string, unknown>[]> {
     const tier = await SubscriptionService.getTier(organizerId);
 
     // Log the access
@@ -80,7 +80,7 @@ export class DataAccessService {
 
     for (const reg of registrations) {
       // Check if consent exists and operational consent is granted (required for basic data)
-      const hasOperationalConsent = await ConsentService.hasConsent(reg.id, 'operational');
+      const hasOperationalConsent = await ConsentService.hasConsent(reg.id as string, 'operational');
 
       if (!hasOperationalConsent) {
         // Skip this registration if no operational consent
@@ -100,21 +100,18 @@ export class DataAccessService {
           totalAmount: reg.totalAmount,
           paymentStatus: reg.paymentStatus,
           paymentMethod: reg.paymentMethod,
-          attendee: reg.attendee ? {
-            id: reg.attendee.id,
-            firstName: reg.attendee.firstName,
-            lastName: reg.attendee.lastName,
-            email: reg.attendee.email,
-            phoneNumber: reg.attendee.phoneNumber,
-          } : null,
+          attendee: (() => {
+            const att = reg.attendee as { id: string; firstName: string; lastName: string; email: string; phoneNumber?: string | null } | null | undefined;
+            return att ? { id: att.id, firstName: att.firstName, lastName: att.lastName, email: att.email, phoneNumber: att.phoneNumber } : null;
+          })(),
           // No demographics or engagement data
         });
       }
 
       if (tier === SubscriptionTier.PREMIUM) {
-        const _hasMarketingConsent = await ConsentService.hasConsent(reg.id, 'marketing');
-        const hasDemographicsConsent = await ConsentService.hasConsent(reg.id, 'demographics');
-        const hasAnalyticsConsent = await ConsentService.hasConsent(reg.id, 'analytics');
+        const _hasMarketingConsent = await ConsentService.hasConsent(reg.id as string, 'marketing');
+        const hasDemographicsConsent = await ConsentService.hasConsent(reg.id as string, 'demographics');
+        const hasAnalyticsConsent = await ConsentService.hasConsent(reg.id as string, 'analytics');
 
         const filteredReg: Record<string, unknown> = {
           id: reg.id,
@@ -127,24 +124,22 @@ export class DataAccessService {
           totalAmount: reg.totalAmount,
           paymentStatus: reg.paymentStatus,
           paymentMethod: reg.paymentMethod,
-          attendee: reg.attendee ? {
-            id: reg.attendee.id,
-            firstName: reg.attendee.firstName,
-            lastName: reg.attendee.lastName,
-            email: reg.attendee.email,
-            phoneNumber: reg.attendee.phoneNumber,
-          } : null,
+          attendee: (() => {
+            const att = reg.attendee as { id: string; firstName: string; lastName: string; email: string; phoneNumber?: string | null } | null | undefined;
+            return att ? { id: att.id, firstName: att.firstName, lastName: att.lastName, email: att.email, phoneNumber: att.phoneNumber } : null;
+          })(),
         };
 
         // Add demographics if consent exists
         if (hasDemographicsConsent && reg.attendee) {
+          const attendee = reg.attendee as { city?: string; state?: string; country?: string };
           filteredReg.attendee = {
-            ...filteredReg.attendee,
+            ...(filteredReg.attendee as Record<string, unknown>),
             // Add demographic fields if available (would need to be added to User model or registrationData)
             // For now, we'll include basic location data if available
-            city: reg.attendee.city,
-            state: reg.attendee.state,
-            country: reg.attendee.country,
+            city: attendee.city,
+            state: attendee.state,
+            country: attendee.country,
           };
         }
 

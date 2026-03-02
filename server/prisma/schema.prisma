@@ -800,6 +800,7 @@ model Event {
   promoCodes             PromoCode[]               @relation("PromoCodeEvent")
   promoCodeRequests      PromoCodeRequest[]        @relation("PromoCodeRequestEvent")
   ticketScans            TicketScan[]
+  sessions               EventSession[]
   checkpoints            Checkpoint[]              @relation("EventCheckpoints")
   checkpointScans        CheckpointScan[]          @relation("EventCheckpointScans")
   assignedStaff          EventStaff[]              @relation("EventStaff")
@@ -963,6 +964,7 @@ model EventRegistration {
   ticketScans         TicketScan[]
   checkpointScans     CheckpointScan[]         @relation("CheckpointScans")
   ticketLineItems     TicketLineItem[] // Multiple ticket types per registration
+  sessionAttendances  SessionAttendance[]
   // Event Payment Relations
   paymentTransaction  EventPaymentTransaction?
   platformFee         PlatformFee?
@@ -1001,6 +1003,53 @@ model EventRegistration {
   @@index([ticketStatus])
   @@index([checkedInAt])
   @@index([isCurrentlyInside])
+}
+
+// Event Sessions (for multi-day and session-level scanning)
+model EventSession {
+  id        String   @id @default(uuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  title      String
+  dayOfEvent Int
+  startTime  DateTime
+  endTime    DateTime
+  location   String?
+  capacity   Int?
+
+  // Relations
+  scans      TicketScan[]
+  attendance SessionAttendance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([eventId, dayOfEvent])
+  @@index([startTime])
+}
+
+model SessionAttendance {
+  id             String            @id @default(uuid())
+  sessionId      String
+  session        EventSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  registrationId String
+  registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  checkedInAt     DateTime?
+  checkedOutAt    DateTime?
+  durationSeconds Int?
+  attended        Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, registrationId])
+  @@index([sessionId])
+  @@index([registrationId])
+  @@index([checkedInAt])
+  @@index([checkedOutAt])
 }
 
 // Attendee Consent Management
@@ -1356,6 +1405,8 @@ model TicketScan {
   registration   EventRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   eventId        String
   event          Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  sessionId      String?
+  session        EventSession?     @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
   // Core scan fields
   scanType  ScanType // Type of scan operation
@@ -1383,8 +1434,14 @@ model TicketScan {
   userAgent String? // User agent of scanning device
   location  Json? // GPS location data if available
 
+  // Session analytics
+  dayOfEvent      Int?
+  durationSeconds Int?
+
   @@index([registrationId])
   @@index([eventId])
+  @@index([sessionId])
+  @@index([dayOfEvent])
   @@index([scannedAt])
   @@index([scannedBy])
   @@index([facility])

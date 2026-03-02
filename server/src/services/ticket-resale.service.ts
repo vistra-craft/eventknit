@@ -153,7 +153,7 @@ export class TicketResaleService {
         status: string;
         expiresAt: { gt: Date };
         registration?: { eventId: string };
-        resalePrice?: { gte?: number; lte?: number };
+        resalePrice?: { gte?: Decimal; lte?: Decimal };
         category?: string;
       } = {
         status: 'LISTED',

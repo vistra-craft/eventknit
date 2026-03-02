@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -187,7 +188,7 @@ export class PersonalEventFeedService {
           feedId: _feed.id,
           eventId: event.id,
           relevanceScore: new Decimal(Math.min(relevanceScore, 1.0)),
-          reason: this.generateReason(event, preferredCategories, preferredTags, preferredLocations),
+          reason: this.generateReason({ ...event, category: event.category ?? undefined }, preferredCategories, preferredTags, preferredLocations),
         };
       });
 
@@ -246,8 +247,8 @@ export class PersonalEventFeedService {
       const updated = await prisma.personalEventFeed.update({
         where: { id: _feed.id },
         data: {
-          preferences: preferences.preferences || _feed.preferences,
-          filters: preferences.filters || _feed.filters,
+          preferences: (preferences.preferences ?? _feed.preferences ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
+          filters: (preferences.filters ?? _feed.filters ?? Prisma.JsonNull) as unknown as Prisma.InputJsonValue,
         },
       });
 

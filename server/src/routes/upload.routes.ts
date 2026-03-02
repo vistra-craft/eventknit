@@ -19,18 +19,36 @@ const FOLDER_CONFIG: Record<string, { folder: string; width: number; height: num
 
 // Multer error handler (reuses pattern from auth.routes.ts)
 const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
+  const isMulterLimitError = (value: unknown): value is { code: string; message?: string } => {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+    if (!('code' in value)) {
+      return false;
+    }
+    const codeValue = value.code;
+    return typeof codeValue === 'string' && codeValue.startsWith('LIMIT_');
+  };
+
   uploadSingleImage(req, res, (err: unknown) => {
     if (err instanceof multer.MulterError) {
-      const multerErr = err;
-      if (multerErr.code === 'LIMIT_FILE_SIZE') {
+      if (err.code === 'LIMIT_FILE_SIZE') {
         res.status(413).json({ success: false, message: 'File too large. Maximum 5MB.' });
         return;
       }
-      if (multerErr.code === 'LIMIT_FILE_COUNT') {
+      if (err.code === 'LIMIT_FILE_COUNT') {
         res.status(400).json({ success: false, message: 'Too many files. Only one file allowed.' });
         return;
       }
-      res.status(400).json({ success: false, message: multerErr.message || 'Upload error' });
+      res.status(400).json({ success: false, message: err.message || 'Upload error' });
+      return;
+    }
+
+    if (isMulterLimitError(err)) {
+      res.status(400).json({
+        success: false,
+        message: typeof err.message === 'string' ? err.message : 'Upload error',
+      });
       return;
     }
 

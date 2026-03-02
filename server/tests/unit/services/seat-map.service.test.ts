@@ -1,4 +1,4 @@
-import { SeatMapService } from '../../../src/services/seat-map.service.js';
+import { SeatMapService, SeatMapLayout, SectionConfig, RowConfig } from '../../../src/services/seat-map.service.js';
 import { prisma } from '../../../src/config/database.js';
 import { NotFoundError } from '../../../src/utils/errors.js';
 import { SeatStatus, SeatType } from '@prisma/client';
@@ -88,7 +88,7 @@ describe('SeatMapService', () => {
       await expect(
         SeatMapService.upsertSeatMap('org-1', {
           eventId: 'event-1',
-          layout: {},
+          layout: {} as unknown as SeatMapLayout,
         }),
       ).rejects.toThrow('Invalid layout: must have sections array');
     });
@@ -102,7 +102,7 @@ describe('SeatMapService', () => {
         SeatMapService.upsertSeatMap('org-1', {
           eventId: 'event-1',
           layout: {
-            sections: [{ id: 'section-1' }], // Missing rows
+            sections: [{ id: 'section-1' } as unknown as SectionConfig], // Missing rows
           },
         }),
       ).rejects.toThrow('Invalid section: must have id and rows array');
@@ -120,7 +120,7 @@ describe('SeatMapService', () => {
             sections: [
               {
                 id: 'section-1',
-                rows: [{ id: 'row-1' }], // Missing seats
+                rows: [{ id: 'row-1' } as unknown as RowConfig], // Missing seats
               },
             ],
           },
@@ -538,7 +538,7 @@ describe('SeatMapService', () => {
       // Act & Assert
       await expect(
         SeatMapService.updateSeatMap('event-1', 'org-1', {
-          layout: { invalid: true },
+          layout: { invalid: true } as unknown as SeatMapLayout,
         }),
       ).rejects.toThrow('Invalid layout: must have sections array');
     });

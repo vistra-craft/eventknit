@@ -119,13 +119,13 @@ export class AdvancedTicketTypesService {
           price: data.price,
           minQuantity: data.minQuantity,
           maxQuantity: data.maxQuantity,
-          bundleItems: data.bundleItems,
+          bundleItems: data.bundleItems as unknown as Prisma.InputJsonValue,
           isDonation: data.isDonation || false,
           minDonation: data.minDonation,
           maxDonation: data.maxDonation,
           suggestedAmounts: data.suggestedAmounts,
           hasReservedSeating: data.hasReservedSeating || false,
-          seatingChart: data.seatingChart,
+          seatingChart: data.seatingChart as unknown as Prisma.InputJsonValue,
           availableFrom: data.availableFrom,
           availableUntil: data.availableUntil,
           quantity: data.quantity,
@@ -221,7 +221,11 @@ export class AdvancedTicketTypesService {
 
       const updated = await prisma.ticketPackage.update({
         where: { id: packageId },
-        data,
+        data: {
+          ...data,
+          bundleItems: data.bundleItems as unknown as Prisma.InputJsonValue | undefined,
+          seatingChart: data.seatingChart as unknown as Prisma.InputJsonValue | undefined,
+        },
       });
 
       return updated;

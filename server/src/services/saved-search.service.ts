@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
 
@@ -24,7 +24,7 @@ export class SavedSearchService {
           userId,
           name: data.name,
           searchQuery: data.searchQuery,
-          filters: data.filters,
+          filters: data.filters as unknown as Prisma.InputJsonValue,
           notifyOnNewEvents: data.notifyOnNewEvents || false,
           notificationFrequency: data.notificationFrequency || 'DAILY',
         },
@@ -84,8 +84,12 @@ export class SavedSearchService {
       const updated = await prisma.savedSearch.update({
         where: { id: searchId },
         data: {
-          ...data,
           lastSearchedAt: new Date(),
+          ...(data.name !== undefined && { name: data.name }),
+          ...(data.searchQuery !== undefined && { searchQuery: data.searchQuery }),
+          ...(data.filters !== undefined && { filters: data.filters as unknown as Prisma.InputJsonValue }),
+          ...(data.notifyOnNewEvents !== undefined && { notifyOnNewEvents: data.notifyOnNewEvents }),
+          ...(data.notificationFrequency !== undefined && { notificationFrequency: data.notificationFrequency }),
         },
       });
 

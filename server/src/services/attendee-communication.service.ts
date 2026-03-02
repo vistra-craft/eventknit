@@ -42,7 +42,7 @@ export class AttendeeCommunicationService {
         type: 'announcement',
         targetAudience: 'SPECIFIC_EVENT',
         eventId: data.audienceId, // store audience/segment reference
-        channels: { email: true, inApp: true, push: false, sms: false } as Prisma.JsonValue,
+        channels: { email: true, inApp: true, push: false, sms: false } as unknown as Prisma.InputJsonValue,
         status: 'SCHEDULED',
         scheduledAt: data.scheduledFor,
         createdBy: organizerId,

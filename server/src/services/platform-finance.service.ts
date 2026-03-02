@@ -87,8 +87,14 @@ export class PlatformExpenseService {
       expenseDate?: Date;
       vendorName?: string;
       taxRate?: Prisma.Decimal;
+      taxAmount?: Prisma.Decimal;
       notes?: string;
-      createdBy?: string;
+      recordedBy?: string;
+      paymentMethod?: string;
+      recipient?: string;
+      reference?: string;
+      receiptUrl?: string;
+      receiptDate?: Date;
     } = {
       category: data.category,
       description: data.description,
@@ -99,10 +105,10 @@ export class PlatformExpenseService {
       reference: data.reference,
       receiptUrl: data.receiptUrl,
       receiptDate: data.receiptDate,
-      taxAmount: data.taxAmount ? new Prisma.Decimal(data.taxAmount) : null,
-      taxRate: data.taxRate ? new Prisma.Decimal(data.taxRate) : null,
+      taxAmount: data.taxAmount ? new Prisma.Decimal(data.taxAmount) : undefined,
+      taxRate: data.taxRate ? new Prisma.Decimal(data.taxRate) : undefined,
       notes: data.notes,
-      recordedBy: data.createdBy, // Mapping createdBy to recordedBy in schema
+      recordedBy: data.createdBy,
       status: 'COMPLETED',
     };
 
@@ -143,7 +149,13 @@ export class PlatformExpenseService {
       expenseDate: Date;
       vendorName: string;
       taxRate: Prisma.Decimal;
+      taxAmount: Prisma.Decimal;
       notes: string;
+      paymentMethod: string;
+      recipient: string;
+      reference: string;
+      receiptUrl: string;
+      receiptDate: Date;
     }> = {};
 
     if (data.category !== undefined) updateData.category = data.category;
@@ -279,7 +291,10 @@ export class PlatformIncomeService {
       source?: string;
       transactionId?: string;
       notes?: string;
-      createdBy?: string;
+      recordedBy?: string;
+      reference?: string;
+      paymentMethod?: string;
+      eventId?: string;
     } = {
       category: data.category,
       description: data.description,
@@ -291,7 +306,7 @@ export class PlatformIncomeService {
       eventId: data.eventId,
       transactionId: data.transactionId,
       notes: data.notes,
-      recordedBy: data.createdBy, // Mapping createdBy to recordedBy in schema
+      recordedBy: data.createdBy,
       status: 'COMPLETED',
     };
 
@@ -330,6 +345,9 @@ export class PlatformIncomeService {
       source: string;
       transactionId: string;
       notes: string;
+      reference: string;
+      paymentMethod: string;
+      eventId: string;
     }> = {};
 
     if (data.category !== undefined) updateData.category = data.category;

@@ -347,7 +347,7 @@ export class WebhookService {
           endpointId,
           eventType,
           eventId,
-          payload: eventData as Prisma.JsonValue,
+          payload: eventData as unknown as Prisma.InputJsonValue,
           status: 'PENDING',
           maxAttempts: endpoint.maxRetries,
         },
@@ -373,7 +373,7 @@ export class WebhookService {
    */
   private static async attemptDelivery(
     deliveryId: string,
-    endpoint: { url: string; secret?: string | null; headers?: Prisma.JsonValue },
+    endpoint: { id: string; url: string; secret?: string | null; headers?: Prisma.JsonValue; maxRetries: number; retryDelay: number },
   ) {
     try {
       const delivery = await prisma.webhookDelivery.findUnique({
@@ -457,7 +457,7 @@ export class WebhookService {
         data: {
           attemptCount: { increment: 1 },
           status: 'FAILED',
-          errorMessage: error.message?.substring(0, 500),
+          errorMessage: error instanceof Error ? error.message?.substring(0, 500) : undefined,
           nextRetryAt: null,
         },
       });
@@ -557,6 +557,7 @@ export class WebhookService {
 
       const where: {
         endpointId?: string;
+        eventType?: string;
         status?: string;
         triggeredAt?: { gte?: Date; lte?: Date };
       } = {};

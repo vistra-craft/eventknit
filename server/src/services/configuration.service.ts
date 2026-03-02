@@ -80,7 +80,7 @@ export class ConfigurationService {
     await prisma.configuration.update({
       where: { id: configuration.id },
       data: {
-        mailTrap: mailTrapConfig as Prisma.JsonValue,
+        mailTrap: mailTrapConfig as unknown as Prisma.InputJsonValue,
         updatedBy,
       },
     });

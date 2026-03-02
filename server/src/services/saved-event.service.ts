@@ -2,6 +2,27 @@ import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
+// The SavedEvent model exists in the Prisma schema but requires a client
+// regeneration before it appears in PrismaClient's type definitions.
+// This typed delegate bridges the gap until `prisma generate` is run.
+interface SavedEventDelegate {
+  findMany(args: {
+    where?: object;
+    skip?: number;
+    take?: number;
+    orderBy?: object;
+    include?: object;
+    select?: object;
+  }): Promise<SavedEventWithDetails[]>;
+  findUnique(args: { where: object; include?: object; select?: object }): Promise<SavedEventWithDetails | null>;
+  count(args: { where?: object }): Promise<number>;
+  create(args: { data: object; include?: object }): Promise<SavedEventWithDetails>;
+  update(args: { where: object; data: object; include?: object }): Promise<SavedEventWithDetails>;
+  delete(args: { where: object }): Promise<SavedEventWithDetails>;
+}
+
+const savedEventModel = (prisma as unknown as { savedEvent: SavedEventDelegate }).savedEvent;
+
 export interface SavedEventWithDetails {
   id: string;
   eventId: string;
@@ -76,7 +97,7 @@ export class SavedEventService {
     }
 
     const [events, total] = await Promise.all([
-      (prisma as any).savedEvent.findMany({
+      savedEventModel.findMany({
         where,
         skip,
         take: limit,
@@ -99,8 +120,8 @@ export class SavedEventService {
             },
           },
         },
-      }) as any,
-      (prisma as any).savedEvent.count({ where }),
+      }),
+      savedEventModel.count({ where }),
     ]);
 
     return {
@@ -133,7 +154,7 @@ export class SavedEventService {
     }
 
     // Check if already saved
-    const existing = await (prisma as any).savedEvent.findUnique({
+    const existing = await savedEventModel.findUnique({
       where: {
         userId_eventId: {
           userId,
@@ -146,7 +167,7 @@ export class SavedEventService {
       throw new ValidationError('Event is already saved');
     }
 
-    const savedEvent = await (prisma as any).savedEvent.create({
+    const savedEvent = await savedEventModel.create({
       data: {
         userId,
         eventId,
@@ -173,14 +194,14 @@ export class SavedEventService {
     });
 
     logger.info(`User ${userId} saved event ${eventId}`);
-    return savedEvent as any;
+    return savedEvent;
   }
 
   /**
    * Remove a saved event
    */
   static async unsaveEvent(userId: string, eventId: string): Promise<void> {
-    const savedEvent = await (prisma as any).savedEvent.findUnique({
+    const savedEvent = await savedEventModel.findUnique({
       where: {
         userId_eventId: {
           userId,
@@ -193,7 +214,7 @@ export class SavedEventService {
       throw new NotFoundError('Saved event not found');
     }
 
-    await (prisma as any).savedEvent.delete({
+    await savedEventModel.delete({
       where: {
         userId_eventId: {
           userId,
@@ -209,7 +230,7 @@ export class SavedEventService {
    * Check if an event is saved by a user
    */
   static async isEventSaved(userId: string, eventId: string): Promise<boolean> {
-    const savedEvent = await (prisma as any).savedEvent.findUnique({
+    const savedEvent = await savedEventModel.findUnique({
       where: {
         userId_eventId: {
           userId,
@@ -228,7 +249,7 @@ export class SavedEventService {
     userId: string,
     eventIds: string[],
   ): Promise<Record<string, boolean>> {
-    const savedEvents = await (prisma as any).savedEvent.findMany({
+    const savedEvents = await savedEventModel.findMany({
       where: {
         userId,
         eventId: { in: eventIds },
@@ -254,7 +275,7 @@ export class SavedEventService {
     eventId: string,
     notes: string,
   ): Promise<SavedEventWithDetails> {
-    const savedEvent = await (prisma as any).savedEvent.findUnique({
+    const savedEvent = await savedEventModel.findUnique({
       where: {
         userId_eventId: {
           userId,
@@ -267,7 +288,7 @@ export class SavedEventService {
       throw new NotFoundError('Saved event not found');
     }
 
-    const updated = await (prisma as any).savedEvent.update({
+    const updated = await savedEventModel.update({
       where: {
         userId_eventId: {
           userId,
@@ -295,14 +316,14 @@ export class SavedEventService {
       },
     });
 
-    return updated as any;
+    return updated;
   }
 
   /**
    * Get saved event count for a user
    */
   static async getSavedCount(userId: string): Promise<number> {
-    return (prisma as any).savedEvent.count({
+    return savedEventModel.count({
       where: { userId },
     });
   }

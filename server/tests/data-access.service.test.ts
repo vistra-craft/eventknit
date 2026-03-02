@@ -335,7 +335,7 @@ describe('DataAccessService', () => {
         eventId,
       );
 
-      const consented = filtered.find((r: any) => r.attendee?.email === 'attendee1@dataaccess.test');
+      const consented = filtered.find((r: any) => r.attendee?.email === 'attendee1@dataaccess.test') as any;
       expect(consented).toBeDefined();
       expect(consented?.attendee).toHaveProperty('city');
       expect(consented?.attendee?.city).toBe('Nairobi');

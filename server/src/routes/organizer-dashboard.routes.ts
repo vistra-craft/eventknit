@@ -127,6 +127,48 @@ router.delete(
   OrganizerDashboardController.deleteDraft,
 );
 
+// Event Sessions
+router.post(
+  '/events/:eventId/sessions',
+  requirePermission('events.edit'),
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  validate(organizerDashboardValidations.createSession),
+  OrganizerDashboardController.createSession,
+);
+router.get(
+  '/events/:eventId/sessions',
+  requirePermission('events.view'),
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  validateQuery(organizerDashboardValidations.sessionsQuery),
+  OrganizerDashboardController.getEventSessions,
+);
+router.get(
+  '/events/:eventId/sessions/stats',
+  requirePermission('events.view'),
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  validateQuery(organizerDashboardValidations.sessionsQuery),
+  OrganizerDashboardController.getEventSessionStats,
+);
+router.get(
+  '/sessions/:sessionId',
+  requirePermission('events.view'),
+  validateParams(Joi.object({ sessionId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getSessionById,
+);
+router.put(
+  '/sessions/:sessionId',
+  requirePermission('events.edit'),
+  validateParams(Joi.object({ sessionId: Joi.string().uuid().required() })),
+  validate(organizerDashboardValidations.updateSession),
+  OrganizerDashboardController.updateSession,
+);
+router.delete(
+  '/sessions/:sessionId',
+  requirePermission('events.edit'),
+  validateParams(Joi.object({ sessionId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.deleteSession,
+);
+
 // Attendee Segmentation (requires attendees.manage)
 router.post(
   '/segments',

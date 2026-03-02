@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError, AuthorizationError } from '../utils/errors.js';
 
@@ -393,7 +394,7 @@ export class EventCollaborationService {
           userId,
           action,
           description: this.getActionDescription(action, metadata),
-          changes: metadata,
+          changes: metadata as unknown as Prisma.InputJsonValue,
           ipAddress,
           userAgent,
         },

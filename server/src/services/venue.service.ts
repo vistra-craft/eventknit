@@ -44,11 +44,11 @@ export class VenueService {
           state: data.state,
           country: data.country,
           postalCode: data.postalCode,
-          coordinates: data.coordinates as Prisma.JsonValue,
+          coordinates: data.coordinates as unknown as Prisma.InputJsonValue,
           capacity: data.capacity,
           venueType: data.venueType,
           amenities: data.amenities || [],
-          defaultSeatMap: data.defaultSeatMap as Prisma.JsonValue,
+          defaultSeatMap: data.defaultSeatMap as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -73,7 +73,7 @@ export class VenueService {
         organizerId: string;
         isActive?: boolean;
         venueType?: string;
-        OR?: Array<{ name: { contains: string; mode: 'insensitive' } } | { address: { contains: string; mode: 'insensitive' } }>;
+        OR?: Array<{ name?: { contains: string; mode: 'insensitive' } } | { address?: { contains: string; mode: 'insensitive' } } | { description?: { contains: string; mode: 'insensitive' } } | { city?: { contains: string; mode: 'insensitive' } }>;
       } = { organizerId };
 
       if (filters?.isActive !== undefined) {
@@ -160,11 +160,11 @@ export class VenueService {
           ...(data.state !== undefined && { state: data.state }),
           ...(data.country !== undefined && { country: data.country }),
           ...(data.postalCode !== undefined && { postalCode: data.postalCode }),
-          ...(data.coordinates && { coordinates: data.coordinates as Prisma.JsonValue }),
+          ...(data.coordinates && { coordinates: data.coordinates as unknown as Prisma.InputJsonValue }),
           ...(data.capacity !== undefined && { capacity: data.capacity }),
           ...(data.venueType !== undefined && { venueType: data.venueType }),
           ...(data.amenities && { amenities: data.amenities }),
-          ...(data.defaultSeatMap && { defaultSeatMap: data.defaultSeatMap as Prisma.JsonValue }),
+          ...(data.defaultSeatMap && { defaultSeatMap: data.defaultSeatMap as unknown as Prisma.InputJsonValue }),
           ...(data.isActive !== undefined && { isActive: data.isActive }),
         },
       });

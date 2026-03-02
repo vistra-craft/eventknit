@@ -35,6 +35,7 @@ export class DynamicPricingService {
     data: {
       eventId: string;
       name: string;
+      type?: string;
       metric: string;
       threshold: number;
       priceChangeType: 'PERCENTAGE' | 'FIXED_AMOUNT';
@@ -54,11 +55,11 @@ export class DynamicPricingService {
         organizerId,
         eventId: data.eventId,
         name: data.name,
-        metric: data.metric,
-        threshold: data.threshold,
-        priceChangeType: data.priceChangeType,
-        priceChangeValue: data.priceChangeValue,
-      } as Prisma.DynamicPricingRuleUncheckedCreateInput,
+        type: data.type || 'THRESHOLD',
+        demandThreshold: data.threshold,
+        discountType: data.priceChangeType,
+        discountValue: data.priceChangeValue,
+      },
     });
 
     return rule;

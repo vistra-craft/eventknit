@@ -11,7 +11,7 @@ export class AttendeeSegmentationService {
     name: string;
     description?: string;
     eventId?: string;
-    criteria: Prisma.JsonValue;
+    criteria: Prisma.InputJsonValue;
     isDynamic?: boolean;
   }) {
     try {

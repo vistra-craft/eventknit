@@ -2,7 +2,7 @@ import * as cron from 'node-cron';
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { emailService } from '../services/email.service.js';
-import { NotificationPriority } from '@prisma/client';
+import { NotificationPriority, NotificationType } from '@prisma/client';
 import { escapeHtml } from '../utils/sanitize.js';
 
 interface DigestItem {
@@ -243,7 +243,7 @@ export class EmailDigestJob {
         userId: data.userId,
         notificationId: data.notificationId,
         digestType: data.digestType,
-        notificationType: data.notificationType as string,
+        notificationType: data.notificationType as NotificationType,
         title: data.title,
         message: data.message,
         eventId: data.eventId,

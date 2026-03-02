@@ -13,7 +13,7 @@ export class EventTemplateService {
     description?: string;
     category?: string;
     tags?: string[];
-    templateData: Prisma.JsonValue;
+    templateData: Prisma.InputJsonValue;
     isPublic?: boolean;
     thumbnail?: string;
   }) {
@@ -330,7 +330,7 @@ export class EventTemplateService {
           description: data.description || parent.description,
           category: parent.category,
           tags: parent.tags,
-          templateData: data.templateData || parent.templateData,
+          templateData: (data.templateData || parent.templateData) as unknown as Prisma.InputJsonValue,
           isPublic: false,
           version: newVersion,
         },

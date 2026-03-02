@@ -68,8 +68,8 @@ export class AdminKYCController {
       const sortOrder = typeof query.sortOrder === 'string' ? query.sortOrder : undefined;
 
       const result = await KYCService.listKYCSubmissions({
-        status: status as 'PENDING' | 'APPROVED' | 'REJECTED' | 'INCOMPLETE' | undefined,
-        entityType: entityType as 'INDIVIDUAL' | 'BUSINESS' | undefined,
+        status: status as KYCStatus | undefined,
+        entityType: entityType as OrganizerEntityType | undefined,
         search,
         page: page ? parseInt(page, 10) : undefined,
         limit: limit ? parseInt(limit, 10) : undefined,

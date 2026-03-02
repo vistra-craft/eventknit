@@ -19,6 +19,7 @@ import { PermissionService } from '../services/permission.service.js';
 import { KYCService } from '../services/kyc.service.js';
 import { SubscriptionService } from '../services/subscription.service.js';
 import { ConsentService } from '../services/consent.service.js';
+import { EventSessionService } from '../services/event-session.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class OrganizerDashboardController {
@@ -279,6 +280,99 @@ export class OrganizerDashboardController {
       const draftId = (req.params.draftId as string) as string;
       const result = await EventDraftService.publishDraft(draftId, req.user.id);
       res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Event Sessions
+  static async createSession(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      const session = await EventSessionService.createSession(req.user.id, eventId, req.body);
+      res.status(201).json({ success: true, data: { session } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventSessions(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      const dayOfEvent = req.query.dayOfEvent ? parseInt(req.query.dayOfEvent as string, 10) : undefined;
+      const sessions = await EventSessionService.getEventSessions(req.user.id, eventId, { dayOfEvent });
+      res.status(200).json({ success: true, data: { sessions } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSessionById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const sessionId = req.params.sessionId as string;
+      const session = await EventSessionService.getSessionById(req.user.id, sessionId);
+      res.status(200).json({ success: true, data: { session } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateSession(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const sessionId = req.params.sessionId as string;
+      const session = await EventSessionService.updateSession(req.user.id, sessionId, req.body);
+      res.status(200).json({ success: true, data: { session } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteSession(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const sessionId = req.params.sessionId as string;
+      const result = await EventSessionService.deleteSession(req.user.id, sessionId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventSessionStats(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      const dayOfEvent = req.query.dayOfEvent ? parseInt(req.query.dayOfEvent as string, 10) : undefined;
+      const stats = await EventSessionService.getEventSessionStats(req.user.id, eventId, { dayOfEvent });
+      res.status(200).json({ success: true, data: { sessions: stats } });
     } catch (error) {
       next(error);
     }

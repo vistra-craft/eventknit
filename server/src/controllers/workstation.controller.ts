@@ -25,7 +25,7 @@ export class WorkstationController {
         return;
       }
 
-      const { code, eventId, facility, deviceId, deviceType } = req.body;
+      const { code, eventId, facility, deviceId, deviceType, sessionId } = req.body;
 
       // Validate required fields
       if (!code || typeof code !== 'string') {
@@ -34,6 +34,10 @@ export class WorkstationController {
 
       if (!eventId || typeof eventId !== 'string') {
         throw new ValidationError('Event ID is required and must be a string');
+      }
+
+      if (sessionId !== undefined && typeof sessionId !== 'string') {
+        throw new ValidationError('Session ID must be a string');
       }
 
       // Extract IP address and user agent
@@ -50,6 +54,8 @@ export class WorkstationController {
         deviceType,
         ipAddress,
         userAgent,
+        undefined,
+        sessionId,
       );
 
       if (!result.success) {
@@ -158,7 +164,7 @@ export class WorkstationController {
         return;
       }
 
-      const { code, eventId, facility } = req.body;
+      const { code, eventId, facility, sessionId } = req.body;
 
       // Validate required fields
       if (!code || typeof code !== 'string') {
@@ -167,6 +173,10 @@ export class WorkstationController {
 
       if (!eventId || typeof eventId !== 'string') {
         throw new ValidationError('Event ID is required and must be a string');
+      }
+
+      if (sessionId !== undefined && typeof sessionId !== 'string') {
+        throw new ValidationError('Session ID must be a string');
       }
 
       // Extract IP address and user agent
@@ -195,6 +205,8 @@ export class WorkstationController {
         undefined, // deviceType
         ipAddress,
         userAgent,
+        undefined,
+        sessionId,
       );
 
       if (!result.success) {
@@ -396,7 +408,7 @@ export class WorkstationController {
         return;
       }
 
-      const { searchTerm, eventId, facility, code } = req.body;
+      const { searchTerm, eventId, facility, code, sessionId } = req.body;
 
       // Validate required fields
       if (!searchTerm || typeof searchTerm !== 'string') {
@@ -407,6 +419,10 @@ export class WorkstationController {
         throw new ValidationError('Event ID is required and must be a string');
       }
 
+      if (sessionId !== undefined && typeof sessionId !== 'string') {
+        throw new ValidationError('Session ID must be a string');
+      }
+
       // Call workstation service
       const result = await WorkstationService.manualCheckIn(
         searchTerm,
@@ -414,6 +430,8 @@ export class WorkstationController {
         req.user.id,
         facility,
         code,
+        undefined,
+        sessionId,
       );
 
       if (!result.success) {
@@ -523,7 +541,7 @@ export class WorkstationController {
         return;
       }
 
-      const { searchTerm, eventId, facility, code } = req.body;
+      const { searchTerm, eventId, facility, code, sessionId } = req.body;
 
       // Validate required fields
       if (!searchTerm || typeof searchTerm !== 'string') {
@@ -534,6 +552,10 @@ export class WorkstationController {
         throw new ValidationError('Event ID is required and must be a string');
       }
 
+      if (sessionId !== undefined && typeof sessionId !== 'string') {
+        throw new ValidationError('Session ID must be a string');
+      }
+
       // Call workstation service
       const result = await WorkstationService.manualCheckOut(
         searchTerm,
@@ -541,6 +563,8 @@ export class WorkstationController {
         req.user.id,
         facility,
         code,
+        undefined,
+        sessionId,
       );
 
       if (!result.success) {

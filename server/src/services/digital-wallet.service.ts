@@ -287,7 +287,7 @@ export class DigitalWalletService {
       await prisma.walletTicket.update({
         where: { registrationId },
         data: {
-          passData: passData as Prisma.JsonValue,
+          passData: passData as unknown as Prisma.InputJsonValue,
           lastAccessedAt: new Date(),
         },
       });
@@ -335,10 +335,10 @@ export class DigitalWalletService {
           },
           validTimeInterval: {
             start: {
-              date: walletTicket.registration.event.startDate,
+              date: walletTicket.registration.event.startDate.toISOString(),
             },
             end: {
-              date: walletTicket.registration.event.endDate || walletTicket.registration.event.startDate,
+              date: (walletTicket.registration.event.endDate || walletTicket.registration.event.startDate).toISOString(),
             },
           },
           locations: walletTicket.registration.event.location
@@ -360,7 +360,7 @@ export class DigitalWalletService {
       await prisma.walletTicket.update({
         where: { registrationId },
         data: {
-          passData: passData as Prisma.JsonValue,
+          passData: passData as unknown as Prisma.InputJsonValue,
           lastAccessedAt: new Date(),
         },
       });

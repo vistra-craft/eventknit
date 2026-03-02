@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
 
@@ -53,7 +54,18 @@ export class PayoutManagementService {
         create: {
           organizerId,
           primaryMethod: data.primaryMethod || 'bank_transfer',
-          ...data,
+          bankName: data.bankName,
+          accountName: data.accountName,
+          accountNumber: data.accountNumber,
+          bankCode: data.bankCode,
+          routingNumber: data.routingNumber,
+          paystackRecipientCode: data.paystackRecipientCode,
+          alternativeMethods: data.alternativeMethods as unknown as Prisma.InputJsonValue,
+          autoPayoutEnabled: data.autoPayoutEnabled,
+          autoPayoutThreshold: data.autoPayoutThreshold,
+          autoPayoutSchedule: data.autoPayoutSchedule,
+          taxId: data.taxId,
+          taxCountry: data.taxCountry,
         },
         update: {
           ...(data.primaryMethod && { primaryMethod: data.primaryMethod }),
@@ -63,7 +75,7 @@ export class PayoutManagementService {
           ...(data.bankCode !== undefined && { bankCode: data.bankCode }),
           ...(data.routingNumber !== undefined && { routingNumber: data.routingNumber }),
           ...(data.paystackRecipientCode !== undefined && { paystackRecipientCode: data.paystackRecipientCode }),
-          ...(data.alternativeMethods !== undefined && { alternativeMethods: data.alternativeMethods }),
+          ...(data.alternativeMethods !== undefined && { alternativeMethods: data.alternativeMethods as unknown as Prisma.InputJsonValue }),
           ...(data.autoPayoutEnabled !== undefined && { autoPayoutEnabled: data.autoPayoutEnabled }),
           ...(data.autoPayoutThreshold !== undefined && { autoPayoutThreshold: data.autoPayoutThreshold }),
           ...(data.autoPayoutSchedule !== undefined && { autoPayoutSchedule: data.autoPayoutSchedule }),
@@ -97,8 +109,7 @@ export class PayoutManagementService {
       const where: {
         organizerId: string;
         status?: string;
-        startDate?: { gte: Date };
-        endDate?: { lte: Date };
+        createdAt?: { gte?: Date; lte?: Date };
       } = {
         organizerId,
       };
@@ -175,6 +186,8 @@ export class PayoutManagementService {
         event: { organizerId: string };
         status: string;
         amountOwed?: { gt: number };
+        disbursementId?: null;
+        eventId?: string;
       } = {
         event: {
           organizerId,

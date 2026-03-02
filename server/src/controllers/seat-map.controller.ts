@@ -6,6 +6,7 @@ import { Request, Response, NextFunction } from 'express';
 import { SeatMapService } from '../services/seat-map.service.js';
 import { SeatSelectionService } from '../services/seat-selection.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { SeatType } from '@prisma/client';
 
 export class SeatMapController {
   /**
@@ -89,11 +90,12 @@ export class SeatMapController {
       }
 
       const eventId = (req.params.eventId as string) as string;
-      const seats = await SeatMapService.getAvailableSeats(eventId, req.query as {
-        sectionId?: string;
-        seatType?: 'REGULAR' | 'VIP' | 'WHEELCHAIR_ACCESSIBLE';
-        minPrice?: string;
-        maxPrice?: string;
+      const { sectionId, seatType, minPrice, maxPrice } = req.query as Record<string, string | undefined>;
+      const seats = await SeatMapService.getAvailableSeats(eventId, {
+        sectionId,
+        seatType: seatType as SeatType | undefined,
+        minPrice: minPrice !== undefined ? Number(minPrice) : undefined,
+        maxPrice: maxPrice !== undefined ? Number(maxPrice) : undefined,
       });
       res.json({
         success: true,
