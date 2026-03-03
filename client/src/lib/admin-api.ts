@@ -3,6 +3,7 @@
  */
 
 import { apiGet, apiPost, apiPut, apiDelete } from './api';
+import type { EventResponse } from './event-api';
 
 /**
  * Admin Dashboard Stats Response
@@ -187,6 +188,13 @@ export interface RejectEventResponse {
 /**
  * Approve an event
  */
+/**
+ * Get event details as admin (works for any event status including PENDING)
+ */
+export const getAdminEventById = async (eventId: string): Promise<EventResponse> => {
+  return apiGet<EventResponse>(`/admin/events/${eventId}`);
+};
+
 export const approveEvent = async (eventId: string): Promise<ApproveEventResponse> => {
   return apiPost<ApproveEventResponse>(`/events/${eventId}/approve`, {});
 };

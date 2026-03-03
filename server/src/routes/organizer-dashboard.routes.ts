@@ -17,7 +17,8 @@ import {
 
 const router = Router();
 
-// All routes require authentication + organizer-level or admin role
+// All routes require authentication + organizer-level, admin, or attendee role
+// ATTENDEE is included because attendees who create paid events need access to KYC endpoints
 router.use(authenticate);
 router.use(authorize(
   UserRole.ORGANIZER,
@@ -25,6 +26,7 @@ router.use(authorize(
   UserRole.ORGANIZER_TELLER,
   UserRole.SUPERADMIN,
   UserRole.ADMIN_STAFF,
+  UserRole.ATTENDEE,
 ));
 
 // Event Templates

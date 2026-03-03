@@ -149,20 +149,27 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
         <>
           {(() => {
             const hasApprovedEvents = organizingEvents.some(event => event.status.toLowerCase() !== 'pending');
-            const isKYCIncomplete = !verificationStatus?.kycStatus || verificationStatus.kycStatus !== 'APPROVED';
-            return (
-              <KYCRequiredBanner
-                hasApprovedEvents={hasApprovedEvents}
-                isKYCIncomplete={isKYCIncomplete}
-                variant="banner"
-                onNavigateToKYC={() => setCurrentTab('settings')}
-              />
+            const hasPendingPaidEvents = organizingEvents.some(
+              event => event.status.toLowerCase() === 'pending' && !event.isFree
             );
+            const isKYCIncomplete = !verificationStatus?.kycStatus || verificationStatus.kycStatus !== 'APPROVED';
+            const showBanner = (hasApprovedEvents || hasPendingPaidEvents) && isKYCIncomplete;
+            return showBanner ? (
+              <>
+                <KYCRequiredBanner
+                  hasApprovedEvents={hasApprovedEvents}
+                  hasPendingPaidEvents={hasPendingPaidEvents}
+                  isKYCIncomplete={isKYCIncomplete}
+                  variant="banner"
+                  onNavigateToKYC={() => {
+                    setCurrentTab('settings');
+                    setSearchParams({ tab: 'verification' }, { replace: true });
+                  }}
+                />
+                <div className="mb-6" />
+              </>
+            ) : null;
           })()}
-          {organizingEvents.some(event => event.status.toLowerCase() !== 'pending') && 
-           (!verificationStatus?.kycStatus || verificationStatus.kycStatus !== 'APPROVED') && (
-            <div className="mb-6" />
-          )}
         </>
       )}
 

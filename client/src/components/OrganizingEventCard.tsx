@@ -388,12 +388,12 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
                       </div>
                     </div>
                   )}
-                  {(previewEvent?.capacity || event.capacity) && (
+                  {(previewEvent?.capacity || event.capacity) ? (
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       <span>Capacity: {previewEvent?.capacity || event.capacity}</span>
                     </div>
-                  )}
+                  ) : null}
                   {previewEvent?.registrationDeadline && (
                     <div className="text-xs text-muted-foreground">
                       Registration closes on {formatDate(previewEvent.registrationDeadline)}

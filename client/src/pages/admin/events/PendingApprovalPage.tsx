@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield, ExternalLink } from "lucide-react";
 import { useAuthContext } from "../../../hooks/useAuthContext";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -14,12 +14,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Pagination } from "../../../components/ui/pagination";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
-import { approveEvent, rejectEvent } from "../../../lib/admin-api";
+import { getEvents, EventStatus, type EventData } from "../../../lib/event-api";
+import { approveEvent, rejectEvent, getAdminEventById } from "../../../lib/admin-api";
 import { EventPreviewModal } from "../../../components/EventPreviewModal";
 import { useToast } from "../../../hooks/useToast";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { extractErrorMessage } from "../../../lib/utils/error";
 
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
 
@@ -87,7 +88,7 @@ const PendingApprovalPage = () => {
 
       try {
         setPreviewLoading(true);
-        const response = await getEventById(previewEventId);
+        const response = await getAdminEventById(previewEventId);
         if (response.success && response.data?.event) {
           setPreviewEventData(response.data.event);
         } else {
@@ -215,41 +216,41 @@ const PendingApprovalPage = () => {
   };
 
   const handleApproveClick = (event: Event) => {
-    // Check if it's a paid event with unverified organizer
-    if (!event.isFree && !event.organizerVerified) {
-      setEventToApprove(event);
-      setApproveDialogOpen(true);
-    } else {
-      handleApprove(event.id);
-    }
+    handleApprove(event);
   };
 
-  const handleApprove = async (eventId: string) => {
+  const handleApprove = async (event: Event) => {
     try {
-      setProcessing(eventId);
-      const response = await approveEvent(eventId);
+      setProcessing(event.id);
+      const response = await approveEvent(event.id);
       if (response.success) {
         toast({
           title: "Event Approved",
           description: "The event has been approved successfully.",
         });
         // Remove event from list
-        setEvents(events.filter(e => e.id !== eventId));
+        setEvents(events.filter(e => e.id !== event.id));
         setApproveDialogOpen(false);
         setEventToApprove(null);
       } else {
         throw new Error(response.message || 'Failed to approve event');
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error
-        ? err.message
-        : 'Failed to approve event. Please try again.';
+      const errorMessage = extractErrorMessage(err, 'Failed to approve event. Please try again.');
       console.error('Error approving event:', err);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+
+      // Check if this is a KYC verification error — show dialog instead of toast
+      const isKycError = errorMessage.toLowerCase().includes('kyc') || errorMessage.toLowerCase().includes('verification');
+      if (isKycError && !event.isFree) {
+        setEventToApprove(event);
+        setApproveDialogOpen(true);
+      } else {
+        toast({
+          title: "Approval Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setProcessing(null);
     }
@@ -624,59 +625,55 @@ const PendingApprovalPage = () => {
           loading={previewLoading}
         />
 
-        {/* Approve Warning Dialog for Unverified Organizers */}
-        <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        {/* KYC Required Dialog — shown when approving a paid event whose organizer hasn't completed KYC */}
+        <Dialog open={approveDialogOpen} onOpenChange={(open) => {
+          setApproveDialogOpen(open);
+          if (!open) setEventToApprove(null);
+        }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-                Unverified Organizer - Paid Event
+                <Shield className="h-5 w-5 text-orange-600" />
+                KYC Verification Required
               </DialogTitle>
               <DialogDescription>
-                This is a paid event, but the organizer has not completed identity verification.
+                This paid event cannot be approved until the organizer completes KYC verification.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <Alert className="border-warning bg-warning/10">
-                <Shield className="h-4 w-4 text-warning" />
-                <AlertDescription className="text-warning">
-                  <strong>Important:</strong> The organizer will not be able to receive payouts from ticket sales until they complete identity verification. 
-                  You can still approve the event, but they will need to verify their identity to receive funds.
+              <Alert className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <AlertDescription>
+                  Paid events require the organizer to have approved KYC documents before the event can go live.
+                  Please review their KYC submission and approve it first, then come back to approve this event.
                 </AlertDescription>
               </Alert>
               {eventToApprove && (
-                <div className="text-sm space-y-1">
+                <div className="text-sm space-y-2 rounded-lg border border-border p-3 bg-muted/30">
                   <p><strong>Event:</strong> {eventToApprove.title}</p>
-                  <p><strong>Organizer:</strong> {eventToApprove.organizer}</p>
-                  <p><strong>Verification Level:</strong> {eventToApprove.organizerVerificationLevel || 1} (Level 2+ required for payouts)</p>
+                  <p><strong>Organizer:</strong> {eventToApprove.organizerName || eventToApprove.organizer}</p>
                 </div>
               )}
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={() => {
                 setApproveDialogOpen(false);
                 setEventToApprove(null);
               }}>
-                Cancel
+                Close
               </Button>
-              <Button 
-                variant="default" 
-                onClick={() => eventToApprove && handleApprove(eventToApprove.id)}
-                disabled={processing === eventToApprove?.id}
-                className="bg-primary hover:bg-primary/90 text-white"
-              >
-                {processing === eventToApprove?.id ? (
-                  <>
-                    <Loader size="sm" className="h-4 w-4 mr-2" />
-                    Approving...
-                  </>
-                ) : (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Approve Anyway
-                  </>
-                )}
-              </Button>
+              {eventToApprove?.organizerId && (
+                <Button asChild>
+                  <Link
+                    to={`/admin/kyc/review/${eventToApprove.organizerId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Review Organizer KYC
+                  </Link>
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

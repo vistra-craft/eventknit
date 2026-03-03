@@ -207,11 +207,14 @@ const EventDetails = () => {
 
   const LocationIcon = venueType === 'online' ? Globe : venueType === 'hybrid' ? Video : MapPin;
 
-  // Lowest price for mobile price display
-  const lowestPrice = event?.ticketTypes && event.ticketTypes.length > 0
-    ? Math.min(...event.ticketTypes.map((t) => t.price))
-    : event?.price ?? 0;
-  const isFreeEvent = event?.isFree || lowestPrice === 0;
+  // Lowest price for mobile price display — use lowest PAID price for mixed events
+  const lowestPrice = (() => {
+    if (!event?.ticketTypes || event.ticketTypes.length === 0) return event?.price ?? 0;
+    const paidPrices = event.ticketTypes.map((t) => t.price).filter((p) => p > 0);
+    if (paidPrices.length > 0) return Math.min(...paidPrices);
+    return Math.min(...event.ticketTypes.map((t) => t.price));
+  })();
+  const isFreeEvent = event?.isFree === true;
 
 
   if (isLoading) {
@@ -340,7 +343,7 @@ const EventDetails = () => {
                     <span className="text-lg font-bold text-primary">Free</span>
                   ) : (
                     <span className="text-lg font-bold text-primary">
-                      {event.currency || '$'}{lowestPrice.toLocaleString()}
+                      From {event.currency || '$'} {lowestPrice.toLocaleString()}
                     </span>
                   )}
                 </div>

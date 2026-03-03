@@ -22,10 +22,15 @@ export function EventSidebar({
   onShare,
   isSaved,
 }: EventSidebarProps) {
-  const lowestPrice =
-    event.ticketTypes && event.ticketTypes.length > 0
-      ? Math.min(...event.ticketTypes.map((t) => t.price))
-      : event.price ?? 0;
+  // For paid events with mixed tickets, show the lowest PAID price (not $0 free tiers)
+  const lowestPrice = (() => {
+    if (!event.ticketTypes || event.ticketTypes.length === 0) return event.price ?? 0;
+    const paidPrices = event.ticketTypes.map((t) => t.price).filter((p) => p > 0);
+    if (paidPrices.length > 0) return Math.min(...paidPrices);
+    return Math.min(...event.ticketTypes.map((t) => t.price));
+  })();
+
+  const hasFreeTickets = event.ticketTypes?.some((t) => t.price === 0);
 
   const spotsLeft = event.availableSlots;
   const capacity = event.capacity;
@@ -43,8 +48,8 @@ export function EventSidebar({
     ? "Registration closes in"
     : "Event starts in";
 
-  // Check if event is truly free (either isFree flag or price is 0)
-  const isFreeEvent = event.isFree || lowestPrice === 0;
+  // Event is free only if explicitly marked free (not just because it has a free tier)
+  const isFreeEvent = event.isFree === true;
 
   return (
     <div className="sticky top-20 self-start space-y-5 rounded-2xl border border-border/40 bg-card p-6 shadow-lg">
@@ -58,9 +63,11 @@ export function EventSidebar({
         <div className="text-center pb-4 border-b border-border/30">
           <p className="text-xs text-muted-foreground mb-1">Starting from</p>
           <p className="text-3xl font-bold text-primary">
-            {event.currency || "$"}
-            {lowestPrice.toLocaleString()}
+            {event.currency || "$"} {lowestPrice.toLocaleString()}
           </p>
+          {hasFreeTickets && (
+            <p className="text-xs text-muted-foreground mt-1">Free entry also available</p>
+          )}
         </div>
       ) : (
         <div className="text-center pb-4 border-b border-border/30">

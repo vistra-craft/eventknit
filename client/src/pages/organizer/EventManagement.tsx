@@ -2305,11 +2305,11 @@ const EventManagement = () => {
               )}
 
               {/* Description */}
-              {eventData.description && (
+              {(eventData.fullDescription || eventData.description) && (
                 <div>
                   <h3 className="text-sm font-semibold mb-2">About this event</h3>
                   <RichTextContent
-                    content={eventData.description}
+                    content={eventData.fullDescription || eventData.description || ''}
                     className="text-sm text-muted-foreground"
                   />
                 </div>
@@ -2408,23 +2408,131 @@ const EventManagement = () => {
                 </div>
               )}
 
+              {/* Requirements & Age Restriction */}
+              {((eventData.requirements && eventData.requirements.length > 0) || eventData.ageRestriction) && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Important Information</h3>
+                  <div className="space-y-2">
+                    {eventData.ageRestriction && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Users className="w-4 h-4 text-primary" />
+                        <span>Age Restriction: {eventData.ageRestriction}</span>
+                      </div>
+                    )}
+                    {eventData.requirements?.map((req, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="w-4 h-4 text-primary" />
+                        <span>{req}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Speakers (if any) */}
               {apiData.speakers && apiData.speakers.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Speakers</h3>
                   <div className="grid gap-2">
-                    {apiData.speakers.slice(0, 5).map((speaker, idx: number) => (
+                    {apiData.speakers.map((speaker, idx: number) => (
                       <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">
-                            {speaker.name.split(' ').map((n: string) => n[0]).join('')}
-                          </span>
-                        </div>
+                        {speaker.image ? (
+                          <img src={speaker.image} alt={speaker.name} className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-sm font-bold text-primary">
+                              {speaker.name.split(' ').map((n: string) => n[0]).join('')}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex-1">
                           <p className="text-sm font-medium">{speaker.name}</p>
                           {speaker.title && <p className="text-xs text-muted-foreground">{speaker.title}</p>}
                         </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Agenda */}
+              {eventData.agenda && eventData.agenda.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Schedule</h3>
+                  <div className="space-y-2">
+                    {(Array.isArray(eventData.agenda) ? eventData.agenda : []).map((item, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-muted/50">
+                        <div className="flex items-center gap-2">
+                          {item.startTime && (
+                            <span className="text-xs font-medium text-primary">
+                              {item.startTime}{item.endTime ? ` - ${item.endTime}` : ''}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm font-medium mt-1">{item.title}</p>
+                        {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Exhibitors */}
+              {eventData.exhibitors && eventData.exhibitors.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Exhibitors</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(Array.isArray(eventData.exhibitors) ? eventData.exhibitors : []).map((exhibitor, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-sm font-medium">{exhibitor.name}</p>
+                        {exhibitor.booth && <p className="text-xs text-muted-foreground">Booth: {exhibitor.booth}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sponsors */}
+              {apiData.sponsors && apiData.sponsors.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Sponsors</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(apiData.sponsors as SponsorItem[]).map((sponsor, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-muted/50 text-center">
+                        {sponsor.logo ? (
+                          <img src={sponsor.logo} alt={sponsor.name} className="h-8 mx-auto mb-1 object-contain" />
+                        ) : (
+                          <p className="text-sm font-medium">{sponsor.name}</p>
+                        )}
+                        {sponsor.level && <Badge variant="outline" className="text-xs">{sponsor.level}</Badge>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* FAQs */}
+              {eventData.faqs && eventData.faqs.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-3">Frequently Asked Questions</h3>
+                  <div className="space-y-2">
+                    {(Array.isArray(eventData.faqs) ? eventData.faqs : []).map((faq, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-muted/50">
+                        <p className="text-sm font-medium">{faq.question}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{faq.answer}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tags */}
+              {eventData.tags && eventData.tags.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold mb-2">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {eventData.tags.map((tag) => (
+                      <Badge key={tag} variant="outline">{tag}</Badge>
                     ))}
                   </div>
                 </div>

@@ -361,8 +361,8 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
  */
 router.put(
   '/profile',
-  validate(authValidations.updateProfile),
   handleMulterUpload,
+  validate(authValidations.updateProfile),
   AuthController.updateProfile,
 );
 

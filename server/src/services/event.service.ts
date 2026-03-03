@@ -264,12 +264,15 @@ export class EventService {
         }
       }
       if (data.ticketTypes && Array.isArray(data.ticketTypes)) {
-        for (const ticket of data.ticketTypes) {
-          if (ticket.isComplementary === true) continue;
-          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
-          if (!isNaN(price) && price <= 0) {
-            throw new ValidationError('Paid ticket types must have a price greater than 0');
-          }
+        // For paid events, at least one non-complementary ticket must have price > 0.
+        // Free-tier tickets (price 0) are allowed alongside paid ones.
+        const hasPaidTicket = data.ticketTypes.some((ticket: Record<string, unknown>) => {
+          if (ticket.isComplementary === true) return false;
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price as string) : Number(ticket.price);
+          return !isNaN(price) && price > 0;
+        });
+        if (!hasPaidTicket) {
+          throw new ValidationError('Paid events must have at least one ticket with a price greater than 0');
         }
       }
     }
@@ -1042,9 +1045,8 @@ export class EventService {
         if (effectiveIsFree && !isNaN(price) && price > 0) {
           throw new ValidationError('Free events cannot include paid ticket types');
         }
-        if (!effectiveIsFree && ticket.isComplementary !== true && !isNaN(price) && price <= 0) {
-          throw new ValidationError('Paid ticket types must have a price greater than 0');
-        }
+        // Note: free-tier tickets (price 0) are allowed in paid events.
+        // The "at least one paid ticket" check is done below after the loop.
 
         // Validate complementary tickets
         if (ticket.isComplementary === true) {
@@ -1072,6 +1074,18 @@ export class EventService {
           if (fromDate >= untilDate) {
             throw new ValidationError('Early bird "available from" date must be before "available until" date');
           }
+        }
+      }
+
+      // For paid events, at least one non-complementary ticket must have price > 0
+      if (!effectiveIsFree) {
+        const hasPaidTicket = data.ticketTypes.some((ticket: Record<string, unknown>) => {
+          if (ticket.isComplementary === true) return false;
+          const p = typeof ticket.price === 'string' ? parseFloat(ticket.price as string) : Number(ticket.price);
+          return !isNaN(p) && p > 0;
+        });
+        if (!hasPaidTicket) {
+          throw new ValidationError('Paid events must have at least one ticket with a price greater than 0');
         }
       }
     }
@@ -2179,6 +2193,8 @@ export class EventService {
         id: true,
         title: true,
         status: true,
+        isFree: true,
+        organizerId: true,
       },
     });
 
@@ -2192,6 +2208,20 @@ export class EventService {
 
     if (event.status === EventStatus.REJECTED) {
       throw new ValidationError('Cannot approve a rejected event. Organizer must resubmit.');
+    }
+
+    // For paid events, verify organizer has completed KYC
+    if (!event.isFree) {
+      const organizer = await prisma.user.findUnique({
+        where: { id: event.organizerId },
+        select: { kycStatus: true, organizationName: true },
+      });
+
+      if (!organizer || organizer.kycStatus !== 'APPROVED') {
+        throw new ValidationError(
+          `Cannot approve a paid event: the organizer${organizer?.organizationName ? ` (${organizer.organizationName})` : ''} has not completed KYC verification. Please notify the organizer to complete their KYC before approving this event.`
+        );
+      }
     }
 
     // Approve event

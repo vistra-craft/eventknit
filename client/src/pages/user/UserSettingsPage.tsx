@@ -900,13 +900,21 @@ const UserSettingsPage = () => {
 
   // Check if user has approved events (events that are not pending)
   const hasApprovedEvents = organizingEvents.some(event => event.status.toLowerCase() !== 'pending');
-  
+
+  // Check if user has pending paid events (need KYC before admin can approve)
+  const hasPendingPaidEvents = organizingEvents.some(
+    event => event.status.toLowerCase() === 'pending' && !event.isFree
+  );
+
   // Check if KYC is incomplete
   const isKYCIncomplete = !verificationStatus?.kycStatus || verificationStatus.kycStatus !== 'APPROVED';
 
+  // Show verification tab if user has approved events OR pending paid events
+  const showVerificationTab = hasApprovedEvents || hasPendingPaidEvents;
+
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
-    ...(hasApprovedEvents ? [{ id: "verification", label: "Verification", icon: Shield }] : []),
+    ...(showVerificationTab ? [{ id: "verification", label: "Verification", icon: Shield }] : []),
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "appearance", label: "Appearance", icon: Palette },
     { id: "security", label: "Security", icon: Key },
@@ -926,24 +934,26 @@ const UserSettingsPage = () => {
       <p className="text-muted-foreground mb-8">Manage your account and preferences</p>
 
       {/* KYC Required Banner */}
-      {hasApprovedEvents && isKYCIncomplete && (
+      {(hasApprovedEvents || hasPendingPaidEvents) && isKYCIncomplete && (
         <div className="mb-6">
           <KYCRequiredBanner
             hasApprovedEvents={hasApprovedEvents}
+            hasPendingPaidEvents={hasPendingPaidEvents}
             isKYCIncomplete={isKYCIncomplete}
             variant="card"
+            onNavigateToKYC={() => setActiveTab('verification')}
           />
         </div>
       )}
 
-      {/* Show message if no approved events yet */}
-      {!hasApprovedEvents && (
+      {/* Show message if no approved events and no pending paid events */}
+      {!hasApprovedEvents && !hasPendingPaidEvents && (
         <div className="bg-blue-50/30 dark:bg-blue-500/5 border border-blue-200/50 dark:border-blue-500/20 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             <div>
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                Verification tab will appear after your first event is approved
+                Verification tab will appear after you create a paid event
               </p>
               <p className="text-xs text-blue-800 dark:text-blue-200 mt-1">
                 Create a paid event to start the verification process and enable payouts.

@@ -40,8 +40,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
 import { applyTemplate } from '@/lib/organizer-dashboard-api';
 import { useToast } from '@/hooks/useToast';
+import { extractErrorMessage } from '@/lib/utils/error';
 import { getMyOrganizerProfile } from '@/lib/organizer-profile-api';
 import { uploadImage } from '@/lib/upload-api';
+import { refreshAccessToken } from '@/lib/api';
+import { RichTextContent } from '@/components/ui/RichTextContent';
 import { BasicInfoStep } from '@/components/event-wizard/BasicInfoStep';
 import { RegistrationDetailsStep } from '@/components/event-wizard/RegistrationDetailsStep';
 import BackButton from '@/components/BackButton';
@@ -782,10 +785,20 @@ export default function CreateEventStepwise() {
             setTags([]);
           }
 
-          // Set requirements
+          // Set requirements - handle both array and string formats
           if (transformedEvent.requirements) {
             if (Array.isArray(transformedEvent.requirements)) {
               setRequirements(transformedEvent.requirements);
+            } else if (typeof transformedEvent.requirements === 'string') {
+              try {
+                const parsedReqs = JSON.parse(transformedEvent.requirements);
+                setRequirements(Array.isArray(parsedReqs) ? parsedReqs : []);
+              } catch {
+                // If parsing fails, split by comma/newline
+                setRequirements(
+                  transformedEvent.requirements.split(/[,\n]/).map((r: string) => r.trim()).filter(Boolean)
+                );
+              }
             }
           }
 
@@ -1071,10 +1084,11 @@ export default function CreateEventStepwise() {
         }
       } catch (err) {
         console.error('Error loading template:', err);
-        setError('Unable to load the template. Please try selecting a different template.');
+        const msg = extractErrorMessage(err, 'Unable to load the template. Please try selecting a different template.');
+        setError(msg);
         toast({
-          title: "Error",
-          description: "Failed to load template. Please try again.",
+          title: "Template load failed",
+          description: msg,
           variant: "destructive",
         });
       } finally {
@@ -1319,7 +1333,7 @@ export default function CreateEventStepwise() {
     setFaqs(updatedFaqs);
   };
 
-  const validateStep = useCallback((step: number) => {
+  const validateStep = useCallback((step: number): Record<string, string> => {
     const errors: Record<string, string> = {};
 
     if (step === 1) { // Details (Basic Info + Date & Location combined)
@@ -1422,38 +1436,43 @@ export default function CreateEventStepwise() {
         if (!validTypes.includes(field.type)) {
           errors[`regField_${idx}_type`] = `Registration field "${field.label || idx + 1}" has an invalid type.`;
         }
-        // Select/radio must have options
-        if ((field.type === 'select' || field.type === 'radio') && (!field.options || field.options.length === 0)) {
+        // Select/radio/checkbox must have options
+        if ((field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && (!field.options || field.options.length === 0)) {
           errors[`regField_${idx}_options`] = `"${field.label || `Field #${idx + 1}`}" needs at least one option.`;
         }
       });
     }
 
     if (step === 5) { // Extras — speakers, sponsors, exhibitors, agenda
+      // Only validate entries that have some content (skip empty placeholders)
       speakers.forEach((speaker, i) => {
-        if (!speaker.name?.trim()) {
+        const hasContent = speaker.name?.trim() || speaker.title?.trim() || speaker.bio?.trim() || speaker.company?.trim() || speaker.image;
+        if (hasContent && !speaker.name?.trim()) {
           errors[`speaker_${i}`] = `Speaker #${i + 1} needs a name.`;
         }
       });
       sponsors.forEach((sponsor, i) => {
-        if (!sponsor.name?.trim()) {
+        const hasContent = sponsor.name?.trim() || sponsor.description?.trim() || sponsor.logo || sponsor.website?.trim();
+        if (hasContent && !sponsor.name?.trim()) {
           errors[`sponsor_${i}`] = `Sponsor #${i + 1} needs a name.`;
         }
       });
       exhibitors.forEach((exhibitor, i) => {
-        if (!exhibitor.name?.trim()) {
+        const hasContent = exhibitor.name?.trim() || exhibitor.description?.trim() || exhibitor.logo || exhibitor.contactEmail?.trim() || exhibitor.booth?.trim();
+        if (hasContent && !exhibitor.name?.trim()) {
           errors[`exhibitor_${i}`] = `Exhibitor #${i + 1} needs a name.`;
         }
       });
       agenda.forEach((item, i) => {
-        if (!item.title?.trim()) {
+        const hasContent = item.title?.trim() || item.description?.trim();
+        if (hasContent && !item.title?.trim()) {
           errors[`agenda_${i}`] = `Agenda item #${i + 1} needs a title.`;
         }
       });
     }
 
     setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    return errors;
   }, [eventData, eventType, ticketTypes, faqs, registrationFields, speakers, sponsors, exhibitors, agenda]);
 
   const transformFormDataToAPI = useCallback((): CreateEventData => {
@@ -1541,47 +1560,59 @@ export default function CreateEventStepwise() {
       type: isPrivate ? EventType.PRIVATE : EventType.PUBLIC,
       requirements: requirements.length > 0 ? requirements : undefined,
       ageRestriction: eventData.ageRestriction?.trim() || undefined,
-      speakers: speakers.length > 0 ? speakers.map(s => ({
-        id: s.id,
-        name: s.name,
-        title: s.title || '',
-        bio: s.bio || '',
-        image: s.image || '',
-        company: s.company || '',
-        website: s.website || '',
-        linkedin: s.linkedin || '',
-        twitter: s.twitter || '',
-      })) : undefined,
-      agenda: agenda.length > 0 ? agenda.map(a => ({
-        id: a.id,
-        title: a.title,
-        description: a.description || '',
-        date: a.date || '',
-        startTime: a.startTime || '',
-        endTime: a.endTime || '',
-        sessionType: a.sessionType || 'other',
-        room: a.room || '',
-        speakerIds: a.speakerIds || [],
-        speakers: a.speakers || [], // Legacy field for backwards compatibility
-      })) : undefined,
-      exhibitors: exhibitors.length > 0 ? exhibitors.map(e => ({
-        id: e.id,
-        name: e.name,
-        description: e.description || '',
-        logo: e.logo || '',
-        contactEmail: e.contactEmail || '',
-        booth: e.booth || '',
-        website: e.website || '',
-        category: e.category || '',
-      })) : undefined,
-      sponsors: sponsors.length > 0 ? sponsors.map(s => ({
-        id: s.id,
-        name: s.name,
-        level: s.level || '',
-        logo: s.logo || '',
-        website: s.website || '',
-        description: s.description || '',
-      })) : undefined,
+      speakers: (() => {
+        const filled = speakers.filter(s => s.name?.trim());
+        return filled.length > 0 ? filled.map(s => ({
+          id: s.id,
+          name: s.name,
+          title: s.title || '',
+          bio: s.bio || '',
+          image: s.image || '',
+          company: s.company || '',
+          website: s.website || '',
+          linkedin: s.linkedin || '',
+          twitter: s.twitter || '',
+        })) : undefined;
+      })(),
+      agenda: (() => {
+        const filled = agenda.filter(a => a.title?.trim());
+        return filled.length > 0 ? filled.map(a => ({
+          id: a.id,
+          title: a.title,
+          description: a.description || '',
+          date: a.date || '',
+          startTime: a.startTime || '',
+          endTime: a.endTime || '',
+          sessionType: a.sessionType || 'other',
+          room: a.room || '',
+          speakerIds: a.speakerIds || [],
+          speakers: a.speakers || [], // Legacy field for backwards compatibility
+        })) : undefined;
+      })(),
+      exhibitors: (() => {
+        const filled = exhibitors.filter(e => e.name?.trim());
+        return filled.length > 0 ? filled.map(e => ({
+          id: e.id,
+          name: e.name,
+          description: e.description || '',
+          logo: e.logo || '',
+          contactEmail: e.contactEmail || '',
+          booth: e.booth || '',
+          website: e.website || '',
+          category: e.category || '',
+        })) : undefined;
+      })(),
+      sponsors: (() => {
+        const filled = sponsors.filter(s => s.name?.trim());
+        return filled.length > 0 ? filled.map(s => ({
+          id: s.id,
+          name: s.name,
+          level: s.level || '',
+          logo: s.logo || '',
+          website: s.website || '',
+          description: s.description || '',
+        })) : undefined;
+      })(),
       socialLinks: socialLinks && Object.keys(socialLinks).length > 0 ? socialLinks : undefined,
       faqs: faqs.filter(faq => faq.question.trim() && faq.answer.trim()).length > 0
         ? faqs.filter(faq => faq.question.trim() && faq.answer.trim()).map(faq => ({
@@ -1617,8 +1648,10 @@ export default function CreateEventStepwise() {
     // Final validation — check ALL steps that have validation rules
     const stepsWithValidation = [1, 2, 3, 4, 5];
     for (const step of stepsWithValidation) {
-      if (!validateStep(step)) {
-        setError(`There are issues in the "${steps[step - 1]?.title || `Step ${step}`}" section that need your attention.`);
+      const errors = validateStep(step);
+      if (Object.keys(errors).length > 0) {
+        const errorMessages = Object.values(errors);
+        setError(`${steps[step - 1]?.title || `Step ${step}`}: ${errorMessages[0]}${errorMessages.length > 1 ? ` (+${errorMessages.length - 1} more)` : ''}`);
         setCurrentStep(step);
         return;
       }
@@ -1667,11 +1700,7 @@ export default function CreateEventStepwise() {
           throw new Error(upgradeResponse.message || 'Failed to set up organizer account');
         }
       } catch (upgradeError) {
-        setError(
-          upgradeError instanceof Error
-            ? upgradeError.message
-            : 'Failed to set up organizer account. Please try again.'
-        );
+        setError(extractErrorMessage(upgradeError, 'Failed to set up organizer account. Please try again.'));
         setIsSubmitting(false);
         return;
       }
@@ -1681,8 +1710,23 @@ export default function CreateEventStepwise() {
     // Verification is only required to RECEIVE payouts (handled in disbursement service)
 
     try {
+      // Save draft before submission so data isn't lost if something goes wrong
+      if (!isEditMode) {
+        saveDraft();
+      }
+
+      // Proactively refresh the access token to prevent 401 during submission.
+      // Event creation forms can take a long time to fill, so the token may have
+      // expired by the time the user clicks Publish.
+      try {
+        await refreshAccessToken();
+      } catch {
+        // Refresh failed — token may still be valid, or the server will 401
+        // and the apiRequest retry logic will handle it. Don't block submission.
+      }
+
       const apiData = transformFormDataToAPI();
-      
+
       if (isEditMode && eventId) {
         // Update existing event
         const response = await updateEvent(eventId, apiData);
@@ -1752,40 +1796,35 @@ export default function CreateEventStepwise() {
         }
       }
     } catch (err: unknown) {
-      // Improved error message handling for better user experience
-      let errorMessage = 'An unexpected error occurred. Please try again.';
-      
-      if (err && typeof err === 'object' && 'message' in err) {
-        const rawMessage = String(err.message);
-        
-        // Parse and improve common validation errors
-        if (rawMessage.includes('registrationFields') && rawMessage.includes('type')) {
-          errorMessage = 'Invalid registration field type detected. Please check your custom form fields.';
-        } else if (rawMessage.includes('validation') || rawMessage.includes('required')) {
-          errorMessage = 'Please check all required fields and ensure they are filled correctly.';
-        } else if (rawMessage.includes('price') || rawMessage.includes('ticket')) {
-          errorMessage = 'Please check your ticket pricing and availability settings.';
-        } else if (rawMessage.includes('date') || rawMessage.includes('time')) {
-          errorMessage = 'Please check your event date and time settings.';
-        } else if (rawMessage.includes('unauthorized') || rawMessage.includes('authentication')) {
-          errorMessage = 'Your session has expired. Please refresh the page and try again.';
-        } else {
-          // Use the original message if it's user-friendly (not too technical)
-          errorMessage = rawMessage.length < 200 && !rawMessage.includes('Error:') 
-            ? rawMessage 
-            : 'Failed to save event. Please check your input and try again.';
-        }
+      const rawMessage = extractErrorMessage(err, 'Failed to save event. Please try again.');
+
+      // Map technical messages to user-friendly ones and navigate to the relevant step
+      let errorMessage = rawMessage;
+      const lowerMsg = rawMessage.toLowerCase();
+      if (lowerMsg.includes('ticket') || lowerMsg.includes('price') || lowerMsg.includes('paid event')) {
+        errorMessage = rawMessage;
+        setCurrentStep(3); // Navigate to Tickets step
+      } else if (rawMessage.includes('registrationFields') && rawMessage.includes('type')) {
+        errorMessage = 'Invalid registration field type detected. Please check your custom form fields.';
+        setCurrentStep(4); // Navigate to Registration step
+      } else if (lowerMsg.includes('unauthorized') || lowerMsg.includes('authentication') || lowerMsg.includes('session expired')) {
+        errorMessage = 'Your session has expired. Your draft has been saved — please log in again and your progress will be restored.';
+      } else if (lowerMsg.includes('speaker') || lowerMsg.includes('sponsor') || lowerMsg.includes('exhibitor') || lowerMsg.includes('agenda')) {
+        setCurrentStep(5); // Navigate to Extras step
+      } else if (lowerMsg.includes('title') || lowerMsg.includes('description') || lowerMsg.includes('date') || lowerMsg.includes('location') || lowerMsg.includes('venue')) {
+        setCurrentStep(1); // Navigate to Details step
       }
-      
+
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput, orgDescInput]);
+  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, saveDraft, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput, orgDescInput]);
 
   const handleNext = useCallback(() => {
     if (currentStep < 6) {
-      if (validateStep(currentStep)) {
+      const errors = validateStep(currentStep);
+      if (Object.keys(errors).length === 0) {
         setError(null);
         // Save draft before navigating to next step
         if (!isEditMode) {
@@ -1793,7 +1832,15 @@ export default function CreateEventStepwise() {
         }
         setCurrentStep(currentStep + 1);
       } else {
-        setError('Please fix the highlighted fields before continuing.');
+        // Show specific error messages from validation
+        const errorMessages = Object.values(errors);
+        if (errorMessages.length === 1) {
+          setError(errorMessages[0]);
+        } else if (errorMessages.length > 1) {
+          setError(errorMessages[0] + ` (+${errorMessages.length - 1} more)`);
+        } else {
+          setError('Please fix the highlighted fields before continuing.');
+        }
         // Scroll to the first invalid ticket card
         setTimeout(() => {
           const firstInvalid = document.querySelector('[data-ticket-card].border-destructive\\/40');
@@ -1949,6 +1996,12 @@ export default function CreateEventStepwise() {
     }
 
     // Default event preview for other steps
+    const filledSpeakers = speakers.filter(s => s.name?.trim());
+    const filledExhibitors = exhibitors.filter(e => e.name?.trim());
+    const filledSponsors = sponsors.filter(s => s.name?.trim());
+    const filledAgenda = agenda.filter(a => a.title?.trim());
+    const filledFaqs = faqs.filter(f => f.question?.trim() && f.answer?.trim());
+
     return (
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -1967,12 +2020,15 @@ export default function CreateEventStepwise() {
                 className="w-full h-64 object-cover rounded-lg"
               />
             )}
-            
+
             {/* Event Title */}
             <div>
               <h2 className="text-page-title">{eventData.title || 'Untitled Event'}</h2>
               {eventData.organizer && (
                 <p className="text-muted-foreground mt-1">by {eventData.organizer}</p>
+              )}
+              {eventData.category && (
+                <Badge variant="outline" className="mt-2">{eventData.category}</Badge>
               )}
             </div>
 
@@ -1994,6 +2050,7 @@ export default function CreateEventStepwise() {
                 <div>
                   {eventData.venue && <p className="font-medium">{eventData.venue}</p>}
                   {eventData.location && <p className="text-muted-foreground">{eventData.location}</p>}
+                  {eventData.address && <p className="text-sm text-muted-foreground">{eventData.address}</p>}
                   {eventData.onlineLink && (
                     <a href={eventData.onlineLink} className="text-primary hover:underline">
                       {eventData.onlineLink}
@@ -2007,7 +2064,10 @@ export default function CreateEventStepwise() {
             {eventData.description && (
               <div>
                 <h3 className="text-section-header mb-2">About this event</h3>
-                <p className="text-muted-foreground whitespace-pre-wrap">{eventData.description}</p>
+                <RichTextContent
+                  content={eventData.description}
+                  className="prose prose-sm max-w-none text-muted-foreground"
+                />
               </div>
             )}
 
@@ -2037,15 +2097,122 @@ export default function CreateEventStepwise() {
               </div>
             )}
 
+            {/* Requirements & Age Restriction */}
+            {(requirements.length > 0 || eventData.ageRestriction) && (
+              <div>
+                <h3 className="text-section-header mb-3">Important Information</h3>
+                <div className="space-y-2">
+                  {eventData.ageRestriction && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="w-4 h-4 text-primary" />
+                      <span>Age Restriction: {eventData.ageRestriction}</span>
+                    </div>
+                  )}
+                  {requirements.map((req, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm">
+                      <CheckCircle className="w-4 h-4 text-primary" />
+                      <span>{req}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Speakers */}
+            {filledSpeakers.length > 0 && (
+              <div>
+                <h3 className="text-section-header mb-3">Speakers</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {filledSpeakers.map((speaker, i) => (
+                    <div key={i} className="flex items-start gap-3 p-3 border rounded-lg">
+                      {speaker.image ? (
+                        <img src={speaker.image} alt={speaker.name} className="w-12 h-12 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                          <User className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium">{speaker.name}</p>
+                        {speaker.title && <p className="text-sm text-primary">{speaker.title}</p>}
+                        {speaker.company && <p className="text-xs text-muted-foreground">{speaker.company}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Agenda */}
+            {filledAgenda.length > 0 && (
+              <div>
+                <h3 className="text-section-header mb-3">Schedule</h3>
+                <div className="space-y-2">
+                  {filledAgenda.map((item, i) => (
+                    <div key={i} className="p-3 border rounded-lg">
+                      <div className="flex items-center gap-2">
+                        {item.startTime && (
+                          <span className="text-sm font-medium text-primary">
+                            {item.startTime}{item.endTime ? ` - ${item.endTime}` : ''}
+                          </span>
+                        )}
+                        {item.sessionType && item.sessionType !== 'other' && (
+                          <Badge variant="outline" className="text-xs">{item.sessionType}</Badge>
+                        )}
+                      </div>
+                      <p className="font-medium mt-1">{item.title}</p>
+                      {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
+                      {item.room && <p className="text-xs text-muted-foreground mt-1">Room: {item.room}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Exhibitors */}
+            {filledExhibitors.length > 0 && (
+              <div>
+                <h3 className="text-section-header mb-3">Exhibitors</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {filledExhibitors.map((exhibitor, i) => (
+                    <div key={i} className="p-3 border rounded-lg">
+                      <p className="font-medium">{exhibitor.name}</p>
+                      {exhibitor.description && <p className="text-sm text-muted-foreground">{exhibitor.description}</p>}
+                      {exhibitor.booth && <p className="text-xs text-muted-foreground">Booth: {exhibitor.booth}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sponsors */}
+            {filledSponsors.length > 0 && (
+              <div>
+                <h3 className="text-section-header mb-3">Sponsors</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {filledSponsors.map((sponsor, i) => (
+                    <div key={i} className="p-3 border rounded-lg text-center">
+                      {sponsor.logo ? (
+                        <img src={sponsor.logo} alt={sponsor.name} className="h-10 mx-auto mb-2 object-contain" />
+                      ) : (
+                        <p className="font-medium">{sponsor.name}</p>
+                      )}
+                      {sponsor.level && <Badge variant="outline" className="text-xs">{sponsor.level}</Badge>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* FAQs */}
-            {faqs.filter(f => f.question && f.answer).length > 0 && (
+            {filledFaqs.length > 0 && (
               <div>
                 <h3 className="text-section-header mb-3">Frequently Asked Questions</h3>
                 <div className="space-y-3">
-                  {faqs.filter(f => f.question && f.answer).map((faq, index) => (
-                    <div key={index}>
+                  {filledFaqs.map((faq, index) => (
+                    <div key={index} className="p-3 border rounded-lg">
                       <p className="font-medium">{faq.question}</p>
-                      <p className="text-muted-foreground text-sm">{faq.answer}</p>
+                      <p className="text-muted-foreground text-sm mt-1">{faq.answer}</p>
                     </div>
                   ))}
                 </div>
@@ -2054,10 +2221,13 @@ export default function CreateEventStepwise() {
 
             {/* Tags */}
             {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag) => (
-                  <Badge key={tag} variant="outline">{tag}</Badge>
-                ))}
+              <div>
+                <h3 className="text-section-header mb-2">Tags</h3>
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <Badge key={tag} variant="outline">{tag}</Badge>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -2139,7 +2309,16 @@ export default function CreateEventStepwise() {
         {error && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>
+              <span>{error}</span>
+              {Object.keys(validationErrors).length > 1 && (
+                <ul className="mt-1.5 list-disc pl-4 text-xs space-y-0.5">
+                  {Object.values(validationErrors).map((msg, i) => (
+                    <li key={i}>{msg}</li>
+                  ))}
+                </ul>
+              )}
+            </AlertDescription>
           </Alert>
         )}
 

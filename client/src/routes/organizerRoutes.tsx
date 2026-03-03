@@ -262,7 +262,7 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
   {
     path: 'kyc',
     element: createElement(KYCVerificationPage),
-    allowedRoles: ORGANIZER_ADMIN_ONLY,
+    allowedRoles: [...ORGANIZER_ADMIN_ONLY, UserRole.ATTENDEE],
   },
   {
     path: 'subscription',

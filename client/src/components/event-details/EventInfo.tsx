@@ -1,5 +1,6 @@
 import { CheckCircle, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import type { EventData } from "@/types/event";
 
 interface EventInfoProps {
@@ -16,11 +17,10 @@ export const EventInfo = ({ description, fullDescription, requirements, ageRestr
       {/* About */}
       <section>
         <h2 className="text-3xl font-bold mb-4">About This Event</h2>
-        <div className="prose prose-lg max-w-none text-muted-foreground">
-          <p className="leading-relaxed whitespace-pre-line">
-            {fullDescription || description}
-          </p>
-        </div>
+        <RichTextContent
+          content={fullDescription || description}
+          className="prose prose-lg max-w-none text-muted-foreground leading-relaxed"
+        />
       </section>
 
 

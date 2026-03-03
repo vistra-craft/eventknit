@@ -168,7 +168,7 @@ export interface ActiveFeaturedEventsResponse {
  */
 export const getActiveFeaturedEvents = async (): Promise<ActiveFeaturedEvent[]> => {
   const response = await apiGet<ActiveFeaturedEventsResponse>('/featured-events/active');
-  return response.data.featuredEvents;
+  return response.data?.featuredEvents ?? [];
 };
 
 /**

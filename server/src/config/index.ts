@@ -36,7 +36,7 @@ export const config = {
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-secret-key-change-in-production-min-32-chars',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-key-change-in-production-min-32-chars',
-    expiresIn: process.env.JWT_EXPIRES_IN || '15m', // 15 minutes
+    expiresIn: process.env.JWT_EXPIRES_IN || '1h', // 1 hour
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // 7 days
     unsubscribeSecret: process.env.JWT_UNSUBSCRIBE_SECRET || 'dev-unsubscribe-secret-change-in-production-min-32',
   },

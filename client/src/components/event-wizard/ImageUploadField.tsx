@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Upload, X } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { uploadImage, type UploadFolder } from '@/lib/upload-api';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 interface ImageUploadFieldProps {
   label: string;
@@ -59,7 +60,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
       const url = await uploadImage(file, folder);
       onChange(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(extractErrorMessage(err, 'Upload failed'));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

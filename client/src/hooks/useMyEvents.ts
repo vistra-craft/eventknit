@@ -31,6 +31,7 @@ export interface OrganizingEvent {
   location: string;
   venue: string;
   status: string;
+  isFree: boolean;
   attendees: number;
   capacity: number;
   revenue: number;
@@ -158,6 +159,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
           location: event.location,
           venue: event.venue || event.location,
           status: event.status || 'draft',
+          isFree: event.isFree ?? true,
           attendees: event.attendees || 0,
           capacity: event.capacity || 0,
           revenue: (event as unknown as Record<string, unknown>).revenue as number || 0,

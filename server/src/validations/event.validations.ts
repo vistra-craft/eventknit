@@ -94,7 +94,7 @@ export const eventValidations = {
             const currPrice = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
             if (!isNaN(origPrice) && !isNaN(currPrice) && origPrice <= currPrice) {
               return helpers.error('any.custom', {
-                message: 'Original price must be greater than current price for discounts',
+                error: { message: 'Original price must be greater than current price for discounts' },
               });
             }
           }
@@ -103,7 +103,7 @@ export const eventValidations = {
             const price = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
             if (price !== 0 && !isNaN(price)) {
               return helpers.error('any.custom', {
-                message: 'Complementary tickets must have price of 0',
+                error: { message: 'Complementary tickets must have price of 0' },
               });
             }
           }
@@ -139,7 +139,7 @@ export const eventValidations = {
             const currPrice = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
             if (!isNaN(origPrice) && !isNaN(currPrice) && origPrice <= currPrice) {
               return helpers.error('any.custom', {
-                message: 'Original price must be greater than current price for discounts',
+                error: { message: 'Original price must be greater than current price for discounts' },
               });
             }
           }
@@ -148,7 +148,7 @@ export const eventValidations = {
             const price = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
             if (price !== 0 && !isNaN(price)) {
               return helpers.error('any.custom', {
-                message: 'Complementary tickets must have price of 0',
+                error: { message: 'Complementary tickets must have price of 0' },
               });
             }
           }
@@ -230,14 +230,14 @@ export const eventValidations = {
     // Validate that if isFree is false, either price or ticketTypes must be provided
     if (!value.isFree && !value.price && (!value.ticketTypes || value.ticketTypes.length === 0)) {
       return helpers.error('any.custom', {
-        message: 'Price or ticket types are required for paid events',
+        error: { message: 'Price or ticket types are required for paid events' },
       });
     }
     // Enforce paid vs free pricing rules
     if (value.isFree === true) {
       if (value.price !== undefined && value.price !== null && Number(value.price) > 0) {
         return helpers.error('any.custom', {
-          message: 'Free events must have a price of 0',
+          error: { message: 'Free events must have a price of 0' },
         });
       }
       if (value.ticketTypes && Array.isArray(value.ticketTypes)) {
@@ -246,7 +246,7 @@ export const eventValidations = {
             const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
             if (!isNaN(price) && price > 0) {
               return helpers.error('any.custom', {
-                message: 'Free events cannot include paid ticket types',
+                error: { message: 'Free events cannot include paid ticket types' },
               });
             }
           }
@@ -256,20 +256,21 @@ export const eventValidations = {
     if (value.isFree === false) {
       if (value.price !== undefined && value.price !== null && Number(value.price) <= 0) {
         return helpers.error('any.custom', {
-          message: 'Paid events must have a price greater than 0',
+          error: { message: 'Paid events must have a price greater than 0' },
         });
       }
+      // For paid events with ticket types, at least one non-complementary ticket
+      // must have price > 0. Free-tier tickets (price 0) are allowed alongside paid ones.
       if (value.ticketTypes && Array.isArray(value.ticketTypes)) {
-        for (const ticket of value.ticketTypes) {
-          if (ticket?.isComplementary === true) continue;
-          if (ticket && ticket.price !== undefined && ticket.price !== null) {
-            const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
-            if (!isNaN(price) && price <= 0) {
-              return helpers.error('any.custom', {
-                message: 'Paid ticket types must have a price greater than 0',
-              });
-            }
-          }
+        const hasPaidTicket = value.ticketTypes.some((ticket: Record<string, unknown>) => {
+          if (ticket?.isComplementary === true) return false;
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price as string) : Number(ticket.price);
+          return !isNaN(price) && price > 0;
+        });
+        if (!hasPaidTicket) {
+          return helpers.error('any.custom', {
+            error: { message: 'Paid events must have at least one ticket with a price greater than 0' },
+          });
         }
       }
     }
@@ -346,7 +347,7 @@ export const eventValidations = {
           const currPrice = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
           if (!isNaN(origPrice) && !isNaN(currPrice) && origPrice <= currPrice) {
             return helpers.error('any.custom', {
-              message: 'Original price must be greater than current price for discounts',
+              error: { message: 'Original price must be greater than current price for discounts' },
             });
           }
         }
@@ -355,7 +356,7 @@ export const eventValidations = {
           const price = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
           if (price !== 0 && !isNaN(price)) {
             return helpers.error('any.custom', {
-              message: 'Complementary tickets must have price of 0',
+              error: { message: 'Complementary tickets must have price of 0' },
             });
           }
         }
@@ -424,7 +425,7 @@ export const eventValidations = {
     if (value.isFree === true) {
       if (value.price !== undefined && value.price !== null && Number(value.price) > 0) {
         return helpers.error('any.custom', {
-          message: 'Free events must have a price of 0',
+          error: { message: 'Free events must have a price of 0' },
         });
       }
       if (value.ticketTypes && Array.isArray(value.ticketTypes)) {
@@ -433,7 +434,7 @@ export const eventValidations = {
             const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
             if (!isNaN(price) && price > 0) {
               return helpers.error('any.custom', {
-                message: 'Free events cannot include paid ticket types',
+                error: { message: 'Free events cannot include paid ticket types' },
               });
             }
           }
@@ -443,20 +444,21 @@ export const eventValidations = {
     if (value.isFree === false) {
       if (value.price !== undefined && value.price !== null && Number(value.price) <= 0) {
         return helpers.error('any.custom', {
-          message: 'Paid events must have a price greater than 0',
+          error: { message: 'Paid events must have a price greater than 0' },
         });
       }
+      // For paid events with ticket types, at least one non-complementary ticket
+      // must have price > 0. Free-tier tickets (price 0) are allowed alongside paid ones.
       if (value.ticketTypes && Array.isArray(value.ticketTypes)) {
-        for (const ticket of value.ticketTypes) {
-          if (ticket?.isComplementary === true) continue;
-          if (ticket && ticket.price !== undefined && ticket.price !== null) {
-            const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
-            if (!isNaN(price) && price <= 0) {
-              return helpers.error('any.custom', {
-                message: 'Paid ticket types must have a price greater than 0',
-              });
-            }
-          }
+        const hasPaidTicket = value.ticketTypes.some((ticket: Record<string, unknown>) => {
+          if (ticket?.isComplementary === true) return false;
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price as string) : Number(ticket.price);
+          return !isNaN(price) && price > 0;
+        });
+        if (!hasPaidTicket) {
+          return helpers.error('any.custom', {
+            error: { message: 'Paid events must have at least one ticket with a price greater than 0' },
+          });
         }
       }
     }

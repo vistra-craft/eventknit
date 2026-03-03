@@ -123,7 +123,13 @@ export const UnifiedRegistrationModal = ({
     setRegistrationData(data);
     setFreeRegError(null);
 
-    if (event.isFree) {
+    // Calculate total from selected tickets — if $0 (all free tiers), skip payment
+    const selectedTotal = event.ticketTypes?.reduce(
+      (sum, t) => sum + (t.price || 0) * (selectedTickets[t.name] || 0),
+      0
+    ) || 0;
+
+    if (event.isFree || selectedTotal === 0) {
       // If guest checkout already created the registration, skip the API call
       if (data.registrationId) {
         handlePaymentComplete({ method: 'free', registrationId: data.registrationId });

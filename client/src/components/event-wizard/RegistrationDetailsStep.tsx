@@ -130,7 +130,7 @@ export function RegistrationDetailsStep({
       label: '',
       required: false,
       placeholder: '',
-      ...(type === 'select' || type === 'radio' ? { options: ['Option 1', 'Option 2'] } : {}),
+      ...(type === 'select' || type === 'radio' || type === 'checkbox' ? { options: ['Option 1', 'Option 2'] } : {}),
     };
     setRegistrationFields(prev => [...prev, newField]);
     setExpandedFieldId(id);
@@ -311,7 +311,15 @@ export function RegistrationDetailsStep({
                           <Label className="text-xs text-muted-foreground">Type</Label>
                           <Select
                             value={field.type}
-                            onValueChange={value => updateField(index, { type: value as RegistrationField['type'] })}
+                            onValueChange={value => {
+                              const newType = value as RegistrationField['type'];
+                              const needsOptions = newType === 'select' || newType === 'radio' || newType === 'checkbox';
+                              const hasOptions = field.options && field.options.length > 0;
+                              updateField(index, {
+                                type: newType,
+                                ...(needsOptions && !hasOptions ? { options: ['Option 1', 'Option 2'] } : {}),
+                              });
+                            }}
                           >
                             <SelectTrigger className="h-9 text-sm">
                               <SelectValue />
@@ -345,7 +353,7 @@ export function RegistrationDetailsStep({
                       )}
 
                       {/* Options editor */}
-                      {(field.type === 'select' || field.type === 'radio') && field.options && (
+                      {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && field.options && (
                         <div className="space-y-1.5 bg-muted/30 rounded-lg p-3">
                           <Label className="text-xs text-muted-foreground">Options</Label>
                           <div className="space-y-1.5">
@@ -483,9 +491,20 @@ export function RegistrationDetailsStep({
                   </div>
                 )}
                 {field.type === 'checkbox' && (
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 rounded border border-input bg-muted/30 shrink-0" />
-                    <span className="text-sm text-muted-foreground">{field.placeholder || field.label}</span>
+                  <div className="space-y-1.5">
+                    {(field.options || []).length > 0 ? (
+                      field.options!.map((opt, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className="h-4 w-4 rounded border border-input bg-muted/30 shrink-0" />
+                          <span className="text-sm text-muted-foreground">{opt}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded border border-input bg-muted/30 shrink-0" />
+                        <span className="text-sm text-muted-foreground">{field.placeholder || field.label}</span>
+                      </div>
+                    )}
                   </div>
                 )}
                 {field.type === 'radio' && (

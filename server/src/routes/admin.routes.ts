@@ -1,5 +1,7 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { AdminController } from '../controllers/admin.controller.js';
+import { EventService } from '../services/event.service.js';
+import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { EventStaffController } from '../controllers/event-staff.controller.js';
 import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
 import { AdminNotificationSettingsController } from '../controllers/admin-notification-settings.controller.js';
@@ -203,6 +205,20 @@ router.post('/users/:id/activate', AdminController.activateUser);
  * @access  Private (ADMIN_STAFF+)
  */
 router.post('/users/:id/approve', AdminController.approveOrganizer);
+
+/**
+ * @route   GET /api/v1/admin/events/:id
+ * @desc    Get event details (admin can view any event regardless of status)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/events/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const event = await EventService.getEventById(req.params.id, req.user!.id, true);
+    res.json({ success: true, data: { event } });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * @route   POST /api/v1/admin/events/:id/recall
