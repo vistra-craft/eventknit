@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, ArrowLeft, ArrowRight } from 'lucide-react';
 import BackButton from '@/components/BackButton';
+import { useAuth } from '@/hooks/useAuth';
 
 import { EntityTypeSelector } from '@/components/kyc/EntityTypeSelector';
 import { DocumentUploadWizard } from '@/components/kyc/DocumentUploadWizard';
@@ -40,6 +41,7 @@ const KYCVerificationPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -55,8 +57,10 @@ const KYCVerificationPage = () => {
   const [minDirectors, setMinDirectors] = useState<number>();
   const [maxDirectorsToCollect, setMaxDirectorsToCollect] = useState<number>();
 
-  // Get the redirect path from location state
-  const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification || "/organizer/dashboard";
+  // Get the redirect path from location state, with role-aware default
+  const isOrganizer = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+  const defaultRedirect = isOrganizer ? '/organizer/dashboard' : '/user/dashboard';
+  const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification || defaultRedirect;
 
   const handleBackClick = () => {
     navigate(redirectPath, { replace: true });

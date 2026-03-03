@@ -42,6 +42,8 @@ const NotificationPreferencesPage = lazy(() => import('../pages/user/Notificatio
 const EventManagementHub = lazy(() => import('../pages/user/EventManagementHub'));
 const CreateEventEntry = lazy(() => import('../pages/user/CreateEventEntry'));
 const CreateEventStepwise = lazy(() => import('../pages/CreateEventStepwise'));
+const VerificationPage = lazy(() => import('../pages/organizer/VerificationPage'));
+const KYCVerificationPage = lazy(() => import('../pages/organizer/KYCVerificationPage'));
 
 /**
  * User route definitions
@@ -223,6 +225,16 @@ export const userRoutes: RouteConfig[] = [
   {
     path: 'settings/appearance',
     element: createElement(Navigate, { to: '/user/dashboard?view=settings&tab=appearance', replace: true }),
+  },
+
+  // Verification & KYC (same components as organizer, rendered in attendee layout)
+  {
+    path: 'verification',
+    element: createElement(VerificationPage),
+  },
+  {
+    path: 'kyc',
+    element: createElement(KYCVerificationPage),
   },
 
   // Financial

@@ -6,6 +6,7 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import {
   AlertCircle,
   CheckCircle,
@@ -34,6 +35,9 @@ const KYCVerificationSection: React.FC<KYCVerificationSectionProps> = ({
   isAttendeeFlow = true,
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isOrganizer = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+  const kycBasePath = isOrganizer ? '/organizer' : '/user';
 
   useEffect(() => {
     onKYCStatusChange?.();
@@ -41,8 +45,8 @@ const KYCVerificationSection: React.FC<KYCVerificationSectionProps> = ({
 
   const handleStartKYC = () => {
     if (isAttendeeFlow) {
-      // For attendees, navigate to organizer KYC page after event approval
-      navigate('/organizer/kyc', {
+      // For attendees, stay in attendee dashboard
+      navigate(`${kycBasePath}/kyc`, {
         state: {
           redirectAfterVerification: '/user/dashboard?view=settings&tab=verification',
           isNewOrganizer: true,

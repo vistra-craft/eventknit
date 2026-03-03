@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 interface KYCRequiredBannerProps {
   hasApprovedPaidEvents: boolean;
@@ -26,6 +27,9 @@ export const KYCRequiredBanner = ({
   onNavigateToKYC,
 }: KYCRequiredBannerProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isOrganizer = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+  const kycBasePath = isOrganizer ? '/organizer' : '/user';
 
   // Only show for paid events (free events don't require KYC)
   if ((!hasApprovedPaidEvents && !hasPendingPaidEvents) || !isKYCIncomplete) {
@@ -48,7 +52,7 @@ export const KYCRequiredBanner = ({
     if (onNavigateToKYC) {
       onNavigateToKYC();
     } else {
-      navigate('/organizer/kyc');
+      navigate(`${kycBasePath}/kyc`);
     }
   };
 

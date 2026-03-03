@@ -2333,9 +2333,12 @@ export default function CreateEventStepwise() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate('/organizer/verification', {
-                  state: { redirectAfterVerification: location.pathname }
-                })}
+                onClick={() => {
+                  const isOrgRole = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+                  navigate(isOrgRole ? '/organizer/verification' : '/user/verification', {
+                    state: { redirectAfterVerification: location.pathname }
+                  });
+                }}
                 className="border-primary text-primary hover:bg-primary/10"
               >
                 Verify Identity
@@ -2357,9 +2360,12 @@ export default function CreateEventStepwise() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate('/organizer/kyc', {
-                      state: { redirectAfterVerification: location.pathname }
-                    })}
+                    onClick={() => {
+                      const isOrgRole = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+                      navigate(isOrgRole ? '/organizer/kyc' : '/user/kyc', {
+                        state: { redirectAfterVerification: location.pathname }
+                      });
+                    }}
                     className="border-amber-500 text-amber-700 hover:bg-amber-500/10"
                   >
                     Complete KYC
