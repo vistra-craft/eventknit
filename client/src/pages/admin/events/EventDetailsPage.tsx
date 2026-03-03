@@ -19,6 +19,10 @@ import {
   Link2,
   Copy,
   Plus,
+  MoreHorizontal,
+  Calendar,
+  MapPin,
+  ChevronDown,
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +30,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "@/components/ui/loader";
 import { RichTextContent } from "@/components/ui/RichTextContent";
@@ -161,7 +166,7 @@ const EventDetailsPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const permissions = usePermissionsEnhanced();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeSection, setActiveSection] = useState("overview");
   const [eventData, setEventData] = useState<EventDetails | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,7 +201,7 @@ const EventDetailsPage = () => {
   // Load scan config when scan-settings tab is active
   useEffect(() => {
     const loadScanConfig = async () => {
-      if (!eventId || activeTab !== 'scan-settings') return;
+      if (!eventId || activeSection !== 'scan-settings') return;
 
       try {
         setScanConfigLoading(true);
@@ -217,12 +222,12 @@ const EventDetailsPage = () => {
     };
 
     loadScanConfig();
-  }, [eventId, activeTab, toast]);
+  }, [eventId, activeSection, toast]);
 
   // Load refunds when refunds tab is active
   useEffect(() => {
     const loadRefunds = async () => {
-      if (!eventId || activeTab !== 'refunds') return;
+      if (!eventId || activeSection !== 'refunds') return;
 
       try {
         setRefundsLoading(true);
@@ -243,12 +248,12 @@ const EventDetailsPage = () => {
     };
 
     loadRefunds();
-  }, [eventId, activeTab, toast]);
+  }, [eventId, activeSection, toast]);
 
   // Load disbursements when remittance tab is active
   useEffect(() => {
     const loadDisbursements = async () => {
-      if (!eventId || activeTab !== 'remittance') return;
+      if (!eventId || activeSection !== 'remittance') return;
 
       try {
         setDisbursementsLoading(true);
@@ -269,12 +274,12 @@ const EventDetailsPage = () => {
     };
 
     loadDisbursements();
-  }, [eventId, activeTab, toast]);
+  }, [eventId, activeSection, toast]);
 
   // Load invitations when invitations tab is active
   useEffect(() => {
     const loadInvitations = async () => {
-      if (!eventId || activeTab !== 'invitations') return;
+      if (!eventId || activeSection !== 'invitations') return;
 
       try {
         setInvitationsLoading(true);
@@ -295,7 +300,7 @@ const EventDetailsPage = () => {
     };
 
     loadInvitations();
-  }, [eventId, activeTab, toast]);
+  }, [eventId, activeSection, toast]);
 
   // Check event access permission
   useEffect(() => {
@@ -615,103 +620,144 @@ const EventDetailsPage = () => {
     }
   };
 
+  const primaryNavSections = [
+    { key: "overview", label: "Overview" },
+    { key: "details", label: "Details" },
+    { key: "attendees", label: "Attendees" },
+    { key: "tickets", label: "Tickets" },
+    { key: "payments", label: "Payments" },
+  ];
+
+  const moreNavSections = [
+    { key: "scan-settings", label: "Scan Settings" },
+    ...(permissions.canAccessAllEvents ? [
+      { key: "refunds", label: "Refunds" },
+      { key: "remittance", label: "Remittance" },
+      { key: "messages", label: "Messages" },
+      { key: "invitations", label: "Invitations" },
+      { key: "staff", label: "Assigned Staff" },
+    ] : []),
+  ];
+
   return (
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <BackButton to="/admin/events" label="Back to Events" />
-            <div>
-              <h1 className="text-base font-semibold text-foreground">{eventData.title}</h1>
-              <p className="text-muted-foreground hidden">Event ID: {eventData.id}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Export Data
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleEdit}>
-              <Settings className="h-4 w-4 mr-2" />
-              Edit Event
-            </Button>
-            <Button size="sm" onClick={handleRefresh}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        </div>
-
-        {/* Event Status and Basic Info */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <CheckCircle className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Status</span>
-              </div>
-              <Badge className={`text-xs ${getStatusBadge(eventData.status)}`}>
-                {eventData.status}
-              </Badge>
-            </CardContent>
-          </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Users className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Attendees</span>
-              </div>
-              <p className="text-base font-semibold text-foreground">
-                {eventData.attendees}/{eventData.capacity}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Revenue</span>
-              </div>
-              <p className="text-base font-semibold text-foreground">
-                {formatCurrency(metrics.totalRevenue)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Conversion</span>
-              </div>
-              <p className="text-base font-semibold text-foreground">
-                {eventData.conversion}%
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="flex w-full overflow-x-auto">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="attendees">Attendees</TabsTrigger>
-            <TabsTrigger value="tickets">Tickets</TabsTrigger>
-            <TabsTrigger value="payments">Payments</TabsTrigger>
-            {permissions.canAccessAllEvents && (
-              <>
-                <TabsTrigger value="refunds">Refunds</TabsTrigger>
-                <TabsTrigger value="remittance">Remittance</TabsTrigger>
-                <TabsTrigger value="messages">Messages</TabsTrigger>
-                <TabsTrigger value="invitations">Invitations</TabsTrigger>
-                <TabsTrigger value="staff">Assigned Staff</TabsTrigger>
-              </>
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border -mx-6 px-6">
+          <div className="flex items-center gap-4 py-4">
+            <BackButton to="/admin/events" label="Back" />
+            {eventData.image && (
+              <img
+                src={eventData.image}
+                alt={eventData.title}
+                className="w-12 h-12 rounded-lg object-cover shrink-0 hidden sm:block"
+              />
             )}
-            <TabsTrigger value="scan-settings">Scan Settings</TabsTrigger>
-          </TabsList>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg font-bold text-foreground truncate">
+                  {eventData.title}
+                </h1>
+                <Badge className={`text-xs shrink-0 ${getStatusBadge(eventData.status)}`}>
+                  {eventData.status}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-0.5">
+                {eventData.date && (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {eventData.date}
+                  </span>
+                )}
+                {(eventData.venue || eventData.location) && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {eventData.venue || eventData.location}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5" />
+                  {eventData.attendees} / {eventData.capacity || '∞'}
+                </span>
+              </div>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 shrink-0">
+                  <MoreHorizontal className="w-4 h-4" />
+                  <span className="hidden sm:inline">Actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleEdit}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Edit Event
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Data
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleRefresh}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </DropdownMenuItem>
+                {permissions.canAccessAllEvents && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setActiveSection('overview')}>
+                      <User className="h-4 w-4 mr-2" />
+                      Data Access Level
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Button-based tab nav */}
+          <div className="flex flex-wrap items-center gap-1 pb-3">
+            {primaryNavSections.map((section) => (
+              <button
+                key={section.key}
+                onClick={() => setActiveSection(section.key)}
+                className={cn(
+                  "px-4 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors",
+                  activeSection === section.key
+                    ? "bg-primary text-primary-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                {section.label}
+              </button>
+            ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={cn(
+                  "px-4 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors flex items-center gap-1",
+                  moreNavSections.some(s => s.key === activeSection)
+                    ? "bg-primary text-primary-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}>
+                  More
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {moreNavSections.map((section) => (
+                  <DropdownMenuItem
+                    key={section.key}
+                    onClick={() => setActiveSection(section.key)}
+                    className={activeSection === section.key ? "bg-muted" : ""}
+                  >
+                    {section.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+        {activeSection === "overview" && <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
                 <CardContent className="p-4">
@@ -809,10 +855,10 @@ const EventDetailsPage = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+        </div>}
 
           {/* Details Tab */}
-          <TabsContent value="details" className="space-y-6">
+        {activeSection === "details" && <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Event Information */}
               <div className="lg:col-span-2 space-y-6">
@@ -1126,10 +1172,10 @@ const EventDetailsPage = () => {
                 )}
               </div>
             ) : null}
-          </TabsContent>
+        </div>}
 
           {/* Attendees Tab */}
-          <TabsContent value="attendees" className="space-y-6">
+        {activeSection === "attendees" && <div className="space-y-6">
             {/* Attendees Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1271,10 +1317,10 @@ const EventDetailsPage = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+        </div>}
 
           {/* Payments Tab */}
-          <TabsContent value="payments" className="space-y-6">
+        {activeSection === "payments" && <div className="space-y-6">
             {/* Payment Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1419,11 +1465,10 @@ const EventDetailsPage = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+        </div>}
 
           {/* Refunds Tab - Only for ADMIN_STAFF and SUPERADMIN */}
-          {permissions.canAccessAllEvents && (
-            <TabsContent value="refunds" className="space-y-6">
+        {permissions.canAccessAllEvents && activeSection === "refunds" && <div className="space-y-6">
             {/* Refunds Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1543,12 +1588,10 @@ const EventDetailsPage = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-          )}
+        </div>}
 
           {/* Remittance Tab - Only for ADMIN_STAFF and SUPERADMIN */}
-          {permissions.canAccessAllEvents && (
-            <TabsContent value="remittance" className="space-y-6">
+        {permissions.canAccessAllEvents && activeSection === "remittance" && <div className="space-y-6">
             {/* Remittance Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1738,23 +1781,20 @@ const EventDetailsPage = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-          )}
+        </div>}
 
           {/* Assigned Staff Tab - Only for ADMIN_STAFF and SUPERADMIN */}
-          {permissions.canAccessAllEvents && (
-            <TabsContent value="staff" className="space-y-6">
+        {permissions.canAccessAllEvents && activeSection === "staff" && <div className="space-y-6">
             {eventId && (
               <EventStaffAssignment
                 eventId={eventId}
                 eventTitle={eventData?.title}
               />
             )}
-          </TabsContent>
-          )}
+        </div>}
 
           {/* Tickets Tab */}
-          <TabsContent value="tickets" className="space-y-6">
+        {activeSection === "tickets" && <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold">Ticket Types</h2>
             </div>
@@ -1786,7 +1826,7 @@ const EventDetailsPage = () => {
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => setActiveTab("invitations")}
+                      onClick={() => setActiveSection("invitations")}
                     >
                       Complimentary Tickets (Invitations)
                     </Button>
@@ -1935,21 +1975,18 @@ const EventDetailsPage = () => {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
+        </div>}
 
           {/* Messages Tab */}
-          {permissions.canAccessAllEvents && (
-            <TabsContent value="messages" className="space-y-6">
+        {permissions.canAccessAllEvents && activeSection === "messages" && <div className="space-y-6">
               <EventCommunicationSection
                 eventId={eventData.id}
                 eventTitle={eventData.title}
               />
-            </TabsContent>
-          )}
+          </div>}
 
           {/* Invitations Tab */}
-          {permissions.canAccessAllEvents && (
-            <TabsContent value="invitations" className="space-y-6">
+        {permissions.canAccessAllEvents && activeSection === "invitations" && <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-lg font-semibold">Registration Links</h2>
@@ -2135,11 +2172,10 @@ const EventDetailsPage = () => {
                   })}
                 </div>
               )}
-            </TabsContent>
-          )}
+          </div>}
 
           {/* Scan Settings Tab */}
-          <TabsContent value="scan-settings" className="space-y-6">
+        {activeSection === "scan-settings" && <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-base font-semibold">Scan Settings</h3>
@@ -2315,8 +2351,7 @@ const EventDetailsPage = () => {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
-        </Tabs>
+        </div>}
       </div>
   );
 };
