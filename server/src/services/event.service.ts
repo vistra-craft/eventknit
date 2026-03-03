@@ -11,7 +11,7 @@ import { logger } from '../utils/logger.js';
 import { Decimal, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { hashPassword } from '../utils/password.js';
 import crypto from 'crypto';
-import { emailService as _emailService } from './email.service.js';
+import { emailService } from './email.service.js';
 import { TicketService } from './ticket.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
@@ -2293,6 +2293,16 @@ export class EventService {
           message: 'Your organizer account has been approved!',
         },
       );
+
+      // Send approval email (fire-and-forget)
+      emailService
+        .sendOrganizerApprovedEmail(
+          approvedEvent.organizer.email,
+          approvedEvent.organizer.firstName || '',
+        )
+        .catch((err) => {
+          logger.error('Failed to send organizer approved email:', err);
+        });
     }
 
     // Audit log

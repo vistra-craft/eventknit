@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 
 interface AgendaItem {
   id?: string;
@@ -177,9 +178,10 @@ function TimelineItem({ item }: { item: AgendaItem }) {
               />
             </button>
             {expanded && (
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                {item.description}
-              </p>
+              <RichTextContent
+                content={item.description!}
+                className="mt-2 text-sm text-muted-foreground"
+              />
             )}
           </>
         )}

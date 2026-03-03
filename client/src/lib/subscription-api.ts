@@ -74,10 +74,10 @@ export interface SubscriptionPlanConfig {
 }
 
 /**
- * Get subscription plans (public endpoint for displaying pricing)
+ * Get subscription plans (for organizer pricing/upgrade page)
  */
 export const getSubscriptionPlans = async (): Promise<{ success: boolean; data: { plans: SubscriptionPlanConfig[] } }> => {
-  return apiGet('/admin/subscription-plans');
+  return apiGet('/organizer-dashboard/subscription-plans');
 };
 
 // ========== Consent Management ==========

@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { downloadTicketPDF } from "@/lib/ticket-api";
 import { getNotifications, markAllAsRead, type Notification } from "@/lib/notification-api";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import type { EventData, User } from "./EventAttendeeView";
 
 interface EventMyEventProps {
@@ -335,9 +336,12 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
                 </div>
               </div>
 
-              {event.description && (
+              {(event.fullDescription ?? event.description) && (
                 <div className="pt-4 border-t border-border">
-                  <p className="text-muted-foreground">{event.description}</p>
+                  <RichTextContent
+                    content={event.fullDescription ?? event.description ?? ''}
+                    className="text-muted-foreground"
+                  />
                 </div>
               )}
             </CardContent>
