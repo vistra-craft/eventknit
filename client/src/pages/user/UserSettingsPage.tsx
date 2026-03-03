@@ -898,8 +898,10 @@ const UserSettingsPage = () => {
     }
   };
 
-  // Check if user has approved events (events that are not pending)
-  const hasApprovedEvents = organizingEvents.some(event => event.status.toLowerCase() !== 'pending');
+  // Check if user has approved paid events (KYC only relevant for paid events)
+  const hasApprovedPaidEvents = organizingEvents.some(
+    event => event.status.toLowerCase() !== 'pending' && !event.isFree
+  );
 
   // Check if user has pending paid events (need KYC before admin can approve)
   const hasPendingPaidEvents = organizingEvents.some(
@@ -909,8 +911,8 @@ const UserSettingsPage = () => {
   // Check if KYC is incomplete
   const isKYCIncomplete = !verificationStatus?.kycStatus || verificationStatus.kycStatus !== 'APPROVED';
 
-  // Show verification tab if user has approved events OR pending paid events
-  const showVerificationTab = hasApprovedEvents || hasPendingPaidEvents;
+  // Show verification tab if user has approved or pending paid events
+  const showVerificationTab = hasApprovedPaidEvents || hasPendingPaidEvents;
 
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
@@ -934,10 +936,10 @@ const UserSettingsPage = () => {
       <p className="text-muted-foreground mb-8">Manage your account and preferences</p>
 
       {/* KYC Required Banner */}
-      {(hasApprovedEvents || hasPendingPaidEvents) && isKYCIncomplete && (
+      {(hasApprovedPaidEvents || hasPendingPaidEvents) && isKYCIncomplete && (
         <div className="mb-6">
           <KYCRequiredBanner
-            hasApprovedEvents={hasApprovedEvents}
+            hasApprovedPaidEvents={hasApprovedPaidEvents}
             hasPendingPaidEvents={hasPendingPaidEvents}
             isKYCIncomplete={isKYCIncomplete}
             variant="card"
@@ -946,8 +948,8 @@ const UserSettingsPage = () => {
         </div>
       )}
 
-      {/* Show message if no approved events and no pending paid events */}
-      {!hasApprovedEvents && !hasPendingPaidEvents && (
+      {/* Show message if no paid events */}
+      {!hasApprovedPaidEvents && !hasPendingPaidEvents && (
         <div className="bg-blue-50/30 dark:bg-blue-500/5 border border-blue-200/50 dark:border-blue-500/20 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />

@@ -148,16 +148,18 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
       {currentTab !== 'settings' && (
         <>
           {(() => {
-            const hasApprovedEvents = organizingEvents.some(event => event.status.toLowerCase() !== 'pending');
+            const hasApprovedPaidEvents = organizingEvents.some(
+              event => event.status.toLowerCase() !== 'pending' && !event.isFree
+            );
             const hasPendingPaidEvents = organizingEvents.some(
               event => event.status.toLowerCase() === 'pending' && !event.isFree
             );
             const isKYCIncomplete = !verificationStatus?.kycStatus || verificationStatus.kycStatus !== 'APPROVED';
-            const showBanner = (hasApprovedEvents || hasPendingPaidEvents) && isKYCIncomplete;
+            const showBanner = (hasApprovedPaidEvents || hasPendingPaidEvents) && isKYCIncomplete;
             return showBanner ? (
               <>
                 <KYCRequiredBanner
-                  hasApprovedEvents={hasApprovedEvents}
+                  hasApprovedPaidEvents={hasApprovedPaidEvents}
                   hasPendingPaidEvents={hasPendingPaidEvents}
                   isKYCIncomplete={isKYCIncomplete}
                   variant="banner"

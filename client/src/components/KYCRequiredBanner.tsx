@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 
 interface KYCRequiredBannerProps {
-  hasApprovedEvents: boolean;
+  hasApprovedPaidEvents: boolean;
   hasPendingPaidEvents?: boolean;
   isKYCIncomplete: boolean;
   variant?: 'banner' | 'card';
@@ -19,7 +19,7 @@ interface KYCRequiredBannerProps {
 }
 
 export const KYCRequiredBanner = ({
-  hasApprovedEvents,
+  hasApprovedPaidEvents,
   hasPendingPaidEvents = false,
   isKYCIncomplete,
   variant = 'banner',
@@ -27,13 +27,13 @@ export const KYCRequiredBanner = ({
 }: KYCRequiredBannerProps) => {
   const navigate = useNavigate();
 
-  // Show when user has approved events OR pending paid events, and KYC is incomplete
-  if ((!hasApprovedEvents && !hasPendingPaidEvents) || !isKYCIncomplete) {
+  // Only show for paid events (free events don't require KYC)
+  if ((!hasApprovedPaidEvents && !hasPendingPaidEvents) || !isKYCIncomplete) {
     return null;
   }
 
   // Context-aware messaging
-  const isPendingContext = hasPendingPaidEvents && !hasApprovedEvents;
+  const isPendingContext = hasPendingPaidEvents && !hasApprovedPaidEvents;
   const title = isPendingContext
     ? 'KYC Verification Required for Paid Events'
     : 'Complete KYC Verification';
