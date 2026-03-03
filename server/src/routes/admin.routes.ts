@@ -213,7 +213,8 @@ router.post('/users/:id/approve', AdminController.approveOrganizer);
  */
 router.get('/events/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   try {
-    const event = await EventService.getEventById(req.params.id, req.user!.id, true);
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const event = await EventService.getEventById(id, req.user!.id, true);
     res.json({ success: true, data: { event } });
   } catch (error) {
     next(error);

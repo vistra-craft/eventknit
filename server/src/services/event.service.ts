@@ -2219,7 +2219,7 @@ export class EventService {
 
       if (!organizer || organizer.kycStatus !== 'APPROVED') {
         throw new ValidationError(
-          `Cannot approve a paid event: the organizer${organizer?.organizationName ? ` (${organizer.organizationName})` : ''} has not completed KYC verification. Please notify the organizer to complete their KYC before approving this event.`
+          `Cannot approve a paid event: the organizer${organizer?.organizationName ? ` (${organizer.organizationName})` : ''} has not completed KYC verification. Please notify the organizer to complete their KYC before approving this event.`,
         );
       }
     }
