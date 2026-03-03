@@ -117,12 +117,14 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
   // Check if event is pending approval
   const isPending = event.status.toLowerCase() === 'pending';
 
+  const soldCount = event.ticketsSold ?? event.attendees ?? 0;
+
   const attendancePercentage = event.capacity > 0
-    ? Math.round((event.ticketsSold || event.attendees) / event.capacity * 100)
+    ? Math.round(soldCount / event.capacity * 100)
     : 0;
 
-  const checkinPercentage = event.ticketsSold || event.attendees > 0
-    ? Math.round((event.checkedIn || 0) / (event.ticketsSold || event.attendees) * 100)
+  const checkinPercentage = soldCount > 0
+    ? Math.round((event.checkedIn ?? 0) / soldCount * 100)
     : 0;
 
   const previewDescription = useMemo(() => {
@@ -197,7 +199,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
               <span>Sold</span>
             </div>
             <div className="text-sm font-semibold text-foreground">
-              {event.ticketsSold || event.attendees}/{event.capacity || 0}
+              {soldCount}/{event.capacity ?? 0}
             </div>
             <div className="text-xs text-muted-foreground">
               {attendancePercentage}%
@@ -211,7 +213,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
               <span>Checked In</span>
             </div>
             <div className="text-sm font-semibold text-foreground">
-              {event.checkedIn || 0}
+              {event.checkedIn ?? 0}
             </div>
             <div className="text-xs text-muted-foreground">
               {checkinPercentage}%

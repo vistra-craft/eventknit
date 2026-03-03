@@ -184,6 +184,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
             </h1>
             <p className="text-page-subtitle">
               {currentTab === 'attending' && "Events you're attending"}
+              {currentTab === 'my-events' && "Events you've created"}
               {currentTab === 'saved' && "Events you've saved"}
               {currentTab === 'settings' && "Manage your account settings"}
             </p>

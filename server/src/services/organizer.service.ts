@@ -994,6 +994,7 @@ export class OrganizerService {
         description: event.description,
         category: event.category || '',
         organizer: event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`,
+        isFree: event.isFree,
         price: event.isFree ? 'Free' : event.price ? `$${Number(event.price)}` : 'N/A',
         rating: 0, // TODO: Add rating system
         fullDescription: event.fullDescription || event.description,
@@ -1181,6 +1182,7 @@ export class OrganizerService {
         description: event.description,
         category: event.category || '',
         organizer: event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`,
+        isFree: event.isFree,
         price: event.isFree ? 'Free' : event.price ? `$${Number(event.price)}` : 'N/A',
         rating: 0, // TODO: Add rating system
         fullDescription: event.fullDescription || event.description,
