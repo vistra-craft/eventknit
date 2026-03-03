@@ -187,9 +187,11 @@ const transformEventData = (
     title: String(apiEvent.title ?? ''),
     description: typeof apiEvent.description === 'string' ? apiEvent.description : undefined,
     fullDescription: typeof apiEvent.fullDescription === 'string' ? apiEvent.fullDescription : undefined,
-    date: String(apiEvent.date ?? apiEvent.startDate ?? ''),
+    date: typeof apiEvent.startDate === 'string' ? apiEvent.startDate : String(apiEvent.date ?? ''),
     endDate: typeof apiEvent.endDate === 'string' ? apiEvent.endDate : undefined,
-    time: typeof apiEvent.time === 'string' ? apiEvent.time : undefined,
+    time: typeof apiEvent.startTime === 'string'
+      ? (typeof apiEvent.endTime === 'string' ? `${apiEvent.startTime} - ${apiEvent.endTime}` : apiEvent.startTime)
+      : (typeof apiEvent.time === 'string' ? apiEvent.time : undefined),
     location: String(apiEvent.location ?? ''),
     venue: typeof apiEvent.venue === 'string' ? apiEvent.venue : undefined,
     type: String(apiEvent.type ?? apiEvent.eventType ?? 'Event'),

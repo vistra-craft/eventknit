@@ -387,20 +387,23 @@ const EventManagement = () => {
 
   const navigationSections = [
     { key: "overview", label: "Overview", icon: BarChart3 },
-    hasPermission('attendees.view') && { key: "attendees", label: "Attendees", icon: Users },
-    hasPermission('tickets.view') && { key: "tickets", label: "Tickets", icon: Ticket },
-    hasPermission('communication.send') && { key: "communication", label: "Messages", icon: MessageSquare },
-    hasPermission('analytics.view') && { key: "analytics", label: "Analytics", icon: TrendingUp },
-  ].filter(Boolean) as Array<{ key: string; label: string; icon: typeof BarChart3 }>;
+    { key: "attendees", label: "Attendees", icon: Users },
+    { key: "tickets", label: "Tickets", icon: Ticket },
+    { key: "communication", label: "Messages", icon: MessageSquare },
+    { key: "analytics", label: "Analytics", icon: TrendingUp },
+  ] as Array<{ key: string; label: string; icon: typeof BarChart3 }>;
 
   const moreMenuSections = [
     { key: "invitations", label: "Invitations", icon: Link2 },
-    hasPermission('financial.view') && { key: "refunds", label: "Refunds", icon: RotateCcw, badge: refunds.length > 0 ? refunds.filter(r => r.status === 'pending').length : 0 },
-    hasPermission('team.view') && { key: "staff", label: "Staff Assignment", icon: UserPlus },
+    { key: "refunds", label: "Refunds", icon: RotateCcw, badge: refunds.filter(r => r.status === 'pending').length },
+    { key: "staff", label: "Staff Assignment", icon: UserPlus },
+    { key: "settings", label: "Event Details", icon: Settings },
+    { key: "scan-settings", label: "Scan Settings", icon: Eye },
+    { key: "remittance", label: "Remittance", icon: DollarSign },
     { key: "seating", label: "Seating", icon: Grid3X3, conditional: true },
     { key: "speakers", label: "Speakers", icon: Mic, conditional: true },
     { key: "sponsors", label: "Sponsors", icon: Star, conditional: true },
-  ].filter(Boolean) as Array<{ key: string; label: string; icon: typeof BarChart3; badge?: number; conditional?: boolean }>;
+  ] as Array<{ key: string; label: string; icon: typeof BarChart3; badge?: number; conditional?: boolean }>;
 
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
@@ -736,6 +739,16 @@ const EventManagement = () => {
       }
 
       case "attendees": {
+        if (!subscriptionLoading && subscription?.tier === 'BASIC') {
+          return (
+            <UpgradePrompt
+              variant="card"
+              targetTier="STANDARD"
+              message="Upgrade to Standard (free) to view attendee details, manage registrations, export data, and add attendees manually."
+              dismissible={false}
+            />
+          );
+        }
         // Client-side search and filter
         const filteredAttendees = apiData.attendees.filter((a) => {
           const matchesSearch = !attendeeSearch ||
@@ -825,16 +838,6 @@ const EventManagement = () => {
 
         return (
           <div className="space-y-6">
-            {/* Tier Indicator Banner */}
-            {!subscriptionLoading && subscription && subscription.tier === 'BASIC' && (
-              <UpgradePrompt
-                message="Upgrade to Standard (free) to access payment details, export, and communication tools."
-                targetTier="STANDARD"
-                variant="banner"
-                dismissible={true}
-              />
-            )}
-
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-1">
@@ -1299,6 +1302,16 @@ const EventManagement = () => {
         );
 
       case "analytics":
+        if (!subscriptionLoading && subscription?.tier !== 'PREMIUM') {
+          return (
+            <UpgradePrompt
+              variant="card"
+              targetTier="PREMIUM"
+              message="Upgrade to Premium to access advanced analytics, revenue breakdowns, and registration timelines."
+              dismissible={false}
+            />
+          );
+        }
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -1743,11 +1756,31 @@ const EventManagement = () => {
         );
 
       case "communication":
+        if (!subscriptionLoading && subscription?.tier === 'BASIC') {
+          return (
+            <UpgradePrompt
+              variant="card"
+              targetTier="STANDARD"
+              message="Upgrade to Standard (free) to send announcements and messages to your attendees."
+              dismissible={false}
+            />
+          );
+        }
         return (
           <EventCommunicationSection eventId={eventId || ""} eventTitle={eventData?.title || ""} />
         );
 
       case "refunds":
+        if (!subscriptionLoading && subscription?.tier === 'BASIC') {
+          return (
+            <UpgradePrompt
+              variant="card"
+              targetTier="STANDARD"
+              message="Upgrade to Standard (free) to view and track refund requests from attendees."
+              dismissible={false}
+            />
+          );
+        }
         return (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -1900,6 +1933,16 @@ const EventManagement = () => {
         );
 
       case "staff":
+        if (!subscriptionLoading && subscription?.tier === 'BASIC') {
+          return (
+            <UpgradePrompt
+              variant="card"
+              targetTier="STANDARD"
+              message="Upgrade to Standard (free) to assign and manage staff members for your event."
+              dismissible={false}
+            />
+          );
+        }
         return (
           <div className="space-y-6">
             {eventId && (
@@ -1926,6 +1969,106 @@ const EventManagement = () => {
               <h3 className="text-lg font-semibold mb-4">Seat Map</h3>
               <EventSeatMapManager eventId={eventId!} />
             </div>
+          </div>
+        );
+
+      case "scan-settings":
+        if (!subscriptionLoading && subscription?.tier === 'BASIC') {
+          return (
+            <UpgradePrompt
+              variant="card"
+              targetTier="STANDARD"
+              message="Upgrade to Standard (free) to view scan settings and check-in configuration for your event."
+              dismissible={false}
+            />
+          );
+        }
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Scan Settings</h2>
+              <p className="text-muted-foreground mt-1">
+                Check-in and ticket scanning configuration for this event
+              </p>
+            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>QR Code Check-In</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-lg border bg-muted/30">
+                    <p className="text-xs text-muted-foreground uppercase font-medium mb-1">Ticket Scanning</p>
+                    <p className="font-semibold">QR Code</p>
+                    <p className="text-xs text-muted-foreground mt-1">Each ticket has a unique QR code for check-in</p>
+                  </div>
+                  <div className="p-4 rounded-lg border bg-muted/30">
+                    <p className="text-xs text-muted-foreground uppercase font-medium mb-1">Scan Mode</p>
+                    <p className="font-semibold">Standard Check-In</p>
+                    <p className="text-xs text-muted-foreground mt-1">Configured by platform administrator</p>
+                  </div>
+                </div>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Scan settings (re-entry policy, checkout scanning) are configured by your platform administrator. Contact support if you need changes to the check-in policy.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case "remittance":
+        if (!subscriptionLoading && subscription?.tier === 'BASIC') {
+          return (
+            <UpgradePrompt
+              variant="card"
+              targetTier="STANDARD"
+              message="Upgrade to Standard (free) to view remittance details and payment disbursement information."
+              dismissible={false}
+            />
+          );
+        }
+        return (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Remittance</h2>
+              <p className="text-muted-foreground mt-1">
+                Payment disbursement and payout information for this event
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase font-medium">Gross Revenue</p>
+                  <p className="text-2xl font-bold mt-1">
+                    {hasPaymentDetailsAccess ? `${currency} ${totalRevenue.toLocaleString()}` : '—'}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase font-medium">Platform Fee</p>
+                  <p className="text-2xl font-bold mt-1 text-muted-foreground">Calculated at payout</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground uppercase font-medium">Est. Payout</p>
+                  <p className="text-2xl font-bold mt-1 text-success">After event</p>
+                </CardContent>
+              </Card>
+            </div>
+            <Card>
+              <CardContent className="p-6 text-center text-muted-foreground">
+                <DollarSign className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p className="font-medium">Disbursements are processed after your event ends</p>
+                <p className="text-sm mt-1">
+                  Funds are typically released within 5–7 business days post-event. Contact support for payout status.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         );
     }

@@ -361,8 +361,6 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
           <EventHome
             event={event}
             user={user}
-            onNavigate={setActiveTab}
-            availableTabs={tabs}
           />
         );
       case 'agenda':

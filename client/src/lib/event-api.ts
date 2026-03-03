@@ -100,7 +100,7 @@ export interface CreateEventData {
   imageFocalY?: number;
   images?: string[];
   type?: EventType;
-  requirements?: string[];
+  requirements?: string[] | string;
   ageRestriction?: string;
   duration?: string;
   speakers?: Array<{

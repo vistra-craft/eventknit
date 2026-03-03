@@ -7,7 +7,7 @@
  *
  * Active when:
  *   - User is ORGANIZER with PENDING_APPROVAL status (new organizer flow)
- *   - User is ATTENDEE with ACTIVE status (event submitted and waiting for approval)
+ *   - User is ATTENDEE with ACTIVE or PENDING_APPROVAL status (event submitted and waiting for approval)
  *
  * On approval: refreshes auth state and exposes a modal flag.
  *
@@ -55,8 +55,10 @@ export const useOrganizerApproval = () => {
     user?.role === UserRole.ORGANIZER && user?.status === UserStatus.PENDING_APPROVAL;
 
   // Active attendee = ATTENDEE whose event may be awaiting approval
+  // Includes PENDING_APPROVAL because becomeOrganizer() sets role=ATTENDEE, status=PENDING_APPROVAL
   const isActiveAttendee =
-    user?.role === UserRole.ATTENDEE && user?.status === UserStatus.ACTIVE;
+    user?.role === UserRole.ATTENDEE &&
+    (user?.status === UserStatus.ACTIVE || user?.status === UserStatus.PENDING_APPROVAL);
 
   // Listen for approval events for both pending organizers and active attendees
   const shouldListenForApproval = isPendingOrganizer || isActiveAttendee;
@@ -69,7 +71,8 @@ export const useOrganizerApproval = () => {
     }
   }, [isPendingOrganizer]);
 
-  // Track that we were an active attendee (so we can detect the ATTENDEE → ORGANIZER transition)
+  // Track that we were an attendee (so we can detect the ATTENDEE → ORGANIZER transition)
+  // isActiveAttendee covers both ACTIVE and PENDING_APPROVAL statuses
   const wasAttendeeRef = useRef(isActiveAttendee);
   useEffect(() => {
     if (isActiveAttendee) {

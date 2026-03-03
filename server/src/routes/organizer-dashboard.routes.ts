@@ -846,6 +846,13 @@ router.delete(
 // ========== Subscription Management ==========
 
 /**
+ * @route   GET /api/v1/organizer-dashboard/subscription-plans
+ * @desc    Get all subscription plans (for organizer pricing/upgrade page)
+ * @access  Private (ORGANIZER+ and ATTENDEE)
+ */
+router.get('/subscription-plans', OrganizerDashboardController.getSubscriptionPlans);
+
+/**
  * @route   GET /api/v1/organizer-dashboard/subscription
  * @desc    Get organizer subscription
  * @access  Private (ORGANIZER+)

@@ -393,7 +393,7 @@ const DeclinedEventsPage = () => {
                         <DropdownMenuItem asChild>
                           <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
                             <Edit className="h-4 w-4 mr-2" />
-                            Edit Event
+                            Manage Event
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>

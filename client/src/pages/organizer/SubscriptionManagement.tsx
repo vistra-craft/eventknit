@@ -34,8 +34,8 @@ const TIER_COLORS: Record<SubscriptionTier, string> = {
   PREMIUM: 'bg-primary/10 text-primary border-primary/30',
 };
 
-/** Fallback display features when plan has none configured */
-const TIER_DISPLAY_FEATURES: Record<SubscriptionTier, string[]> = {
+/** Base features always included in each tier — not admin-configurable */
+const TIER_BASE_FEATURES: Record<SubscriptionTier, string[]> = {
   BASIC: [
     'Event creation and management',
     'Basic event analytics',
@@ -44,20 +44,24 @@ const TIER_DISPLAY_FEATURES: Record<SubscriptionTier, string[]> = {
   ],
   STANDARD: [
     'Everything in Basic',
-    'Attendee list with contact info',
-    'Basic attendee data export',
     'Email communication to consented attendees',
     'Registration analytics',
   ],
   PREMIUM: [
     'Everything in Standard',
-    'Demographic data access',
-    'Engagement analytics',
-    'Advanced data exports',
     'Geographic heatmaps',
     'Multi-event comparisons',
     'Priority support',
   ],
+};
+
+/** Human-readable labels for admin-configured feature keys */
+const FEATURE_LABELS: Record<string, string> = {
+  attendee_list: 'Attendee list with contact info',
+  export: 'Basic attendee data export',
+  demographics: 'Demographic data access',
+  analytics: 'Advanced analytics',
+  advanced_export: 'Advanced data exports',
 };
 
 function formatPrice(plan: SubscriptionPlanConfig): string {
@@ -216,13 +220,16 @@ const SubscriptionManagement = () => {
   const currentPlan = plans.find(p => p.tier === subscription.tier);
   const currentDescription = currentPlan?.description ?? '';
 
-  // Build display data per plan: use DB plan data with static display features as fallback
+  // Build display data per plan: base features (always available) + admin-configured feature keys
   const tierEntries = (plans.length > 0 ? plans : []).map((plan) => ({
     tier: plan.tier,
     name: plan.name,
     description: plan.description ?? '',
     price: formatPrice(plan),
-    displayFeatures: TIER_DISPLAY_FEATURES[plan.tier] ?? [],
+    displayFeatures: [
+      ...(TIER_BASE_FEATURES[plan.tier] ?? []),
+      ...plan.features.map(key => FEATURE_LABELS[key] ?? key),
+    ],
     icon: TIER_ICONS[plan.tier],
     color: TIER_COLORS[plan.tier],
   }));

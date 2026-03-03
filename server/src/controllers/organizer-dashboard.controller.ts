@@ -1915,6 +1915,18 @@ export class OrganizerDashboardController {
   // ========== Subscription Management ==========
 
   /**
+   * Get subscription plans (for organizer pricing/upgrade page)
+   */
+  static async getSubscriptionPlans(_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const plans = await SubscriptionService.getPlans();
+      res.status(200).json({ success: true, data: { plans } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get organizer subscription
    */
   static async getSubscription(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

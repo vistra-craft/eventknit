@@ -5,12 +5,7 @@ import {
   MapPin,
   Clock,
   Globe,
-  Building2,
-  CalendarDays,
-  Heart,
-  BadgeCheck,
   ExternalLink,
-  ChevronRight,
   Twitter,
   Facebook,
   Instagram,
@@ -18,70 +13,19 @@ import {
   Youtube,
   Github,
   Globe2,
-  Mic2,
   Timer,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import type { EventData, User, Sponsor } from "./EventAttendeeView";
-
-type TabKey = 'home' | 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge';
-
-interface TabConfig {
-  key: TabKey;
-  label: string;
-  icon: React.ElementType;
-  available: boolean;
-}
 
 interface EventHomeProps {
   event: EventData;
   user: User;
-  onNavigate: (tab: TabKey) => void;
-  availableTabs: TabConfig[];
 }
-
-// ─── Quick action config ──────────────────────────────────────────────────────
-
-const quickActionConfig: Record<string, {
-  label: string;
-  icon: React.ElementType;
-  description: string;
-  accentClass: string;
-}> = {
-  agenda: {
-    label: 'Agenda',
-    icon: CalendarDays,
-    description: 'Full schedule',
-    accentClass: 'group-hover:bg-primary/10 group-hover:text-primary',
-  },
-  speakers: {
-    label: 'Speakers',
-    icon: Mic2,
-    description: 'Meet the experts',
-    accentClass: 'group-hover:bg-violet-500/10 group-hover:text-violet-600 dark:group-hover:text-violet-400',
-  },
-  exhibitors: {
-    label: 'Exhibitors',
-    icon: Building2,
-    description: 'Browse booths',
-    accentClass: 'group-hover:bg-amber-500/10 group-hover:text-amber-600 dark:group-hover:text-amber-400',
-  },
-  'my-event': {
-    label: 'My Event',
-    icon: Heart,
-    description: 'Your registration',
-    accentClass: 'group-hover:bg-rose-500/10 group-hover:text-rose-500',
-  },
-  'my-badge': {
-    label: 'My Badge',
-    icon: BadgeCheck,
-    description: 'View ticket',
-    accentClass: 'group-hover:bg-success/10 group-hover:text-success',
-  },
-};
 
 // ─── Sponsor helpers ──────────────────────────────────────────────────────────
 
@@ -214,8 +158,6 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
 export const EventHome: React.FC<EventHomeProps> = ({
   event,
   user,
-  onNavigate,
-  availableTabs,
 }) => {
   const navigate = useNavigate();
 
@@ -248,10 +190,6 @@ export const EventHome: React.FC<EventHomeProps> = ({
     return start;
   };
 
-  // Quick action tabs: exclude home, show only tabs that have config entries and are available
-  const quickActionTabs = availableTabs.filter(
-    tab => tab.key !== 'home' && tab.key in quickActionConfig,
-  );
 
   return (
     <div className="relative">
@@ -343,54 +281,6 @@ export const EventHome: React.FC<EventHomeProps> = ({
             {/* Countdown / Live status strip */}
             <CountdownStrip event={event} />
 
-            {/* Quick Actions — colour-coded, engaging cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              {quickActionTabs.map((tab) => {
-                const cfg = quickActionConfig[tab.key];
-                if (!cfg) return null;
-                const Icon = cfg.icon;
-
-                return (
-                  <Card
-                    key={tab.key}
-                    variant="github"
-                    className="group cursor-pointer hover:shadow-md hover:border-primary/20 transition-all duration-200"
-                    onClick={() => onNavigate(tab.key)}
-                  >
-                    <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                      <div className={`w-10 h-10 rounded-xl bg-muted flex items-center justify-center transition-all duration-200 ${cfg.accentClass}`}>
-                        <Icon className="w-5 h-5 text-muted-foreground transition-colors duration-200" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-foreground text-sm group-hover:text-primary transition-colors leading-tight">
-                          {cfg.label}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                          {cfg.description}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-
-              {/* "All sections" chevron card if tabs are truncated */}
-              {quickActionTabs.length > 4 && (
-                <Card
-                  variant="github"
-                  className="group cursor-pointer hover:shadow-md hover:border-primary/20 transition-all duration-200"
-                  onClick={() => onNavigate('my-event')}
-                >
-                  <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                    <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm font-medium text-muted-foreground">More</p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
             {/* Sponsors */}
             {event.sponsors && event.sponsors.length > 0 && (
               <Card variant="github">
@@ -465,11 +355,10 @@ export const EventHome: React.FC<EventHomeProps> = ({
                 </div>
 
                 {(event.fullDescription ?? event.description) && (
-                  <div>
-                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                      {event.fullDescription ?? event.description}
-                    </p>
-                  </div>
+                  <RichTextContent
+                    content={event.fullDescription ?? event.description ?? ''}
+                    className="text-sm text-muted-foreground"
+                  />
                 )}
 
                 {event.socialLinks && Object.keys(event.socialLinks).length > 0 && (

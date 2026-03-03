@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { Clock, MapPin, Mic, Users, Coffee, Calendar, Zap, Monitor, MessageCircle, Award, Music, PartyPopper } from "lucide-react";
+import { Clock, MapPin, Mic, Users, Coffee, Calendar, Zap, Monitor, MessageCircle, Award, Music, PartyPopper, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import { cn } from "@/lib/utils";
 import type { EventData, User, AgendaItem } from "./EventAttendeeView";
 
@@ -78,6 +79,98 @@ const formatTime = (time: string): string => {
   if (!time) return '';
   return time.substring(0, 5); // HH:MM format
 };
+
+// Get speaker names from agenda item
+const getSpeakerNames = (item: AgendaItem): string => {
+  if (item.speakerDetails && item.speakerDetails.length > 0) {
+    return item.speakerDetails.map(s => s.name).join(', ');
+  }
+  if (item.speakers && item.speakers.length > 0) {
+    return item.speakers.join(', ');
+  }
+  return '';
+};
+
+// ─── Expandable agenda item ────────────────────────────────────────────────────
+
+function AgendaItemCard({ item, idx }: { item: AgendaItem; idx: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const type = resolveSessionType(item);
+  const config = sessionTypeConfig[type] || sessionTypeConfig.session;
+  const TypeIcon = config.icon;
+  const duration = calculateDuration(item.startTime, item.endTime);
+  const speakers = getSpeakerNames(item);
+  const hasDescription = !!item.description;
+
+  return (
+    <Card key={item.id || idx} variant="github" className="hover:shadow-md hover:border-primary/30 transition-all">
+      <CardContent className="p-3">
+        <div className="flex items-start gap-3">
+          {/* Type Icon */}
+          <div className={cn('p-1.5 rounded-md flex-shrink-0', config.bgColor)}>
+            <TypeIcon className={cn('w-4 h-4', config.color)} />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <div>
+                <h3 className="font-medium text-foreground text-sm">
+                  {item.title}
+                </h3>
+                {speakers && (
+                  <p className="text-xs text-muted-foreground">
+                    {speakers}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  {type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                </Badge>
+                {duration && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {duration}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {hasDescription && (
+              <>
+                <div className={cn(!expanded && 'line-clamp-2')}>
+                  <RichTextContent
+                    content={item.description!}
+                    className="text-xs text-muted-foreground"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-0 text-xs text-primary hover:text-primary/80 mt-1 gap-1"
+                  onClick={() => setExpanded(e => !e)}
+                >
+                  {expanded ? (
+                    <><ChevronUp className="w-3 h-3" /> Show less</>
+                  ) : (
+                    <><ChevronDown className="w-3 h-3" /> See more</>
+                  )}
+                </Button>
+              </>
+            )}
+
+            {(item.room || item.location) && (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                <MapPin className="w-2.5 h-2.5" />
+                <span>{item.room || item.location}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
   // Get unique dates from agenda items
@@ -157,17 +250,6 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
     });
   };
 
-  // Get speaker names from agenda item
-  const getSpeakerNames = (item: AgendaItem): string => {
-    if (item.speakerDetails && item.speakerDetails.length > 0) {
-      return item.speakerDetails.map(s => s.name).join(', ');
-    }
-    if (item.speakers && item.speakers.length > 0) {
-      return item.speakers.join(', ');
-    }
-    return '';
-  };
-
   if (!event.agenda || event.agenda.length === 0) {
     return (
       <div className="container mx-auto px-4 sm:px-6 py-12">
@@ -233,65 +315,9 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
 
             {/* Sessions */}
             <div className="space-y-2 pl-3 border-l-2 border-muted ml-3">
-              {items.map((item, idx) => {
-                const type = resolveSessionType(item);
-                const config = sessionTypeConfig[type] || sessionTypeConfig.session;
-                const TypeIcon = config.icon;
-                const duration = calculateDuration(item.startTime, item.endTime);
-                const speakers = getSpeakerNames(item);
-
-                return (
-                  <Card key={item.id || idx} variant="github" className="hover:shadow-md hover:border-primary/30 transition-all">
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-3">
-                        {/* Type Icon */}
-                        <div className={cn('p-1.5 rounded-md', config.bgColor)}>
-                          <TypeIcon className={cn('w-4 h-4', config.color)} />
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-3 mb-1">
-                            <div>
-                              <h3 className="font-medium text-foreground text-sm">
-                                {item.title}
-                              </h3>
-                              {speakers && (
-                                <p className="text-xs text-muted-foreground">
-                                  {speakers}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                {type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                              </Badge>
-                              {duration && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  {duration}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground mb-1.5 line-clamp-2">
-                              {item.description}
-                            </p>
-                          )}
-
-                          {(item.room || item.location) && (
-                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <MapPin className="w-2.5 h-2.5" />
-                              <span>{item.room || item.location}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {items.map((item, idx) => (
+                <AgendaItemCard key={item.id || idx} item={item} idx={idx} />
+              ))}
             </div>
           </div>
         ))}

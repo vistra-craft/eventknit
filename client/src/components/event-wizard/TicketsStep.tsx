@@ -47,32 +47,32 @@ const TICKET_TEMPLATES: { label: string; icon: React.ReactNode; ticket: Partial<
   {
     label: 'General Admission',
     icon: <Ticket className="h-3.5 w-3.5" />,
-    ticket: { name: 'General Admission', type: 'paid', price: '0', quantity: '100', maxPerPerson: 10, salesChannel: 'both' },
+    ticket: { name: 'General Admission', type: 'paid', price: '', quantity: '100', maxPerPerson: 10, salesChannel: 'both' },
   },
   {
     label: 'VIP',
     icon: <Crown className="h-3.5 w-3.5" />,
-    ticket: { name: 'VIP', type: 'paid', price: '0', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
+    ticket: { name: 'VIP', type: 'paid', price: '', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
   },
   {
     label: 'Early Bird',
     icon: <Zap className="h-3.5 w-3.5" />,
-    ticket: { name: 'Early Bird', type: 'paid', price: '0', quantity: '100', maxPerPerson: 10, discountLabel: 'Early Bird', salesChannel: 'online' },
+    ticket: { name: 'Early Bird', type: 'paid', price: '', quantity: '100', maxPerPerson: 10, discountLabel: 'Early Bird', salesChannel: 'online' },
   },
   {
     label: 'Student',
     icon: <GraduationCap className="h-3.5 w-3.5" />,
-    ticket: { name: 'Student / Concession', type: 'paid', price: '0', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
+    ticket: { name: 'Student / Concession', type: 'paid', price: '', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
   },
   {
     label: 'Free Entry',
     icon: <DoorOpen className="h-3.5 w-3.5" />,
-    ticket: { name: 'Free Entry', type: 'free', price: '0', quantity: '200', maxPerPerson: 10, salesChannel: 'both' },
+    ticket: { name: 'Free Entry', type: 'free', price: '', quantity: '200', maxPerPerson: 10, salesChannel: 'both' },
   },
   {
     label: 'Complimentary',
     icon: <Users className="h-3.5 w-3.5" />,
-    ticket: { name: 'Speaker / Staff Pass', type: 'paid', price: '0', quantity: '20', maxPerPerson: 1, isComplementary: true, requiresInvitation: true, salesChannel: 'both' },
+    ticket: { name: 'Speaker / Staff Pass', type: 'paid', price: '', quantity: '20', maxPerPerson: 1, isComplementary: true, requiresInvitation: true, salesChannel: 'both' },
   },
 ];
 
@@ -146,7 +146,7 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
       name: template?.name || '',
       description: template?.description || '',
       type: template?.type || 'paid',
-      price: template?.price || '0',
+      price: template?.price || '',
       quantity: template?.quantity || '100',
       maxPerPerson: template?.maxPerPerson ?? 10,
       salesChannel: template?.salesChannel || 'both',
