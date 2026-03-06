@@ -15,3 +15,4 @@ export { default as EditExpensePage } from './EditExpensePage';
 export { default as EditIncomePage } from './EditIncomePage';
 export { default as EditWagePage } from './EditWagePage';
 export { default as AdminFinancialManagement } from './AdminFinancialManagement';
+export { default as ResaleTransferReportingPage } from './ResaleTransferReportingPage';

@@ -20,13 +20,14 @@ export class EventCollaborationService {
       canManageStaff?: boolean;
       canPublish?: boolean;
     },
+    isAdmin = false,
   ) {
     try {
-      // Verify event belongs to organizer
+      // Verify event belongs to organizer (admins bypass ownership check)
       const event = await prisma.event.findFirst({
         where: {
           id: eventId,
-          organizerId,
+          ...(isAdmin ? {} : { organizerId }),
           deletedAt: null,
         },
       });
@@ -134,9 +135,9 @@ export class EventCollaborationService {
   /**
    * Get event collaborators
    */
-  static async getEventCollaborators(eventId: string, organizerId: string) {
+  static async getEventCollaborators(eventId: string, organizerId: string, isAdmin = false) {
     try {
-      // Verify organizer owns the event or is a collaborator
+      // Verify organizer owns the event or is a collaborator (admins bypass)
       const event = await prisma.event.findFirst({
         where: {
           id: eventId,
@@ -148,17 +149,19 @@ export class EventCollaborationService {
         throw new NotFoundError('Event not found');
       }
 
-      const isOwner = event.organizerId === organizerId;
-      const isCollaborator = await prisma.eventCollaborator.findFirst({
-        where: {
-          eventId,
-          collaboratorId: organizerId,
-          isActive: true,
-        },
-      });
+      if (!isAdmin) {
+        const isOwner = event.organizerId === organizerId;
+        const isCollaborator = await prisma.eventCollaborator.findFirst({
+          where: {
+            eventId,
+            collaboratorId: organizerId,
+            isActive: true,
+          },
+        });
 
-      if (!isOwner && !isCollaborator) {
-        throw new AuthorizationError('You do not have permission to view collaborators');
+        if (!isOwner && !isCollaborator) {
+          throw new AuthorizationError('You do not have permission to view collaborators');
+        }
       }
 
       const collaborators = await prisma.eventCollaborator.findMany({

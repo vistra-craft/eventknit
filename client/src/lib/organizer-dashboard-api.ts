@@ -1360,6 +1360,96 @@ export const getPayoutSummary = async (): Promise<
 };
 
 // ===========================================================================
+// ==================== Resale & Transfer Analytics ==========================
+// ===========================================================================
+
+export interface ResaleStats {
+  totalListings: number;
+  activeListings: number;
+  reservedListings: number;
+  soldListings: number;
+  cancelledListings: number;
+  expiredListings: number;
+  totalResaleValue: number;
+  totalPlatformFees: number;
+  totalSellerPayouts: number;
+}
+
+export interface ResaleListing {
+  id: string;
+  status: string;
+  originalPrice: number;
+  resalePrice: number;
+  currency: string;
+  platformFee: number | null;
+  sellerPayout: number | null;
+  listedAt: string;
+  soldAt: string | null;
+  expiresAt: string | null;
+  seller: { id: string; firstName: string; lastName: string; email: string };
+  buyer: { id: string; firstName: string; lastName: string; email: string } | null;
+  ticketType: string;
+}
+
+export interface TransferStats {
+  totalTransfers: number;
+  pendingTransfers: number;
+  acceptedTransfers: number;
+  rejectedTransfers: number;
+  cancelledTransfers: number;
+  expiredTransfers: number;
+}
+
+export interface TransferRecord {
+  id: string;
+  status: string;
+  message: string | null;
+  fromUser: { id: string; firstName: string; lastName: string; email: string };
+  toUser: { id: string; firstName: string; lastName: string; email: string } | null;
+  toEmail: string | null;
+  createdAt: string;
+  acceptedAt: string | null;
+  expiresAt: string | null;
+  ticketType: string;
+}
+
+export const getEventResaleStats = async (
+  eventId: string,
+): Promise<ApiResponse<ResaleStats>> => {
+  return apiGet(`/organizer-dashboard/events/${eventId}/resale/stats`);
+};
+
+export const getEventResaleListings = async (
+  eventId: string,
+  filters?: { status?: string; page?: number; limit?: number },
+): Promise<ApiResponse<{ listings: ResaleListing[]; total: number; page: number; totalPages: number }>> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/organizer-dashboard/events/${eventId}/resale/listings${query ? `?${query}` : ''}`);
+};
+
+export const getEventTransferStats = async (
+  eventId: string,
+): Promise<ApiResponse<TransferStats>> => {
+  return apiGet(`/organizer-dashboard/events/${eventId}/transfers/stats`);
+};
+
+export const getEventTransferHistory = async (
+  eventId: string,
+  filters?: { status?: string; page?: number; limit?: number },
+): Promise<ApiResponse<{ transfers: TransferRecord[]; total: number; page: number; totalPages: number }>> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/organizer-dashboard/events/${eventId}/transfers/history${query ? `?${query}` : ''}`);
+};
+
+// ===========================================================================
 // ==================== Event Collaboration ==================================
 // ===========================================================================
 
@@ -1819,4 +1909,99 @@ export const getMyPermissions = async (): Promise<
   ApiResponse<{ permissions: string[] }>
 > => {
   return apiGet("/organizer-dashboard/my-permissions");
+};
+
+// ===========================================================================
+// ==================== Scan & Check-In Analytics ============================
+// ===========================================================================
+
+export interface OrganizerScanConfig {
+  allowReEntry: boolean;
+  requireCheckOut: boolean;
+  maxReEntries: number | null;
+  scanSettings: Record<string, unknown> | null;
+}
+
+export interface OrganizerScanStatistics {
+  totalAttendees: number;
+  checkedIn: number;
+  currentlyInside: number;
+  checkedOut: number;
+  reEntries: number;
+  scansToday: number;
+}
+
+export interface OrganizerScanOverview {
+  config: OrganizerScanConfig;
+  statistics: OrganizerScanStatistics;
+}
+
+export interface OrganizerScanRecord {
+  id: string;
+  registrationId: string;
+  eventId: string;
+  scanType: 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT';
+  scannedAt: string;
+  scannedBy: string;
+  facility: string | null;
+  session: string | null;
+  attendeeName: string;
+  ticketType: string | null;
+  isReEntry: boolean;
+  isValid: boolean;
+  scanLocation: string | null;
+}
+
+export interface OrganizerScanAttendee {
+  registrationId: string;
+  visitorId: string;
+  attendeeName: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  ticketType: string | null;
+  ticketStatus: string;
+  isCurrentlyInside: boolean;
+  checkedInAt: string | null;
+  checkedOutAt: string | null;
+  reEntryCount: number;
+  lastScanFacility: string | null;
+  registeredAt: string;
+}
+
+export const getEventScanOverview = async (
+  eventId: string,
+): Promise<ApiResponse<OrganizerScanOverview>> => {
+  return apiGet(`/organizer-dashboard/events/${eventId}/scans/overview`);
+};
+
+export const getEventScanHistory = async (
+  eventId: string,
+  filters?: { scanType?: string; page?: number; limit?: number },
+): Promise<ApiResponse<{ scans: OrganizerScanRecord[]; total: number; pagination: { page: number; limit: number; totalPages: number } }>> => {
+  const params = new URLSearchParams();
+  if (filters?.scanType) params.set('scanType', filters.scanType);
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/organizer-dashboard/events/${eventId}/scans/history${query ? `?${query}` : ''}`);
+};
+
+export const getEventScanAttendees = async (
+  eventId: string,
+  filters?: { page?: number; limit?: number },
+): Promise<ApiResponse<{ attendees: OrganizerScanAttendee[]; total: number; pagination: { page: number; limit: number; totalPages: number } }>> => {
+  const params = new URLSearchParams();
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/organizer-dashboard/events/${eventId}/scans/attendees${query ? `?${query}` : ''}`);
+};
+
+export const updateEventScanConfig = async (
+  eventId: string,
+  updates: { allowReEntry?: boolean; requireCheckOut?: boolean; maxReEntries?: number | null },
+): Promise<ApiResponse<{ config: OrganizerScanConfig }>> => {
+  return apiPut(`/organizer-dashboard/events/${eventId}/scans/config`, updates);
 };

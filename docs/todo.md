@@ -1,5 +1,15 @@
 # TODO
 
+## Flutter: Move Heavy Work Off Main Thread
+
+- Identify any expensive computations, synchronous loops, or blocking I/O in widget build methods, initState, or event handlers.
+- Move heavy computations to background isolates using `compute()` or custom `Isolate`.
+- For network requests, database access, or file I/O, always use async/await and avoid blocking calls.
+- Use `FutureBuilder` or `StreamBuilder` to update UI when background work completes.
+- Profile app startup and screen transitions to find bottlenecks (use Flutter DevTools Timeline).
+- Refactor code to keep the main thread (UI thread) responsive.
+
+
 ## Web
 - Staff details: audit trail (actions history) with timestamps and actor.
 - Staff details: access/role change history.

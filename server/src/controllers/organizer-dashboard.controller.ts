@@ -20,7 +20,13 @@ import { KYCService } from '../services/kyc.service.js';
 import { SubscriptionService } from '../services/subscription.service.js';
 import { ConsentService } from '../services/consent.service.js';
 import { EventSessionService } from '../services/event-session.service.js';
+import { ResaleTransferAnalyticsService } from '../services/resale-transfer-analytics.service.js';
+import { WorkstationService } from '../services/workstation.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { UserRole } from '@prisma/client';
+
+const isAdminRole = (role: UserRole): boolean =>
+  role === UserRole.SUPERADMIN || role === UserRole.ADMIN_STAFF;
 
 export class OrganizerDashboardController {
   // Event Templates
@@ -1059,6 +1065,154 @@ export class OrganizerDashboardController {
 
       const summary = await PayoutManagementService.getPayoutSummary(req.user.id);
       res.status(200).json({ success: true, data: summary });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Resale & Transfer Analytics
+  static async getEventResaleStats(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const admin = isAdminRole(req.user.role);
+      const stats = await ResaleTransferAnalyticsService.getEventResaleStats(eventId, req.user.id, admin);
+      res.status(200).json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventResaleListings(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { status, page, limit } = req.query;
+      const filters = {
+        status: typeof status === 'string' ? status : undefined,
+        page: typeof page === 'string' ? parseInt(page, 10) : undefined,
+        limit: typeof limit === 'string' ? parseInt(limit, 10) : undefined,
+      };
+      const admin = isAdminRole(req.user.role);
+      const result = await ResaleTransferAnalyticsService.getEventResaleListings(eventId, req.user.id, filters, admin);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventTransferStats(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const admin = isAdminRole(req.user.role);
+      const stats = await ResaleTransferAnalyticsService.getEventTransferStats(eventId, req.user.id, admin);
+      res.status(200).json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventTransferHistory(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { status, page, limit } = req.query;
+      const filters = {
+        status: typeof status === 'string' ? status : undefined,
+        page: typeof page === 'string' ? parseInt(page, 10) : undefined,
+        limit: typeof limit === 'string' ? parseInt(limit, 10) : undefined,
+      };
+      const admin = isAdminRole(req.user.role);
+      const result = await ResaleTransferAnalyticsService.getEventTransferHistory(eventId, req.user.id, filters, admin);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Scan & Check-In Analytics
+  static async getEventScanOverview(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const admin = isAdminRole(req.user.role);
+      const data = await WorkstationService.getOrganizerEventScanOverview(eventId, req.user.id, admin);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventScanHistory(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { scanType, page, limit } = req.query;
+      const admin = isAdminRole(req.user.role);
+      const data = await WorkstationService.getOrganizerEventScans(eventId, req.user.id, {
+        scanType: typeof scanType === 'string' ? scanType : undefined,
+        page: typeof page === 'string' ? parseInt(page, 10) : undefined,
+        limit: typeof limit === 'string' ? parseInt(limit, 10) : undefined,
+      }, admin);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventScanAttendees(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { page, limit } = req.query;
+      const admin = isAdminRole(req.user.role);
+      const data = await WorkstationService.getOrganizerEventAttendees(eventId, req.user.id, {
+        page: typeof page === 'string' ? parseInt(page, 10) : undefined,
+        limit: typeof limit === 'string' ? parseInt(limit, 10) : undefined,
+      }, admin);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateEventScanConfig(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { allowReEntry, requireCheckOut, maxReEntries } = req.body;
+      const admin = isAdminRole(req.user.role);
+      const config = await WorkstationService.updateOrganizerEventScanConfig(eventId, req.user.id, {
+        allowReEntry,
+        requireCheckOut,
+        maxReEntries,
+      }, admin);
+      res.status(200).json({ success: true, data: { config } });
     } catch (error) {
       next(error);
     }

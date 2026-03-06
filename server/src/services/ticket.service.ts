@@ -938,6 +938,9 @@ export class TicketService {
       qrCode: qrCodeDataUrl,
       backupCode: registration.backupCode || undefined,
       createdAt: registration.createdAt.toISOString(),
+      checkedInAt: registration.checkedInAt?.toISOString() ?? null,
+      checkedOutAt: registration.checkedOutAt?.toISOString() ?? null,
+      isCurrentlyInside: registration.isCurrentlyInside,
       registration,
       ticketData: ticketDataForResponse,
     };

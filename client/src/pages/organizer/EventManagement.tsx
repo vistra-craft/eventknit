@@ -29,6 +29,12 @@ import {
   Copy as CopyIcon,
   Grid3X3,
   Search,
+  QrCode,
+  LogIn,
+  LogOut,
+  UserCheck,
+  RefreshCw,
+  Shield,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -62,6 +68,7 @@ import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
 import { exportAttendees, quickRegisterAttendee } from "../../lib/attendee-import-api";
 import type { QuickRegisterRequest } from "../../lib/attendee-import-api";
+import { getEventResaleStats, getEventResaleListings, getEventTransferStats, getEventTransferHistory, type ResaleStats, type ResaleListing, type TransferStats, type TransferRecord, getEventScanOverview, getEventScanHistory, getEventScanAttendees, updateEventScanConfig, type OrganizerScanConfig, type OrganizerScanStatistics, type OrganizerScanRecord, type OrganizerScanAttendee } from "../../lib/organizer-dashboard-api";
 import { extractErrorMessage } from "../../lib/utils/error";
 
 // Top-level interfaces for type safety
@@ -93,9 +100,14 @@ interface OrganizerEventData extends EventData {
 import EventCommunicationSection from "../../components/EventCommunicationSection";
 import { useUserPermissions } from "../../hooks/usePermissions";
 
-const EventManagement = () => {
+interface EventManagementProps {
+  isAdminMode?: boolean;
+}
+
+const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
   const { eventId } = useParams();
   const navigate = useNavigate();
+  const backPath = isAdminMode ? `/admin/service-point/event/${eventId}` : '/organizer/dashboard';
   const { toast } = useToast();
   const { hasPermission } = useUserPermissions();
   const [activeSection, setActiveSection] = useState("overview");
@@ -137,6 +149,27 @@ const EventManagement = () => {
   const [newInviteTitle, setNewInviteTitle] = useState('');
   const [newInviteMaxUses, setNewInviteMaxUses] = useState('');
   const [creatingInvitation, setCreatingInvitation] = useState(false);
+
+  // Resale & Transfer state
+  const [resaleStats, setResaleStats] = useState<ResaleStats | null>(null);
+  const [resaleListings, setResaleListings] = useState<ResaleListing[]>([]);
+  const [transferStats, setTransferStats] = useState<TransferStats | null>(null);
+  const [transferHistory, setTransferHistory] = useState<TransferRecord[]>([]);
+  const [resaleTransferLoading, setResaleTransferLoading] = useState(false);
+
+  // Scan & Check-In state
+  const [scanConfig, setScanConfig] = useState<OrganizerScanConfig | null>(null);
+  const [scanStatistics, setScanStatistics] = useState<OrganizerScanStatistics | null>(null);
+  const [scanHistory, setScanHistory] = useState<OrganizerScanRecord[]>([]);
+  const [scanAttendees, setScanAttendees] = useState<OrganizerScanAttendee[]>([]);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanHistoryTotal, setScanHistoryTotal] = useState(0);
+  const [scanHistoryPage, setScanHistoryPage] = useState(1);
+  const [scanTypeFilter, setScanTypeFilter] = useState<string>('all');
+  const [scanAttendeesTotal, setScanAttendeesTotal] = useState(0);
+  const [scanAttendeesPage, setScanAttendeesPage] = useState(1);
+  const [scanTab, setScanTab] = useState<'overview' | 'history' | 'attendees' | 'settings'>('overview');
+  const [updatingConfig, setUpdatingConfig] = useState(false);
 
   // Fetch event data and attendees
   useEffect(() => {
@@ -278,6 +311,99 @@ const EventManagement = () => {
     fetchInvitations();
   }, [eventId, activeSection]);
 
+  // Fetch resale & transfer data when the tab is active (lazy loading)
+  useEffect(() => {
+    const fetchResaleTransfers = async () => {
+      if (!eventId || activeSection !== 'resale-transfers') return;
+      try {
+        setResaleTransferLoading(true);
+        const [resaleStatsRes, resaleListingsRes, transferStatsRes, transferHistoryRes] = await Promise.all([
+          getEventResaleStats(eventId),
+          getEventResaleListings(eventId, { limit: 20 }),
+          getEventTransferStats(eventId),
+          getEventTransferHistory(eventId, { limit: 20 }),
+        ]);
+        if (resaleStatsRes.success && resaleStatsRes.data) setResaleStats(resaleStatsRes.data);
+        if (resaleListingsRes.success && resaleListingsRes.data) setResaleListings(resaleListingsRes.data.listings);
+        if (transferStatsRes.success && transferStatsRes.data) setTransferStats(transferStatsRes.data);
+        if (transferHistoryRes.success && transferHistoryRes.data) setTransferHistory(transferHistoryRes.data.transfers);
+      } catch (err) {
+        toast({
+          title: "Load failed",
+          description: extractErrorMessage(err, "Failed to load resale & transfer data"),
+          variant: "destructive",
+        });
+      } finally {
+        setResaleTransferLoading(false);
+      }
+    };
+    fetchResaleTransfers();
+  }, [eventId, activeSection]);
+
+  // Fetch scan & check-in data when the tab is active (lazy loading)
+  useEffect(() => {
+    const fetchScanData = async () => {
+      if (!eventId || activeSection !== 'scan-settings') return;
+      try {
+        setScanLoading(true);
+        const scanFilters: { scanType?: string; page?: number; limit?: number } = {
+          page: scanHistoryPage,
+          limit: 20,
+        };
+        if (scanTypeFilter !== 'all') {
+          scanFilters.scanType = scanTypeFilter;
+        }
+        const [overviewRes, scansRes, attendeesRes] = await Promise.all([
+          getEventScanOverview(eventId),
+          getEventScanHistory(eventId, scanFilters),
+          getEventScanAttendees(eventId, { page: scanAttendeesPage, limit: 20 }),
+        ]);
+        if (overviewRes.success && overviewRes.data) {
+          setScanConfig(overviewRes.data.config);
+          setScanStatistics(overviewRes.data.statistics);
+        }
+        if (scansRes.success && scansRes.data) {
+          setScanHistory(scansRes.data.scans);
+          setScanHistoryTotal(scansRes.data.total);
+        }
+        if (attendeesRes.success && attendeesRes.data) {
+          setScanAttendees(attendeesRes.data.attendees);
+          setScanAttendeesTotal(attendeesRes.data.total);
+        }
+      } catch (err) {
+        toast({
+          title: "Load failed",
+          description: extractErrorMessage(err, "Failed to load scan data"),
+          variant: "destructive",
+        });
+      } finally {
+        setScanLoading(false);
+      }
+    };
+    fetchScanData();
+  }, [eventId, activeSection, scanHistoryPage, scanTypeFilter, scanAttendeesPage]);
+
+  // Handle scan config update
+  const handleUpdateScanConfig = async (updates: { allowReEntry?: boolean; requireCheckOut?: boolean; maxReEntries?: number | null }) => {
+    if (!eventId) return;
+    try {
+      setUpdatingConfig(true);
+      const res = await updateEventScanConfig(eventId, updates);
+      if (res.success && res.data) {
+        setScanConfig(res.data.config);
+        toast({ title: "Settings updated", description: "Scan configuration has been saved" });
+      }
+    } catch (err) {
+      toast({
+        title: "Update failed",
+        description: extractErrorMessage(err, "Failed to update scan settings"),
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingConfig(false);
+    }
+  };
+
   // Check if event can be cancelled (APPROVED and hasn't started)
   const canCancelEvent = () => {
     if (!eventData) return false;
@@ -351,7 +477,7 @@ const EventManagement = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error || 'Event not found'}</AlertDescription>
           </Alert>
-          <Button onClick={() => navigate('/organizer/events')} className="mt-4">
+          <Button onClick={() => navigate(isAdminMode ? '/admin/service-point' : '/organizer/events')} className="mt-4">
             Back to Events
           </Button>
         </div>
@@ -398,8 +524,9 @@ const EventManagement = () => {
     { key: "refunds", label: "Refunds", icon: RotateCcw, badge: refunds.filter(r => r.status === 'pending').length },
     { key: "staff", label: "Staff Assignment", icon: UserPlus },
     { key: "settings", label: "Event Details", icon: Settings },
-    { key: "scan-settings", label: "Scan Settings", icon: Eye },
+    { key: "scan-settings", label: "Scan & Check-In", icon: QrCode },
     { key: "remittance", label: "Remittance", icon: DollarSign },
+    { key: "resale-transfers", label: "Resale & Transfers", icon: Share2 },
     { key: "seating", label: "Seating", icon: Grid3X3, conditional: true },
     { key: "speakers", label: "Speakers", icon: Mic, conditional: true },
     { key: "sponsors", label: "Sponsors", icon: Star, conditional: true },
@@ -1556,6 +1683,199 @@ const EventManagement = () => {
           </div>
         );
 
+      case "resale-transfers":
+        return (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold">Resale & Transfers</h3>
+              <p className="text-sm text-muted-foreground">Track ticket resale and transfer activity for this event</p>
+            </div>
+
+            {resaleTransferLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader />
+              </div>
+            ) : (
+              <>
+                {/* Stats Overview */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card className="border-l-4 border-l-primary">
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground uppercase">Total Resale Listings</p>
+                      <p className="text-2xl font-bold mt-1">{resaleStats?.totalListings || 0}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {resaleStats?.activeListings || 0} active · {resaleStats?.soldListings || 0} sold
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-success">
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground uppercase">Resale Value</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {eventData?.currency || '$'}{(resaleStats?.totalResaleValue || 0).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {eventData?.currency || '$'}{(resaleStats?.totalPlatformFees || 0).toLocaleString()} in fees
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-blue-500">
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground uppercase">Total Transfers</p>
+                      <p className="text-2xl font-bold mt-1">{transferStats?.totalTransfers || 0}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {transferStats?.pendingTransfers || 0} pending · {transferStats?.acceptedTransfers || 0} completed
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-amber-500">
+                    <CardContent className="p-4">
+                      <p className="text-xs text-muted-foreground uppercase">Cancelled / Expired</p>
+                      <p className="text-2xl font-bold mt-1">
+                        {(resaleStats?.cancelledListings || 0) + (resaleStats?.expiredListings || 0) +
+                         (transferStats?.cancelledTransfers || 0) + (transferStats?.expiredTransfers || 0)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">across resale &amp; transfers</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Resale Listings Table */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Resale Listings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {resaleListings.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <DollarSign className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                        <p className="text-sm font-medium text-muted-foreground">No resale activity yet</p>
+                        <p className="text-xs text-muted-foreground mt-1">Resale listings will appear here when attendees list tickets for sale</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-border/40 bg-muted/30">
+                              <th className="text-left p-3 font-medium text-muted-foreground">Seller</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground">Ticket</th>
+                              <th className="text-right p-3 font-medium text-muted-foreground">Original</th>
+                              <th className="text-right p-3 font-medium text-muted-foreground">Resale</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground">Buyer</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {resaleListings.map((listing) => (
+                              <tr key={listing.id} className="border-b border-border/20 hover:bg-muted/20 transition-colors">
+                                <td className="p-3">
+                                  <p className="font-medium">{listing.seller.firstName} {listing.seller.lastName}</p>
+                                  <p className="text-xs text-muted-foreground">{listing.seller.email}</p>
+                                </td>
+                                <td className="p-3">{listing.ticketType}</td>
+                                <td className="p-3 text-right text-muted-foreground line-through">
+                                  {eventData?.currency || '$'}{listing.originalPrice}
+                                </td>
+                                <td className="p-3 text-right font-medium">
+                                  {eventData?.currency || '$'}{listing.resalePrice}
+                                </td>
+                                <td className="p-3">
+                                  <Badge className={
+                                    listing.status === 'SOLD' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                    listing.status === 'LISTED' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                                    listing.status === 'RESERVED' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                    'bg-muted text-muted-foreground'
+                                  }>
+                                    {listing.status}
+                                  </Badge>
+                                </td>
+                                <td className="p-3">
+                                  {listing.buyer ? (
+                                    <span>{listing.buyer.firstName} {listing.buyer.lastName}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </td>
+                                <td className="p-3 text-muted-foreground text-xs">
+                                  {new Date(listing.listedAt).toLocaleDateString()}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Transfer History Table */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Transfer History</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {transferHistory.length === 0 ? (
+                      <div className="p-8 text-center">
+                        <Share2 className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                        <p className="text-sm font-medium text-muted-foreground">No transfers yet</p>
+                        <p className="text-xs text-muted-foreground mt-1">Ticket transfers will appear here</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-border/40 bg-muted/30">
+                              <th className="text-left p-3 font-medium text-muted-foreground">From</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground">To</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground">Ticket</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                              <th className="text-left p-3 font-medium text-muted-foreground">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {transferHistory.map((transfer) => (
+                              <tr key={transfer.id} className="border-b border-border/20 hover:bg-muted/20 transition-colors">
+                                <td className="p-3">
+                                  <p className="font-medium">{transfer.fromUser.firstName} {transfer.fromUser.lastName}</p>
+                                  <p className="text-xs text-muted-foreground">{transfer.fromUser.email}</p>
+                                </td>
+                                <td className="p-3">
+                                  {transfer.toUser ? (
+                                    <>
+                                      <p className="font-medium">{transfer.toUser.firstName} {transfer.toUser.lastName}</p>
+                                      <p className="text-xs text-muted-foreground">{transfer.toUser.email}</p>
+                                    </>
+                                  ) : (
+                                    <p className="text-muted-foreground">{transfer.toEmail || '—'}</p>
+                                  )}
+                                </td>
+                                <td className="p-3">{transfer.ticketType}</td>
+                                <td className="p-3">
+                                  <Badge className={
+                                    transfer.status === 'ACCEPTED' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' :
+                                    transfer.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                    'bg-muted text-muted-foreground'
+                                  }>
+                                    {transfer.status}
+                                  </Badge>
+                                </td>
+                                <td className="p-3 text-muted-foreground text-xs">
+                                  {new Date(transfer.createdAt).toLocaleDateString()}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        );
+
       case "overview":
       default:
         return (
@@ -1978,7 +2298,7 @@ const EventManagement = () => {
             <UpgradePrompt
               variant="card"
               targetTier="STANDARD"
-              message="Upgrade to Standard (free) to view scan settings and check-in configuration for your event."
+              message="Upgrade to Standard (free) to view scan & check-in data for your event."
               dismissible={false}
             />
           );
@@ -1986,36 +2306,478 @@ const EventManagement = () => {
         return (
           <div className="space-y-6">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight">Scan Settings</h2>
+              <h2 className="text-2xl font-bold tracking-tight">Scan & Check-In</h2>
               <p className="text-muted-foreground mt-1">
-                Check-in and ticket scanning configuration for this event
+                Live check-in monitoring, scan history, and attendee status
               </p>
             </div>
-            <Card>
-              <CardHeader>
-                <CardTitle>QR Code Check-In</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 rounded-lg border bg-muted/30">
-                    <p className="text-xs text-muted-foreground uppercase font-medium mb-1">Ticket Scanning</p>
-                    <p className="font-semibold">QR Code</p>
-                    <p className="text-xs text-muted-foreground mt-1">Each ticket has a unique QR code for check-in</p>
-                  </div>
-                  <div className="p-4 rounded-lg border bg-muted/30">
-                    <p className="text-xs text-muted-foreground uppercase font-medium mb-1">Scan Mode</p>
-                    <p className="font-semibold">Standard Check-In</p>
-                    <p className="text-xs text-muted-foreground mt-1">Configured by platform administrator</p>
-                  </div>
+
+            {scanLoading && !scanStatistics ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader />
+              </div>
+            ) : (
+              <>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {[
+                    { label: "Registered", value: scanStatistics?.totalAttendees || 0, icon: Users, gradient: "from-blue-500 to-blue-600" },
+                    { label: "Checked In", value: scanStatistics?.checkedIn || 0, icon: LogIn, gradient: "from-emerald-500 to-emerald-600" },
+                    { label: "Currently Inside", value: scanStatistics?.currentlyInside || 0, icon: UserCheck, gradient: "from-violet-500 to-violet-600" },
+                    { label: "Checked Out", value: scanStatistics?.checkedOut || 0, icon: LogOut, gradient: "from-slate-500 to-slate-600" },
+                    { label: "Re-entries", value: scanStatistics?.reEntries || 0, icon: RefreshCw, gradient: "from-amber-500 to-amber-600" },
+                  ].map((stat, index) => (
+                    <div
+                      key={index}
+                      className="group relative overflow-hidden rounded-2xl border border-border/40 bg-card shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
+                    >
+                      <div className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-xs font-medium text-muted-foreground uppercase">{stat.label}</p>
+                            <p className="mt-1 text-2xl font-bold text-foreground">{stat.value.toLocaleString()}</p>
+                          </div>
+                          <div className={`w-10 h-10 bg-gradient-to-r ${stat.gradient} rounded-xl flex items-center justify-center`}>
+                            <stat.icon className="h-5 w-5 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Scan settings (re-entry policy, checkout scanning) are configured by your platform administrator. Contact support if you need changes to the check-in policy.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+
+                {/* Check-in progress bar */}
+                {scanStatistics && scanStatistics.totalAttendees > 0 && (
+                  <Card className="border-border/40 bg-card">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">Check-in Progress</p>
+                        <p className="text-sm text-muted-foreground">
+                          {scanStatistics.checkedIn} / {scanStatistics.totalAttendees} ({Math.round((scanStatistics.checkedIn / scanStatistics.totalAttendees) * 100)}%)
+                        </p>
+                      </div>
+                      <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, (scanStatistics.checkedIn / scanStatistics.totalAttendees) * 100)}%` }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Sub-tabs */}
+                <div className="flex gap-1 border-b border-border/40">
+                  {[
+                    { key: 'overview' as const, label: 'Overview' },
+                    { key: 'history' as const, label: 'Scan History' },
+                    { key: 'attendees' as const, label: 'Attendee Status' },
+                    { key: 'settings' as const, label: 'Settings' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setScanTab(tab.key)}
+                      className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                        scanTab === tab.key
+                          ? 'border-primary text-primary'
+                          : 'border-transparent text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Overview Tab */}
+                {scanTab === 'overview' && (
+                  <div className="space-y-4">
+                    {/* Config summary */}
+                    <Card className="border-border/40 bg-card">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Scan Configuration</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="p-3 rounded-lg border bg-muted/30">
+                            <p className="text-xs text-muted-foreground uppercase font-medium mb-1">Scan Method</p>
+                            <div className="flex items-center gap-2">
+                              <QrCode className="h-4 w-4 text-primary" />
+                              <p className="font-semibold text-sm">QR Code + Backup Code</p>
+                            </div>
+                          </div>
+                          <div className="p-3 rounded-lg border bg-muted/30">
+                            <p className="text-xs text-muted-foreground uppercase font-medium mb-1">Re-entry Policy</p>
+                            <p className="font-semibold text-sm">
+                              {scanConfig?.allowReEntry ? (
+                                <span className="text-emerald-600 dark:text-emerald-400">
+                                  Allowed{scanConfig.maxReEntries ? ` (max ${scanConfig.maxReEntries})` : ''}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">Not allowed</span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="p-3 rounded-lg border bg-muted/30">
+                            <p className="text-xs text-muted-foreground uppercase font-medium mb-1">Check-out Required</p>
+                            <p className="font-semibold text-sm">
+                              {scanConfig?.requireCheckOut ? (
+                                <span className="text-blue-600 dark:text-blue-400">Yes</span>
+                              ) : (
+                                <span className="text-muted-foreground">No</span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Recent scans */}
+                    <Card className="border-border/40 bg-card">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">Recent Scans</CardTitle>
+                          <Button variant="ghost" size="sm" onClick={() => setScanTab('history')}>
+                            View all
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-0">
+                        {scanHistory.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <QrCode className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                            <p className="text-sm font-medium text-muted-foreground">No scans recorded yet</p>
+                            <p className="text-xs text-muted-foreground mt-1">Scans will appear here when attendees check in</p>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-border/40 bg-muted/30">
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Attendee</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Ticket</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Type</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Time</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {scanHistory.slice(0, 10).map((scan) => (
+                                  <tr key={scan.id} className="border-b border-border/20 hover:bg-muted/20 transition-colors">
+                                    <td className="p-3">
+                                      <p className="font-medium">{scan.attendeeName}</p>
+                                    </td>
+                                    <td className="p-3 text-muted-foreground">{scan.ticketType || '—'}</td>
+                                    <td className="p-3">
+                                      <Badge className={
+                                        scan.scanType === 'CHECK_IN' || scan.scanType === 'MANUAL_CHECK_IN'
+                                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                      }>
+                                        {scan.scanType === 'CHECK_IN' ? 'Check-in' :
+                                         scan.scanType === 'CHECK_OUT' ? 'Check-out' :
+                                         scan.scanType === 'MANUAL_CHECK_IN' ? 'Manual In' :
+                                         'Manual Out'}
+                                      </Badge>
+                                      {scan.isReEntry && (
+                                        <Badge className="ml-1 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                                          Re-entry
+                                        </Badge>
+                                      )}
+                                    </td>
+                                    <td className="p-3 text-muted-foreground text-xs">
+                                      {new Date(scan.scannedAt).toLocaleString()}
+                                    </td>
+                                    <td className="p-3">
+                                      {scan.isValid ? (
+                                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                      ) : (
+                                        <AlertCircle className="h-4 w-4 text-destructive" />
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {/* Scan History Tab */}
+                {scanTab === 'history' && (
+                  <div className="space-y-4">
+                    {/* Filters */}
+                    <div className="flex items-center gap-3">
+                      <Select value={scanTypeFilter} onValueChange={(val) => { setScanTypeFilter(val); setScanHistoryPage(1); }}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="All scan types" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Scan Types</SelectItem>
+                          <SelectItem value="CHECK_IN">Check-in</SelectItem>
+                          <SelectItem value="CHECK_OUT">Check-out</SelectItem>
+                          <SelectItem value="MANUAL_CHECK_IN">Manual Check-in</SelectItem>
+                          <SelectItem value="MANUAL_CHECK_OUT">Manual Check-out</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-sm text-muted-foreground ml-auto">
+                        {scanHistoryTotal} scan{scanHistoryTotal !== 1 ? 's' : ''} total
+                      </p>
+                    </div>
+
+                    <Card className="border-border/40 bg-card">
+                      <CardContent className="p-0">
+                        {scanHistory.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <QrCode className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                            <p className="text-sm font-medium text-muted-foreground">No scans match the filter</p>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-border/40 bg-muted/30">
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Attendee</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Ticket Type</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Scan Type</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Scanned At</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Scanned By</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Facility</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Valid</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {scanHistory.map((scan) => (
+                                  <tr key={scan.id} className="border-b border-border/20 hover:bg-muted/20 transition-colors">
+                                    <td className="p-3">
+                                      <p className="font-medium">{scan.attendeeName}</p>
+                                    </td>
+                                    <td className="p-3 text-muted-foreground">{scan.ticketType || '—'}</td>
+                                    <td className="p-3">
+                                      <Badge className={
+                                        scan.scanType === 'CHECK_IN' || scan.scanType === 'MANUAL_CHECK_IN'
+                                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                          : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                                      }>
+                                        {scan.scanType === 'CHECK_IN' ? 'Check-in' :
+                                         scan.scanType === 'CHECK_OUT' ? 'Check-out' :
+                                         scan.scanType === 'MANUAL_CHECK_IN' ? 'Manual In' :
+                                         'Manual Out'}
+                                      </Badge>
+                                      {scan.isReEntry && (
+                                        <Badge className="ml-1 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                                          Re-entry
+                                        </Badge>
+                                      )}
+                                    </td>
+                                    <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">
+                                      {new Date(scan.scannedAt).toLocaleString()}
+                                    </td>
+                                    <td className="p-3 text-muted-foreground text-xs">{scan.scannedBy || '—'}</td>
+                                    <td className="p-3 text-muted-foreground text-xs">{scan.facility || scan.scanLocation || '—'}</td>
+                                    <td className="p-3">
+                                      {scan.isValid ? (
+                                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                      ) : (
+                                        <AlertCircle className="h-4 w-4 text-destructive" />
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Pagination */}
+                    {scanHistoryTotal > 20 && (
+                      <div className="flex justify-center">
+                        <Pagination
+                          currentPage={scanHistoryPage}
+                          totalPages={Math.ceil(scanHistoryTotal / 20)}
+                          onPageChange={setScanHistoryPage}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Attendee Status Tab */}
+                {scanTab === 'attendees' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        {scanAttendeesTotal} registered attendee{scanAttendeesTotal !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+
+                    <Card className="border-border/40 bg-card">
+                      <CardContent className="p-0">
+                        {scanAttendees.length === 0 ? (
+                          <div className="p-8 text-center">
+                            <Users className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+                            <p className="text-sm font-medium text-muted-foreground">No attendees registered</p>
+                          </div>
+                        ) : (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-border/40 bg-muted/30">
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Attendee</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Ticket</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Status</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Checked In</th>
+                                  <th className="text-left p-3 font-medium text-muted-foreground">Checked Out</th>
+                                  <th className="text-right p-3 font-medium text-muted-foreground">Re-entries</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {scanAttendees.map((attendee) => (
+                                  <tr key={attendee.registrationId} className="border-b border-border/20 hover:bg-muted/20 transition-colors">
+                                    <td className="p-3">
+                                      <p className="font-medium">{attendee.attendeeName}</p>
+                                      <p className="text-xs text-muted-foreground">{attendee.email}</p>
+                                    </td>
+                                    <td className="p-3 text-muted-foreground">{attendee.ticketType || '—'}</td>
+                                    <td className="p-3">
+                                      {attendee.isCurrentlyInside ? (
+                                        <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                          Inside
+                                        </Badge>
+                                      ) : attendee.checkedInAt ? (
+                                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                          Checked Out
+                                        </Badge>
+                                      ) : (
+                                        <Badge className="bg-muted text-muted-foreground">
+                                          Not Arrived
+                                        </Badge>
+                                      )}
+                                    </td>
+                                    <td className="p-3 text-muted-foreground text-xs">
+                                      {attendee.checkedInAt ? new Date(attendee.checkedInAt).toLocaleString() : '—'}
+                                    </td>
+                                    <td className="p-3 text-muted-foreground text-xs">
+                                      {attendee.checkedOutAt ? new Date(attendee.checkedOutAt).toLocaleString() : '—'}
+                                    </td>
+                                    <td className="p-3 text-right">
+                                      {attendee.reEntryCount > 0 ? (
+                                        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                                          {attendee.reEntryCount}
+                                        </Badge>
+                                      ) : (
+                                        <span className="text-muted-foreground">0</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Pagination */}
+                    {scanAttendeesTotal > 20 && (
+                      <div className="flex justify-center">
+                        <Pagination
+                          currentPage={scanAttendeesPage}
+                          totalPages={Math.ceil(scanAttendeesTotal / 20)}
+                          onPageChange={setScanAttendeesPage}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Settings Tab */}
+                {scanTab === 'settings' && (
+                  <div className="space-y-4">
+                    <Card className="border-border/40 bg-card">
+                      <CardHeader>
+                        <CardTitle className="text-base">Check-In Configuration</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {/* Re-entry toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">Allow Re-entry</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Allow attendees to check in again after checking out
+                            </p>
+                          </div>
+                          <Button
+                            variant={scanConfig?.allowReEntry ? "default" : "outline"}
+                            size="sm"
+                            disabled={updatingConfig}
+                            onClick={() => handleUpdateScanConfig({ allowReEntry: !scanConfig?.allowReEntry })}
+                          >
+                            {scanConfig?.allowReEntry ? 'Enabled' : 'Disabled'}
+                          </Button>
+                        </div>
+
+                        {/* Require checkout toggle */}
+                        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">Require Check-out</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Attendees must check out before they can re-enter
+                            </p>
+                          </div>
+                          <Button
+                            variant={scanConfig?.requireCheckOut ? "default" : "outline"}
+                            size="sm"
+                            disabled={updatingConfig}
+                            onClick={() => handleUpdateScanConfig({ requireCheckOut: !scanConfig?.requireCheckOut })}
+                          >
+                            {scanConfig?.requireCheckOut ? 'Required' : 'Optional'}
+                          </Button>
+                        </div>
+
+                        {/* Max re-entries */}
+                        {scanConfig?.allowReEntry && (
+                          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">Maximum Re-entries</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Limit the number of times an attendee can re-enter (leave empty for unlimited)
+                              </p>
+                            </div>
+                            <div className="w-24">
+                              <Input
+                                type="number"
+                                min={0}
+                                placeholder="∞"
+                                value={scanConfig.maxReEntries ?? ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  handleUpdateScanConfig({
+                                    maxReEntries: val === '' ? null : parseInt(val, 10),
+                                  });
+                                }}
+                                disabled={updatingConfig}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Alert>
+                      <Shield className="h-4 w-4" />
+                      <AlertDescription>
+                        Scan settings control how ticket scanning behaves at your event. Changes take effect immediately for all scanning devices.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         );
 
@@ -2138,7 +2900,7 @@ const EventManagement = () => {
             {/* Event Title and Quick Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <BackButton to="/organizer/dashboard" />
+                <BackButton to={backPath} />
                 <h1 className="text-xl font-bold text-foreground truncate">
                   {eventData?.title || 'Event Management'}
                 </h1>
@@ -2677,6 +3439,31 @@ const EventManagement = () => {
                     {eventData.tags.map((tag) => (
                       <Badge key={tag} variant="outline">{tag}</Badge>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Organizer Info */}
+              {eventData.organizer && (
+                <div className="border-t pt-4">
+                  <h3 className="text-sm font-semibold text-foreground mb-3">
+                    Event Organizer
+                  </h3>
+                  <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                    <p className="font-medium text-sm">
+                      {eventData.organizer.firstName || ''} {eventData.organizer.lastName || ''}
+                    </p>
+                    {eventData.organizer.organizationName && (
+                      <p className="text-xs text-muted-foreground">
+                        {eventData.organizer.organizationName}
+                      </p>
+                    )}
+                    {eventData.organizerDescription && (
+                      <RichTextContent
+                        content={eventData.organizerDescription}
+                        className="text-xs text-muted-foreground leading-relaxed"
+                      />
+                    )}
                   </div>
                 </div>
               )}

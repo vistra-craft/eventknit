@@ -420,6 +420,50 @@ router.post(
 );
 router.get('/payouts/summary', OrganizerDashboardController.getPayoutSummary);
 
+// Resale & Transfer Analytics (event-level)
+router.get(
+  '/events/:eventId/resale/stats',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventResaleStats,
+);
+router.get(
+  '/events/:eventId/resale/listings',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventResaleListings,
+);
+router.get(
+  '/events/:eventId/transfers/stats',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventTransferStats,
+);
+router.get(
+  '/events/:eventId/transfers/history',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventTransferHistory,
+);
+
+// Scan & Check-In Analytics (event-level)
+router.get(
+  '/events/:eventId/scans/overview',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventScanOverview,
+);
+router.get(
+  '/events/:eventId/scans/history',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventScanHistory,
+);
+router.get(
+  '/events/:eventId/scans/attendees',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventScanAttendees,
+);
+router.put(
+  '/events/:eventId/scans/config',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.updateEventScanConfig,
+);
+
 // Event Collaboration
 router.post(
   '/events/:eventId/collaborators',

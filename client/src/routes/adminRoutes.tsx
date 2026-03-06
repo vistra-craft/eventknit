@@ -109,6 +109,7 @@ const EditExpensePage = lazy(() => import('../pages/admin/finance').then(m => ({
 const EditIncomePage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EditIncomePage })));
 const EditWagePage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EditWagePage })));
 const PlatformFeeConfigPage = lazy(() => import('../pages/admin/finance/PlatformFeeConfigPage'));
+const ResaleTransferReportingPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.ResaleTransferReportingPage })));
 
 // KYC Review
 const KYCReviewDashboard = lazy(() => import('../pages/admin/kyc/KYCReviewDashboard'));
@@ -124,6 +125,7 @@ const ServicePointPrint = lazy(() => import('../pages/admin/service-point/Servic
 const ServicePointTemplates = lazy(() => import('../pages/admin/service-point/ServicePointTemplates'));
 const FacilityZones = lazy(() => import('../pages/admin/service-point/FacilityZones'));
 const ServicePointHistory = lazy(() => import('../pages/admin/service-point/ServicePointHistory'));
+const EventManagement = lazy(() => import('../pages/organizer/EventManagement'));
 
 /**
  * Common role combinations
@@ -549,6 +551,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     allowedRoles: SUPERADMIN_ONLY,
   },
   {
+    path: 'finance/resale-transfers',
+    element: createElement(ResaleTransferReportingPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
     path: 'finance/transactions/edit/:id',
     element: createElement(EditTransactionPage),
     allowedRoles: ADMIN_STAFF_ROLES,
@@ -621,6 +628,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     path: 'service-point/history',
     element: createElement(ServicePointHistory),
     allowedRoles: TELLER_ROLES,
+  },
+  {
+    path: 'service-point/event/:eventId/manage',
+    element: createElement(EventManagement, { isAdminMode: true }),
+    allowedRoles: ADMIN_STAFF_ROLES,
   },
 
   // KYC Review

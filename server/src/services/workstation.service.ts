@@ -1350,5 +1350,198 @@ export class WorkstationService {
       };
     }
   }
+
+  // ─── Organizer Scan Analytics (with ownership verification) ───
+
+  private static async verifyEventOwnership(eventId: string, organizerId: string, isAdmin = false): Promise<void> {
+    const event = await prisma.event.findFirst({
+      where: { id: eventId, ...(isAdmin ? {} : { organizerId }) },
+      select: { id: true },
+    });
+    if (!event) {
+      throw new Error('Event not found or access denied');
+    }
+  }
+
+  static async getOrganizerEventScanOverview(eventId: string, organizerId: string, isAdmin = false) {
+    await this.verifyEventOwnership(eventId, organizerId, isAdmin);
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: {
+        allowReEntry: true,
+        requireCheckOut: true,
+        maxReEntries: true,
+        scanSettings: true,
+      },
+    });
+
+    const [totalAttendees, checkedInCount, currentlyInsideCount, reEntrySum] = await Promise.all([
+      prisma.eventRegistration.count({ where: { eventId } }),
+      prisma.eventRegistration.count({ where: { eventId, checkedInAt: { not: null } } }),
+      prisma.eventRegistration.count({ where: { eventId, isCurrentlyInside: true } }),
+      prisma.eventRegistration.aggregate({ where: { eventId }, _sum: { reEntryCount: true } }),
+    ]);
+
+    const checkedOutCount = checkedInCount - currentlyInsideCount;
+    const scansToday = await prisma.ticketScan.count({
+      where: {
+        eventId,
+        scannedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      },
+    });
+
+    return {
+      config: {
+        allowReEntry: event?.allowReEntry ?? false,
+        requireCheckOut: event?.requireCheckOut ?? false,
+        maxReEntries: event?.maxReEntries ?? null,
+        scanSettings: event?.scanSettings ?? null,
+      },
+      statistics: {
+        totalAttendees,
+        checkedIn: checkedInCount,
+        currentlyInside: currentlyInsideCount,
+        checkedOut: checkedOutCount,
+        reEntries: reEntrySum._sum.reEntryCount ?? 0,
+        scansToday,
+      },
+    };
+  }
+
+  static async getOrganizerEventScans(
+    eventId: string,
+    organizerId: string,
+    filters: { scanType?: string; page?: number; limit?: number },
+    isAdmin = false,
+  ) {
+    await this.verifyEventOwnership(eventId, organizerId, isAdmin);
+
+    const pageNum = filters.page ?? 1;
+    const limitNum = filters.limit ?? 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: Record<string, unknown> = { eventId };
+    if (filters.scanType) {
+      where.scanType = filters.scanType;
+    }
+
+    const [scans, total] = await Promise.all([
+      prisma.ticketScan.findMany({
+        where,
+        skip,
+        take: limitNum,
+        include: {
+          registration: {
+            include: {
+              attendee: { select: { id: true, firstName: true, lastName: true, email: true } },
+            },
+          },
+        },
+        orderBy: { scannedAt: 'desc' },
+      }),
+      prisma.ticketScan.count({ where }),
+    ]);
+
+    const scannerIds = [...new Set(scans.map((s) => s.scannedBy))];
+    const scanners = await prisma.user.findMany({
+      where: { id: { in: scannerIds } },
+      select: { id: true, firstName: true, lastName: true },
+    });
+    const scannerMap = new Map(scanners.map((s) => [s.id, s]));
+
+    return {
+      scans: scans.map((scan) => {
+        const scanner = scannerMap.get(scan.scannedBy);
+        return {
+          id: scan.id,
+          registrationId: scan.registrationId,
+          eventId: scan.eventId,
+          scanType: scan.scanType,
+          scannedAt: scan.scannedAt,
+          scannedBy: scanner ? `${scanner.firstName || ''} ${scanner.lastName || ''}`.trim() : scan.scannedBy,
+          facility: scan.facility,
+          session: scan.sessionId,
+          attendeeName: `${scan.registration.attendee.firstName || ''} ${scan.registration.attendee.lastName || ''}`.trim(),
+          ticketType: scan.registration.ticketType,
+          isReEntry: scan.isReEntry,
+          isValid: scan.isValid,
+          scanLocation: scan.location,
+        };
+      }),
+      total,
+      pagination: { page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) },
+    };
+  }
+
+  static async getOrganizerEventAttendees(
+    eventId: string,
+    organizerId: string,
+    filters: { page?: number; limit?: number },
+    isAdmin = false,
+  ) {
+    await this.verifyEventOwnership(eventId, organizerId, isAdmin);
+
+    const pageNum = filters.page ?? 1;
+    const limitNum = filters.limit ?? 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    const [attendees, total] = await Promise.all([
+      prisma.eventRegistration.findMany({
+        where: { eventId },
+        skip,
+        take: limitNum,
+        include: {
+          attendee: { select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true } },
+        },
+        orderBy: { checkedInAt: 'desc' },
+      }),
+      prisma.eventRegistration.count({ where: { eventId } }),
+    ]);
+
+    return {
+      attendees: attendees.map((reg) => ({
+        registrationId: reg.id,
+        visitorId: reg.attendee.id,
+        attendeeName: `${reg.attendee.firstName || ''} ${reg.attendee.lastName || ''}`.trim(),
+        firstName: reg.attendee.firstName,
+        lastName: reg.attendee.lastName,
+        email: reg.attendee.email,
+        phoneNumber: reg.attendee.phoneNumber,
+        ticketType: reg.ticketType,
+        ticketStatus: reg.ticketStatus,
+        isCurrentlyInside: reg.isCurrentlyInside,
+        checkedInAt: reg.checkedInAt,
+        checkedOutAt: reg.checkedOutAt,
+        reEntryCount: reg.reEntryCount,
+        lastScanFacility: reg.lastScanFacility,
+        registeredAt: reg.createdAt,
+      })),
+      total,
+      pagination: { page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) },
+    };
+  }
+
+  static async updateOrganizerEventScanConfig(
+    eventId: string,
+    organizerId: string,
+    updates: { allowReEntry?: boolean; requireCheckOut?: boolean; maxReEntries?: number | null },
+    isAdmin = false,
+  ) {
+    await this.verifyEventOwnership(eventId, organizerId, isAdmin);
+
+    const event = await prisma.event.update({
+      where: { id: eventId },
+      data: updates,
+      select: { allowReEntry: true, requireCheckOut: true, maxReEntries: true, scanSettings: true },
+    });
+
+    return {
+      allowReEntry: event.allowReEntry,
+      requireCheckOut: event.requireCheckOut,
+      maxReEntries: event.maxReEntries,
+      scanSettings: event.scanSettings,
+    };
+  }
 }
 

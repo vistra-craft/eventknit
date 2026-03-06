@@ -1139,6 +1139,42 @@ router.get(
   AdminPlatformAnalyticsController.getDashboardAnalytics,
 );
 
+// Resale & Transfer Analytics
+router.get(
+  '/platform-analytics/resale/stats',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+  })),
+  AdminPlatformAnalyticsController.getResaleStats,
+);
+router.get(
+  '/platform-analytics/transfers/stats',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+  })),
+  AdminPlatformAnalyticsController.getTransferStats,
+);
+router.get(
+  '/platform-analytics/resale/activity',
+  validateQuery(Joi.object({
+    status: Joi.string().valid('LISTED', 'RESERVED', 'SOLD', 'CANCELLED', 'EXPIRED').optional(),
+    eventId: Joi.string().uuid().optional(),
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+  })),
+  AdminPlatformAnalyticsController.getResaleActivity,
+);
+router.get(
+  '/platform-analytics/resale/pending-payouts',
+  validateQuery(Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+  })),
+  AdminPlatformAnalyticsController.getResalePendingPayouts,
+);
+
 // ─── KYC Review & Approval ──────────────────────────────────────────────
 
 /**

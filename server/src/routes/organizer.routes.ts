@@ -9,6 +9,7 @@ import { EventService } from '../services/event.service.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { canManageStaff } from '../utils/privileges.js';
 import { AuthorizationError, NotFoundError } from '../utils/errors.js';
+import { UserRole } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
 import {
@@ -127,7 +128,8 @@ router.get('/events/:eventId', async (req: AuthenticatedRequest & { params: { ev
       return;
     }
     const { eventId } = req.params;
-    const event = await EventService.getEventById(eventId, req.user.id, false);
+    const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN_STAFF;
+    const event = await EventService.getEventById(eventId, req.user.id, isAdmin);
     res.json({ success: true, data: { event } });
   } catch (error) {
     next(error);
@@ -304,7 +306,9 @@ const verifyEventOwner = async (req: EventIdRequest, res: Response, next: NextFu
       throw new NotFoundError('Event not found');
     }
 
-    if (event.organizerId !== req.user.id) {
+    // Allow admins to manage any event (for service point operations)
+    const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN_STAFF;
+    if (!isAdmin && event.organizerId !== req.user.id) {
       throw new AuthorizationError('You do not have permission to manage this event');
     }
 

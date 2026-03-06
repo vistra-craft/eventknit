@@ -1318,3 +1318,120 @@ export const removeSubscriptionOverride = async (
   return apiDelete(`/admin/organizers/${organizerId}/subscription/override/${overrideId}`);
 };
 
+// ===========================================================================
+// ==================== Resale & Transfer Analytics ==========================
+// ===========================================================================
+
+export interface AdminResaleStats {
+  totalListings: number;
+  activeListings: number;
+  soldListings: number;
+  cancelledListings: number;
+  expiredListings: number;
+  totalResaleValue: number;
+  totalPlatformFees: number;
+  totalSellerPayouts: number;
+  pendingPayouts: { count: number; amount: number };
+  topEvents: Array<{
+    id: string;
+    title: string;
+    resaleCount: number;
+    totalValue: number;
+    totalFees: number;
+  }>;
+}
+
+export interface AdminTransferStats {
+  totalTransfers: number;
+  pendingTransfers: number;
+  acceptedTransfers: number;
+  rejectedTransfers: number;
+  cancelledTransfers: number;
+  expiredTransfers: number;
+}
+
+export interface AdminResaleActivity {
+  id: string;
+  status: string;
+  originalPrice: number;
+  resalePrice: number;
+  currency: string;
+  platformFee: number | null;
+  sellerPayout: number | null;
+  paymentStatus: string | null;
+  listedAt: string;
+  soldAt: string | null;
+  expiresAt: string | null;
+  seller: { id: string; firstName: string; lastName: string; email: string };
+  buyer: { id: string; firstName: string; lastName: string; email: string } | null;
+  event: { id: string; title: string };
+  ticketType: string;
+}
+
+export interface ResalePayoutItem {
+  id: string;
+  seller: { id: string; firstName: string; lastName: string; email: string };
+  event: { id: string; title: string };
+  ticketType: string;
+  resalePrice: number;
+  platformFee: number;
+  sellerPayout: number;
+  currency: string;
+  soldAt: string | null;
+  paymentReference: string | null;
+}
+
+export const getAdminResaleStats = async (
+  filters?: { startDate?: string; endDate?: string },
+): Promise<{ success: boolean; data: AdminResaleStats }> => {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.set('startDate', filters.startDate);
+  if (filters?.endDate) params.set('endDate', filters.endDate);
+  const query = params.toString();
+  return apiGet(`/admin/platform-analytics/resale/stats${query ? `?${query}` : ''}`);
+};
+
+export const getAdminTransferStats = async (
+  filters?: { startDate?: string; endDate?: string },
+): Promise<{ success: boolean; data: AdminTransferStats }> => {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.set('startDate', filters.startDate);
+  if (filters?.endDate) params.set('endDate', filters.endDate);
+  const query = params.toString();
+  return apiGet(`/admin/platform-analytics/transfers/stats${query ? `?${query}` : ''}`);
+};
+
+export const getAdminResaleActivity = async (
+  filters?: { status?: string; eventId?: string; page?: number; limit?: number },
+): Promise<{
+  success: boolean;
+  data: { listings: AdminResaleActivity[]; total: number; page: number; totalPages: number };
+}> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.eventId) params.set('eventId', filters.eventId);
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/admin/platform-analytics/resale/activity${query ? `?${query}` : ''}`);
+};
+
+export const getAdminResalePendingPayouts = async (
+  filters?: { page?: number; limit?: number },
+): Promise<{
+  success: boolean;
+  data: {
+    payouts: ResalePayoutItem[];
+    total: number;
+    page: number;
+    totalPages: number;
+    summary: { totalPending: number; totalPayoutAmount: number; totalPlatformFees: number };
+  };
+}> => {
+  const params = new URLSearchParams();
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/admin/platform-analytics/resale/pending-payouts${query ? `?${query}` : ''}`);
+};
+

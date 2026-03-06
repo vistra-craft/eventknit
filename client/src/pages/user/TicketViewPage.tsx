@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Download, Calendar, MapPin, Globe, Ticket as TicketIcon, CheckCircle2, RotateCcw, AlertTriangle, Clock, ShieldCheck } from "lucide-react";
+import { Download, Calendar, MapPin, Globe, Ticket as TicketIcon, CheckCircle2, RotateCcw, AlertTriangle, Clock, ShieldCheck, LogIn, LogOut, DoorOpen } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -105,6 +105,9 @@ const TicketViewPage: React.FC = () => {
             ticketType?: string | null;
             backupCode?: string | null;
             createdAt?: string | null;
+            checkedInAt?: string | null;
+            checkedOutAt?: string | null;
+            isCurrentlyInside?: boolean;
           };
 
           type TicketResponseWithRegistration = {
@@ -112,6 +115,9 @@ const TicketViewPage: React.FC = () => {
             ticketLineItems?: Array<{ ticketType: string; quantity: number; unitPrice: number; totalPrice: number }>;
             currency?: string;
             qrCode?: string | null;
+            checkedInAt?: string | null;
+            checkedOutAt?: string | null;
+            isCurrentlyInside?: boolean;
           };
 
           const ticketData: TicketData = (() => {
@@ -139,6 +145,9 @@ const TicketViewPage: React.FC = () => {
                 qrCode: resp.qrCode || undefined,
                 backupCode: reg.backupCode || undefined,
                 createdAt: reg.createdAt || new Date().toISOString(),
+                checkedInAt: resp.checkedInAt,
+                checkedOutAt: resp.checkedOutAt,
+                isCurrentlyInside: resp.isCurrentlyInside,
               };
             }
             return data as TicketData;
@@ -362,6 +371,37 @@ const TicketViewPage: React.FC = () => {
               <p className="text-sm text-muted-foreground">{ticket.attendeeName}</p>
               <p className="text-sm text-muted-foreground">{ticket.attendeeEmail}</p>
             </div>
+
+            {/* Check-in Status */}
+            {ticket.checkedInAt && (
+              <div className="space-y-2 pb-4 border-b">
+                <p className="text-sm font-medium">Check-in Status</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {ticket.isCurrentlyInside ? (
+                    <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                      <DoorOpen className="w-3 h-3 mr-1" />
+                      Currently Inside
+                    </Badge>
+                  ) : ticket.checkedOutAt ? (
+                    <Badge variant="secondary">
+                      <LogOut className="w-3 h-3 mr-1" />
+                      Checked Out
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-primary/10 text-primary border-primary/20">
+                      <LogIn className="w-3 h-3 mr-1" />
+                      Checked In
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Checked in {new Date(ticket.checkedInAt).toLocaleString("en-US", {
+                    month: "short", day: "numeric", year: "numeric",
+                    hour: "numeric", minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            )}
 
             {/* Ticket Details */}
             {ticket.ticketLineItems && ticket.ticketLineItems.length > 0 ? (

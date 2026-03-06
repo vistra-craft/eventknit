@@ -35,6 +35,9 @@ export interface TicketData {
   backupCode?: string;
   seat?: TicketSeatInfo;
   createdAt: string;
+  checkedInAt?: string | null;
+  checkedOutAt?: string | null;
+  isCurrentlyInside?: boolean;
 }
 
 /**

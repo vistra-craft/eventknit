@@ -1706,6 +1706,13 @@ export default function CreateEventStepwise() {
       }
     }
 
+    // If the user just entered an organizer bio in the become-organizer dialog,
+    // carry it over to the event data so it's included in the submission.
+    if (wasAttendee && orgDescInput.trim() && !eventData.organizerDescription) {
+      setEventData(prev => ({ ...prev, organizerDescription: orgDescInput.trim() }));
+      eventData.organizerDescription = orgDescInput.trim();
+    }
+
     // Eventbrite-style: No verification required to CREATE events
     // Verification is only required to RECEIVE payouts (handled in disbursement service)
 
