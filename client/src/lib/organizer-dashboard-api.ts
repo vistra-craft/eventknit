@@ -534,7 +534,7 @@ export interface PricingRule {
 // Ticket package types
 // ---------------------------------------------------------------------------
 
-export type TicketPackageType = "group" | "bundle" | "donation";
+export type TicketPackageType = "group" | "bundle" | "donation" | "complementary" | "vip" | "early_bird";
 
 export interface BundleItem {
   ticketTypeId: Id;
@@ -1587,6 +1587,47 @@ export const deleteTicketPackage = async (
   packageId: Id,
 ): Promise<ApiResponse<{ success: boolean }>> => {
   return apiDelete(`/organizer-dashboard/ticket-packages/${packageId}`);
+};
+
+// ---------------------------------------------------------------------------
+// Complementary ticket issuances
+// ---------------------------------------------------------------------------
+
+export interface TicketIssuance {
+  id: Id;
+  packageId: Id;
+  email: string;
+  quantity: number;
+  claimToken: string;
+  status: 'PENDING' | 'CLAIMED' | 'EXPIRED' | 'CANCELLED';
+  claimedAt?: string;
+  expiresAt?: string;
+  note?: string;
+  createdAt: string;
+}
+
+export const issueComplementaryTickets = async (
+  packageId: Id,
+  data: {
+    emails: string[];
+    quantity?: number;
+    note?: string;
+    expiresAt?: string;
+  },
+): Promise<ApiResponse<{ issuances: TicketIssuance[] }>> => {
+  return apiPost(`/organizer-dashboard/ticket-packages/${packageId}/issue`, data);
+};
+
+export const getPackageIssuances = async (
+  packageId: Id,
+): Promise<ApiResponse<{ issuances: TicketIssuance[] }>> => {
+  return apiGet(`/organizer-dashboard/ticket-packages/${packageId}/issuances`);
+};
+
+export const cancelIssuance = async (
+  issuanceId: Id,
+): Promise<ApiResponse<{ issuance: TicketIssuance }>> => {
+  return apiPatch(`/organizer-dashboard/ticket-issuances/${issuanceId}/cancel`, {});
 };
 
 // ===========================================================================

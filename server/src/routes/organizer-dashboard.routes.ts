@@ -528,6 +528,29 @@ router.delete(
   OrganizerDashboardController.deleteTicketPackage,
 );
 
+// Complementary ticket issuances
+router.post(
+  '/ticket-packages/:packageId/issue',
+  validateParams(Joi.object({ packageId: Joi.string().uuid().required() })),
+  validate(Joi.object({
+    emails: Joi.array().items(Joi.string().email()).min(1).max(50).required(),
+    quantity: Joi.number().integer().min(1).max(20).default(1),
+    note: Joi.string().max(500).optional(),
+    expiresAt: Joi.string().isoDate().optional(),
+  })),
+  OrganizerDashboardController.issueComplementaryTickets,
+);
+router.get(
+  '/ticket-packages/:packageId/issuances',
+  validateParams(Joi.object({ packageId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getPackageIssuances,
+);
+router.patch(
+  '/ticket-issuances/:issuanceId/cancel',
+  validateParams(Joi.object({ issuanceId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.cancelIssuance,
+);
+
 // Phase 3: Dynamic Pricing
 router.post(
   '/pricing-rules',

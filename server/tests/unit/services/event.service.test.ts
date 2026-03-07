@@ -1266,3 +1266,230 @@ describe('EventService - updateEvent capacity recalculation', () => {
     );
   });
 });
+
+describe('EventService - updateEvent sold-count floor validation', () => {
+  let prisma: DeepMockProxy<PrismaClient>;
+
+  const existingEvent = {
+    id: 'event-123',
+    organizerId: 'organizer-123',
+    status: EventStatus.PENDING,
+    startDate: new Date('2027-06-01'),
+    endDate: null,
+    venue: 'Test Venue',
+    location: 'Lagos',
+    isFree: false,
+  };
+
+  const paidTicket = (overrides = {}) => ({
+    name: 'General Admission',
+    price: 5000,
+    quantity: 100,
+    features: [],
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    prisma = databaseModule.prisma as unknown as DeepMockProxy<PrismaClient>;
+    mockReset(prisma);
+    jest.clearAllMocks();
+
+    prisma.event.findFirst.mockResolvedValue(existingEvent as any);
+    prisma.eventCollaborator.findFirst.mockResolvedValue(null);
+    prisma.event.update.mockResolvedValue({ ...existingEvent } as any);
+  });
+
+  it('should throw ValidationError when new quantity is below sold count via ticketLineItems', async () => {
+    // Arrange: 5 tickets sold via line items
+    prisma.eventRegistration.findMany.mockResolvedValue([
+      { ticketType: null, ticketLineItems: [{ ticketType: 'General Admission', quantity: 3 }] } as any,
+      { ticketType: null, ticketLineItems: [{ ticketType: 'General Admission', quantity: 2 }] } as any,
+    ]);
+
+    // Act & Assert: trying to set quantity to 4 when 5 were sold
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ quantity: 4 })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).rejects.toThrow(ValidationError);
+
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ quantity: 4 })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).rejects.toThrow('Cannot set quantity of "General Admission" below 5');
+  });
+
+  it('should throw ValidationError when new quantity is below sold count via legacy ticketType field', async () => {
+    // Arrange: 2 tickets sold via legacy field
+    prisma.eventRegistration.findMany.mockResolvedValue([
+      { ticketType: 'VIP', ticketLineItems: null } as any,
+      { ticketType: 'VIP', ticketLineItems: null } as any,
+    ]);
+
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ name: 'VIP', price: 10000, quantity: 1 })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).rejects.toThrow('Cannot set quantity of "VIP" below 2');
+  });
+
+  it('should allow quantity equal to sold count', async () => {
+    // Arrange: 5 tickets sold
+    prisma.eventRegistration.findMany.mockResolvedValue([
+      { ticketType: null, ticketLineItems: [{ ticketType: 'General Admission', quantity: 5 }] } as any,
+    ]);
+
+    // Act: setting quantity exactly to 5 — should succeed
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ quantity: 5 })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).resolves.toBeDefined();
+  });
+
+  it('should allow quantity above sold count', async () => {
+    // Arrange: 5 tickets sold
+    prisma.eventRegistration.findMany.mockResolvedValue([
+      { ticketType: null, ticketLineItems: [{ ticketType: 'General Admission', quantity: 5 }] } as any,
+    ]);
+
+    // Act: increasing quantity to 200 — should succeed
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ quantity: 200 })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).resolves.toBeDefined();
+  });
+
+  it('should allow null (unlimited) quantity even when tickets are sold', async () => {
+    // Arrange: 50 tickets sold
+    prisma.eventRegistration.findMany.mockResolvedValue([
+      { ticketType: null, ticketLineItems: [{ ticketType: 'General Admission', quantity: 50 }] } as any,
+    ]);
+
+    // Act: removing quantity cap — should succeed
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ quantity: null })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).resolves.toBeDefined();
+  });
+
+  it('should not enforce floor when no tickets of that type have been sold', async () => {
+    // Arrange: sales only for a different ticket type
+    prisma.eventRegistration.findMany.mockResolvedValue([
+      { ticketType: null, ticketLineItems: [{ ticketType: 'VIP', quantity: 10 }] } as any,
+    ]);
+
+    // Act: reducing General Admission (zero sales) to 1 — should succeed
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ name: 'General Admission', quantity: 1 })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).resolves.toBeDefined();
+  });
+
+  it('should aggregate quantities across multiple line-item registrations', async () => {
+    // Arrange: 3 registrations, each with 2 tickets = 6 total
+    prisma.eventRegistration.findMany.mockResolvedValue([
+      { ticketType: null, ticketLineItems: [{ ticketType: 'Early Bird', quantity: 2 }] } as any,
+      { ticketType: null, ticketLineItems: [{ ticketType: 'Early Bird', quantity: 2 }] } as any,
+      { ticketType: null, ticketLineItems: [{ ticketType: 'Early Bird', quantity: 2 }] } as any,
+    ]);
+
+    // quantity of 5 should fail (6 sold)
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ name: 'Early Bird', quantity: 5 })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).rejects.toThrow('Cannot set quantity of "Early Bird" below 6');
+
+    // quantity of 6 should succeed
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ name: 'Early Bird', quantity: 6 })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).resolves.toBeDefined();
+  });
+
+  it('should default missing quantity in line items to 1', async () => {
+    // Arrange: line item with no quantity field → counts as 1
+    prisma.eventRegistration.findMany.mockResolvedValue([
+      { ticketType: null, ticketLineItems: [{ ticketType: 'General Admission' }] } as any,
+    ]);
+
+    // 1 sold — quantity of 0 should fail
+    await expect(
+      EventService.updateEvent(
+        'event-123',
+        { ticketTypes: [paidTicket({ quantity: 0 })] } as any,
+        'organizer-123',
+        UserRole.ORGANIZER,
+      )
+    ).rejects.toThrow('Cannot set quantity of "General Admission" below 1');
+  });
+
+  it('should not query registrations when ticketTypes is not in the update payload', async () => {
+    // Act: updating only title — no ticketTypes in payload
+    await EventService.updateEvent(
+      'event-123',
+      { title: 'New Title' } as any,
+      'organizer-123',
+      UserRole.ORGANIZER,
+    );
+
+    // Assert: sold-count query should not run
+    expect(prisma.eventRegistration.findMany).not.toHaveBeenCalled();
+  });
+
+  it('should query registrations filtering out CANCELLED and FAILED', async () => {
+    // Arrange: no sold tickets
+    prisma.eventRegistration.findMany.mockResolvedValue([]);
+
+    await EventService.updateEvent(
+      'event-123',
+      { ticketTypes: [paidTicket()] } as any,
+      'organizer-123',
+      UserRole.ORGANIZER,
+    );
+
+    // Assert: query excludes cancelled/failed registrations
+    expect(prisma.eventRegistration.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          eventId: 'event-123',
+          status: { not: 'CANCELLED' },
+          paymentStatus: { not: 'FAILED' },
+        }),
+      })
+    );
+  });
+});

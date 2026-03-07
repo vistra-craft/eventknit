@@ -1113,6 +1113,128 @@ export class WorkstationController {
   }
 
   /**
+   * Record a badge print job
+   * POST /api/v1/workstation/events/:eventId/badge-prints
+   * Requires: TELLER or higher
+   */
+  static async createBadgePrint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required' } });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      if (!eventId) throw new ValidationError('Event ID is required');
+
+      const { registrationId, templateId } = req.body as { registrationId: unknown; templateId: unknown };
+
+      if (!registrationId || typeof registrationId !== 'string') {
+        throw new ValidationError('registrationId is required and must be a string');
+      }
+      if (!templateId || typeof templateId !== 'string') {
+        throw new ValidationError('templateId is required and must be a string');
+      }
+
+      // Verify registration belongs to this event
+      const registration = await prisma.eventRegistration.findFirst({
+        where: { id: registrationId, eventId },
+        select: { id: true },
+      });
+      if (!registration) {
+        throw new NotFoundError('Registration not found for this event');
+      }
+
+      const printerInfo = {
+        userId: req.user.id,
+        userAgent: req.headers['user-agent'] ?? null,
+      };
+
+      // Upsert: update existing job or create new one
+      const existing = await prisma.badgePrintJob.findFirst({
+        where: { eventId, registrationId },
+        select: { id: true },
+      });
+
+      let printJob;
+      if (existing) {
+        printJob = await prisma.badgePrintJob.update({
+          where: { id: existing.id },
+          data: {
+            templateId,
+            status: 'completed',
+            printedAt: new Date(),
+            printedBy: req.user.id,
+            printerInfo,
+          },
+          select: { id: true, registrationId: true, templateId: true, status: true, printedAt: true },
+        });
+      } else {
+        printJob = await prisma.badgePrintJob.create({
+          data: {
+            eventId,
+            registrationId,
+            templateId,
+            status: 'completed',
+            printedAt: new Date(),
+            printedBy: req.user.id,
+            printerInfo,
+          },
+          select: { id: true, registrationId: true, templateId: true, status: true, printedAt: true },
+        });
+      }
+
+      res.status(200).json({ success: true, data: { printJob } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get badge print status for an event (which registrations have been printed)
+   * GET /api/v1/workstation/events/:eventId/badge-prints
+   * Requires: TELLER or higher
+   */
+  static async getEventBadgePrints(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required' } });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      if (!eventId) throw new ValidationError('Event ID is required');
+
+      const printJobs = await prisma.badgePrintJob.findMany({
+        where: { eventId, status: 'completed' },
+        select: { registrationId: true, printedAt: true, printedBy: true, templateId: true },
+        orderBy: { printedAt: 'desc' },
+      });
+
+      // Deduplicate — one registration may have been reprinted multiple times
+      const seen = new Set<string>();
+      const printedRegistrationIds: string[] = [];
+      for (const job of printJobs) {
+        if (!seen.has(job.registrationId)) {
+          seen.add(job.registrationId);
+          printedRegistrationIds.push(job.registrationId);
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          printedRegistrationIds,
+          printJobs,
+          count: printedRegistrationIds.length,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update event scan configuration
    * PUT /api/v1/workstation/events/:eventId/config
    * Requires: ADMIN_STAFF or higher

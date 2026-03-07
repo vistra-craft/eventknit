@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Bell } from "lucide-react";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
+import { io, Socket } from "socket.io-client";
 import { getUnreadCount } from "../lib/notification-api";
 import { useAuth } from "../hooks/useAuth";
 import { useRoleView } from "../contexts/RoleViewContext";
@@ -12,7 +13,7 @@ interface NotificationBellProps {
   size?: "sm" | "md" | "lg";
 }
 
-const NotificationBell: React.FC<NotificationBellProps> = ({ 
+const NotificationBell: React.FC<NotificationBellProps> = ({
   className = "",
   size = "md"
 }) => {
@@ -21,31 +22,64 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
   const { activeViewRole } = useRoleView();
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const socketRef = useRef<Socket | null>(null);
 
-  // Load unread count
+  // Load unread count from API
   const loadUnreadCount = async () => {
     try {
       const response = await getUnreadCount();
       if (response.success && response.data) {
         setUnreadCount(response.data.count);
       }
-    } catch (error) {
-      console.error("Failed to load unread count:", error);
-      // Don't show error toast for background updates
+    } catch {
+      // Silent — background update
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUnreadCount();
-    
-    // Poll for updates every 30 seconds
-    const interval = setInterval(() => {
-      loadUnreadCount();
-    }, 30000);
+    // Initial load
+    void loadUnreadCount();
 
-    return () => clearInterval(interval);
+    // Connect to WebSocket for real-time updates
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      const socketURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const socket = io(socketURL, {
+        auth: { token },
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+      });
+
+      socketRef.current = socket;
+
+      socket.on("connect", () => {
+        // Join the personal notifications room
+        socket.emit("join:notifications");
+      });
+
+      // Instantly increment count when a new notification arrives
+      socket.on("notification:new", () => {
+        setUnreadCount((prev) => prev + 1);
+      });
+
+      // Server can also push the authoritative unread count
+      socket.on("unread:count", (data: { count: number }) => {
+        setUnreadCount(data.count);
+      });
+    }
+
+    // Fallback poll every 60s (reduced since WebSocket handles real-time)
+    const interval = setInterval(() => void loadUnreadCount(), 60_000);
+
+    return () => {
+      clearInterval(interval);
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
   }, []);
 
   const handleClick = () => {

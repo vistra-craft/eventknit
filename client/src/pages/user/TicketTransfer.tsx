@@ -30,7 +30,7 @@ const TicketTransfer: React.FC = () => {
   const { toast } = useToast();
 
   // Pre-select from location.state (e.g., from MyTickets page)
-  const preselectedRegistrationId = (location.state as any)?.registrationId;
+  const preselectedRegistrationId = (location.state as { registrationId?: string } | null)?.registrationId;
 
   useEffect(() => {
     fetchData();

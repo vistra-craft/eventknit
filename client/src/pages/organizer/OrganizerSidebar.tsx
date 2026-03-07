@@ -36,9 +36,9 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     analytics: location.pathname.startsWith('/organizer/analytics'),
-    marketing: location.pathname.startsWith('/organizer/marketing'),
+    marketing: location.pathname.startsWith('/organizer/marketing') || location.pathname === '/organizer/tickets',
     finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts') || location.pathname.startsWith('/organizer/subscription'),
-    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/verification'),
+    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/verification') || location.pathname.startsWith('/organizer/kyc'),
   });
 
   const navigationItems = [
@@ -69,7 +69,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       icon: Megaphone,
       group: "main",
       children: [
-        { name: "Promo Codes", href: "/organizer/marketing/promo-codes" },
+        { name: "Promo Codes", href: "/organizer/tickets" },
         { name: "Affiliate Program", href: "/organizer/marketing/affiliate" },
       ]
     },
@@ -93,6 +93,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       children: [
         { name: "Overview", href: "/organizer/financial" },
         { name: "Payouts", href: "/organizer/payouts" },
+        { name: "Refunds", href: "/organizer/analytics/revenue" },
         { name: "Subscription", href: "/organizer/subscription" },
       ]
     },
@@ -113,7 +114,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Notifications", href: "/organizer/settings/notifications" },
         { name: "Security", href: "/organizer/settings/security" },
         { name: "Appearance", href: "/organizer/settings/appearance" },
-        { name: "Verification", href: "/organizer/verification" },
+        { name: "Verification", href: "/organizer/kyc" },
       ]
     },
   ];
@@ -131,9 +132,9 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       setExpandedItems(prev => ({
         ...prev,
         analytics: location.pathname.startsWith('/organizer/analytics'),
-        marketing: location.pathname.startsWith('/organizer/marketing'),
-        finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts') || location.pathname.startsWith('/organizer/subscription'),
-        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/verification'),
+        marketing: location.pathname.startsWith('/organizer/marketing') || location.pathname === '/organizer/tickets',
+        finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts') || location.pathname.startsWith('/organizer/subscription') || location.pathname === '/organizer/analytics/revenue',
+        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/verification') || location.pathname.startsWith('/organizer/kyc'),
       }));
     }
   }, [location.pathname, isOrganizerStaff]);
@@ -153,7 +154,8 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
   };
 
   const isChildActive = (href: string) => {
-    // For child items, use exact matching to prevent parent highlighting
+    // Tickets hub uses startsWith since it has sub-paths (/organizer/tickets/:eventId)
+    if (href === '/organizer/tickets') return location.pathname.startsWith('/organizer/tickets');
     return location.pathname === href;
   };
 

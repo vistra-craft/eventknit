@@ -304,11 +304,11 @@ const PrinterManagement: React.FC = () => {
           <BackButton />
           <div className="mt-4 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-                <PrinterIcon className="h-8 w-8 text-blue-600" />
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                <PrinterIcon className="h-7 w-7 text-primary" />
                 Printer Management
               </h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Manage printers and print jobs for badge printing
               </p>
             </div>
@@ -360,13 +360,13 @@ const PrinterManagement: React.FC = () => {
                         {discoveredPrinters.map((printer, index) => (
                           <div
                             key={index}
-                            className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                            className="p-3 border border-border/40 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                             onClick={() => selectDiscoveredPrinter(printer)}
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="font-medium">{printer.name}</p>
-                                <p className="text-xs text-gray-500">{printer.deviceId}</p>
+                                <p className="font-medium text-foreground">{printer.name}</p>
+                                <p className="text-xs text-muted-foreground font-mono">{printer.deviceId}</p>
                               </div>
                               <Badge variant={printer.isAvailable ? "default" : "secondary"}>
                                 {printer.isAvailable ? "Available" : "Unavailable"}
@@ -475,8 +475,8 @@ const PrinterManagement: React.FC = () => {
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
-              <p className="mt-4 text-sm text-gray-600">Loading printers...</p>
+              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+              <p className="mt-4 text-sm text-muted-foreground">Loading printers...</p>
             </div>
           </div>
         ) : (
@@ -491,12 +491,12 @@ const PrinterManagement: React.FC = () => {
                 <CardContent className="space-y-2">
                   {printers.length === 0 ? (
                     <div className="text-center py-8">
-                      <PrinterIcon className="mx-auto h-12 w-12 text-gray-400" />
-                      <p className="mt-2 text-sm text-gray-500">No printers configured</p>
+                      <PrinterIcon className="mx-auto h-10 w-10 text-muted-foreground/50" />
+                      <p className="mt-2 text-sm text-muted-foreground">No printers configured</p>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="mt-4"
+                        className="mt-3"
                         onClick={() => setSetupDialogOpen(true)}
                       >
                         Add First Printer
@@ -508,21 +508,21 @@ const PrinterManagement: React.FC = () => {
                         key={printer.id}
                         className={`p-4 border rounded-lg cursor-pointer transition-all ${
                           selectedPrinter?.id === printer.id
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                            ? "border-primary bg-primary/5"
+                            : "border-border/40 hover:border-border hover:bg-muted/50"
                         }`}
                         onClick={() => setSelectedPrinter(printer)}
                       >
                         <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-gray-900">{printer.name}</h3>
-                              <div className={`w-2 h-2 rounded-full ${getPrinterStatusColor(printer.isOnline)}`} />
+                              <h3 className="font-semibold text-foreground truncate">{printer.name}</h3>
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${getPrinterStatusColor(printer.isOnline)}`} />
                             </div>
-                            <p className="text-xs text-gray-500 mt-1">{getDriverDisplayName(printer.driver)}</p>
-                            <p className="text-xs text-gray-400">{printer.deviceId}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{getDriverDisplayName(printer.driver)}</p>
+                            <p className="text-xs text-muted-foreground/70 font-mono">{printer.deviceId}</p>
                             {printer._count && (
-                              <div className="mt-2 text-xs text-gray-600">
+                              <div className="mt-1.5 text-xs text-muted-foreground">
                                 {printer._count.printJobs} total jobs
                               </div>
                             )}
@@ -569,8 +569,8 @@ const PrinterManagement: React.FC = () => {
                       <CardContent>
                         {printJobs.length === 0 ? (
                           <div className="text-center py-8">
-                            <Clock className="mx-auto h-12 w-12 text-gray-400" />
-                            <p className="mt-2 text-sm text-gray-500">No print jobs in queue</p>
+                            <Clock className="mx-auto h-10 w-10 text-muted-foreground/50" />
+                            <p className="mt-2 text-sm text-muted-foreground">No print jobs in queue</p>
                           </div>
                         ) : (
                           <Table>
@@ -631,11 +631,11 @@ const PrinterManagement: React.FC = () => {
                       <CardContent className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label className="text-gray-600">Driver</Label>
-                            <p className="font-medium">{getDriverDisplayName(selectedPrinter.driver)}</p>
+                            <Label className="text-muted-foreground">Driver</Label>
+                            <p className="font-medium text-foreground">{getDriverDisplayName(selectedPrinter.driver)}</p>
                           </div>
                           <div>
-                            <Label className="text-gray-600">Status</Label>
+                            <Label className="text-muted-foreground">Status</Label>
                             <div className="flex items-center gap-2">
                               {selectedPrinter.isOnline ? (
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -648,12 +648,12 @@ const PrinterManagement: React.FC = () => {
                             </div>
                           </div>
                           <div>
-                            <Label className="text-gray-600">Device ID</Label>
-                            <p className="font-medium">{selectedPrinter.deviceId}</p>
+                            <Label className="text-muted-foreground">Device ID</Label>
+                            <p className="font-medium text-foreground font-mono text-sm">{selectedPrinter.deviceId}</p>
                           </div>
                           {selectedPrinter.lastChecked && (
                             <div>
-                              <Label className="text-gray-600">Last Checked</Label>
+                              <Label className="text-muted-foreground">Last Checked</Label>
                               <p className="font-medium">
                                 {new Date(selectedPrinter.lastChecked).toLocaleString()}
                               </p>
@@ -710,9 +710,9 @@ const PrinterManagement: React.FC = () => {
                 <Card>
                   <CardContent className="py-16">
                     <div className="text-center">
-                      <PrinterIcon className="mx-auto h-16 w-16 text-gray-400" />
-                      <h3 className="mt-4 text-lg font-medium text-gray-900">No Printer Selected</h3>
-                      <p className="mt-2 text-sm text-gray-500">
+                      <PrinterIcon className="mx-auto h-14 w-14 text-muted-foreground/40" />
+                      <h3 className="mt-4 text-base font-medium text-foreground">No Printer Selected</h3>
+                      <p className="mt-2 text-sm text-muted-foreground">
                         Select a printer from the list to view details and manage print jobs
                       </p>
                     </div>

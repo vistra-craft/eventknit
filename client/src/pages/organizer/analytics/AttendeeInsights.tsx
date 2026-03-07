@@ -48,67 +48,10 @@ const AttendeeInsights = () => {
   ] : [];
 
 
-  // Demographics data - Note: Percentages are placeholders
-  // Real demographic data would require backend API support for attendee demographics
-  // Counts are calculated from total attendees for display purposes
-  const demographicsData = stats?.totalAttendees ? {
-    ageGroups: [
-      { range: "18-25", percentage: 35, count: Math.round(stats.totalAttendees * 0.35) },
-      { range: "26-35", percentage: 40, count: Math.round(stats.totalAttendees * 0.4) },
-      { range: "36-45", percentage: 20, count: Math.round(stats.totalAttendees * 0.2) },
-      { range: "45+", percentage: 5, count: Math.round(stats.totalAttendees * 0.05) },
-    ],
-    locations: [
-      { city: "Nairobi", percentage: 45, count: Math.round(stats.totalAttendees * 0.45) },
-      { city: "Mombasa", percentage: 25, count: Math.round(stats.totalAttendees * 0.25) },
-      { city: "Kisumu", percentage: 15, count: Math.round(stats.totalAttendees * 0.15) },
-      { city: "Other", percentage: 15, count: Math.round(stats.totalAttendees * 0.15) },
-    ],
-    industries: [
-      { industry: "Technology", percentage: 40, count: Math.round(stats.totalAttendees * 0.4) },
-      { industry: "Business", percentage: 30, count: Math.round(stats.totalAttendees * 0.3) },
-      { industry: "Education", percentage: 20, count: Math.round(stats.totalAttendees * 0.2) },
-      { industry: "Other", percentage: 10, count: Math.round(stats.totalAttendees * 0.1) },
-    ],
-    experience: [
-      { level: "Beginner", percentage: 30, count: Math.round(stats.totalAttendees * 0.3) },
-      { level: "Intermediate", percentage: 45, count: Math.round(stats.totalAttendees * 0.45) },
-      { level: "Advanced", percentage: 25, count: Math.round(stats.totalAttendees * 0.25) },
-    ],
-  } : {
-    ageGroups: [],
-    locations: [],
-    industries: [],
-    experience: [],
-  };
-
   const behaviorInsights = [
     { id: 1, type: "insight", title: "Peak Registration", insight: "Peak Registration", description: "Most registrations occur in the week before events", impact: "positive" },
     { id: 2, type: "trend", title: "Engagement", insight: "Engagement", description: `Average ${stats?.totalAttendees ? Math.round(stats.totalAttendees / (stats.totalEvents || 1)) : 0} attendees per event`, impact: "positive" },
   ];
-
-  // Attendee segments - Note: Percentages, satisfaction, and retention are placeholders
-  // Real segment data would require backend API support for attendee segmentation
-  const attendeeSegments = stats?.totalAttendees ? [
-    { 
-      segment: "First-time",
-      name: "First-time",
-      percentage: 60, 
-      count: Math.round(stats.totalAttendees * 0.6),
-      satisfaction: 4.5,
-      retention: 65,
-      characteristics: ["New to platform", "High engagement", "Tech-savvy"],
-    },
-    { 
-      segment: "Returning",
-      name: "Returning",
-      percentage: 40, 
-      count: Math.round(stats.totalAttendees * 0.4),
-      satisfaction: 4.7,
-      retention: 80,
-      characteristics: ["Loyal customers", "High retention", "Brand advocates"],
-    },
-  ] : [];
 
   // Chart data for attendee analysis - placeholders (would need backend API support)
   // Engagement trends would need backend support for monthly engagement metrics
@@ -123,12 +66,8 @@ const AttendeeInsights = () => {
   // Satisfaction by segment would need backend API support for segment analytics
   const satisfactionBySegmentData: Array<{ segment: string; satisfaction: number; retention: number }> = [];
 
-  // Use imported data
   const statsData = attendeeStats;
-
-  // Use imported behavior insights and segments
   const insightsData = behaviorInsights;
-  const segmentsData = attendeeSegments;
 
   const getInsightTypeColor = (type: string) => {
     switch (type) {
@@ -238,73 +177,16 @@ const AttendeeInsights = () => {
           </TabsList>
 
           <TabsContent value="demographics" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Age Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Age Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomPieChart
-                    data={demographicsData.ageGroups}
-                    dataKey="percentage"
-                    nameKey="range"
-                    height={300}
-                    formatter={(value) => `${value}%`}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Geographic Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Geographic Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomBarChart
-                    data={demographicsData.locations}
-                    dataKey="percentage"
-                    xAxisKey="city"
-                    height={300}
-                    color={CHART_COLORS.success}
-                    formatter={(value) => `${value}%`}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Industry Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Industry Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomBarChart
-                    data={demographicsData.industries}
-                    dataKey="percentage"
-                    xAxisKey="industry"
-                    height={300}
-                    color={CHART_COLORS.primary}
-                    formatter={(value) => `${value}%`}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Experience Level */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Experience Level</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomPieChart
-                    data={demographicsData.experience}
-                    dataKey="percentage"
-                    nameKey="level"
-                    height={300}
-                    formatter={(value) => `${value}%`}
-                  />
-                </CardContent>
-              </Card>
-            </div>
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <Users className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                <h3 className="text-base font-semibold text-foreground mb-2">Demographic data not yet available</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Age, location, and industry breakdowns require attendees to complete demographic fields during registration.
+                  This data will appear here once collected.
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="behavior" className="space-y-6">
@@ -382,89 +264,16 @@ const AttendeeInsights = () => {
           </TabsContent>
 
           <TabsContent value="segments" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Satisfaction by Segment */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Satisfaction by Segment</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {satisfactionBySegmentData.length > 0 ? (
-                    <CustomComposedChart
-                      data={satisfactionBySegmentData}
-                      xAxisKey="segment"
-                      bars={[
-                        { dataKey: "retention", name: "Retention Rate", color: CHART_COLORS.success },
-                      ]}
-                      lines={[
-                        { dataKey: "satisfaction", name: "Satisfaction Score", color: CHART_COLORS.warning },
-                      ]}
-                      height={300}
-                      formatter={(value, name) => {
-                        if (name === "Retention Rate") return `${value}%`;
-                        if (name === "Satisfaction Score") return (value as number).toFixed(1);
-                        return (value as number).toString();
-                      }}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                      <p>Satisfaction by segment data requires backend API support</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Segment Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Segment Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomPieChart
-                    data={segmentsData as unknown as Array<Record<string, unknown>>}
-                    dataKey="percentage"
-                    nameKey="name"
-                    height={300}
-                    formatter={(value) => `${value}%`}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {segmentsData.map((segment, index) => (
-                <Card key={index}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{segment.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">
-                      {segment.count} attendees ({segment.percentage}% of total)
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Satisfaction</p>
-                        <p className="text-lg font-bold text-foreground">{segment.satisfaction} ⭐</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Retention Rate</p>
-                        <p className="text-lg font-bold text-foreground">{segment.retention}%</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-2">Key Characteristics:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {segment.characteristics.map((char, charIndex) => (
-                          <Badge key={charIndex} variant="secondary" className="text-xs">
-                            {char}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                <Users className="h-12 w-12 text-muted-foreground/40 mb-4" />
+                <h3 className="text-base font-semibold text-foreground mb-2">Attendee segments not yet available</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Segment data — including first-time vs. returning attendees, satisfaction scores, and retention rates —
+                  requires backend support for attendee tracking across events.
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="engagement" className="space-y-6">

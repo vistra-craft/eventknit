@@ -127,6 +127,10 @@ export interface Refund {
     paymentDate: string | null;
     attendeeName: string | null;
   };
+  event?: {
+    id: string;
+    title: string;
+  };
 }
 
 export interface Reconciliation {

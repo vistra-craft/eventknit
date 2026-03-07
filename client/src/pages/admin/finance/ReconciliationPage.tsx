@@ -326,7 +326,7 @@ const ReconciliationPage = () => {
                           <Badge className={statusBadge.className}>
                             <span className="flex items-center gap-1">
                               {statusBadge.icon}
-                              {r.status.replace("_", " ")}
+                              {r.status.replace(/_/g, " ")}
                             </span>
                           </Badge>
                         </TableCell>

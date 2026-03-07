@@ -2,7 +2,7 @@
  * Admin API Functions
  */
 
-import { apiGet, apiPost, apiPut, apiDelete } from './api';
+import { apiGet, apiPost, apiPut, apiDelete, apiPatch } from './api';
 import type { EventResponse } from './event-api';
 
 /**
@@ -1239,6 +1239,7 @@ export interface SubscriptionPlan {
   currency: string;
   features: string[];
   isActive: boolean;
+  subscriberCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -1283,7 +1284,7 @@ export const getSubscriptionPlans = async (): Promise<{
 
 export const updateSubscriptionPlan = async (
   tier: SubscriptionTier,
-  data: { price?: number; description?: string; features?: string[] },
+  data: { price?: number; description?: string; features?: string[]; isActive?: boolean },
 ): Promise<{
   success: boolean;
   data: { plan: SubscriptionPlan };
@@ -1433,5 +1434,52 @@ export const getAdminResalePendingPayouts = async (
   if (filters?.limit) params.set('limit', String(filters.limit));
   const query = params.toString();
   return apiGet(`/admin/platform-analytics/resale/pending-payouts${query ? `?${query}` : ''}`);
+};
+
+// ===========================================================================
+// ==================== Ticket Issuances =====================================
+// ===========================================================================
+
+export interface AdminTicketIssuance {
+  id: string;
+  email: string;
+  quantity: number;
+  status: 'PENDING' | 'CLAIMED' | 'CANCELLED' | 'EXPIRED';
+  claimToken: string;
+  note: string | null;
+  expiresAt: string | null;
+  claimedAt: string | null;
+  createdAt: string;
+  package: {
+    id: string;
+    name: string;
+    type: string;
+    event: { id: string; title: string };
+  };
+}
+
+export const getAdminTicketIssuances = async (filters?: {
+  status?: string;
+  eventId?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  success: boolean;
+  data: { issuances: AdminTicketIssuance[]; total: number; page: number; limit: number };
+}> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.eventId) params.set('eventId', filters.eventId);
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/admin/ticket-issuances${query ? `?${query}` : ''}`);
+};
+
+export const cancelAdminTicketIssuance = async (issuanceId: string): Promise<{
+  success: boolean;
+  message: string;
+}> => {
+  return apiPatch(`/admin/ticket-issuances/${issuanceId}/cancel`, {});
 };
 

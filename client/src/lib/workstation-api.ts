@@ -651,3 +651,59 @@ export const updateEventConfig = async (
 ): Promise<UpdateEventConfigResponse> => {
   return apiPut<UpdateEventConfigResponse>(`/workstation/events/${eventId}/config`, config);
 };
+
+// ─── Badge Print Tracking ─────────────────────────────────────────────────────
+
+export interface BadgePrintRecord {
+  registrationId: string;
+  printedAt: string;
+  printedBy: string | null;
+  templateId: string;
+}
+
+export interface BadgePrintsResponse {
+  success: boolean;
+  data: {
+    printedRegistrationIds: string[];
+    printJobs: BadgePrintRecord[];
+    count: number;
+  };
+}
+
+export interface CreateBadgePrintResponse {
+  success: boolean;
+  data: {
+    printJob: {
+      id: string;
+      registrationId: string;
+      templateId: string;
+      status: string;
+      printedAt: string;
+    };
+  };
+}
+
+/**
+ * Record a badge print job (server-side tracking across workstations)
+ * POST /api/v1/workstation/events/:eventId/badge-prints
+ * Requires: TELLER or higher
+ */
+export const recordBadgePrint = async (
+  eventId: string,
+  registrationId: string,
+  templateId: string,
+): Promise<CreateBadgePrintResponse> => {
+  return apiPost<CreateBadgePrintResponse>(`/workstation/events/${eventId}/badge-prints`, {
+    registrationId,
+    templateId,
+  });
+};
+
+/**
+ * Get which registrations have had badges printed for an event
+ * GET /api/v1/workstation/events/:eventId/badge-prints
+ * Requires: TELLER or higher
+ */
+export const getEventBadgePrints = async (eventId: string): Promise<BadgePrintsResponse> => {
+  return apiGet<BadgePrintsResponse>(`/workstation/events/${eventId}/badge-prints`);
+};

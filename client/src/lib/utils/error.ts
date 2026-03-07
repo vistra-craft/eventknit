@@ -4,6 +4,8 @@
  * Standardized error extraction and handling for EventKnit.
  */
 
+type ToastFn = (opts: { title: string; description?: string; variant?: 'default' | 'destructive' }) => void;
+
 /**
  * Extracts a human-readable error message from an unknown error.
  *
@@ -79,6 +81,34 @@ export const isApiError = (
     (response as { success: unknown }).success === false &&
     'message' in response
   );
+};
+
+/**
+ * Shows a destructive toast with a context-specific title.
+ *
+ * Replaces the broken pattern: `toast({ title: "Error", description: err instanceof Error ? err.message : 'fallback' })`
+ *
+ * @param toast   - The toast function from useToast()
+ * @param error   - The caught error (any type)
+ * @param title   - Context-specific title, e.g. "Save failed", "Upload failed"
+ * @param fallback - Fallback message if error message cannot be extracted
+ *
+ * @example
+ * } catch (err) {
+ *   showErrorToast(toast, err, 'Save failed');
+ * }
+ */
+export const showErrorToast = (
+  toast: ToastFn,
+  error: unknown,
+  title: string,
+  fallback = 'An error occurred'
+): void => {
+  toast({
+    title,
+    description: extractErrorMessage(error, fallback),
+    variant: 'destructive',
+  });
 };
 
 /**

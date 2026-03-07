@@ -2406,6 +2406,9 @@ enum NotificationType {
   PROMOTION_OFFER
   EARLY_BIRD_REMINDER
 
+  // Messaging
+  NEW_MESSAGE
+
   // Account-related
   ACCOUNT_VERIFIED
   PASSWORD_CHANGED
@@ -4298,12 +4301,41 @@ model TicketPackage {
   soldQuantity   Int       @default(0)
 
   isActive  Boolean  @default(true)
+  issuances TicketIssuance[] @relation("PackageIssuances")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([organizerId])
   @@index([eventId])
   @@index([type])
+}
+
+// Complementary ticket issuances — tracks free tickets sent to specific recipients
+model TicketIssuance {
+  id        String @id @default(uuid())
+  packageId String
+  package   TicketPackage @relation("PackageIssuances", fields: [packageId], references: [id], onDelete: Cascade)
+
+  email     String  // Recipient email
+  quantity  Int     @default(1)
+  claimToken String @unique @default(uuid())
+
+  status    String   @default("PENDING") // PENDING | CLAIMED | EXPIRED | CANCELLED
+  claimedAt DateTime?
+  expiresAt DateTime?
+
+  // Optionally linked to a user/registration once claimed
+  claimedByUserId String?
+
+  note      String? @db.Text // Internal note (e.g., "Speaker - keynote day 1")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([packageId])
+  @@index([claimToken])
+  @@index([email])
 }
 
 // Dynamic Pricing Rules

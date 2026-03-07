@@ -127,10 +127,8 @@ const ServicePointEvents: React.FC = () => {
         return "bg-primary/10 text-primary border-primary";
       case "ongoing":
         return "bg-success/10 text-success border-success";
-      case "completed":
-        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
       default:
-        return "bg-muted text-gray-800 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -337,7 +335,7 @@ const ServicePointEvents: React.FC = () => {
                   </div>
                   {event.category && (
                     <div className="absolute top-3 right-3">
-                      <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                      <Badge variant="secondary" className="bg-card/90 text-foreground">
                         {getCategoryLabel(event.category)}
                       </Badge>
                     </div>

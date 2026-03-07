@@ -286,10 +286,8 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
   return (
     <ResponsiveContainer width="100%" height={height}>
       <PieChart>
-        {/* Casting to unknown here because Recharts expects its internal ChartDataInput[] type */}
         <Pie
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          data={data as any[]}
+          data={data as object[]}
           cx="50%"
           cy="50%"
           labelLine={false}

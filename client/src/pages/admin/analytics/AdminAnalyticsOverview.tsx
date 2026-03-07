@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,8 +69,17 @@ interface RecentEvent {
   category: string;
 }
 
+const TAB_ROUTES: Record<string, string> = {
+  overview: '/admin/analytics',
+  events: '/admin/analytics/events',
+  organizers: '/admin/analytics/users',
+  revenue: '/admin/analytics/revenue',
+  system: '/admin/analytics/system',
+};
+
 const AdminAnalyticsOverview = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("30d");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +100,10 @@ const AdminAnalyticsOverview = () => {
   };
 
   const currentTab = getCurrentTab();
+
+  const handleTabChange = (tab: string) => {
+    navigate(TAB_ROUTES[tab] ?? '/admin/analytics');
+  };
 
   // Transform API stats to UI format
   const transformStats = useCallback(
@@ -390,7 +403,7 @@ const AdminAnalyticsOverview = () => {
 
           {/* Main Content Tabs */}
           {!isLoading && !error && (
-          <Tabs value={currentTab} className="space-y-6">
+          <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="events">Events</TabsTrigger>

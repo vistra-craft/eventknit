@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ import {
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/useToast";
+import { getEventById } from "@/lib/event-api";
 import DraggableBadgeElement from "@/components/service-point/DraggableBadgeElement";
 import {
   getBadgeTemplates,
@@ -94,6 +96,11 @@ const COLOR_PALETTE = [
 
 const ServicePointTemplates: React.FC = () => {
   const { toast } = useToast();
+  const { eventId } = useParams<{ eventId?: string }>();
+
+  // Organizer context — resolved from the event when accessed via event-scoped URL
+  const organizerIdRef = useRef<string | undefined>(undefined);
+  const [eventTitle, setEventTitle] = useState<string | undefined>(undefined);
 
   // Templates state
   const [templates, setTemplates] = useState<BadgeTemplate[]>([]);
@@ -114,7 +121,9 @@ const ServicePointTemplates: React.FC = () => {
   const loadTemplates = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await getBadgeTemplates();
+      const response = await getBadgeTemplates(
+        organizerIdRef.current ? { organizerId: organizerIdRef.current } : undefined
+      );
       if (response.success && response.data.templates) {
         setTemplates(response.data.templates);
 
@@ -144,10 +153,22 @@ const ServicePointTemplates: React.FC = () => {
     }
   }, [toast]);
 
-  // Load templates on mount
+  // If accessed via event-scoped URL, fetch event to resolve organizerId first, then load templates
   useEffect(() => {
-    loadTemplates();
-  }, [loadTemplates]);
+    if (!eventId) {
+      loadTemplates();
+      return;
+    }
+    getEventById(eventId)
+      .then((res) => {
+        if (res.success && res.data?.event) {
+          organizerIdRef.current = res.data.event.organizerId;
+          setEventTitle(res.data.event.title);
+        }
+      })
+      .catch(() => { /* proceed without scope */ })
+      .finally(() => loadTemplates());
+  }, [eventId, loadTemplates]);
 
   // Save selected template to localStorage when it changes
   useEffect(() => {
@@ -313,6 +334,8 @@ const ServicePointTemplates: React.FC = () => {
         backgroundColor: "#ffffff",
         elements: [],
         isCustom: true,
+        organizerId: organizerIdRef.current,
+        eventId: eventId,
       };
 
       const response = await createBadgeTemplate(newTemplate);
@@ -507,10 +530,17 @@ const ServicePointTemplates: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <BackButton to="/admin/service-point" label="Back" />
+            <BackButton
+              to={eventId ? `/admin/service-point/dashboard/${eventId}` : "/admin/service-point"}
+              label={eventId ? "Back to Event" : "Back"}
+            />
             <div>
               <h1 className="text-xl font-semibold text-foreground">Badge Template Editor</h1>
-              <p className="text-sm text-muted-foreground">Design and customize badge templates for your events</p>
+              <p className="text-sm text-muted-foreground">
+                {eventTitle
+                  ? `Templates scoped to: ${eventTitle}`
+                  : "Design and customize badge templates for your events"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">

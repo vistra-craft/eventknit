@@ -57,7 +57,7 @@ const UnifiedOrganizerDashboard = () => {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // React Query hooks
-  const { data: stats, isLoading: statsLoading } = useOrganizerDashboardStats();
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useOrganizerDashboardStats();
   const { data: eventsData, isLoading: eventsLoading } = useOrganizerDashboardEvents(page);
   const { data: subscription, isLoading: subscriptionLoading } = useOrganizerSubscription();
   const { data: accessData } = useOrganizerDashboardAccess();
@@ -171,6 +171,16 @@ const UnifiedOrganizerDashboard = () => {
     return (
       <div className="bg-gradient-to-br from-background via-background to-muted/20">
         <DashboardSkeleton />
+      </div>
+    );
+  }
+
+  if (statsError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <AlertCircle className="h-12 w-12 text-muted-foreground" />
+        <p className="text-muted-foreground">Failed to load dashboard data</p>
+        <Button variant="outline" onClick={() => void refetchStats()}>Try again</Button>
       </div>
     );
   }

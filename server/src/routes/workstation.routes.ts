@@ -173,6 +173,28 @@ router.put(
   WorkstationController.updateEventConfig,
 );
 
+/**
+ * @route   POST /api/v1/workstation/events/:eventId/badge-prints
+ * @desc    Record a badge print job (attendee, template, printed by)
+ * @access  Private (TELLER or higher)
+ */
+router.post(
+  '/events/:eventId/badge-prints',
+  requireMinRole(UserRole.TELLER),
+  WorkstationController.createBadgePrint,
+);
+
+/**
+ * @route   GET /api/v1/workstation/events/:eventId/badge-prints
+ * @desc    Get badge print status for all registrations in an event
+ * @access  Private (TELLER or higher)
+ */
+router.get(
+  '/events/:eventId/badge-prints',
+  requireMinRole(UserRole.TELLER),
+  WorkstationController.getEventBadgePrints,
+);
+
 export default router;
 
 

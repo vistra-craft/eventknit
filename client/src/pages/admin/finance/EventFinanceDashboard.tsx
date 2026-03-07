@@ -109,10 +109,15 @@ const EventFinanceDashboard = () => {
       );
 
       // Extract disbursements from response (may be flat array or paginated object)
-      let disbursementsList: { totalAmount: number }[] = [];
+      type DisbursementItem = { totalAmount: number };
+      let disbursementsList: DisbursementItem[] = [];
       if (disbursementsResponse.success && disbursementsResponse.data) {
-        const dData = disbursementsResponse.data;
-        disbursementsList = Array.isArray(dData) ? dData : (dData as { disbursements: { totalAmount: number }[] }).disbursements || [];
+        const dData: unknown = disbursementsResponse.data;
+        if (Array.isArray(dData)) {
+          disbursementsList = dData as DisbursementItem[];
+        } else if (typeof dData === 'object' && dData !== null && 'disbursements' in dData) {
+          disbursementsList = (dData as { disbursements: DisbursementItem[] }).disbursements ?? [];
+        }
       }
       const pendingDisbursements = disbursementsList.reduce((sum, d) => sum + d.totalAmount, 0);
 
@@ -122,10 +127,15 @@ const EventFinanceDashboard = () => {
       });
 
       // Extract refunds from response (may be flat array or paginated object)
-      let refundsList: { refundAmount: number }[] = [];
+      type RefundItem = { refundAmount: number };
+      let refundsList: RefundItem[] = [];
       if (refundsResponse.success && refundsResponse.data) {
-        const rData = refundsResponse.data;
-        refundsList = Array.isArray(rData) ? rData : (rData as { refunds: { refundAmount: number }[] }).refunds || [];
+        const rData: unknown = refundsResponse.data;
+        if (Array.isArray(rData)) {
+          refundsList = rData as RefundItem[];
+        } else if (typeof rData === 'object' && rData !== null && 'refunds' in rData) {
+          refundsList = (rData as { refunds: RefundItem[] }).refunds ?? [];
+        }
       }
       const totalRefunds = refundsList.reduce((sum, r) => sum + r.refundAmount, 0);
 
@@ -293,7 +303,7 @@ const EventFinanceDashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All months</SelectItem>
-                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((m) => (
+                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m) => (
                       <SelectItem key={m} value={m}>
                         {m}
                       </SelectItem>
@@ -498,7 +508,7 @@ const EventFinanceDashboard = () => {
                 {stats.recentTransactions.map((tx) => (
                   <div
                     key={tx.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                    className="flex items-center justify-between p-3 border border-border/40 rounded-lg hover:bg-muted/50 cursor-pointer"
                     onClick={() => navigate(`/admin/finance/payments/${tx.id}`)}
                   >
                     <div className="flex-1">

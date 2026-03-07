@@ -98,7 +98,6 @@ const RolesPermissions = () => {
         setPermissions(response.data.permissions);
       }
     } catch (error) {
-      console.error("Error fetching permissions:", error);
       toast({
         title: "Error",
         description: "Failed to load permissions",
@@ -117,7 +116,6 @@ const RolesPermissions = () => {
         setCustomRoles(response.data.templates);
       }
     } catch (error) {
-      console.error("Error fetching roles:", error);
       toast({
         title: "Error",
         description: "Failed to load custom roles",
@@ -135,7 +133,6 @@ const RolesPermissions = () => {
         setStaff(response.data.staff);
       }
     } catch (error) {
-      console.error("Error fetching staff:", error);
       toast({
         title: "Error",
         description: "Failed to load staff members",

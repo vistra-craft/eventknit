@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/useToast";
 import {
   getSubscriptionPlans,
@@ -22,6 +23,7 @@ import {
   X,
   Plus,
   Check,
+  Users,
 } from "lucide-react";
 
 const TIER_ORDER: SubscriptionTier[] = ["BASIC", "STANDARD", "PREMIUM"];
@@ -60,6 +62,7 @@ const SubscriptionPlansPage = () => {
     newFeature: "",
   });
   const [saving, setSaving] = useState(false);
+  const [togglingTier, setTogglingTier] = useState<SubscriptionTier | null>(null);
 
   const loadPlans = useCallback(async () => {
     setLoading(true);
@@ -82,6 +85,28 @@ const SubscriptionPlansPage = () => {
   useEffect(() => {
     loadPlans();
   }, [loadPlans]);
+
+  const handleToggleActive = async (plan: SubscriptionPlan) => {
+    setTogglingTier(plan.tier);
+    try {
+      const response = await updateSubscriptionPlan(plan.tier, { isActive: !plan.isActive });
+      if (response.success) {
+        setPlans(prev => prev.map(p => (p.tier === plan.tier ? response.data.plan : p)));
+        toast({
+          title: plan.isActive ? "Plan deactivated" : "Plan activated",
+          description: `${plan.name} is now ${plan.isActive ? "hidden from" : "available to"} organizers.`,
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: extractErrorMessage(err, "Failed to update plan status"),
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingTier(null);
+    }
+  };
 
   const startEditing = (plan: SubscriptionPlan) => {
     setEditingTier(plan.tier);
@@ -203,12 +228,15 @@ const SubscriptionPlansPage = () => {
                     </div>
                     <div>
                       <CardTitle className="text-lg">{plan.name}</CardTitle>
-                      <Badge
-                        variant={plan.isActive ? "default" : "secondary"}
-                        className="mt-1"
-                      >
-                        {plan.isActive ? "Active" : "Inactive"}
-                      </Badge>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={plan.isActive ? "default" : "secondary"}>
+                          {plan.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3" />
+                          {plan.subscriberCount ?? 0} subscriber{(plan.subscriberCount ?? 0) !== 1 ? "s" : ""}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -353,6 +381,24 @@ const SubscriptionPlansPage = () => {
                   >
                     Edit Plan
                   </Button>
+                )}
+
+                {/* Active toggle — always visible, outside edit mode */}
+                {!isEditing && (
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-sm text-muted-foreground">
+                      {plan.isActive ? "Visible to organizers" : "Hidden from organizers"}
+                    </span>
+                    {togglingTier === plan.tier ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Switch
+                        checked={plan.isActive}
+                        onCheckedChange={() => handleToggleActive(plan)}
+                        disabled={togglingTier !== null}
+                      />
+                    )}
+                  </div>
                 )}
 
                 {/* Metadata */}

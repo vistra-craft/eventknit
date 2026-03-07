@@ -23,7 +23,7 @@ import {
   type OrganizerInfo,
   type CreateCustomDomainData,
 } from '@/lib/white-label-api';
-import { getUsers } from '@/lib/admin-api';
+import { getUsers, type User } from '@/lib/admin-api';
 import {
   Search,
   Plus,
@@ -83,12 +83,10 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
             ? 'VERIFIED'
             : undefined;
       const res = await adminGetAllCustomDomains({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        status: statusFilter as any,
+        status: statusFilter,
         search: searchTerm || undefined,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setDomains((res as any)?.data || res || []);
+      setDomains(res.data ?? []);
     } catch {
       toast({ title: 'Error', description: 'Failed to load domains', variant: 'destructive' });
     } finally {
@@ -108,12 +106,10 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
     }
     setIsSearchingOrg(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await getUsers({ role: 'ORGANIZER' as any, search: term, limit: 15 });
-      const users = res?.data?.users || [];
+      const res = await getUsers({ role: 'ORGANIZER', search: term, limit: 15 });
+      const users = res?.data?.users ?? [];
       setOrgResults(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        users.map((u: any) => ({
+        users.map((u: User) => ({
           id: u.id,
           label: u.organizationName || `${u.firstName} ${u.lastName}`,
           email: u.email,

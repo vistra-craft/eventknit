@@ -282,9 +282,23 @@ export class SubscriptionService {
    * Get all subscription plans
    */
   static async getPlans() {
-    return prisma.subscriptionPlan.findMany({
-      orderBy: { tier: 'asc' },
-    });
+    const [plans, subscriberCounts] = await Promise.all([
+      prisma.subscriptionPlan.findMany({ orderBy: { tier: 'asc' } }),
+      prisma.organizerSubscription.groupBy({
+        by: ['tier'],
+        where: { isActive: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    const countByTier = Object.fromEntries(
+      subscriberCounts.map(row => [row.tier, row._count.id]),
+    );
+
+    return plans.map(plan => ({
+      ...plan,
+      subscriberCount: countByTier[plan.tier] ?? 0,
+    }));
   }
 
   /**
@@ -292,7 +306,7 @@ export class SubscriptionService {
    */
   static async updatePlan(
     tier: SubscriptionTier,
-    data: { price?: number; description?: string; features?: string[] },
+    data: { price?: number; description?: string; features?: string[]; isActive?: boolean },
   ) {
     const existing = await prisma.subscriptionPlan.findUnique({
       where: { tier },
@@ -308,6 +322,7 @@ export class SubscriptionService {
         ...(data.price !== undefined && { price: data.price }),
         ...(data.description !== undefined && { description: data.description }),
         ...(data.features !== undefined && { features: data.features }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
     });
   }

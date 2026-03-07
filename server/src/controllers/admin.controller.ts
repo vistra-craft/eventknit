@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AdminService } from '../services/admin.service.js';
 import { SubscriptionService } from '../services/subscription.service.js';
+import { TicketIssuanceService } from '../services/ticket-issuance.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { UserRole, UserStatus, SubscriptionTier } from '@prisma/client';
 import { roleHierarchy, canCreateRole, canModifyUser, canDeleteUser } from '../utils/privileges.js';
@@ -640,8 +641,8 @@ export class AdminController {
         return;
       }
 
-      const { price, description, features } = req.body;
-      const plan = await SubscriptionService.updatePlan(tier as SubscriptionTier, { price, description, features });
+      const { price, description, features, isActive } = req.body;
+      const plan = await SubscriptionService.updatePlan(tier as SubscriptionTier, { price, description, features, isActive });
 
       res.status(200).json({
         success: true,
@@ -719,6 +720,38 @@ export class AdminController {
         message: 'Subscription override removed',
         data: { override },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * List all ticket issuances across the platform (admin view)
+   */
+  static async getTicketIssuances(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { status, eventId, page, limit } = req.query as Record<string, string>;
+      const result = await TicketIssuanceService.listAll({
+        status: status || undefined,
+        eventId: eventId || undefined,
+        page: page ? parseInt(page, 10) : 1,
+        limit: limit ? parseInt(limit, 10) : 50,
+      });
+
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Cancel a ticket issuance (admin, no ownership check)
+   */
+  static async cancelTicketIssuance(req: AuthenticatedRequest<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const issuance = await TicketIssuanceService.adminCancel(id);
+      res.status(200).json({ success: true, message: 'Issuance cancelled', data: { issuance } });
     } catch (error) {
       next(error);
     }

@@ -35,6 +35,8 @@ import {
   UserCheck,
   RefreshCw,
   Shield,
+  Pencil,
+  Archive,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
@@ -56,6 +58,8 @@ import { EventStaffAssignment } from "../../components/EventStaffAssignment";
 
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { Textarea } from "../../components/ui/textarea";
+import { Switch } from "../../components/ui/switch";
 import { ConsentStatisticsCard } from "../../components/organizer/ConsentStatisticsCard";
 import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTierBadge";
 import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
@@ -70,6 +74,47 @@ import { exportAttendees, quickRegisterAttendee } from "../../lib/attendee-impor
 import type { QuickRegisterRequest } from "../../lib/attendee-import-api";
 import { getEventResaleStats, getEventResaleListings, getEventTransferStats, getEventTransferHistory, type ResaleStats, type ResaleListing, type TransferStats, type TransferRecord, getEventScanOverview, getEventScanHistory, getEventScanAttendees, updateEventScanConfig, type OrganizerScanConfig, type OrganizerScanStatistics, type OrganizerScanRecord, type OrganizerScanAttendee } from "../../lib/organizer-dashboard-api";
 import { extractErrorMessage } from "../../lib/utils/error";
+import { updateEvent } from "../../lib/event-api";
+
+// Ticket type with all fields (including ones not in EventData type)
+interface FullTicketType {
+  name: string;
+  price: number;
+  quantity?: number | null;
+  features?: string[];
+  originalPrice?: number | null;
+  discountLabel?: string | null;
+  isComplementary?: boolean;
+  requiresInvitation?: boolean;
+  availableFrom?: string | null;
+  availableUntil?: string | null;
+  earlyBirdQuantity?: number | null;
+  isSoldOut?: boolean;
+  description?: string;
+  maxPerPerson?: number;
+  minPerOrder?: number;
+  salesChannel?: string;
+  isHidden?: boolean;
+}
+
+// Form state for the ticket edit sheet
+interface EditableTicket {
+  name: string;
+  type: 'free' | 'paid';
+  price: string;
+  quantity: string;
+  description: string;
+  isComplementary: boolean;
+  requiresInvitation: boolean;
+  isHidden: boolean;
+  salesChannel: string;
+  maxPerPerson: string;
+  minPerOrder: string;
+  originalPrice: string;
+  discountLabel: string;
+  availableFrom: string;
+  availableUntil: string;
+}
 
 // Top-level interfaces for type safety
 interface Attendee {
@@ -170,6 +215,12 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
   const [scanAttendeesPage, setScanAttendeesPage] = useState(1);
   const [scanTab, setScanTab] = useState<'overview' | 'history' | 'attendees' | 'settings'>('overview');
   const [updatingConfig, setUpdatingConfig] = useState(false);
+
+  // Ticket editing state
+  const [ticketSheetOpen, setTicketSheetOpen] = useState(false);
+  const [editingTicketIndex, setEditingTicketIndex] = useState<number | null>(null);
+  const [ticketForm, setTicketForm] = useState<EditableTicket | null>(null);
+  const [savingTicket, setSavingTicket] = useState(false);
 
   // Fetch event data and attendees
   useEffect(() => {
@@ -458,6 +509,137 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
     }
   };
 
+  // ── Ticket editing helpers ──────────────────────────────────────────────
+
+  const emptyTicketForm = (): EditableTicket => ({
+    name: '', type: 'free', price: '', quantity: '100',
+    description: '', isComplementary: false, requiresInvitation: false,
+    isHidden: false, salesChannel: 'both', maxPerPerson: '', minPerOrder: '',
+    originalPrice: '', discountLabel: '', availableFrom: '', availableUntil: '',
+  });
+
+  const openAddTicket = () => {
+    setEditingTicketIndex(null);
+    setTicketForm(emptyTicketForm());
+    setTicketSheetOpen(true);
+  };
+
+  const openEditTicket = (ticket: FullTicketType, index: number) => {
+    setEditingTicketIndex(index);
+    setTicketForm({
+      name: ticket.name || '',
+      type: (ticket.price === 0 || !ticket.price) && !ticket.isComplementary ? 'free' : 'paid',
+      price: String(ticket.price ?? ''),
+      quantity: String(ticket.quantity ?? ''),
+      description: ticket.description || '',
+      isComplementary: ticket.isComplementary || false,
+      requiresInvitation: ticket.requiresInvitation || false,
+      isHidden: ticket.isHidden || false,
+      salesChannel: ticket.salesChannel || 'both',
+      maxPerPerson: ticket.maxPerPerson ? String(ticket.maxPerPerson) : '',
+      minPerOrder: ticket.minPerOrder ? String(ticket.minPerOrder) : '',
+      originalPrice: ticket.originalPrice ? String(ticket.originalPrice) : '',
+      discountLabel: ticket.discountLabel || '',
+      availableFrom: ticket.availableFrom || '',
+      availableUntil: ticket.availableUntil || '',
+    });
+    setTicketSheetOpen(true);
+  };
+
+  const buildTicketPayload = (form: EditableTicket): Record<string, unknown> => ({
+    name: form.name.trim(),
+    price: form.type === 'paid' && !form.isComplementary ? parseFloat(form.price) || 0 : 0,
+    quantity: form.quantity ? parseInt(form.quantity) : null,
+    description: form.description || undefined,
+    isComplementary: form.isComplementary || undefined,
+    requiresInvitation: form.requiresInvitation || undefined,
+    isHidden: form.isHidden || undefined,
+    salesChannel: form.salesChannel !== 'both' ? form.salesChannel : undefined,
+    maxPerPerson: form.maxPerPerson ? parseInt(form.maxPerPerson) : undefined,
+    minPerOrder: form.minPerOrder ? parseInt(form.minPerOrder) : undefined,
+    originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : undefined,
+    discountLabel: form.discountLabel || undefined,
+    availableFrom: form.availableFrom || undefined,
+    availableUntil: form.availableUntil || undefined,
+  });
+
+  const refreshEventData = (updatedEvent: Record<string, unknown>) => {
+    const normalized = { ...updatedEvent, timezone: (updatedEvent.timezone as string | null) ?? undefined };
+    setEventData(transformEventData(normalized as Parameters<typeof transformEventData>[0]));
+  };
+
+  const handleSaveTicket = async () => {
+    if (!ticketForm || !eventId || !eventData) return;
+    if (!ticketForm.name.trim()) {
+      toast({ title: 'Name required', description: 'Please enter a ticket name.', variant: 'destructive' });
+      return;
+    }
+
+    const currentTickets = (eventData.ticketTypes || []) as FullTicketType[];
+    const originalName = editingTicketIndex !== null ? currentTickets[editingTicketIndex]?.name : null;
+    const soldForType = originalName ? attendees.filter(a => a.ticketType === originalName).length : 0;
+    const newQty = ticketForm.quantity ? parseInt(ticketForm.quantity) : 0;
+    if (newQty > 0 && newQty < soldForType) {
+      toast({ title: 'Quantity too low', description: `${soldForType} tickets already sold — quantity cannot go below ${soldForType}.`, variant: 'destructive' });
+      return;
+    }
+
+    const updatedTicket = buildTicketPayload(ticketForm);
+    const newTicketTypes = editingTicketIndex === null
+      ? [...currentTickets, updatedTicket]
+      : currentTickets.map((t, i) => i === editingTicketIndex ? updatedTicket : t);
+
+    try {
+      setSavingTicket(true);
+      const response = await updateEvent(eventId, { ticketTypes: newTicketTypes } as Parameters<typeof updateEvent>[1]);
+      if (response.success && response.data) {
+        refreshEventData(response.data.event as Record<string, unknown>);
+        setTicketSheetOpen(false);
+        toast({ title: 'Saved', description: editingTicketIndex === null ? 'New ticket type added.' : 'Ticket type updated.' });
+      }
+    } catch (err) {
+      toast({ title: 'Save failed', description: extractErrorMessage(err, 'Failed to update tickets.'), variant: 'destructive' });
+    } finally {
+      setSavingTicket(false);
+    }
+  };
+
+  const handleArchiveTicket = async (index: number) => {
+    if (!eventId || !eventData) return;
+    const currentTickets = (eventData.ticketTypes || []) as FullTicketType[];
+    const newTicketTypes = currentTickets.map((t, i) => i === index ? { ...t, isHidden: true } : t);
+    try {
+      setSavingTicket(true);
+      const response = await updateEvent(eventId, { ticketTypes: newTicketTypes } as Parameters<typeof updateEvent>[1]);
+      if (response.success && response.data) {
+        refreshEventData(response.data.event as Record<string, unknown>);
+        toast({ title: 'Archived', description: 'Ticket is now hidden from new purchases.' });
+      }
+    } catch (err) {
+      toast({ title: 'Failed', description: extractErrorMessage(err, 'Failed to archive ticket.'), variant: 'destructive' });
+    } finally {
+      setSavingTicket(false);
+    }
+  };
+
+  const handleRemoveTicket = async (index: number) => {
+    if (!eventId || !eventData) return;
+    const currentTickets = (eventData.ticketTypes || []) as FullTicketType[];
+    const newTicketTypes = currentTickets.filter((_, i) => i !== index);
+    try {
+      setSavingTicket(true);
+      const response = await updateEvent(eventId, { ticketTypes: newTicketTypes } as Parameters<typeof updateEvent>[1]);
+      if (response.success && response.data) {
+        refreshEventData(response.data.event as Record<string, unknown>);
+        toast({ title: 'Removed', description: 'Ticket type removed.' });
+      }
+    } catch (err) {
+      toast({ title: 'Failed', description: extractErrorMessage(err, 'Failed to remove ticket.'), variant: 'destructive' });
+    } finally {
+      setSavingTicket(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
@@ -564,7 +746,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
   const renderSection = () => {
     switch (activeSection) {
       case "tickets": {
-        const ticketTypes = eventData.ticketTypes || [];
+        const ticketTypes = (eventData.ticketTypes || []) as FullTicketType[];
         const totalSold = attendees.length;
         const totalCapacity = eventData.capacity || 0;
 
@@ -577,9 +759,9 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                   {totalSold} sold · {totalCapacity || '∞'} capacity · {ticketTypes.length} type{ticketTypes.length !== 1 ? 's' : ''}
                 </p>
               </div>
-              <Button size="sm" onClick={() => navigate(`/organizer/events/create?edit=${eventId}`)}>
-                <Settings className="w-4 h-4 mr-2" />
-                Edit Tickets
+              <Button size="sm" onClick={openAddTicket}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Ticket Type
               </Button>
             </div>
 
@@ -590,7 +772,11 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                   <div className="p-8 text-center">
                     <Ticket className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
                     <p className="text-sm font-medium text-muted-foreground">No ticket types configured</p>
-                    <p className="text-xs text-muted-foreground mt-1">Configure tickets in event settings</p>
+                    <p className="text-xs text-muted-foreground mt-1">Add your first ticket type to get started</p>
+                    <Button size="sm" className="mt-4" onClick={openAddTicket}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Ticket Type
+                    </Button>
                   </div>
                 ) : (
                   <div className="divide-y">
@@ -598,13 +784,17 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                       const soldForType = attendees.filter(a => a.ticketType === ticket.name).length;
                       const available = ticket.quantity || 0;
                       const fillPct = available > 0 ? Math.min(100, (soldForType / available) * 100) : 0;
+                      const hasSales = soldForType > 0;
 
                       return (
-                        <div key={`${ticket.name}-${idx}`} className="p-4 hover:bg-muted/30 transition-colors">
+                        <div key={`${ticket.name}-${idx}`} className={`p-4 hover:bg-muted/30 transition-colors ${ticket.isHidden ? 'opacity-60' : ''}`}>
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
                                 <span className="font-semibold truncate">{ticket.name}</span>
+                                {ticket.isHidden && (
+                                  <Badge variant="outline" className="text-xs">Archived</Badge>
+                                )}
                                 {ticket.isComplementary && (
                                   <Badge variant="secondary" className="text-xs">Free</Badge>
                                 )}
@@ -629,22 +819,37 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                                 </span>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className="font-bold">
-                                {ticket.price === 0 || !ticket.price ? 'Free' : `${currency} ${ticket.price}`}
-                              </p>
-                              {ticket.originalPrice && ticket.originalPrice > (ticket.price || 0) && (
-                                <p className="text-xs text-muted-foreground line-through">
-                                  {currency} {ticket.originalPrice}
+                            <div className="flex items-center gap-3 shrink-0">
+                              <div className="text-right">
+                                <p className="font-bold">
+                                  {ticket.price === 0 || !ticket.price ? 'Free' : `${currency} ${ticket.price}`}
                                 </p>
-                              )}
-                              {hasPaymentDetailsAccess && soldForType > 0 && (ticket.price || 0) > 0 && (
-                                <p className="text-xs text-success mt-1">
-                                  {currency} {(soldForType * (ticket.price || 0)).toLocaleString()} revenue
-                                </p>
-                              )}
+                                {ticket.originalPrice && ticket.originalPrice > (ticket.price || 0) && (
+                                  <p className="text-xs text-muted-foreground line-through">
+                                    {currency} {ticket.originalPrice}
+                                  </p>
+                                )}
+                                {hasPaymentDetailsAccess && soldForType > 0 && (ticket.price || 0) > 0 && (
+                                  <p className="text-xs text-success mt-1">
+                                    {currency} {(soldForType * (ticket.price || 0)).toLocaleString()} revenue
+                                  </p>
+                                )}
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                onClick={() => openEditTicket(ticket, idx)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
                             </div>
                           </div>
+                          {hasSales && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {soldForType} ticket{soldForType !== 1 ? 's' : ''} sold — price changes apply to new purchases only
+                            </p>
+                          )}
                         </div>
                       );
                     })}
@@ -3485,6 +3690,258 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Ticket Edit / Add Sheet */}
+      <Sheet open={ticketSheetOpen} onOpenChange={setTicketSheetOpen}>
+        <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{editingTicketIndex === null ? 'Add Ticket Type' : 'Edit Ticket Type'}</SheetTitle>
+            {editingTicketIndex !== null && (() => {
+              const ticket = (eventData?.ticketTypes as FullTicketType[] | null | undefined)?.[editingTicketIndex];
+              const sold = ticket ? attendees.filter(a => a.ticketType === ticket.name).length : 0;
+              return sold > 0 ? (
+                <SheetDescription>
+                  {sold} ticket{sold !== 1 ? 's' : ''} sold — quantity cannot go below {sold}. Price changes apply to new purchases only.
+                </SheetDescription>
+              ) : null;
+            })()}
+          </SheetHeader>
+
+          {ticketForm && (
+            <div className="space-y-4 mt-6">
+              {/* Name */}
+              <div className="space-y-1.5">
+                <Label>Name <span className="text-destructive">*</span></Label>
+                <Input
+                  placeholder="e.g., General Admission"
+                  value={ticketForm.name}
+                  onChange={(e) => setTicketForm(f => f ? { ...f, name: e.target.value } : f)}
+                />
+              </div>
+
+              {/* Type + Price */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Type</Label>
+                  <Select
+                    value={ticketForm.type}
+                    onValueChange={(v: 'free' | 'paid') =>
+                      setTicketForm(f => f ? { ...f, type: v, price: v === 'free' ? '0' : f.price } : f)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="free">Free</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>
+                    Price{ticketForm.type === 'paid' && !ticketForm.isComplementary && (
+                      <span className="text-destructive"> *</span>
+                    )}
+                  </Label>
+                  {ticketForm.type === 'paid' && !ticketForm.isComplementary ? (
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{currency}</span>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={ticketForm.price}
+                        className="pl-8"
+                        onChange={(e) => setTicketForm(f => f ? { ...f, price: e.target.value } : f)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-10 flex items-center px-3 border border-border rounded-md bg-muted/30">
+                      <span className="text-sm text-muted-foreground">{ticketForm.isComplementary ? 'Comp.' : 'Free'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quantity */}
+              {(() => {
+                const origTicket = editingTicketIndex !== null
+                  ? (eventData?.ticketTypes as FullTicketType[] | null | undefined)?.[editingTicketIndex]
+                  : null;
+                const soldForType = origTicket ? attendees.filter(a => a.ticketType === origTicket.name).length : 0;
+                return (
+                  <div className="space-y-1.5">
+                    <Label>
+                      Quantity{soldForType > 0 && (
+                        <span className="text-xs text-muted-foreground ml-1">(min {soldForType})</span>
+                      )}
+                    </Label>
+                    <Input
+                      type="number"
+                      min={soldForType > 0 ? soldForType : 1}
+                      placeholder="Unlimited"
+                      value={ticketForm.quantity}
+                      onChange={(e) => setTicketForm(f => f ? { ...f, quantity: e.target.value } : f)}
+                    />
+                  </div>
+                );
+              })()}
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <Label>Description</Label>
+                <Textarea
+                  placeholder="What's included with this ticket?"
+                  value={ticketForm.description}
+                  className="min-h-[70px] resize-none"
+                  onChange={(e) => setTicketForm(f => f ? { ...f, description: e.target.value } : f)}
+                />
+              </div>
+
+              {/* Complementary toggle */}
+              {ticketForm.type === 'paid' && (
+                <div className="flex items-center justify-between py-2 border-t">
+                  <div>
+                    <p className="text-sm font-medium">Complementary</p>
+                    <p className="text-xs text-muted-foreground">Invitation-only, price waived</p>
+                  </div>
+                  <Switch
+                    checked={ticketForm.isComplementary}
+                    onCheckedChange={(c) =>
+                      setTicketForm(f => f ? { ...f, isComplementary: c, requiresInvitation: c, price: c ? '0' : f.price } : f)
+                    }
+                  />
+                </div>
+              )}
+              {ticketForm.isComplementary && (
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-sm font-medium">Requires Invitation</p>
+                    <p className="text-xs text-muted-foreground">Only accessible via invitation link</p>
+                  </div>
+                  <Switch
+                    checked={ticketForm.requiresInvitation}
+                    onCheckedChange={(c) => setTicketForm(f => f ? { ...f, requiresInvitation: c } : f)}
+                  />
+                </div>
+              )}
+
+              {/* Hidden toggle */}
+              <div className="flex items-center justify-between py-2 border-t">
+                <div>
+                  <p className="text-sm font-medium">Hidden</p>
+                  <p className="text-xs text-muted-foreground">Not shown publicly; access via link only</p>
+                </div>
+                <Switch
+                  checked={ticketForm.isHidden}
+                  onCheckedChange={(c) => setTicketForm(f => f ? { ...f, isHidden: c } : f)}
+                />
+              </div>
+
+              {/* Per-person limits */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Max per person</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="10"
+                    value={ticketForm.maxPerPerson}
+                    onChange={(e) => setTicketForm(f => f ? { ...f, maxPerPerson: e.target.value } : f)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Min per order</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="1"
+                    value={ticketForm.minPerOrder}
+                    onChange={(e) => setTicketForm(f => f ? { ...f, minPerOrder: e.target.value } : f)}
+                  />
+                </div>
+              </div>
+
+              {/* Sales channel */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Sales Channel</Label>
+                <Select
+                  value={ticketForm.salesChannel}
+                  onValueChange={(v) => setTicketForm(f => f ? { ...f, salesChannel: v } : f)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="both">Online & At Door</SelectItem>
+                    <SelectItem value="online">Online Only</SelectItem>
+                    <SelectItem value="door">At Door Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Availability window */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Available From</Label>
+                  <Input
+                    type="datetime-local"
+                    value={ticketForm.availableFrom}
+                    onChange={(e) => setTicketForm(f => f ? { ...f, availableFrom: e.target.value } : f)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Available Until</Label>
+                  <Input
+                    type="datetime-local"
+                    value={ticketForm.availableUntil}
+                    onChange={(e) => setTicketForm(f => f ? { ...f, availableUntil: e.target.value } : f)}
+                  />
+                </div>
+              </div>
+
+              {/* Footer actions */}
+              <div className="flex items-center justify-between pt-4 border-t mt-2">
+                {editingTicketIndex !== null ? (() => {
+                  const origTicket = (eventData?.ticketTypes as FullTicketType[] | null | undefined)?.[editingTicketIndex];
+                  const sold = origTicket ? attendees.filter(a => a.ticketType === origTicket.name).length : 0;
+                  return sold > 0 ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { void handleArchiveTicket(editingTicketIndex); setTicketSheetOpen(false); }}
+                      disabled={savingTicket}
+                    >
+                      <Archive className="h-4 w-4 mr-2" />
+                      Archive
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => { void handleRemoveTicket(editingTicketIndex); setTicketSheetOpen(false); }}
+                      disabled={savingTicket}
+                    >
+                      Remove
+                    </Button>
+                  );
+                })() : <div />}
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setTicketSheetOpen(false)} disabled={savingTicket}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSaveTicket} disabled={savingTicket}>
+                    {savingTicket ? <><ButtonLoader />Saving...</> : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
 
       {/* Cancel Event Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>

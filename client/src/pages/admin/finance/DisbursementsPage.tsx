@@ -45,14 +45,18 @@ const DisbursementsPage = () => {
       });
 
       if (response.success && response.data) {
-        const data = response.data;
+        const data: unknown = response.data;
         if (Array.isArray(data)) {
           // Flat array (filtered by organizerId or eventId)
-          setDisbursements(data);
+          setDisbursements(data as Disbursement[]);
           setPagination({ page: 1, limit: 20, total: data.length, totalPages: 1 });
-        } else {
+        } else if (typeof data === 'object' && data !== null && 'disbursements' in data) {
           // Paginated response: { disbursements: [...], pagination: {...} }
-          const paginated = data as { disbursements: Disbursement[]; pagination: typeof pagination };
+          type PaginatedDisbursementsResponse = {
+            disbursements: Disbursement[];
+            pagination: { page: number; limit: number; total: number; totalPages: number };
+          };
+          const paginated = data as PaginatedDisbursementsResponse;
           setDisbursements(paginated.disbursements);
           setPagination(paginated.pagination);
         }

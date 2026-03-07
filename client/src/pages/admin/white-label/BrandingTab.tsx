@@ -66,12 +66,10 @@ const BrandingTab = ({ onEditBranding, refreshKey }: BrandingTabProps) => {
             ? 'ACTIVE'
             : undefined;
       const res = await getAllBrandings({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        status: status as any,
+        status,
         search: searchTerm || undefined,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setBrandings((res as any)?.data || res || []);
+      setBrandings(res.data ?? []);
     } catch {
       toast({
         title: 'Error',
@@ -133,8 +131,7 @@ const BrandingTab = ({ onEditBranding, refreshKey }: BrandingTabProps) => {
     const loadAll = async () => {
       try {
         const res = await getAllBrandings({});
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setAllBrandings((res as any)?.data || res || []);
+        setAllBrandings(res.data ?? []);
       } catch {
         // Silently fail for stats
       }

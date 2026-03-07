@@ -18,6 +18,7 @@ import {
   Ticket,
   ShieldCheck,
   CreditCard,
+  Server,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -56,7 +57,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     // Auto-expand support section if on support pages
     support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
     // Auto-expand service point section if on service-point pages
-    workstation: location.pathname.startsWith('/admin/service-point')
+    workstation: location.pathname.startsWith('/admin/service-point'),
+    // Auto-expand system section if on system pages
+    system: location.pathname.startsWith('/admin/system')
   });
 
   const navigationItems = [
@@ -153,6 +156,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       children: [
         { name: "Advanced Ticket Types", href: "/admin/tickets/advanced" },
         { name: "Dynamic Pricing", href: "/admin/tickets/pricing" },
+        { name: "Ticket Issuances", href: "/admin/tickets/issuances" },
       ]
     },
     {
@@ -183,6 +187,20 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Print Center", href: "/admin/service-point/print" },
         { name: "Template Editor", href: "/admin/service-point/templates" },
         { name: "Scan History", href: "/admin/service-point/history" },
+      ]
+    },
+    {
+      id: "system",
+      label: "System",
+      icon: Server,
+      group: "management",
+      superadminOnly: true,
+      children: [
+        { name: "Health", href: "/admin/system/health" },
+        { name: "Database", href: "/admin/system/database" },
+        { name: "Logs", href: "/admin/system/logs" },
+        { name: "Backups", href: "/admin/system/backups" },
+        { name: "Maintenance", href: "/admin/system/maintenance" },
       ]
     },
     {
@@ -244,7 +262,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       settings: location.pathname.startsWith('/admin/settings'),
       branding: location.pathname === '/admin/white-label',
       support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
-      workstation: location.pathname.startsWith('/admin/service-point')
+      workstation: location.pathname.startsWith('/admin/service-point'),
+      system: location.pathname.startsWith('/admin/system')
     }));
   }, [location.pathname]);
 
@@ -260,7 +279,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     return location.pathname === href;
   };
 
-  const groupedItems = navigationItems.reduce((acc, item) => {
+  const isSuperAdmin = userRole === UserRole.SUPERADMIN;
+
+  // Filter out superadmin-only items for non-superadmin users
+  const visibleItems = navigationItems.filter(item => !('superadminOnly' in item && item.superadminOnly && !isSuperAdmin));
+
+  const groupedItems = visibleItems.reduce((acc, item) => {
     if (!acc[item.group]) {
       acc[item.group] = [];
     }

@@ -5,6 +5,7 @@
  */
 
 import { lazy, createElement } from 'react';
+import { Navigate } from 'react-router-dom';
 import type { ProtectedRouteConfig } from './types';
 import { UserRole } from '../types/auth';
 
@@ -84,6 +85,7 @@ const SubscriptionPlansPage = lazy(() => import('../pages/admin/subscriptions/Su
 // Tickets
 const AdminAdvancedTicketTypes = lazy(() => import('../pages/admin/tickets/AdminAdvancedTicketTypes'));
 const AdminDynamicPricing = lazy(() => import('../pages/admin/tickets/AdminDynamicPricing'));
+const AdminTicketIssuancesPage = lazy(() => import('../pages/admin/tickets/AdminTicketIssuancesPage'));
 
 // Analytics
 const AdminAnalyticsOverview = lazy(() => import('../pages/admin/analytics').then(m => ({ default: m.AdminAnalyticsOverview })));
@@ -96,6 +98,7 @@ const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'
 const FinanceDashboard = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.FinanceDashboard })));
 const EventFinanceDashboard = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EventFinanceDashboard })));
 const PaymentTransactionsPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.PaymentTransactionsPage })));
+const PaymentTransactionDetailPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.PaymentTransactionDetailPage })));
 const DisbursementsPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.DisbursementsPage })));
 const RefundsPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.RefundsPage })));
 const ReconciliationPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.ReconciliationPage })));
@@ -125,6 +128,7 @@ const ServicePointPrint = lazy(() => import('../pages/admin/service-point/Servic
 const ServicePointTemplates = lazy(() => import('../pages/admin/service-point/ServicePointTemplates'));
 const FacilityZones = lazy(() => import('../pages/admin/service-point/FacilityZones'));
 const ServicePointHistory = lazy(() => import('../pages/admin/service-point/ServicePointHistory'));
+const WalkInRegistration = lazy(() => import('../pages/admin/service-point/WalkInRegistration'));
 const EventManagement = lazy(() => import('../pages/organizer/EventManagement'));
 
 /**
@@ -153,6 +157,12 @@ const TELLER_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER
  * All routes require admin-related roles
  */
 export const adminRoutes: ProtectedRouteConfig[] = [
+  // Root redirect: /admin → /admin/dashboard
+  {
+    index: true,
+    element: createElement(Navigate, { to: '/admin/dashboard', replace: true }),
+  },
+
   // Dashboard & Profile
   {
     path: 'dashboard',
@@ -461,6 +471,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     element: createElement(AdminDynamicPricing),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
+  {
+    path: 'tickets/issuances',
+    element: createElement(AdminTicketIssuancesPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
 
   // Analytics
   {
@@ -503,6 +518,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'finance/payments',
     element: createElement(PaymentTransactionsPage),
+    allowedRoles: TELLER_ROLES,
+  },
+  {
+    path: 'finance/payments/:id',
+    element: createElement(PaymentTransactionDetailPage),
     allowedRoles: TELLER_ROLES,
   },
   {
@@ -627,6 +647,16 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'service-point/history',
     element: createElement(ServicePointHistory),
+    allowedRoles: TELLER_ROLES,
+  },
+  {
+    path: 'service-point/event/:eventId/templates',
+    element: createElement(ServicePointTemplates),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'service-point/event/:eventId/walk-in',
+    element: createElement(WalkInRegistration),
     allowedRoles: TELLER_ROLES,
   },
   {

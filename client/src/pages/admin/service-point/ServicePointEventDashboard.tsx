@@ -57,6 +57,7 @@ import {
   Camera,
   Upload,
   LayoutDashboard,
+  UserPlus,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import BackButton from "@/components/BackButton";
@@ -65,7 +66,7 @@ import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
 import { QuickRegisterDialog } from "@/components/QuickRegisterDialog";
 import { getEvent, getEventAttendees, type EventAttendee, type EventStatistics, TicketStatus } from "../../../lib/workstation-api";
 import { exportAttendees } from "@/lib/attendee-import-api";
-import { getEvents, type EventData } from "../../../lib/event-api";
+import { getEventById, type EventData } from "../../../lib/event-api";
 import {
   getSessions,
   createSession,
@@ -82,7 +83,7 @@ const ServicePointEventDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { eventId } = useParams<{ eventId: string }>();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'overview' | 'attendees' | 'sessions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'attendees' | 'sessions' | 'no-shows'>('overview');
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [statistics, setStatistics] = useState<EventStatistics | null>(null);
@@ -128,6 +129,17 @@ const ServicePointEventDashboard: React.FC = () => {
   // Export state
   const [exporting, setExporting] = useState(false);
 
+  // No-show report state
+  const [noShowAttendees, setNoShowAttendees] = useState<EventAttendee[]>([]);
+  const [noShowLoading, setNoShowLoading] = useState(false);
+  const [noShowExporting, setNoShowExporting] = useState(false);
+
+  // Emergency muster report state
+  const [musterOpen, setMusterOpen] = useState(false);
+  const [musterAttendees, setMusterAttendees] = useState<EventAttendee[]>([]);
+  const [musterLoading, setMusterLoading] = useState(false);
+  const [musterExporting, setMusterExporting] = useState(false);
+
   // Session icon mapping
   const getSessionIcon = (iconId: string | null): React.ElementType => {
     const iconMap: Record<string, React.ElementType> = {
@@ -163,10 +175,10 @@ const ServicePointEventDashboard: React.FC = () => {
       try {
         setLoading(true);
 
-        // Load event details from event API
-        const eventsResponse = await getEvents({ limit: 1000 });
-        const event = eventsResponse.success && eventsResponse.data
-          ? eventsResponse.data.events.find(e => e.id === eventId)
+        // Load event details
+        const eventResponse = await getEventById(eventId);
+        const event = eventResponse.success && eventResponse.data
+          ? eventResponse.data.event
           : null;
 
         if (!event) {
@@ -213,7 +225,7 @@ const ServicePointEventDashboard: React.FC = () => {
           setPagination({
             page: response.data.pagination.page,
             limit: response.data.pagination.limit,
-            total: response.data.attendees.length,
+            total: response.data.pagination?.total ?? response.data.attendees.length,
             totalPages: response.data.pagination.totalPages,
           });
         }
@@ -266,6 +278,105 @@ const ServicePointEventDashboard: React.FC = () => {
     }
   };
 
+  // Load no-shows when no-shows tab is active
+  useEffect(() => {
+    const loadNoShows = async () => {
+      if (!eventId || activeTab !== 'no-shows') return;
+      try {
+        setNoShowLoading(true);
+        const response = await getEventAttendees(eventId, 1, 500);
+        if (response.success && response.data) {
+          setNoShowAttendees(response.data.attendees.filter(a => !a.checkedInAt));
+        }
+      } catch (error) {
+        console.error('Error loading no-shows:', error);
+        toast({ title: "Error", description: "Failed to load no-show report", variant: "destructive" });
+      } finally {
+        setNoShowLoading(false);
+      }
+    };
+    loadNoShows();
+  }, [eventId, activeTab, toast]);
+
+  // Export no-show report as CSV
+  const handleExportNoShows = () => {
+    if (noShowAttendees.length === 0) return;
+    setNoShowExporting(true);
+    try {
+      const headers = ['Name', 'Email', 'Phone', 'Ticket Type', 'Ticket Status', 'Registered At'];
+      const rows = noShowAttendees.map(a => [
+        a.attendeeName,
+        a.email,
+        a.phoneNumber || '',
+        a.ticketType || '',
+        a.ticketStatus,
+        new Date(a.registeredAt).toLocaleString(),
+      ]);
+      const csv = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const eventSlug = eventData?.title?.replace(/\s+/g, '_').toLowerCase() || eventId;
+      link.href = url;
+      link.download = `no_shows_${eventSlug}_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Export Complete", description: `${noShowAttendees.length} no-show records exported` });
+    } finally {
+      setNoShowExporting(false);
+    }
+  };
+
+  // Load muster report (all currently inside)
+  const handleOpenMuster = async () => {
+    if (!eventId) return;
+    setMusterOpen(true);
+    setMusterLoading(true);
+    try {
+      const response = await getEventAttendees(eventId, 1, 500);
+      if (response.success && response.data) {
+        setMusterAttendees(response.data.attendees.filter(a => a.isCurrentlyInside));
+      }
+    } catch (error) {
+      console.error('Error loading muster report:', error);
+      toast({ title: "Error", description: "Failed to load muster report", variant: "destructive" });
+    } finally {
+      setMusterLoading(false);
+    }
+  };
+
+  const handleExportMuster = () => {
+    if (musterAttendees.length === 0) return;
+    setMusterExporting(true);
+    try {
+      const now = new Date();
+      const headers = ['Name', 'Email', 'Phone', 'Ticket Type', 'Last Scanned Facility'];
+      const rows = musterAttendees.map(a => [
+        a.attendeeName,
+        a.email,
+        a.phoneNumber || '',
+        a.ticketType || '',
+        a.lastScanFacility || '',
+      ]);
+      const csv = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const eventSlug = eventData?.title?.replace(/\s+/g, '_').toLowerCase() || eventId;
+      link.href = url;
+      link.download = `muster_${eventSlug}_${now.toISOString().slice(0, 16).replace(':', '-')}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Muster Report Exported", description: `${musterAttendees.length} people currently inside` });
+    } finally {
+      setMusterExporting(false);
+    }
+  };
+
   // Load attendees when attendees tab is active
   useEffect(() => {
     const loadAttendees = async () => {
@@ -285,7 +396,7 @@ const ServicePointEventDashboard: React.FC = () => {
             setPagination({
               page: response.data.pagination.page,
               limit: response.data.pagination.limit,
-              total: response.data.attendees.length,
+              total: response.data.pagination?.total ?? response.data.attendees.length,
               totalPages: response.data.pagination.totalPages,
             });
           }
@@ -465,10 +576,8 @@ const ServicePointEventDashboard: React.FC = () => {
         return "bg-primary/10 text-primary border-primary";
       case 'ongoing':
         return "bg-success/10 text-success border-success";
-      case 'completed':
-        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
       default:
-        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -492,11 +601,11 @@ const ServicePointEventDashboard: React.FC = () => {
       case TicketStatus.DEACTIVATED:
         return "bg-destructive/10 text-destructive border-destructive";
       case TicketStatus.EXPIRED:
-        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+        return "bg-muted text-muted-foreground border-border";
       case TicketStatus.CANCELLED:
         return "bg-destructive/10 text-destructive border-destructive";
       default:
-        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -673,7 +782,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`/admin/service-point/templates?event=${eventId}`)}
+                onClick={() => navigate(`/admin/service-point/event/${eventId}/templates`)}
               >
                 <Settings className="w-6 h-6" />
                 <span>Templates</span>
@@ -685,6 +794,30 @@ const ServicePointEventDashboard: React.FC = () => {
               >
                 <History className="w-6 h-6" />
                 <span>Scan History</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-20 flex flex-col items-center justify-center space-y-2"
+                onClick={() => navigate(`/admin/service-point/zones/${eventId}`)}
+              >
+                <MapPin className="w-6 h-6" />
+                <span>Facility Zones</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-20 flex flex-col items-center justify-center space-y-2"
+                onClick={() => navigate(`/admin/service-point/event/${eventId}/walk-in`)}
+              >
+                <UserPlus className="w-6 h-6 text-primary" />
+                <span>Walk-In Reg.</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-20 flex flex-col items-center justify-center space-y-2 border-destructive/50 hover:bg-destructive/5"
+                onClick={handleOpenMuster}
+              >
+                <Shield className="w-6 h-6 text-destructive" />
+                <span className="text-destructive font-medium">Muster Report</span>
               </Button>
             </div>
           </CardContent>
@@ -712,6 +845,13 @@ const ServicePointEventDashboard: React.FC = () => {
           >
             <Building2 className="w-4 h-4 mr-2" />
             Sessions
+          </Button>
+          <Button
+            variant={activeTab === 'no-shows' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('no-shows')}
+          >
+            <Clock className="w-4 h-4 mr-2" />
+            No-Shows
           </Button>
         </div>
 
@@ -816,7 +956,7 @@ const ServicePointEventDashboard: React.FC = () => {
                   {attendees.map((attendee) => (
                     <div
                       key={attendee.registrationId}
-                      className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                      className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                       onClick={() => handleViewAttendee(attendee)}
                     >
                       <div className="flex items-center gap-4">
@@ -1051,6 +1191,88 @@ const ServicePointEventDashboard: React.FC = () => {
             </Card>
           </>
         )}
+
+        {activeTab === 'no-shows' && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Clock className="w-5 h-5 mr-2" />
+                  No-Show Report
+                  {!noShowLoading && (
+                    <Badge variant="secondary" className="ml-3">
+                      {noShowAttendees.length} attendee{noShowAttendees.length !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportNoShows}
+                  disabled={noShowExporting || noShowAttendees.length === 0 || noShowLoading}
+                >
+                  {noShowExporting ? (
+                    <Loader size="sm" className="mr-2" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                  )}
+                  Export CSV
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {noShowLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <Loader />
+                  <span className="ml-2 text-muted-foreground">Loading no-show report...</span>
+                </div>
+              ) : noShowAttendees.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 gap-2">
+                  <CheckCircle className="w-8 h-8 text-success" />
+                  <p className="text-muted-foreground font-medium">All registered attendees have checked in!</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    These attendees registered but have not yet checked in.
+                  </p>
+                  {noShowAttendees.map((attendee) => (
+                    <div
+                      key={attendee.registrationId}
+                      className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-destructive/10 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-destructive">
+                            {attendee.attendeeName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-foreground">{attendee.attendeeName}</h4>
+                          <p className="text-sm text-muted-foreground">{attendee.email}</p>
+                          {attendee.phoneNumber && (
+                            <p className="text-sm text-muted-foreground">{attendee.phoneNumber}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {attendee.ticketType && (
+                          <Badge variant="outline" className="text-xs">
+                            {attendee.ticketType}
+                          </Badge>
+                        )}
+                        <div className="text-right text-xs text-muted-foreground">
+                          <div>Registered: {new Date(attendee.registeredAt).toLocaleDateString()}</div>
+                          <div className="text-destructive font-medium">Not checked in</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Session Create/Edit Dialog */}
@@ -1261,6 +1483,95 @@ const ServicePointEventDashboard: React.FC = () => {
           onSuccess={handleQuickRegisterSuccess}
         />
       )}
+
+      {/* Emergency Muster Report Dialog */}
+      <Dialog open={musterOpen} onOpenChange={setMusterOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Shield className="w-5 h-5" />
+              Emergency Muster Report
+            </DialogTitle>
+            <DialogDescription>
+              People currently inside the venue as of {new Date().toLocaleTimeString()}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto">
+            {musterLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader />
+                <span className="ml-2 text-muted-foreground">Generating muster report...</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4 p-3 bg-destructive/5 rounded-lg border border-destructive/20">
+                  <div>
+                    <p className="font-semibold text-foreground text-lg">{musterAttendees.length}</p>
+                    <p className="text-sm text-muted-foreground">People currently inside</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportMuster}
+                    disabled={musterExporting || musterAttendees.length === 0}
+                    className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                  >
+                    {musterExporting ? (
+                      <Loader size="sm" className="mr-2" />
+                    ) : (
+                      <Download className="w-4 h-4 mr-2" />
+                    )}
+                    Export CSV
+                  </Button>
+                </div>
+                {musterAttendees.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-24 gap-2 text-muted-foreground">
+                    <Activity className="w-8 h-8" />
+                    <p>No attendees are currently inside</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {musterAttendees.map((attendee) => (
+                      <div
+                        key={attendee.registrationId}
+                        className="flex items-center justify-between p-3 border border-border/40 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-xs font-medium text-primary">
+                            {attendee.attendeeName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm text-foreground">{attendee.attendeeName}</p>
+                            <p className="text-xs text-muted-foreground">{attendee.email}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {attendee.ticketType && (
+                            <Badge variant="outline" className="text-xs mb-1">
+                              {attendee.ticketType}
+                            </Badge>
+                          )}
+                          {attendee.lastScanFacility && (
+                            <p className="text-xs text-muted-foreground">
+                              <MapPin className="w-3 h-3 inline mr-1" />
+                              {attendee.lastScanFacility}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMusterOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

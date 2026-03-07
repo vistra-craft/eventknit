@@ -51,6 +51,7 @@ export function useOrganizerDashboardEvents(page: number = 1) {
       return response.data;
     },
     placeholderData: (previousData) => previousData,
+    staleTime: 1000 * 60 * 2,
   });
 }
 

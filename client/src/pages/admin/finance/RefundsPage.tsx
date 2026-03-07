@@ -46,14 +46,18 @@ const RefundsPage = () => {
       });
 
       if (response.success && response.data) {
-        const data = response.data;
+        const data: unknown = response.data;
         if (Array.isArray(data)) {
           // Flat array (filtered by eventId)
-          setRefunds(data);
+          setRefunds(data as Refund[]);
           setPagination({ page: 1, limit: 20, total: data.length, totalPages: 1 });
-        } else {
+        } else if (typeof data === 'object' && data !== null && 'refunds' in data) {
           // Paginated response: { refunds: [...], pagination: {...} }
-          const paginated = data as { refunds: Refund[]; pagination: typeof pagination };
+          type PaginatedRefundsResponse = {
+            refunds: Refund[];
+            pagination: { page: number; limit: number; total: number; totalPages: number };
+          };
+          const paginated = data as PaginatedRefundsResponse;
           setRefunds(paginated.refunds);
           setPagination(paginated.pagination);
         }
@@ -247,8 +251,7 @@ const RefundsPage = () => {
                           {r.transaction?.transactionNumber || "N/A"}
                         </TableCell>
                         <TableCell>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {(r as any).event?.title || "N/A"}
+                          {r.event?.title ?? "N/A"}
                         </TableCell>
                         <TableCell>
                           <Badge

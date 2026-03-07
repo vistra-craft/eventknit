@@ -5,6 +5,8 @@ import {
   Clock,
   Mail,
   Plus,
+  Inbox,
+  Reply,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
@@ -25,6 +27,7 @@ import { Textarea } from "./ui/textarea";
 import { Switch } from "./ui/switch";
 import { useToast } from "@/hooks/useToast";
 import { sendToEventRegistrations, getCommunicationHistory, type CommunicationMessage } from "@/lib/organizer-dashboard-api";
+import { getInbox, sendMessage, type DirectMessage } from "@/lib/user-dashboard-api";
 import { extractErrorMessage } from "@/lib/utils/error";
 
 interface EventCommunicationSectionProps {
@@ -34,6 +37,9 @@ interface EventCommunicationSectionProps {
 
 const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSectionProps) => {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<"broadcasts" | "inbox">("broadcasts");
+
+  // Broadcasts
   const [messages, setMessages] = useState<CommunicationMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
@@ -43,23 +49,57 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
   const [sendNotification, setSendNotification] = useState(true);
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    const loadMessages = async () => {
-      if (!eventId) return;
-      try {
-        setLoading(true);
-        const response = await getCommunicationHistory({ eventId });
-        if (response.success && response.data) {
-          setMessages(response.data.messages || []);
-        }
-      } catch (error) {
-        console.error("Error loading communication history:", error);
-      } finally {
-        setLoading(false);
+  // Inbox (DMs from attendees)
+  const [inboxMessages, setInboxMessages] = useState<DirectMessage[]>([]);
+  const [inboxLoading, setInboxLoading] = useState(false);
+  const [inboxLoaded, setInboxLoaded] = useState(false);
+  const [replyTarget, setReplyTarget] = useState<DirectMessage | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [replying, setReplying] = useState(false);
+
+  const loadBroadcasts = async () => {
+    if (!eventId) return;
+    try {
+      setLoading(true);
+      const response = await getCommunicationHistory({ eventId });
+      if (response.success && response.data) {
+        setMessages(response.data.messages || []);
       }
-    };
-    loadMessages();
+    } catch {
+      // non-critical — history is informational only
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadInbox = async () => {
+    try {
+      setInboxLoading(true);
+      const response = await getInbox({ limit: 100 });
+      if (response.success && response.data) {
+        // Filter client-side to this event's messages
+        const eventMessages = response.data.messages.filter(
+          (m) => m.eventId === eventId
+        );
+        setInboxMessages(eventMessages);
+        setInboxLoaded(true);
+      }
+    } catch {
+      // non-critical
+    } finally {
+      setInboxLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadBroadcasts();
   }, [eventId]);
+
+  useEffect(() => {
+    if (activeTab === "inbox" && !inboxLoaded) {
+      void loadInbox();
+    }
+  }, [activeTab]);
 
   const handleSendMessage = async () => {
     if (!eventId || !subject.trim() || !content.trim()) {
@@ -105,8 +145,60 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
     }
   };
 
+  const handleReply = async () => {
+    if (!replyTarget || !replyContent.trim()) return;
+    try {
+      setReplying(true);
+      await sendMessage({
+        recipientId: replyTarget.senderId,
+        subject: `Re: ${replyTarget.subject || "Your message"}`,
+        content: replyContent.trim(),
+        eventId,
+        parentMessageId: replyTarget.id,
+      });
+      toast({ title: "Reply sent" });
+      setReplyTarget(null);
+      setReplyContent("");
+      // Refresh inbox
+      setInboxLoaded(false);
+      void loadInbox();
+    } catch (err) {
+      toast({
+        title: "Reply failed",
+        description: extractErrorMessage(err, "Could not send reply"),
+        variant: "destructive",
+      });
+    } finally {
+      setReplying(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-border">
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === "broadcasts" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("broadcasts")}
+        >
+          <Mail className="h-4 w-4 inline mr-1.5 -mt-0.5" />
+          Broadcasts
+        </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${activeTab === "inbox" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("inbox")}
+        >
+          <Inbox className="h-4 w-4 inline mr-1.5 -mt-0.5" />
+          Attendee Messages
+          {inboxMessages.filter(m => !m.isRead).length > 0 && (
+            <Badge className="ml-1.5 bg-primary text-primary-foreground text-xs px-1.5 rounded-full">
+              {inboxMessages.filter(m => !m.isRead).length}
+            </Badge>
+          )}
+        </button>
+      </div>
+
+      {activeTab === "broadcasts" && (
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">Communication</h3>
@@ -244,6 +336,105 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
           </div>
         )}
       </div>
+      )}
+
+      {/* ── Inbox tab ─────────────────────────────────────────────────────── */}
+      {activeTab === "inbox" && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">Attendee Messages</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Direct messages sent to you by attendees of {eventTitle}
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => { setInboxLoaded(false); void loadInbox(); }}>
+              Refresh
+            </Button>
+          </div>
+
+          {inboxLoading ? (
+            <div className="text-center py-8 text-muted-foreground">Loading messages…</div>
+          ) : inboxMessages.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Inbox className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No messages from attendees yet</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Messages sent by attendees about this event will appear here
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {inboxMessages.map((dm) => (
+                <Card key={dm.id} className={!dm.isRead ? "border-primary/40 bg-primary/[0.02]" : ""}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          {!dm.isRead && <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />}
+                          <span className="font-semibold text-sm truncate">
+                            {dm.sender
+                              ? `${dm.sender.firstName} ${dm.sender.lastName}`
+                              : "Attendee"}
+                          </span>
+                          {dm.subject && (
+                            <span className="text-muted-foreground text-sm">· {dm.subject}</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-3">{dm.content}</p>
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                          {new Date(dm.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-shrink-0"
+                        onClick={() => { setReplyTarget(dm); setReplyContent(""); }}
+                      >
+                        <Reply className="h-3.5 w-3.5 mr-1.5" />
+                        Reply
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Reply dialog */}
+      <Dialog open={!!replyTarget} onOpenChange={(open) => { if (!open) setReplyTarget(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Reply to {replyTarget?.sender ? `${replyTarget.sender.firstName} ${replyTarget.sender.lastName}` : "Attendee"}</DialogTitle>
+            <DialogDescription>
+              {replyTarget?.subject ? `Re: ${replyTarget.subject}` : "Direct reply to their message"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="reply-content">Message</Label>
+            <Textarea
+              id="reply-content"
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              placeholder="Write your reply…"
+              className="mt-2 min-h-[120px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReplyTarget(null)} disabled={replying}>
+              Cancel
+            </Button>
+            <Button onClick={handleReply} disabled={replying || !replyContent.trim()}>
+              {replying ? <><ButtonLoader />Sending…</> : "Send Reply"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

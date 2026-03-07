@@ -36,6 +36,7 @@ import {
   type TaxSummaryInfo,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { extractErrorMessage } from "@/lib/utils/error";
 
 interface ProfitLossStatement {
   period: FinancialPeriod;
@@ -113,10 +114,9 @@ const FinancialManagement = () => {
         }
       }
     } catch (error) {
-      console.error("Error loading financial data:", error);
       toast({
-        title: "Error",
-        description: "Failed to load financial data",
+        title: "Failed to load financial data",
+        description: extractErrorMessage(error, "Please try again."),
         variant: "destructive",
       });
     } finally {
@@ -140,10 +140,9 @@ const FinancialManagement = () => {
         loadData();
       }
     } catch (error) {
-      console.error("Error creating expense:", error);
       toast({
-        title: "Error",
-        description: "Failed to create expense",
+        title: "Failed to create expense",
+        description: extractErrorMessage(error, "Please try again."),
         variant: "destructive",
       });
     }
@@ -161,10 +160,9 @@ const FinancialManagement = () => {
         loadData();
       }
     } catch (error) {
-      console.error("Error creating goal:", error);
       toast({
-        title: "Error",
-        description: "Failed to create goal",
+        title: "Failed to create financial goal",
+        description: extractErrorMessage(error, "Please try again."),
         variant: "destructive",
       });
     }

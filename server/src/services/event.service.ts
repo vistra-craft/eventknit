@@ -1090,6 +1090,42 @@ export class EventService {
       }
     }
 
+    // Validate quantity floors against sold tickets
+    if (data.ticketTypes && Array.isArray(data.ticketTypes) && data.ticketTypes.length > 0) {
+      const activeRegistrations = await prisma.eventRegistration.findMany({
+        where: {
+          eventId,
+          status: { not: 'CANCELLED' },
+          paymentStatus: { not: 'FAILED' },
+        },
+        select: { ticketType: true, ticketLineItems: true },
+      });
+
+      // Count sold tickets per type name (supports both line-items and legacy ticketType)
+      const soldByType = new Map<string, number>();
+      for (const reg of activeRegistrations) {
+        const lineItems = reg.ticketLineItems as Array<{ ticketType: string; quantity?: number }> | null;
+        if (lineItems && lineItems.length > 0) {
+          for (const item of lineItems) {
+            soldByType.set(item.ticketType, (soldByType.get(item.ticketType) || 0) + (item.quantity || 1));
+          }
+        } else if (reg.ticketType) {
+          soldByType.set(reg.ticketType, (soldByType.get(reg.ticketType) || 0) + 1);
+        }
+      }
+
+      for (const ticket of data.ticketTypes) {
+        const name = ticket.name as string;
+        const newQty = ticket.quantity !== undefined && ticket.quantity !== null ? Number(ticket.quantity) : null;
+        const sold = soldByType.get(name) || 0;
+        if (sold > 0 && newQty !== null && newQty < sold) {
+          throw new ValidationError(
+            `Cannot set quantity of "${name}" below ${sold} — that many tickets have already been sold.`
+          );
+        }
+      }
+    }
+
     // Handle ticket types
     if (data.ticketTypes !== undefined) {
       if (data.ticketTypes.length > 0) {

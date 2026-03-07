@@ -7,7 +7,7 @@ import { useAuthContext } from './useAuthContext';
 import * as authApi from '../lib/auth-api';
 import { setAccessToken, removeAccessToken, getAccessToken, setLogoutCallback } from '../lib/api';
 import { queryClient } from '../lib/queryClient';
-import { UserRole } from '../types/auth';
+import { UserRole, UserStatus } from '../types/auth';
 import { useNavigate } from 'react-router-dom';
 
 export const useAuth = () => {
@@ -238,9 +238,16 @@ export const useAuth = () => {
       accessToken: string
     ) => {
       setAccessToken(accessToken);
-      // Cast to satisfy the User type — the full profile fetch below fills in the rest
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      dispatch({ type: 'AUTH_SUCCESS', payload: partialUser as any });
+      // Dispatch with placeholder role/status — the profile fetch below overwrites with real values
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          ...partialUser,
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: false,
+        },
+      });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       // Fetch full profile asynchronously so role and all fields are populated
       try {

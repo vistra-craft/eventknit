@@ -167,7 +167,6 @@ const TicketsManagementHub = () => {
         setEvents(response.data.events as Event[]);
       }
     } catch (error) {
-      console.error('Error fetching events:', error);
       toast({
         title: 'Error',
         description: 'Failed to load events',
@@ -184,7 +183,6 @@ const TicketsManagementHub = () => {
         setPricingRules(response.data.rules || []);
       }
     } catch (error) {
-      console.error('Error fetching pricing rules:', error);
     }
   }, [selectedEventId]);
 
@@ -196,7 +194,6 @@ const TicketsManagementHub = () => {
         setPackages(response.data.packages || []);
       }
     } catch (error) {
-      console.error('Error fetching packages:', error);
     }
   }, [selectedEventId]);
 
@@ -207,7 +204,6 @@ const TicketsManagementHub = () => {
         setPromoCodes(response.data.promoCodes);
       }
     } catch (error) {
-      console.error('Error fetching promo codes:', error);
     }
   }, [selectedEventId]);
 
@@ -228,7 +224,6 @@ const TicketsManagementHub = () => {
       await Promise.all([fetchPricingRules(), fetchPackages(), fetchPromoCodes()]);
       updateStats();
     } catch (error) {
-      console.error('Error fetching data:', error);
       toast({
         title: 'Error',
         description: 'Failed to load ticket management data',
@@ -292,7 +287,6 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to create pricing rule');
       }
     } catch (error) {
-      console.error('Error creating pricing rule:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to create pricing rule',
@@ -314,7 +308,6 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to delete pricing rule');
       }
     } catch (error) {
-      console.error('Error deleting pricing rule:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to delete pricing rule',
@@ -366,7 +359,6 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to create package');
       }
     } catch (error) {
-      console.error('Error creating package:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to create package',
@@ -388,7 +380,6 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to delete package');
       }
     } catch (error) {
-      console.error('Error deleting package:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to delete package',
@@ -440,7 +431,6 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to create promo code');
       }
     } catch (error) {
-      console.error('Error creating promo code:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to create promo code',
@@ -462,7 +452,6 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to delete promo code');
       }
     } catch (error) {
-      console.error('Error deleting promo code:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to delete promo code',

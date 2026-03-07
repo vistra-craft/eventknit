@@ -23,6 +23,18 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { downloadTicketPDF } from "@/lib/ticket-api";
 import { getNotifications, markAllAsRead, type Notification } from "@/lib/notification-api";
+import { sendMessage } from "@/lib/user-dashboard-api";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/useToast";
 import { RichTextContent } from "@/components/ui/RichTextContent";
 import type { EventData, User } from "./EventAttendeeView";
 
@@ -75,11 +87,18 @@ function AnnouncementIcon({ type }: { type: string }) {
 
 export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
   const status = getEventStatus(event);
+  const { toast } = useToast();
 
   const [announcements, setAnnouncements] = useState<Notification[]>([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
   const [markingRead, setMarkingRead] = useState(false);
   const [downloadingTicket, setDownloadingTicket] = useState(false);
+
+  // Contact Organizer
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [contactSubject, setContactSubject] = useState("");
+  const [contactContent, setContactContent] = useState("");
+  const [sendingContact, setSendingContact] = useState(false);
 
   const loadAnnouncements = useCallback(async () => {
     try {
@@ -143,6 +162,27 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
       // user-visible feedback handled by downloadTicketPDF
     } finally {
       setDownloadingTicket(false);
+    }
+  };
+
+  const handleContactOrganizer = async () => {
+    if (!event.organizerId || !contactContent.trim()) return;
+    setSendingContact(true);
+    try {
+      await sendMessage({
+        recipientId: event.organizerId,
+        subject: contactSubject.trim() || `Question about ${event.title}`,
+        content: contactContent.trim(),
+        eventId: event.id,
+      });
+      toast({ title: "Message sent", description: "The organizer will reply shortly." });
+      setIsContactOpen(false);
+      setContactSubject("");
+      setContactContent("");
+    } catch {
+      toast({ title: "Failed to send message", variant: "destructive" });
+    } finally {
+      setSendingContact(false);
     }
   };
 
@@ -500,10 +540,60 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
                 <Bell className="w-4 h-4 mr-2" />
                 All Notifications
               </Button>
+
+              {event.organizerId && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => setIsContactOpen(true)}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Contact Organizer
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Contact Organizer dialog */}
+      <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Contact Organizer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="contact-subject">Subject</Label>
+              <Input
+                id="contact-subject"
+                value={contactSubject}
+                onChange={(e) => setContactSubject(e.target.value)}
+                placeholder={`Question about ${event.title}`}
+                className="mt-2"
+              />
+            </div>
+            <div>
+              <Label htmlFor="contact-content">Message *</Label>
+              <Textarea
+                id="contact-content"
+                value={contactContent}
+                onChange={(e) => setContactContent(e.target.value)}
+                placeholder="Write your message to the organizer…"
+                className="mt-2 min-h-[140px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsContactOpen(false)} disabled={sendingContact}>
+              Cancel
+            </Button>
+            <Button onClick={handleContactOrganizer} disabled={sendingContact || !contactContent.trim()}>
+              {sendingContact ? "Sending…" : "Send Message"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

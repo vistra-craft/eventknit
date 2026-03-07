@@ -1,6 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, NotificationType } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
+import { NotificationService } from './notification.service.js';
 
 const prisma = new PrismaClient();
 
@@ -73,7 +74,18 @@ export class DirectMessageService {
         },
       });
 
-      // TODO: Send notification to recipient
+      // Notify recipient of new message (fire-and-forget — never block the send)
+      NotificationService.sendNotification({
+        userId: data.recipientId,
+        type: NotificationType.NEW_MESSAGE,
+        title: `New message from ${message.sender.firstName} ${message.sender.lastName}`,
+        message: message.subject
+          ? `${message.subject}: ${message.content.slice(0, 100)}${message.content.length > 100 ? '…' : ''}`
+          : `${message.content.slice(0, 120)}${message.content.length > 120 ? '…' : ''}`,
+        eventId: data.eventId,
+        relatedUserId: senderId,
+        data: { messageId: message.id },
+      }).catch((err: unknown) => logger.error('Failed to send DM notification:', err));
 
       return message;
     } catch (error) {

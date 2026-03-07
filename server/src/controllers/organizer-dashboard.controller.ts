@@ -10,6 +10,7 @@ import { OrganizerFinancialService } from '../services/organizer-financial.servi
 import { PayoutManagementService } from '../services/payout-management.service.js';
 import { EventCollaborationService } from '../services/event-collaboration.service.js';
 import { AdvancedTicketTypesService } from '../services/advanced-ticket-types.service.js';
+import { TicketIssuanceService } from '../services/ticket-issuance.service.js';
 import { DynamicPricingService } from '../services/dynamic-pricing.service.js';
 import { AffiliateProgramService } from '../services/affiliate-program.service.js';
 import { EmailMarketingService } from '../services/email-marketing.service.js';
@@ -1395,6 +1396,53 @@ export class OrganizerDashboardController {
       const packageId = (req.params.packageId as string) as string;
       const result = await AdvancedTicketTypesService.deleteTicketPackage(packageId, req.user.id);
       res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Complementary ticket issuances
+  static async issueComplementaryTickets(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) { res.status(401).json({ success: false, message: 'Authentication required' }); return; }
+      const { packageId } = req.params as { packageId: string };
+      const { emails, quantity, note, expiresAt } = req.body as {
+        emails: string[];
+        quantity?: number;
+        note?: string;
+        expiresAt?: string;
+      };
+      const issuances = await TicketIssuanceService.issue(
+        packageId,
+        req.user.id,
+        emails,
+        quantity ?? 1,
+        note,
+        expiresAt ? new Date(expiresAt) : undefined,
+      );
+      res.status(201).json({ success: true, data: { issuances } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getPackageIssuances(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) { res.status(401).json({ success: false, message: 'Authentication required' }); return; }
+      const { packageId } = req.params as { packageId: string };
+      const issuances = await TicketIssuanceService.listForPackage(packageId, req.user.id);
+      res.status(200).json({ success: true, data: { issuances } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async cancelIssuance(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) { res.status(401).json({ success: false, message: 'Authentication required' }); return; }
+      const { issuanceId } = req.params as { issuanceId: string };
+      const issuance = await TicketIssuanceService.cancel(issuanceId, req.user.id);
+      res.status(200).json({ success: true, data: { issuance } });
     } catch (error) {
       next(error);
     }

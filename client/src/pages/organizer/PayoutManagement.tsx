@@ -22,6 +22,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Wallet,
   Building2,
   Clock,
@@ -32,12 +39,15 @@ import {
   Save,
   ChevronLeft,
   ChevronRight,
+  PlusCircle,
 } from "lucide-react";
 import {
   getPayoutPreferences,
   updatePayoutPreferences,
   getPayoutHistory,
   getPayoutSummary,
+  schedulePayout,
+  getOrganizerEvents,
   type PayoutPreferences,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
@@ -120,6 +130,17 @@ const PayoutManagement = () => {
   // Summary state
   const [summary, setSummary] = useState<PayoutSummaryData | null>(null);
 
+  // Request payout dialog state
+  const [isRequestPayoutOpen, setIsRequestPayoutOpen] = useState(false);
+  const [payoutEvents, setPayoutEvents] = useState<Array<{ id: string; title: string }>>([]);
+  const [requestingPayout, setRequestingPayout] = useState(false);
+  const [payoutForm, setPayoutForm] = useState({
+    eventId: "",
+    amount: "",
+    scheduledDate: new Date().toISOString().split("T")[0],
+    notes: "",
+  });
+
   const loadPreferences = useCallback(async () => {
     try {
       const res = await getPayoutPreferences();
@@ -146,13 +167,12 @@ const PayoutManagement = () => {
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
-      const filters: Record<string, string | number> = {
+      const filters: { page: number; limit: number; status?: string } = {
         page: historyPage,
         limit: HISTORY_LIMIT,
       };
       if (historyFilter) filters.status = historyFilter;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await getPayoutHistory(filters as any);
+      const res = await getPayoutHistory(filters);
       if (res.success && res.data) {
         setDisbursements(res.data.disbursements || []);
         setHistoryTotal(res.data.totalPages || 1);
@@ -175,10 +195,42 @@ const PayoutManagement = () => {
     }
   }, []);
 
+  const handleRequestPayout = async () => {
+    setRequestingPayout(true);
+    try {
+      const payload: Parameters<typeof schedulePayout>[0] = {
+        scheduledDate: payoutForm.scheduledDate,
+      };
+      if (payoutForm.eventId) payload.eventId = payoutForm.eventId;
+      if (payoutForm.amount) payload.amount = parseFloat(payoutForm.amount);
+      if (payoutForm.notes) payload.notes = payoutForm.notes;
+
+      const res = await schedulePayout(payload);
+      if (res.success) {
+        toast({ title: "Payout request submitted", description: "EventKnit will process your payout on the scheduled date." });
+        setIsRequestPayoutOpen(false);
+        setPayoutForm({ eventId: "", amount: "", scheduledDate: new Date().toISOString().split("T")[0], notes: "" });
+        await Promise.all([loadSummary(), loadHistory()]);
+      } else {
+        toast({ title: res.message || "Failed to submit payout request", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Failed to submit payout request", variant: "destructive" });
+    } finally {
+      setRequestingPayout(false);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await Promise.all([loadPreferences(), loadSummary()]);
+      const [, eventsRes] = await Promise.all([
+        Promise.all([loadPreferences(), loadSummary()]),
+        getOrganizerEvents({ limit: 100, status: "COMPLETED" }),
+      ]);
+      if (eventsRes.success && eventsRes.data?.events) {
+        setPayoutEvents(eventsRes.data.events as Array<{ id: string; title: string }>);
+      }
       setLoading(false);
     };
     init();
@@ -193,21 +245,20 @@ const PayoutManagement = () => {
   const handleSavePreferences = async () => {
     setSaving(true);
     try {
-      const payload: Record<string, unknown> = {
+      const payload: Partial<PayoutPreferences> = {
         primaryMethod: formData.primaryMethod,
-        bankName: formData.bankName || null,
-        accountName: formData.accountName || null,
-        accountNumber: formData.accountNumber || null,
-        bankCode: formData.bankCode || null,
-        routingNumber: formData.routingNumber || null,
+        bankName: formData.bankName || undefined,
+        accountName: formData.accountName || undefined,
+        accountNumber: formData.accountNumber || undefined,
+        bankCode: formData.bankCode || undefined,
+        routingNumber: formData.routingNumber || undefined,
         autoPayoutEnabled: formData.autoPayoutEnabled,
         autoPayoutSchedule: formData.autoPayoutSchedule,
       };
       if (formData.autoPayoutThreshold) {
         payload.autoPayoutThreshold = parseFloat(formData.autoPayoutThreshold);
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await updatePayoutPreferences(payload as any);
+      const res = await updatePayoutPreferences(payload);
       if (res.success) {
         toast({ title: "Payout preferences updated" });
         await loadPreferences();
@@ -231,11 +282,88 @@ const PayoutManagement = () => {
 
   return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Payout Management</h1>
-          <p className="text-muted-foreground">
-            Manage your bank details, auto-payout settings, and view payout history.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Payout Management</h1>
+            <p className="text-muted-foreground">
+              Manage your bank details, auto-payout settings, and view payout history.
+            </p>
+          </div>
+          <Dialog open={isRequestPayoutOpen} onOpenChange={setIsRequestPayoutOpen}>
+            <DialogTrigger asChild>
+              <Button className="shrink-0">
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Request Payout
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Request a Payout</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Event (optional)</label>
+                  <Select
+                    value={payoutForm.eventId || "all"}
+                    onValueChange={(v) => setPayoutForm((f) => ({ ...f, eventId: v === "all" ? "" : v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All events" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All events</SelectItem>
+                      {payoutEvents.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>{e.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Leave blank to request payout for all eligible events</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Amount (optional)</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Leave blank to request full balance"
+                    value={payoutForm.amount}
+                    onChange={(e) => setPayoutForm((f) => ({ ...f, amount: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Scheduled Date</label>
+                  <Input
+                    type="date"
+                    value={payoutForm.scheduledDate}
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => setPayoutForm((f) => ({ ...f, scheduledDate: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Notes (optional)</label>
+                  <Input
+                    placeholder="Any special instructions"
+                    value={payoutForm.notes}
+                    onChange={(e) => setPayoutForm((f) => ({ ...f, notes: e.target.value }))}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground border-t pt-3">
+                  Payouts are subject to a 5 business day grace period from event end. Funds will be sent to your registered bank account.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsRequestPayoutOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleRequestPayout} disabled={requestingPayout || !payoutForm.scheduledDate}>
+                    {requestingPayout ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : null}
+                    Submit Request
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Summary Cards */}
