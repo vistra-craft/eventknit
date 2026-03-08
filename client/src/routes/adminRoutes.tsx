@@ -424,21 +424,6 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     allowedRoles: MARKETING_ROLES,
   },
   {
-    path: 'marketing/promo-codes',
-    element: createElement(Navigate, { to: '/admin/tickets/promo-codes', replace: true }),
-    allowedRoles: MARKETING_ROLES,
-  },
-  {
-    path: 'marketing/promo-codes/create',
-    element: createElement(Navigate, { to: '/admin/tickets/promo-codes/create', replace: true }),
-    allowedRoles: MARKETING_ROLES,
-  },
-  {
-    path: 'marketing/promo-codes/:id/edit',
-    element: createElement(Navigate, { to: '/admin/tickets/promo-codes/:id/edit', replace: true }),
-    allowedRoles: MARKETING_ROLES,
-  },
-  {
     path: 'marketing/affiliate',
     element: createElement(AffiliateProgram),
     allowedRoles: MARKETING_ROLES,

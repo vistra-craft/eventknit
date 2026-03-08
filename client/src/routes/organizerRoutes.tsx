@@ -296,11 +296,6 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
 
   // Marketing
   {
-    path: 'marketing/promo-codes',
-    element: createElement(Navigate, { to: '/organizer/tickets', replace: true }),
-    allowedRoles: NON_TELLER_ROLES,
-  },
-  {
     path: 'marketing/affiliate',
     element: createElement(AffiliateProgram),
     allowedRoles: NON_TELLER_ROLES,

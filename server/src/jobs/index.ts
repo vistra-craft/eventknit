@@ -10,6 +10,7 @@ import { CartCleanupJob } from './cart-cleanup.job.js';
 import { AutoPayoutJob } from './auto-payout.job.js';
 import { SeatReservationCleanupJob } from './seat-reservation-cleanup.job.js';
 import { TicketExpirationCleanupJob } from './ticket-expiration-cleanup.job.js';
+import { PendingEventExpiryJob } from './pending-event-expiry.job.js';
 
 /**
  * Initialize all scheduled jobs
@@ -27,8 +28,9 @@ export function initializeJobs(): void {
     AutoPayoutJob.start();
     SeatReservationCleanupJob.start();
     TicketExpirationCleanupJob.start();
+    PendingEventExpiryJob.start();
 
-    logger.info('Scheduled jobs initialized (11 jobs)');
+    logger.info('Scheduled jobs initialized (12 jobs)');
   } catch (error) {
     logger.error('Failed to initialize scheduled jobs:', error);
     throw error;
@@ -51,6 +53,7 @@ export function stopJobs(): void {
     AutoPayoutJob.stop();
     SeatReservationCleanupJob.stop();
     TicketExpirationCleanupJob.stop();
+    PendingEventExpiryJob.stop();
 
     logger.info('Scheduled jobs stopped');
   } catch (error) {
@@ -70,4 +73,5 @@ export { CartCleanupJob } from './cart-cleanup.job.js';
 export { AutoPayoutJob } from './auto-payout.job.js';
 export { SeatReservationCleanupJob } from './seat-reservation-cleanup.job.js';
 export { TicketExpirationCleanupJob } from './ticket-expiration-cleanup.job.js';
+export { PendingEventExpiryJob } from './pending-event-expiry.job.js';
 

@@ -199,6 +199,7 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
       </div>
 
       {activeTab === "broadcasts" && (
+      <>
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">Communication</h3>
@@ -336,6 +337,7 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
           </div>
         )}
       </div>
+      </>
       )}
 
       {/* ── Inbox tab ─────────────────────────────────────────────────────── */}

@@ -43,9 +43,9 @@ const BackButton: React.FC<BackButtonProps> = ({
     <button
       type="button"
       onClick={handleClick}
-      className={`inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground px-3 py-1.5 rounded-lg hover:bg-muted transition-colors ${className}`}
+      className={`inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors ${className}`}
     >
-      <ArrowLeft className="w-4 h-4" />
+      <ArrowLeft className="w-4 h-4 shrink-0" />
       <span>{label}</span>
     </button>
   );

@@ -23,8 +23,9 @@ import {
   Calendar,
   MapPin,
   ChevronDown,
+  ChevronRight,
+  ArrowLeft,
 } from "lucide-react";
-import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -643,43 +644,23 @@ const EventDetailsPage = () => {
       <div className="space-y-6">
         {/* Sticky Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border -mx-6 px-6">
-          <div className="flex items-center gap-4 py-4">
-            <BackButton to="/admin/events" label="Back" />
-            {eventData.image && (
-              <img
-                src={eventData.image}
-                alt={eventData.title}
-                className="w-12 h-12 rounded-lg object-cover shrink-0 hidden sm:block"
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-lg font-bold text-foreground truncate">
-                  {eventData.title}
-                </h1>
-                <Badge className={`text-xs shrink-0 ${getStatusBadge(eventData.status)}`}>
-                  {eventData.status}
-                </Badge>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-0.5">
-                {eventData.date && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {eventData.date}
-                  </span>
-                )}
-                {(eventData.venue || eventData.location) && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" />
-                    {eventData.venue || eventData.location}
-                  </span>
-                )}
-                <span className="flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5" />
-                  {eventData.attendees} / {eventData.capacity || '∞'}
-                </span>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 py-2.5">
+            {/* Breadcrumb */}
+            <button
+              type="button"
+              onClick={() => navigate('/admin/events')}
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Events</span>
+            </button>
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0 hidden sm:block" />
+            <h1 className="text-sm font-semibold text-foreground truncate flex-1 min-w-0">
+              {eventData.title}
+            </h1>
+            <Badge className={`text-xs shrink-0 ${getStatusBadge(eventData.status)}`}>
+              {eventData.status}
+            </Badge>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 shrink-0">
