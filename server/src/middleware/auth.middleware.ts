@@ -77,15 +77,21 @@ export const authenticate = async (
 
 /**
  * Middleware to check if user has required role(s)
+ * ADMIN is automatically allowed wherever SUPERADMIN is allowed (same privilege tier).
  */
 export const authorize = (...allowedRoles: UserRole[]) => {
+  // ADMIN inherits SUPERADMIN access — they are the same privilege tier
+  const expanded = allowedRoles.includes(UserRole.SUPERADMIN) && !allowedRoles.includes(UserRole.ADMIN)
+    ? [...allowedRoles, UserRole.ADMIN]
+    : allowedRoles;
+
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
         throw new AuthenticationError('Authentication required');
       }
 
-      if (!allowedRoles.includes(req.user.role)) {
+      if (!expanded.includes(req.user.role)) {
         throw new AuthorizationError('You do not have permission to access this resource');
       }
 
@@ -140,15 +146,21 @@ export const requireMinRole = (minRole: UserRole) => {
 
 /**
  * Middleware to check if user has one of the allowed roles
+ * ADMIN is automatically allowed wherever SUPERADMIN is allowed (same privilege tier).
  */
 export const requireRole = (allowedRoles: UserRole[]) => {
+  // ADMIN inherits SUPERADMIN access — they are the same privilege tier
+  const expanded = allowedRoles.includes(UserRole.SUPERADMIN) && !allowedRoles.includes(UserRole.ADMIN)
+    ? [...allowedRoles, UserRole.ADMIN]
+    : allowedRoles;
+
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
         throw new AuthenticationError('Authentication required');
       }
 
-      if (!allowedRoles.includes(req.user.role)) {
+      if (!expanded.includes(req.user.role)) {
         throw new AuthorizationError('You do not have sufficient permissions');
       }
 

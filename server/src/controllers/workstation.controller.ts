@@ -813,7 +813,7 @@ export class WorkstationController {
       }
 
       const eventId = (req.params.eventId as string) as string;
-      const { status, facility, search, page = '1', limit = '50' } = req.query;
+      const { status, checkedIn, facility, search, page = '1', limit = '50' } = req.query;
 
       if (!eventId) {
         throw new ValidationError('Event ID is required');
@@ -829,7 +829,22 @@ export class WorkstationController {
       };
 
       if (status && typeof status === 'string') {
-        where.ticketStatus = status as TicketStatus;
+        // Support both ticketStatus values and check-in pseudo-statuses
+        if (status === 'CHECKED_IN') {
+          where.checkedInAt = { not: null };
+        } else if (status === 'NOT_CHECKED_IN' || status === 'CONFIRMED') {
+          where.checkedInAt = null;
+          where.ticketStatus = 'ACTIVE';
+        } else {
+          where.ticketStatus = status as TicketStatus;
+        }
+      }
+
+      // Also support explicit checkedIn boolean param
+      if (checkedIn === 'true') {
+        where.checkedInAt = { not: null };
+      } else if (checkedIn === 'false') {
+        where.checkedInAt = null;
       }
 
       if (facility && typeof facility === 'string') {
@@ -847,8 +862,8 @@ export class WorkstationController {
         ];
       }
 
-      // Get attendees
-      const [attendees, total] = await Promise.all([
+      // Get attendees + total + checkedIn count
+      const [attendees, total, checkedInCount] = await Promise.all([
         prisma.eventRegistration.findMany({
           where,
           skip,
@@ -864,11 +879,15 @@ export class WorkstationController {
               },
             },
           },
-          orderBy: {
-            checkedInAt: 'desc',
-          },
+          orderBy: [
+            { checkedInAt: { sort: 'desc', nulls: 'last' } },
+            { createdAt: 'desc' },
+          ],
         }),
         prisma.eventRegistration.count({ where }),
+        prisma.eventRegistration.count({
+          where: { eventId, checkedInAt: { not: null } },
+        }),
       ]);
 
       res.status(200).json({
@@ -894,6 +913,7 @@ export class WorkstationController {
             qrCodeDataUrl: reg.qrCodeDataUrl,
             registrationData: reg.registrationData as Record<string, unknown> | null,
           })),
+          checkedInCount,
           pagination: {
             page: pageNum,
             limit: limitNum,

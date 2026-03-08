@@ -1731,6 +1731,166 @@ export class AdminService {
   }
 
   /**
+   * Get event analytics for admin mobile app
+   */
+  static async getEventAnalytics(eventId: string) {
+    // Find the event
+    const event = await prisma.event.findFirst({
+      where: { id: eventId, deletedAt: null },
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            organizationName: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Parse ticket types from JSON field
+    const ticketTypes = (event.ticketTypes as Array<{
+      name: string;
+      price: number;
+      quantity: number;
+      features?: string[];
+    }>) || [];
+
+    // Calculate total tickets from ticketTypes quantities, fall back to event capacity
+    const totalTickets = ticketTypes.length > 0
+      ? ticketTypes.reduce((sum, tt) => sum + (tt.quantity || 0), 0)
+      : (event.capacity || 0);
+
+    // Get registration status counts
+    const statusCounts = await prisma.eventRegistration.groupBy({
+      by: ['status'],
+      where: { eventId },
+      _count: { id: true },
+    });
+
+    const statusMap = statusCounts.reduce((acc, item) => {
+      acc[item.status] = item._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const confirmedCount = statusMap['CONFIRMED'] || 0;
+    const pendingCount = statusMap['PENDING'] || 0;
+    const ticketsSold = confirmedCount + pendingCount;
+    const ticketsAvailable = Math.max(0, totalTickets - ticketsSold);
+    const salesRate = totalTickets > 0
+      ? Math.round((ticketsSold / totalTickets) * 10000) / 100
+      : 0;
+
+    // Total revenue (sum of totalAmount where status = CONFIRMED)
+    const revenueResult = await prisma.eventRegistration.aggregate({
+      where: { eventId, status: 'CONFIRMED' },
+      _sum: { totalAmount: true },
+    });
+    const totalRevenue = Number(revenueResult._sum.totalAmount || 0);
+
+    // Total check-ins
+    const totalCheckIns = await prisma.eventRegistration.count({
+      where: { eventId, checkedInAt: { not: null } },
+    });
+    const checkInRate = ticketsSold > 0
+      ? Math.round((totalCheckIns / ticketsSold) * 10000) / 100
+      : 0;
+
+    // Ticket breakdown by ticketType
+    const soldByType = await prisma.eventRegistration.groupBy({
+      by: ['ticketType'],
+      where: {
+        eventId,
+        status: { in: ['CONFIRMED', 'PENDING'] },
+      },
+      _count: { id: true },
+    });
+
+    const revenueByType = await prisma.eventRegistration.groupBy({
+      by: ['ticketType'],
+      where: {
+        eventId,
+        status: 'CONFIRMED',
+      },
+      _sum: { totalAmount: true },
+    });
+
+    const soldMap = soldByType.reduce((acc, item) => {
+      if (item.ticketType) acc[item.ticketType] = item._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const revenueMap = revenueByType.reduce((acc, item) => {
+      if (item.ticketType) acc[item.ticketType] = Number(item._sum.totalAmount || 0);
+      return acc;
+    }, {} as Record<string, number>);
+
+    const ticketBreakdown = ticketTypes.map((tt) => {
+      const sold = soldMap[tt.name] || 0;
+      const total = tt.quantity || 0;
+      const revenue = revenueMap[tt.name] || 0;
+      const percentage = total > 0
+        ? Math.round((sold / total) * 10000) / 100
+        : 0;
+      return { ticketType: tt.name, sold, total, revenue, percentage };
+    });
+
+    // If there are registrations with ticket types not in ticketTypes JSON, include them too
+    const knownTypes = new Set(ticketTypes.map((tt) => tt.name));
+    for (const typeName of Object.keys(soldMap)) {
+      if (!knownTypes.has(typeName)) {
+        const sold = soldMap[typeName] || 0;
+        const revenue = revenueMap[typeName] || 0;
+        ticketBreakdown.push({
+          ticketType: typeName,
+          sold,
+          total: 0,
+          revenue,
+          percentage: 0,
+        });
+      }
+    }
+
+    // Attendees by facility
+    const facilityGroups = await prisma.eventRegistration.groupBy({
+      by: ['lastScanFacility'],
+      where: {
+        eventId,
+        lastScanFacility: { not: null },
+      },
+      _count: { id: true },
+    });
+
+    const attendeesByFacility: Record<string, number> = {};
+    for (const group of facilityGroups) {
+      if (group.lastScanFacility) {
+        attendeesByFacility[group.lastScanFacility] = group._count.id;
+      }
+    }
+
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      totalTickets,
+      ticketsSold,
+      ticketsAvailable,
+      salesRate,
+      totalRevenue,
+      totalCheckIns,
+      checkInRate,
+      ticketBreakdown,
+      salesTrend: [] as Array<{ date: string; count: number }>,
+      checkInTrend: [] as Array<{ date: string; count: number }>,
+      attendeesByFacility,
+    };
+  }
+
+  /**
    * Get system alerts (placeholder - can be enhanced with actual system monitoring)
    */
   static async getSystemAlerts() {

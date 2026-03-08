@@ -125,7 +125,7 @@ router.get(
  */
 router.post(
   '/scan/sync',
-  authorize('TELLER', 'ORGANIZER', 'SUPERADMIN', 'ADMIN_STAFF'),
+  authorize('TELLER', 'ORGANIZER', 'SUPERADMIN', 'ADMIN', 'ADMIN_STAFF'),
   validate(
     Joi.object({
       scans: Joi.array()

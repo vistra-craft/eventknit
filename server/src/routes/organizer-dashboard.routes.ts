@@ -25,6 +25,7 @@ router.use(authorize(
   UserRole.ORGANIZER_STAFF,
   UserRole.ORGANIZER_TELLER,
   UserRole.SUPERADMIN,
+  UserRole.ADMIN,
   UserRole.ADMIN_STAFF,
   UserRole.ATTENDEE,
 ));

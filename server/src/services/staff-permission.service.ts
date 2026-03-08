@@ -18,9 +18,10 @@ export class StaffPermissionService {
     userRole: UserRole,
     eventId: string,
   ): Promise<boolean> {
-    // Admin staff (SUPERADMIN, ADMIN_STAFF, MARKETER, SUPPORT, TELLER) can access any event
+    // Admin roles (SUPERADMIN, ADMIN, ADMIN_STAFF, MARKETER, SUPPORT, TELLER) can access any event
     const adminStaffRoles: UserRole[] = [
       UserRole.SUPERADMIN,
+      UserRole.ADMIN,
       UserRole.ADMIN_STAFF,
       UserRole.MARKETER,
       UserRole.SUPPORT,
@@ -88,6 +89,7 @@ export class StaffPermissionService {
   ) {
     const adminStaffRoles: UserRole[] = [
       UserRole.SUPERADMIN,
+      UserRole.ADMIN,
       UserRole.ADMIN_STAFF,
       UserRole.MARKETER,
       UserRole.SUPPORT,

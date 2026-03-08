@@ -27,7 +27,7 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { UserRole } from '@prisma/client';
 
 const isAdminRole = (role: UserRole): boolean =>
-  role === UserRole.SUPERADMIN || role === UserRole.ADMIN_STAFF;
+  role === UserRole.SUPERADMIN || role === UserRole.ADMIN || role === UserRole.ADMIN_STAFF;
 
 export class OrganizerDashboardController {
   // Event Templates

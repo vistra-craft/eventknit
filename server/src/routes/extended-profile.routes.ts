@@ -34,7 +34,7 @@ router.put(
  */
 router.get(
   '/organizer/:userId',
-  authorize('SUPERADMIN', 'ADMIN_STAFF'),
+  authorize('SUPERADMIN', 'ADMIN', 'ADMIN_STAFF'),
   ExtendedProfileController.getOrganizerProfile,
 );
 
@@ -45,7 +45,7 @@ router.get(
  */
 router.put(
   '/organizer/:userId',
-  authorize('SUPERADMIN', 'ADMIN_STAFF'),
+  authorize('SUPERADMIN', 'ADMIN', 'ADMIN_STAFF'),
   validate(extendedProfileValidations.upsertOrganizerProfile),
   ExtendedProfileController.updateOrganizerProfile,
 );

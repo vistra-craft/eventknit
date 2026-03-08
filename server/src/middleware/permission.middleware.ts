@@ -7,6 +7,7 @@ import { PermissionService } from '../services/permission.service.js';
 /** Roles that bypass granular permission checks (full access) */
 const BYPASS_ROLES: UserRole[] = [
   UserRole.SUPERADMIN,
+  UserRole.ADMIN,
   UserRole.ADMIN_STAFF,
   UserRole.ORGANIZER,
 ];

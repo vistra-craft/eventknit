@@ -236,6 +236,13 @@ router.post('/events/:id/recall', AdminController.recallEvent);
 router.get('/roles', AdminController.getRoles);
 
 /**
+ * @route   GET /api/v1/admin/events/:eventId/analytics
+ * @desc    Get event analytics (for admin mobile app)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/events/:eventId/analytics', AdminController.getEventAnalytics);
+
+/**
  * @route   POST /api/v1/admin/events/:eventId/staff
  * @desc    Assign admin staff to event
  * @access  Private (ADMIN_STAFF+)
