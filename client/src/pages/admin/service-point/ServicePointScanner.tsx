@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Html5QrcodeScanner } from "html5-qrcode/esm/html5-qrcode-scanner";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -43,6 +43,8 @@ import { useIsMobile } from "../../../hooks/useMobile";
 import {
   scanTicket,
   scanOut,
+  manualCheckIn,
+  manualCheckOut,
   searchAttendees,
   getEvent,
   detectCodeType,
@@ -178,9 +180,12 @@ const vibrateError = (): void => {
 
 const ServicePointScanner: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const eventIdParam = searchParams.get('event');
   const { toast } = useToast();
+  // Detect whether we're under /admin or /organizer so back/history links work for both
+  const basePrefix = location.pathname.startsWith('/organizer') ? '/organizer' : '/admin';
   
   // State
   const [eventId, setEventId] = useState<string | null>(eventIdParam);
@@ -785,21 +790,16 @@ const ServicePointScanner: React.FC = () => {
     if (!eventId) return;
 
     try {
-      let response: ScanResponse;
-
-      const manualRequest: ScanRequest = {
-        code: attendee.registrationId, // Use registration ID as code
+      const manualRequest = {
+        searchTerm: attendee.registrationId,
         eventId,
-        session: selectedSession,
-        deviceId,
-        deviceType: isMobile ? 'MOBILE' : 'DESKTOP',
+        facility: selectedSession || null,
+        code: searchCode.trim() || null,
       };
 
-      if (scanMode === 'check-in') {
-        response = await scanTicket(manualRequest);
-      } else {
-        response = await scanOut(manualRequest);
-      }
+      const response = scanMode === 'check-in'
+        ? await manualCheckIn(manualRequest)
+        : await manualCheckOut(manualRequest);
 
       if (response.success) {
         const scanResult: ScanResult = {
@@ -808,10 +808,10 @@ const ServicePointScanner: React.FC = () => {
           attendeeName: response.data.attendeeName,
           ticketType: response.data.ticketType,
           scannedAt: response.data.scannedAt instanceof Date ? response.data.scannedAt.toISOString() : response.data.scannedAt,
-          session: response.data.session,
+          session: selectedSession,
           status: 'success',
-          signatureValid: response.data.signatureValid,
-          codeType: response.data.codeType,
+          signatureValid: response.data.signatureValid ?? true,
+          codeType: response.data.codeType ?? 'QR_CODE',
           scanType: response.data.scanType,
           isReEntry: response.data.isReEntry,
         };
@@ -820,15 +820,16 @@ const ServicePointScanner: React.FC = () => {
         setShowSearchModal(false);
         setSearchTerm("");
         setSearchResults([]);
+        setSearchCode("");
 
         toast({
           title: "Success",
           description: `${scanMode === 'check-in' ? 'Checked in' : 'Checked out'}: ${response.data.attendeeName}`,
         });
       } else {
-        const error = response.error || { code: 'UNKNOWN', message: 'Scan failed' };
+        const error = response.error || { code: 'UNKNOWN', message: 'Operation failed' };
         toast({
-          title: "Error",
+          title: scanMode === 'check-in' ? "Check-in failed" : "Check-out failed",
           description: error.message || "Operation failed",
           variant: "destructive",
         });
@@ -884,7 +885,7 @@ const ServicePointScanner: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to="/admin/service-point" label="Back" />
+          <BackButton to={`${basePrefix}/service-point`} label="Back" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">Ticket Scanner</h1>
             <p className="text-muted-foreground mt-2">
@@ -897,7 +898,7 @@ const ServicePointScanner: React.FC = () => {
               onChange={(e) => {
                 const newEventId = e.target.value;
                 setEventId(newEventId);
-                navigate(`/admin/service-point/scanner?event=${newEventId}`);
+                navigate(`${basePrefix}/service-point/scanner?event=${newEventId}`);
               }}
               className="px-3 py-2 border border-border rounded-md text-sm"
             >
@@ -1267,7 +1268,7 @@ const ServicePointScanner: React.FC = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate('/admin/service-point/history')}
+                      onClick={() => navigate(`${basePrefix}/service-point/history`)}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>

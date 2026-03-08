@@ -19,6 +19,7 @@ import { UserRole } from '../../types/auth';
 import { shareEvent } from '../../lib/utils/share';
 import { downloadTicket } from '../../lib/utils/ticket';
 import { useToast } from '../../hooks/useToast';
+import { showErrorToast } from '../../lib/utils/error';
 import { getVerificationStatus, type VerificationStatus } from '../../lib/verification-api';
 import {
   PAGE_TITLES,
@@ -126,8 +127,8 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
         ticketId: `${event.id}-${Date.now()}`,
       });
       toast({ title: 'Downloaded', description: 'Ticket downloaded' });
-    } catch {
-      toast({ title: 'Error', description: 'Failed to download', variant: 'destructive' });
+    } catch (err) {
+      showErrorToast(toast, err, 'Download failed');
     }
   };
 

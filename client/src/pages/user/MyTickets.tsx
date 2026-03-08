@@ -10,6 +10,7 @@ import { getUserRegisteredEvents } from "../../lib/event-api";
 import { downloadTicketPDF, resendTicketEmail } from "../../lib/ticket-api";
 import { shareEvent } from "../../lib/utils/share";
 import { useToast } from "../../hooks/useToast";
+import { showErrorToast } from "../../lib/utils/error";
 
 interface Ticket {
   id: string;
@@ -56,7 +57,7 @@ const MyTickets: React.FC = () => {
         }
       } catch (error) {
         console.error("Error fetching tickets:", error);
-        toast({ title: "Error", description: "Failed to load tickets", variant: "destructive" });
+        showErrorToast(toast, error, 'Load failed', 'Failed to load tickets');
       } finally {
         setLoading(false);
       }
@@ -82,7 +83,7 @@ const MyTickets: React.FC = () => {
       await downloadTicketPDF(ticket.registrationId);
       toast({ title: "Downloaded", description: "Ticket PDF downloaded" });
     } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Download failed", variant: "destructive" });
+      showErrorToast(toast, error, 'Download failed');
     } finally {
       setDownloadingId(null);
     }
@@ -111,11 +112,7 @@ const MyTickets: React.FC = () => {
       );
       toast({ title: "Sent", description: "Ticket email resend started" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to resend ticket email",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Resend failed', 'Failed to resend ticket email');
     } finally {
       setResendingId(null);
     }

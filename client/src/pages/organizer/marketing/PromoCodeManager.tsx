@@ -35,6 +35,8 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { getPromoCodes, createPromoCode, updatePromoCode, deletePromoCode, type PromoCode, type CreatePromoCodeData } from '@/lib/promo-code-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const PromoCodeManager = () => {
   const { toast } = useToast();
@@ -45,6 +47,7 @@ const PromoCodeManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
   const [codeValidation, setCodeValidation] = useState<{ valid: boolean; error?: string }>({ valid: true });
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<CreatePromoCodeData>({
@@ -164,12 +167,8 @@ const PromoCodeManager = () => {
       if (response.success && response.data) {
         setPromoCodes(response.data.promoCodes);
       }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to load promo codes',
-        variant: 'destructive',
-      });
+    } catch (err) {
+      showErrorToast(toast, err, 'Load failed', 'Failed to load promo codes');
     } finally {
       setLoading(false);
     }
@@ -203,18 +202,10 @@ const PromoCodeManager = () => {
         resetForm();
         fetchPromoCodes();
       } else {
-        toast({
-          title: 'Error',
-          description: response.message || 'Failed to create promo code',
-          variant: 'destructive',
-        });
+        toast({ title: 'Create failed', description: response.message || 'Failed to create promo code', variant: 'destructive' });
       }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to create promo code',
-        variant: 'destructive',
-      });
+    } catch (err) {
+      showErrorToast(toast, err, 'Create failed', 'Failed to create promo code');
     }
   };
 
@@ -237,45 +228,31 @@ const PromoCodeManager = () => {
         resetForm();
         fetchPromoCodes();
       } else {
-        toast({
-          title: 'Error',
-          description: response.message || 'Failed to update promo code',
-          variant: 'destructive',
-        });
+        toast({ title: 'Update failed', description: response.message || 'Failed to update promo code', variant: 'destructive' });
       }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to update promo code',
-        variant: 'destructive',
-      });
+    } catch (err) {
+      showErrorToast(toast, err, 'Update failed', 'Failed to update promo code');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this promo code?')) return;
+  const handleDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
 
+  const executeDelete = async () => {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     try {
       const response = await deletePromoCode(id);
       if (response.success) {
-        toast({
-          title: 'Success',
-          description: 'Promo code deleted successfully',
-        });
+        toast({ title: 'Deleted', description: 'Promo code deleted successfully' });
         fetchPromoCodes();
       } else {
-        toast({
-          title: 'Error',
-          description: response.message || 'Failed to delete promo code',
-          variant: 'destructive',
-        });
+        toast({ title: 'Delete failed', description: response.message || 'Failed to delete promo code', variant: 'destructive' });
       }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete promo code',
-        variant: 'destructive',
-      });
+    } catch (err) {
+      showErrorToast(toast, err, 'Delete failed', 'Failed to delete promo code');
     }
   };
 
@@ -731,6 +708,16 @@ const PromoCodeManager = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        <ConfirmDialog
+          open={confirmDeleteId !== null}
+          onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}
+          title="Delete promo code?"
+          description="This action cannot be undone."
+          confirmText="Delete"
+          variant="danger"
+          onConfirm={executeDelete}
+        />
       </div>
   );
 };

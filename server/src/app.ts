@@ -129,7 +129,14 @@ if (config.env === 'development') {
 }
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+// The verify callback saves the raw body buffer so the Stripe webhook controller
+// can compute HMAC over the exact bytes Stripe sent (required by Stripe's SDK).
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: express.Request & { rawBody?: string }, _res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Global rate limiter

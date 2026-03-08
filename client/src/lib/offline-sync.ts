@@ -228,14 +228,22 @@ export const syncOfflineQueue = async (
           synced++;
           onItemComplete?.(item, true);
         } else {
-          // API returned error - increment retry count
-          updateOfflineQueueItem(item.id, {
-            retryCount: item.retryCount + 1,
-            lastError: response.error?.message || 'Unknown error',
-          });
-          failed++;
-          errors.push(`Item ${item.id}: ${response.error?.message || 'Unknown error'}`);
-          onItemComplete?.(item, false);
+          // Treat duplicate scan as success — already scanned by another device
+          const errorCode = response.error?.code;
+          if (errorCode === 'ALREADY_SCANNED' || errorCode === 'ALREADY_CHECKED_IN') {
+            removeFromOfflineQueue(item.id);
+            synced++;
+            onItemComplete?.(item, true);
+          } else {
+            // API returned a real error - increment retry count
+            updateOfflineQueueItem(item.id, {
+              retryCount: item.retryCount + 1,
+              lastError: response.error?.message || 'Unknown error',
+            });
+            failed++;
+            errors.push(`Item ${item.id}: ${response.error?.message || 'Unknown error'}`);
+            onItemComplete?.(item, false);
+          }
         }
       } catch (error) {
         // Network or other error - increment retry count

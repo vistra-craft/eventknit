@@ -63,7 +63,7 @@ export class TicketService {
   static async generateQRCode(data: string): Promise<string> {
     try {
       const qrCodeDataUrl = await QRCode.toDataURL(data, {
-        errorCorrectionLevel: 'M',
+        errorCorrectionLevel: 'H',
         type: 'image/png',
         width: 300,
         margin: 2,
@@ -443,7 +443,7 @@ export class TicketService {
                           
                           <!-- QR Code -->
                           <div style="margin: 20px 0; text-align: center;">
-                            <img src="${qrCodeDataUrl}" alt="Ticket QR Code" style="width: 200px; height: 200px; display: block; margin: 0 auto; border: 2px solid #e9ecef; border-radius: 8px; padding: 10px; background-color: #ffffff;">
+                            <img src="cid:ticket-qr-code" alt="Ticket QR Code" style="width: 200px; height: 200px; display: block; margin: 0 auto; border: 2px solid #e9ecef; border-radius: 8px; padding: 10px; background-color: #ffffff;">
                           </div>
                           
                           <!-- Backup Code -->
@@ -550,18 +550,20 @@ export class TicketService {
         content: Buffer | string;
         contentType?: string;
         encoding?: string;
+        cid?: string;
       }> = [
         {
           filename: 'event.ics',
           content: Buffer.from(icsContent),
           contentType: 'text/calendar',
         },
-        // QR code PNG attachment (always available)
+        // QR code PNG — embedded inline via cid so it renders in Gmail/Outlook/Apple Mail
         {
           filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-qr-code.png`,
           content: qrCodeDataUrl.split(';base64,')[1] || qrCodeDataUrl,
           encoding: 'base64',
           contentType: 'image/png',
+          cid: 'ticket-qr-code',
         },
       ];
 

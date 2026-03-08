@@ -4,6 +4,7 @@ import { Calendar, MapPin, User, Gift, CheckCircle, XCircle, Clock, AlertTriangl
 import { Button } from "../components/ui/button";
 import { Loader } from "../components/ui/loader";
 import { useToast } from "../hooks/useToast";
+import { extractErrorMessage, showErrorToast } from "../lib/utils/error";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { getTransferByToken, acceptTicketTransfer } from "../lib/user-dashboard-api";
 import Logo from "../components/Logo";
@@ -59,7 +60,7 @@ const TransferAccept: React.FC = () => {
           setError(response.message || "Transfer not found");
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load transfer details");
+        setError(extractErrorMessage(err, "Failed to load transfer details"));
       } finally {
         setLoading(false);
       }
@@ -78,14 +79,10 @@ const TransferAccept: React.FC = () => {
         setAccepted(true);
         toast({ title: "Transfer Accepted", description: "The ticket has been added to your account" });
       } else {
-        toast({ title: "Error", description: response.message || "Failed to accept transfer", variant: "destructive" });
+        toast({ title: "Accept failed", description: response.message || "Failed to accept transfer", variant: "destructive" });
       }
     } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to accept transfer",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, 'Accept failed', 'Failed to accept transfer');
     } finally {
       setAccepting(false);
     }

@@ -8,6 +8,8 @@ export interface EmailAttachment {
   filename: string;
   content: Buffer | string;
   contentType?: string;
+  encoding?: string;
+  cid?: string; // Content-ID for inline images: reference with src="cid:<value>"
 }
 
 export interface EmailOptions {
@@ -176,6 +178,8 @@ class EmailService {
             filename: att.filename,
             content: att.content,
             contentType: att.contentType,
+            encoding: att.encoding,
+            cid: att.cid,
           }));
         }
 

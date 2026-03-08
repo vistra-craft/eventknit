@@ -25,6 +25,7 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { ButtonLoader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { 
   getOrganizerStaff, 
   type OrganizerStaff,
@@ -98,11 +99,7 @@ const RolesPermissions = () => {
         setPermissions(response.data.permissions);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load permissions",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Load failed', 'Failed to load permissions');
     } finally {
       setPermissionsLoading(false);
     }
@@ -116,11 +113,7 @@ const RolesPermissions = () => {
         setCustomRoles(response.data.templates);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load custom roles",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Load failed', 'Failed to load custom roles');
     }
   }, [toast]);
 
@@ -133,11 +126,7 @@ const RolesPermissions = () => {
         setStaff(response.data.staff);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load staff members",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Load failed', 'Failed to load staff members');
     } finally {
       setLoading(false);
     }
@@ -200,11 +189,7 @@ const RolesPermissions = () => {
   // Handler functions
   const handleCreateRole = async () => {
     if (!formData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Role name is required",
-        variant: "destructive",
-      });
+      toast({ title: "Validation error", description: "Role name is required", variant: "destructive" });
       return;
     }
 
@@ -221,12 +206,7 @@ const RolesPermissions = () => {
         fetchCustomRoles();
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to create role";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Create role failed', 'Failed to create role');
     } finally {
       setSubmitting(false);
     }
@@ -260,12 +240,7 @@ const RolesPermissions = () => {
         }
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to update role";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Update role failed', 'Failed to update role');
     } finally {
       setSubmitting(false);
     }
@@ -291,12 +266,7 @@ const RolesPermissions = () => {
         }
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to delete role";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Delete role failed', 'Failed to delete role');
     } finally {
       setSubmitting(false);
     }
@@ -314,12 +284,7 @@ const RolesPermissions = () => {
         fetchCustomRoles();
       }
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to duplicate role";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Duplicate role failed', 'Failed to duplicate role');
     } finally {
       setSubmitting(false);
     }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 interface LocationData {
   city: string;
@@ -91,7 +92,7 @@ export const useLocation = (): UseLocationReturn => {
           countryCode: 'KE',
           region: 'Nairobi',
         });
-        setError(err instanceof Error ? err.message : 'Failed to detect location');
+        setError(extractErrorMessage(err, 'Failed to detect location'));
       } finally {
         setIsLoading(false);
       }

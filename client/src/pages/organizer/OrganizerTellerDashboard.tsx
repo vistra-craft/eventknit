@@ -249,7 +249,7 @@ const OrganizerTellerDashboard = () => {
                     </div>
                     <div className={`flex ${isMobile ? 'w-full gap-2' : 'gap-2'}`}>
                       <Link
-                        to={`/organizer/service-point/scanner?eventId=${assignment.event.id}`}
+                        to={`/organizer/service-point/scanner?event=${assignment.event.id}`}
                         className={isMobile ? 'flex-1' : ''}
                       >
                         <Button size={isMobile ? 'default' : 'sm'} className={isMobile ? 'w-full' : ''}>
