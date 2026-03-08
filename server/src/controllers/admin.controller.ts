@@ -745,6 +745,31 @@ export class AdminController {
   }
 
   /**
+   * Get event analytics (for admin mobile app)
+   */
+  static async getEventAnalytics(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { eventId } = req.params;
+      const analytics = await AdminService.getEventAnalytics(eventId);
+
+      res.status(200).json({
+        success: true,
+        data: analytics,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Cancel a ticket issuance (admin, no ownership check)
    */
   static async cancelTicketIssuance(req: AuthenticatedRequest<{ id: string }>, res: Response, next: NextFunction): Promise<void> {

@@ -141,6 +141,7 @@ export const canDeleteUser = (userRole: UserRole, targetUserRole: UserRole): boo
 export const canManageStaff = (userRole: UserRole): boolean => {
   const allowedRoles: UserRole[] = [
     UserRole.SUPERADMIN,
+    UserRole.ADMIN,
     UserRole.ADMIN_STAFF,
     UserRole.MARKETER,
     UserRole.ORGANIZER,
@@ -187,12 +188,21 @@ export const validateUserDeletion = (userRole: UserRole, targetUserRole: UserRol
 export const isAdminStaff = (userRole: UserRole): boolean => {
   const adminStaffRoles: UserRole[] = [
     UserRole.SUPERADMIN,
+    UserRole.ADMIN,
     UserRole.ADMIN_STAFF,
     UserRole.MARKETER,
     UserRole.SUPPORT,
     UserRole.TELLER,
   ];
   return adminStaffRoles.includes(userRole);
+};
+
+/**
+ * Check if user has platform admin privileges (SUPERADMIN, ADMIN, or ADMIN_STAFF).
+ * Use this instead of inline SUPERADMIN/ADMIN_STAFF checks in services and controllers.
+ */
+export const isPlatformAdmin = (userRole: UserRole): boolean => {
+  return userRole === UserRole.SUPERADMIN || userRole === UserRole.ADMIN || userRole === UserRole.ADMIN_STAFF;
 };
 
 /**
