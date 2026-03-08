@@ -219,7 +219,10 @@ const ServicePointScanner: React.FC = () => {
   // Refs
   const html5QrCodeRef = useRef<Html5QrcodeScanner | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
+  const lastScannedRef = useRef<{ code: string; time: number } | null>(null);
   const deviceId = getDeviceId();
+  // Debounce: ignore the same code within 3 seconds to prevent double-scans while camera runs continuously
+  const SCAN_DEBOUNCE_MS = 3000;
 
   // Check camera permissions
   useEffect(() => {
@@ -639,8 +642,16 @@ const ServicePointScanner: React.FC = () => {
           errorTitle = "Ticket Not Found";
           errorDescription = "This ticket is not valid for this event.";
         } else if (error.code === 'ALREADY_SCANNED') {
-          errorTitle = "Already Scanned";
-          errorDescription = "This ticket has already been scanned.";
+          // Amber/warning — not a hard failure, staff may need to verify and wave through
+          toast({
+            title: "Already Checked In",
+            description: "This ticket was already scanned. Verify the attendee visually.",
+          });
+          setFlashStatus('error');
+          setTimeout(() => setFlashStatus('none'), 1000);
+          if (soundEnabled) playErrorSound();
+          vibrateError();
+          return;
         }
 
         toast({
@@ -729,8 +740,14 @@ const ServicePointScanner: React.FC = () => {
 
       html5QrCode.render(
         (decodedText) => {
-          // Stop scanning after successful decode
-          stopScanning();
+          // Debounce: skip if this exact code was scanned within SCAN_DEBOUNCE_MS
+          const now = Date.now();
+          const last = lastScannedRef.current;
+          if (last && last.code === decodedText && now - last.time < SCAN_DEBOUNCE_MS) {
+            return;
+          }
+          lastScannedRef.current = { code: decodedText, time: now };
+          // Keep camera running — only processCode, do NOT stop scanning
           processCode(decodedText);
         },
         () => {
@@ -1200,7 +1217,7 @@ const ServicePointScanner: React.FC = () => {
                             const value = e.target.value.toUpperCase().replace(/\s+/g, '');
                             setManualInput(value);
                           }}
-                          onKeyPress={(e) => e.key === 'Enter' && handleManualScan()}
+                          onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
                           maxLength={100}
                           className={isMobile ? 'text-base h-12' : ''}
                           autoComplete="off"
@@ -1375,7 +1392,7 @@ const ServicePointScanner: React.FC = () => {
                   placeholder="Enter name, email, phone, backup code, or registration ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
               <div>
