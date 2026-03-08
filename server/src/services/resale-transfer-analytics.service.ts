@@ -39,7 +39,7 @@ export class ResaleTransferAnalyticsService {
     ]);
 
     const statusMap = Object.fromEntries(
-      statusCounts.map((s) => [s.status, s._count])
+      statusCounts.map((s) => [s.status, s._count]),
     );
 
     return {
@@ -59,7 +59,7 @@ export class ResaleTransferAnalyticsService {
     eventId: string,
     organizerId: string,
     filters: { status?: string; page?: number; limit?: number } = {},
-    isAdmin = false
+    isAdmin = false,
   ) {
     const event = await prisma.event.findFirst({
       where: { id: eventId, ...(isAdmin ? {} : { organizerId }), deletedAt: null },
@@ -138,7 +138,7 @@ export class ResaleTransferAnalyticsService {
     ]);
 
     const statusMap = Object.fromEntries(
-      statusCounts.map((s) => [s.status, s._count])
+      statusCounts.map((s) => [s.status, s._count]),
     );
 
     return {
@@ -155,7 +155,7 @@ export class ResaleTransferAnalyticsService {
     eventId: string,
     organizerId: string,
     filters: { status?: string; page?: number; limit?: number } = {},
-    isAdmin = false
+    isAdmin = false,
   ) {
     const event = await prisma.event.findFirst({
       where: { id: eventId, ...(isAdmin ? {} : { organizerId }), deletedAt: null },
@@ -246,7 +246,7 @@ export class ResaleTransferAnalyticsService {
     ]);
 
     const statusMap = Object.fromEntries(
-      statusCounts.map((s) => [s.status, s._count])
+      statusCounts.map((s) => [s.status, s._count]),
     );
 
     // Pending seller payouts (sold but not yet disbursed)
@@ -291,7 +291,7 @@ export class ResaleTransferAnalyticsService {
     ]);
 
     const statusMap = Object.fromEntries(
-      statusCounts.map((s) => [s.status, s._count])
+      statusCounts.map((s) => [s.status, s._count]),
     );
 
     return {
@@ -305,7 +305,7 @@ export class ResaleTransferAnalyticsService {
   }
 
   static async getPlatformResaleActivity(
-    filters: { status?: string; eventId?: string; page?: number; limit?: number } = {}
+    filters: { status?: string; eventId?: string; page?: number; limit?: number } = {},
   ) {
     const { status, eventId, page = 1, limit = 25 } = filters;
 
@@ -360,7 +360,7 @@ export class ResaleTransferAnalyticsService {
   }
 
   static async getResalePendingPayouts(
-    filters: { page?: number; limit?: number } = {}
+    filters: { page?: number; limit?: number } = {},
   ) {
     const { page = 1, limit = 25 } = filters;
 
