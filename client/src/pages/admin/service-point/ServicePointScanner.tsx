@@ -764,7 +764,7 @@ const ServicePointScanner: React.FC = () => {
         variant: "destructive",
       });
     }
-  }, [processCode, toast, cameraPermission, isMobile, stopScanning]);
+  }, [processCode, toast, cameraPermission, isMobile]);
 
   // Handle manual scan
   const handleManualScan = () => {

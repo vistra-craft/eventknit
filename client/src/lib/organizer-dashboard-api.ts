@@ -2,7 +2,7 @@
  * Organizer Dashboard API Functions
  */
 
-import { apiGet, apiPost, apiPut, apiDelete, type ApiResponse } from "./api";
+import { apiGet, apiPost, apiPut, apiDelete, apiPatch, type ApiResponse } from "./api";
 
 // ---------------------------------------------------------------------------
 // Shared utility types

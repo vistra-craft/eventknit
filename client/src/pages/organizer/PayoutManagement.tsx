@@ -47,9 +47,9 @@ import {
   getPayoutHistory,
   getPayoutSummary,
   schedulePayout,
-  getOrganizerEvents,
   type PayoutPreferences,
 } from "@/lib/organizer-dashboard-api";
+import { getEvents, EventStatus } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
 
 interface DisbursementRecord {
@@ -226,7 +226,7 @@ const PayoutManagement = () => {
       setLoading(true);
       const [, eventsRes] = await Promise.all([
         Promise.all([loadPreferences(), loadSummary()]),
-        getOrganizerEvents({ limit: 100, status: "COMPLETED" }),
+        getEvents({ limit: 100, status: EventStatus.APPROVED }),
       ]);
       if (eventsRes.success && eventsRes.data?.events) {
         setPayoutEvents(eventsRes.data.events as Array<{ id: string; title: string }>);

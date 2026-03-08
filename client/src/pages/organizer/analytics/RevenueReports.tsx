@@ -22,13 +22,13 @@ import {
 import { CHART_COLORS } from "@/components/charts/chartConstants";
 import {
   getRevenueAnalytics,
-  getOrganizerEvents,
   type FinancialTotals,
   type RevenueByTicketType,
   type RefundStats,
   type AverageOrderValue,
   type RevenueForecast,
 } from "@/lib/organizer-dashboard-api";
+import { getEvents } from "@/lib/event-api";
 import { extractErrorMessage } from "@/lib/utils/error";
 
 interface RevenueAnalyticsData {
@@ -96,7 +96,7 @@ const RevenueReports = () => {
 
       const [analyticsResponse, eventsResponse] = await Promise.all([
         getRevenueAnalytics({ eventId, startDate, endDate }),
-        getOrganizerEvents({ limit: 100 }),
+        getEvents({ limit: 100 }),
       ]);
 
       if (analyticsResponse.success && analyticsResponse.data) {
@@ -318,14 +318,9 @@ const RevenueReports = () => {
                     <CustomBarChart
                       data={ticketTypeChartData}
                       xAxisKey="type"
-                      bars={[
-                        {
-                          dataKey: "revenue",
-                          name: "Revenue",
-                          color: CHART_COLORS.success,
-                        },
-                      ]}
+                      dataKey="revenue"
                       height={300}
+                      color={CHART_COLORS.success}
                       formatter={(value) => formatCurrency(value as number, currency)}
                     />
                   ) : (

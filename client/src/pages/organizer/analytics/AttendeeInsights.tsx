@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import {
   Users,
   Clock,
@@ -12,7 +11,6 @@ import {
 } from "lucide-react";
 import {
   CustomAreaChart,
-  CustomBarChart,
   CustomPieChart,
   CustomMultiLineChart,
   CustomComposedChart,
@@ -63,9 +61,6 @@ const AttendeeInsights = () => {
   // Device usage would need backend API support for device analytics
   const deviceUsageData: Array<{ device: string; percentage: number; count: number }> = [];
   
-  // Satisfaction by segment would need backend API support for segment analytics
-  const satisfactionBySegmentData: Array<{ segment: string; satisfaction: number; retention: number }> = [];
-
   const statsData = attendeeStats;
   const insightsData = behaviorInsights;
 

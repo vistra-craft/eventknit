@@ -102,7 +102,7 @@ const ServicePointPrint: React.FC = () => {
 
       // Fetch event to resolve organizerId for scoped templates
       const eventDetail = await getEventById(eventId).catch(() => null);
-      const organizerId = eventDetail?.data?.event?.organizerId;
+      const organizerId = eventDetail?.data?.event?.organizer?.id;
 
       // Load templates (scoped to organizer if available), event config, and attendees in parallel
       const [templatesRes, eventRes, attendeesRes] = await Promise.all([

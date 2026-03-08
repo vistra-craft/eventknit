@@ -67,7 +67,7 @@ const TeamPerformance = () => {
       if (utilizationRes.success) setUtilization(utilizationRes.data);
       if (coverageRes.success) setCoverage(coverageRes.data);
       if (availabilityRes.success) setAvailability(availabilityRes.data);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load performance data",

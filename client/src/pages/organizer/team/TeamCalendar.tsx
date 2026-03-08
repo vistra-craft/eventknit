@@ -158,7 +158,7 @@ const TeamCalendar = () => {
         });
 
       setStaffSchedules(Array.from(staffMap.values()));
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load calendar data",

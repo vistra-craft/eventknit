@@ -9,7 +9,7 @@ import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, getEventById, type EventData } from "../../../lib/event-api";
+import { getEvents, getEventById, EventType, type EventData } from "../../../lib/event-api";
 import { approveEvent } from "../../../lib/admin-api";
 import { useToast } from "../../../hooks/useToast";
 import { shareEvent } from "../../../lib/utils/share";
@@ -58,7 +58,7 @@ const RecalledEventsPage = () => {
         };
 
         if (categoryFilter !== "all") filters.category = categoryFilter;
-        if (typeFilter !== "all") filters.type = typeFilter === "public" ? "PUBLIC" : "PRIVATE";
+        if (typeFilter !== "all") filters.type = (typeFilter === "public" ? "PUBLIC" : "PRIVATE") as EventType;
         if (priceFilter !== "all") filters.isFree = priceFilter === "free";
         if (searchTerm) filters.search = searchTerm;
 

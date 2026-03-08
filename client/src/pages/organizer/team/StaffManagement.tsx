@@ -111,6 +111,7 @@ const StaffManagement = () => {
         setCustomRoles(response.data.templates);
       }
     } catch (error) {
+      console.error('Failed to fetch custom roles:', error);
     }
   }, []);
 
@@ -122,7 +123,7 @@ const StaffManagement = () => {
       if (response.success && response.data) {
         setStaff(response.data.staff);
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load staff members",
@@ -150,7 +151,7 @@ const StaffManagement = () => {
       if (utilizationRes.success) setUtilization(utilizationRes.data);
       if (coverageRes.success) setCoverage(coverageRes.data);
       if (availabilityRes.success) setAvailability(availabilityRes.data);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load performance data",
@@ -199,6 +200,7 @@ const StaffManagement = () => {
           setAssignments(response.data.assignments);
         }
       } catch (error) {
+        console.error('Failed to fetch assignments:', error);
       }
     };
     fetchAssignments();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -57,7 +57,7 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
   const [replyContent, setReplyContent] = useState("");
   const [replying, setReplying] = useState(false);
 
-  const loadBroadcasts = async () => {
+  const loadBroadcasts = useCallback(async () => {
     if (!eventId) return;
     try {
       setLoading(true);
@@ -70,9 +70,9 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
 
-  const loadInbox = async () => {
+  const loadInbox = useCallback(async () => {
     try {
       setInboxLoading(true);
       const response = await getInbox({ limit: 100 });
@@ -89,17 +89,17 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
     } finally {
       setInboxLoading(false);
     }
-  };
+  }, [eventId]);
 
   useEffect(() => {
     void loadBroadcasts();
-  }, [eventId]);
+  }, [eventId, loadBroadcasts]);
 
   useEffect(() => {
     if (activeTab === "inbox" && !inboxLoaded) {
       void loadInbox();
     }
-  }, [activeTab]);
+  }, [activeTab, inboxLoaded, loadInbox]);
 
   const handleSendMessage = async () => {
     if (!eventId || !subject.trim() || !content.trim()) {

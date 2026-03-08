@@ -162,7 +162,7 @@ const ServicePointTemplates: React.FC = () => {
     getEventById(eventId)
       .then((res) => {
         if (res.success && res.data?.event) {
-          organizerIdRef.current = res.data.event.organizerId;
+          organizerIdRef.current = res.data.event.organizer?.id;
           setEventTitle(res.data.event.title);
         }
       })

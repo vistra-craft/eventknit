@@ -795,9 +795,12 @@ export default function CreateEventStepwise() {
                 setRequirements(Array.isArray(parsedReqs) ? parsedReqs : []);
               } catch {
                 // If parsing fails, split by comma/newline
-                setRequirements(
-                  transformedEvent.requirements.split(/[,\n]/).map((r: string) => r.trim()).filter(Boolean)
-                );
+                const requirementsText = (transformedEvent as { requirements?: unknown }).requirements;
+                if (typeof requirementsText === 'string') {
+                  setRequirements(
+                    requirementsText.split(/[,\n]/).map((r: string) => r.trim()).filter(Boolean)
+                  );
+                }
               }
             }
           }
@@ -1826,7 +1829,7 @@ export default function CreateEventStepwise() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, saveDraft, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput, orgDescInput]);
+  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, saveDraft, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput, orgDescInput, eventData]);
 
   const handleNext = useCallback(() => {
     if (currentStep < 6) {

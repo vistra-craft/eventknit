@@ -225,7 +225,7 @@ const ServicePointEventDashboard: React.FC = () => {
           setPagination({
             page: response.data.pagination.page,
             limit: response.data.pagination.limit,
-            total: response.data.pagination?.total ?? response.data.attendees.length,
+            total: response.data.attendees.length,
             totalPages: response.data.pagination.totalPages,
           });
         }
@@ -396,7 +396,7 @@ const ServicePointEventDashboard: React.FC = () => {
             setPagination({
               page: response.data.pagination.page,
               limit: response.data.pagination.limit,
-              total: response.data.pagination?.total ?? response.data.attendees.length,
+              total: response.data.attendees.length,
               totalPages: response.data.pagination.totalPages,
             });
           }
