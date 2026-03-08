@@ -42,6 +42,9 @@ export interface EventFilters {
   type?: EventType;
   dateFrom?: string; // ISO date string - filter events starting from this date
   dateTo?: string; // ISO date string - filter events starting before this date
+  declinedOrRecalledCancelled?: boolean; // REJECTED or (CANCELLED + recalledAt)
+  recalledCancelled?: boolean; // CANCELLED + recalledAt (recalled events only)
+  recalledPending?: boolean; // PENDING + recalledAt
 }
 
 /**
@@ -295,6 +298,10 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
   // Date range filtering
   if (filters?.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
   if (filters?.dateTo) queryParams.append('dateTo', filters.dateTo);
+  // Special status filters
+  if (filters?.declinedOrRecalledCancelled) queryParams.append('declinedOrRecalledCancelled', 'true');
+  if (filters?.recalledCancelled) queryParams.append('recalledCancelled', 'true');
+  if (filters?.recalledPending) queryParams.append('recalledPending', 'true');
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/events?${queryString}` : '/events';

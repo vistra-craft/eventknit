@@ -1654,7 +1654,7 @@ class EmailService {
     eventTitle?: string | null,
     message?: string | null,
   ): Promise<void> {
-    const reviewUrl = `${config.frontend.url}/admin/marketing/promo-codes?tab=requests`;
+    const reviewUrl = `${config.frontend.url}/admin/tickets/promo-codes?tab=requests`;
 
     const messageBlock = message
       ? `
@@ -1759,7 +1759,7 @@ class EmailService {
     promoCode: { code: string; discountType: string; discountValue: unknown; validFrom?: Date; validUntil?: Date },
     eventTitle?: string | null,
   ): Promise<void> {
-    const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
+    const viewUrl = `${config.frontend.url}/organizer/tickets`;
 
     const discountDisplay = promoCode.discountType === 'PERCENTAGE'
       ? `${promoCode.discountValue}%`
@@ -1865,7 +1865,7 @@ class EmailService {
     reason?: string | null,
     eventTitle?: string | null,
   ): Promise<void> {
-    const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
+    const viewUrl = `${config.frontend.url}/organizer/tickets`;
 
     const reasonBlock = reason
       ? `

@@ -25,6 +25,7 @@ const EditFeaturedEventPage = lazy(() => import('../pages/admin/events/featured/
 const AdminPastEventsPage = lazy(() => import('../pages/admin/events/PastEventsPage'));
 const AdminUpcomingEventsPage = lazy(() => import('../pages/admin/events/UpcomingEventsPage'));
 const AdminDeclinedEventsPage = lazy(() => import('../pages/admin/events/DeclinedEventsPage'));
+const AdminRecalledEventsPage = lazy(() => import('../pages/admin/events/RecalledEventsPage'));
 const AdminCreateEventPage = lazy(() => import('../pages/admin/AdminCreateEventPage'));
 const EventPreviewPage = lazy(() => import('../pages/admin/events/EventPreviewPage'));
 const EventDetailsPage = lazy(() => import('../pages/admin/events/EventDetailsPage'));
@@ -219,6 +220,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'events/declined',
     element: createElement(AdminDeclinedEventsPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'events/recalled',
+    element: createElement(AdminRecalledEventsPage),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
   {
@@ -419,17 +425,17 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   },
   {
     path: 'marketing/promo-codes',
-    element: createElement(AdminPromotionsPage),
+    element: createElement(Navigate, { to: '/admin/tickets/promo-codes', replace: true }),
     allowedRoles: MARKETING_ROLES,
   },
   {
     path: 'marketing/promo-codes/create',
-    element: createElement(AdminPromoCodeFormPage),
+    element: createElement(Navigate, { to: '/admin/tickets/promo-codes/create', replace: true }),
     allowedRoles: MARKETING_ROLES,
   },
   {
     path: 'marketing/promo-codes/:id/edit',
-    element: createElement(AdminPromoCodeFormPage),
+    element: createElement(Navigate, { to: '/admin/tickets/promo-codes/:id/edit', replace: true }),
     allowedRoles: MARKETING_ROLES,
   },
   {
@@ -475,6 +481,21 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     path: 'tickets/issuances',
     element: createElement(AdminTicketIssuancesPage),
     allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'tickets/promo-codes',
+    element: createElement(AdminPromotionsPage),
+    allowedRoles: MARKETING_ROLES,
+  },
+  {
+    path: 'tickets/promo-codes/create',
+    element: createElement(AdminPromoCodeFormPage),
+    allowedRoles: MARKETING_ROLES,
+  },
+  {
+    path: 'tickets/promo-codes/:id/edit',
+    element: createElement(AdminPromoCodeFormPage),
+    allowedRoles: MARKETING_ROLES,
   },
 
   // Analytics

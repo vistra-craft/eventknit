@@ -87,6 +87,22 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
         if (!hasAllTags) return false;
       }
 
+      // 0. Hide events that have already ended
+      // - If endDate exists: hide once endDate has passed (end of that day)
+      // - If no endDate: hide once startDate's day has passed (single-day event)
+      {
+        const now = new Date();
+        if (event.endDate) {
+          const end = new Date(event.endDate);
+          end.setHours(23, 59, 59, 999);
+          if (end < now) return false;
+        } else {
+          const start = new Date(event.startDate);
+          const endOfStartDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 23, 59, 59, 999);
+          if (endOfStartDay < now) return false;
+        }
+      }
+
       // 5. Date Range Filter
       if (filters.dateRange && filters.dateRange !== 'anytime') {
         const eventDate = new Date(event.startDate);

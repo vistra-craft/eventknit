@@ -82,6 +82,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Past Events", href: "/admin/events/past" },
         { name: "Upcoming Events", href: "/admin/events/upcoming" },
         { name: "Declined Events", href: "/admin/events/declined" },
+        { name: "Recalled Events", href: "/admin/events/recalled" },
       ]
     },
     { 
@@ -157,6 +158,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Advanced Ticket Types", href: "/admin/tickets/advanced" },
         { name: "Dynamic Pricing", href: "/admin/tickets/pricing" },
         { name: "Ticket Issuances", href: "/admin/tickets/issuances" },
+        { name: "Promo Codes", href: "/admin/tickets/promo-codes" },
       ]
     },
     {
@@ -171,7 +173,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Social Media", href: "/admin/marketing/social" },
         // { name: "Email Marketing", href: "/admin/marketing/email" },
         // { name: "Promotions", href: "/admin/marketing/promotions" },
-        { name: "Promo Codes", href: "/admin/marketing/promo-codes" },
         // { name: "Affiliate Program", href: "/admin/marketing/affiliate" },
         // { name: "Partnerships", href: "/admin/marketing/partnerships" },
       ]

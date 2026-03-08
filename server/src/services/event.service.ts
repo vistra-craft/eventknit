@@ -519,6 +519,7 @@ export class EventService {
     dateFrom?: string; // ISO date string - filter events starting from this date
     dateTo?: string; // ISO date string - filter events starting before this date
     declinedOrRecalledCancelled?: boolean; // Filter for declined (REJECTED) or recalled-cancelled (CANCELLED + recalledAt)
+    recalledCancelled?: boolean; // Filter for recalled-cancelled only (CANCELLED + recalledAt)
     recalledPending?: boolean; // Filter for recalled-pending (PENDING + recalledAt)
   } = {}) {
     const where: Prisma.EventWhereInput = {
@@ -539,6 +540,10 @@ export class EventService {
           ],
         },
       ];
+    } else if (filters.recalledCancelled) {
+      // CANCELLED + recalledAt IS NOT NULL (recalled events only)
+      where.status = EventStatus.CANCELLED;
+      where.recalledAt = { not: null };
     } else if (filters.recalledPending) {
       // PENDING + recalledAt IS NOT NULL
       where.status = EventStatus.PENDING;

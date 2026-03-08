@@ -245,7 +245,7 @@ const AdminPromoCodeFormPage = () => {
           setCodeStatus("available");
         } else {
           toast({ title: "Error", description: "Promo code not found", variant: "destructive" });
-          navigate("/admin/marketing/promo-codes");
+          navigate("/admin/tickets/promo-codes");
         }
       } else if (requestId) {
         // Fetch full request data for context card
@@ -352,10 +352,10 @@ const AdminPromoCodeFormPage = () => {
           } else {
             toast({ title: "Partial Success", description: "Promo code created but failed to approve request. Please approve manually.", variant: "destructive" });
           }
-          navigate("/admin/marketing/promo-codes?tab=requests");
+          navigate("/admin/tickets/promo-codes?tab=requests");
         } else {
           toast({ title: "Success", description: isEditing ? "Promo code updated" : "Promo code created" });
-          navigate("/admin/marketing/promo-codes");
+          navigate("/admin/tickets/promo-codes");
         }
       } else {
         toast({ title: "Error", description: response.message || "Failed to save", variant: "destructive" });
@@ -450,7 +450,7 @@ const AdminPromoCodeFormPage = () => {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => requestId ? navigate("/admin/marketing/promo-codes?tab=requests") : navigate("/admin/marketing/promo-codes")}
+              onClick={() => requestId ? navigate("/admin/tickets/promo-codes?tab=requests") : navigate("/admin/tickets/promo-codes")}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
@@ -465,7 +465,7 @@ const AdminPromoCodeFormPage = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => navigate("/admin/marketing/promo-codes")}>
+            <Button type="button" variant="outline" onClick={() => navigate("/admin/tickets/promo-codes")}>
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={saving || codeStatus === "taken" || codeStatus === "checking"}>

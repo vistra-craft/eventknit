@@ -363,7 +363,7 @@ const AdminPromotionsPage = () => {
                 <Layers className="h-4 w-4 mr-2" />
                 Bulk Generate
               </Button>
-              <Button onClick={() => navigate("/admin/marketing/promo-codes/create")}>
+              <Button onClick={() => navigate("/admin/tickets/promo-codes/create")}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Code
               </Button>
@@ -491,7 +491,7 @@ const AdminPromotionsPage = () => {
                   <Tag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">No promo codes found</h3>
                   <p className="text-muted-foreground mb-4">Create your first promo code to get started</p>
-                  <Button onClick={() => navigate("/admin/marketing/promo-codes/create")}>
+                  <Button onClick={() => navigate("/admin/tickets/promo-codes/create")}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Code
                   </Button>
@@ -573,7 +573,7 @@ const AdminPromotionsPage = () => {
                               <ToggleLeft className="h-5 w-5 text-muted-foreground" />
                             )}
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/marketing/promo-codes/${code.id}/edit`)}>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/tickets/promo-codes/${code.id}/edit`)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
@@ -709,7 +709,7 @@ const AdminPromotionsPage = () => {
                                   });
                                   if (request.organizer) params.set("organizerId", request.organizer.id);
                                   if (request.eventId) params.set("eventId", request.eventId);
-                                  navigate(`/admin/marketing/promo-codes/create?${params.toString()}`);
+                                  navigate(`/admin/tickets/promo-codes/create?${params.toString()}`);
                                 }}
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />
