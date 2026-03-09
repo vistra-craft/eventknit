@@ -142,6 +142,7 @@ export interface EventData {
     organizationName?: string | null;
     businessEmail?: string | null;
     phoneNumber?: string | null;
+    avatar?: string | null;
     isIdentityVerified?: boolean;
     verificationLevel?: number;
   };

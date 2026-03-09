@@ -661,6 +661,7 @@ export class EventService {
             email: true,
             organizationName: true,
             businessEmail: true,
+            avatar: true,
           },
         },
         _count: {

@@ -17,7 +17,7 @@ import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, Building2, AlertCircle } from "lucide-react";
+import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, AlertCircle } from "lucide-react";
 import { FAQsAccordion } from "@/components/event-details/FAQsAccordion";
 import { RefundPolicy } from "@/components/event-details/RefundPolicy";
 import ResaleListings from "@/components/event-details/ResaleListings";
@@ -315,16 +315,6 @@ const EventDetails = () => {
               {/* Event Header */}
               <div className="space-y-3 pb-8 border-b border-border/40">
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">{event.title}</h1>
-
-                {/* Organizer row */}
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Building2 className="w-4 h-4 text-primary" />
-                  </div>
-                  <p className="text-sm text-foreground">
-                    By <span className="font-medium">{event.organizerName || event.organizer?.organizationName || event.organizer?.firstName || 'Organizer'}</span>
-                  </p>
-                </div>
 
                 {/* Date + Time */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
