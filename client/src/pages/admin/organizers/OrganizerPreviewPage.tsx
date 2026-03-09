@@ -8,6 +8,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { getUserById, type User } from "@/lib/admin-api";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const OrganizerPreviewPage = () => {
   const { organizerId } = useParams<{ organizerId: string }>();
@@ -26,20 +27,11 @@ const OrganizerPreviewPage = () => {
         if (response.success && response.data) {
           setOrganizer(response.data.user);
         } else {
-          toast({
-            title: "Error",
-            description: "Failed to load organizer details",
-            variant: "destructive",
-          });
+          showErrorToast(toast, null, "Load failed", "Failed to load organizer details");
           navigate("/admin/users/organizers");
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to load organizer details";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Load failed", "Failed to load organizer details");
         navigate("/admin/users/organizers");
       } finally {
         setLoading(false);

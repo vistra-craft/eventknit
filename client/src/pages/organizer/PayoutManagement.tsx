@@ -51,6 +51,7 @@ import {
   type PayoutPreferences,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface DisbursementRecord {
   id: string;
@@ -159,8 +160,8 @@ const PayoutManagement = () => {
           autoPayoutSchedule: p.autoPayoutSchedule || "weekly",
         });
       }
-    } catch {
-      toast({ title: "Failed to load payout preferences", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load payout preferences");
     }
   }, [toast]);
 
@@ -177,8 +178,8 @@ const PayoutManagement = () => {
         setDisbursements(res.data.disbursements || []);
         setHistoryTotal(res.data.totalPages || 1);
       }
-    } catch {
-      toast({ title: "Failed to load payout history", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load payout history");
     } finally {
       setHistoryLoading(false);
     }
@@ -212,10 +213,10 @@ const PayoutManagement = () => {
         setPayoutForm({ eventId: "", amount: "", scheduledDate: new Date().toISOString().split("T")[0], notes: "" });
         await Promise.all([loadSummary(), loadHistory()]);
       } else {
-        toast({ title: res.message || "Failed to submit payout request", variant: "destructive" });
+        showErrorToast(toast, new Error(res.message), "Failed to submit payout request");
       }
-    } catch {
-      toast({ title: "Failed to submit payout request", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to submit payout request");
     } finally {
       setRequestingPayout(false);
     }
@@ -263,10 +264,10 @@ const PayoutManagement = () => {
         toast({ title: "Payout preferences updated" });
         await loadPreferences();
       } else {
-        toast({ title: res.message || "Failed to update preferences", variant: "destructive" });
+        showErrorToast(toast, new Error(res.message), "Failed to update preferences");
       }
-    } catch {
-      toast({ title: "Failed to save preferences", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to save preferences");
     } finally {
       setSaving(false);
     }

@@ -13,6 +13,7 @@ import { Loader } from "@/components/ui/loader";
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import EmptyState from "@/components/EmptyState";
 import {
   getMyCollections,
@@ -82,11 +83,7 @@ const EventCollections: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching collection details:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load collection details",
-      });
+      showErrorToast(toast, error, "Failed to load collection details");
     } finally {
       setLoadingCollection(false);
     }
@@ -94,11 +91,7 @@ const EventCollections: React.FC = () => {
 
   const handleCreateCollection = async () => {
     if (!collectionData.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Collection name is required",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Collection name is required");
       return;
     }
 
@@ -121,11 +114,7 @@ const EventCollections: React.FC = () => {
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } }, message?: string };
-      toast({
-        title: "Error",
-        description: err.response?.data?.message || err.message || "Failed to create collection",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to create collection");
     } finally {
       setCreating(false);
     }

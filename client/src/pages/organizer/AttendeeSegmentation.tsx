@@ -26,6 +26,8 @@ import {
   sendToSegment,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Segment {
   id: string;
@@ -54,6 +56,7 @@ const AttendeeSegmentation = () => {
   const [segmentMembers, setSegmentMembers] = useState<SegmentMember[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [confirmDeleteSegment, setConfirmDeleteSegment] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchSegments = useCallback(async () => {
@@ -83,11 +86,7 @@ const AttendeeSegmentation = () => {
       }
     } catch (error) {
       console.error("Error fetching segments:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load segments",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load segments');
     } finally {
       setLoading(false);
     }
@@ -113,12 +112,8 @@ const AttendeeSegmentation = () => {
         setIsCreateDialogOpen(false);
         fetchSegments();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to create segment",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to create segment');
     }
   };
 
@@ -134,12 +129,8 @@ const AttendeeSegmentation = () => {
           loadSegmentDetails(segmentId);
         }
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to update segment members",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to update segment members');
     }
   };
 
@@ -171,8 +162,6 @@ const AttendeeSegmentation = () => {
   };
 
   const handleDeleteSegment = async (segmentId: string) => {
-    if (!confirm("Are you sure you want to delete this segment?")) return;
-
     try {
       const response = await deleteSegment(segmentId);
       if (response.success) {
@@ -182,12 +171,8 @@ const AttendeeSegmentation = () => {
         });
         fetchSegments();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to delete segment",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to delete segment');
     }
   };
 
@@ -206,12 +191,8 @@ const AttendeeSegmentation = () => {
         });
         setIsSendDialogOpen(false);
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to send message",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to send message');
     }
   };
 
@@ -317,7 +298,7 @@ const AttendeeSegmentation = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteSegment(segment.id)}
+                      onClick={() => setConfirmDeleteSegment(segment.id)}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
                       Delete
@@ -402,6 +383,21 @@ const AttendeeSegmentation = () => {
             </DialogContent>
           </Dialog>
         )}
+
+        <AlertDialog open={!!confirmDeleteSegment} onOpenChange={() => setConfirmDeleteSegment(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this segment?</AlertDialogTitle>
+              <AlertDialogDescription>This action cannot be undone. The segment will be permanently deleted.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { handleDeleteSegment(confirmDeleteSegment!); setConfirmDeleteSegment(null); }}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

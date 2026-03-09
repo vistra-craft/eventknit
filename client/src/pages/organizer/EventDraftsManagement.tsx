@@ -25,6 +25,8 @@ import {
   deleteDraft,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface Draft {
   id: string;
@@ -45,6 +47,8 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
+  const [confirmPublish, setConfirmPublish] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchDrafts = useCallback(async () => {
@@ -59,11 +63,7 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
       }
     } catch (error) {
       console.error("Error fetching drafts:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load drafts",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load drafts');
     } finally {
       setLoading(false);
     }
@@ -91,17 +91,11 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
       }
     } catch (error) {
       console.error("Error creating draft:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create draft",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to create draft');
     }
   };
 
   const handlePublishDraft = async (draftId: string) => {
-    if (!confirm("Are you sure you want to publish this draft? This will create a new event.")) return;
-
     try {
       const response = await publishDraft(draftId);
       if (response.success) {
@@ -113,11 +107,7 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
       }
     } catch (error) {
       console.error("Error publishing draft:", error);
-      toast({
-        title: "Error",
-        description: "Failed to publish draft",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to publish draft');
     }
   };
 
@@ -134,17 +124,11 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
       }
     } catch (error) {
       console.error("Error scheduling draft:", error);
-      toast({
-        title: "Error",
-        description: "Failed to schedule draft",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to schedule draft');
     }
   };
 
   const handleDeleteDraft = async (draftId: string) => {
-    if (!confirm("Are you sure you want to delete this draft?")) return;
-
     try {
       const response = await deleteDraft(draftId);
       if (response.success) {
@@ -156,11 +140,7 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
       }
     } catch (error) {
       console.error("Error deleting draft:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete draft",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to delete draft');
     }
   };
 
@@ -277,7 +257,7 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
                       </Button>
                       <Button
                         size="sm"
-                        onClick={() => handlePublishDraft(draft.id)}
+                        onClick={() => setConfirmPublish(draft.id)}
                       >
                         <Send className="h-4 w-4 mr-1" />
                         Publish
@@ -285,7 +265,7 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteDraft(draft.id)}
+                        onClick={() => setConfirmDelete(draft.id)}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         Delete
@@ -339,6 +319,36 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
             </DialogContent>
           </Dialog>
         )}
+
+        <AlertDialog open={!!confirmPublish} onOpenChange={() => setConfirmPublish(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Publish this draft?</AlertDialogTitle>
+              <AlertDialogDescription>This will create a new event from the draft. This action cannot be undone.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { handlePublishDraft(confirmPublish!); setConfirmPublish(null); }}>
+                Publish
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!confirmDelete} onOpenChange={() => setConfirmDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this draft?</AlertDialogTitle>
+              <AlertDialogDescription>This action cannot be undone. The draft will be permanently deleted.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { handleDeleteDraft(confirmDelete!); setConfirmDelete(null); }}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

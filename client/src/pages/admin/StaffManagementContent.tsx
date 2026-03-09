@@ -27,6 +27,7 @@ import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 // Staff roles that exist in the enum but not in the admin-api UserRole type
 type StaffRole = AdminApiUserRole | 'MARKETER' | 'SUPPORT' | 'TELLER';
 import { exportUserData } from "@/lib/utils/export";
+import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
 
 const StaffManagementContent = () => {
   const navigate = useNavigate();
@@ -79,13 +80,9 @@ const StaffManagementContent = () => {
         }
       } catch (err: unknown) {
         console.error("Error fetching staff:", err);
-        const message = err instanceof Error ? err.message : "Failed to load staff members";
+        const message = extractErrorMessage(err, "Failed to load staff members");
         setError(message);
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, err, "Load failed", "Failed to load staff members");
       } finally {
         setLoading(false);
       }
@@ -118,9 +115,9 @@ const StaffManagementContent = () => {
       'SUPPORT': "bg-purple-100 text-purple-800",
       'TELLER': "bg-success/10 text-success",
       'ORGANIZER': "bg-warning/10 text-warning",
-      'ATTENDEE': "bg-muted text-gray-800",
+      'ATTENDEE': "bg-muted text-muted-foreground",
     };
-    return variants[role] || "bg-muted text-gray-800";
+    return variants[role] || "bg-muted text-muted-foreground";
   };
 
   const formatDate = (dateString: string) => {
@@ -157,12 +154,7 @@ const StaffManagementContent = () => {
         }
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to suspend staff member";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Suspend failed", "Failed to suspend staff member");
     } finally {
       setActionLoading(null);
     }
@@ -190,12 +182,7 @@ const StaffManagementContent = () => {
         }
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to deactivate staff member";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Deactivate failed", "Failed to deactivate staff member");
     } finally {
       setActionLoading(null);
     }
@@ -223,12 +210,7 @@ const StaffManagementContent = () => {
         }
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to activate staff member";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Activate failed", "Failed to activate staff member");
     } finally {
       setActionLoading(null);
     }
@@ -273,11 +255,11 @@ const StaffManagementContent = () => {
           </Select>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
+          <Button variant="outline" size="sm" className="hover:bg-primary hover:text-primary-foreground transition-colors">
             <Upload className="h-4 w-4 mr-2" />
             Import
           </Button>
-          <Button variant="outline" size="sm" className="hover:bg-gray-900 hover:text-white transition-colors">
+          <Button variant="outline" size="sm" className="hover:bg-primary hover:text-primary-foreground transition-colors">
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
@@ -481,12 +463,8 @@ const StaffManagementContent = () => {
                                 title: "Exported",
                                 description: "Staff data exported successfully",
                               });
-                            } catch {
-                              toast({
-                                title: "Error",
-                                description: "Failed to export staff data",
-                                variant: "destructive",
-                              });
+                            } catch (err) {
+                              showErrorToast(toast, err, "Export failed", "Failed to export staff data");
                             }
                           }}>
                             <Download className="h-4 w-4 mr-2" />

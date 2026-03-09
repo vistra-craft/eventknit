@@ -29,6 +29,7 @@ import { ExhibitorsGrid } from "@/components/event-details/ExhibitorsGrid";
 import { Loader } from "@/components/ui/loader";
 import { getRegistrationStatus } from "@/lib/user-dashboard-api";
 import { getVenueType } from "@/types/event";
+import { showErrorToast } from "@/lib/utils/error";
 
 // Helper function to format time for display
 const formatTimeForDisplay = (timeStr: string): string => {
@@ -189,8 +190,8 @@ const EventDetails = () => {
           ? "You can find this in your saved events"
           : "Event removed from your saved list",
       });
-    } catch {
-      toast({ title: "Error", description: "Could not update saved status. Please try again." });
+    } catch (error) {
+      showErrorToast(toast, error, "Save failed", "Could not update saved status. Please try again.");
     }
   }, [id, user, isSaved, navigate, toast]);
 

@@ -14,6 +14,7 @@ import { Loader } from "@/components/ui/loader";
 import { getUserRegisteredEvents } from "@/lib/event-api";
 import { initiateTicketTransfer, getTransferHistory, cancelTicketTransfer } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const TicketTransfer: React.FC = () => {
   const location = useLocation();
@@ -53,11 +54,7 @@ const TicketTransfer: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load data. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -65,11 +62,7 @@ const TicketTransfer: React.FC = () => {
 
   const handleTransfer = async (registrationId: string) => {
     if (!transferData.toEmail) {
-      toast({
-        title: "Error",
-        description: "Please enter recipient email",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Please enter recipient email");
       return;
     }
 
@@ -90,11 +83,7 @@ const TicketTransfer: React.FC = () => {
         fetchData();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to initiate transfer",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to initiate transfer");
     } finally {
       setTransferring(false);
     }
@@ -111,11 +100,7 @@ const TicketTransfer: React.FC = () => {
         fetchData();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to cancel transfer",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to cancel transfer");
     }
   };
 

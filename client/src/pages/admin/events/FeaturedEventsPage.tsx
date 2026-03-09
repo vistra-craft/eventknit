@@ -17,6 +17,7 @@ import {
 } from "../../../lib/featured-event-api";
 import { getEventById, type EventData } from "../../../lib/event-api";
 import { EventPreviewModal } from "../../../components/EventPreviewModal";
+import { showErrorToast } from "@/lib/utils/error";
 
 /**
  * Check if a featured event is currently displayed on the hero section
@@ -74,20 +75,11 @@ const FeaturedEventsPage = () => {
         if (response.success && response.data?.event) {
           setPreviewEventData(response.data.event);
         } else {
-          toast({
-            title: "Error",
-            description: "Failed to load event details",
-            variant: "destructive",
-          });
+          showErrorToast(toast, new Error("Failed to load event details"), "Preview failed", "Failed to load event details");
           setPreviewModalOpen(false);
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to load event details";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Preview failed", "Failed to load event details");
         setPreviewModalOpen(false);
       } finally {
         setPreviewLoading(false);
@@ -104,11 +96,7 @@ const FeaturedEventsPage = () => {
       setFeaturedEvents(data);
     } catch (error) {
       console.error("Failed to fetch featured events:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch featured events",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Fetch failed", "Failed to fetch featured events");
     } finally {
       setLoading(false);
     }
@@ -162,12 +150,8 @@ const FeaturedEventsPage = () => {
         title: "Reordered",
         description: "Display order updated",
       });
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to reorder",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Reorder failed", "Failed to reorder");
     } finally {
       setReordering(null);
     }
@@ -191,12 +175,8 @@ const FeaturedEventsPage = () => {
         title: "Reordered",
         description: "Display order updated",
       });
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to reorder",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Reorder failed", "Failed to reorder");
     } finally {
       setReordering(null);
     }
@@ -221,15 +201,7 @@ const FeaturedEventsPage = () => {
       setDeleteDialogOpen(false);
       setDeletingId(null);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to delete featured event";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Delete failed", "Failed to delete featured event");
     } finally {
       setDeleting(false);
     }

@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   getVenues,
   createVenue,
@@ -30,6 +32,7 @@ const VenueManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingVenue, setEditingVenue] = useState<Venue | null>(null);
+  const [confirmDeleteVenue, setConfirmDeleteVenue] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -49,15 +52,7 @@ const VenueManagement = () => {
       const data = await getVenues();
       setVenues(data);
     } catch (error: unknown) {
-      const message =
-        typeof error === 'object' && error !== null && 'response' in error
-          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
-          : undefined;
-      toast({
-        title: 'Error',
-        description: message || 'Failed to load venues',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to load venues');
     } finally {
       setLoading(false);
     }
@@ -92,23 +87,11 @@ const VenueManagement = () => {
       resetForm();
       loadVenues();
     } catch (error: unknown) {
-      const message =
-        typeof error === 'object' && error !== null && 'response' in error
-          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
-          : undefined;
-      toast({
-        title: 'Error',
-        description: message || 'Failed to save venue',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to save venue');
     }
   };
 
   const handleDelete = async (venueId: string) => {
-    if (!confirm('Are you sure you want to delete this venue?')) {
-      return;
-    }
-
     try {
       await deleteVenue(venueId);
       toast({
@@ -117,15 +100,7 @@ const VenueManagement = () => {
       });
       loadVenues();
     } catch (error: unknown) {
-      const message =
-        typeof error === 'object' && error !== null && 'response' in error
-          ? (error as { response?: { data?: { error?: string } } }).response?.data?.error
-          : undefined;
-      toast({
-        title: 'Error',
-        description: message || 'Failed to delete venue',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to delete venue');
     }
   };
 
@@ -340,7 +315,7 @@ const VenueManagement = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(venue.id)}
+                        onClick={() => setConfirmDeleteVenue(venue.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -388,6 +363,21 @@ const VenueManagement = () => {
             ))}
           </div>
         )}
+
+        <AlertDialog open={!!confirmDeleteVenue} onOpenChange={() => setConfirmDeleteVenue(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this venue?</AlertDialogTitle>
+              <AlertDialogDescription>This action cannot be undone. The venue will be permanently deleted.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { handleDelete(confirmDeleteVenue!); setConfirmDeleteVenue(null); }}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

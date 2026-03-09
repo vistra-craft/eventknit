@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EventPreviewModal } from "@/components/EventPreviewModal";
 import { getEventById, type EventData } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
+import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
 
 const EventPreviewPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -27,20 +28,11 @@ const EventPreviewPage = () => {
           setEvent(response.data.event);
         } else {
           setError("Failed to load event details");
-          toast({
-            title: "Error",
-            description: "Failed to load event details",
-            variant: "destructive",
-          });
+          showErrorToast(toast, new Error("Failed to load event details"), "Load failed", "Failed to load event details");
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to load event details";
-        setError(message);
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        setError(extractErrorMessage(error, "Failed to load event details"));
+        showErrorToast(toast, error, "Load failed", "Failed to load event details");
       } finally {
         setLoading(false);
       }

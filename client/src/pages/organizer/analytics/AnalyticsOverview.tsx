@@ -26,6 +26,7 @@ import {
 } from "@/components/charts/ChartComponents";
 import { CHART_COLORS } from "@/components/charts/chartConstants";
 import { getOrganizerDashboardStats, getOrganizerEvents } from "@/lib/organizer-api";
+import { extractErrorMessage } from '@/lib/utils/error';
 
 const AnalyticsOverview = () => {
   const [timeRange, setTimeRange] = useState("30d");
@@ -82,7 +83,7 @@ const AnalyticsOverview = () => {
           setEvents(eventsResponse.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; category?: string; capacity?: number }>);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load analytics data');
+        setError(extractErrorMessage(err, 'Failed to load analytics data'));
       } finally {
         setLoading(false);
       }

@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getExpenses, deleteExpense, type PlatformExpense } from "@/lib/accounting-api";
 import { useToast } from "@/hooks/useToast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { showErrorToast } from "@/lib/utils/error";
 
 const WagesPage = () => {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ const WagesPage = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedWage, setSelectedWage] = useState<PlatformExpense | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Fetch wages (expenses with category "Wages")
   useEffect(() => {
@@ -123,11 +126,14 @@ const WagesPage = () => {
     navigate(`/admin/finance/wages/edit/${id}`);
   };
 
-  const handleDeleteWage = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this wage record? This action cannot be undone.")) {
-      return;
-    }
+  const handleDeleteWage = (id: string) => {
+    setDeleteConfirm(id);
+  };
 
+  const confirmDeleteWage = async () => {
+    if (!deleteConfirm) return;
+    const id = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       setDeleting(id);
       const response = await deleteExpense(id);
@@ -142,11 +148,7 @@ const WagesPage = () => {
       }
     } catch (err) {
       console.error('Error deleting wage:', err);
-      toast({
-        title: "Error",
-        description: "Failed to delete wage record. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to delete wage record. Please try again.");
     } finally {
       setDeleting(null);
     }
@@ -396,6 +398,23 @@ const WagesPage = () => {
             </div>
           </div>
         )}
+
+        <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Wage Record</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this wage record? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteWage} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

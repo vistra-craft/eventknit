@@ -21,6 +21,7 @@ import {
   applyAsAffiliate,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
 
 interface AffiliateProgram {
   id: string;
@@ -62,11 +63,7 @@ const AffiliateProgram = () => {
       }
     } catch (error) {
       console.error("Error fetching programs:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load affiliate programs",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load affiliate programs');
     } finally {
       setLoading(false);
     }
@@ -114,11 +111,7 @@ const AffiliateProgram = () => {
         fetchPrograms();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create program",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to create program');
     }
   };
 
@@ -133,11 +126,7 @@ const AffiliateProgram = () => {
         fetchPrograms();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to apply as affiliate",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to apply as affiliate');
     }
   };
 

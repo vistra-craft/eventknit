@@ -15,6 +15,7 @@ import {
 } from "@/lib/financial-api";
 import { useToast } from "@/hooks/useToast";
 import { CustomLineChart, CustomBarChart } from "@/components/charts/ChartComponents";
+import { showErrorToast } from "@/lib/utils/error";
 
 const EventFinanceDashboard = () => {
   const navigate = useNavigate();
@@ -147,12 +148,8 @@ const EventFinanceDashboard = () => {
         totalRefunds,
         recentTransactions: transactions.slice(0, 5),
       });
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load financial data",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load financial data");
     } finally {
       setLoading(false);
     }

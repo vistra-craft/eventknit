@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 import {
   Dialog,
   DialogContent,
@@ -70,12 +71,8 @@ const BrandingTab = ({ onEditBranding, refreshKey }: BrandingTabProps) => {
         search: searchTerm || undefined,
       });
       setBrandings(res.data ?? []);
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to load brandings',
-        variant: 'destructive',
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to load brandings');
     } finally {
       setIsLoading(false);
     }
@@ -91,8 +88,8 @@ const BrandingTab = ({ onEditBranding, refreshKey }: BrandingTabProps) => {
       await updateBrandingStatus(brandingId, 'ACTIVE');
       toast({ title: 'Success', description: 'Branding approved and activated' });
       loadBrandings();
-    } catch {
-      toast({ title: 'Error', description: 'Failed to approve branding', variant: 'destructive' });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to approve branding');
     } finally {
       setProcessingId(null);
     }
@@ -108,8 +105,8 @@ const BrandingTab = ({ onEditBranding, refreshKey }: BrandingTabProps) => {
       setRejectionReason('');
       setSelectedBranding(null);
       loadBrandings();
-    } catch {
-      toast({ title: 'Error', description: 'Failed to reject branding', variant: 'destructive' });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to reject branding');
     } finally {
       setProcessingId(null);
     }

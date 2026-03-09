@@ -6,6 +6,7 @@ import {
   approveOrganizer,
 } from '@/lib/admin-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 export function useApproveOrganizer() {
   const queryClient = useQueryClient();
@@ -24,11 +25,7 @@ export function useApproveOrganizer() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to approve organizer',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to approve organizer');
     },
   });
 }
@@ -50,11 +47,7 @@ export function useSuspendOrganizer() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to suspend organizer',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to suspend organizer');
     },
   });
 }
@@ -76,11 +69,7 @@ export function useDeactivateOrganizer() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to deactivate organizer',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to deactivate organizer');
     },
   });
 }
@@ -102,11 +91,7 @@ export function useActivateOrganizer() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to activate organizer',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to activate organizer');
     },
   });
 }

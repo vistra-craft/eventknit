@@ -13,7 +13,7 @@ import {
   type SubscriptionPlan,
   type SubscriptionTier,
 } from "@/lib/admin-api";
-import { extractErrorMessage } from "@/lib/utils/error";
+import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
 import {
   Crown,
   Zap,
@@ -72,11 +72,7 @@ const SubscriptionPlansPage = () => {
         setPlans(response.data.plans);
       }
     } catch (err) {
-      toast({
-        title: "Load failed",
-        description: extractErrorMessage(err, "Failed to load subscription plans"),
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to load subscription plans");
     } finally {
       setLoading(false);
     }
@@ -98,11 +94,7 @@ const SubscriptionPlansPage = () => {
         });
       }
     } catch (err) {
-      toast({
-        title: "Error",
-        description: extractErrorMessage(err, "Failed to update plan status"),
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to update plan status");
     } finally {
       setTogglingTier(null);
     }
@@ -173,11 +165,7 @@ const SubscriptionPlansPage = () => {
         });
       }
     } catch (err) {
-      toast({
-        title: "Save failed",
-        description: extractErrorMessage(err, "Failed to update subscription plan"),
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to update subscription plan");
     } finally {
       setSaving(false);
     }

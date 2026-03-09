@@ -13,6 +13,7 @@ import {
 import { CHART_COLORS } from "@/components/charts/chartConstants";
 import { getPersonalAnalytics, getActivityHistory } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface EventData {
   id: number;
@@ -60,11 +61,7 @@ const PersonalAnalytics: React.FC<PersonalAnalyticsProps> = () => {
         }
       } catch (error) {
         console.error("Error fetching analytics:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load analytics. Please try again.",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Failed to load analytics. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -131,8 +128,8 @@ const PersonalAnalytics: React.FC<PersonalAnalyticsProps> = () => {
       change: "+0%",
       changeType: "positive" as const,
       icon: TrendingUp,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
+      color: "text-purple-600 dark:text-purple-400",
+      bgColor: "bg-purple-100 dark:bg-purple-900/20",
     },
     {
       title: "Total Spent",

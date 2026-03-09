@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getEventConsentStats, type ConsentStatistics } from '@/lib/organizer-api';
 import { cn } from '@/lib/utils';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM';
 
@@ -80,7 +81,7 @@ export const ConsentStatisticsCard: React.FC<ConsentStatisticsCardProps> = ({
           throw new Error('Failed to fetch consent statistics');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load consent statistics');
+        setError(extractErrorMessage(err, 'Failed to load consent statistics'));
       } finally {
         setLoading(false);
       }

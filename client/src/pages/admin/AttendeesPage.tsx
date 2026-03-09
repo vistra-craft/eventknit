@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/useToast";
 import { getAttendees, suspendUser, deactivateUser, activateUser, type Attendee, type UserStatus } from "@/lib/admin-api";
 import { getEvents } from "@/lib/event-api";
 import { exportAttendeeData } from "@/lib/utils/export";
+import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
 
 interface EventOption {
   id: string;
@@ -93,13 +94,9 @@ const AttendeesPage = () => {
         }
       } catch (err: unknown) {
         console.error("Error fetching attendees:", err);
-        const message = err instanceof Error ? err.message : "Failed to load attendees";
+        const message = extractErrorMessage(err, "Failed to load attendees");
         setError(message);
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, err, "Load failed", "Failed to load attendees");
       } finally {
         setLoading(false);
       }
@@ -153,12 +150,7 @@ const AttendeesPage = () => {
         )));
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to suspend attendee";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Suspend failed", "Failed to suspend attendee");
     } finally {
       setActionLoading(null);
     }
@@ -178,12 +170,7 @@ const AttendeesPage = () => {
         )));
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to deactivate attendee";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Deactivate failed", "Failed to deactivate attendee");
     } finally {
       setActionLoading(null);
     }
@@ -203,12 +190,7 @@ const AttendeesPage = () => {
         )));
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to activate attendee";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Activate failed", "Failed to activate attendee");
     } finally {
       setActionLoading(null);
     }
@@ -518,12 +500,8 @@ const AttendeesPage = () => {
                                 title: "Exported",
                                 description: "Attendee data exported successfully",
                               });
-                            } catch {
-                              toast({
-                                title: "Error",
-                                description: "Failed to export attendee data",
-                                variant: "destructive",
-                              });
+                            } catch (error) {
+                              showErrorToast(toast, error, "Failed to export attendee data");
                             }
                           }}>
                             <Download className="h-4 w-4 mr-2" />

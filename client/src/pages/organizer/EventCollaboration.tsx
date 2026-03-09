@@ -24,6 +24,8 @@ import {
   getEventActivityLog,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useParams } from "react-router-dom";
 
 interface Collaborator {
@@ -79,6 +81,7 @@ const EventCollaboration = () => {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [selectedCollaborator, setSelectedCollaborator] = useState<Collaborator | null>(null);
   const [isPermissionsDialogOpen, setIsPermissionsDialogOpen] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const { toast } = useToast();
 
   const loadCollaborators = useCallback(async () => {
@@ -91,11 +94,7 @@ const EventCollaboration = () => {
       }
     } catch (error) {
       console.error("Error loading collaborators:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load collaborators",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load collaborators');
     } finally {
       setLoading(false);
     }
@@ -141,11 +140,7 @@ const EventCollaboration = () => {
       }
     } catch (error) {
       console.error("Error inviting collaborator:", error);
-      toast({
-        title: "Error",
-        description: "Failed to invite collaborator",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to invite collaborator');
     }
   };
 
@@ -163,17 +158,11 @@ const EventCollaboration = () => {
       }
     } catch (error) {
       console.error("Error updating permissions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update permissions",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to update permissions');
     }
   };
 
   const handleRemoveCollaborator = async (collaborationId: string) => {
-    if (!confirm("Are you sure you want to remove this collaborator?")) return;
-
     try {
       const response = await removeCollaborator(collaborationId);
       if (response.success) {
@@ -185,11 +174,7 @@ const EventCollaboration = () => {
       }
     } catch (error) {
       console.error("Error removing collaborator:", error);
-      toast({
-        title: "Error",
-        description: "Failed to remove collaborator",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to remove collaborator');
     }
   };
 
@@ -327,7 +312,7 @@ const EventCollaboration = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleRemoveCollaborator(collaborator.id)}
+                            onClick={() => setConfirmRemove(collaborator.id)}
                           >
                             <Trash2 className="h-4 w-4 mr-1" />
                             Remove
@@ -402,6 +387,21 @@ const EventCollaboration = () => {
             </DialogContent>
           </Dialog>
         )}
+
+        <AlertDialog open={!!confirmRemove} onOpenChange={() => setConfirmRemove(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove this collaborator?</AlertDialogTitle>
+              <AlertDialogDescription>This action cannot be undone. The collaborator will lose access to this event.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { handleRemoveCollaborator(confirmRemove!); setConfirmRemove(null); }}>
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

@@ -11,6 +11,7 @@ import { Loader } from "@/components/ui/loader";
 import { getUserRegisteredEvents } from "@/lib/event-api";
 import { getEventReviews, createEventReview, markReviewHelpful } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { Avatar } from "@/components/ui/avatar";
 
 const EventReviews: React.FC = () => {
@@ -75,11 +76,7 @@ const EventReviews: React.FC = () => {
 
   const handleSubmitReview = async () => {
     if (!selectedEvent || !reviewData.rating) {
-      toast({
-        title: "Error",
-        description: "Please select an event and provide a rating",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Please select an event and provide a rating");
       return;
     }
 
@@ -108,11 +105,7 @@ const EventReviews: React.FC = () => {
         fetchReviews(selectedEvent.id);
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to submit review",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to submit review");
     } finally {
       setSubmitting(false);
     }

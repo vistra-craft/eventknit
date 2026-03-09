@@ -46,6 +46,7 @@ import {
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import {
   getPrinters,
   discoverPrinters,
@@ -102,11 +103,7 @@ const PrinterManagement: React.FC = () => {
       }
     } catch (error) {
       console.error("Error loading printers:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load printers",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Load failed", "Failed to load printers");
     } finally {
       setIsLoading(false);
     }
@@ -152,11 +149,7 @@ const PrinterManagement: React.FC = () => {
         }
       }
     } catch (error: unknown) {
-      toast({
-        title: "Discovery Failed",
-        description: error instanceof Error ? error.message : "Failed to discover printers",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Discovery failed", "Failed to discover printers");
     } finally {
       setIsDiscovering(false);
     }
@@ -193,11 +186,7 @@ const PrinterManagement: React.FC = () => {
         loadPrinters();
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to register printer",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Registration failed", "Failed to register printer");
     }
   };
 
@@ -216,11 +205,7 @@ const PrinterManagement: React.FC = () => {
         loadPrinters();
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete printer",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Delete failed", "Failed to delete printer");
     }
   };
 
@@ -235,11 +220,7 @@ const PrinterManagement: React.FC = () => {
         loadPrinters();
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to check printer status",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Status check failed", "Failed to check printer status");
     }
   };
 
@@ -253,11 +234,7 @@ const PrinterManagement: React.FC = () => {
         });
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send test page",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Test failed", "Failed to send test page");
     }
   };
 
@@ -272,11 +249,7 @@ const PrinterManagement: React.FC = () => {
         loadPrintJobs();
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to cancel print job",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Cancel failed", "Failed to cancel print job");
     }
   };
 

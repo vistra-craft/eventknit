@@ -29,6 +29,8 @@ import {
   applyTemplate,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface EventTemplate {
   id: string;
@@ -51,6 +53,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
   const [selectedTemplate, setSelectedTemplate] = useState<EventTemplate | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [confirmDeleteTemplate, setConfirmDeleteTemplate] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchTemplates = useCallback(async () => {
@@ -76,11 +79,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
       }
     } catch (error) {
       console.error("Error fetching templates:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load templates",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load templates');
     } finally {
       setLoading(false);
     }
@@ -108,17 +107,11 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
       }
     } catch (error) {
       console.error("Error creating template:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create template",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to create template');
     }
   };
 
   const handleDeleteTemplate = async (templateId: string) => {
-    if (!confirm("Are you sure you want to delete this template?")) return;
-
     try {
       const response = await deleteTemplate(templateId);
       if (response.success) {
@@ -130,11 +123,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
       }
     } catch (error) {
       console.error("Error deleting template:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete template",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to delete template');
     }
   };
 
@@ -150,11 +139,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
       }
     } catch (error) {
       console.error("Error sharing template:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate share link",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to generate share link');
     }
   };
 
@@ -167,11 +152,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
       }
     } catch (error) {
       console.error("Error using template:", error);
-      toast({
-        title: "Error",
-        description: "Failed to use template",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to use template');
     }
   };
 
@@ -230,7 +211,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleDeleteTemplate(template.id)}
+                onClick={() => setConfirmDeleteTemplate(template.id)}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
                 Delete
@@ -367,6 +348,21 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
             </DialogContent>
           </Dialog>
         )}
+
+        <AlertDialog open={!!confirmDeleteTemplate} onOpenChange={() => setConfirmDeleteTemplate(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this template?</AlertDialogTitle>
+              <AlertDialogDescription>This action cannot be undone. The template will be permanently deleted.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { handleDeleteTemplate(confirmDeleteTemplate!); setConfirmDeleteTemplate(null); }}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

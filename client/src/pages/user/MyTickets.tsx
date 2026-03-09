@@ -75,7 +75,7 @@ const MyTickets: React.FC = () => {
 
   const handleDownload = async (ticket: Ticket) => {
     if (!ticket.registrationId) {
-      toast({ title: "Error", description: "Ticket not available", variant: "destructive" });
+      toast({ title: "Ticket unavailable", description: "Ticket not available", variant: "destructive" });
       return;
     }
     setDownloadingId(ticket.id);
@@ -96,7 +96,7 @@ const MyTickets: React.FC = () => {
 
   const handleResendEmail = async (ticket: Ticket) => {
     if (!ticket.registrationId) {
-      toast({ title: "Error", description: "Registration not found", variant: "destructive" });
+      toast({ title: "Not found", description: "Registration not found", variant: "destructive" });
       return;
     }
 

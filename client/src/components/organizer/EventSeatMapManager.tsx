@@ -27,6 +27,8 @@ import {
 } from 'lucide-react';
 import { getSeatMap, deleteSeatMap, type SeatMap, type Seat } from '@/lib/venue-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { SeatMapBuilder } from './SeatMapBuilder';
 
 interface EventSeatMapManagerProps {
@@ -59,6 +61,7 @@ export const EventSeatMapManager = ({ eventId }: EventSeatMapManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadSeatMap = useCallback(async () => {
@@ -132,16 +135,19 @@ export const EventSeatMapManager = ({ eventId }: EventSeatMapManagerProps) => {
     return { total: seats.length, available, reserved, booked, blocked, revenue, sections };
   }, [seatMap]);
 
-  const handleDelete = async () => {
-    if (!confirm('This will permanently remove the seat map and all associated seat data. Continue?')) return;
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
 
+  const confirmDelete = async () => {
+    setShowDeleteConfirm(false);
     try {
       setDeleting(true);
       await deleteSeatMap(eventId);
       setSeatMap(null);
       toast({ title: 'Seat map removed', description: 'All seat data has been deleted.' });
-    } catch {
-      toast({ title: 'Error', description: 'Failed to delete seat map', variant: 'destructive' });
+    } catch (err) {
+      showErrorToast(toast, err, 'Delete failed', 'Failed to delete seat map');
     } finally {
       setDeleting(false);
     }
@@ -245,6 +251,22 @@ export const EventSeatMapManager = ({ eventId }: EventSeatMapManagerProps) => {
 
       {/* Section breakdown */}
       {stats && stats.sections.length > 0 && <SectionBreakdownTable sections={stats.sections} />}
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Seat Map</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the seat map and all associated seat data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

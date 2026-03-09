@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/useToast";
 import EmptyState from "@/components/EmptyState";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   getBulkMessages,
   createBulkMessage,
@@ -24,6 +25,7 @@ import {
   type BulkMessageTargetAudience,
   type BulkMessageType,
 } from "@/lib/bulk-message-api";
+import { showErrorToast } from "@/lib/utils/error";
 import {
   getEmailTemplates,
   createEmailTemplate,
@@ -136,6 +138,12 @@ const CommunicationsPage = () => {
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [viewingTemplate, setViewingTemplate] = useState<EmailTemplate | null>(null);
   
+  // Delete confirmation states
+  const [deleteAnnouncementConfirm, setDeleteAnnouncementConfirm] = useState<string | null>(null);
+  const [deleteNotificationConfirm, setDeleteNotificationConfirm] = useState<string | null>(null);
+  const [deleteTemplateConfirm, setDeleteTemplateConfirm] = useState<string | null>(null);
+  const [deleteBulkMessageConfirm, setDeleteBulkMessageConfirm] = useState<string | null>(null);
+
   // Form data states
   const [announcementForm, setAnnouncementForm] = useState({
     title: "",
@@ -301,8 +309,13 @@ const CommunicationsPage = () => {
   };
 
   const handleDeleteAnnouncement = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this announcement? This action cannot be undone.")) {
-      setAnnouncements(prev => prev.filter(announcement => announcement.id !== id));
+    setDeleteAnnouncementConfirm(id);
+  };
+
+  const confirmDeleteAnnouncement = () => {
+    if (deleteAnnouncementConfirm) {
+      setAnnouncements(prev => prev.filter(announcement => announcement.id !== deleteAnnouncementConfirm));
+      setDeleteAnnouncementConfirm(null);
     }
   };
 
@@ -376,8 +389,13 @@ const CommunicationsPage = () => {
   };
 
   const handleDeleteNotification = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this notification? This action cannot be undone.")) {
-      setNotifications(prev => prev.filter(notification => notification.id !== id));
+    setDeleteNotificationConfirm(id);
+  };
+
+  const confirmDeleteNotification = () => {
+    if (deleteNotificationConfirm) {
+      setNotifications(prev => prev.filter(notification => notification.id !== deleteNotificationConfirm));
+      setDeleteNotificationConfirm(null);
     }
   };
 
@@ -406,11 +424,7 @@ const CommunicationsPage = () => {
       }
     } catch (error) {
       console.error("Failed to load email templates:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load email templates. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load email templates. Please try again.");
     } finally {
       setLoadingTemplates(false);
     }
@@ -437,11 +451,7 @@ const CommunicationsPage = () => {
       }
     } catch (error) {
       console.error("Failed to create email template:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create email template. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to create email template. Please try again.");
     }
   };
 
@@ -482,33 +492,30 @@ const CommunicationsPage = () => {
       }
     } catch (error) {
       console.error("Failed to update email template:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update email template. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to update email template. Please try again.");
     }
   };
 
-  const handleDeleteTemplate = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this email template? This action cannot be undone.")) {
-      try {
-        const response = await deleteEmailTemplate(id);
-        if (response.success) {
-          toast({
-            title: "Success",
-            description: "Email template deleted successfully.",
-          });
-          loadEmailTemplates();
-        }
-      } catch (error) {
-        console.error("Failed to delete email template:", error);
+  const handleDeleteTemplate = (id: string) => {
+    setDeleteTemplateConfirm(id);
+  };
+
+  const confirmDeleteTemplate = async () => {
+    if (!deleteTemplateConfirm) return;
+    const id = deleteTemplateConfirm;
+    setDeleteTemplateConfirm(null);
+    try {
+      const response = await deleteEmailTemplate(id);
+      if (response.success) {
         toast({
-          title: "Error",
-          description: "Failed to delete email template. Please try again.",
-          variant: "destructive",
+          title: "Success",
+          description: "Email template deleted successfully.",
         });
+        loadEmailTemplates();
       }
+    } catch (error) {
+      console.error("Failed to delete email template:", error);
+      showErrorToast(toast, error, "Failed to delete email template. Please try again.");
     }
   };
 
@@ -537,11 +544,7 @@ const CommunicationsPage = () => {
       }
     } catch (error) {
       console.error("Failed to load bulk messages:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load bulk messages. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load bulk messages. Please try again.");
     } finally {
       setLoadingBulkMessages(false);
     }
@@ -575,11 +578,7 @@ const CommunicationsPage = () => {
       }
     } catch (error) {
       console.error("Failed to create bulk message:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create bulk message. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to create bulk message. Please try again.");
     }
   };
 
@@ -607,33 +606,30 @@ const CommunicationsPage = () => {
       }
     } catch (error) {
       console.error("Failed to update bulk message:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update bulk message. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to update bulk message. Please try again.");
     }
   };
 
-  const handleDeleteBulkMessage = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this bulk message? This action cannot be undone.")) {
-      try {
-        const response = await deleteBulkMessage(id);
-        if (response.success) {
-          toast({
-            title: "Success",
-            description: "Bulk message deleted successfully.",
-          });
-          loadBulkMessages();
-        }
-      } catch (error) {
-        console.error("Failed to delete bulk message:", error);
+  const handleDeleteBulkMessage = (id: string) => {
+    setDeleteBulkMessageConfirm(id);
+  };
+
+  const confirmDeleteBulkMessage = async () => {
+    if (!deleteBulkMessageConfirm) return;
+    const id = deleteBulkMessageConfirm;
+    setDeleteBulkMessageConfirm(null);
+    try {
+      const response = await deleteBulkMessage(id);
+      if (response.success) {
         toast({
-          title: "Error",
-          description: "Failed to delete bulk message. Please try again.",
-          variant: "destructive",
+          title: "Success",
+          description: "Bulk message deleted successfully.",
         });
+        loadBulkMessages();
       }
+    } catch (error) {
+      console.error("Failed to delete bulk message:", error);
+      showErrorToast(toast, error, "Failed to delete bulk message. Please try again.");
     }
   };
 
@@ -649,11 +645,7 @@ const CommunicationsPage = () => {
       }
     } catch (error) {
       console.error("Failed to send bulk message:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send bulk message. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to send bulk message. Please try again.");
     }
   };
 
@@ -669,11 +661,7 @@ const CommunicationsPage = () => {
       }
     } catch (error) {
       console.error("Failed to cancel bulk message:", error);
-      toast({
-        title: "Error",
-        description: "Failed to cancel bulk message. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to cancel bulk message. Please try again.");
     }
   };
 
@@ -1846,6 +1834,74 @@ const CommunicationsPage = () => {
           </div>
         )}
       </div>
+
+      <AlertDialog open={!!deleteAnnouncementConfirm} onOpenChange={(open) => !open && setDeleteAnnouncementConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Announcement</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this announcement? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteAnnouncement} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteNotificationConfirm} onOpenChange={(open) => !open && setDeleteNotificationConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Notification</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this notification? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteNotification} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteTemplateConfirm} onOpenChange={(open) => !open && setDeleteTemplateConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Email Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this email template? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTemplate} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteBulkMessageConfirm} onOpenChange={(open) => !open && setDeleteBulkMessageConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Bulk Message</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this bulk message? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteBulkMessage} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
   );
 };
 

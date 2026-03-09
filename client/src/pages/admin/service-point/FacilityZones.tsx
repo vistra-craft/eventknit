@@ -51,6 +51,17 @@ import {
 import BackButton from "@/components/BackButton";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   getEventZones,
   createFacilityZone,
@@ -94,6 +105,7 @@ const FacilityZones: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
+  const [deleteZoneId, setDeleteZoneId] = useState<string | null>(null);
 
   // Bulk assign state
   const [allAttendees, setAllAttendees] = useState<EventAttendee[]>([]);
@@ -144,7 +156,7 @@ const FacilityZones: React.FC = () => {
       }
     } catch (err) {
       console.error("Error loading zones:", err);
-      toast({ title: "Error", description: "Failed to load facility zones", variant: "destructive" });
+      showErrorToast(toast, err, "Load failed", "Failed to load facility zones");
     } finally {
       setIsLoading(false);
     }
@@ -217,11 +229,7 @@ const FacilityZones: React.FC = () => {
         loadZones();
       }
     } catch (err: unknown) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to create facility zone",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Create failed", "Failed to create facility zone");
     }
   };
 
@@ -242,29 +250,27 @@ const FacilityZones: React.FC = () => {
         loadZones();
       }
     } catch (err: unknown) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to update facility zone",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Update failed", "Failed to update facility zone");
     }
   };
 
-  const handleDeleteZone = async (zoneId: string) => {
-    if (!confirm("Are you sure you want to delete this zone? This action cannot be undone.")) return;
+  const handleDeleteZone = (zoneId: string) => {
+    setDeleteZoneId(zoneId);
+  };
+
+  const confirmDeleteZone = async () => {
+    if (!deleteZoneId) return;
     try {
-      const response = await deleteFacilityZone(zoneId);
+      const response = await deleteFacilityZone(deleteZoneId);
       if (response.success) {
         toast({ title: "Success", description: "Facility zone deleted" });
-        if (selectedZone?.id === zoneId) setSelectedZone(null);
+        if (selectedZone?.id === deleteZoneId) setSelectedZone(null);
         loadZones();
       }
     } catch (err: unknown) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to delete facility zone",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Delete failed", "Failed to delete facility zone");
+    } finally {
+      setDeleteZoneId(null);
     }
   };
 
@@ -305,7 +311,7 @@ const FacilityZones: React.FC = () => {
         }
       } catch (err) {
         console.error("Failed to load attendees for bulk assign:", err);
-        toast({ title: "Error", description: "Failed to load attendees", variant: "destructive" });
+        showErrorToast(toast, err, "Load failed", "Failed to load attendees");
       } finally {
         setIsLoadingAttendees(false);
       }
@@ -362,11 +368,7 @@ const FacilityZones: React.FC = () => {
         loadZoneDetails();
       }
     } catch (err: unknown) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to assign attendees",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Assign failed", "Failed to assign attendees");
     } finally {
       setIsAssigning(false);
     }
@@ -392,11 +394,7 @@ const FacilityZones: React.FC = () => {
         loadZoneDetails();
       }
     } catch (err: unknown) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to assign facility",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Assign failed", "Failed to assign facility");
     }
   };
 
@@ -409,11 +407,7 @@ const FacilityZones: React.FC = () => {
         loadZones();
       }
     } catch (err: unknown) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to remove facility",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Remove failed", "Failed to remove facility");
     }
   };
 
@@ -426,11 +420,7 @@ const FacilityZones: React.FC = () => {
         loadZoneDetails();
       }
     } catch (err: unknown) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to revoke access",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Revoke failed", "Failed to revoke access");
     }
   };
 
@@ -1095,6 +1085,20 @@ const FacilityZones: React.FC = () => {
           </div>
         </div>
       )}
+      <AlertDialog open={!!deleteZoneId} onOpenChange={(open) => !open && setDeleteZoneId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Facility Zone</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this zone? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteZone}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -10,6 +10,7 @@ import type { TicketSelection } from '../UnifiedRegistrationModal';
 import { downloadTicketPDF } from '@/lib/ticket-api';
 import { shareEvent } from '@/lib/utils/share';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 interface RegistrationData {
   userId?: string;
@@ -88,11 +89,7 @@ export const ConfirmationStep = ({
       });
     } catch (error) {
       console.error("Download failed:", error);
-      toast({
-        title: "Error",
-        description: "Failed to download ticket. Check your email for the ticket.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Download failed", "Failed to download ticket. Check your email for the ticket.");
     } finally {
       setIsDownloading(false);
     }

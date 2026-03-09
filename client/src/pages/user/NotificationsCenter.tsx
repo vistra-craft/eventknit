@@ -17,6 +17,7 @@ import {
   type NotificationPriority,
 } from "../../lib/notification-api";
 import { useToast } from "../../hooks/useToast";
+import { showErrorToast } from "../../lib/utils/error";
 // Helper function to format time distance
 const formatDistanceToNow = (date: Date): string => {
   const now = new Date();
@@ -85,11 +86,7 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
       }
     } catch (error) {
       console.error("Failed to load notifications:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load notifications. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load notifications. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -112,11 +109,7 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
       }
     } catch (error) {
       console.error("Failed to mark notification as read:", error);
-      toast({
-        title: "Error",
-        description: "Failed to mark notification as read.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to mark notification as read.");
     }
   };
 
@@ -136,11 +129,7 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
       }
     } catch (error) {
       console.error("Failed to mark all as read:", error);
-      toast({
-        title: "Error",
-        description: "Failed to mark all notifications as read.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to mark all notifications as read.");
     }
   };
 
@@ -162,11 +151,7 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
       }
     } catch (error) {
       console.error("Failed to delete notification:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete notification.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to delete notification.");
     }
   };
 

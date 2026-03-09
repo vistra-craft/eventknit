@@ -11,6 +11,7 @@ import { Send, Mail, MailOpen, Trash2, Reply, Calendar } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { getInbox, getSentMessages, sendMessage, getMessageThread, markMessageAsRead, deleteMessage } from "@/lib/user-dashboard-api";
 import EmptyState from "@/components/EmptyState";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -61,20 +62,12 @@ const DirectMessaging: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!messageData.recipientId && !messageData.recipientEmail) {
-      toast({
-        title: "Error",
-        description: "Please provide a recipient",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Please provide a recipient");
       return;
     }
 
     if (!messageData.content.trim()) {
-      toast({
-        title: "Error",
-        description: "Message content is required",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Message content is required");
       return;
     }
 
@@ -103,11 +96,7 @@ const DirectMessaging: React.FC = () => {
         fetchMessages();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send message",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to send message");
     } finally {
       setSending(false);
     }
@@ -142,11 +131,7 @@ const DirectMessaging: React.FC = () => {
         }
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete message",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to delete message");
     }
   };
 

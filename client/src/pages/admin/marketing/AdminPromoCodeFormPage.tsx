@@ -41,6 +41,7 @@ import {
 } from "@/lib/admin-promo-code-api";
 import { getEvents, EventStatus } from "@/lib/event-api";
 import { getUsers, type User } from "@/lib/admin-api";
+import { showErrorToast } from "@/lib/utils/error";
 import {
   approvePromoCodeRequest,
   getPromoCodeRequestById,
@@ -164,7 +165,7 @@ const AdminPromoCodeFormPage = () => {
       lastCheckedCodeRef.current = code;
       setCodeStatus("available");
     } else {
-      toast({ title: "Error", description: "Failed to generate code", variant: "destructive" });
+      showErrorToast(toast, new Error("Failed to generate code"), "Failed to generate code");
     }
 
     setGeneratingCode(false);
@@ -244,7 +245,7 @@ const AdminPromoCodeFormPage = () => {
           lastCheckedCodeRef.current = code.code;
           setCodeStatus("available");
         } else {
-          toast({ title: "Error", description: "Promo code not found", variant: "destructive" });
+          showErrorToast(toast, new Error("Promo code not found"), "Promo code not found");
           navigate("/admin/tickets/promo-codes");
         }
       } else if (requestId) {
@@ -280,7 +281,7 @@ const AdminPromoCodeFormPage = () => {
       }
     } catch (err: unknown) {
       console.error("Error loading data:", err);
-      toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
+      showErrorToast(toast, err, "Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -303,37 +304,37 @@ const AdminPromoCodeFormPage = () => {
     e.preventDefault();
 
     if (!formData.code) {
-      toast({ title: "Error", description: "Code is required", variant: "destructive" });
+      showErrorToast(toast, new Error("Code is required"), "Code is required");
       return;
     }
 
     if (codeStatus === "taken") {
-      toast({ title: "Error", description: "This code is already taken. Please choose a different one.", variant: "destructive" });
+      showErrorToast(toast, new Error("This code is already taken. Please choose a different one."), "This code is already taken. Please choose a different one.");
       return;
     }
 
     if (!formData.discountValue || formData.discountValue <= 0) {
-      toast({ title: "Error", description: "Discount value must be greater than 0", variant: "destructive" });
+      showErrorToast(toast, new Error("Discount value must be greater than 0"), "Discount value must be greater than 0");
       return;
     }
 
     if (formData.discountType === "PERCENTAGE" && formData.discountValue > 100) {
-      toast({ title: "Error", description: "Percentage discount cannot exceed 100%", variant: "destructive" });
+      showErrorToast(toast, new Error("Percentage discount cannot exceed 100%"), "Percentage discount cannot exceed 100%");
       return;
     }
 
     if (formData.scope === "ORGANIZER" && !formData.organizerId) {
-      toast({ title: "Error", description: "Please select an organizer for organizer-scoped codes", variant: "destructive" });
+      showErrorToast(toast, new Error("Please select an organizer for organizer-scoped codes"), "Please select an organizer for organizer-scoped codes");
       return;
     }
 
     if (formData.scope === "EVENT" && !formData.eventId) {
-      toast({ title: "Error", description: "Please select an event for single-event scope", variant: "destructive" });
+      showErrorToast(toast, new Error("Please select an event for single-event scope"), "Please select an event for single-event scope");
       return;
     }
 
     if (formData.scope === "MULTI_EVENT" && (!formData.eventIds || formData.eventIds.length === 0)) {
-      toast({ title: "Error", description: "Please select at least one event for multi-event scope", variant: "destructive" });
+      showErrorToast(toast, new Error("Please select at least one event for multi-event scope"), "Please select at least one event for multi-event scope");
       return;
     }
 
@@ -358,10 +359,10 @@ const AdminPromoCodeFormPage = () => {
           navigate("/admin/tickets/promo-codes");
         }
       } else {
-        toast({ title: "Error", description: response.message || "Failed to save", variant: "destructive" });
+        showErrorToast(toast, new Error(response.message || "Failed to save"), "Failed to save");
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to save promo code", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to save promo code");
     } finally {
       setSaving(false);
     }

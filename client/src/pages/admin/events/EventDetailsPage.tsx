@@ -42,7 +42,7 @@ import { getEventRegistrations } from "@/lib/organizer-api";
 import { updateOrganizerDataAccess } from "@/lib/admin-api";
 import { getEventInvitations, createInvitation, revokeInvitation, getRegistrationLinkUrl, InviteType } from "@/lib/invitation-api";
 import { useToast } from "@/hooks/useToast";
-import { extractErrorMessage } from "@/lib/utils/error";
+import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
 import { exportEventData } from "@/lib/utils/export";
 import { getEventConfig, updateEventConfig, type EventScanConfig } from "@/lib/workstation-api";
 import { getRefunds, getDisbursements, type Refund, type Disbursement } from "@/lib/financial-api";
@@ -190,6 +190,7 @@ const EventDetailsPage = () => {
   const [newInviteTitle, setNewInviteTitle] = useState("");
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const ticketTypeCount = eventData?.ticketTypes?.length ?? 0;
   const hasMultipleTicketTypes = ticketTypeCount > 1;
@@ -429,7 +430,7 @@ const EventDetailsPage = () => {
     };
 
     fetchData();
-  }, [eventId, canAccessEvent]);
+  }, [eventId, canAccessEvent, refreshKey]);
 
   // Calculate payment metrics from registrations
   const metrics: EventMetrics = (() => {
@@ -589,7 +590,7 @@ const EventDetailsPage = () => {
 
   const handleRefresh = () => {
     if (eventId) {
-      window.location.reload();
+      setRefreshKey((k) => k + 1);
     }
   };
 

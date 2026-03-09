@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 const StaffPerformanceDetail = () => {
   const { staffId } = useParams<{ staffId: string }>();
@@ -57,11 +58,7 @@ const StaffPerformanceDetail = () => {
       }
     } catch (error) {
       console.error('Error fetching performance data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load performance data',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to load performance data');
     } finally {
       setLoading(false);
     }

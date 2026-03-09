@@ -1,4 +1,14 @@
 import { useState, useEffect } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -58,6 +68,7 @@ export const UnifiedRegistrationModal = ({
   const [seatTotalPrice, setSeatTotalPrice] = useState(0);
   const [freeRegLoading, setFreeRegLoading] = useState(false);
   const [freeRegError, setFreeRegError] = useState<string | null>(null);
+  const [cancelRegConfirm, setCancelRegConfirm] = useState(false);
 
   // Determine if we should skip ticket selection for free events or single ticket types
   const shouldSkipTicketSelection =
@@ -190,9 +201,7 @@ export const UnifiedRegistrationModal = ({
         setFreeRegError(null);
       }, 300);
     } else {
-      if (confirm('Are you sure you want to cancel your registration?')) {
-        onClose();
-      }
+      setCancelRegConfirm(true);
     }
   };
 
@@ -204,6 +213,7 @@ export const UnifiedRegistrationModal = ({
   const totalTickets = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -321,5 +331,19 @@ export const UnifiedRegistrationModal = ({
         )}
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={cancelRegConfirm} onOpenChange={setCancelRegConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel registration?</AlertDialogTitle>
+          <AlertDialogDescription>Are you sure you want to cancel your registration?</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>No, continue</AlertDialogCancel>
+          <AlertDialogAction onClick={() => { setCancelRegConfirm(false); onClose(); }}>Yes, cancel</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };

@@ -32,6 +32,7 @@ import {
 } from '@/lib/organizer-api';
 
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 type Step = 'entity-type' | 'directors' | 'documents' | 'review';
 
@@ -103,11 +104,7 @@ const KYCVerificationPage = () => {
       setDocuments(documentsRes.data.documents);
       setDirectors(directorsRes.data.directors);
     } catch (err: unknown) {
-      toast({
-        title: 'Failed to load KYC data',
-        description: err instanceof Error ? err.message : 'An error occurred',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, err, 'Failed to load KYC data');
     } finally {
       setLoading(false);
     }
@@ -132,11 +129,7 @@ const KYCVerificationPage = () => {
         setCurrentStep(res.data.requiresDirectors ? 'directors' : 'documents');
       }
     } catch (error: unknown) {
-      toast({
-        title: 'Failed to set entity type',
-        description: error instanceof Error ? error.message : 'An error occurred',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to set entity type');
     }
   };
 
@@ -154,11 +147,7 @@ const KYCVerificationPage = () => {
         navigate(redirectPath, { replace: true });
       }
     } catch (error: unknown) {
-      toast({
-        title: 'Submission failed',
-        description: error instanceof Error ? error.message : 'An error occurred',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Submission failed');
     } finally {
       setSubmitting(false);
     }

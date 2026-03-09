@@ -14,6 +14,7 @@ import {
   type Reconciliation,
 } from "@/lib/financial-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const ReconciliationPage = () => {
   const navigate = useNavigate();
@@ -48,12 +49,8 @@ const ReconciliationPage = () => {
       if (response.success && response.data) {
         setReconciliations(response.data);
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load reconciliations",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load reconciliations");
     } finally {
       setLoading(false);
     }
@@ -61,11 +58,7 @@ const ReconciliationPage = () => {
 
   const handleCreateReconciliation = async () => {
     if (!createForm.startDate || !createForm.endDate) {
-      toast({
-        title: "Error",
-        description: "Please select start and end dates",
-        variant: "destructive",
-      });
+      showErrorToast(toast, null, "Please select start and end dates");
       return;
     }
 
@@ -85,12 +78,8 @@ const ReconciliationPage = () => {
         setCreateForm({ startDate: "", endDate: "", eventId: "" });
         loadReconciliations();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to create reconciliation",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to create reconciliation");
     } finally {
       setCreating(false);
     }
@@ -106,12 +95,8 @@ const ReconciliationPage = () => {
         });
         loadReconciliations();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to auto-fix reconciliation",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to auto-fix reconciliation");
     }
   };
 

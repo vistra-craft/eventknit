@@ -21,6 +21,7 @@ import {
   dismissFeedItem,
 } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { useNavigate } from "react-router-dom";
 
 interface FeedItem {
@@ -72,11 +73,7 @@ const PersonalEventFeed = () => {
       }
     } catch (error) {
       console.error("Error loading feed:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load feed",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load feed");
     } finally {
       setLoading(false);
     }
@@ -98,11 +95,7 @@ const PersonalEventFeed = () => {
         loadFeed();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to refresh feed",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to refresh feed");
     } finally {
       setRefreshing(false);
     }
@@ -138,11 +131,7 @@ const PersonalEventFeed = () => {
         setFeed(response.data.feed as unknown as Feed);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update preferences",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to update preferences");
     }
   };
 

@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getNotificationPreferences,
@@ -78,11 +79,7 @@ const NotificationPreferencesPage = () => {
         }
       } catch (error) {
         console.error("Failed to load notification preferences:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load notification preferences. Please try again.",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Failed to load notification preferences. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -116,11 +113,7 @@ const NotificationPreferencesPage = () => {
           : "Failed to save notification preferences. Please try again.";
       setSaveStatus("error");
       setSaveMessage(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast({ title: "Save failed", description: errorMessage, variant: "destructive" });
     } finally {
       setSaving(false);
     }

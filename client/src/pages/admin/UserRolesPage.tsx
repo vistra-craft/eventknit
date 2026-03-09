@@ -31,6 +31,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { UserRole as UserRoleEnum } from "@/types/auth";
 import { useToast } from "@/hooks/useToast";
 import { useEffect } from "react";
+import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
 
 // Define all available pages/permissions based on the website structure
 export interface PagePermission {
@@ -114,12 +115,7 @@ const UserRolesPage = () => {
         }
       } catch (err: unknown) {
         console.error("Error fetching roles:", err);
-        const message = err instanceof Error ? err.message : "Failed to load roles";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, err, "Load failed", "Failed to load roles");
       } finally {
         setLoading(false);
       }

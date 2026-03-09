@@ -189,7 +189,7 @@ const RolesPermissions = () => {
   // Handler functions
   const handleCreateRole = async () => {
     if (!formData.name.trim()) {
-      toast({ title: "Validation error", description: "Role name is required", variant: "destructive" });
+      showErrorToast(toast, new Error("Role name is required"), "Validation error");
       return;
     }
 

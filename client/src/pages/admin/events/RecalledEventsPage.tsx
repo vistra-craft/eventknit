@@ -12,6 +12,7 @@ import { Loader } from "../../../components/ui/loader";
 import { getEvents, getEventById, type EventData } from "../../../lib/event-api";
 import { approveEvent } from "../../../lib/admin-api";
 import { useToast } from "../../../hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
@@ -113,12 +114,11 @@ const RecalledEventsPage = () => {
         if (response.success && response.data?.event) {
           setPreviewEventData(response.data.event);
         } else {
-          toast({ title: "Error", description: "Failed to load event details", variant: "destructive" });
+          showErrorToast(toast, null, "Failed to load event details");
           setPreviewModalOpen(false);
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to load event details";
-        toast({ title: "Error", description: message, variant: "destructive" });
+        showErrorToast(toast, error, "Failed to load event details");
         setPreviewModalOpen(false);
       } finally {
         setPreviewLoading(false);
@@ -140,8 +140,7 @@ const RecalledEventsPage = () => {
         throw new Error(response.message || 'Failed to re-approve event');
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to re-approve event. Please try again.';
-      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+      showErrorToast(toast, err, "Re-approve failed", "Failed to re-approve event. Please try again.");
     } finally {
       setProcessing(null);
     }
@@ -340,8 +339,8 @@ const RecalledEventsPage = () => {
                             category: event.category,
                           });
                           toast({ title: "Exported", description: "Event data exported successfully" });
-                        } catch {
-                          toast({ title: "Error", description: "Failed to export event data", variant: "destructive" });
+                        } catch (error) {
+                          showErrorToast(toast, error, "Export failed", "Failed to export event data");
                         }
                       }}>
                         <Download className="h-4 w-4 mr-2" />
@@ -351,8 +350,8 @@ const RecalledEventsPage = () => {
                         try {
                           await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
                           toast({ title: "Copied", description: "Event link copied to clipboard" });
-                        } catch {
-                          toast({ title: "Error", description: "Failed to copy link", variant: "destructive" });
+                        } catch (error) {
+                          showErrorToast(toast, error, "Copy failed", "Failed to copy link");
                         }
                       }}>
                         <Copy className="h-4 w-4 mr-2" />

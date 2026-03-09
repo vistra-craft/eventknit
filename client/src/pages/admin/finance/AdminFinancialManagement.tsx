@@ -36,6 +36,8 @@ import {
   type CreateIncomeData,
 } from "@/lib/admin-financial-api";
 import { useToast } from "@/hooks/useToast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { showErrorToast } from "@/lib/utils/error";
 
 const AdminFinancialManagement = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -81,11 +83,7 @@ const AdminFinancialManagement = () => {
       }
     } catch (error) {
       console.error("Error loading financial data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load financial data",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load financial data");
     } finally {
       setLoading(false);
     }
@@ -99,11 +97,7 @@ const AdminFinancialManagement = () => {
       }
     } catch (error) {
       console.error("Error loading monthly summary:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load monthly summary",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load monthly summary");
     }
   }, [selectedMonth, selectedYear, toast]);
 
@@ -150,12 +144,8 @@ const AdminFinancialManagement = () => {
         setIsExpenseDialogOpen(false);
         loadData();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to create expense",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to create expense");
     }
   };
 
@@ -191,18 +181,15 @@ const AdminFinancialManagement = () => {
         setSelectedExpense(null);
         loadData();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to update expense",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to update expense");
     }
   };
 
-  const handleDeleteExpense = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this expense?")) return;
+  const [deleteExpenseConfirm, setDeleteExpenseConfirm] = useState<string | null>(null);
+  const [deleteIncomeConfirm, setDeleteIncomeConfirm] = useState<string | null>(null);
 
+  const handleDeleteExpense = async (id: string) => {
     try {
       const response = await deleteExpense(id);
       if (response.success) {
@@ -212,12 +199,8 @@ const AdminFinancialManagement = () => {
         });
         loadData();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to delete expense",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to delete expense");
     }
   };
 
@@ -232,12 +215,8 @@ const AdminFinancialManagement = () => {
         setIsIncomeDialogOpen(false);
         loadData();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to create income",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to create income");
     }
   };
 
@@ -268,18 +247,12 @@ const AdminFinancialManagement = () => {
         setSelectedIncome(null);
         loadData();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to update income",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to update income");
     }
   };
 
   const handleDeleteIncome = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this income?")) return;
-
     try {
       const response = await deleteIncome(id);
       if (response.success) {
@@ -289,12 +262,8 @@ const AdminFinancialManagement = () => {
         });
         loadData();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to delete income",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to delete income");
     }
   };
 
@@ -553,7 +522,7 @@ const AdminFinancialManagement = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDeleteExpense(expense.id)}
+                              onClick={() => setDeleteExpenseConfirm(expense.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -655,7 +624,7 @@ const AdminFinancialManagement = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDeleteIncome(income.id)}
+                              onClick={() => setDeleteIncomeConfirm(income.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -832,6 +801,32 @@ const AdminFinancialManagement = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <AlertDialog open={!!deleteExpenseConfirm} onOpenChange={() => setDeleteExpenseConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete expense?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteExpenseConfirm) handleDeleteExpense(deleteExpenseConfirm); setDeleteExpenseConfirm(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteIncomeConfirm} onOpenChange={() => setDeleteIncomeConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete income?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteIncomeConfirm) handleDeleteIncome(deleteIncomeConfirm); setDeleteIncomeConfirm(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
   );
 };
 

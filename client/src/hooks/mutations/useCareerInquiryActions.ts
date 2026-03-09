@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateCareerInquiry, type CareerInquiryStatus } from '@/lib/careers-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 export function useUpdateCareerInquiry() {
   const queryClient = useQueryClient();
@@ -18,11 +19,7 @@ export function useUpdateCareerInquiry() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update inquiry',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to update inquiry');
     },
   });
 }

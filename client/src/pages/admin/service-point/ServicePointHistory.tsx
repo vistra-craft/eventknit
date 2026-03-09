@@ -28,6 +28,7 @@ import BackButton from "@/components/BackButton";
 import { getEventScans, type TicketScanRecord, type ScanHistoryFilters, ScanType } from "../../../lib/workstation-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
 import { useToast } from "../../../hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface ScanStats {
   totalScans: number;
@@ -154,11 +155,7 @@ const ServicePointHistory: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading scans:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load scan history",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Failed to load scan history");
       } finally {
         setLoading(false);
       }

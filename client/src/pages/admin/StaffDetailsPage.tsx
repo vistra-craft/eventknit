@@ -342,7 +342,7 @@ const StaffDetailsPage = () => {
       admin: "bg-destructive/10 text-destructive border-destructive",
       supervisor: "bg-orange-100 text-orange-800 border-orange-200"
     };
-    return variants[role as keyof typeof variants] || "bg-muted text-gray-800 border-gray-200";
+    return variants[role as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
 
@@ -352,7 +352,7 @@ const StaffDetailsPage = () => {
       pending: "bg-warning/10 text-warning border-warning",
       processing: "bg-primary/10 text-primary border-primary"
     };
-    return variants[status as keyof typeof variants] || "bg-muted text-gray-800 border-gray-200";
+    return variants[status as keyof typeof variants] || "bg-muted text-muted-foreground border-border";
   };
 
   const formatCurrency = (amount: number) => {
@@ -720,12 +720,12 @@ const StaffDetailsPage = () => {
                   {Object.entries(staffData.permissions).map(([permission, hasAccess]) => (
                     <div key={permission} className="flex items-center justify-between p-3 border border-border rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${hasAccess ? 'bg-success/50' : 'bg-gray-300'}`}></div>
+                        <div className={`w-2 h-2 rounded-full ${hasAccess ? 'bg-success/50' : 'bg-muted-foreground/30'}`}></div>
                         <span className="text-sm font-medium text-foreground">
                           {permission.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                         </span>
                       </div>
-                      <Badge className={hasAccess ? "bg-success/10 text-success border-success" : "bg-muted text-gray-800 border-gray-200"}>
+                      <Badge className={hasAccess ? "bg-success/10 text-success border-success" : "bg-muted text-muted-foreground border-border"}>
                         {hasAccess ? "Allowed" : "Denied"}
                       </Badge>
                     </div>
@@ -811,7 +811,7 @@ const StaffDetailsPage = () => {
                                   Active
                                 </Badge>
                               ) : (
-                                <Badge className="text-xs bg-muted text-gray-800 border-gray-200">
+                                <Badge className="text-xs bg-muted text-muted-foreground border-border">
                                   Inactive
                                 </Badge>
                               )}

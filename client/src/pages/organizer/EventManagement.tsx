@@ -73,7 +73,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { exportAttendees, quickRegisterAttendee } from "../../lib/attendee-import-api";
 import type { QuickRegisterRequest } from "../../lib/attendee-import-api";
 import { getEventResaleStats, getEventResaleListings, getEventTransferStats, getEventTransferHistory, type ResaleStats, type ResaleListing, type TransferStats, type TransferRecord, getEventScanOverview, getEventScanHistory, getEventScanAttendees, updateEventScanConfig, type OrganizerScanConfig, type OrganizerScanStatistics, type OrganizerScanRecord, type OrganizerScanAttendee } from "../../lib/organizer-dashboard-api";
-import { extractErrorMessage } from "../../lib/utils/error";
+import { showErrorToast } from "../../lib/utils/error";
 import { updateEvent } from "../../lib/event-api";
 
 // Ticket type with all fields (including ones not in EventData type)
@@ -379,11 +379,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
         if (transferStatsRes.success && transferStatsRes.data) setTransferStats(transferStatsRes.data);
         if (transferHistoryRes.success && transferHistoryRes.data) setTransferHistory(transferHistoryRes.data.transfers);
       } catch (err) {
-        toast({
-          title: "Load failed",
-          description: extractErrorMessage(err, "Failed to load resale & transfer data"),
-          variant: "destructive",
-        });
+        showErrorToast(toast, err, "Load failed", "Failed to load resale & transfer data");
       } finally {
         setResaleTransferLoading(false);
       }
@@ -422,11 +418,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
           setScanAttendeesTotal(attendeesRes.data.total);
         }
       } catch (err) {
-        toast({
-          title: "Load failed",
-          description: extractErrorMessage(err, "Failed to load scan data"),
-          variant: "destructive",
-        });
+        showErrorToast(toast, err, "Load failed", "Failed to load scan data");
       } finally {
         setScanLoading(false);
       }
@@ -445,11 +437,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
         toast({ title: "Settings updated", description: "Scan configuration has been saved" });
       }
     } catch (err) {
-      toast({
-        title: "Update failed",
-        description: extractErrorMessage(err, "Failed to update scan settings"),
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Update failed", "Failed to update scan settings");
     } finally {
       setUpdatingConfig(false);
     }
@@ -598,7 +586,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
         toast({ title: 'Saved', description: editingTicketIndex === null ? 'New ticket type added.' : 'Ticket type updated.' });
       }
     } catch (err) {
-      toast({ title: 'Save failed', description: extractErrorMessage(err, 'Failed to update tickets.'), variant: 'destructive' });
+      showErrorToast(toast, err, 'Save failed', 'Failed to update tickets.');
     } finally {
       setSavingTicket(false);
     }
@@ -616,7 +604,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
         toast({ title: 'Archived', description: 'Ticket is now hidden from new purchases.' });
       }
     } catch (err) {
-      toast({ title: 'Failed', description: extractErrorMessage(err, 'Failed to archive ticket.'), variant: 'destructive' });
+      showErrorToast(toast, err, 'Failed to archive ticket');
     } finally {
       setSavingTicket(false);
     }
@@ -634,7 +622,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
         toast({ title: 'Removed', description: 'Ticket type removed.' });
       }
     } catch (err) {
-      toast({ title: 'Failed', description: extractErrorMessage(err, 'Failed to remove ticket.'), variant: 'destructive' });
+      showErrorToast(toast, err, 'Failed to remove ticket');
     } finally {
       setSavingTicket(false);
     }
@@ -881,7 +869,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
               setInvitations(response.data.invitations || []);
             }
           } catch (err) {
-            toast({ title: "Invitation failed", description: extractErrorMessage(err, "Failed to create invitation"), variant: "destructive" });
+            showErrorToast(toast, err, "Invitation failed", "Failed to create invitation");
           } finally {
             setCreatingInvitation(false);
           }
@@ -893,7 +881,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
             toast({ title: "Revoked", description: "Invitation link has been revoked" });
             setInvitations(prev => prev.map(inv => inv.id === invId ? { ...inv, isActive: false } : inv));
           } catch (err) {
-            toast({ title: "Revoke failed", description: extractErrorMessage(err, "Failed to revoke invitation"), variant: "destructive" });
+            showErrorToast(toast, err, "Revoke failed", "Failed to revoke invitation");
           }
         };
 

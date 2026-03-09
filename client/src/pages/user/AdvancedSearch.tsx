@@ -11,6 +11,7 @@ import { Search, Save, Trash2, Bell, Filter, X } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { useNavigate } from "react-router-dom";
 import { getEvents } from "@/lib/event-api";
 import { createSavedSearch, getUserSavedSearches, deleteSavedSearch, executeSavedSearch } from "@/lib/user-dashboard-api";
@@ -146,11 +147,7 @@ const AdvancedSearch: React.FC = () => {
       }
     } catch (error) {
       console.error("Error searching:", error);
-      toast({
-        title: "Error",
-        description: "Failed to search events",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to search events");
     } finally {
       setSearching(false);
     }
@@ -158,11 +155,7 @@ const AdvancedSearch: React.FC = () => {
 
   const handleSaveSearch = async () => {
     if (!savedSearchName.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a name for your saved search",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Please enter a name for your saved search");
       return;
     }
 
@@ -183,11 +176,7 @@ const AdvancedSearch: React.FC = () => {
         fetchSavedSearches();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save search",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to save search");
     }
   };
 
@@ -202,11 +191,7 @@ const AdvancedSearch: React.FC = () => {
         fetchSavedSearches();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete search",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to delete search");
     }
   };
 

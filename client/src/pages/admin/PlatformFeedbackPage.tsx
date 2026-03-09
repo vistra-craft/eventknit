@@ -43,6 +43,7 @@ import {
   type FeedbackFilters,
 } from "@/lib/feedback-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import type { ApiResponse } from "@/lib/api";
 
 const PlatformFeedbackPage: React.FC = () => {
@@ -82,11 +83,7 @@ const PlatformFeedbackPage: React.FC = () => {
       }
     } catch (err: unknown) {
       console.error("Error fetching feedback:", err);
-      toast({
-        title: "Error",
-        description: "Failed to load feedback data",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Load failed", "Failed to load feedback data");
     } finally {
       setLoading(false);
     }
@@ -122,11 +119,7 @@ const PlatformFeedbackPage: React.FC = () => {
       fetchData();
     } catch (error) {
       console.error("Error saving notes:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save notes",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Save failed", "Failed to save notes");
     } finally {
       setSavingNotes(false);
     }
@@ -135,7 +128,7 @@ const PlatformFeedbackPage: React.FC = () => {
   const handleTriggerEmails = async () => {
     if (!triggerEventId.trim()) {
       toast({
-        title: "Error",
+        title: "Validation error",
         description: "Please enter an event ID",
         variant: "destructive",
       });
@@ -154,11 +147,7 @@ const PlatformFeedbackPage: React.FC = () => {
       }
     } catch (error) {
       console.error("Error triggering emails:", error);
-      toast({
-        title: "Error",
-        description: "Failed to trigger feedback emails",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Send failed", "Failed to trigger feedback emails");
     } finally {
       setTriggering(false);
     }

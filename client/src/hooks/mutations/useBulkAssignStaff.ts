@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { bulkAssignStaff, type EventStaffRole } from '@/lib/admin-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 /**
  * Mutation hook to assign multiple staff members to an event
@@ -42,11 +43,7 @@ export function useBulkAssignStaff() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to assign staff',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to assign staff');
     },
   });
 }

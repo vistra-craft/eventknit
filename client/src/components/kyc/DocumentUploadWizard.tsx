@@ -13,7 +13,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/useToast';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */
@@ -84,6 +86,7 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
   const [uploadStates, setUploadStates] = useState<Record<string, UploadState>>(
     {}
   );
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
   const groupedRequirements = groupByCategory(requirements);
 
@@ -176,7 +179,7 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
     } catch (error: unknown) {
       toast({
         title: 'Upload failed',
-        description: error instanceof Error ? error.message : 'Something went wrong',
+        description: extractErrorMessage(error, 'Something went wrong'),
         variant: 'destructive',
       });
     } finally {
@@ -186,16 +189,23 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
 
   /* ----------------------------- Delete ---------------------------------- */
 
-  const handleDelete = async (documentId: string) => {
-    if (!onDelete || !confirm('Delete this document?')) return;
+  const handleDelete = (documentId: string) => {
+    if (!onDelete) return;
+    setDeletingDocId(documentId);
+  };
+
+  const confirmDelete = async () => {
+    if (!onDelete || !deletingDocId) return;
+    const docId = deletingDocId;
+    setDeletingDocId(null);
 
     try {
-      await onDelete(documentId);
+      await onDelete(docId);
       toast({ title: 'Document deleted' });
     } catch (error: unknown) {
       toast({
         title: 'Delete failed',
-        description: error instanceof Error ? error.message : 'Something went wrong',
+        description: extractErrorMessage(error, 'Something went wrong'),
         variant: 'destructive',
       });
     }
@@ -351,6 +361,22 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
           </CardContent>
         </Card>
       ))}
+
+      {/* Delete Document Confirmation */}
+      <AlertDialog open={!!deletingDocId} onOpenChange={(open) => !open && setDeletingDocId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this document? You will need to upload it again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -13,6 +13,7 @@ import { getSeatMapAvailability, reserveSeats, type Seat, type SeatMap } from '@
 import { CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { useToast } from '@/hooks/useToast';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 interface SeatMapSelectorProps {
   eventId: string;
@@ -43,14 +44,11 @@ const SeatMapSelector = ({
       const data = await getSeatMapAvailability(eventId);
       setSeatMap(data);
     } catch (err: unknown) {
-      const message =
-        typeof err === "object" && err !== null && "response" in err
-          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-          : undefined;
-      setError(message || "Failed to load seat map");
+      const message = extractErrorMessage(err, 'Failed to load seat map');
+      setError(message);
       toast({
-        title: 'Error',
-        description: 'Failed to load seat map',
+        title: 'Seat map load failed',
+        description: message,
         variant: 'destructive',
       });
     } finally {
@@ -126,14 +124,11 @@ const SeatMapSelector = ({
         onSeatsSelected(seatIds, totalPrice);
       }
     } catch (err: unknown) {
-      const errorMsg =
-        typeof err === "object" && err !== null && "response" in err
-          ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
-          : undefined;
-      setError(errorMsg || 'Failed to reserve seats');
+      const errorMsg = extractErrorMessage(err, 'Failed to reserve seats');
+      setError(errorMsg);
       toast({
-        title: 'Error',
-        description: errorMsg || 'Failed to reserve seats',
+        title: 'Reservation failed',
+        description: errorMsg,
         variant: 'destructive',
       });
     } finally {

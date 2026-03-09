@@ -49,6 +49,7 @@ import {
   getSupportStatistics,
   type SupportQuery as ApiSupportQuery,
 } from "@/lib/support-api";
+import { showErrorToast } from "@/lib/utils/error";
 import type {
   SupportQuery,
   SupportResponse,
@@ -154,11 +155,7 @@ const SupportPage = () => {
       }
     } catch (error) {
       console.error("Failed to load support queries:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load support queries.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load support queries.");
     } finally {
       setLoadingQueries(false);
     }
@@ -353,11 +350,7 @@ const SupportPage = () => {
       }
     } catch (error) {
       console.error("Failed to assign message:", error);
-      toast({
-        title: "Error",
-        description: "Failed to assign message. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to assign message. Please try again.");
     }
   };
 
@@ -373,11 +366,7 @@ const SupportPage = () => {
       }
     } catch (error) {
       console.error("Failed to update message status:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update status. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to update status. Please try again.");
     }
   };
 
@@ -395,11 +384,7 @@ const SupportPage = () => {
       }
     } catch (error) {
       console.error("Failed to send response:", error);
-      toast({
-        title: "Error",
-        description: "Failed to send response. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to send response. Please try again.");
     }
   };
 
