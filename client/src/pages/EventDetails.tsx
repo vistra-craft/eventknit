@@ -315,16 +315,6 @@ const EventDetails = () => {
               <div className="space-y-3 pb-8 border-b border-border/40">
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">{event.title}</h1>
 
-                {/* Organizer row */}
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Building2 className="w-4 h-4 text-primary" />
-                  </div>
-                  <p className="text-sm text-foreground">
-                    By <span className="font-medium">{event.organizerName || event.organizer?.organizationName || event.organizer?.firstName || 'Organizer'}</span>
-                  </p>
-                </div>
-
                 {/* Date + Time */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Calendar className="h-4 w-4 text-primary flex-shrink-0" />
