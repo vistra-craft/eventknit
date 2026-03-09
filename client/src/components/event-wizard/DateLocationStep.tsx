@@ -152,20 +152,29 @@ export function DateLocationStep({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="date">Event Date *</Label>
-          <Input
-            id="date"
-            type="date"
-            value={eventData.date}
-            onChange={(e) => {
-              handleInputChange("date", e.target.value);
-              // Clear end date if it's before start date
-              if (eventData.endDate && e.target.value > eventData.endDate) {
-                handleInputChange("endDate", "");
-              }
-              if (validationErrors.date) setValidationErrors(prev => ({ ...prev, date: '' }));
-            }}
-            className={`h-12 [&::-webkit-calendar-picker-indicator]:hidden ${validationErrors.date ? 'border-destructive' : ''}`}
-          />
+          <div className="relative">
+            <Input
+              id="date"
+              type="date"
+              value={eventData.date}
+              onChange={(e) => {
+                handleInputChange("date", e.target.value);
+                // Clear end date if it's before start date
+                if (eventData.endDate && e.target.value > eventData.endDate) {
+                  handleInputChange("endDate", "");
+                }
+                if (validationErrors.date) setValidationErrors(prev => ({ ...prev, date: '' }));
+              }}
+              className={`h-12 pr-10 [&::-webkit-calendar-picker-indicator]:hidden ${validationErrors.date ? 'border-destructive' : ''}`}
+            />
+            <button
+              type="button"
+              onClick={() => document.getElementById('date')?.showPicker?.()}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <Calendar className="h-4 w-4" />
+            </button>
+          </div>
           {validationErrors.date && (
             <p className="text-sm text-destructive">{validationErrors.date}</p>
           )}
@@ -233,17 +242,26 @@ export function DateLocationStep({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="endDate">End Date</Label>
-          <Input
-            id="endDate"
-            type="date"
-            min={eventData.date || undefined}
-            value={eventData.endDate}
-            onChange={(e) => {
-              handleInputChange("endDate", e.target.value);
-              if (validationErrors.endDate) setValidationErrors(prev => ({ ...prev, endDate: '' }));
-            }}
-            className={`h-12 [&::-webkit-calendar-picker-indicator]:hidden ${validationErrors.endDate ? 'border-destructive' : ''}`}
-          />
+          <div className="relative">
+            <Input
+              id="endDate"
+              type="date"
+              min={eventData.date || undefined}
+              value={eventData.endDate}
+              onChange={(e) => {
+                handleInputChange("endDate", e.target.value);
+                if (validationErrors.endDate) setValidationErrors(prev => ({ ...prev, endDate: '' }));
+              }}
+              className={`h-12 pr-10 [&::-webkit-calendar-picker-indicator]:hidden ${validationErrors.endDate ? 'border-destructive' : ''}`}
+            />
+            <button
+              type="button"
+              onClick={() => document.getElementById('endDate')?.showPicker?.()}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <Calendar className="h-4 w-4" />
+            </button>
+          </div>
           {validationErrors.endDate && (
             <p className="text-sm text-destructive">{validationErrors.endDate}</p>
           )}
@@ -301,40 +319,33 @@ export function DateLocationStep({
                 <Label htmlFor="registrationDeadline" className="text-xs text-muted-foreground">
                   Last Registration Date
                 </Label>
-                <Input
-                  id="registrationDeadline"
-                  type="date"
-                  value={eventData.registrationDeadline}
-                  max={eventData.date || undefined}
-                  onChange={(e) => handleInputChange("registrationDeadline", e.target.value)}
-                  className="h-10 [&::-webkit-calendar-picker-indicator]:hidden"
-                />
+                <div className="relative">
+                  <Input
+                    id="registrationDeadline"
+                    type="date"
+                    value={eventData.registrationDeadline}
+                    max={eventData.date || undefined}
+                    onChange={(e) => handleInputChange("registrationDeadline", e.target.value)}
+                    className="h-10 pr-10 [&::-webkit-calendar-picker-indicator]:hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('registrationDeadline')?.showPicker?.()}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <Calendar className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="registrationDeadlineTime" className="text-xs text-muted-foreground">
                   Closing Time
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="registrationDeadlineTime"
-                    type="time"
-                    value={eventData.registrationDeadlineTime || "23:59"}
-                    onChange={(e) => handleInputChange("registrationDeadlineTime", e.target.value)}
-                    className="h-10 pr-10"
-                  />
-                  {eventData.registrationDeadlineTime && eventData.registrationDeadlineTime !== "23:59" && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-muted"
-                      onClick={() => handleInputChange("registrationDeadlineTime", "23:59")}
-                    >
-                      <X className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="sr-only">Reset to default</span>
-                    </Button>
-                  )}
-                </div>
+                <TimePicker
+                  id="registrationDeadlineTime"
+                  value={eventData.registrationDeadlineTime || "23:59"}
+                  onChange={(value) => handleInputChange("registrationDeadlineTime", value || "23:59")}
+                />
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
