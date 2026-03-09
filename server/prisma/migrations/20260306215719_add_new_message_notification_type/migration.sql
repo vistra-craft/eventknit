@@ -2,7 +2,7 @@
 ALTER TYPE "NotificationType" ADD VALUE 'NEW_MESSAGE';
 
 -- DropIndex
-DROP INDEX "SeatReservation_ticketLineItemId_idx";
+DROP INDEX IF EXISTS "SeatReservation_ticketLineItemId_idx";
 
 -- AlterTable
 ALTER TABLE "SeatReservation" ALTER COLUMN "attendeeName" SET DATA TYPE TEXT,
