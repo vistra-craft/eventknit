@@ -280,6 +280,51 @@ npm run prisma:release-lock
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run test:run` | Run tests once (CI mode) |
 
+### Pre-push validation
+
+```bash
+npm run pre-push
+```
+
+Runs the full local validation suite in sequence:
+
+| Step | Command | What it catches |
+|------|---------|-----------------|
+| 1 | `prisma:generate` | Schema / client drift |
+| 2 | `lint` | ESLint errors |
+| 3 | `type-check` | TypeScript errors (fast, no emit) |
+| 4 | `test:run` | Test regressions |
+| 5 | `build` | Compile errors that only appear at emit time |
+
+Prints a summary of every step. Exits with code `1` if anything fails so the git `pre-push` hook can block the push.
+
+---
+
+## Git Hooks
+
+Hooks are managed by [Husky](https://typicode.com/husky) and live in `.husky/` at the repository root.
+
+### `pre-commit` — runs on every `git commit`
+
+Executes `lint-staged` in the server directory, which runs `eslint --fix` on all staged `.ts` files. Keeps the commit history clean without running the full suite on every save.
+
+### `pre-push` — runs on every `git push`
+
+Runs the full validation pipeline for **both** the server and the client before the push is allowed through:
+
+```
+Server  →  prisma:generate → lint → type-check → test:run → build
+Client  →  type-check → build
+```
+
+If any step fails, the push is **blocked** and the terminal shows exactly which check failed and which files are affected. Fix the errors and push again.
+
+**Emergency bypass** (use only for WIP/draft pushes — never for production branches):
+
+```bash
+git push --no-verify
+```
+
 ---
 
 ## 👥 User Management Scripts
@@ -563,10 +608,10 @@ For detailed API documentation, see the route files in `src/routes/`.
 
 1. Create a feature branch from `development`
 2. Make your changes
-3. Run tests: `npm test`
-4. Run linting: `npm run lint:fix`
-5. Run type check: `npm run type-check`
-6. Submit a pull request
+3. The `pre-commit` hook will auto-fix lint errors on staged files
+4. Run `npm run pre-push` locally to verify everything passes before pushing
+5. Push — the `pre-push` hook runs the full suite automatically and blocks on failure
+6. Submit a pull request — GitHub Actions CI runs the same checks in a clean environment
 
 ---
 

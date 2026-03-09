@@ -93,8 +93,8 @@ The app will be available at `http://localhost:5173`.
 | Command | Description |
 |---------|-------------|
 | `npm run lint` | Run ESLint on the codebase |
-| `npm run type-check` | Run TypeScript type checking |
-| `npm run pre-push` | Run lint, type-check, tests, and build (CI check) |
+| `npm run type-check` | Run TypeScript type checking (no emit) |
+| `npm run pre-push` | Run full validation suite (lint + type-check + tests + build) |
 
 ### Testing
 
@@ -104,6 +104,42 @@ The app will be available at `http://localhost:5173`.
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run test:run` | Run tests once (CI mode) |
+
+---
+
+## Git Hooks
+
+Hooks are managed by [Husky](https://typicode.com/husky) and configured at the repository root (`.husky/`).
+
+### `pre-commit` — runs on every `git commit`
+
+Runs `lint-staged` on the **server** side (ESLint auto-fix on staged `.ts` files). The client does not have a separate pre-commit step — type errors and build failures are caught at push time instead.
+
+### `pre-push` — runs on every `git push`
+
+Runs the full validation pipeline for **both** the client and server before the push is allowed through:
+
+```
+Server  →  prisma:generate → lint → type-check → test:run → build
+Client  →  type-check → build
+```
+
+The client steps run automatically as part of the hook — you don't need to trigger them manually. If the client type-check or build fails, the push is **blocked** with a clear error showing what went wrong.
+
+To run the client checks manually before pushing:
+
+```bash
+# From the client/ directory
+npm run type-check   # Fast — catches TypeScript errors
+npm run build        # Full Vite build — catches bundler-level issues
+npm run pre-push     # Both of the above + lint + tests
+```
+
+**Emergency bypass** (use only for WIP/draft pushes):
+
+```bash
+git push --no-verify
+```
 
 ---
 
@@ -305,8 +341,9 @@ Create environment-specific files:
 
 1. Create a feature branch from `development`
 2. Make your changes
-3. Run quality checks: `npm run pre-push`
-4. Submit a pull request
+3. Run `npm run pre-push` locally to verify everything passes
+4. Push — the `pre-push` hook runs automatically and blocks on failure
+5. Submit a pull request — GitHub Actions CI runs the same checks in a clean environment
 
 ---
 
