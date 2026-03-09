@@ -172,8 +172,8 @@ main() {
     log_info "Replacing server and client containers..."
     docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate server client
 
-    # Step 7: Ensure nginx is up (it may already be running)
-    docker compose -f "$COMPOSE_FILE" up -d --no-deps nginx
+    # Step 7: Recreate nginx so it picks up any config changes
+    docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate nginx
 
     # Step 8: Wait for new server to be healthy
     if ! wait_for_healthy "eventknit-server" "$MAX_HEALTH_WAIT"; then
