@@ -249,6 +249,7 @@ export default function CreateEventStepwise() {
         location: "",
         venue: "",
         address: "",
+        coordinates: null,
         onlineLink: "",
         price: "",
         totalSlots: 0,
@@ -292,6 +293,7 @@ export default function CreateEventStepwise() {
         location: "",
         venue: "",
         address: "",
+        coordinates: null,
         onlineLink: "",
         price: "",
         totalSlots: 0,
@@ -338,6 +340,7 @@ export default function CreateEventStepwise() {
             location: draftData.location || "",
             venue: draftData.venue || "",
             address: draftData.address || "",
+            coordinates: draftData.coordinates || null,
             onlineLink: draftData.onlineLink || "",
             price: draftData.price || "",
             totalSlots: draftData.totalSlots || 0,
@@ -382,6 +385,7 @@ export default function CreateEventStepwise() {
       location: "",
       venue: "",
       address: "",
+      coordinates: null,
       onlineLink: "",
       price: "",
       totalSlots: 0,
@@ -436,6 +440,7 @@ export default function CreateEventStepwise() {
       location: "",
       venue: "",
       address: "",
+      coordinates: null,
       onlineLink: "",
       price: "",
       totalSlots: 0,
@@ -698,6 +703,7 @@ export default function CreateEventStepwise() {
             location: transformedEvent.location || "",
             venue: transformedEvent.venue || "",
             address: transformedEvent.address || "",
+            coordinates: transformedEvent.coordinates || null,
             onlineLink: transformedEvent.onlineLink || "",
             price: transformedEvent.price?.toString() || "",
             totalSlots: transformedEvent.capacity || 0,
@@ -1283,14 +1289,16 @@ export default function CreateEventStepwise() {
 
   const handleInputChange = (
     field: string,
-    value: string | boolean | number
+    value: string | boolean | number | { lat: number; lng: number } | null
   ) => {
-    const processedValue = field === 'totalSlots' 
-      ? typeof value === 'string' 
-        ? value === '' 
-          ? 0 
-          : Number(value) 
-        : value
+    const processedValue = field === 'totalSlots'
+      ? typeof value === 'string'
+        ? value === ''
+          ? 0
+          : Number(value)
+        : typeof value === 'number'
+          ? value
+          : 0
       : value;
 
     setEventData((prev) => ({ ...prev, [field]: processedValue }));
@@ -1537,6 +1545,7 @@ export default function CreateEventStepwise() {
       venue: eventData.venue?.trim() || undefined,
       location: eventData.location?.trim() || eventData.onlineLink?.trim() || '',
       address: eventData.address?.trim() || undefined,
+      coordinates: eventData.coordinates || undefined,
       isOnline: eventType === 'online' || eventType === 'hybrid',
       onlineLink: eventData.onlineLink?.trim() || undefined,
       isFree,

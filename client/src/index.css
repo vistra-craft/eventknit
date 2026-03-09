@@ -1,5 +1,6 @@
 /* React Resizable styles for draggable badge elements - must be first */
 @import 'react-resizable/css/styles.css';
+@import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;

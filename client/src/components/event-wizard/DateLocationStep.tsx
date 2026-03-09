@@ -5,9 +5,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Globe, Calendar, X, MapPin, Clock } from 'lucide-react';
+import { Globe, Calendar, X, MapPin, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import type { StepComponentProps } from './types';
 import { TIMEZONES, getCurrentTimezone, getTimezoneLabel } from './types';
+import { MapPicker } from './MapPicker';
+import { EventMap } from '@/components/EventMap';
 
 interface DateLocationStepProps extends StepComponentProps {
   eventType: string;
@@ -142,7 +144,9 @@ export function DateLocationStep({
   timezone,
   setTimezone,
 }: DateLocationStepProps) {
-  const handleInputChange = (field: string, value: string | boolean | number) => {
+  const [showMapPicker, setShowMapPicker] = useState(false);
+
+  const handleInputChange = (field: string, value: string | boolean | number | { lat: number; lng: number } | null) => {
     onInputChange(field, value);
   };
 
@@ -409,6 +413,48 @@ export function DateLocationStep({
             <p className="text-xs text-muted-foreground">
               Full address helps attendees find your venue
             </p>
+          </div>
+          <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+            <button
+              type="button"
+              onClick={() => setShowMapPicker((prev) => !prev)}
+              className="flex w-full items-center justify-between text-left"
+            >
+              <div>
+                <Label className="text-sm font-medium">Pin exact location (optional)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Search for an address, then click the map to set the exact coordinates.
+                </p>
+              </div>
+              {showMapPicker ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+            {showMapPicker && (
+              <div className="space-y-4">
+                <MapPicker
+                  value={eventData.coordinates || null}
+                  onChange={(coords) => handleInputChange('coordinates', coords)}
+                  venue={eventData.venue}
+                  address={eventData.address}
+                  location={eventData.location}
+                />
+                {(eventData.location || eventData.venue || eventData.coordinates) && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Attendee map preview
+                    </p>
+                    <EventMap
+                      venue={eventData.venue || ''}
+                      location={eventData.location || ''}
+                      coordinates={eventData.coordinates || undefined}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

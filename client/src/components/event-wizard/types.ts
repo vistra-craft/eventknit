@@ -149,6 +149,7 @@ export interface EventFormData {
   location: string;
   venue: string;
   address: string;
+  coordinates?: { lat: number; lng: number } | null;
   onlineLink: string;
   price: string;
   totalSlots: number;
@@ -184,7 +185,7 @@ export interface EventFormData {
 /** Common props shared by all step components */
 export interface StepComponentProps {
   eventData: EventFormData;
-  onInputChange: (field: string, value: string | boolean | number) => void;
+  onInputChange: (field: string, value: string | boolean | number | { lat: number; lng: number } | null) => void;
   validationErrors: Record<string, string>;
   setValidationErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }
