@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Menu, User, ChevronDown, LogOut, Building2, Settings, LayoutDashboard } from "lucide-react";
+import { Menu, User, LogOut, Building2, Settings, LayoutDashboard } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";

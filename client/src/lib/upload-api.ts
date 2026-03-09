@@ -1,6 +1,6 @@
 import { apiPost } from './api';
 
-export type UploadFolder = 'avatars' | 'speakers' | 'exhibitors' | 'sponsors' | 'events';
+export type UploadFolder = 'avatars' | 'speakers' | 'exhibitors' | 'sponsors' | 'events' | 'general';
 
 interface UploadResponse {
   success: boolean;

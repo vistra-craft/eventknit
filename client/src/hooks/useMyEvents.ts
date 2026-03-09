@@ -179,7 +179,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
     } finally {
       setOrganizingLoading(false);
     }
-  }, [canOrganize, user?.role]);
+  }, [canOrganize]);
 
   // Fetch saved events
   const fetchSaved = useCallback(async () => {

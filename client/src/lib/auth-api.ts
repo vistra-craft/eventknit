@@ -46,6 +46,7 @@ export interface RegisterData {
   role?: UserRole;
   organizationName?: string;
   businessEmail?: string;
+  avatar?: string | null;
 }
 
 export interface LoginResponse {

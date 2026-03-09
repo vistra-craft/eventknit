@@ -35,7 +35,6 @@ import {
 } from "@/lib/user-preferences-api";
 import { SettingsSection, ThemeSelector } from "@/components/settings";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
-import { useUploadAvatar } from "@/hooks/useUploadAvatar";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { getMyOrganizerProfile, updateMyOrganizerProfile } from "@/lib/organizer-profile-api";
 
@@ -100,7 +99,6 @@ const OrganizerSettingsPage = () => {
     UserRole.ORGANIZER_STAFF,
     UserRole.ORGANIZER_TELLER,
   ].includes(user.role) : false;
-  const uploadAvatarMutation = useUploadAvatar();
   const { theme: currentTheme, setTheme: setThemeContext } = useTheme();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
@@ -118,10 +116,6 @@ const OrganizerSettingsPage = () => {
     confirmPassword: "",
   });
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
-  
-  // Avatar upload state
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
   // Determine active tab from URL
   const getActiveTabFromUrl = useCallback(() => {
@@ -400,40 +394,20 @@ const OrganizerSettingsPage = () => {
     try {
       if (activeTab === "profile") {
         // 1. Save user profile (auth fields)
-        if (avatarFile) {
-          const formData = new FormData();
-          formData.append('image', avatarFile);
-          formData.append('firstName', settings.firstName);
-          formData.append('lastName', settings.lastName);
-          if (settings.otherName) formData.append('otherName', settings.otherName);
-          if (settings.phone) formData.append('phoneNumber', settings.phone);
-          if (settings.companyAffiliation) formData.append('companyAffiliation', settings.companyAffiliation);
-          if (settings.organizationName) formData.append('organizationName', settings.organizationName);
-          if (settings.businessEmail) formData.append('businessEmail', settings.businessEmail);
+        const profileData: Partial<authApi.RegisterData> = {
+          firstName: settings.firstName,
+          lastName: settings.lastName,
+          otherName: settings.otherName || undefined,
+          phoneNumber: settings.phone || undefined,
+          companyAffiliation: settings.companyAffiliation || undefined,
+          organizationName: settings.organizationName || undefined,
+          businessEmail: settings.businessEmail || undefined,
+        };
 
-          const response = await authApi.updateProfile(formData);
+        const response = await authApi.updateProfile(profileData);
 
-          if (response.success) {
-            setAvatarFile(null);
-          } else {
-            throw new Error("Failed to update profile");
-          }
-        } else {
-          const profileData: Partial<authApi.RegisterData> = {
-            firstName: settings.firstName,
-            lastName: settings.lastName,
-            otherName: settings.otherName || undefined,
-            phoneNumber: settings.phone || undefined,
-            companyAffiliation: settings.companyAffiliation || undefined,
-            organizationName: settings.organizationName || undefined,
-            businessEmail: settings.businessEmail || undefined,
-          };
-
-          const response = await authApi.updateProfile(profileData);
-
-          if (!response.success) {
-            throw new Error("Failed to update profile");
-          }
+        if (!response.success) {
+          throw new Error("Failed to update profile");
         }
 
         // 2. Save organizer profile (description, website, location, socialLinks) — organizer only
@@ -590,19 +564,10 @@ const OrganizerSettingsPage = () => {
     }
   };
 
-  // Handle avatar change
-  const handleAvatarChange = async (file: File) => {
-    if (file && file.size > 0) {
-      setAvatarFile(file);
-      setIsUploadingAvatar(true);
-      
-      try {
-        await uploadAvatarMutation.mutateAsync(file);
-        setAvatarFile(null);
-      } finally {
-        setIsUploadingAvatar(false);
-      }
-    }
+  // Called by AvatarUpload after direct Cloudinary upload
+  const handleAvatarUploadComplete = async (url: string) => {
+    await authApi.updateProfile({ avatar: url });
+    await refreshProfile();
   };
 
   const renderProfileSettings = () => {
@@ -617,9 +582,8 @@ const OrganizerSettingsPage = () => {
       {/* Avatar / Logo Upload */}
       <AvatarUpload
         currentAvatar={settings.avatar || null}
-        onAvatarChange={handleAvatarChange}
-        isUploading={isUploadingAvatar || uploadAvatarMutation.isPending}
-        userName={`${settings.firstName} ${settings.lastName}`.trim()}
+        onUploadComplete={handleAvatarUploadComplete}
+        onRemove={() => authApi.updateProfile({ avatar: '' }).then(() => refreshProfile())}
         isLogo={!isIndividual}
         label={isIndividual ? "Profile Photo" : "Company / Organization Logo"}
         hint={

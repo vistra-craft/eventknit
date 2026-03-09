@@ -25,7 +25,7 @@ const STEPS = [
     Icon: CalendarDays,
     title: 'Create events your way',
     description:
-      'Set up event pages, choose ticket types, control capacity, and publish whenever you're ready.',
+      "Set up event pages, choose ticket types, control capacity, and publish whenever you're ready.",
   },
   {
     Icon: DollarSign,
@@ -37,7 +37,7 @@ const STEPS = [
     Icon: BarChart2,
     title: 'Know your audience',
     description:
-      'Check-in rates, registration trends, attendee breakdown — it's all in Analytics once your event goes live.',
+      "Check-in rates, registration trends, attendee breakdown — it's all in Analytics once your event goes live.",
   },
 ] as const;
 

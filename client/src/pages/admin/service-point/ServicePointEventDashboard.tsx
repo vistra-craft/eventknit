@@ -213,7 +213,7 @@ const ServicePointEventDashboard: React.FC = () => {
     };
 
     loadEventData();
-  }, [eventId, navigate, toast]);
+  }, [basePrefix, eventId, navigate, toast]);
 
   // Refresh attendees function (for use after import)
   const refreshAttendees = async () => {

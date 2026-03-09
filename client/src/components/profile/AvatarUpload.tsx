@@ -1,14 +1,17 @@
-import { useRef, useState } from "react";
-import { Upload, Pencil, User, Building2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Loader } from "@/components/ui/loader";
+import { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Pencil, User, Building2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Loader } from '@/components/ui/loader';
+import { useDirectUpload } from '@/hooks/useDirectUpload';
 
 interface AvatarUploadProps {
   currentAvatar?: string | null;
-  onAvatarChange: (file: File, preview: string) => void;
-  isUploading?: boolean;
-  userName?: string;
+  /** Called with the Cloudinary URL once the upload completes. */
+  onUploadComplete: (url: string) => void;
+  /** Called when the user removes the current image. */
+  onRemove?: () => void;
   label?: string;
   hint?: string;
   /** When true, renders a rounded-lg square preview suitable for logos */
@@ -16,157 +19,167 @@ interface AvatarUploadProps {
 }
 
 /**
- * Reusable Avatar / Logo Upload Component
- * - Square aspect ratio (1:1)
- * - Max 2MB
- * - Supports both circular profile photos and square company logos
+ * Avatar / Logo Upload — direct Cloudinary upload via signed params.
+ * Supports drag-and-drop and click-to-select.
+ * Max 2MB.
  */
 export function AvatarUpload({
   currentAvatar,
-  onAvatarChange,
-  isUploading = false,
-  label = "Profile Photo",
-  hint = "Your photo will be displayed on your profile and in event communications.",
+  onUploadComplete,
+  onRemove,
+  label = 'Profile Photo',
+  hint = 'Your photo will be displayed on your profile and in event communications.',
   isLogo = false,
 }: AvatarUploadProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(currentAvatar || null);
-  const [error, setError] = useState<string>("");
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const { upload, progress, isUploading, error: uploadError } = useDirectUpload({
+    folder: 'avatars',
+    maxSizeMB: 2,
+    onError: (msg) => setErrorMsg(msg),
+  });
 
-    if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file (JPG, PNG, or GIF)");
-      return;
-    }
+  const handleFile = useCallback(
+    async (file: File) => {
+      setErrorMsg('');
+      // Instant local preview
+      const objectUrl = URL.createObjectURL(file);
+      setPreview(objectUrl);
 
-    if (file.size > 2 * 1024 * 1024) {
-      setError("File size must be less than 2MB");
-      return;
-    }
+      const url = await upload(file);
+      // Revoke the temp object URL once Cloudinary URL is ready
+      URL.revokeObjectURL(objectUrl);
 
-    setError("");
+      if (url) {
+        setPreview(url);
+        onUploadComplete(url);
+      } else {
+        // Upload failed — revert preview
+        setPreview(currentAvatar || null);
+      }
+    },
+    [upload, onUploadComplete, currentAvatar],
+  );
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setPreview(base64String);
-      onAvatarChange(file, base64String);
-    };
-    reader.onerror = () => {
-      setError("Failed to read image file");
-    };
-    reader.readAsDataURL(file);
-  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: { 'image/*': [] },
+    maxFiles: 1,
+    disabled: isUploading,
+    onDropAccepted: ([file]) => handleFile(file),
+    onDropRejected: () => setErrorMsg('Only image files are allowed (max 2MB)'),
+    maxSize: 2 * 1024 * 1024,
+    noClick: !!preview, // when preview shown, clicking the edit button handles it
+  });
 
   const handleRemove = () => {
     setPreview(null);
-    setError("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-    onAvatarChange(new File([], ""), "");
+    setErrorMsg('');
+    onRemove?.();
   };
 
   const containerClass = isLogo
-    ? "relative w-32 h-32 rounded-xl overflow-hidden border-2 border-border bg-muted"
-    : "relative w-32 h-32 rounded-full overflow-hidden border-4 border-border bg-muted";
+    ? 'relative w-32 h-32 rounded-xl overflow-hidden border-2 border-border bg-muted'
+    : 'relative w-32 h-32 rounded-full overflow-hidden border-4 border-border bg-muted';
 
-  const placeholderIcon = isLogo
-    ? <Building2 className="w-12 h-12 text-muted-foreground" />
-    : <User className="w-12 h-12 text-muted-foreground" />;
+  const displayError = errorMsg || uploadError;
 
   return (
     <div className="space-y-4">
       <Label>{label}</Label>
 
       <div className="flex items-start gap-6">
-        {/* Preview */}
+        {/* Avatar preview + dropzone overlay when no preview */}
         <div className="flex-shrink-0">
-          <div className={containerClass}>
-            {preview ? (
+          {preview ? (
+            <div className={containerClass}>
               <img
                 src={preview}
-                alt={isLogo ? "Logo preview" : "Avatar preview"}
+                alt={isLogo ? 'Logo preview' : 'Avatar preview'}
                 className="w-full h-full object-cover"
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-muted">
-                {placeholderIcon}
+              {/* Progress overlay */}
+              {isUploading && (
+                <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-1">
+                  <Loader size="sm" className="text-white" />
+                  <span className="text-white text-xs font-medium">{progress}%</span>
+                </div>
+              )}
+              {!isUploading && (
+                <div {...getRootProps()} className="absolute inset-0 cursor-pointer">
+                  <input {...getInputProps()} />
+                  <button
+                    type="button"
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-md transition-all"
+                    title={isLogo ? 'Change logo' : 'Change photo'}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div
+              {...getRootProps()}
+              className={`${containerClass} cursor-pointer transition-colors ${
+                isDragActive ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : 'hover:bg-muted/80'
+              }`}
+            >
+              <input {...getInputProps()} />
+              <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                {isLogo ? (
+                  <Building2 className="w-10 h-10 text-muted-foreground" />
+                ) : (
+                  <User className="w-10 h-10 text-muted-foreground" />
+                )}
+                {isDragActive && (
+                  <span className="text-[10px] text-primary font-medium">Drop here</span>
+                )}
               </div>
-            )}
-
-            {preview && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="absolute top-2 right-2 p-1.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 shadow-md transition-all"
-                title={isLogo ? "Change logo" : "Change photo"}
-              >
-                <Pencil className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Controls */}
-        <div className="flex-1 space-y-4">
+        <div className="flex-1 space-y-3">
           <div className="space-y-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              disabled={isUploading}
-              className="hidden"
-            />
-
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <>
-                    <Loader size="sm" className="mr-2" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    {isLogo ? "Upload Logo" : "Choose Photo"}
-                  </>
+            {isUploading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader size="sm" />
+                <span>Uploading… {progress}%</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div {...getRootProps()}>
+                  <input {...getInputProps()} />
+                  <Button type="button" variant="outline" size="sm" disabled={isUploading}>
+                    {isLogo ? 'Upload Logo' : 'Choose Photo'}
+                  </Button>
+                </div>
+                {preview && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemove}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    Remove
+                  </Button>
                 )}
-              </Button>
-
-              {preview && !isUploading && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRemove}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  Remove
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
 
             <p className="text-xs text-muted-foreground">
-              Max 2MB · JPG, PNG, or GIF
-              {isLogo && " · Square format recommended"}
+              Drag & drop or click to upload · Max 2MB · JPG, PNG, GIF
+              {isLogo && ' · Square format recommended'}
             </p>
           </div>
 
-          {error && (
+          {displayError && (
             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30">
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-destructive">{displayError}</p>
             </div>
           )}
 
