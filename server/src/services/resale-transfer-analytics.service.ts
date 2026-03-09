@@ -1,4 +1,4 @@
-import { prisma } from '../config/database';
+import { prisma } from '../config/database.js';
 
 /**
  * Service for resale & transfer analytics used by organizer and admin dashboards.
