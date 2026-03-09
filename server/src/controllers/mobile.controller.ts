@@ -286,6 +286,140 @@ export const mobileController = {
   }),
 
   /**
+   * Get organizer dashboard stats for a specific event
+   * GET /api/v1/mobile/dashboard/organizer/:eventId
+   * Lightweight per-event stats optimized for the mobile organizer dashboard
+   */
+  getOrganizerEventDashboard: asyncHandler(async (req: Request, res: Response) => {
+    const userId: string | undefined = req.user?.id;
+
+    if (!userId) {
+      throw new ValidationError('Authentication required');
+    }
+
+    const eventId: string | undefined = typeof req.params.eventId === 'string'
+      ? req.params.eventId
+      : undefined;
+
+    if (!eventId) {
+      throw new ValidationError('Event ID is required');
+    }
+
+    // Verify the user owns this event or is an admin
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        deletedAt: null,
+        OR: [
+          { organizerId: userId },
+          { organizer: { role: { in: ['SUPERADMIN', 'ADMIN_STAFF'] } } },
+        ],
+      },
+      select: { id: true, title: true },
+    });
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: 'Event not found or access denied',
+      });
+    }
+
+    // Get stats in parallel
+    const [
+      confirmedRegistrations,
+      checkedInCount,
+      currentlyInsideCount,
+      recentActivity,
+    ] = await Promise.all([
+      // Total confirmed registrations with revenue
+      prisma.eventRegistration.aggregate({
+        where: {
+          eventId,
+          status: 'CONFIRMED',
+        },
+        _count: true,
+        _sum: { totalAmount: true },
+      }),
+      // Checked-in count
+      prisma.eventRegistration.count({
+        where: {
+          eventId,
+          status: 'CONFIRMED',
+          checkedInAt: { not: null },
+        },
+      }),
+      // Currently inside venue count
+      prisma.eventRegistration.count({
+        where: {
+          eventId,
+          status: 'CONFIRMED',
+          isCurrentlyInside: true,
+        },
+      }),
+      // Recent activity (last 10 check-ins/registrations)
+      prisma.eventRegistration.findMany({
+        where: {
+          eventId,
+          status: 'CONFIRMED',
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+        include: {
+          attendee: {
+            select: { firstName: true, lastName: true },
+          },
+        },
+      }),
+    ]);
+
+    const ticketsSold: number = confirmedRegistrations._count ?? 0;
+    const totalAmount = confirmedRegistrations._sum?.totalAmount;
+    const revenue: number = totalAmount !== null && totalAmount !== undefined
+      ? Number(totalAmount)
+      : 0;
+    const pending: number = ticketsSold - checkedInCount;
+
+    // Format recent activity
+    const formattedActivity = recentActivity.map(reg => {
+      const name: string = [reg.attendee.firstName, reg.attendee.lastName]
+        .filter(Boolean)
+        .join(' ') || 'Attendee';
+
+      if (reg.checkedInAt) {
+        const timeDiff: number = Date.now() - reg.checkedInAt.getTime();
+        return {
+          type: 'check_in' as const,
+          message: `${name} checked in`,
+          time: formatRelativeTime(timeDiff),
+        };
+      }
+
+      const timeDiff: number = Date.now() - reg.createdAt.getTime();
+      const amount: number = Number(reg.totalAmount ?? 0);
+      return {
+        type: amount > 0 ? 'sale' as const : 'registration' as const,
+        message: amount > 0
+          ? `${name} purchased ticket`
+          : `${name} registered`,
+        time: formatRelativeTime(timeDiff),
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        ticketsSold,
+        revenue,
+        checkedIn: checkedInCount,
+        currentlyInside: currentlyInsideCount,
+        pending,
+        recentActivity: formattedActivity,
+      },
+    });
+  }),
+
+  /**
    * Batch sync offline scans (for staff/teller apps)
    * POST /api/v1/mobile/scan/sync
    * Processes multiple check-ins with idempotency
@@ -492,3 +626,15 @@ export const mobileController = {
     });
   }),
 };
+
+/** Format millisecond diff to a human-readable relative time string */
+function formatRelativeTime(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
