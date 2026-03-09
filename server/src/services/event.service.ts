@@ -1125,7 +1125,7 @@ export class EventService {
         const sold = soldByType.get(name) || 0;
         if (sold > 0 && newQty !== null && newQty < sold) {
           throw new ValidationError(
-            `Cannot set quantity of "${name}" below ${sold} — that many tickets have already been sold.`
+            `Cannot set quantity of "${name}" below ${sold} — that many tickets have already been sold.`,
           );
         }
       }

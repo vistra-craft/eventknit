@@ -741,7 +741,7 @@ const ServicePointScanner: React.FC = () => {
       console.error('Error starting scanner:', error);
       showErrorToast(toast, error, "Camera failed", "Failed to start camera. Please check permissions or use manual entry.");
     }
-  }, [processCode, toast, cameraPermission, isMobile, stopScanning]);
+  }, [processCode, toast, cameraPermission, isMobile]);
 
   // Handle manual scan
   const handleManualScan = () => {

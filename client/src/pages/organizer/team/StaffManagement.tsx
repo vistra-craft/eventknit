@@ -112,6 +112,7 @@ const StaffManagement = () => {
         setCustomRoles(response.data.templates);
       }
     } catch (error) {
+      console.error('Failed to fetch custom roles:', error);
     }
   }, []);
 
@@ -192,6 +193,7 @@ const StaffManagement = () => {
           setAssignments(response.data.assignments);
         }
       } catch (error) {
+        console.error('Failed to fetch assignments:', error);
       }
     };
     fetchAssignments();

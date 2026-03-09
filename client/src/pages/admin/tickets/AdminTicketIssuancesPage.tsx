@@ -95,7 +95,7 @@ const AdminTicketIssuancesPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, toast]);
 
   useEffect(() => {
     setPage(1);

@@ -11,6 +11,7 @@ import { UserRole } from '../types/auth';
 
 // Service Point (shared with admin, used by ORGANIZER_TELLER role)
 const ServicePointEvents = lazy(() => import('../pages/admin/service-point/ServicePointEvents'));
+const ServicePointEventDashboard = lazy(() => import('../pages/admin/service-point/ServicePointEventDashboard'));
 const ServicePointScanner = lazy(() => import('../pages/admin/service-point/ServicePointScanner'));
 const ServicePointHistory = lazy(() => import('../pages/admin/service-point/ServicePointHistory'));
 
@@ -353,6 +354,11 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
   {
     path: 'service-point',
     element: createElement(ServicePointEvents),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'service-point/event/:eventId',
+    element: createElement(ServicePointEventDashboard),
     allowedRoles: ALL_ORGANIZER_ROLES,
   },
   {

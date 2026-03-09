@@ -62,7 +62,7 @@ const ResaleTransferReportingPage = () => {
       }
     };
     fetchStats();
-  }, []);
+  }, [toast]);
 
   // Load activity when tab or filters change
   useEffect(() => {
@@ -87,7 +87,7 @@ const ResaleTransferReportingPage = () => {
       }
     };
     fetchActivity();
-  }, [activeTab, statusFilter, activityPage]);
+  }, [activeTab, statusFilter, activityPage, toast]);
 
   // Load pending payouts when tab changes
   useEffect(() => {
@@ -108,7 +108,7 @@ const ResaleTransferReportingPage = () => {
       }
     };
     fetchPayouts();
-  }, [activeTab]);
+  }, [activeTab, toast]);
 
   if (loading) {
     return (

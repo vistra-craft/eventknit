@@ -34,6 +34,7 @@ const EditFeaturedEventPage = () => {
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -91,11 +92,12 @@ const EditFeaturedEventPage = () => {
 
     setIsUploadingImage(true);
     try {
+      // Store the actual file for FormData submission
+      setUploadedFile(file);
+      // Generate preview only
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
-        setFormData((prev) => ({ ...prev, customImage: base64String }));
+        setImagePreview(reader.result as string);
         setIsUploadingImage(false);
       };
       reader.onerror = () => {
@@ -119,7 +121,23 @@ const EditFeaturedEventPage = () => {
 
     try {
       setLoading(true);
-      await updateFeaturedEvent(id, formData);
+
+      let payload: typeof formData | FormData = formData;
+
+      if (uploadedFile) {
+        // Send as multipart/form-data so the server receives req.file
+        const fd = new FormData();
+        fd.append('image', uploadedFile);
+        if (formData.customTitle) fd.append('customTitle', formData.customTitle);
+        if (formData.customCategory) fd.append('customCategory', formData.customCategory);
+        if (formData.displayStartDate) fd.append('displayStartDate', formData.displayStartDate);
+        if (formData.displayEndDate) fd.append('displayEndDate', formData.displayEndDate);
+        fd.append('displayOrder', String(formData.displayOrder));
+        fd.append('isActive', String(formData.isActive));
+        payload = fd;
+      }
+
+      await updateFeaturedEvent(id, payload);
       toast({
         title: "Success",
         description: "Featured event updated successfully",
@@ -235,6 +253,7 @@ const EditFeaturedEventPage = () => {
                     className="absolute top-2 right-2"
                     onClick={() => {
                       setImagePreview(null);
+                      setUploadedFile(null);
                       setFormData((prev) => ({ ...prev, customImage: "" }));
                       if (fileInputRef.current) fileInputRef.current.value = "";
                     }}

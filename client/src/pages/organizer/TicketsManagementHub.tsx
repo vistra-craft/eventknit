@@ -180,6 +180,7 @@ const TicketsManagementHub = () => {
         setPricingRules(response.data.rules || []);
       }
     } catch (error) {
+      console.error('Failed to fetch pricing rules:', error);
     }
   }, [selectedEventId]);
 
@@ -188,9 +189,10 @@ const TicketsManagementHub = () => {
     try {
       const response = await getEventTicketPackages(selectedEventId);
       if (response.success && response.data) {
-        setPackages(response.data.packages || []);
+        setPackages((response.data.packages || []) as unknown as TicketPackage[]);
       }
     } catch (error) {
+      console.error('Failed to fetch packages:', error);
     }
   }, [selectedEventId]);
 
@@ -201,6 +203,7 @@ const TicketsManagementHub = () => {
         setPromoCodes(response.data.promoCodes);
       }
     } catch (error) {
+      console.error('Failed to fetch promo codes:', error);
     }
   }, [selectedEventId]);
 

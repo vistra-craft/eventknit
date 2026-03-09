@@ -101,7 +101,6 @@ const PaymentTransactionDetailPage = () => {
 
   const statusConfig = getStatusConfig(transaction.paymentStatus);
   const platformFee = transaction.platformFee;
-  const organizerAmount = platformFee?.organizerAmount ?? transaction.amount - (platformFee?.feeAmount ?? 0);
 
   return (
     <div className="space-y-6">

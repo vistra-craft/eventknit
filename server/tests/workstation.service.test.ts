@@ -812,6 +812,112 @@ describe('WorkstationService', () => {
       await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
     });
 
+    it('should perform manual check-in for registration with null backup code', async () => {
+      if (!dbConnected) return;
+
+      // Create a second attendee whose registration has NO backup code (null)
+      const attendeeNoCode = await prisma.user.create({
+        data: {
+          email: 'nocode@example.com',
+          password: 'hashedpassword',
+          firstName: 'NoCode',
+          lastName: 'Attendee',
+          role: 'ATTENDEE',
+          status: 'ACTIVE',
+          isEmailVerified: true,
+        },
+      });
+
+      const regNoCode = await prisma.eventRegistration.create({
+        data: {
+          eventId: testEventId,
+          attendeeId: attendeeNoCode.id,
+          status: 'CONFIRMED',
+          totalAmount: 0,
+          ticketStatus: 'ACTIVE',
+          backupCode: null, // <-- explicitly null: the bug scenario
+        },
+      });
+
+      const result = await WorkstationService.manualCheckIn(
+        regNoCode.id,
+        testEventId,
+        testScannerId,
+        'Main Entrance',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.isManual).toBe(true);
+      expect(result.registrationId).toBe(regNoCode.id);
+
+      // Verify the scan record was marked MANUAL_CHECK_IN
+      const scan = await prisma.ticketScan.findFirst({
+        where: { registrationId: regNoCode.id, scanType: 'MANUAL_CHECK_IN' },
+      });
+      expect(scan).toBeDefined();
+      expect(scan?.scanType).toBe('MANUAL_CHECK_IN');
+
+      // Verify registration state
+      const updated = await prisma.eventRegistration.findUnique({ where: { id: regNoCode.id } });
+      expect(updated?.isCurrentlyInside).toBe(true);
+      expect(updated?.checkedInAt).toBeDefined();
+
+      // Cleanup
+      await prisma.ticketScan.deleteMany({ where: { registrationId: regNoCode.id } });
+      await prisma.eventRegistration.delete({ where: { id: regNoCode.id } });
+      await prisma.user.delete({ where: { id: attendeeNoCode.id } });
+    });
+
+    it('should perform manual check-out for registration with null backup code', async () => {
+      if (!dbConnected) return;
+
+      const attendeeNoCode = await prisma.user.create({
+        data: {
+          email: 'nocode2@example.com',
+          password: 'hashedpassword',
+          firstName: 'NoCode2',
+          lastName: 'Attendee',
+          role: 'ATTENDEE',
+          status: 'ACTIVE',
+          isEmailVerified: true,
+        },
+      });
+
+      const regNoCode = await prisma.eventRegistration.create({
+        data: {
+          eventId: testEventId,
+          attendeeId: attendeeNoCode.id,
+          status: 'CONFIRMED',
+          totalAmount: 0,
+          ticketStatus: 'ACTIVE',
+          backupCode: null,
+        },
+      });
+
+      // Check in first (via registration ID)
+      await WorkstationService.manualCheckIn(regNoCode.id, testEventId, testScannerId);
+
+      // Now manual check-out
+      const result = await WorkstationService.manualCheckOut(
+        regNoCode.id,
+        testEventId,
+        testScannerId,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.isManual).toBe(true);
+
+      const scan = await prisma.ticketScan.findFirst({
+        where: { registrationId: regNoCode.id, scanType: 'MANUAL_CHECK_OUT' },
+      });
+      expect(scan).toBeDefined();
+
+      // Cleanup
+      await prisma.ticketScan.deleteMany({ where: { registrationId: regNoCode.id } });
+      await prisma.eventRegistration.delete({ where: { id: regNoCode.id } });
+      await prisma.user.delete({ where: { id: attendeeNoCode.id } });
+    });
+
     it('should reject manual check-in for non-existent attendee', async () => {
       if (!dbConnected) return;
 

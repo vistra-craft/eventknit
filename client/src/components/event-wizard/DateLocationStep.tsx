@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,9 +18,10 @@ interface DateLocationStepProps extends StepComponentProps {
 // Time Picker Component
 function TimePicker({ value, onChange, id }: { value: string; onChange: (val: string) => void; id: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-  
+
   const [selectedHour, selectedMinute] = value ? value.split(':') : ['00', '00'];
 
   const handleTimeSelect = (hour: string, minute: string) => {
@@ -29,8 +30,20 @@ function TimePicker({ value, onChange, id }: { value: string; onChange: (val: st
     setIsOpen(false);
   };
 
+  // Close on click outside
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
+
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Input
@@ -38,7 +51,7 @@ function TimePicker({ value, onChange, id }: { value: string; onChange: (val: st
             type="time"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className={`h-12 pr-10`}
+            className="h-12 pr-10 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden"
             placeholder="HH:MM"
           />
           <button
@@ -151,7 +164,7 @@ export function DateLocationStep({
               }
               if (validationErrors.date) setValidationErrors(prev => ({ ...prev, date: '' }));
             }}
-            className={`h-12 ${validationErrors.date ? 'border-destructive' : ''}`}
+            className={`h-12 [&::-webkit-calendar-picker-indicator]:hidden ${validationErrors.date ? 'border-destructive' : ''}`}
           />
           {validationErrors.date && (
             <p className="text-sm text-destructive">{validationErrors.date}</p>
@@ -229,7 +242,7 @@ export function DateLocationStep({
               handleInputChange("endDate", e.target.value);
               if (validationErrors.endDate) setValidationErrors(prev => ({ ...prev, endDate: '' }));
             }}
-            className={`h-12 ${validationErrors.endDate ? 'border-destructive' : ''}`}
+            className={`h-12 [&::-webkit-calendar-picker-indicator]:hidden ${validationErrors.endDate ? 'border-destructive' : ''}`}
           />
           {validationErrors.endDate && (
             <p className="text-sm text-destructive">{validationErrors.endDate}</p>
@@ -294,7 +307,7 @@ export function DateLocationStep({
                   value={eventData.registrationDeadline}
                   max={eventData.date || undefined}
                   onChange={(e) => handleInputChange("registrationDeadline", e.target.value)}
-                  className="h-10"
+                  className="h-10 [&::-webkit-calendar-picker-indicator]:hidden"
                 />
               </div>
               <div className="space-y-2">

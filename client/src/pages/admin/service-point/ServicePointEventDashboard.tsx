@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -82,6 +82,8 @@ import { showErrorToast } from "@/lib/utils/error";
 
 const ServicePointEventDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePrefix = location.pathname.startsWith('/organizer') ? '/organizer' : '/admin';
   const { eventId } = useParams<{ eventId: string }>();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'attendees' | 'sessions' | 'no-shows'>('overview');
@@ -165,7 +167,7 @@ const ServicePointEventDashboard: React.FC = () => {
     const loadEventData = async () => {
       if (!eventId) {
         showErrorToast(toast, new Error("Event ID is required"), "Event ID is required");
-        navigate('/admin/service-point');
+        navigate(`${basePrefix}/service-point`);
         return;
       }
 
@@ -180,7 +182,7 @@ const ServicePointEventDashboard: React.FC = () => {
 
         if (!event) {
           showErrorToast(toast, new Error("Event not found"), "Event not found");
-          navigate('/admin/service-point');
+          navigate(`${basePrefix}/service-point`);
           return;
         }
 
@@ -200,7 +202,7 @@ const ServicePointEventDashboard: React.FC = () => {
     };
 
     loadEventData();
-  }, [eventId, navigate, toast]);
+  }, [basePrefix, eventId, navigate, toast]);
 
   // Refresh attendees function (for use after import)
   const refreshAttendees = async () => {
@@ -214,7 +216,7 @@ const ServicePointEventDashboard: React.FC = () => {
           setPagination({
             page: response.data.pagination.page,
             limit: response.data.pagination.limit,
-            total: response.data.pagination?.total ?? response.data.attendees.length,
+            total: response.data.attendees.length,
             totalPages: response.data.pagination.totalPages,
           });
         }
@@ -381,7 +383,7 @@ const ServicePointEventDashboard: React.FC = () => {
             setPagination({
               page: response.data.pagination.page,
               limit: response.data.pagination.limit,
-              total: response.data.pagination?.total ?? response.data.attendees.length,
+              total: response.data.attendees.length,
               totalPages: response.data.pagination.totalPages,
             });
           }
@@ -623,21 +625,21 @@ const ServicePointEventDashboard: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to="/admin/service-point" label="Back to Events" />
+          <BackButton to={`${basePrefix}/service-point`} label="Back to Events" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">{eventData.title}</h1>
             <p className="text-muted-foreground mt-2">{organizerName} • {formatTimeRange()} • {eventData.location}</p>
           </div>
           <div className="flex gap-3">
             <Button
-              onClick={() => navigate(`/admin/service-point/scanner?event=${eventId}`)}
+              onClick={() => navigate(`${basePrefix}/service-point/scanner?event=${eventId}`)}
               className="bg-primary hover:bg-primary/90"
             >
               <QrCode className="w-4 h-4 mr-2" />
               QR Scanner
             </Button>
             <Button
-              onClick={() => navigate(`/admin/service-point/print?event=${eventId}`)}
+              onClick={() => navigate(`${basePrefix}/service-point/print?event=${eventId}`)}
               variant="outline"
             >
               <Printer className="w-4 h-4 mr-2" />
@@ -715,7 +717,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`/admin/service-point/event/${eventId}/manage`)}
+                onClick={() => navigate(`${basePrefix}/service-point/event/${eventId}/manage`)}
               >
                 <LayoutDashboard className="w-6 h-6 text-primary" />
                 <span>Manage Event</span>
@@ -723,7 +725,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`/admin/service-point/dashboard/${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/service-point/dashboard/${eventId}`)}
               >
                 <Activity className="w-6 h-6 text-green-600" />
                 <span>Live Dashboard</span>
@@ -731,7 +733,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`/admin/service-point/scanner?event=${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/service-point/scanner?event=${eventId}`)}
               >
                 <QrCode className="w-6 h-6" />
                 <span>QR Scanner</span>
@@ -739,7 +741,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`/admin/service-point/print?event=${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/service-point/print?event=${eventId}`)}
               >
                 <Printer className="w-6 h-6" />
                 <span>Print Center</span>
@@ -747,7 +749,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`/admin/service-point/event/${eventId}/templates`)}
+                onClick={() => navigate(`${basePrefix}/service-point/event/${eventId}/templates`)}
               >
                 <Settings className="w-6 h-6" />
                 <span>Templates</span>
@@ -755,7 +757,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`/admin/service-point/history?event=${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/service-point/history?event=${eventId}`)}
               >
                 <History className="w-6 h-6" />
                 <span>Scan History</span>
@@ -763,7 +765,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`/admin/service-point/zones/${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/service-point/zones/${eventId}`)}
               >
                 <MapPin className="w-6 h-6" />
                 <span>Facility Zones</span>
@@ -771,7 +773,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`/admin/service-point/event/${eventId}/walk-in`)}
+                onClick={() => navigate(`${basePrefix}/service-point/event/${eventId}/walk-in`)}
               >
                 <UserPlus className="w-6 h-6 text-primary" />
                 <span>Walk-In Reg.</span>

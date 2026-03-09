@@ -132,28 +132,35 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
             }}
             className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent transition-colors"
           >
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-medium text-white">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-medium text-white shrink-0">
               {userInitial}
             </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium">{userName}</p>
-              <p className="text-xs text-muted-foreground truncate max-w-[120px]">{userEmail}</p>
-            </div>
-            <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
+            <span className="hidden md:block text-sm font-medium max-w-[120px] truncate">{userName}</span>
+            <ChevronDown className="hidden md:block h-3.5 w-3.5 text-muted-foreground" />
           </button>
 
           {/* Profile dropdown */}
           {isProfileOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border bg-popover shadow-xl animate-scale-in origin-top-right z-50">
-              <div className="p-2">
+            <div className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-border bg-popover shadow-xl animate-scale-in origin-top-right z-50">
+              {/* Identity block */}
+              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border">
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-medium text-white shrink-0">
+                  {userInitial}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-popover-foreground truncate">{userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+                </div>
+              </div>
+              <div className="p-1.5">
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     navigate('/admin/profile');
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
                 >
-                  <User className="h-4 w-4" />
+                  <User className="h-4 w-4 text-muted-foreground" />
                   <span>Profile</span>
                 </button>
                 <button
@@ -161,28 +168,26 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
                     setIsProfileOpen(false);
                     navigate('/admin/settings');
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-4 w-4 text-muted-foreground" />
                   <span>Settings</span>
                 </button>
-              </div>
-              <div className="border-t border-border p-2">
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     navigate('/admin/dashboard');
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
                 >
-                  <LayoutDashboard className="h-4 w-4" />
+                  <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
                   <span>Dashboard</span>
                 </button>
               </div>
-              <div className="border-t border-border p-2">
+              <div className="border-t border-border p-1.5">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Log out</span>

@@ -143,7 +143,6 @@ interface OrganizerEventData extends EventData {
 
 // Shared component - imported from shared location
 import EventCommunicationSection from "../../components/EventCommunicationSection";
-import { useUserPermissions } from "../../hooks/usePermissions";
 
 interface EventManagementProps {
   isAdminMode?: boolean;
@@ -154,7 +153,6 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
   const navigate = useNavigate();
   const backPath = isAdminMode ? `/admin/service-point/event/${eventId}` : '/organizer/dashboard';
   const { toast } = useToast();
-  const { hasPermission } = useUserPermissions();
   const [activeSection, setActiveSection] = useState("overview");
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [attendees, setAttendees] = useState<Attendee[]>([]);
@@ -385,7 +383,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
       }
     };
     fetchResaleTransfers();
-  }, [eventId, activeSection]);
+  }, [eventId, activeSection, toast]);
 
   // Fetch scan & check-in data when the tab is active (lazy loading)
   useEffect(() => {
@@ -424,7 +422,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
       }
     };
     fetchScanData();
-  }, [eventId, activeSection, scanHistoryPage, scanTypeFilter, scanAttendeesPage]);
+  }, [eventId, activeSection, scanHistoryPage, scanTypeFilter, scanAttendeesPage, toast]);
 
   // Handle scan config update
   const handleUpdateScanConfig = async (updates: { allowReEntry?: boolean; requireCheckOut?: boolean; maxReEntries?: number | null }) => {
@@ -581,7 +579,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
       setSavingTicket(true);
       const response = await updateEvent(eventId, { ticketTypes: newTicketTypes } as Parameters<typeof updateEvent>[1]);
       if (response.success && response.data) {
-        refreshEventData(response.data.event as Record<string, unknown>);
+        refreshEventData(response.data.event as unknown as Record<string, unknown>);
         setTicketSheetOpen(false);
         toast({ title: 'Saved', description: editingTicketIndex === null ? 'New ticket type added.' : 'Ticket type updated.' });
       }
@@ -600,7 +598,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
       setSavingTicket(true);
       const response = await updateEvent(eventId, { ticketTypes: newTicketTypes } as Parameters<typeof updateEvent>[1]);
       if (response.success && response.data) {
-        refreshEventData(response.data.event as Record<string, unknown>);
+        refreshEventData(response.data.event as unknown as Record<string, unknown>);
         toast({ title: 'Archived', description: 'Ticket is now hidden from new purchases.' });
       }
     } catch (err) {
@@ -618,7 +616,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
       setSavingTicket(true);
       const response = await updateEvent(eventId, { ticketTypes: newTicketTypes } as Parameters<typeof updateEvent>[1]);
       if (response.success && response.data) {
-        refreshEventData(response.data.event as Record<string, unknown>);
+        refreshEventData(response.data.event as unknown as Record<string, unknown>);
         toast({ title: 'Removed', description: 'Ticket type removed.' });
       }
     } catch (err) {

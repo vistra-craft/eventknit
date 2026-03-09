@@ -1,10 +1,11 @@
-import React, { useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { Label } from '@/components/ui/label';
-import { Upload, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Upload, X, ImageIcon } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
-import { uploadImage, type UploadFolder } from '@/lib/upload-api';
-import { extractErrorMessage } from '@/lib/utils/error';
+import { useDirectUpload } from '@/hooks/useDirectUpload';
+import type { UploadFolder } from '@/lib/upload-api';
 
 interface ImageUploadFieldProps {
   label: string;
@@ -19,132 +20,111 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   label,
   value,
   onChange,
-  folder,
+  folder = 'general',
   previewSize = 'md',
   aspectRatio = 'square',
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { upload, progress, isUploading, error } = useDirectUpload({
+    folder,
+    maxSizeMB: 5,
+  });
 
-  const sizeClasses = {
-    sm: 'h-16 w-16',
-    md: 'h-24 w-24',
-    lg: 'h-32 w-32',
-  };
+  const handleFile = useCallback(
+    async (file: File) => {
+      const url = await upload(file);
+      if (url) onChange(url);
+    },
+    [upload, onChange],
+  );
 
-  const aspectClasses = {
-    square: 'aspect-square',
-    wide: 'aspect-video',
-    auto: '',
-  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: { 'image/*': [] },
+    maxFiles: 1,
+    maxSize: 5 * 1024 * 1024,
+    disabled: isUploading,
+    onDropAccepted: ([file]) => handleFile(file),
+    noClick: !!value,
+  });
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setError('Only image files are allowed');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError('File too large. Maximum 5MB.');
-      return;
-    }
-
-    setIsUploading(true);
-    setError(null);
-
-    try {
-      const url = await uploadImage(file, folder);
-      onChange(url);
-    } catch (err) {
-      setError(extractErrorMessage(err, 'Upload failed'));
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const handleClear = () => {
-    onChange('');
-    setError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+  const sizeClasses = { sm: 'h-16 w-16', md: 'h-24 w-24', lg: 'h-32 w-32' };
+  const aspectClasses = { square: 'aspect-square', wide: 'aspect-video', auto: '' };
 
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileUpload}
-        className="hidden"
-      />
 
       {value ? (
         <div className="flex items-start gap-3">
-          <div className={`relative ${sizeClasses[previewSize]} ${aspectClasses[aspectRatio]} overflow-hidden rounded-lg border bg-muted flex-shrink-0`}>
-            <img
-              src={value}
-              alt="Preview"
-              className="h-full w-full object-cover"
-            />
+          <div
+            className={`relative ${sizeClasses[previewSize]} ${aspectClasses[aspectRatio]} overflow-hidden rounded-lg border bg-muted flex-shrink-0`}
+          >
+            <img src={value} alt="Preview" className="h-full w-full object-cover" />
             <Button
               variant="destructive"
               size="icon"
               className="absolute -top-1 -right-1 h-5 w-5"
-              onClick={handleClear}
+              onClick={() => onChange('')}
             >
               <X className="h-3 w-3" />
             </Button>
           </div>
           <div className="flex flex-col gap-1 text-xs text-muted-foreground">
             <span>Image uploaded</span>
-            <Button
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-xs"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              {isUploading ? 'Uploading...' : 'Change image'}
-            </Button>
+            <div {...getRootProps()}>
+              <input {...getInputProps()} />
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-xs"
+                disabled={isUploading}
+                type="button"
+              >
+                {isUploading ? `Uploading ${progress}%…` : 'Change image'}
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="space-y-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <>
-                <Loader size="sm" className="mr-2" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload
-              </>
-            )}
-          </Button>
+        <div
+          {...getRootProps()}
+          className={`flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
+            isDragActive
+              ? 'border-primary bg-primary/5 text-primary'
+              : 'border-border hover:border-primary/50 hover:bg-muted/30'
+          }`}
+        >
+          <input {...getInputProps()} />
 
-          {error && (
-            <p className="text-xs text-destructive">{error}</p>
+          {isUploading ? (
+            <>
+              <Loader size="sm" className="text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Uploading… {progress}%</p>
+              <div className="w-24 h-1 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </>
+          ) : isDragActive ? (
+            <>
+              <Upload className="h-6 w-6" />
+              <p className="text-sm font-medium">Drop image here</p>
+            </>
+          ) : (
+            <>
+              <ImageIcon className="h-6 w-6 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Drag & drop or{' '}
+                <span className="text-primary font-medium">browse</span>
+              </p>
+              <p className="text-xs text-muted-foreground">Max 5MB · JPG, PNG, GIF</p>
+            </>
           )}
-
-          <p className="text-xs text-muted-foreground">
-            Max 5MB. JPG, PNG, or GIF
-          </p>
         </div>
       )}
+
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 };

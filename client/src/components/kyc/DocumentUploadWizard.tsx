@@ -16,6 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/useToast';
 import { extractErrorMessage } from '@/lib/utils/error';
+import { uploadDocument } from '@/lib/upload-api';
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */
@@ -40,7 +41,7 @@ interface UploadState {
   issueDate?: string;
   expiryDate?: string;
   file?: File;
-  preview?: string;
+  previewUrl?: string; // object URL for image preview (not used for submission)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -125,19 +126,14 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadStates((prev) => ({
-          ...prev,
-          [documentType]: {
-            ...prev[documentType],
-            file,
-            preview: reader.result as string,
-          },
-        }));
-      };
-
-      reader.readAsDataURL(file);
+      setUploadStates((prev) => ({
+        ...prev,
+        [documentType]: {
+          ...prev[documentType],
+          file,
+          previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        },
+      }));
     },
     [toast]
   );
@@ -146,7 +142,7 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
 
   const handleUpload = async (req: DocumentRequirement) => {
     const state = uploadStates[req.documentType];
-    if (!state?.file || !state.preview) {
+    if (!state?.file) {
       toast({
         title: 'No file selected',
         description: 'Please select a file before uploading',
@@ -158,10 +154,12 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
     setUploading(req.documentType);
 
     try {
+      const documentUrl = await uploadDocument(state.file);
+
       await onUpload({
         documentType: req.documentType,
         documentNumber: state.documentNumber,
-        documentUrl: state.preview,
+        documentUrl,
         issueDate: state.issueDate,
         expiryDate: state.expiryDate,
       });

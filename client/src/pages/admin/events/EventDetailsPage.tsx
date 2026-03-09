@@ -20,8 +20,6 @@ import {
   Copy,
   Plus,
   MoreHorizontal,
-  Calendar,
-  MapPin,
   ChevronDown,
   ChevronRight,
   ArrowLeft,

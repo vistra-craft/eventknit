@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -32,6 +32,8 @@ interface EventWithComputedStatus extends EventData {
 
 const ServicePointEvents: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const basePrefix = location.pathname.startsWith('/organizer') ? '/organizer' : '/admin';
   const [events, setEvents] = useState<EventWithComputedStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -156,7 +158,7 @@ const ServicePointEvents: React.FC = () => {
   };
 
   const handleEventClick = (eventId: string) => {
-    navigate(`/admin/service-point/event/${eventId}`);
+    navigate(`${basePrefix}/service-point/event/${eventId}`);
   };
 
   return (
@@ -173,7 +175,7 @@ const ServicePointEvents: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/admin/service-point/templates")}
+              onClick={() => navigate(`${basePrefix}/service-point/templates`)}
             >
               <FileText className="w-4 h-4 mr-1" />
               Templates
@@ -181,7 +183,7 @@ const ServicePointEvents: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/admin/service-point/history")}
+              onClick={() => navigate(`${basePrefix}/service-point/history`)}
             >
               <History className="w-4 h-4 mr-1" />
               History

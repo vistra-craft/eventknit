@@ -26,12 +26,10 @@ import * as authApi from "@/lib/auth-api";
 import { UserRole, UserStatus } from "@/types/auth";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
-import { useUploadAvatar } from "@/hooks/useUploadAvatar";
 
 const AdminProfilePage = () => {
 
   const { user, refreshProfile } = useAuth();
-  const uploadAvatarMutation = useUploadAvatar();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -229,8 +227,9 @@ const AdminProfilePage = () => {
     }
   };
 
-  const handleAvatarChange = async (file: File) => {
-    await uploadAvatarMutation.mutateAsync(file);
+  const handleAvatarUploadComplete = async (url: string) => {
+    await authApi.updateProfile({ avatar: url });
+    await refreshProfile();
   };
 
   const getStatusBadge = (status: UserStatus) => {
@@ -321,9 +320,8 @@ const AdminProfilePage = () => {
                     {/* Profile Picture */}
                     <AvatarUpload
                       currentAvatar={user?.avatar}
-                      onAvatarChange={handleAvatarChange}
-                      isUploading={uploadAvatarMutation.isPending}
-                      userName={profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : "Admin"}
+                      onUploadComplete={handleAvatarUploadComplete}
+                      onRemove={() => authApi.updateProfile({ avatar: '' }).then(() => refreshProfile())}
                     />
 
                     {/* Form Fields */}

@@ -75,7 +75,7 @@ export class PendingEventExpiryJob {
     } catch (error) {
       if (
         error instanceof Error &&
-        (error.message.includes("Can't reach database server") ||
+        (error.message.includes('Can\'t reach database server') ||
           error.message.includes('P1001') ||
           error.constructor.name === 'PrismaClientInitializationError')
       ) {

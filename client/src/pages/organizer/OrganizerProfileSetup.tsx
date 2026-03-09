@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
-import { useUploadAvatar } from '@/hooks/useUploadAvatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { showErrorToast } from '@/lib/utils/error';
@@ -39,7 +38,6 @@ export default function OrganizerProfileSetup() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, refreshProfile } = useAuth();
-  const uploadAvatarMutation = useUploadAvatar();
   const { toast } = useToast();
 
   const state = location.state as {
@@ -50,8 +48,6 @@ export default function OrganizerProfileSetup() {
 
   // Personal fields
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [phone, setPhone] = useState('');
   const [companyAffiliation, setCompanyAffiliation] = useState('');
 
@@ -105,15 +101,8 @@ export default function OrganizerProfileSetup() {
     }
   }, [state]);
 
-  const handleAvatarChange = (file: File, preview: string) => {
-    if (file.size > 0) {
-      setAvatarFile(file);
-      setAvatar(preview);
-    } else {
-      // Remove triggered
-      setAvatarFile(null);
-      setAvatar(null);
-    }
+  const handleAvatarUploadComplete = (url: string) => {
+    setAvatar(url);
   };
 
   const handleSave = async (navigateTo: 'dashboard' | 'kyc') => {
@@ -121,25 +110,13 @@ export default function OrganizerProfileSetup() {
 
     try {
       // 1. Update User fields
-      if (avatarFile) {
-        setIsUploadingAvatar(true);
-        const formData = new FormData();
-        formData.append('avatar', avatarFile);
-        formData.append('organizationName', organizationName);
-        formData.append('phoneNumber', phone);
-        if (companyAffiliation) formData.append('companyAffiliation', companyAffiliation);
-        if (businessEmail) formData.append('businessEmail', businessEmail);
-        await authApi.updateProfile(formData);
-        setIsUploadingAvatar(false);
-        setAvatarFile(null);
-      } else {
-        await authApi.updateProfile({
-          organizationName: organizationName || undefined,
-          phoneNumber: phone || undefined,
-          companyAffiliation: companyAffiliation || undefined,
-          businessEmail: businessEmail || undefined,
-        });
-      }
+      await authApi.updateProfile({
+        avatar: avatar || undefined,
+        organizationName: organizationName || undefined,
+        phoneNumber: phone || undefined,
+        companyAffiliation: companyAffiliation || undefined,
+        businessEmail: businessEmail || undefined,
+      });
 
       // 2. Update OrganizerProfile
       const filteredSocialLinks = Object.fromEntries(
@@ -175,7 +152,6 @@ export default function OrganizerProfileSetup() {
       showErrorToast(toast, error, 'Failed to save profile');
     } finally {
       setIsSaving(false);
-      setIsUploadingAvatar(false);
     }
   };
 
@@ -220,9 +196,8 @@ export default function OrganizerProfileSetup() {
 
           <AvatarUpload
             currentAvatar={avatar}
-            onAvatarChange={handleAvatarChange}
-            isUploading={isUploadingAvatar || uploadAvatarMutation.isPending}
-            userName={organizationName || `${user?.firstName || ''} ${user?.lastName || ''}`.trim()}
+            onUploadComplete={handleAvatarUploadComplete}
+            onRemove={() => setAvatar(null)}
             isLogo={!isIndividual}
             label={isIndividual ? 'Profile Photo' : 'Company / Organization Logo'}
             hint={

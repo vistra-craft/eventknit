@@ -246,6 +246,8 @@ export const useAuth = () => {
           role: UserRole.ATTENDEE,
           status: UserStatus.ACTIVE,
           isEmailVerified: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         },
       });
       queryClient.invalidateQueries({ queryKey: ['profile'] });

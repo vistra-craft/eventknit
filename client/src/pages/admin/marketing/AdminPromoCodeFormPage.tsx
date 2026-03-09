@@ -20,7 +20,7 @@ import {
   X,
   RefreshCw,
   AlertCircle,
-  User,
+  User as UserIcon,
   Mail,
   Calendar,
   MessageSquare,
@@ -406,7 +406,7 @@ const AdminPromoCodeFormPage = () => {
                   <div className="space-y-1.5 text-sm">
                     {requestData.organizer && (
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <User className="h-3.5 w-3.5 shrink-0" />
+                        <UserIcon className="h-3.5 w-3.5 shrink-0" />
                         <span>
                           <span className="text-foreground font-medium">
                             {requestData.organizer.firstName} {requestData.organizer.lastName}
@@ -628,7 +628,7 @@ const AdminPromoCodeFormPage = () => {
                 {selectedOrganizer ? (
                   <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
                     <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <User className="h-3.5 w-3.5 text-primary" />
+                      <UserIcon className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium leading-none">
@@ -678,7 +678,7 @@ const AdminPromoCodeFormPage = () => {
                             }}
                           >
                             <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                              <User className="h-3.5 w-3.5 text-primary" />
+                              <UserIcon className="h-3.5 w-3.5 text-primary" />
                             </div>
                             <div className="min-w-0">
                               <p className="text-sm font-medium truncate">
@@ -911,7 +911,7 @@ const AdminPromoCodeFormPage = () => {
                   {selectedReferrer ? (
                     <div className="flex items-center gap-3 max-w-md rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
                       <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <User className="h-3.5 w-3.5 text-primary" />
+                        <UserIcon className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium leading-none">
@@ -964,7 +964,7 @@ const AdminPromoCodeFormPage = () => {
                               }}
                             >
                               <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                <User className="h-3.5 w-3.5 text-primary" />
+                                <UserIcon className="h-3.5 w-3.5 text-primary" />
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium truncate">

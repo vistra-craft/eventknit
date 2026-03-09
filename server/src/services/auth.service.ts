@@ -1087,8 +1087,9 @@ export class AuthService {
     rememberMe: boolean = false,
   ): Promise<void> {
     const expiresAt = new Date();
-    const daysToExpire = rememberMe ? 30 : 7;
-    expiresAt.setDate(expiresAt.getDate() + daysToExpire);
+    const baseSeconds = parseExpiresIn(config.jwt.refreshExpiresIn);
+    const expiryMs = rememberMe ? Math.min(baseSeconds * 2 * 1000, 90 * 24 * 60 * 60 * 1000) : baseSeconds * 1000;
+    expiresAt.setTime(expiresAt.getTime() + expiryMs);
 
     // Use upsert to handle potential duplicate tokens (shouldn't happen but safety measure)
     await prisma.refreshToken.upsert({

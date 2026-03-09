@@ -30,6 +30,8 @@ import type {
   EventSubscription,
 } from "@/types/user-dashboard";
 
+export type { DirectMessage } from "@/types/user-dashboard";
+
 /**
  * Check if user is registered for an event
  */

@@ -145,7 +145,7 @@ const ServicePointHistory: React.FC = () => {
             setPagination({
               page: response.data.pagination.page,
               limit: response.data.pagination.limit,
-              total: response.data.pagination.total ?? response.data.scans.length,
+              total: response.data.scans.length,
               totalPages: response.data.pagination.totalPages,
             });
           }

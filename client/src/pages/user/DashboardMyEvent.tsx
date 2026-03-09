@@ -72,7 +72,8 @@ interface ApiEvent {
   startDate?: unknown;
   endDate?: unknown;
   time?: unknown;
-  location?: unknown;
+  startTime?: unknown;
+  endTime?: unknown;  location?: unknown;
   venue?: unknown;
   type?: unknown;
   eventType?: unknown;
@@ -189,7 +190,7 @@ const transformEventData = (
     fullDescription: typeof apiEvent.fullDescription === 'string' ? apiEvent.fullDescription : undefined,
     date: typeof apiEvent.startDate === 'string' ? apiEvent.startDate : String(apiEvent.date ?? ''),
     endDate: typeof apiEvent.endDate === 'string' ? apiEvent.endDate : undefined,
-    time: typeof apiEvent.startTime === 'string'
+    time: apiEvent.startTime && typeof apiEvent.startTime === 'string'
       ? (typeof apiEvent.endTime === 'string' ? `${apiEvent.startTime} - ${apiEvent.endTime}` : apiEvent.startTime)
       : (typeof apiEvent.time === 'string' ? apiEvent.time : undefined),
     location: String(apiEvent.location ?? ''),
