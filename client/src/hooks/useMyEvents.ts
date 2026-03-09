@@ -147,9 +147,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
     try {
       setOrganizingLoading(true);
       setOrganizingError(null);
-      console.log('[useMyEvents] Fetching organizing events for user role:', user?.role);
       const response = await getOrganizerEvents({ limit: 100 });
-      console.log('[useMyEvents] Organizing events response:', response);
       if (response.success && response.data) {
         const mappedEvents = response.data.events.map(event => ({
           id: event.id,
@@ -171,7 +169,6 @@ export const useMyEvents = (): UseMyEventsReturn => {
           ticketsSold: event.attendees || 0,
           checkedIn: Math.floor((event.attendees || 0) * 0.7), // Estimate for now
         }));
-        console.log('[useMyEvents] Mapped organizing events:', mappedEvents);
         setOrganizingEvents(mappedEvents);
       } else {
         console.warn('[useMyEvents] No organizing events data:', response);

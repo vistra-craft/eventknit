@@ -52,22 +52,12 @@ export const useEvents = (initialFilters?: EventFilters): UseEventsReturn => {
       if (!isMountedRef.current) return;
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      console.log('[useEvents] Fetching events with filters:', activeFilters);
       const response = await eventApi.getEvents(activeFilters);
-      console.log('[useEvents] API response received:', {
-        success: response.success,
-        hasData: !!response.data,
-        eventCount: response.data?.events?.length || 0
-      });
 
-      if (!isMountedRef.current) {
-        console.log('[useEvents] Component unmounted, not updating state');
-        return;
-      }
-      
+      if (!isMountedRef.current) return;
+
       if (response.success && response.data) {
         const { events, total, limit = 20 } = response.data;
-        console.log('[useEvents] Setting state with events:', events.length);
         setState({
           events,
           isLoading: false,
