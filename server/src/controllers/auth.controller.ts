@@ -3,6 +3,11 @@ import { AuthService } from '../services/auth.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { prisma } from '../config/database.js';
 import { TicketSecurityService } from '../services/ticket-security.service.js';
+import { config } from '../config/index.js';
+import { parseExpiresIn } from '../utils/jwt.js';
+
+// Cookie maxAge derived from JWT_REFRESH_EXPIRES_IN so they always stay in sync
+const REFRESH_COOKIE_MAX_AGE_MS = parseExpiresIn(config.jwt.refreshExpiresIn) * 1000;
 
 export class AuthController {
   /**
@@ -39,9 +44,9 @@ export class AuthController {
       // Set refresh token as HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.jwt.cookieSecure,
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: REFRESH_COOKIE_MAX_AGE_MS,
       });
 
       res.status(200).json({
@@ -87,14 +92,14 @@ export class AuthController {
       const result = await AuthService.login(req.body, ipAddress, userAgent, rememberMe);
 
       // Set refresh token as HttpOnly cookie
-      // If rememberMe is true, extend cookie to 30 days, otherwise 7 days
+      // If rememberMe is true, double the normal duration (capped at 90 days)
       const cookieMaxAge = rememberMe
-        ? 30 * 24 * 60 * 60 * 1000 // 30 days
-        : 7 * 24 * 60 * 60 * 1000; // 7 days
+        ? Math.min(REFRESH_COOKIE_MAX_AGE_MS * 2, 90 * 24 * 60 * 60 * 1000)
+        : REFRESH_COOKIE_MAX_AGE_MS;
 
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.jwt.cookieSecure,
         sameSite: 'strict',
         maxAge: cookieMaxAge,
       });
@@ -137,9 +142,9 @@ export class AuthController {
       // Update refresh token cookie
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.jwt.cookieSecure,
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: REFRESH_COOKIE_MAX_AGE_MS,
       });
 
       res.status(200).json({
@@ -169,7 +174,7 @@ export class AuthController {
       // Clear refresh token cookie (options must match how cookie was set, minus maxAge)
       res.clearCookie('refreshToken', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.jwt.cookieSecure,
         sameSite: 'strict',
         path: '/',
       });
@@ -401,9 +406,9 @@ export class AuthController {
       // Set refresh token as HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.jwt.cookieSecure,
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: REFRESH_COOKIE_MAX_AGE_MS,
       });
 
       res.status(200).json({
@@ -441,9 +446,9 @@ export class AuthController {
       // Set refresh token as HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.jwt.cookieSecure,
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: REFRESH_COOKIE_MAX_AGE_MS,
       });
 
       res.status(200).json({
@@ -481,9 +486,9 @@ export class AuthController {
       // Set refresh token as HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.jwt.cookieSecure,
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: REFRESH_COOKIE_MAX_AGE_MS,
       });
 
       res.status(200).json({
@@ -558,9 +563,9 @@ export class AuthController {
       // Set refresh token as HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.jwt.cookieSecure,
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: REFRESH_COOKIE_MAX_AGE_MS,
       });
 
       res.status(200).json({
@@ -666,9 +671,9 @@ export class AuthController {
       // Set refresh token as HttpOnly cookie
       res.cookie('refreshToken', result.refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: config.jwt.cookieSecure,
         sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: REFRESH_COOKIE_MAX_AGE_MS,
       });
 
       res.status(200).json({

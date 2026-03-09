@@ -212,7 +212,7 @@ export function RegistrationDetailsStep({
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                   isAdded
                     ? 'border-transparent bg-primary/10 text-primary cursor-default'
-                    : 'border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary/5 cursor-pointer'
+                    : 'border-border bg-transparent text-foreground hover:border-primary/50 hover:bg-primary/5 cursor-pointer'
                 }`}
               >
                 {isAdded && <Check className="h-3 w-3" />}

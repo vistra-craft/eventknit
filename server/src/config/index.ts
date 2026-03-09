@@ -37,8 +37,10 @@ export const config = {
     secret: process.env.JWT_SECRET || 'dev-secret-key-change-in-production-min-32-chars',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-key-change-in-production-min-32-chars',
     expiresIn: process.env.JWT_EXPIRES_IN || '1h', // 1 hour
-    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // 7 days
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d', // 30 days
     unsubscribeSecret: process.env.JWT_UNSUBSCRIBE_SECRET || 'dev-unsubscribe-secret-change-in-production-min-32',
+    // Set COOKIE_SECURE=true only when serving over HTTPS. Default false so HTTP deployments work.
+    cookieSecure: process.env.COOKIE_SECURE === 'true',
   },
   
   cors: {
