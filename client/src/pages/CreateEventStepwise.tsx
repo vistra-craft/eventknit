@@ -119,12 +119,12 @@ const DRAFT_STORAGE_KEY = 'eventknit_event_draft';
 
 /* Step definitions — consolidated 6-step wizard */
 const steps = [
-  { title: "Details", icon: FileText },           // 1: Basic info + date/location combined
-  { title: "Media", icon: Camera },               // 2: Cover image, tags, requirements, FAQs
-  { title: "Tickets", icon: Ticket },             // 3: Ticket types, pricing, currency, capacity
-  { title: "Registration", icon: ClipboardList }, // 4: Registration form builder
-  { title: "Extras", icon: LayoutList },          // 5: Agenda + Social (collapsible)
-  { title: "Review", icon: CheckCircle },         // 6: Final review
+  { title: "Event Details", icon: FileText },        // 1: Basic info + date/location combined
+  { title: "Event Image & Media", icon: Camera },    // 2: Cover image, tags, requirements, FAQs
+  { title: "Tickets & Pricing", icon: Ticket },      // 3: Ticket types, pricing, currency, capacity
+  { title: "Registration Form", icon: ClipboardList }, // 4: Registration form builder
+  { title: "Sessions & Extras", icon: LayoutList },  // 5: Agenda + Social (collapsible)
+  { title: "Review & Publish", icon: CheckCircle },  // 6: Final review
 ];
 
 export default function CreateEventStepwise() {
