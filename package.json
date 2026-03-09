@@ -1,0 +1,11 @@
+{
+  "name": "eventknit",
+  "private": true,
+  "scripts": {
+    "prepare": "node_modules/.bin/husky || true",
+    "pre-push": "node server/scripts/prepush-summary.js"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

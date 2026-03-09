@@ -211,9 +211,10 @@ export const Hero = () => {
             {/* Right side - Actions */}
             <div className="flex items-center gap-3">
               <Button
-                size="lg"
+                variant="outline"
+                size="default"
                 onClick={handleViewEvent}
-                className="bg-primary hover:bg-primary/90 text-white shadow-lg"
+                className="border-white/30 text-white/90 bg-white/10 hover:bg-white/20 hover:border-white/50 shadow-none"
               >
                 {currentEvent.type === 'EVENT' ? 'Get Tickets' : (currentEvent.linkText || 'Learn More')}
                 <ArrowRight className="w-4 h-4 ml-2" />

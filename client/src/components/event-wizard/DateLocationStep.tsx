@@ -173,7 +173,10 @@ export function DateLocationStep({
             />
             <button
               type="button"
-              onClick={() => document.getElementById('date')?.showPicker?.()}
+              onClick={() => {
+                const input = document.getElementById('date') as HTMLInputElement | null;
+                input?.showPicker?.();
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <Calendar className="h-4 w-4" />
@@ -260,7 +263,10 @@ export function DateLocationStep({
             />
             <button
               type="button"
-              onClick={() => document.getElementById('endDate')?.showPicker?.()}
+              onClick={() => {
+                const input = document.getElementById('endDate') as HTMLInputElement | null;
+                input?.showPicker?.();
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
             >
               <Calendar className="h-4 w-4" />
@@ -334,7 +340,10 @@ export function DateLocationStep({
                   />
                   <button
                     type="button"
-                    onClick={() => document.getElementById('registrationDeadline')?.showPicker?.()}
+                    onClick={() => {
+                      const input = document.getElementById('registrationDeadline') as HTMLInputElement | null;
+                      input?.showPicker?.();
+                    }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   >
                     <Calendar className="h-4 w-4" />
