@@ -155,7 +155,7 @@ const AdvancedSearch: React.FC = () => {
 
   const handleSaveSearch = async () => {
     if (!savedSearchName.trim()) {
-      showErrorToast(toast, error, "Please enter a name for your saved search");
+      showErrorToast(toast, null, "Please enter a name for your saved search");
       return;
     }
 

@@ -62,7 +62,7 @@ const TicketTransfer: React.FC = () => {
 
   const handleTransfer = async (registrationId: string) => {
     if (!transferData.toEmail) {
-      showErrorToast(toast, error, "Please enter recipient email");
+      showErrorToast(toast, null, "Please enter recipient email");
       return;
     }
 

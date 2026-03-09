@@ -76,7 +76,7 @@ const EventReviews: React.FC = () => {
 
   const handleSubmitReview = async () => {
     if (!selectedEvent || !reviewData.rating) {
-      showErrorToast(toast, error, "Please select an event and provide a rating");
+      showErrorToast(toast, null, "Please select an event and provide a rating");
       return;
     }
 

@@ -62,12 +62,12 @@ const DirectMessaging: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (!messageData.recipientId && !messageData.recipientEmail) {
-      showErrorToast(toast, error, "Please provide a recipient");
+      showErrorToast(toast, null, "Please provide a recipient");
       return;
     }
 
     if (!messageData.content.trim()) {
-      showErrorToast(toast, error, "Message content is required");
+      showErrorToast(toast, null, "Message content is required");
       return;
     }
 

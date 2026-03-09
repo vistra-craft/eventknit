@@ -91,7 +91,7 @@ const EventCollections: React.FC = () => {
 
   const handleCreateCollection = async () => {
     if (!collectionData.name.trim()) {
-      showErrorToast(toast, error, "Collection name is required");
+      showErrorToast(toast, null, "Collection name is required");
       return;
     }
 
@@ -113,7 +113,6 @@ const EventCollections: React.FC = () => {
         fetchCollections();
       }
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } }, message?: string };
       showErrorToast(toast, error, "Failed to create collection");
     } finally {
       setCreating(false);

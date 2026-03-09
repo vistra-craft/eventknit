@@ -42,7 +42,7 @@ const InterestManagement: React.FC = () => {
 
   const handleAddInterest = async () => {
     if (!newCategory.trim()) {
-      showErrorToast(toast, error, "Category is required");
+      showErrorToast(toast, null, "Category is required");
       return;
     }
 

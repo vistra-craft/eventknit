@@ -13,7 +13,7 @@ import {
   type SubscriptionPlan,
   type SubscriptionTier,
 } from "@/lib/admin-api";
-import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
+import { showErrorToast } from "@/lib/utils/error";
 import {
   Crown,
   Zap,

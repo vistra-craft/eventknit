@@ -31,7 +31,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { UserRole as UserRoleEnum } from "@/types/auth";
 import { useToast } from "@/hooks/useToast";
 import { useEffect } from "react";
-import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
+import { showErrorToast } from "@/lib/utils/error";
 
 // Define all available pages/permissions based on the website structure
 export interface PagePermission {

@@ -73,7 +73,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { exportAttendees, quickRegisterAttendee } from "../../lib/attendee-import-api";
 import type { QuickRegisterRequest } from "../../lib/attendee-import-api";
 import { getEventResaleStats, getEventResaleListings, getEventTransferStats, getEventTransferHistory, type ResaleStats, type ResaleListing, type TransferStats, type TransferRecord, getEventScanOverview, getEventScanHistory, getEventScanAttendees, updateEventScanConfig, type OrganizerScanConfig, type OrganizerScanStatistics, type OrganizerScanRecord, type OrganizerScanAttendee } from "../../lib/organizer-dashboard-api";
-import { showErrorToast } from "../../lib/utils/error";
+import { extractErrorMessage, showErrorToast } from "../../lib/utils/error";
 import { updateEvent } from "../../lib/event-api";
 
 // Ticket type with all fields (including ones not in EventData type)

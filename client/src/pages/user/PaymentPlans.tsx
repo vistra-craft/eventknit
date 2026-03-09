@@ -180,7 +180,7 @@ const PaymentPlans = () => {
                   setIsCreateDialogOpen(false);
                   loadData();
                 } catch {
-                  showErrorToast(toast, error, "Failed to create payment plan");
+                  showErrorToast(toast, null, "Failed to create payment plan");
                 }
               }}
               onCancel={() => setIsCreateDialogOpen(false)}

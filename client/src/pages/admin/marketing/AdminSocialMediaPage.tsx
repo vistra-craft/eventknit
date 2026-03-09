@@ -374,6 +374,7 @@ const AdminSocialMediaPage = () => {
   const totalImpressions = apiMetrics?.totalImpressions || socialPosts.reduce((sum, post) => sum + post.impressions, 0);
 
   return (
+    <>
       <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -755,6 +756,7 @@ const AdminSocialMediaPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
   );
 };
 

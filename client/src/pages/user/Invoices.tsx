@@ -60,7 +60,7 @@ const Invoices = () => {
       }
     } catch {
       console.error("Error loading invoices");
-      showErrorToast(toast, error, "Failed to load invoices");
+      showErrorToast(toast, null, "Failed to load invoices");
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ const Invoices = () => {
       setInvoiceHTML(html);
       setSelectedInvoice(invoiceId);
     } catch {
-      showErrorToast(toast, error, "Failed to load invoice");
+      showErrorToast(toast, null, "Failed to load invoice");
     }
   };
 
@@ -84,7 +84,7 @@ const Invoices = () => {
         description: "Invoice downloaded successfully",
       });
     } catch {
-      showErrorToast(toast, error, "Failed to download invoice");
+      showErrorToast(toast, null, "Failed to download invoice");
     }
   };
 

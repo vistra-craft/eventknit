@@ -6,7 +6,7 @@
 
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, MapPin, Users, CheckCircle, DollarSign, BarChart3, MoreVertical, Edit, Trash2, Eye, ExternalLink } from 'lucide-react';
+import { Calendar, MapPin, Users, CheckCircle, DollarSign, BarChart3, MoreVertical, Edit, Trash2, Eye, ExternalLink, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -22,9 +22,10 @@ interface OrganizingEventCardProps {
   event: OrganizingEvent;
   onManage?: (eventId: string) => void;
   onDelete?: (eventId: string) => void;
+  context?: 'attendee' | 'organizer'; // Dashboard context
 }
 
-const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingEventCardProps) => {
+const OrganizingEventCardComponent = ({ event, onManage, onDelete, context = 'attendee' }: OrganizingEventCardProps) => {
   const navigate = useNavigate();
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewEvent, setPreviewEvent] = useState<EventData | null>(null);
@@ -238,7 +239,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
             {isPending ? (
-              // Actions for pending events: Edit, Preview, Delete
+              // Actions for pending events: Edit, Preview, Delete (same for both contexts)
               <>
                 <Button
                   variant="default"
@@ -271,8 +272,33 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete }: OrganizingE
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </>
+            ) : context === 'attendee' ? (
+              // Actions for approved events on attendee dashboard: Preview, Manage in Organizer Dashboard
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviewClick}
+                  className="hover:scale-105 active:scale-95 transition-transform duration-200"
+                  aria-label={`Preview ${event.title}`}
+                >
+                  <Eye className="h-4 w-4 mr-1.5" />
+                  Preview
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => navigate('/organizer/dashboard')}
+                  className="flex-1 hover:scale-105 active:scale-95 transition-transform duration-200 gap-1.5"
+                  aria-label={`Manage ${event.title} in organizer dashboard`}
+                  title="Switch to organizer dashboard for full management"
+                >
+                  Manage in Organizer Dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </>
             ) : (
-              // Actions for approved events: Manage, Analytics, More
+              // Actions for approved events on organizer dashboard: Manage, Analytics, More
               <>
                 <Button
                   variant="default"

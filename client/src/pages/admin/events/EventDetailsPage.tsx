@@ -40,7 +40,7 @@ import { getEventRegistrations } from "@/lib/organizer-api";
 import { updateOrganizerDataAccess } from "@/lib/admin-api";
 import { getEventInvitations, createInvitation, revokeInvitation, getRegistrationLinkUrl, InviteType } from "@/lib/invitation-api";
 import { useToast } from "@/hooks/useToast";
-import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
+import { extractErrorMessage } from "@/lib/utils/error";
 import { exportEventData } from "@/lib/utils/export";
 import { getEventConfig, updateEventConfig, type EventScanConfig } from "@/lib/workstation-api";
 import { getRefunds, getDisbursements, type Refund, type Disbursement } from "@/lib/financial-api";

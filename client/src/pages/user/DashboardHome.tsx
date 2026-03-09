@@ -356,6 +356,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                   <OrganizingEventCard
                     key={event.id}
                     event={event}
+                    context="attendee"
                   />
                 ))}
               </div>
