@@ -34,7 +34,7 @@ export const useSocket = (options: UseSocketOptions = {}): UseSocketReturn => {
     }
 
     // Create socket connection
-    const socketURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const socketURL = import.meta.env.VITE_API_URL || window.location.origin;
     const socket = io(socketURL, {
       auth: { token },
       transports: ['websocket', 'polling'],

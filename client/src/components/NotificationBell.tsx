@@ -45,7 +45,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
     // Connect to WebSocket for real-time updates
     const token = localStorage.getItem("accessToken");
     if (token) {
-      const socketURL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+      const socketURL = import.meta.env.VITE_API_URL || window.location.origin;
       const socket = io(socketURL, {
         auth: { token },
         transports: ["websocket", "polling"],
