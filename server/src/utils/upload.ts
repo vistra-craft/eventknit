@@ -31,3 +31,21 @@ export const upload: MulterInstance = multer({
 
 // Single image upload middleware
 export const uploadSingleImage: RequestHandler = upload.single('image');
+
+// Document upload (images + PDFs, up to 10MB)
+export const documentUpload: MulterInstance = multer({
+  storage,
+  fileFilter(_req, file, cb) {
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files and PDFs are allowed'));
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB for documents
+    files: 1,
+  },
+}) as unknown as MulterInstance;
+
+export const uploadSingleDocument: RequestHandler = documentUpload.single('file');

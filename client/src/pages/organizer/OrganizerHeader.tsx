@@ -55,7 +55,8 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
               variant="ghost" 
               size="sm"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center space-x-2 hover:bg-muted transition-colors"
+              className="rounded-full p-0 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors"
+              title={`${userName}\n${userEmail}`}
             >
               {userAvatar ? (
                 <img 
@@ -68,13 +69,6 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                   <User className="h-4 w-4 text-primary-foreground" />
                 </div>
               )}
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-foreground">{userName}</p>
-                {userOrganization && (
-                  <p className="text-xs text-muted-foreground">{userOrganization}</p>
-                )}
-              </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
             
             {/* Profile Dropdown Menu */}

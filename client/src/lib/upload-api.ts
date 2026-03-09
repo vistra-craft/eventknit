@@ -9,6 +9,20 @@ interface UploadResponse {
 }
 
 /**
+ * Upload a document (image or PDF) for verification/KYC.
+ * Returns the secure Cloudinary URL.
+ */
+export async function uploadDocument(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiPost<UploadResponse>('/uploads/document', formData);
+  if (!response.success || !response.data?.url) {
+    throw new Error(response.message || 'Document upload failed');
+  }
+  return response.data.url;
+}
+
+/**
  * Upload an image to Cloudinary via the generic upload endpoint.
  * Returns the secure Cloudinary URL.
  */

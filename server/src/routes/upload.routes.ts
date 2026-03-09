@@ -1,8 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { authenticate } from '../middleware/auth.middleware.js';
-import { uploadSingleImage } from '../utils/upload.js';
-import { uploadImageToCloudinary } from '../services/cloudinary.service.js';
+import { uploadSingleImage, uploadSingleDocument } from '../utils/upload.js';
+import { uploadImageToCloudinary, uploadBuffer } from '../services/cloudinary.service.js';
 import { logger } from '../utils/logger.js';
 
 const router = Router();
@@ -106,6 +106,63 @@ router.post('/image', handleMulterUpload, async (
   } catch (error) {
     next(error);
   }
+});
+
+/**
+ * @route   POST /api/v1/uploads/document
+ * @desc    Upload an image or PDF document to Cloudinary (for verification/KYC)
+ * @access  Private (any authenticated user)
+ * @body    multipart/form-data: `file` field (image or PDF, max 10MB)
+ */
+router.post('/document', (req: Request, res: Response, next: NextFunction): void => {
+  uploadSingleDocument(req, res, async (err: unknown) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        res.status(413).json({ success: false, message: 'File too large. Maximum 10MB.' });
+        return;
+      }
+      res.status(400).json({ success: false, message: err.message || 'Upload error' });
+      return;
+    }
+    if (err instanceof Error) {
+      res.status(400).json({ success: false, message: err.message });
+      return;
+    }
+    if (err) return next(err);
+
+    try {
+      if (!req.file) {
+        res.status(400).json({ success: false, message: 'No file provided' });
+        return;
+      }
+
+      let result;
+      if (req.file.mimetype === 'application/pdf') {
+        result = await uploadBuffer(req.file.buffer, {
+          folder: 'kyc-documents',
+          resource_type: 'raw',
+          format: 'pdf',
+        });
+      } else {
+        result = await uploadImageToCloudinary(req.file.buffer, 'kyc-documents', {
+          quality: 'auto',
+          format: 'auto',
+        });
+      }
+
+      logger.info(`Document uploaded to kyc-documents by user ${req.user!.id}`);
+
+      res.json({
+        success: true,
+        data: {
+          url: result.secureUrl,
+          publicId: result.publicId,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
 });
 
 export default router;
