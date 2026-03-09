@@ -29,7 +29,7 @@ jobs:
 
       - name: Setup test environment
         run: |
-          echo "VITE_API_URL=http://localhost:3010" >> $GITHUB_ENV
+          echo "VITE_API_URL=http://localhost:3001" >> $GITHUB_ENV
           echo "VITE_NODE_ENV=test" >> $GITHUB_ENV
 
       - name: Install client dependencies

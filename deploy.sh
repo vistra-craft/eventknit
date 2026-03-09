@@ -11,7 +11,7 @@ set -e  # Exit on any error
 set -o pipefail  # Exit on pipe failures
 
 # Configuration
-COMPOSE_FILE="docker-compose.prod.yml"
+COMPOSE_FILE="docker-compose.dev.yml"
 MAX_HEALTH_WAIT=120  # Maximum seconds to wait for health checks
 HEALTH_CHECK_INTERVAL=5  # Seconds between health checks
 
@@ -121,7 +121,7 @@ verify_deployment() {
     local attempt=0
 
     while [ $attempt -lt $max_attempts ]; do
-        if docker compose -f "$COMPOSE_FILE" exec -T server curl -sf http://localhost:3010/health > /dev/null 2>&1; then
+        if docker compose -f "$COMPOSE_FILE" exec -T server curl -sf http://localhost:3001/health > /dev/null 2>&1; then
             log_info "Server API is responding!"
             return 0
         fi
@@ -146,25 +146,36 @@ main() {
     # Step 1: Verify Docker is available
     check_docker
 
-    # Step 2: Stop existing containers gracefully
-    log_info "Stopping existing containers..."
-    docker compose -f "$COMPOSE_FILE" down --timeout 30 || true
+    # Step 2: Ensure infrastructure (postgres + redis) is running.
+    # Do NOT bring them down — this kills data connections and causes the
+    # "server refuses to connect" window during every deploy.
+    log_info "Ensuring infrastructure is running (postgres + redis)..."
+    docker compose -f "$COMPOSE_FILE" up -d postgres redis
 
-    # Step 3: Remove old application images to force fresh build
-    log_info "Removing old application images..."
-    docker rmi eventknit-client:latest eventknit-server:latest 2>/dev/null || true
-
-    # Step 4: Build and start containers
-    log_info "Building and starting containers..."
-    docker compose -f "$COMPOSE_FILE" up -d --build
-
-    # Step 5: Wait for database to be healthy
+    # Step 3: Wait for database to be healthy before doing anything else
     if ! wait_for_healthy "eventknit-postgres" 60; then
         log_error "Database failed to start"
         exit 1
     fi
 
-    # Step 6: Wait for server to be healthy
+    # Step 4: Build new application images without stopping the running ones
+    log_info "Building new application images..."
+    docker compose -f "$COMPOSE_FILE" build --no-cache server client
+
+    # Step 5: Run migrations against the already-running database
+    # (Run before swapping containers so the schema is ready when the new server starts)
+    if ! run_migrations; then
+        log_warn "Migration issues detected, but continuing..."
+    fi
+
+    # Step 6: Swap server and client containers with zero-infra downtime
+    log_info "Replacing server and client containers..."
+    docker compose -f "$COMPOSE_FILE" up -d --no-deps --force-recreate server client
+
+    # Step 7: Ensure nginx is up (it may already be running)
+    docker compose -f "$COMPOSE_FILE" up -d --no-deps nginx
+
+    # Step 8: Wait for new server to be healthy
     if ! wait_for_healthy "eventknit-server" "$MAX_HEALTH_WAIT"; then
         log_error "Server failed to start"
         log_error "Attempting to show server logs:"
@@ -172,24 +183,13 @@ main() {
         exit 1
     fi
 
-    # Step 7: Run database migrations
-    if ! run_migrations; then
-        log_warn "Migration issues detected, but continuing..."
-        # Don't exit - migrations might have already been applied
-    fi
-
-    # Step 8: Restart server to pick up any migration changes
-    log_info "Restarting server to apply migration changes..."
-    docker compose -f "$COMPOSE_FILE" restart server
-    sleep 5
-
-    # Step 9: Verify deployment
+    # Step 9: Verify the API is reachable
     if ! verify_deployment; then
         log_error "Deployment verification failed!"
         exit 1
     fi
 
-    # Step 10: Cleanup
+    # Step 10: Cleanup old dangling images
     log_info "Cleaning up unused Docker resources..."
     docker image prune -f
     docker builder prune -f --filter "until=24h" 2>/dev/null || true

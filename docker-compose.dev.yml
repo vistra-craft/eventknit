@@ -48,7 +48,7 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
-      PORT: 3010
+      PORT: 3001
       DATABASE_URL: postgres://${POSTGRES_USER:-eventknit}:${POSTGRES_PASSWORD:-eventknit123}@postgres:5432/${POSTGRES_DB:-eventknit}?schema=public
       REDIS_URL: redis://redis:6379
       # Add other env vars here or use env_file
@@ -64,7 +64,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3010/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -98,8 +98,10 @@ services:
     networks:
       - eventknit-network
     depends_on:
-      - server
-      - client
+      server:
+        condition: service_healthy
+      client:
+        condition: service_started
 
 networks:
   eventknit-network:
