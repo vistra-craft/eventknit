@@ -130,16 +130,16 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
               setIsProfileOpen(!isProfileOpen);
               setIsNotificationsOpen(false);
             }}
-            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent transition-colors"
+            className="group flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
           >
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-medium text-white">
               {userInitial}
             </div>
             <div className="hidden md:block text-left">
               <p className="text-sm font-medium">{userName}</p>
-              <p className="text-xs text-muted-foreground truncate max-w-[120px]">{userEmail}</p>
+              <p className="text-xs text-muted-foreground group-hover:text-accent-foreground/80 truncate max-w-[120px]">{userEmail}</p>
             </div>
-            <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
+            <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground group-hover:text-accent-foreground/80" />
           </button>
 
           {/* Profile dropdown */}
