@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { useToast } from "../../../hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { useIsMobile } from "../../../hooks/useMobile";
 import {
   scanTicket,
@@ -322,11 +323,7 @@ const ServicePointScanner: React.FC = () => {
       }
     } catch (error) {
       console.error('Error syncing:', error);
-      toast({
-        title: "Sync Error",
-        description: error instanceof Error ? error.message : "Failed to sync scans",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Sync error", "Failed to sync scans");
     } finally {
       setSyncing(false);
       setSyncProgress({ synced: 0, total: 0 });
@@ -380,11 +377,7 @@ const ServicePointScanner: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading sessions:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load sessions",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Load failed", "Failed to load sessions");
       } finally {
         setSessionsLoading(false);
       }
@@ -427,11 +420,7 @@ const ServicePointScanner: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading events:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load events",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Load failed", "Failed to load events");
       } finally {
         setLoading(false);
       }
@@ -469,11 +458,7 @@ const ServicePointScanner: React.FC = () => {
   // Process scanned code
   const processCode = useCallback(async (code: string) => {
     if (!eventId) {
-      toast({
-        title: "Error",
-        description: "Please select an event first",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please select an event first"), "Please select an event first");
       return;
     }
 
@@ -662,11 +647,7 @@ const ServicePointScanner: React.FC = () => {
       }
     } catch (error) {
       console.error('Error processing code:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process scan. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Scan failed", "Failed to process scan. Please try again.");
     }
   }, [eventId, selectedSession, scanMode, soundEnabled, toast, deviceId, isOnlineState, isMobile]);
 
@@ -758,11 +739,7 @@ const ServicePointScanner: React.FC = () => {
       setIsScanning(true);
     } catch (error) {
       console.error('Error starting scanner:', error);
-      toast({
-        title: "Error",
-        description: "Failed to start camera. Please check permissions or use manual entry.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Camera failed", "Failed to start camera. Please check permissions or use manual entry.");
     }
   }, [processCode, toast, cameraPermission, isMobile]);
 
@@ -792,11 +769,7 @@ const ServicePointScanner: React.FC = () => {
       }
     } catch (error) {
       console.error('Error searching attendees:', error);
-      toast({
-        title: "Error",
-        description: "Failed to search attendees",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to search attendees");
     } finally {
       setSearching(false);
     }
@@ -853,11 +826,7 @@ const ServicePointScanner: React.FC = () => {
       }
     } catch (error) {
       console.error('Error in manual operation:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process operation",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to process operation");
     }
   };
 

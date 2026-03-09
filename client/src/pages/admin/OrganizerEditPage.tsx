@@ -29,6 +29,7 @@ import {
   type EmergencyContact
 } from "@/lib/admin-api";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
+import { extractErrorMessage } from "@/lib/utils/error";
 
 interface OrganizerDetails {
   id: string;
@@ -286,7 +287,7 @@ const OrganizerEditPage = () => {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error("Error updating organizer:", err);
-      setError(err instanceof Error ? err.message : "Failed to update organizer");
+      setError(extractErrorMessage(err, "Failed to update organizer"));
     } finally {
       setIsSaving(false);
     }

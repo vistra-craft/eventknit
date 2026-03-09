@@ -29,6 +29,7 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { ButtonLoader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   getOrganizerStaff,
@@ -123,12 +124,8 @@ const StaffManagement = () => {
       if (response.success && response.data) {
         setStaff(response.data.staff);
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load staff members",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to load staff members');
     } finally {
       setLoading(false);
     }
@@ -151,12 +148,8 @@ const StaffManagement = () => {
       if (utilizationRes.success) setUtilization(utilizationRes.data);
       if (coverageRes.success) setCoverage(coverageRes.data);
       if (availabilityRes.success) setAvailability(availabilityRes.data);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load performance data",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to load performance data');
     } finally {
       setPerformanceLoading(false);
     }
@@ -217,11 +210,7 @@ const StaffManagement = () => {
   // Handle add staff
   const handleAddStaff = async () => {
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please fill in all required fields"), "Validation error");
       return;
     }
 
@@ -245,11 +234,7 @@ const StaffManagement = () => {
         fetchStaff();
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create staff member",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to create staff member');
     } finally {
       setSubmitting(false);
     }
@@ -279,11 +264,7 @@ const StaffManagement = () => {
         fetchStaff();
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update staff member",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to update staff member');
     } finally {
       setSubmitting(false);
     }
@@ -306,11 +287,7 @@ const StaffManagement = () => {
         fetchStaff();
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete staff member",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to delete staff member');
     } finally {
       setSubmitting(false);
     }

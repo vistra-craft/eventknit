@@ -7,6 +7,7 @@ import { useUsersStats } from "@/hooks/queries";
 import StaffManagementContent from "./StaffManagementContent";
 import OrganizersContent from "./OrganizersContent";
 import AttendeesPage from "./AttendeesPage";
+import { extractErrorMessage } from "@/lib/utils/error";
 
 const UsersManagementPage = () => {
   const [activeTab, setActiveTab] = useState("staff");
@@ -71,7 +72,7 @@ const UsersManagementPage = () => {
         ) : statsError ? (
           <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
             <p className="font-semibold">Error loading user stats</p>
-            <p className="text-sm mt-1">{statsError instanceof Error ? statsError.message : 'Failed to fetch user statistics'}</p>
+            <p className="text-sm mt-1">{extractErrorMessage(statsError, 'Failed to fetch user statistics')}</p>
           </div>
         ) : stats.length > 0 ? (
           <section className="sticky top-0 z-10 bg-background pb-2 pt-2">

@@ -8,6 +8,7 @@ import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 import { getMyOrganizerProfile, updateMyOrganizerProfile } from '@/lib/organizer-profile-api';
 import * as authApi from '@/lib/auth-api';
 import {
@@ -148,11 +149,7 @@ export default function OrganizerProfileSetup() {
       }
     } catch (error) {
       console.error('Failed to save profile:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save your profile. Please try again.',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to save profile');
     } finally {
       setIsSaving(false);
     }

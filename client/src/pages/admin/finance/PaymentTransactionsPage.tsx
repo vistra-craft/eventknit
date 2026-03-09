@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getPaymentTransactions, syncPaymentsFromPaystack, type PaymentTransaction } from "@/lib/financial-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const PaymentTransactionsPage = () => {
   const navigate = useNavigate();
@@ -49,12 +50,8 @@ const PaymentTransactionsPage = () => {
         setTransactions(response.data.transactions);
         setPagination(response.data.pagination);
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load payment transactions",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load payment transactions");
     } finally {
       setLoading(false);
     }
@@ -76,12 +73,8 @@ const PaymentTransactionsPage = () => {
         });
         loadTransactions();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to sync payments from Paystack",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to sync payments from Paystack");
     } finally {
       setSyncing(false);
     }

@@ -37,9 +37,11 @@ import {
   Award
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/useToast";
 import { getEventById } from "@/lib/event-api";
 import DraggableBadgeElement from "@/components/service-point/DraggableBadgeElement";
+import { showErrorToast } from "@/lib/utils/error";
 import {
   getBadgeTemplates,
   createBadgeTemplate,
@@ -117,6 +119,7 @@ const ServicePointTemplates: React.FC = () => {
   // History for undo/redo
   const [history, setHistory] = useState<BadgeTemplate[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const loadTemplates = useCallback(async () => {
     try {
@@ -143,11 +146,7 @@ const ServicePointTemplates: React.FC = () => {
       }
     } catch (error) {
       console.error("Error loading templates:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load templates",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load templates");
     } finally {
       setIsLoading(false);
     }
@@ -348,7 +347,7 @@ const ServicePointTemplates: React.FC = () => {
       }
     } catch (error) {
       console.error("Error creating template:", error);
-      toast({ title: "Error", description: "Failed to create template", variant: "destructive" });
+      showErrorToast(toast, error, "Failed to create template");
     }
   };
 
@@ -363,14 +362,18 @@ const ServicePointTemplates: React.FC = () => {
       }
     } catch (error) {
       console.error("Error duplicating template:", error);
-      toast({ title: "Error", description: "Failed to duplicate template", variant: "destructive" });
+      showErrorToast(toast, error, "Failed to duplicate template");
     }
   };
 
-  const handleDeleteTemplate = async () => {
+  const handleDeleteTemplate = () => {
     if (!currentTemplate || currentTemplate.isDefault) return;
-    if (!window.confirm("Are you sure you want to delete this template?")) return;
+    setDeleteConfirm(true);
+  };
 
+  const confirmDeleteTemplate = async () => {
+    if (!currentTemplate) return;
+    setDeleteConfirm(false);
     try {
       await deleteBadgeTemplate(currentTemplate.id);
       await loadTemplates();
@@ -378,7 +381,7 @@ const ServicePointTemplates: React.FC = () => {
       toast({ title: "Success", description: "Template deleted" });
     } catch (error) {
       console.error("Error deleting template:", error);
-      toast({ title: "Error", description: "Failed to delete template", variant: "destructive" });
+      showErrorToast(toast, error, "Failed to delete template");
     }
   };
 
@@ -392,7 +395,7 @@ const ServicePointTemplates: React.FC = () => {
       toast({ title: "Success", description: "Template saved" });
     } catch (error) {
       console.error("Error saving template:", error);
-      toast({ title: "Error", description: "Failed to save template", variant: "destructive" });
+      showErrorToast(toast, error, "Failed to save template");
     } finally {
       setIsSaving(false);
     }
@@ -754,7 +757,7 @@ const ServicePointTemplates: React.FC = () => {
               <CardContent className="p-6 flex items-center justify-center min-h-[600px] bg-gradient-to-br from-muted/40 to-muted/60 overflow-auto">
                 {currentTemplate ? (
                   <div
-                    className="relative border-2 border-dashed border-gray-400 bg-white shadow-2xl transition-all duration-200 max-w-full hover:border-primary/50"
+                    className="relative border-2 border-dashed border-border bg-card shadow-2xl transition-all duration-200 max-w-full hover:border-primary/50"
                     style={{
                       width: `${canvasWidth}px`,
                       height: `${canvasHeight}px`,
@@ -947,7 +950,7 @@ const ServicePointTemplates: React.FC = () => {
                             <button
                               key={color}
                               className={`w-6 h-6 rounded border transition-all ${
-                                selectedElementData.color === color ? 'ring-2 ring-primary ring-offset-1' : 'border-gray-200'
+                                selectedElementData.color === color ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
                               }`}
                               style={{ backgroundColor: color }}
                               onClick={() => updateElementWithHistory(selectedElement!, { color })}
@@ -962,7 +965,7 @@ const ServicePointTemplates: React.FC = () => {
                             <button
                               key={color}
                               className={`w-6 h-6 rounded border transition-all ${
-                                selectedElementData.backgroundColor === color ? 'ring-2 ring-primary ring-offset-1' : 'border-gray-200'
+                                selectedElementData.backgroundColor === color ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
                               } ${color === 'transparent' ? 'bg-[url("data:image/svg+xml,%3Csvg%20width%3D%226%22%20height%3D%226%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Crect%20width%3D%223%22%20height%3D%223%22%20fill%3D%22%23ccc%22%2F%3E%3Crect%20x%3D%223%22%20y%3D%223%22%20width%3D%223%22%20height%3D%223%22%20fill%3D%22%23ccc%22%2F%3E%3C%2Fsvg%3E")]' : ''}`}
                               style={{ backgroundColor: color === 'transparent' ? undefined : color }}
                               onClick={() => updateElementWithHistory(selectedElement!, { backgroundColor: color })}
@@ -1231,6 +1234,23 @@ const ServicePointTemplates: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this template? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTemplate} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
   );
 };
 

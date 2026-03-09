@@ -22,6 +22,8 @@ import {
   deletePricingRule,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useParams } from "react-router-dom";
 
 interface PricingRule {
@@ -67,6 +69,7 @@ const DynamicPricing = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [priceCalculation, setPriceCalculation] = useState<PriceCalculation | null>(null);
+  const [confirmDeleteRule, setConfirmDeleteRule] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchRules = useCallback(async () => {
@@ -79,11 +82,7 @@ const DynamicPricing = () => {
       }
     } catch (error) {
       console.error("Error fetching pricing rules:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load pricing rules",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load pricing rules');
     } finally {
       setLoading(false);
     }
@@ -109,11 +108,7 @@ const DynamicPricing = () => {
       }
     } catch (error) {
       console.error("Error creating pricing rule:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create pricing rule",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to create pricing rule');
     }
   };
 
@@ -127,17 +122,11 @@ const DynamicPricing = () => {
       }
     } catch (error) {
       console.error("Error calculating price:", error);
-      toast({
-        title: "Error",
-        description: "Failed to calculate price",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to calculate price');
     }
   };
 
   const handleDeleteRule = async (ruleId: string) => {
-    if (!confirm("Are you sure you want to delete this pricing rule?")) return;
-
     try {
       const response = await deletePricingRule(ruleId);
       if (response.success) {
@@ -149,11 +138,7 @@ const DynamicPricing = () => {
       }
   } catch (error) {
     console.error("Error deleting rule:", error);
-    toast({
-      title: "Error",
-      description: "Failed to delete rule",
-      variant: "destructive",
-    });
+    showErrorToast(toast, error, 'Failed to delete pricing rule');
   }
   };
 
@@ -313,7 +298,7 @@ const DynamicPricing = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDeleteRule(rule.id)}
+                        onClick={() => setConfirmDeleteRule(rule.id)}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         Delete
@@ -325,6 +310,21 @@ const DynamicPricing = () => {
             ))}
           </div>
         )}
+
+        <AlertDialog open={!!confirmDeleteRule} onOpenChange={() => setConfirmDeleteRule(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this pricing rule?</AlertDialogTitle>
+              <AlertDialogDescription>This action cannot be undone. The pricing rule will be permanently deleted.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { handleDeleteRule(confirmDeleteRule!); setConfirmDeleteRule(null); }}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

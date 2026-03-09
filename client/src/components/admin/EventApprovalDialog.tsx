@@ -14,6 +14,7 @@ import {
   rejectEvent,
 } from '../../lib/admin-api';
 import type { KYCOrganizerDetails } from '../../lib/admin-api';
+import { extractErrorMessage } from '../../lib/utils/error';
 
 export interface EventWithOrganizer {
   id: string;
@@ -70,7 +71,7 @@ export const EventApprovalDialog = ({
         // const messagesRes = await getEventApprovalMessages(event.id);
         // setMessages(messagesRes.data.messages as ApprovalMessage[]);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load approval data');
+        setError(extractErrorMessage(err, 'Failed to load approval data'));
         console.error('Error loading approval data:', err);
       } finally {
         setLoadingKYC(false);
@@ -89,7 +90,7 @@ export const EventApprovalDialog = ({
       onApprovalComplete?.('approved');
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to approve event');
+      setError(extractErrorMessage(err, 'Failed to approve event'));
     } finally {
       setProcessing(false);
     }
@@ -104,7 +105,7 @@ export const EventApprovalDialog = ({
       onApprovalComplete?.('rejected');
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reject event');
+      setError(extractErrorMessage(err, 'Failed to reject event'));
     } finally {
       setProcessing(false);
     }
@@ -123,7 +124,7 @@ export const EventApprovalDialog = ({
       onApprovalComplete?.('requested_info');
       setActiveTab('communication'); // Switch to communication tab to show the message
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send request');
+      setError(extractErrorMessage(err, 'Failed to send request'));
     } finally {
       setProcessing(false);
     }

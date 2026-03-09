@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
 import { getOrganizerStaffAssignments, getOrganizerEvents, type EventStaffAssignment } from "@/lib/organizer-api";
 
 interface EventAssignment {
@@ -158,12 +159,8 @@ const TeamCalendar = () => {
         });
 
       setStaffSchedules(Array.from(staffMap.values()));
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load calendar data",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to load calendar data');
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 import {
   getBranding,
   upsertBranding,
@@ -203,12 +204,7 @@ const OrganizerBrandingPage = () => {
           : 'Your branding has been created and submitted for approval.',
       });
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string } }; message?: string };
-      toast({
-        title: 'Error',
-        description: err?.response?.data?.error || err?.message || 'Failed to save branding',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to save branding');
     } finally {
       setSaving(false);
     }
@@ -224,12 +220,7 @@ const OrganizerBrandingPage = () => {
       const res = await getCustomDomains();
       if (res?.data) setDomains(Array.isArray(res.data) ? res.data : []);
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string } }; message?: string };
-      toast({
-        title: 'Error',
-        description: err?.response?.data?.error || err?.message || 'Failed to add domain',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to add domain');
     } finally {
       setAddingDomain(false);
     }
@@ -240,8 +231,8 @@ const OrganizerBrandingPage = () => {
       await deleteCustomDomain(domainId);
       setDomains((prev) => prev.filter((d) => d.id !== domainId));
       toast({ title: 'Domain removed' });
-    } catch {
-      toast({ title: 'Error', description: 'Failed to delete domain', variant: 'destructive' });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to delete domain');
     }
   };
 

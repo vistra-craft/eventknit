@@ -19,6 +19,8 @@ import {
   sendToTaggedUsers,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface AttendeeTag {
   id: string;
@@ -50,6 +52,7 @@ const AttendeeTagsManagement = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isTagUserDialogOpen, setIsTagUserDialogOpen] = useState(false);
   const [isSendDialogOpen, setIsSendDialogOpen] = useState(false);
+  const [confirmDeleteTag, setConfirmDeleteTag] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchTags = useCallback(async () => {
@@ -61,11 +64,7 @@ const AttendeeTagsManagement = () => {
       }
     } catch (error) {
       console.error("Error fetching tags:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load tags",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load tags');
     } finally {
       setLoading(false);
     }
@@ -123,11 +122,7 @@ const AttendeeTagsManagement = () => {
         fetchTags();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create tag",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to create tag');
     }
   };
 
@@ -149,11 +144,7 @@ const AttendeeTagsManagement = () => {
         }
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to tag user",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to tag user');
     }
   };
 
@@ -168,17 +159,11 @@ const AttendeeTagsManagement = () => {
         loadTaggedUsers();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to untag user",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to untag user');
     }
   };
 
   const handleDeleteTag = async (tagId: string) => {
-    if (!confirm("Are you sure you want to delete this tag?")) return;
-
     try {
       const response = await deleteTag(tagId);
       if (response.success) {
@@ -192,11 +177,7 @@ const AttendeeTagsManagement = () => {
         }
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete tag",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to delete tag');
     }
   };
 
@@ -216,11 +197,7 @@ const AttendeeTagsManagement = () => {
         setIsSendDialogOpen(false);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to send message",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to send message');
     }
   };
 
@@ -329,7 +306,7 @@ const AttendeeTagsManagement = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDeleteTag(tag.id)}
+                            onClick={() => setConfirmDeleteTag(tag.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -453,6 +430,21 @@ const AttendeeTagsManagement = () => {
             </Dialog>
           </>
         )}
+
+        <AlertDialog open={!!confirmDeleteTag} onOpenChange={() => setConfirmDeleteTag(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this tag?</AlertDialogTitle>
+              <AlertDialogDescription>This action cannot be undone. The tag and all associations will be permanently deleted.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { handleDeleteTag(confirmDeleteTag!); setConfirmDeleteTag(null); }}>
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

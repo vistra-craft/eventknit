@@ -28,7 +28,7 @@ import { Switch } from "./ui/switch";
 import { useToast } from "@/hooks/useToast";
 import { sendToEventRegistrations, getCommunicationHistory, type CommunicationMessage } from "@/lib/organizer-dashboard-api";
 import { getInbox, sendMessage, type DirectMessage } from "@/lib/user-dashboard-api";
-import { extractErrorMessage } from "@/lib/utils/error";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface EventCommunicationSectionProps {
   eventId: string;
@@ -135,11 +135,7 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
         }
       }
     } catch (err) {
-      toast({
-        title: "Send failed",
-        description: extractErrorMessage(err, "Failed to send message"),
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Send failed", "Failed to send message");
     } finally {
       setSending(false);
     }
@@ -163,11 +159,7 @@ const EventCommunicationSection = ({ eventId, eventTitle }: EventCommunicationSe
       setInboxLoaded(false);
       void loadInbox();
     } catch (err) {
-      toast({
-        title: "Reply failed",
-        description: extractErrorMessage(err, "Could not send reply"),
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Reply failed", "Could not send reply");
     } finally {
       setReplying(false);
     }

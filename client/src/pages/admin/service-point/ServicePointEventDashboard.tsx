@@ -78,6 +78,7 @@ import {
   SESSION_COLORS,
 } from "../../../lib/session-api";
 import { useToast } from "../../../hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const ServicePointEventDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -165,11 +166,7 @@ const ServicePointEventDashboard: React.FC = () => {
   useEffect(() => {
     const loadEventData = async () => {
       if (!eventId) {
-        toast({
-          title: "Error",
-          description: "Event ID is required",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error("Event ID is required"), "Event ID is required");
         navigate(`${basePrefix}/service-point`);
         return;
       }
@@ -184,11 +181,7 @@ const ServicePointEventDashboard: React.FC = () => {
           : null;
 
         if (!event) {
-          toast({
-            title: "Error",
-            description: "Event not found",
-            variant: "destructive",
-          });
+          showErrorToast(toast, new Error("Event not found"), "Event not found");
           navigate(`${basePrefix}/service-point`);
           return;
         }
@@ -202,11 +195,7 @@ const ServicePointEventDashboard: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading event data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load event data",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Failed to load event data");
       } finally {
         setLoading(false);
       }
@@ -257,11 +246,7 @@ const ServicePointEventDashboard: React.FC = () => {
       });
     } catch (error) {
       console.error('Error exporting attendees:', error);
-      toast({
-        title: "Export Failed",
-        description: error instanceof Error ? error.message : "Failed to export attendees",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to export attendees");
     } finally {
       setExporting(false);
     }
@@ -292,7 +277,7 @@ const ServicePointEventDashboard: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading no-shows:', error);
-        toast({ title: "Error", description: "Failed to load no-show report", variant: "destructive" });
+        showErrorToast(toast, error, "Failed to load no-show report");
       } finally {
         setNoShowLoading(false);
       }
@@ -343,7 +328,7 @@ const ServicePointEventDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading muster report:', error);
-      toast({ title: "Error", description: "Failed to load muster report", variant: "destructive" });
+      showErrorToast(toast, error, "Failed to load muster report");
     } finally {
       setMusterLoading(false);
     }
@@ -405,11 +390,7 @@ const ServicePointEventDashboard: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading attendees:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load attendees",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Failed to load attendees");
       } finally {
         setAttendeesLoading(false);
       }
@@ -431,11 +412,7 @@ const ServicePointEventDashboard: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading sessions:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load sessions",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Failed to load sessions");
       } finally {
         setSessionsLoading(false);
       }
@@ -483,11 +460,7 @@ const ServicePointEventDashboard: React.FC = () => {
 
   const handleSaveSession = async () => {
     if (!eventId || !sessionFormData.name || !sessionFormData.code) {
-      toast({
-        title: "Error",
-        description: "Name and code are required",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Name and code are required"), "Name and code are required");
       return;
     }
 
@@ -519,11 +492,7 @@ const ServicePointEventDashboard: React.FC = () => {
       handleCloseSessionDialog();
     } catch (error) {
       console.error('Error saving session:', error);
-      toast({
-        title: "Error",
-        description: editingSession ? "Failed to update session" : "Failed to create session",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, editingSession ? "Failed to update session" : "Failed to create session");
     } finally {
       setSessionSaving(false);
     }
@@ -544,11 +513,7 @@ const ServicePointEventDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error deleting session:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete session",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to delete session");
     } finally {
       setDeletingSession(false);
       setDeleteSessionId(null);
@@ -1107,7 +1072,7 @@ const ServicePointEventDashboard: React.FC = () => {
                     {sessions.map((session) => {
                       const SessionIcon = getSessionIcon(session.icon);
                       return (
-                        <div key={session.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                        <div key={session.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
                           <div className="flex items-center gap-4">
                             <div
                               className="w-12 h-12 rounded-xl flex items-center justify-center"

@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/useToast';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 interface DirectorsFormProps {
   directors: OrganizerDirector[];
@@ -36,6 +38,7 @@ export const DirectorsForm: React.FC<DirectorsFormProps> = ({
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [removingDirectorId, setRemovingDirectorId] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateDirectorData>({
     fullName: '',
     nationality: '',
@@ -84,7 +87,7 @@ export const DirectorsForm: React.FC<DirectorsFormProps> = ({
     } catch (error: unknown) {
       toast({
         title: 'Failed to add director',
-        description: error instanceof Error ? error.message : 'An error occurred while adding the director',
+        description: extractErrorMessage(error, 'An error occurred while adding the director'),
         variant: 'destructive',
       });
     } finally {
@@ -92,10 +95,14 @@ export const DirectorsForm: React.FC<DirectorsFormProps> = ({
     }
   };
 
-  const handleDelete = async (directorId: string) => {
-    if (!confirm('Are you sure you want to remove this director/shareholder?')) {
-      return;
-    }
+  const handleDelete = (directorId: string) => {
+    setRemovingDirectorId(directorId);
+  };
+
+  const confirmDeleteDirector = async () => {
+    if (!removingDirectorId) return;
+    const directorId = removingDirectorId;
+    setRemovingDirectorId(null);
 
     try {
       await onDelete(directorId);
@@ -106,7 +113,7 @@ export const DirectorsForm: React.FC<DirectorsFormProps> = ({
     } catch (error: unknown) {
       toast({
         title: 'Failed to remove director',
-        description: error instanceof Error ? error.message : 'An error occurred while removing the director',
+        description: extractErrorMessage(error, 'An error occurred while removing the director'),
         variant: 'destructive',
       });
     }
@@ -370,6 +377,22 @@ export const DirectorsForm: React.FC<DirectorsFormProps> = ({
           Maximum number of directors ({maxDirectorsToCollect}) reached. Additional directors can be listed in a separate document.
         </div>
       )}
+
+      {/* Remove Director Confirmation */}
+      <AlertDialog open={!!removingDirectorId} onOpenChange={(open) => !open && setRemovingDirectorId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Director</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this director/shareholder? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDirector}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

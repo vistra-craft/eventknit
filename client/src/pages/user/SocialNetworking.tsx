@@ -7,6 +7,7 @@ import { UserPlus, UserMinus, Users, Building2, Mail } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { getFollowers, getFollowing, followUser, unfollowUser, getUserProfile } from "@/lib/user-dashboard-api";
@@ -71,11 +72,7 @@ const SocialNetworking: React.FC = () => {
       }
       fetchSocialData();
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update follow status",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to update follow status");
     }
   };
 

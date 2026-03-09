@@ -8,6 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -62,7 +72,7 @@ import {
 } from "@/lib/organizer-dashboard-api";
 import { EventSeatMapManager } from "@/components/organizer/EventSeatMapManager";
 import { useToast } from "@/hooks/useToast";
-import { extractErrorMessage } from "@/lib/utils/error";
+import { showErrorToast } from "@/lib/utils/error";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -185,6 +195,9 @@ export function TicketPackageManager({ eventId, mode }: TicketPackageManagerProp
   // Issue dialog state
   const [issuePackage, setIssuePackage] = useState<TicketPackage | null>(null);
 
+  // Delete confirmation state — tracks which package ID to delete
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const fetchPackages = useCallback(async () => {
     setLoading(true);
     try {
@@ -193,11 +206,7 @@ export function TicketPackageManager({ eventId, mode }: TicketPackageManagerProp
         setPackages(response.data.packages ?? []);
       }
     } catch (err) {
-      toast({
-        title: "Error",
-        description: extractErrorMessage(err, "Failed to load ticket packages"),
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to load ticket packages");
     } finally {
       setLoading(false);
     }
@@ -259,28 +268,23 @@ export function TicketPackageManager({ eventId, mode }: TicketPackageManagerProp
         }
       }
     } catch (err) {
-      toast({
-        title: "Error",
-        description: extractErrorMessage(err, "Failed to save package"),
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to save package");
     }
   };
 
-  const handleDelete = async (pkg: TicketPackage) => {
-    if (!confirm(`Delete "${pkg.name}"? This cannot be undone.`)) return;
+  const handleDelete = (pkg: TicketPackage) => {
+    setDeleteConfirmId(pkg.id);
+  };
+
+  const executeDelete = async (pkgId: string) => {
     try {
-      const response = await deleteTicketPackage(pkg.id);
+      const response = await deleteTicketPackage(pkgId);
       if (response.success) {
         toast({ title: "Package deleted" });
-        setPackages((prev) => prev.filter((p) => p.id !== pkg.id));
+        setPackages((prev) => prev.filter((p) => p.id !== pkgId));
       }
     } catch (err) {
-      toast({
-        title: "Error",
-        description: extractErrorMessage(err, "Failed to delete package"),
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to delete package");
     }
   };
 
@@ -444,6 +448,31 @@ export function TicketPackageManager({ eventId, mode }: TicketPackageManagerProp
           onClose={() => setIssuePackage(null)}
         />
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete package?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete &ldquo;{packages.find((p) => p.id === deleteConfirmId)?.name}&rdquo;. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteConfirmId) {
+                  executeDelete(deleteConfirmId);
+                }
+                setDeleteConfirmId(null);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -970,7 +999,7 @@ function IssueDialog({
         fetchIssuances();
       }
     } catch (err) {
-      toast({ title: "Error", description: extractErrorMessage(err, "Failed to send"), variant: "destructive" });
+      showErrorToast(toast, err, "Failed to send invitations");
     } finally {
       setSending(false);
     }
@@ -982,7 +1011,7 @@ function IssueDialog({
       setIssuances(prev => prev.map(i => i.id === issuanceId ? { ...i, status: "CANCELLED" as const } : i));
       toast({ title: "Issuance cancelled" });
     } catch (err) {
-      toast({ title: "Error", description: extractErrorMessage(err, "Failed to cancel"), variant: "destructive" });
+      showErrorToast(toast, err, "Failed to cancel issuance");
     }
   };
 

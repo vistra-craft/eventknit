@@ -31,6 +31,7 @@ import {
   type ValidationResult,
   type ImportResult,
 } from '@/lib/attendee-import-api';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 interface AttendeeImportDialogProps {
   open: boolean;
@@ -94,7 +95,7 @@ export function AttendeeImportDialog({
       setValidationResult(result);
       setStep('preview');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to validate file');
+      setError(extractErrorMessage(err, 'Failed to validate file'));
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +136,7 @@ export function AttendeeImportDialog({
       setStep('complete');
       onImportComplete?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Import failed');
+      setError(extractErrorMessage(err, 'Import failed'));
       setStep('options');
     } finally {
       setIsLoading(false);

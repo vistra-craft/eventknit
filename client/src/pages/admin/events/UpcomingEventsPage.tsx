@@ -19,6 +19,7 @@ import { EventPreviewModal } from "../../../components/EventPreviewModal";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { useToast } from "../../../hooks/useToast";
+import { extractErrorMessage, showErrorToast } from "../../../lib/utils/error";
 import { getCategoriesByGroup } from "@/lib/event-categories";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
@@ -78,20 +79,11 @@ const UpcomingEventsPage = () => {
         if (response.success && response.data?.event) {
           setPreviewEventData(response.data.event);
         } else {
-          toast({
-            title: "Error",
-            description: "Failed to load event details",
-            variant: "destructive",
-          });
+          showErrorToast(toast, new Error("Failed to load event details"), "Preview failed", "Failed to load event details");
           setPreviewModalOpen(false);
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to load event details";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Preview failed", "Failed to load event details");
         setPreviewModalOpen(false);
       } finally {
         setPreviewLoading(false);
@@ -249,10 +241,7 @@ const UpcomingEventsPage = () => {
         throw new Error(response.message || 'Failed to recall event');
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error
-        ? err.message
-        : 'Failed to recall event. Please try again.';
-      setError(errorMessage);
+      setError(extractErrorMessage(err, 'Failed to recall event. Please try again.'));
     } finally {
       setRecalling(false);
     }
@@ -551,12 +540,8 @@ const UpcomingEventsPage = () => {
                               title: "Exported",
                               description: "Event data exported successfully",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to export event data",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Export failed", "Failed to export event data");
                           }
                         }}>
                           <Download className="h-4 w-4 mr-2" />
@@ -569,12 +554,8 @@ const UpcomingEventsPage = () => {
                               title: "Copied",
                               description: "Event link copied to clipboard",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to copy link",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Copy failed", "Failed to copy link");
                           }
                         }}>
                           <Copy className="h-4 w-4 mr-2" />

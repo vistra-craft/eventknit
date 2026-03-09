@@ -26,6 +26,7 @@ import {
 import BackButton from "@/components/BackButton";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
+import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
 import {
   initiateWalkInRegistration,
   verifyWalkInOTP,
@@ -147,9 +148,8 @@ const WalkInRegistration: React.FC = () => {
         toast({ title: "OTP Sent", description: "A verification code has been sent to the attendee's phone" });
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send OTP. Please try again.";
-      setError(msg);
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      setError(extractErrorMessage(err, "Failed to send OTP. Please try again."));
+      showErrorToast(toast, err, "Failed to send OTP. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -182,9 +182,8 @@ const WalkInRegistration: React.FC = () => {
         setError("Invalid OTP. Please check the code and try again.");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "OTP verification failed";
-      setError(msg);
-      toast({ title: "Verification Failed", description: msg, variant: "destructive" });
+      setError(extractErrorMessage(err, "OTP verification failed"));
+      showErrorToast(toast, err, "OTP verification failed");
     } finally {
       setIsLoading(false);
     }
@@ -222,9 +221,8 @@ const WalkInRegistration: React.FC = () => {
         toast({ title: "Registration Complete", description: `${res.data.attendeeName} has been registered` });
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Registration failed. Please try again.";
-      setError(msg);
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      setError(extractErrorMessage(err, "Registration failed. Please try again."));
+      showErrorToast(toast, err, "Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }

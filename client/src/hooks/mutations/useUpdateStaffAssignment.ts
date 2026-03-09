@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateStaffAssignment, type EventStaffRole } from '@/lib/admin-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 interface UpdateStaffAssignmentData {
   role: EventStaffRole;
@@ -49,11 +50,7 @@ export function useUpdateStaffAssignment() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update assignment',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to update assignment');
     },
   });
 }

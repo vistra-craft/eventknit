@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/useToast";
 import { getExpenseById, createExpense, updateExpense } from "@/lib/platform-finance-api";
+import { showErrorToast } from "@/lib/utils/error";
 
 const EditExpensePage = () => {
   const navigate = useNavigate();
@@ -50,11 +51,7 @@ const EditExpensePage = () => {
       });
     } catch (saveError) {
       console.error("Error loading expense:", saveError);
-      toast({
-        title: "Error",
-        description: "Failed to load expense",
-        variant: "destructive",
-      });
+      showErrorToast(toast, saveError, "Failed to load expense");
     } finally {
       setLoading(false);
     }
@@ -113,11 +110,7 @@ const EditExpensePage = () => {
       navigate("/admin/finance/expenses");
     } catch (error) {
       console.error("Error saving expense:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save expense",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to save expense");
     } finally {
       setSaving(false);
     }

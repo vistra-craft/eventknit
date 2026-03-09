@@ -19,6 +19,7 @@ import {
   type CommunicationMessage,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
 
 const AttendeeCommunication = () => {
   const [messages, setMessages] = useState<CommunicationMessage[]>([]);
@@ -72,11 +73,7 @@ const AttendeeCommunication = () => {
       }
     } catch (error) {
       console.error("Error loading data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load communication data",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load communication data');
     } finally {
       setLoading(false);
     }
@@ -127,12 +124,8 @@ const AttendeeCommunication = () => {
         setIsSendDialogOpen(false);
         loadData();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to send message",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to send message');
     }
   };
 

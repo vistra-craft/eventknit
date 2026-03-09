@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getUserById, updateUser, getStaffProfile, updateStaffProfile, getEmergencyContact, updateEmergencyContact, type User as ApiUser, type StaffProfile, type EmergencyContact, type StaffDepartment } from "@/lib/admin-api";
+import { extractErrorMessage } from "@/lib/utils/error";
 
 interface StaffDetails {
   id: string;
@@ -323,7 +324,7 @@ const StaffEditPage = () => {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error("Error updating staff:", err);
-      setError(err instanceof Error ? err.message : "Failed to update staff member");
+      setError(extractErrorMessage(err, "Failed to update staff member"));
     } finally {
       setIsSaving(false);
     }

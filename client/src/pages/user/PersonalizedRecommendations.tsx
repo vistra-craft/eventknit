@@ -9,6 +9,7 @@ import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import { getPersonalizedRecommendations } from "@/lib/user-dashboard-api";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import EmptyState from "@/components/EmptyState";
 
 const PersonalizedRecommendations: React.FC = () => {
@@ -28,11 +29,7 @@ const PersonalizedRecommendations: React.FC = () => {
         }
       } catch (error) {
         console.error("Error fetching recommendations:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load recommendations. Please try again.",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Failed to load recommendations. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -90,7 +87,7 @@ const PersonalizedRecommendations: React.FC = () => {
                 />
                 {event.category && (
                   <div className="absolute top-4 right-4 z-10">
-                    <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                    <Badge variant="secondary" className="bg-card/90 text-foreground">
                       {event.category}
                     </Badge>
                   </div>

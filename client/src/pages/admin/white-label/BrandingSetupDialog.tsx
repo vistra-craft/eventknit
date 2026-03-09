@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 import { getUsers, type User } from '@/lib/admin-api';
 import {
   adminUpsertBranding,
@@ -199,7 +200,7 @@ const BrandingSetupDialog = ({
 
   const handleSubmit = async () => {
     if (!organizerId) {
-      toast({ title: 'Error', description: 'Please select an organizer', variant: 'destructive' });
+      toast({ title: 'Please select an organizer', variant: 'destructive' });
       return;
     }
 
@@ -229,14 +230,8 @@ const BrandingSetupDialog = ({
       });
       onOpenChange(false);
       onSuccess();
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string } }; message?: string };
-      const message = err?.response?.data?.error || err?.message;
-      toast({
-        title: 'Error',
-        description: message || 'Failed to save branding',
-        variant: 'destructive',
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to save branding');
     } finally {
       setIsSaving(false);
     }

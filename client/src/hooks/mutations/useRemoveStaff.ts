@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { removeStaffFromEvent } from '@/lib/admin-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 /**
  * Mutation hook to remove a staff member from an event
@@ -38,11 +39,7 @@ export function useRemoveStaff() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to remove staff',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to remove staff');
     },
   });
 }

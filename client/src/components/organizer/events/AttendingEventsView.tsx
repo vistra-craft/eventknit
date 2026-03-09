@@ -20,6 +20,7 @@ import { getUserRegisteredEvents } from "@/lib/event-api";
 import { downloadTicketPDF } from "@/lib/ticket-api";
 import { shareEvent } from "@/lib/utils/share";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 type AttendingFilter = "all" | "upcoming" | "past";
 
@@ -74,11 +75,7 @@ export function AttendingEventsView() {
         }
       } catch (error) {
         console.error("Error fetching attending events:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load attending events",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Load failed", "Failed to load attending events");
       } finally {
         setLoading(false);
       }
@@ -144,12 +141,7 @@ export function AttendingEventsView() {
       await downloadTicketPDF(event.registrationId);
       toast({ title: "Downloaded", description: "Ticket PDF downloaded" });
     } catch (error) {
-      toast({
-        title: "Error",
-        description:
-          error instanceof Error ? error.message : "Download failed",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Download failed", "Failed to download ticket");
     } finally {
       setDownloadingId(null);
     }

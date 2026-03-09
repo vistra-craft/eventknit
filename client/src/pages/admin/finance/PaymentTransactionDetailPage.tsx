@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getPaymentTransaction, type PaymentTransaction } from "@/lib/financial-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const PaymentTransactionDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -30,12 +31,8 @@ const PaymentTransactionDetailPage = () => {
           });
           navigate("/admin/finance/payments");
         }
-      } catch {
-        toast({
-          title: "Error",
-          description: "Failed to load transaction details",
-          variant: "destructive",
-        });
+      } catch (error) {
+        showErrorToast(toast, error, "Failed to load transaction details");
         navigate("/admin/finance/payments");
       } finally {
         setLoading(false);

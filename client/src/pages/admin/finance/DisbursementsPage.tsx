@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getDisbursements, getDisbursementSummary, type Disbursement, type DisbursementSummary } from "@/lib/financial-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const DisbursementsPage = () => {
   const navigate = useNavigate();
@@ -61,12 +62,8 @@ const DisbursementsPage = () => {
           setPagination(paginated.pagination);
         }
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load disbursements",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load disbursements");
     } finally {
       setLoading(false);
     }

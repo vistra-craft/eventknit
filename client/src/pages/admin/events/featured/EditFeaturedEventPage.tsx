@@ -14,6 +14,7 @@ import {
   type FeaturedEventData,
 } from "@/lib/featured-event-api";
 import { HeroPreview } from "@/components/admin/HeroPreview";
+import { showErrorToast } from "@/lib/utils/error";
 
 const EditFeaturedEventPage = () => {
   const navigate = useNavigate();
@@ -39,11 +40,7 @@ const EditFeaturedEventPage = () => {
   useEffect(() => {
     const fetchFeaturedEvent = async () => {
       if (!id) {
-        toast({
-          title: "Error",
-          description: "Featured event ID is missing",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error("Featured event ID is missing"), "Missing ID", "Featured event ID is missing");
         navigate("/admin/events/featured");
         return;
       }
@@ -69,12 +66,7 @@ const EditFeaturedEventPage = () => {
           setImagePreview(featuredEvent.customImage);
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to fetch featured event";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Load failed", "Failed to fetch featured event");
         navigate("/admin/events/featured");
       } finally {
         setFetching(false);
@@ -89,20 +81,12 @@ const EditFeaturedEventPage = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Error",
-        description: "Please upload an image file",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please upload an image file"), "Invalid file type", "Please upload an image file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Error",
-        description: "Image size must be less than 5MB",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Image size must be less than 5MB"), "File too large", "Image size must be less than 5MB");
       return;
     }
 
@@ -117,20 +101,12 @@ const EditFeaturedEventPage = () => {
         setIsUploadingImage(false);
       };
       reader.onerror = () => {
-        toast({
-          title: "Error",
-          description: "Failed to read image file",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error("Failed to read image file"), "Read failed", "Failed to read image file");
         setIsUploadingImage(false);
       };
       reader.readAsDataURL(file);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to upload image",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Upload failed", "Failed to upload image");
       setIsUploadingImage(false);
     }
   };
@@ -139,11 +115,7 @@ const EditFeaturedEventPage = () => {
     e.preventDefault();
 
     if (!id) {
-      toast({
-        title: "Error",
-        description: "Featured event ID is missing",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Featured event ID is missing"), "Missing ID", "Featured event ID is missing");
       return;
     }
 
@@ -172,12 +144,7 @@ const EditFeaturedEventPage = () => {
       });
       navigate("/admin/events/featured");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to update featured event";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Update failed", "Failed to update featured event");
     } finally {
       setLoading(false);
     }

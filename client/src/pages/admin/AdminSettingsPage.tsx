@@ -23,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/useToast";
 import { getSettings, setSettings, type SystemSetting } from "@/lib/system-settings-api";
 import { SettingsSection, SettingsField, ThemeSelector, LanguageSelector, TimezoneSelector, DateFormatSelector } from "@/components/settings";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface SettingsData {
   // General Settings
@@ -210,11 +211,7 @@ const AdminSettingsPage = () => {
         }
       } catch (error) {
         console.error('Failed to load settings:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load settings. Using default values.',
-          variant: 'destructive',
-        });
+        showErrorToast(toast, error, 'Load failed', 'Failed to load settings. Using default values.');
       } finally {
         setIsLoading(false);
       }
@@ -267,11 +264,7 @@ const AdminSettingsPage = () => {
     } catch (error) {
       console.error('Failed to save settings:', error);
       setSaveStatus("error");
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save settings. Please try again.',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Save failed', 'Failed to save settings. Please try again.');
       setTimeout(() => setSaveStatus("idle"), 3000);
     } finally {
       setIsSaving(false);
@@ -307,11 +300,7 @@ const AdminSettingsPage = () => {
       }
     } catch (error) {
       console.error('Failed to reset settings:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to reset settings',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Reset failed', 'Failed to reset settings');
     } finally {
       setIsLoading(false);
     }

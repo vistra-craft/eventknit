@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { RichTextContent } from "@/components/ui/RichTextContent";
 import type { EventData, User } from "./EventAttendeeView";
 
@@ -179,8 +180,8 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
       setIsContactOpen(false);
       setContactSubject("");
       setContactContent("");
-    } catch {
-      toast({ title: "Failed to send message", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to send message");
     } finally {
       setSendingContact(false);
     }

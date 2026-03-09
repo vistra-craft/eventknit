@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getRefunds, getRefundSummary, type Refund, type RefundSummary } from "@/lib/financial-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const RefundsPage = () => {
   const navigate = useNavigate();
@@ -62,12 +63,8 @@ const RefundsPage = () => {
           setPagination(paginated.pagination);
         }
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load refunds",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load refunds");
     } finally {
       setLoading(false);
     }

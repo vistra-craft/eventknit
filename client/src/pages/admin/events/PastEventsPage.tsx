@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Loader } from "../../../components/ui/loader";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 import { exportEventData } from "../../../lib/utils/export";
@@ -183,11 +184,7 @@ const PastEventsPage = () => {
         }
       } catch (err) {
         console.error('Error fetching event details:', err);
-        toast({
-          title: "Error",
-          description: "Failed to load event details",
-          variant: "destructive",
-        });
+        showErrorToast(toast, err, "Preview failed", "Failed to load event details");
       } finally {
         setPreviewLoading(false);
       }
@@ -390,12 +387,8 @@ const PastEventsPage = () => {
                               title: "Exported",
                               description: "Event data exported successfully",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to export event data",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Export failed", "Failed to export event data");
                           }
                         }}>
                           <Download className="h-4 w-4 mr-2" />
@@ -408,12 +401,8 @@ const PastEventsPage = () => {
                               title: "Copied",
                               description: "Event link copied to clipboard",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to copy link",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Copy failed", "Failed to copy link");
                           }
                         }}>
                           <Copy className="h-4 w-4 mr-2" />

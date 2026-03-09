@@ -18,6 +18,7 @@ import {
   type BusinessVerificationData
 } from '@/lib/verification-api';
 import { useToast } from '@/hooks/useToast';
+import { extractErrorMessage } from '@/lib/utils/error';
 import { uploadDocument } from '@/lib/upload-api';
 
 interface VerificationFormProps {
@@ -87,8 +88,8 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
     } catch (error) {
       console.error('Error loading verification status:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load verification status',
+        title: 'Load failed',
+        description: extractErrorMessage(error, 'Failed to load verification status'),
         variant: 'destructive',
       });
     } finally {
@@ -229,10 +230,9 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
       }
     } catch (error: unknown) {
       console.error('Error submitting identity verification:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to submit identity verification. Please try again.';
       toast({
-        title: 'Submission Error',
-        description: errorMessage,
+        title: 'Identity verification failed',
+        description: extractErrorMessage(error, 'Failed to submit identity verification. Please try again.'),
         variant: 'destructive',
       });
     } finally {
@@ -278,10 +278,9 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
       }
     } catch (error: unknown) {
       console.error('Error submitting business verification:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to submit business verification. Please try again.';
       toast({
-        title: 'Submission Error',
-        description: errorMessage,
+        title: 'Business verification failed',
+        description: extractErrorMessage(error, 'Failed to submit business verification. Please try again.'),
         variant: 'destructive',
       });
     } finally {

@@ -15,6 +15,7 @@ import {
 } from "@/lib/featured-event-api";
 import { getEvents, EventStatus } from "@/lib/event-api";
 import { HeroPreview } from "@/components/admin/HeroPreview";
+import { showErrorToast } from "@/lib/utils/error";
 
 const CreateFeaturedEventPage = () => {
   const navigate = useNavigate();
@@ -72,20 +73,12 @@ const CreateFeaturedEventPage = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Error",
-        description: "Please upload an image file",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please upload an image file"), "Invalid file", "Please upload an image file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Error",
-        description: "Image size must be less than 5MB",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Image size must be less than 5MB"), "File too large", "Image size must be less than 5MB");
       return;
     }
 
@@ -93,7 +86,7 @@ const CreateFeaturedEventPage = () => {
     try {
       // Store the file for FormData upload
       setUploadedCustomImageFile(file);
-      
+
       // Create preview for display
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -102,21 +95,13 @@ const CreateFeaturedEventPage = () => {
         setIsUploadingImage(false);
       };
       reader.onerror = () => {
-        toast({
-          title: "Error",
-          description: "Failed to read image file",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error("Failed to read image file"), "Read failed", "Failed to read image file");
         setIsUploadingImage(false);
         setUploadedCustomImageFile(null);
       };
       reader.readAsDataURL(file);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to upload image",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Upload failed", "Failed to upload image");
       setIsUploadingImage(false);
       setUploadedCustomImageFile(null);
     }
@@ -127,20 +112,12 @@ const CreateFeaturedEventPage = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Error",
-        description: "Please upload an image file",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please upload an image file"), "Invalid file", "Please upload an image file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Error",
-        description: "Image size must be less than 5MB",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Image size must be less than 5MB"), "File too large", "Image size must be less than 5MB");
       return;
     }
 
@@ -148,7 +125,7 @@ const CreateFeaturedEventPage = () => {
     try {
       // Store the file for FormData upload
       setUploadedFile(file);
-      
+
       // Create preview for display
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -157,22 +134,14 @@ const CreateFeaturedEventPage = () => {
         setIsUploadingImage(false);
       };
       reader.onerror = () => {
-        toast({
-          title: "Error",
-          description: "Failed to read image file",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error("Failed to read image file"), "Read failed", "Failed to read image file");
         setIsUploadingImage(false);
         setUploadedFile(null);
       };
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast({
-        title: "Error",
-        description: "Failed to upload image",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Upload failed", "Failed to upload image");
       setIsUploadingImage(false);
       setUploadedFile(null);
     }
@@ -184,27 +153,19 @@ const CreateFeaturedEventPage = () => {
     // Validate based on type
     if (itemType === "EVENT") {
       if (!formData.eventId) {
-        toast({
-          title: "Validation Error",
-          description: "Please select an event",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error("Please select an event"), "Validation error", "Please select an event");
         return;
       }
     } else if (itemType === "IMAGE") {
       // Check if imageUrl exists and is not empty (could be base64 from upload or URL)
       // Also check imagePreview as it might be set before formData is updated
-      const hasImage = (formData.imageUrl && 
-        typeof formData.imageUrl === 'string' && 
+      const hasImage = (formData.imageUrl &&
+        typeof formData.imageUrl === 'string' &&
         formData.imageUrl.trim() !== '') ||
         (imagePreview && imagePreview.trim() !== '');
-      
+
       if (!hasImage) {
-        toast({
-          title: "Validation Error",
-          description: "Please upload an image or provide an image URL",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error("Please upload an image or provide an image URL"), "Validation error", "Please upload an image or provide an image URL");
         return;
       }
     }
@@ -294,12 +255,7 @@ const CreateFeaturedEventPage = () => {
       });
       navigate("/admin/events/featured");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to create featured item";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Create failed", "Failed to create featured item");
     } finally {
       setLoading(false);
     }

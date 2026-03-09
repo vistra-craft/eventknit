@@ -44,6 +44,7 @@ import {
 import { Loader } from '@/components/ui/loader';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 import { useNavigate, useParams } from 'react-router-dom';
 
 // API imports
@@ -166,12 +167,8 @@ const TicketsManagementHub = () => {
       if (response.success && response.data?.events) {
         setEvents(response.data.events as Event[]);
       }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to load events',
-        variant: 'destructive',
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to load events');
     }
   }, [toast]);
 
@@ -226,12 +223,8 @@ const TicketsManagementHub = () => {
       setLoading(true);
       await Promise.all([fetchPricingRules(), fetchPackages(), fetchPromoCodes()]);
       updateStats();
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to load ticket management data',
-        variant: 'destructive',
-      });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to load ticket management data');
     } finally {
       setLoading(false);
     }
@@ -290,11 +283,7 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to create pricing rule');
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create pricing rule',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to create pricing rule');
     }
   };
 
@@ -311,11 +300,7 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to delete pricing rule');
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete pricing rule',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to delete pricing rule');
     } finally {
       setDeleteConfirm({ open: false, type: null, id: null, name: null });
     }
@@ -362,11 +347,7 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to create package');
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create package',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to create package');
     }
   };
 
@@ -383,11 +364,7 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to delete package');
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete package',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to delete package');
     } finally {
       setDeleteConfirm({ open: false, type: null, id: null, name: null });
     }
@@ -434,11 +411,7 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to create promo code');
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create promo code',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to create promo code');
     }
   };
 
@@ -455,11 +428,7 @@ const TicketsManagementHub = () => {
         throw new Error(response.message || 'Failed to delete promo code');
       }
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete promo code',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to delete promo code');
     } finally {
       setDeleteConfirm({ open: false, type: null, id: null, name: null });
     }

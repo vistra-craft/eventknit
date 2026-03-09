@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { submitEventReport, updateEventReport, type ReportCategory, type ReportStatus } from '@/lib/event-report-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 export function useSubmitEventReport() {
   const queryClient = useQueryClient();
@@ -18,11 +19,7 @@ export function useSubmitEventReport() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to submit report',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to submit report');
     },
   });
 }
@@ -44,11 +41,7 @@ export function useUpdateEventReport() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update report',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to update report');
     },
   });
 }

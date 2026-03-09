@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
 import {
   getUserPreferences,
   updateUserPreferences,
@@ -169,11 +170,7 @@ const OrganizerSettingsPage = () => {
         }
       } catch (error) {
         console.error("Failed to load preferences:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load preferences. Using default values.",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, 'Failed to load preferences');
       }
     };
 
@@ -494,11 +491,7 @@ const OrganizerSettingsPage = () => {
         : 'Failed to save settings';
       setSaveStatus("error");
       setSaveMessage(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to save settings');
       setTimeout(() => {
         setSaveStatus("idle");
         setSaveMessage("");
@@ -544,11 +537,7 @@ const OrganizerSettingsPage = () => {
         }
       } catch (error) {
         console.error("Failed to reset preferences:", error);
-        toast({
-          title: "Error",
-          description: "Failed to reset preferences",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, 'Failed to reset preferences');
       } finally {
         setIsSaving(false);
       }

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/useToast";
 import { createWage, updateWage, getWageById } from "@/lib/platform-finance-api";
+import { showErrorToast } from "@/lib/utils/error";
 
 const EditWagePage = () => {
   const navigate = useNavigate();
@@ -63,12 +64,7 @@ const EditWagePage = () => {
         });
       }
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: err.response?.data?.message || "Failed to load wage details",
-      });
+      showErrorToast(toast, error, "Failed to load wage details");
     } finally {
       setLoading(false);
     }
@@ -154,12 +150,7 @@ const EditWagePage = () => {
       }
       navigate("/admin/finance/wages");
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: err.response?.data?.message || `Failed to ${isEditing ? "update" : "create"} wage`,
-      });
+      showErrorToast(toast, error, `Failed to ${isEditing ? "update" : "create"} wage`);
     } finally {
       setSaving(false);
     }

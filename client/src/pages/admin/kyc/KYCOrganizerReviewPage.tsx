@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 import {
   getOrganizerKYCDetails,
   approveKYCDocument,
@@ -55,7 +56,7 @@ export default function KYCOrganizerReviewPage() {
       if (res.success) setData(res.data);
     } catch (error) {
       console.error('Failed to load KYC details:', error);
-      toast({ title: 'Error', description: 'Failed to load KYC details', variant: 'destructive' });
+      showErrorToast(toast, error, 'Failed to load KYC details');
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +76,7 @@ export default function KYCOrganizerReviewPage() {
       }
     } catch (error) {
       console.error('Failed to approve document:', error);
-      toast({ title: 'Error', description: 'Failed to approve document', variant: 'destructive' });
+      showErrorToast(toast, error, 'Failed to approve document');
     } finally {
       setActionLoading(null);
     }
@@ -98,7 +99,7 @@ export default function KYCOrganizerReviewPage() {
       }
     } catch (error) {
       console.error('Failed to reject document:', error);
-      toast({ title: 'Error', description: 'Failed to reject document', variant: 'destructive' });
+      showErrorToast(toast, error, 'Failed to reject document');
     } finally {
       setActionLoading(null);
     }
@@ -113,11 +114,8 @@ export default function KYCOrganizerReviewPage() {
         toast({ title: 'KYC Approved', description: 'Organizer KYC has been approved successfully' });
         fetchData();
       }
-    } catch (error: unknown) {
-      const msg = error && typeof error === 'object' && 'message' in error
-        ? (error as { message: string }).message
-        : 'Failed to approve KYC';
-      toast({ title: 'Error', description: msg, variant: 'destructive' });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to approve KYC');
     } finally {
       setActionLoading(null);
     }
@@ -141,7 +139,7 @@ export default function KYCOrganizerReviewPage() {
       }
     } catch (error) {
       console.error('Failed to reject KYC:', error);
-      toast({ title: 'Error', description: 'Failed to reject KYC', variant: 'destructive' });
+      showErrorToast(toast, error, 'Failed to reject KYC');
     } finally {
       setActionLoading(null);
     }

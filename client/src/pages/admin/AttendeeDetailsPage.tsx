@@ -31,6 +31,7 @@ import {
   type EventRegistration,
 } from "@/lib/admin-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -169,8 +170,8 @@ const AttendeeDetailsPage = () => {
         setUserData((prev) => prev ? { ...prev, status: "SUSPENDED" as const } : null);
         toast({ title: "Attendee suspended" });
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to suspend", variant: "destructive" });
+    } catch (err) {
+      showErrorToast(toast, err, "Suspend failed", "Failed to suspend attendee");
     } finally {
       setActionLoading(false);
     }
@@ -185,8 +186,8 @@ const AttendeeDetailsPage = () => {
         setUserData((prev) => prev ? { ...prev, status: "ACTIVE" as const } : null);
         toast({ title: "Attendee activated" });
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to activate", variant: "destructive" });
+    } catch (err) {
+      showErrorToast(toast, err, "Activate failed", "Failed to activate attendee");
     } finally {
       setActionLoading(false);
     }
@@ -201,8 +202,8 @@ const AttendeeDetailsPage = () => {
         setUserData((prev) => prev ? { ...prev, status: "DEACTIVATED" as const } : null);
         toast({ title: "Attendee deactivated" });
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to deactivate", variant: "destructive" });
+    } catch (err) {
+      showErrorToast(toast, err, "Deactivate failed", "Failed to deactivate attendee");
     } finally {
       setActionLoading(false);
     }

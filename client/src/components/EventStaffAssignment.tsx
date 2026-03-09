@@ -20,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/useToast";
 import {
@@ -70,6 +71,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [showBulkAssignDialog, setShowBulkAssignDialog] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<EventStaffAssignmentType | null>(null);
+  const [removingAssignment, setRemovingAssignment] = useState<EventStaffAssignmentType | null>(null);
 
   // Filter state
   const [filterRole, setFilterRole] = useState<string>("all");
@@ -130,7 +132,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   const handleAssign = () => {
     if (!selectedStaffId) {
       toast({
-        title: "Error",
+        title: "Staff member required",
         description: "Please select a staff member",
         variant: "destructive",
       });
@@ -160,7 +162,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   const handleBulkAssign = () => {
     if (selectedStaffIds.length === 0) {
       toast({
-        title: "Error",
+        title: "Staff members required",
         description: "Please select at least one staff member",
         variant: "destructive",
       });
@@ -209,14 +211,16 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   };
 
   const handleRemove = (assignment: EventStaffAssignmentType) => {
-    if (!confirm(`Are you sure you want to remove ${assignment.staff.firstName} ${assignment.staff.lastName} from this event?`)) {
-      return;
-    }
+    setRemovingAssignment(assignment);
+  };
 
+  const confirmRemoveStaff = () => {
+    if (!removingAssignment) return;
     removeStaffMutation.mutate({
       eventId,
-      staffId: assignment.staffId,
+      staffId: removingAssignment.staffId,
     });
+    setRemovingAssignment(null);
   };
 
   const resetForm = () => {
@@ -665,6 +669,22 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
         </DialogContent>
       </Dialog>
       )}
+
+      {/* Remove Staff Confirmation */}
+      <AlertDialog open={!!removingAssignment} onOpenChange={(open) => !open && setRemovingAssignment(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Staff Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove {removingAssignment?.staff.firstName} {removingAssignment?.staff.lastName} from this event?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveStaff}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

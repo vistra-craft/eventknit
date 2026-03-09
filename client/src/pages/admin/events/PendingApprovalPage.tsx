@@ -19,7 +19,7 @@ import { EventPreviewModal } from "../../../components/EventPreviewModal";
 import { useToast } from "../../../hooks/useToast";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
-import { extractErrorMessage } from "../../../lib/utils/error";
+import { extractErrorMessage, showErrorToast } from "../../../lib/utils/error";
 
 const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
 
@@ -90,20 +90,11 @@ const PendingApprovalPage = () => {
         if (response.success && response.data?.event) {
           setPreviewEventData(response.data.event);
         } else {
-          toast({
-            title: "Error",
-            description: "Failed to load event details",
-            variant: "destructive",
-          });
+          showErrorToast(toast, new Error("Failed to load event details"), "Preview failed", "Failed to load event details");
           setPreviewModalOpen(false);
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to load event details";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Preview failed", "Failed to load event details");
         setPreviewModalOpen(false);
       } finally {
         setPreviewLoading(false);
@@ -262,11 +253,7 @@ const PendingApprovalPage = () => {
 
   const handleConfirmReject = async () => {
     if (!selectedEventId || !rejectionReason.trim()) {
-      toast({
-        title: "Error",
-        description: "Please provide a rejection reason.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please provide a rejection reason."), "Validation error", "Please provide a rejection reason.");
       return;
     }
 
@@ -287,15 +274,8 @@ const PendingApprovalPage = () => {
         throw new Error(response.message || 'Failed to reject event');
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error
-        ? err.message
-        : 'Failed to reject event. Please try again.';
       console.error('Error rejecting event:', err);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Reject failed", "Failed to reject event. Please try again.");
     } finally {
       setProcessing(null);
     }
@@ -550,12 +530,8 @@ const PendingApprovalPage = () => {
                               title: "Exported",
                               description: "Event data exported successfully",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to export event data",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Export failed", "Failed to export event data");
                           }
                         }}>
                           <Download className="h-4 w-4 mr-2" />
@@ -568,12 +544,8 @@ const PendingApprovalPage = () => {
                               title: "Copied",
                               description: "Event link copied to clipboard",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to copy link",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Copy failed", "Failed to copy link");
                           }
                         }}>
                           <Copy className="h-4 w-4 mr-2" />

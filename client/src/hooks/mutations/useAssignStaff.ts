@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignAdminStaffToEvent, type AssignStaffToEventData } from '@/lib/admin-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 /**
  * Mutation hook to assign a staff member to an event
@@ -38,11 +39,7 @@ export function useAssignStaff() {
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to assign staff',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to assign staff');
     },
   });
 }
