@@ -6,14 +6,14 @@ import OrganizerHeader from "../pages/organizer/OrganizerHeader";
 import { organizerRoutes } from '../routes/organizerRoutes';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
+import { Loader } from '../components/ui/loader';
 import { useOrganizerApproval } from '../hooks/useOrganizerApproval';
 import OrganizerOnboardingModal from '../components/OrganizerOnboardingModal';
 
 /**
- * Loading component for suspense fallback
- * Professional skeleton loader with shimmer animations
+ * Dashboard skeleton — page header + 4 metric cards
  */
-const LoadingFallback = () => (
+const DashboardFallback = () => (
   <SkeletonGroup className="p-6 space-y-6">
     <SkeletonPageHeader showActions={false} />
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -23,6 +23,28 @@ const LoadingFallback = () => (
     </div>
   </SkeletonGroup>
 );
+
+/**
+ * Simple centered spinner for form/create pages
+ */
+const SpinnerFallback = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+    <Loader size="lg" />
+  </div>
+);
+
+/**
+ * Route-aware loading fallback
+ */
+const LoadingFallback = () => {
+  const path = window.location.pathname;
+
+  if (path.includes('/create') || path.includes('/edit') || path.includes('/settings')) {
+    return <SpinnerFallback />;
+  }
+
+  return <DashboardFallback />;
+};
 
 const OrganizerLayout: React.FC = () => {
   const { showApprovalModal, handleApprovalAcknowledged } = useOrganizerApproval();
