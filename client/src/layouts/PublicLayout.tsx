@@ -9,6 +9,7 @@ import { Suspense } from 'react';
 import { publicRoutes } from '../routes/publicRoutes';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EventDetailsSkeleton } from '../components/event-details/EventDetailsSkeleton';
+import { RegisterEventSkeleton } from '../components/skeletons/RegisterEventSkeleton';
 
 /**
  * Shared navbar skeleton used across public page fallbacks
@@ -140,6 +141,11 @@ const LoadingFallback = () => {
   // Event details page: /event/:id (but not /event/:id/register, /event/:id/payment, etc.)
   if (/^\/event\/[^/]+$/.test(path)) {
     return <EventDetailsSkeleton />;
+  }
+
+  // Event registration: /event/:id/register
+  if (/^\/event\/[^/]+\/register$/.test(path)) {
+    return <RegisterEventSkeleton />;
   }
 
   // All other public pages
