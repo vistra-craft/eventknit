@@ -109,12 +109,13 @@ const AdminAnalyticsOverview = () => {
   const transformStats = useCallback(
     (data: AdminDashboardStatsResponse["data"]): PlatformStat[] => {
       const { stats } = data;
+      if (!stats) return [];
       return [
         {
           title: "Total Events",
-          value: stats.totalEvents.value,
-          change: stats.totalEvents.change,
-          changeType: stats.totalEvents.changeType,
+          value: stats.totalEvents?.value ?? "—",
+          change: stats.totalEvents?.change ?? "0%",
+          changeType: stats.totalEvents?.changeType ?? "positive",
           icon: Calendar,
           color: "text-primary",
           bgColor: "bg-primary/10",
@@ -123,9 +124,9 @@ const AdminAnalyticsOverview = () => {
         },
         {
           title: "Active Organizers",
-          value: stats.organizers.value,
-          change: stats.organizers.change,
-          changeType: stats.organizers.changeType,
+          value: stats.organizers?.value ?? "—",
+          change: stats.organizers?.change ?? "0%",
+          changeType: stats.organizers?.changeType ?? "positive",
           icon: Building2,
           color: "text-success",
           bgColor: "bg-success/10",
@@ -134,9 +135,9 @@ const AdminAnalyticsOverview = () => {
         },
         {
           title: "Active Staff",
-          value: stats.activeStaff.value,
-          change: stats.activeStaff.change,
-          changeType: stats.activeStaff.changeType,
+          value: stats.activeStaff?.value ?? "—",
+          change: stats.activeStaff?.change ?? "0%",
+          changeType: stats.activeStaff?.changeType ?? "positive",
           icon: Users,
           color: "text-muted-foreground",
           bgColor: "bg-muted",
@@ -145,9 +146,9 @@ const AdminAnalyticsOverview = () => {
         },
         {
           title: "Platform Revenue",
-          value: stats.platformRevenue.value,
-          change: stats.platformRevenue.change,
-          changeType: stats.platformRevenue.changeType,
+          value: stats.platformRevenue?.value ?? "—",
+          change: stats.platformRevenue?.change ?? "0%",
+          changeType: stats.platformRevenue?.changeType ?? "positive",
           icon: DollarSign,
           color: "text-success",
           bgColor: "bg-success/10",
@@ -174,13 +175,14 @@ const AdminAnalyticsOverview = () => {
   const transformGrowthData = useCallback(
     (data: AdminDashboardGrowthResponse["data"]): GrowthDataPoint[] => {
       const { organizers, events, revenue, attendees } = data;
+      if (!Array.isArray(events)) return [];
       // Combine data series by index (they all have the same labels)
-      return events.map((eventPoint, index) => ({
+      return events.filter(Boolean).map((eventPoint, index) => ({
         month: eventPoint.label,
         events: eventPoint.value,
-        organizers: organizers[index]?.value || 0,
-        attendees: attendees[index]?.value || 0,
-        revenue: revenue[index]?.value || 0,
+        organizers: organizers?.[index]?.value ?? 0,
+        attendees: attendees?.[index]?.value ?? 0,
+        revenue: revenue?.[index]?.value ?? 0,
       }));
     },
     []

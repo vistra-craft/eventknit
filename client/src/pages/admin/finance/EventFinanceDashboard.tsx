@@ -316,7 +316,7 @@ const EventFinanceDashboard = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All years</SelectItem>
-                    {financeGrowth?.totalRevenue.map((d) => (
+                    {financeGrowth?.totalRevenue.filter(d => d.label).map((d) => (
                       <SelectItem key={d.label} value={d.label}>
                         {d.label}
                       </SelectItem>

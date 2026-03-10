@@ -10,22 +10,33 @@ import { Toaster } from "./components/ui/toaster";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GuestRoute } from "./components/GuestRoute";
 import { lazy, Suspense } from "react";
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode } from "react";
+
+// Wraps lazy() so a stale-chunk 404 after deploy triggers a full reload instead of a blank screen
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function lazyWithReload<T extends ComponentType<any>>(factory: () => Promise<{ default: T }>) {
+  return lazy(() =>
+    factory().catch(() => {
+      window.location.reload();
+      return new Promise<{ default: T }>(() => {});
+    })
+  );
+}
 
 // Lazy load layout components
-const AuthLayout = lazy(() => import("./layouts/AuthLayout"));
-const PublicLayout = lazy(() => import("./layouts/PublicLayout"));
-const UserLayout = lazy(() => import("./layouts/UserLayout"));
-const OrganizerLayout = lazy(() => import("./layouts/OrganizerLayout"));
-const AdminLayout = lazy(() => import("./layouts/AdminLayout"));
+const AuthLayout = lazyWithReload(() => import("./layouts/AuthLayout"));
+const PublicLayout = lazyWithReload(() => import("./layouts/PublicLayout"));
+const UserLayout = lazyWithReload(() => import("./layouts/UserLayout"));
+const OrganizerLayout = lazyWithReload(() => import("./layouts/OrganizerLayout"));
+const AdminLayout = lazyWithReload(() => import("./layouts/AdminLayout"));
 // All routes are now defined in client/src/routes/ and rendered by layouts
 
 // Lazy load onboarding screens
-const WelcomeScreen = lazy(() => import("./pages/onboarding/WelcomeScreen"));
-const InterestsScreen = lazy(() => import("./pages/onboarding/InterestsScreen"));
-const EventTypesScreen = lazy(() => import("./pages/onboarding/EventTypesScreen"));
-const NotificationsScreen = lazy(() => import("./pages/onboarding/NotificationsScreen"));
-const CompletionScreen = lazy(() => import("./pages/onboarding/CompletionScreen"));
+const WelcomeScreen = lazyWithReload(() => import("./pages/onboarding/WelcomeScreen"));
+const InterestsScreen = lazyWithReload(() => import("./pages/onboarding/InterestsScreen"));
+const EventTypesScreen = lazyWithReload(() => import("./pages/onboarding/EventTypesScreen"));
+const NotificationsScreen = lazyWithReload(() => import("./pages/onboarding/NotificationsScreen"));
+const CompletionScreen = lazyWithReload(() => import("./pages/onboarding/CompletionScreen"));
 
 // Wrapper component to provide role view context with user role
 // This needs to be inside BrowserRouter and AuthProvider
