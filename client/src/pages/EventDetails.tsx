@@ -27,6 +27,7 @@ import { SpeakersShowcase } from "@/components/event-details/SpeakersShowcase";
 import { SponsorsShowcase } from "@/components/event-details/SponsorsShowcase";
 import { ExhibitorsGrid } from "@/components/event-details/ExhibitorsGrid";
 import { Loader } from "@/components/ui/loader";
+import { EventDetailsSkeleton } from "@/components/event-details/EventDetailsSkeleton";
 import { getRegistrationStatus } from "@/lib/user-dashboard-api";
 import { getVenueType } from "@/types/event";
 import { showErrorToast } from "@/lib/utils/error";
@@ -219,18 +220,7 @@ const EventDetails = () => {
 
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
-        <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <Loader size="lg" className="mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading event...</p>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
+    return <EventDetailsSkeleton />;
   }
 
   if (error || !event) {
