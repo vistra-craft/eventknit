@@ -3337,7 +3337,7 @@ export class EventService {
 
     // Get and validate invitation
     const invitation = await InvitationService.getInvitationByToken(token);
-    const eventId = invitation.event.id;
+    let eventId = invitation.event.id;
 
     // Extract email from registration data (required field)
     const email = registrationData.email as string;
@@ -3419,6 +3419,8 @@ export class EventService {
     if (!event) {
       throw new NotFoundError('Event not found');
     }
+    // Ensure all subsequent queries use the real UUID, not a slug
+    eventId = event.id;
 
     // Validate event status
     if (event.status !== EventStatus.APPROVED) {
@@ -3629,6 +3631,8 @@ export class EventService {
     if (!event) {
       throw new NotFoundError('Event not found');
     }
+    // Ensure all subsequent queries use the real UUID, not a slug
+    eventId = event.id;
 
     // Check if event is approved
     if (event.status !== EventStatus.APPROVED) {
