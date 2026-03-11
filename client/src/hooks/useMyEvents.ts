@@ -40,6 +40,7 @@ export interface OrganizingEvent {
   image: string;
   description: string;
   category: string;
+  slug?: string;
   ticketsSold?: number;
   checkedIn?: number;
 }
