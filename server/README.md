@@ -618,3 +618,5 @@ For detailed API documentation, see the route files in `src/routes/`.
 ## 📄 License
 
 This project is proprietary and confidential.
+
+## convert to pdf - pandoc EVENTKNIT_PLATFORM_GUIDE.md -o EVENTKNIT_PLATFORM_GUIDE.docx

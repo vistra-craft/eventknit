@@ -8,6 +8,7 @@ import {
 } from '../utils/errors.js';
 import { createAuditLog, AuditActions } from '../utils/audit.js';
 import { logger } from '../utils/logger.js';
+import { hashToken } from '../utils/password.js';
 import { Decimal, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { hashPassword } from '../utils/password.js';
 import crypto from 'crypto';
@@ -3780,13 +3781,14 @@ export class EventService {
     if (finalIsNewUser || !finalUserHasPassword) {
       accountInvitationToken = crypto.randomBytes(32).toString('hex');
       const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const accountInvitationTokenHash = hashToken(accountInvitationToken);
 
-      // Store account invitation token in EmailVerification table
+      // Store hashed account invitation token in EmailVerification table
       await prisma.emailVerification.create({
         data: {
           userId: user.id,
           email: user.email,
-          token: accountInvitationToken,
+          token: accountInvitationTokenHash,
           expiresAt: accountInvitationExpiresAt,
           verified: false,
         },

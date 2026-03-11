@@ -56,7 +56,7 @@
   },
   "homepage": "https://github.com/vistra-craft/eventknit-auth#readme",
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^9.39.4",
     "@types/bcrypt": "^5.0.2",
     "@types/compression": "^1.7.5",
     "@types/cookie-parser": "^1.4.10",

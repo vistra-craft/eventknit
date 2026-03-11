@@ -353,9 +353,9 @@ export class TicketPdfQueueService {
       const emailVerification = await prisma.emailVerification.findFirst({
         where: {
           userId: registration.attendeeId,
-          type: 'ACCOUNT_INVITATION',
+          token: { not: null },
           expiresAt: { gt: new Date() },
-          usedAt: null,
+          verified: false,
         },
         select: { token: true },
       });
