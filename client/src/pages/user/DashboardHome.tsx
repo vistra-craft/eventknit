@@ -107,8 +107,8 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
     });
   };
 
-  const handleShare = async (event: { title: string; id: string }) => {
-    const shared = await shareEvent(event.title, event.id);
+  const handleShare = async (event: { title: string; id: string; slug?: string | null }) => {
+    const shared = await shareEvent(event.title, event.slug ?? event.id);
     toast({
       title: shared ? 'Shared' : 'Link Copied',
       description: shared ? 'Event shared' : 'Link copied to clipboard',

@@ -25,6 +25,7 @@ const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&[^;]+
 
 interface Event {
   id: string;
+  slug?: string | null;
   title: string;
   organizer: string;
   organizerName?: string;
@@ -137,6 +138,7 @@ const PendingApprovalPage = () => {
           if (response.data.events) {
           const pendingEvents = response.data.events.map(event => ({
             id: event.id,
+            slug: event.slug ?? null,
             title: event.title,
             organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             organizerName: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
@@ -501,7 +503,7 @@ const PendingApprovalPage = () => {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link to={`/event/${event.id}`} target="_blank" rel="noopener noreferrer">
+                          <Link to={`/event/${event.slug ?? event.id}`} target="_blank" rel="noopener noreferrer">
                             <Eye className="h-4 w-4 mr-2" />
                             View Public Page
                           </Link>
@@ -539,7 +541,7 @@ const PendingApprovalPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.slug ?? event.id}`);
                             toast({
                               title: "Copied",
                               description: "Event link copied to clipboard",

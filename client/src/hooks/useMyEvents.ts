@@ -15,6 +15,7 @@ export type MyEventsTab = 'attending' | 'organizing' | 'saved';
 
 export interface AttendingEvent {
   id: string;
+  slug?: string | null;
   title: string;
   date: string;
   location: string;
@@ -122,6 +123,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
       if (response.success && response.data) {
         setAttendingEvents(response.data.events.map(event => ({
           id: event.id,
+          slug: event.slug ?? null,
           title: event.title,
           date: event.date,
           location: event.location,

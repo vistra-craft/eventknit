@@ -20,6 +20,7 @@ import { EventPreviewModal } from "../../../components/EventPreviewModal";
 
 interface RecalledEvent {
   id: string;
+  slug?: string | null;
   title: string;
   organizer: string;
   date: string;
@@ -80,6 +81,7 @@ const RecalledEventsPage = () => {
         if (cancelledResponse.success || pendingResponse.success) {
           const recalledEvents = allRecalledEvents.map(event => ({
             id: event.id,
+            slug: event.slug ?? null,
             title: event.title,
             organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
@@ -326,7 +328,7 @@ const RecalledEventsPage = () => {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link to={`/event/${event.id}`} target="_blank" rel="noopener noreferrer">
+                        <Link to={`/event/${event.slug ?? event.id}`} target="_blank" rel="noopener noreferrer">
                           <Eye className="h-4 w-4 mr-2" />
                           View Public Page
                         </Link>
@@ -361,7 +363,7 @@ const RecalledEventsPage = () => {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={async () => {
                         try {
-                          await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                          await navigator.clipboard.writeText(`${window.location.origin}/event/${event.slug ?? event.id}`);
                           toast({ title: "Copied", description: "Event link copied to clipboard" });
                         } catch (error) {
                           showErrorToast(toast, error, "Copy failed", "Failed to copy link");
@@ -371,7 +373,7 @@ const RecalledEventsPage = () => {
                         Copy Event Link
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={async () => {
-                        const shared = await shareEvent(event.title, event.id);
+                        const shared = await shareEvent(event.title, event.slug ?? event.id);
                         if (shared) {
                           toast({ title: "Shared", description: "Event shared successfully" });
                         } else {

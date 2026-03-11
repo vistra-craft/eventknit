@@ -70,7 +70,7 @@ const EventPreviewPage = () => {
         </div>
         {eventId && (
           <Button variant="default" asChild>
-            <Link to={`/event/${eventId}`} target="_blank" rel="noopener noreferrer">
+            <Link to={`/event/${event?.slug ?? eventId}`} target="_blank" rel="noopener noreferrer">
               <Eye className="h-4 w-4 mr-2" />
               View Public Page
             </Link>

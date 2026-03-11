@@ -227,6 +227,7 @@ const UpcomingEventsPage = () => {
               const daysUntil = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
               return {
                 id: event.id,
+                slug: event.slug ?? null,
                 title: event.title,
                 organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
                 date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
@@ -557,7 +558,7 @@ const UpcomingEventsPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.slug ?? event.id}`);
                             toast({
                               title: "Copied",
                               description: "Event link copied to clipboard",
@@ -570,7 +571,7 @@ const UpcomingEventsPage = () => {
                           Copy Event Link
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={async () => {
-                          const shared = await shareEvent(event.title, event.id);
+                          const shared = await shareEvent(event.title, event.slug ?? event.id);
                           if (shared) {
                             toast({
                               title: "Shared",
