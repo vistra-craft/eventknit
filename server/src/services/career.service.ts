@@ -41,7 +41,6 @@ class CareerService {
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
         status: 'PENDING',
-        emailSentAt: null,
       },
     });
 
