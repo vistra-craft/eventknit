@@ -386,14 +386,15 @@ export class EventService {
       }) as Prisma.InputJsonValue;
     }
 
-    // Generate a stable ID upfront so we can derive the slug from it
+    // Generate a stable ID and unique slug upfront
     const newEventId = crypto.randomUUID();
+    const slug = await EventService.generateSlug(data.title);
 
     // Create event
     const event = await prisma.event.create({
       data: {
         id: newEventId,
-        slug: EventService.generateSlug(data.title, newEventId),
+        slug,
         title: data.title.trim(),
         description: data.description.trim(),
         organizerDescription: data.organizerDescription?.trim(),
@@ -4371,7 +4372,7 @@ export class EventService {
    * Appends the first 8 chars of the event ID to guarantee uniqueness.
    * e.g. "Mini Mornings at Unseen – March 3" + id → "mini-mornings-at-unseen-march-3-bc8cbfd6"
    */
-  static generateSlug(title: string, id: string): string {
+  static async generateSlug(title: string, excludeId?: string): Promise<string> {
     const base = title
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, '') // remove special chars (keep letters, digits, spaces, hyphens)
@@ -4379,7 +4380,24 @@ export class EventService {
       .replace(/\s+/g, '-')         // spaces → hyphens
       .replace(/-+/g, '-')          // collapse multiple hyphens
       .replace(/^-|-$/g, '');       // trim leading/trailing hyphens
-    return `${base}-${id.slice(0, 8)}`;
+
+    // Find a unique slug — append -2, -3, etc. only if there's a conflict
+    let slug = base;
+    let counter = 1;
+    while (true) {
+      const existing = await prisma.event.findFirst({
+        where: {
+          slug,
+          ...(excludeId ? { id: { not: excludeId } } : {}),
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!existing) break;
+      counter++;
+      slug = `${base}-${counter}`;
+    }
+    return slug;
   }
 
   /**
