@@ -180,7 +180,11 @@ Each event page displays full details including title, description, date/time, v
 2. **Apply promo code** (optional) — Enter a discount code manually or have one auto-applied from a URL.
 3. **Fill registration form** — Name, email, phone, and any custom fields the organizer has configured. Logged-in users have forms pre-filled from their profile.
 4. **Complete payment** — Select from available payment methods (card, bank transfer, USSD, mobile money, Apple Pay, Google Pay, or installment plan). Free events skip this step.
-5. **Receive confirmation** — Confirmation email with ticket PDF, QR code, and calendar invite. Ticket appears in the dashboard and digital wallet.
+5. **Receive confirmation** — Two emails are sent:
+   - **Email 1 (immediate):** Booking confirmation sent instantly after payment. Confirms the order, sets expectation that the ticket is on its way.
+   - **Email 2 (ticket delivery):** Sent within seconds once the ticket PDF and QR code are generated in the background. Contains the PDF attachment, QR code, and calendar invite.
+
+   The ticket also appears in the attendee dashboard immediately after registration.
 
 Guest registration is supported — attendees can register without creating an account, using only their email for ticket delivery.
 
@@ -609,12 +613,21 @@ Organizers can issue complimentary tickets directly:
 
 ### Ticket Delivery
 
+EventKnit uses a **two-email model** to separate instant confirmation from ticket generation, ensuring fast UX even at high registration volumes.
+
+| Email | Timing | Contents |
+|-------|--------|----------|
+| **Email 1 — Booking Confirmed** | Instant (within seconds of payment) | Order summary, event details, account setup link (for guests), "your ticket is being prepared" message |
+| **Email 2 — Your Ticket** | Seconds later, after background processing | PDF ticket, QR code, calendar invite (.ics), online event link if applicable |
+
+This pattern is used by Ticketmaster, Eventbrite, and AXS. It means registration always completes quickly — ticket PDF generation is handled asynchronously in the background, never blocking the checkout flow.
+
 Every ticket includes:
 
 - **QR Code** — Unique, digitally signed code for scanning at entry
 - **Backup Code** — Alphanumeric fallback for manual check-in
 - **PDF** — Downloadable ticket with event details and QR code
-- **Email** — Confirmation email with PDF attachment and calendar invite
+- **Email** — Two-stage delivery (confirmation + ticket)
 - **Digital Wallet** — Add to Apple Wallet or Google Pay
 
 ### Ticket Transfers
@@ -1048,9 +1061,9 @@ Features include scheduled posting, content calendar, and engagement tracking.
 ### Notification Types
 
 **Transactional (Automatic):**
-- Registration confirmation
+- Registration confirmation (Email 1 — instant booking acknowledgement)
+- Ticket delivery with PDF and QR code (Email 2 — sent after async background generation)
 - Payment receipt
-- Ticket delivery (PDF and QR code)
 - Refund confirmation
 - Transfer notifications
 - Event reminders (configurable timing)
@@ -1611,6 +1624,9 @@ The platform supports the following event categories:
 | **Complementary Ticket** | A free ticket issued directly by the organizer to a specific person |
 | **Ticket Transfer** | Moving a ticket from one person to another |
 | **Ticket Resale** | An attendee listing their ticket for sale to another user on the platform marketplace |
+| **Async Queue** | A background job queue that processes tasks (PDF generation, email delivery) separately from the main checkout flow, allowing instant responses to users while heavy work runs in the background |
+| **Dead Letter Queue (DLQ)** | A holding area for jobs that have failed all retry attempts. EventKnit logs a critical alert for every DLQ event so the ops team can investigate and manually re-trigger ticket delivery if needed |
+| **Two-Email Model** | EventKnit's registration email strategy: Email 1 confirms the booking instantly; Email 2 delivers the ticket PDF and QR code after async background generation |
 | **Event Collection** | A curated, shareable list of events created by a user |
 | **Subscription Plan** | A paid tier that unlocks premium features for organizers |
 | **Webhook** | An automated notification sent to an external system when a platform event occurs |

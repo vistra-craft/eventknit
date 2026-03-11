@@ -63,6 +63,9 @@ import extendedProfileRoutes from './routes/extended-profile.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
+import { authenticate, authorize } from './middleware/auth.middleware.js';
+import { UserRole } from '@prisma/client';
+import { serverAdapter as queueServerAdapter } from './services/queue-monitor.js';
 
 const app = express();
 
@@ -113,7 +116,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        'connect-src': ["'self'", 'http:', 'https:', 'ws:', 'wss:'],
+        'connect-src': ['\'self\'', 'http:', 'https:', 'ws:', 'wss:'],
       },
     },
   }),
@@ -244,6 +247,9 @@ app.use('/api/v1/cart', cartRoutes); // Cart reservation system
 app.use('/api/v1/configuration', configurationRoutes); // System configuration (mailTrap, maintenance mode)
 app.use('/api/v1/profile', extendedProfileRoutes); // Extended profile (organizer profile, staff profile)
 app.use('/api/v1/uploads', uploadRoutes); // Generic image upload (Cloudinary)
+
+// Queue monitoring dashboard — superadmin only
+app.use('/admin/queues', authenticate, authorize(UserRole.SUPERADMIN), queueServerAdapter.getRouter());
 
 // Error handler middleware (must be last)
 app.use(errorHandler);

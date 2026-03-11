@@ -23,6 +23,7 @@ interface TicketEmailData {
       totalPrice: number;
     }>;
     accountInvitationToken?: string | null;
+    pdfUrl?: string | null; // Pre-generated Cloudinary URL — skips PDF regeneration if provided
     event: {
       id: string;
       title: string;
@@ -219,6 +220,174 @@ export class TicketService {
     ].join('\r\n');
 
     return icsContent;
+  }
+
+  /**
+   * Send Email 1: Immediate registration confirmation (no QR/PDF).
+   * Fast — confirms the booking instantly and sets expectation that the ticket is on its way.
+   */
+  static async sendRegistrationConfirmationEmail(data: {
+    registrationId: string;
+    eventTitle: string;
+    eventStartDate: Date;
+    eventStartTime?: string | null;
+    eventLocation: string;
+    eventVenue?: string | null;
+    eventImage?: string | null;
+    attendeeEmail: string;
+    attendeeFirstName: string;
+    attendeeLastName?: string | null;
+    ticketType?: string | null;
+    quantity: number;
+    accountInvitationToken?: string | null;
+  }): Promise<void> {
+    const {
+      registrationId,
+      eventTitle,
+      eventStartDate,
+      eventStartTime,
+      eventLocation,
+      eventVenue,
+      eventImage,
+      attendeeEmail,
+      attendeeFirstName,
+      attendeeLastName,
+      ticketType,
+      quantity,
+      accountInvitationToken,
+    } = data;
+
+    const dateStr = new Date(eventStartDate).toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    });
+    const dateTime = eventStartTime ? `${dateStr} at ${eventStartTime}` : dateStr;
+    const venue = eventVenue ? `${eventVenue}, ${eventLocation}` : eventLocation;
+    const attendeeName = `${attendeeFirstName}${attendeeLastName ? ` ${attendeeLastName}` : ''}`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Registration Confirmed - ${eventTitle}</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
+          <tr>
+            <td align="center" style="padding: 40px 20px;">
+              <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+
+                <!-- Header -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">🎉 You're registered!</h1>
+                    <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">EventKnit</p>
+                  </td>
+                </tr>
+
+                <!-- Confirmation Banner -->
+                <tr>
+                  <td style="padding: 25px 30px; background-color: #f0f9ff; border-bottom: 1px solid #e0e7ff; text-align: center;">
+                    <p style="margin: 0 0 6px 0; color: #1e40af; font-size: 16px; font-weight: 600;">✅ Registration confirmed, ${attendeeFirstName}!</p>
+                    <p style="margin: 0; color: #3b82f6; font-size: 14px;">Your ticket with QR code is being prepared and will arrive in a separate email shortly.</p>
+                  </td>
+                </tr>
+
+                ${eventImage ? `
+                <tr>
+                  <td style="padding: 0;">
+                    <img src="${eventImage}" alt="${eventTitle}" style="width: 100%; height: 180px; object-fit: cover; display: block;">
+                  </td>
+                </tr>
+                ` : ''}
+
+                <!-- Event Details -->
+                <tr>
+                  <td style="padding: 30px;">
+                    <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 22px; font-weight: 700;">${eventTitle}</h2>
+                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px;">
+                      <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-size: 14px; width: 120px;">📅 Date</td>
+                          <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${dateTime}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-size: 14px;">📍 Location</td>
+                          <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${venue}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-size: 14px;">👤 Attendee</td>
+                          <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${attendeeName}</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 8px 0; color: #666; font-size: 14px;">🎫 Ticket</td>
+                          <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${ticketType || 'General Admission'} × ${quantity}</td>
+                        </tr>
+                      </table>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- What Happens Next -->
+                <tr>
+                  <td style="padding: 0 30px 30px 30px;">
+                    <div style="background-color: #fefce8; border-radius: 8px; padding: 20px; border: 1px solid #fde68a;">
+                      <h3 style="margin: 0 0 12px 0; color: #92400e; font-size: 16px; font-weight: 700;">📬 What happens next?</h3>
+                      <p style="margin: 0 0 8px 0; color: #78350f; font-size: 14px;">1. Your ticket with QR code will arrive in a <strong>second email</strong> within a few minutes.</p>
+                      <p style="margin: 0 0 8px 0; color: #78350f; font-size: 14px;">2. Save the QR code or backup code — you'll need it at the entrance.</p>
+                      <p style="margin: 0; color: #78350f; font-size: 14px;">3. You can also view your ticket anytime at:</p>
+                      <div style="margin-top: 12px; text-align: center;">
+                        <a href="${config.frontend.url}/user/tickets/${registrationId}" style="display: inline-block; background-color: #667eea; color: #ffffff; text-decoration: none; padding: 10px 22px; border-radius: 6px; font-weight: 600; font-size: 14px;">View My Ticket</a>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                ${accountInvitationToken ? `
+                <!-- Account Setup -->
+                <tr>
+                  <td style="padding: 0 30px 30px 30px;">
+                    <div style="background-color: #fff7ed; border-radius: 12px; padding: 25px; border: 1px solid #ffedd5; text-align: center;">
+                      <h3 style="margin: 0 0 10px 0; color: #9a3412; font-size: 18px; font-weight: 700;">Complete Your Account Setup</h3>
+                      <p style="margin: 0 0 20px 0; color: #c2410c; font-size: 14px; line-height: 1.5;">
+                        Set up your password to manage your tickets, view event history, and register for future events with one click.
+                      </p>
+                      <a href="${config.frontend.url}/auth/create-account?token=${accountInvitationToken}" style="display: inline-block; background-color: #ea580c; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 15px;">
+                        Set Up Password
+                      </a>
+                      <p style="margin: 15px 0 0 0; color: #9a3412; font-size: 12px; font-style: italic;">This link is valid for 7 days.</p>
+                    </div>
+                  </td>
+                </tr>
+                ` : ''}
+
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #e9ecef;">
+                    <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;">
+                      Need help? <a href="mailto:support@eventknit.com" style="color: #667eea; text-decoration: none;">support@eventknit.com</a>
+                    </p>
+                    <p style="margin: 0; color: #999; font-size: 12px;">© ${new Date().getFullYear()} EventKnit. All rights reserved.</p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await emailService.sendEmail({
+      to: attendeeEmail,
+      subject: `Registration Confirmed: ${eventTitle} - EventKnit`,
+      html,
+      isCritical: true,
+    });
+
+    logger.info(`Registration confirmation email sent to ${attendeeEmail} for event ${eventTitle}`);
   }
 
   /**
@@ -567,9 +736,12 @@ export class TicketService {
         },
       ];
 
-      // Try to generate PDF ticket (always attempt, fallback to HTML if puppeteer unavailable)
+      // Attach PDF ticket: use pre-generated Cloudinary URL if available (avoids double generation),
+      // otherwise generate on-the-fly with fallback to HTML if Puppeteer is unavailable.
       try {
-        const pdfBuffer = await this.generateTicketPDF(registration.id);
+        const pdfBuffer = registration.pdfUrl
+          ? await fetch(registration.pdfUrl).then(r => r.arrayBuffer()).then(ab => Buffer.from(ab))
+          : await this.generateTicketPDF(registration.id);
         // Check if it's PDF (Buffer with PDF header) or HTML (fallback)
         const isHTMLFallback = pdfBuffer.toString('utf-8').trim().startsWith('<!-- FALLBACK_HTML -->');
         const isPDF = !isHTMLFallback && pdfBuffer.length > 4 && pdfBuffer[0] === 0x25 && pdfBuffer[1] === 0x50 && pdfBuffer[2] === 0x44 && pdfBuffer[3] === 0x46; // %PDF

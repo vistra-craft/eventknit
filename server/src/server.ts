@@ -8,6 +8,7 @@ import { createServer } from 'http';
 import { websocketService } from './services/websocket.service.js';
 import { mobilePushService } from './services/mobile-push.service.js';
 import { TicketSecurityService } from './services/ticket-security.service.js';
+import { TicketPdfQueueService } from './services/ticket-pdf-queue.service.js';
 
 const PORT = config.port;
 const HOST = config.host;
@@ -46,6 +47,14 @@ const startServer = async () => {
       logger.error('Failed to initialize scheduled jobs:', error);
     }
 
+    // Initialize ticket PDF queue (BullMQ + Redis worker for async ticket delivery)
+    try {
+      await TicketPdfQueueService.initialize();
+    } catch (error) {
+      logger.error('Failed to initialize ticket PDF queue:', error);
+      // Non-fatal: falls back to synchronous PDF generation
+    }
+
     // Initialize mobile push notification service
     try {
       mobilePushService.initialize();
@@ -78,6 +87,7 @@ const startServer = async () => {
     const gracefulShutdown = async (signal: string) => {
       logger.info(`${signal} received, shutting down...`);
       stopJobs();
+      await TicketPdfQueueService.shutdown();
       await new Promise<void>((resolve) => httpServer.close(() => resolve()));
       await disconnectDB();
       logger.info('Shutdown complete');

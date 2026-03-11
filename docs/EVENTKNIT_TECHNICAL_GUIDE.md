@@ -1413,6 +1413,67 @@ const emailWorker = new Worker('email', async (job) => {
 | KYC document processing | On demand | Process uploaded KYC documents | 2x |
 | Webhook retry | On demand | Retry failed outbound webhooks | 5x exponential |
 
+### Ticket PDF Queue (Async Ticket Delivery)
+
+EventKnit uses a dedicated **async queue with BullMQ + Redis** for ticket PDF generation and delivery. This decouples the heavy PDF/email work from the checkout critical path, meaning a spike of 10,000 simultaneous registrations won't crash the server — they all get instant Email 1, then the queue processes tickets at a controlled rate (5 concurrent workers).
+
+#### Architecture
+
+```
+Registration checkout
+       │
+       ├── Instant: Email 1 (booking confirmation) ─── sent synchronously in < 1s
+       │
+       └── Queue: TicketPdfQueueService.addJob()
+                       │
+                  BullMQ (Redis-backed)
+                       │
+              Worker (5 concurrent)
+                       │
+              ┌────────┴───────────┐
+              │                    │
+        PDF generated         Uploaded to
+        (Puppeteer)           Cloudinary
+                                   │
+                             Email 2 sent
+                         (PDF attachment + QR code)
+```
+
+#### Key Properties
+
+| Property | Value |
+|----------|-------|
+| Queue backend | Redis (BullMQ) |
+| Workers | 5 concurrent |
+| Retry strategy | Exponential backoff — 3 attempts, 2 s initial delay (doubles each retry) |
+| Job persistence | Jobs survive server restarts (stored in Redis) |
+| Graceful shutdown | Queue drains before process exits. Tickets in-flight won't be lost. |
+| Idempotency | `ticketEmailSentAt` guard — re-processing a job never sends duplicate emails |
+| Monitoring | Bull Board dashboard at `/admin/queues` (superadmin only) |
+
+#### Dead Letter Queue (DLQ) Alerting
+
+When a job exhausts all retries, the worker emits a structured critical log entry tagged `[DLQ]`:
+
+```json
+{
+  "level": "error",
+  "message": "[DLQ] PDF job permanently failed after all retries",
+  "jobId": "pdf-reg-abc123-1741000000",
+  "registrationId": "abc123",
+  "attendeeEmail": "user@example.com",
+  "attemptsMade": 3,
+  "maxAttempts": 3,
+  "error": "connect ECONNREFUSED"
+}
+```
+
+This alert is the signal for the ops team to investigate (e.g. SMTP outage, Redis issue) and manually trigger re-delivery via the `/admin/queues` dashboard or the `retryFailed()` API method.
+
+#### Bull Board Dashboard
+
+Queue health is visible at `/admin/queues` — shows waiting, active, completed, and failed job counts in real-time. Access is restricted to SUPERADMIN role via JWT authentication.
+
 ### Error Isolation
 
 Each job processes independently within try/catch. One failure doesn't block the queue. Failed jobs are logged with full context and retried according to backoff configuration.
@@ -1873,8 +1934,25 @@ organizerAmount = grossAmount − feeAmount
 
 ### Post-Payment Email (Two-Email Model)
 
-**Email 1 (Immediate):** Payment confirmation with "Your ticket is being prepared"
-**Email 2 (After generation):** QR code (300×300px, error correction M), backup code, ICS calendar invite, Google/Outlook links
+EventKnit separates booking confirmation from ticket delivery using an async queue with BullMQ + Redis. This is the same model used by Ticketmaster, Eventbrite, and AXS.
+
+**Email 1 — Booking Confirmed (immediate, < 1 s)**
+- Sent synchronously inside the registration handler before returning the HTTP response
+- Contains: event summary, attendee name, order details, account setup link (for guests)
+- Subject: `Registration Confirmed: {Event Title} - EventKnit`
+- Never blocked by PDF generation
+
+**Email 2 — Your Ticket (async, usually < 10 s)**
+- Triggered by `TicketPdfQueueService.addJob()` immediately after Email 1
+- Background worker generates ticket PDF (Puppeteer → Cloudinary upload), then sends email
+- Contains: PDF attachment, QR code (300×300 px, error correction M), backup code, ICS calendar invite, Google/Outlook calendar links
+- Subject: `Your Ticket for {Event Title} - EventKnit`
+- Retry with exponential backoff — 3 attempts, backoff on failure
+- Idempotency: guarded by `ticketEmailSentAt` — re-processing a BullMQ job never sends a duplicate email
+- Fails gracefully: queue not available → falls back to synchronous PDF generation
+
+**Why not one email?**
+Waiting for PDF generation before sending any email increases p99 latency by seconds, worsens failure rates, and blocks the server during high-traffic bursts. Splitting the flow returns instant trust to the user while heavy work continues in the background.
 
 ### Ticket Transfer & Resale
 
@@ -3236,7 +3314,14 @@ server {
 | **Idempotency** | Guarantee that repeated operations produce the same result (critical for payments) |
 | **HMAC** | Hash-based Message Authentication Code — used for webhook signature verification |
 | **Ed25519** | Elliptic curve cryptographic algorithm used for offline-verifiable ticket signing |
-| **BullMQ** | Redis-backed job queue for background processing |
+| **BullMQ** | Redis-backed job queue for background processing. EventKnit uses BullMQ for async ticket PDF generation and email delivery |
+| **Async Queue** | Background task pipeline that decouples heavy work (PDF generation, email delivery) from the checkout critical path. A spike of 10,000 simultaneous registrations won't crash the server — they all get instant Email 1, then the queue processes tickets at a controlled rate (5 concurrent workers) |
+| **Dead Letter Queue (DLQ)** | Virtual destination for jobs that have exhausted all retry attempts. EventKnit logs a structured `[DLQ]` critical alert so ops can investigate and re-trigger delivery via the Bull Board dashboard or `retryFailed()` |
+| **Exponential Backoff** | Retry delay strategy where each attempt waits longer than the last (2 s → 4 s → 8 s). Prevents hammering a temporarily-down SMTP server or Redis instance |
+| **Graceful Shutdown** | Ordered server stop: queue worker drains in-flight jobs before the process exits. Tickets being generated at the moment of a deploy are not lost |
+| **Two-Email Model** | Registration email strategy: Email 1 confirms the booking instantly (< 1 s); Email 2 delivers the ticket PDF and QR code seconds later after async background generation |
+| **Idempotency Key** | A unique identifier that prevents duplicate side effects. EventKnit uses `ticketEmailSentAt` as an idempotency guard — retrying a failed BullMQ job never sends a duplicate ticket email |
+| **Bull Board** | Web dashboard for BullMQ queues. Mounted at `/admin/queues` (SUPERADMIN only). Shows waiting, active, completed, and failed job counts in real time |
 | **Prisma** | Type-safe ORM that generates TypeScript types from the database schema |
 | **Socket.IO** | WebSocket library with fallback transports, room-based broadcasting |
 | **Grace Period** | 5 business days after event end before automatic organizer payout |

@@ -10,6 +10,8 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { PDFService } from './pdf.service.js';
 import { CloudinaryService } from './cloudinary.service.js';
+import { TicketService } from './ticket.service.js';
+import { registerQueueForMonitoring } from './queue-monitor.js';
 
 // Redis configuration for BullMQ
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6380';
@@ -91,8 +93,27 @@ export class TicketPdfQueueService {
       });
 
       worker.on('failed', (job, error) => {
-        logger.error(`PDF job ${job?.id} failed:`, error);
+        const maxAttempts = job?.opts?.attempts ?? 3;
+        const attemptsMade = job?.attemptsMade ?? 0;
+
+        if (attemptsMade >= maxAttempts) {
+          // All retries exhausted — alert ops (dead letter queue event)
+          logger.error('[DLQ] PDF job permanently failed after all retries', {
+            jobId: job?.id,
+            registrationId: job?.data?.registrationId,
+            eventId: job?.data?.eventId,
+            attendeeEmail: job?.data?.attendeeEmail,
+            attemptsMade,
+            maxAttempts,
+            error: error.message,
+          });
+        } else {
+          logger.warn(`PDF job ${job?.id} failed (attempt ${attemptsMade}/${maxAttempts}):`, error.message);
+        }
       });
+
+      // Register with Bull Board dashboard
+      registerQueueForMonitoring(queue);
 
       logger.info('Ticket PDF queue service initialized');
     } catch (error) {
@@ -265,48 +286,103 @@ export class TicketPdfQueueService {
   }
 
   /**
-   * Queue ticket email (separate from confirmation)
+   * Send Email 2: Ticket delivery email (called after PDF is ready).
+   * Fetches full registration data from DB and delegates to TicketService.
    */
   private static async queueTicketEmail(
     registrationId: string,
     _pdfUrl: string,
   ): Promise<void> {
     try {
-      // Get registration details
+      // Fetch full registration data needed by sendTicketEmail
       const registration = await prisma.eventRegistration.findUnique({
         where: { id: registrationId },
         include: {
-          attendee: {
-            select: {
-              email: true,
-              firstName: true,
-            },
-          },
+          ticketLineItems: true,
           event: {
             select: {
+              id: true,
               title: true,
+              description: true,
+              startDate: true,
+              endDate: true,
+              startTime: true,
+              endTime: true,
+              venue: true,
+              location: true,
+              address: true,
+              isOnline: true,
+              onlineLink: true,
+              image: true,
+              currency: true,
+              organizer: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  organizationName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          attendee: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              companyAffiliation: true,
             },
           },
         },
       });
 
       if (!registration) {
+        logger.warn(`[queueTicketEmail] Registration ${registrationId} not found`);
         return;
       }
 
-      // Update email tracking
-      await prisma.eventRegistration.update({
-        where: { id: registrationId },
-        data: {
-          ticketEmailStatus: 'PENDING',
+      // Idempotency guard — skip if ticket email was already sent (prevents duplicate delivery on job retry)
+      if (registration.ticketEmailSentAt) {
+        logger.info(`[queueTicketEmail] Ticket email already sent at ${registration.ticketEmailSentAt.toISOString()} for registration ${registrationId} — skipping`);
+        return;
+      }
+
+      // Retrieve account invitation token if still valid (user hasn't set up account yet)
+      const emailVerification = await prisma.emailVerification.findFirst({
+        where: {
+          userId: registration.attendeeId,
+          type: 'ACCOUNT_INVITATION',
+          expiresAt: { gt: new Date() },
+          usedAt: null,
         },
+        select: { token: true },
       });
 
-      // Note: Actual email sending would be done here or via another queue
-      // For now, we just mark it as ready to send
-      logger.info(`Ticket email queued for ${registration.attendee.email}`);
+      await TicketService.sendTicketEmail({
+        id: registration.id,
+        ticketType: registration.ticketType,
+        quantity: registration.quantity,
+        totalAmount: registration.totalAmount,
+        createdAt: registration.createdAt,
+        backupCode: registration.backupCode,
+        registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+        ticketLineItems: registration.ticketLineItems.map(item => ({
+          ticketType: item.ticketType,
+          quantity: item.quantity,
+          unitPrice: Number(item.unitPrice),
+          totalPrice: Number(item.totalPrice),
+        })),
+        accountInvitationToken: emailVerification?.token ?? null,
+        pdfUrl: registration.ticketPdfUrl, // Pass pre-generated URL to skip double PDF generation
+        event: registration.event,
+        attendee: registration.attendee,
+      });
+
+      logger.info(`[queueTicketEmail] Ticket email sent to ${registration.attendee.email} for registration ${registrationId}`);
     } catch (error) {
-      logger.error('Error queueing ticket email:', error);
+      logger.error('[queueTicketEmail] Error sending ticket email:', error);
     }
   }
 

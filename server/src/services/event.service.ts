@@ -13,6 +13,7 @@ import { hashPassword } from '../utils/password.js';
 import crypto from 'crypto';
 import { emailService } from './email.service.js';
 import { TicketService } from './ticket.service.js';
+import { TicketPdfQueueService } from './ticket-pdf-queue.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
 import { EventCollaborationService } from './event-collaboration.service.js';
@@ -2156,32 +2157,41 @@ export class EventService {
           ticketLineItems = undefined;
         }
 
-        logger.debug(`[registerForEvent] Authenticated user - calling TicketService.sendTicketEmail for registration ${registration.id}`);
-        // Send email asynchronously (non-blocking) - user gets immediate response
-        TicketService.sendTicketEmail({
-          id: registration.id,
+        // Email 1: Immediate confirmation — fast, no QR/PDF, sent fire-and-forget
+        TicketService.sendRegistrationConfirmationEmail({
+          registrationId: registration.id,
+          eventTitle: registration.event.title,
+          eventStartDate: registration.event.startDate,
+          eventStartTime: registration.event.startTime,
+          eventLocation: registration.event.location,
+          eventVenue: registration.event.venue,
+          eventImage: registration.event.image,
+          attendeeEmail: registration.attendee.email,
+          attendeeFirstName: registration.attendee.firstName || '',
+          attendeeLastName: registration.attendee.lastName,
           ticketType: registration.ticketType,
           quantity: registration.quantity,
-          totalAmount: registration.totalAmount,
-          createdAt: registration.createdAt,
-          backupCode: registration.backupCode,
-          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-          ticketLineItems,
-          event: registration.event,
-          attendee: registration.attendee,
-        }).catch((error) => {
-          // Log email error but don't fail registration - email can be resent later
-          logger.error('[registerForEvent] Authenticated user - failed to send ticket email (async):', {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-            registrationId: registration.id,
-            eventId,
-            attendeeEmail: registration.attendee.email,
-          });
-          // Don't fail registration if email fails - status already tracked in database
+          accountInvitationToken: null, // Authenticated users already have accounts
+        }).catch((err) => {
+          logger.error(`[registerForEvent] Confirmation email failed for registration ${registration.id}:`, err);
         });
-        // Email status will be updated in database by sendTicketEmail
-        logger.debug(`[registerForEvent] Authenticated user - ticket email sending started (async) for registration ${registration.id}`);
+
+        // Email 2: Queue ticket delivery (QR + PDF) in background
+        TicketPdfQueueService.addJob({
+          registrationId: registration.id,
+          eventId: registration.event.id,
+          ticketNumber: registration.backupCode || registration.id,
+          attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim(),
+          attendeeEmail: registration.attendee.email,
+          eventTitle: registration.event.title,
+          eventDate: new Date(registration.event.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+          eventLocation: registration.event.venue ? `${registration.event.venue}, ${registration.event.location}` : registration.event.location,
+          qrCodeDataUrl: undefined,
+          priority: 2,
+        }).catch((err) => {
+          logger.error(`[registerForEvent] Failed to queue ticket PDF job for registration ${registration.id}:`, err);
+        });
+        logger.debug(`[registerForEvent] Authenticated user - confirmation email sent, ticket delivery queued for registration ${registration.id}`);
 
         // Send in-app notification (separate try-catch to ensure it's sent even if email fails)
         try {
@@ -4217,33 +4227,41 @@ export class EventService {
           ticketLineItems = undefined;
         }
 
-        // Send email asynchronously (non-blocking) - user gets immediate response
-        logger.debug(`[registerForEvent] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
-        TicketService.sendTicketEmail({
-          id: registration.id,
+        // Email 1: Immediate confirmation — fast, no QR/PDF, sent fire-and-forget
+        TicketService.sendRegistrationConfirmationEmail({
+          registrationId: registration.id,
+          eventTitle: registration.event.title,
+          eventStartDate: registration.event.startDate,
+          eventStartTime: registration.event.startTime,
+          eventLocation: registration.event.location,
+          eventVenue: registration.event.venue,
+          eventImage: registration.event.image,
+          attendeeEmail: registration.attendee.email,
+          attendeeFirstName: registration.attendee.firstName || '',
+          attendeeLastName: registration.attendee.lastName,
           ticketType: registration.ticketType,
           quantity: registration.quantity,
-          totalAmount: registration.totalAmount,
-          createdAt: registration.createdAt,
-          backupCode: registration.backupCode,
-          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-          ticketLineItems,
-          accountInvitationToken, // Consolidated: Send setup link in ticket email
-          event: registration.event,
-          attendee: registration.attendee,
-        }).catch((emailError) => {
-          // Log email error but don't fail registration - email can be resent later
-          logger.error(`[registerForEvent] Failed to send ticket email (async) to ${user.email} for event ${eventId}:`, {
-            error: emailError instanceof Error ? emailError.message : String(emailError),
-            stack: emailError instanceof Error ? emailError.stack : undefined,
-            registrationId: registration.id,
-            eventId,
-            userEmail: user.email,
-          });
-          // Registration still succeeds even if email fails - status already tracked in database
+          accountInvitationToken,
+        }).catch((err) => {
+          logger.error(`[registerAsGuest] Confirmation email failed for registration ${registration.id}:`, err);
         });
-        // Email status will be updated in database by sendTicketEmail
-        logger.debug(`[registerForEvent] Ticket email sending started (async) for registration ${registration.id}`);
+
+        // Email 2: Queue ticket delivery (QR + PDF) in background
+        TicketPdfQueueService.addJob({
+          registrationId: registration.id,
+          eventId: registration.event.id,
+          ticketNumber: registration.backupCode || registration.id,
+          attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim(),
+          attendeeEmail: registration.attendee.email,
+          eventTitle: registration.event.title,
+          eventDate: new Date(registration.event.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+          eventLocation: registration.event.venue ? `${registration.event.venue}, ${registration.event.location}` : registration.event.location,
+          qrCodeDataUrl: undefined, // Worker will fetch stored QR from DB
+          priority: 2,
+        }).catch((err) => {
+          logger.error(`[registerAsGuest] Failed to queue ticket PDF job for registration ${registration.id}:`, err);
+        });
+        logger.debug(`[registerAsGuest] Confirmation email sent, ticket delivery queued for registration ${registration.id}`);
 
         // Send registration confirmed notification for free events
         try {
