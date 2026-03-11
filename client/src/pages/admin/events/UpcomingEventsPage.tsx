@@ -25,6 +25,7 @@ import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/e
 
 interface Event {
   id: string;
+  slug?: string | null;
   title: string;
   organizer: string;
   date: string;
@@ -138,6 +139,7 @@ const UpcomingEventsPage = () => {
 
               return {
                 id: event.id,
+                slug: event.slug || null,
                 title: event.title,
                 organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
                 date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
@@ -189,6 +191,12 @@ const UpcomingEventsPage = () => {
         setSelectedEventId(null);
         setRecallAction('PENDING');
         setRecallReason("");
+        toast({
+          title: recallAction === 'PENDING' ? "Event recalled to pending" : "Event recalled and cancelled",
+          description: recallAction === 'PENDING'
+            ? "The event has been pulled down and is awaiting re-approval. You can find it in Recalled Events."
+            : "The event has been cancelled and attendees will be refunded. You can find it in Recalled Events.",
+        });
         // Refresh events
         const filters: Record<string, unknown> = {
           status: EventStatus.APPROVED,
@@ -511,7 +519,7 @@ const UpcomingEventsPage = () => {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link to={`/event/${event.id}`} target="_blank" rel="noopener noreferrer">
+                          <Link to={`/event/${event.slug ?? event.id}`} target="_blank" rel="noopener noreferrer">
                             <Eye className="h-4 w-4 mr-2" />
                             View Public Page
                           </Link>

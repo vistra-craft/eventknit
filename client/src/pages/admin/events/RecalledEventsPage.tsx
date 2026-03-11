@@ -54,18 +54,31 @@ const RecalledEventsPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const filters: Parameters<typeof getEvents>[0] = {
+        // Fetch both recalled to PENDING and recalled to CANCELLED
+        const cancelledResponse = await getEvents({
           recalledCancelled: true,
-        };
+          ...(categoryFilter !== "all" && { category: categoryFilter }),
+          ...(typeFilter !== "all" && { type: (typeFilter === "public" ? "PUBLIC" : "PRIVATE") as EventType }),
+          ...(priceFilter !== "all" && { isFree: priceFilter === "free" }),
+          ...(searchTerm && { search: searchTerm }),
+        });
 
-        if (categoryFilter !== "all") filters.category = categoryFilter;
-        if (typeFilter !== "all") filters.type = (typeFilter === "public" ? "PUBLIC" : "PRIVATE") as EventType;
-        if (priceFilter !== "all") filters.isFree = priceFilter === "free";
-        if (searchTerm) filters.search = searchTerm;
+        const pendingResponse = await getEvents({
+          recalledPending: true,
+          ...(categoryFilter !== "all" && { category: categoryFilter }),
+          ...(typeFilter !== "all" && { type: (typeFilter === "public" ? "PUBLIC" : "PRIVATE") as EventType }),
+          ...(priceFilter !== "all" && { isFree: priceFilter === "free" }),
+          ...(searchTerm && { search: searchTerm }),
+        });
 
-        const response = await getEvents(filters);
-        if (response.success && response.data?.events) {
-          const recalledEvents = response.data.events.map(event => ({
+        // Combine both responses
+        const allRecalledEvents = [
+          ...(cancelledResponse.success ? cancelledResponse.data?.events || [] : []),
+          ...(pendingResponse.success ? pendingResponse.data?.events || [] : []),
+        ];
+
+        if (cancelledResponse.success || pendingResponse.success) {
+          const recalledEvents = allRecalledEvents.map(event => ({
             id: event.id,
             title: event.title,
             organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',

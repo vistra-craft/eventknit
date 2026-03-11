@@ -16,6 +16,7 @@ import { showErrorToast } from "../../../lib/utils/error";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { EventPreviewModal } from "../../../components/EventPreviewModal";
 
 interface Event {
@@ -29,6 +30,7 @@ interface Event {
   category: string;
   type: "public" | "private";
   isFree: boolean;
+  image?: string;
   declinedDate: string;
   reason: string;
   declinedBy: string;
@@ -78,6 +80,7 @@ const DeclinedEventsPage = () => {
             category: event.category || 'Uncategorized',
             type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
             isFree: event.isFree || false,
+            image: event.image || undefined,
             declinedDate: event.rejectedAt || event.updatedAt || event.createdAt || new Date().toISOString(),
             reason: event.rejectionReason || 'No reason provided',
             declinedBy: event.rejectedBy ? 'Admin' : 'System',
@@ -272,7 +275,13 @@ const DeclinedEventsPage = () => {
           {filteredEvents.map((event) => (
             <Card key={event.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <EventThumbnail
+                    src={event.image}
+                    alt={event.title}
+                    category={event.category}
+                    size="md"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-base font-semibold text-foreground truncate">{event.title}</h3>
