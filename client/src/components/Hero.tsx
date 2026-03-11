@@ -5,12 +5,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getActiveFeaturedEvents, type ActiveFeaturedEvent } from "@/lib/featured-event-api";
 import { getFocalPointStyle } from "@/lib/image-utils";
+import { HeroSkeleton } from "./HeroSkeleton";
 
 export const Hero = () => {
   const navigate = useNavigate();
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [featuredEvents, setFeaturedEvents] = useState<ActiveFeaturedEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch featured events on mount
   useEffect(() => {
@@ -24,6 +26,8 @@ export const Hero = () => {
       } catch (error) {
         console.error("Failed to fetch featured events:", error);
         setFeaturedEvents([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -43,27 +47,9 @@ export const Hero = () => {
     return () => clearInterval(interval);
   }, [isAutoPlaying, featuredEvents.length]);
 
-  // Placeholder hero when no featured events
-  if (featuredEvents.length === 0) {
-    return (
-      <div className="container mx-auto px-6 py-6">
-        <div className="relative rounded-2xl overflow-hidden h-[400px] lg:h-[450px] bg-gradient-to-br from-primary/20 via-primary/10 to-background">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center space-y-4 max-w-2xl px-6">
-              <Badge className="bg-primary text-white">
-                Discover Amazing Events
-              </Badge>
-              <h1 className="text-3xl lg:text-4xl font-bold text-foreground">
-                Find Your Next Unforgettable Experience
-              </h1>
-              <p className="text-muted-foreground">
-                Explore concerts, conferences, workshops, and more.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // Show loading skeleton or placeholder while loading
+  if (isLoading || featuredEvents.length === 0) {
+    return <HeroSkeleton />;
   }
 
   const currentEvent = featuredEvents[currentEventIndex];

@@ -7,6 +7,7 @@ import { EventImage } from "./EventImage";
 
 interface EventCardProps {
   id: string;
+  slug?: string | null;
   title: string;
   image: string;
   imageFocalX?: number | null;
@@ -25,6 +26,7 @@ interface EventCardProps {
 
 export const EventCard: React.FC<EventCardProps> = ({
   id,
+  slug,
   title,
   image,
   imageFocalX,
@@ -41,7 +43,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   const navigate = useNavigate();
   const venueType = getVenueType({ isOnline, venue, onlineLink });
   const handleCardClick = () => {
-    navigate(`/event/${id}`);
+    navigate(`/event/${slug ?? id}`);
   };
 
   // Format Date: Sat, Oct 04 - Sun, Aug 01

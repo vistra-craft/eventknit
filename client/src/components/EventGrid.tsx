@@ -13,7 +13,7 @@ interface EventGridProps {
 export const EventGrid = ({ filters = {} }: EventGridProps) => {
   // Get events - we fetch all approved events and filter client-side for advanced filters
   // that the backend doesn't support yet
-  const { events: fetchedEvents, error, fetchEvents } = useEvents();
+  const { events: fetchedEvents, error, fetchEvents, isLoading } = useEvents();
 
   // Fetch events on mount and when basic filters change
   useEffect(() => {
@@ -167,7 +167,15 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
     <section className="pt-4 pb-16 bg-background" data-section="events">
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {error ? (
+          {isLoading ? (
+            // Show skeleton loaders while loading
+            Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg overflow-hidden bg-muted animate-pulse h-80"
+              />
+            ))
+          ) : error ? (
             <div className="col-span-full text-center py-12">
               <p className="text-destructive mb-2">{error}</p>
               <Button
@@ -198,9 +206,10 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
                 : event.currency || '$';
 
               return (
-                <EventCard 
-                  key={event.id} 
+                <EventCard
+                  key={event.id}
                   id={event.id}
+                  slug={event.slug}
                   title={event.title}
                   image={event.image || ''}
                   startDate={event.startDate}
