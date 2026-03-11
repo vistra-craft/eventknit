@@ -69,6 +69,47 @@ const TermsOfService = () => {
     {
       title: "Changes",
       content: "We may update these terms and will notify you of significant changes. Continued use means you accept the updates."
+    },
+    {
+      id: "intellectual-property",
+      title: "Intellectual Property Rights",
+      content: "EventKnit owns all platform content, design, and functionality. Users retain ownership of their event content. By uploading content, you grant us a license to display and distribute it on the platform."
+    },
+    {
+      title: "User-Generated Content",
+      items: [
+        "You're responsible for content you upload",
+        "You grant us the right to use your event information for platform operation",
+        "We may remove content that violates these terms",
+        "Photos and reviews may be displayed publicly"
+      ]
+    },
+    {
+      title: "Disclaimer of Warranties",
+      content: "EventKnit is provided 'as is' without warranties. We don't guarantee uninterrupted service, accurate information from organizers, or that events will proceed as planned. Use at your own risk."
+    },
+    {
+      title: "Force Majeure",
+      content: "EventKnit is not liable for failures due to events beyond our control (natural disasters, war, pandemics, infrastructure failures)."
+    },
+    {
+      id: "dispute-resolution",
+      title: "Dispute Resolution",
+      items: [
+        "First, try to resolve disputes by contacting us at support@eventknit.com",
+        "If unresolved after 30 days, disputes are resolved through binding arbitration",
+        "Both parties waive the right to jury trial or class action lawsuits",
+        "Arbitration occurs in accordance with applicable laws"
+      ]
+    },
+    {
+      id: "governing-law",
+      title: "Governing Law",
+      content: "These terms are governed by the laws of Nigeria, without regard to conflict of law principles. Any disputes shall be resolved under Nigerian law."
+    },
+    {
+      title: "Severability",
+      content: "If any provision of these terms is found invalid or unenforceable, that provision shall be removed, and the remaining terms shall continue in full effect."
     }
   ];
 
