@@ -246,7 +246,8 @@ export const apiRequest = async <T>(
       if (endpoint.includes('/auth/login') ||
         endpoint.includes('/auth/register') ||
         endpoint.includes('/auth/refresh') ||
-        endpoint.includes('/register-guest')) {
+        endpoint.includes('/register-guest') ||
+        endpoint.includes('/careers')) {
         throw error;
       }
 

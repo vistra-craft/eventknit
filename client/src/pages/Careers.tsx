@@ -44,7 +44,10 @@ const Careers = () => {
       await apiPost("/careers", { email });
       setIsSubmitted(true);
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : 
+        (err && typeof err === 'object' && 'message' in err) ? (err as any).message :
+        "Something went wrong. Please try again.";
+      setError(errorMessage || "Something went wrong. Please try again.");
       console.error("Career inquiry error:", err);
     } finally {
       setIsSubmitting(false);

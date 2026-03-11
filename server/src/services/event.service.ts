@@ -1420,10 +1420,13 @@ export class EventService {
     ipAddress?: string,
     userAgent?: string,
   ) {
+    // Resolve slug or UUID to actual event
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
+
     // Get event
     const event = await prisma.event.findFirst({
       where: {
-        id: eventId,
+        ...(isUuid ? { id: eventId } : { slug: eventId }),
         deletedAt: null,
       },
       select: {
@@ -3589,10 +3592,13 @@ export class EventService {
       throw new ValidationError('Email, first name, and last name are required');
     }
 
+    // Resolve slug or UUID to actual event
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
+
     // Get event
     const event = await prisma.event.findFirst({
       where: {
-        id: eventId,
+        ...(isUuid ? { id: eventId } : { slug: eventId }),
         deletedAt: null,
       },
       select: {
