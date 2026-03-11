@@ -26,6 +26,7 @@ type AttendingFilter = "all" | "upcoming" | "past";
 
 interface AttendingEvent {
   id: string;
+  slug?: string | null;
   title: string;
   date: string;
   location: string;
@@ -60,6 +61,7 @@ export function AttendingEventsView() {
           setEvents(
             response.data.events.map((e) => ({
               id: e.id,
+              slug: e.slug ?? null,
               title: e.title,
               date: e.date || "",
               location: e.location || "",
@@ -148,7 +150,7 @@ export function AttendingEventsView() {
   };
 
   const handleShare = async (event: AttendingEvent) => {
-    const shared = await shareEvent(event.title, event.id);
+    const shared = await shareEvent(event.title, event.slug ?? event.id);
     toast({
       title: shared ? "Shared" : "Link Copied",
       description: shared ? "Event shared successfully" : "Event link copied to clipboard",
@@ -231,7 +233,7 @@ export function AttendingEventsView() {
               key={event.id}
               variant="interactive"
               className="group"
-              onClick={() => navigate(`/event/${event.id}`)}
+              onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
             >
               <div className="flex gap-4 p-4">
                 <EventImage

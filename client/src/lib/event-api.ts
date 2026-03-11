@@ -632,6 +632,7 @@ export interface UserRegisteredEventsResponse {
   data: {
     events: Array<{
       id: string;
+      slug?: string | null;
       title: string;
       date: string;
       location: string;

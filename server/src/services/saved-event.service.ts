@@ -30,6 +30,7 @@ export interface SavedEventWithDetails {
   notes: string | null;
   event: {
     id: string;
+    slug: string | null;
     title: string;
     startDate: Date;
     endDate: Date | null;
@@ -106,6 +107,7 @@ export class SavedEventService {
           event: {
             select: {
               id: true,
+              slug: true,
               title: true,
               startDate: true,
               endDate: true,

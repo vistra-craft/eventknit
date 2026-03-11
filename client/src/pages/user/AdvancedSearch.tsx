@@ -388,7 +388,7 @@ const AdvancedSearch: React.FC = () => {
                   <Card
                     key={event.id}
                     className="hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => navigate(`/event/${event.id}`)}
+                    onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
                   >
                     <div className="relative">
                       <EventThumbnail

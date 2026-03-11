@@ -94,6 +94,7 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
           >
             <EventCard
               id={event.id}
+              slug={event.slug}
               title={event.title}
               image={event.image || ""}
               startDate={event.startDate}

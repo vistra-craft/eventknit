@@ -3139,7 +3139,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 </DropdownMenuItem>
                 {eventData?.status?.toUpperCase() === 'APPROVED' && (
                   <DropdownMenuItem asChild>
-                    <Link to={`/event/${eventId}`} target="_blank" rel="noopener noreferrer">
+                    <Link to={`/event/${eventData?.slug ?? eventId}`} target="_blank" rel="noopener noreferrer">
                       <Eye className="h-4 w-4 mr-2" />
                       View Public Page
                     </Link>
@@ -3157,7 +3157,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(`${window.location.origin}/event/${eventId}`);
+                    await navigator.clipboard.writeText(`${window.location.origin}/event/${eventData?.slug ?? eventId}`);
                     toast({
                       title: "Copied",
                       description: "Event link copied to clipboard",
@@ -3244,7 +3244,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
               size="sm"
               onClick={async () => {
                 try {
-                  await navigator.clipboard.writeText(`${window.location.origin}/event/${eventId}`);
+                  await navigator.clipboard.writeText(`${window.location.origin}/event/${eventData?.slug ?? eventId}`);
                   toast({
                     title: "Copied",
                     description: "Event link copied to clipboard",
@@ -3285,7 +3285,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
             </Button>
             {eventData?.status?.toUpperCase() === 'APPROVED' && (
               <Button variant="outline" size="sm" asChild>
-                <Link to={`/event/${eventId}`} target="_blank" rel="noopener noreferrer">
+                <Link to={`/event/${eventData?.slug ?? eventId}`} target="_blank" rel="noopener noreferrer">
                   <Eye className="w-3.5 h-3.5 mr-1.5" />
                   View Public
                 </Link>
@@ -3665,7 +3665,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 </Button>
                 {eventData?.status?.toUpperCase() === 'APPROVED' && (
                   <Button asChild onClick={() => setShowPreviewModal(false)}>
-                    <Link to={`/event/${eventId}`} target="_blank" rel="noopener noreferrer">
+                    <Link to={`/event/${eventData?.slug ?? eventId}`} target="_blank" rel="noopener noreferrer">
                       <Eye className="h-4 w-4 mr-2" />
                       View Public Page
                     </Link>

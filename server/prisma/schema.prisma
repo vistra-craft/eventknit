@@ -675,6 +675,7 @@ model AuditLog {
 
 model Event {
   id              String   @id @default(uuid())
+  slug            String?  @unique // Human-readable URL slug (e.g. "my-event-title")
   title           String
   description     String   @db.Text
   fullDescription String?  @db.Text

@@ -619,7 +619,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete, context = 'at
           {!previewLoading && !previewError && (
             <div className="flex justify-end pt-2 border-t border-border">
               <Button variant="outline" size="sm" asChild className="gap-1.5">
-                <Link to={`/event/${event.id}`} target="_blank" rel="noopener noreferrer">
+                <Link to={`/event/${event.slug ?? event.id}`} target="_blank" rel="noopener noreferrer">
                   View public page
                   <ExternalLink className="h-3.5 w-3.5" />
                 </Link>

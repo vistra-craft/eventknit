@@ -26,6 +26,7 @@ export interface RegistrationData {
  */
 export interface EventData {
   id: string;
+  slug?: string | null; // Human-readable URL slug (e.g. "my-event-title-bc8cbfd6")
   title: string;
   description: string;
   fullDescription?: string | null;

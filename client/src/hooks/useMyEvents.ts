@@ -46,6 +46,7 @@ export interface OrganizingEvent {
 
 export interface SavedEvent {
   id: string;
+  slug?: string | null;
   title: string;
   date: string;
   location: string;
@@ -193,6 +194,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
             const event = savedEvent.event;
             return {
               id: event.id,
+              slug: event.slug ?? null,
               title: event.title,
               date: event.startDate,
               location: event.location || '',

@@ -76,7 +76,7 @@ const PersonalizedRecommendations: React.FC = () => {
             <Card
               key={event.id}
               className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-              onClick={() => navigate(`/event/${event.id}`)}
+              onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
             >
               <div className="relative overflow-hidden">
                 <EventThumbnail
@@ -127,7 +127,7 @@ const PersonalizedRecommendations: React.FC = () => {
                   variant="outline"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/event/${event.id}`);
+                    navigate(`/event/${event.slug ?? event.id}`);
                   }}
                 >
                   View Event

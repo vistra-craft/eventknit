@@ -69,7 +69,7 @@ const SavedEvents: React.FC = () => {
           {events.map((saved) => (
             <div
               key={saved.id}
-              onClick={() => navigate(`/event/${saved.eventId}`)}
+              onClick={() => navigate(`/event/${saved.event.slug ?? saved.eventId}`)}
               className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
             >
               <img
@@ -101,7 +101,7 @@ const SavedEvents: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     className="h-7 px-2 text-xs"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/event/${saved.eventId}`); }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/event/${saved.event.slug ?? saved.eventId}`); }}
                   >
                     View Event
                   </Button>

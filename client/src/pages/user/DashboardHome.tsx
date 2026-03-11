@@ -383,7 +383,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 {savedEvents.map((event, index) => (
                   <div
                     key={event.id}
-                    onClick={() => navigate(`/event/${event.id}`)}
+                    onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
                     className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
                     style={{ animationDelay: `${index * 50}ms` }}
                     role="article"

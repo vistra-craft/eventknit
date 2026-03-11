@@ -34,8 +34,20 @@ export async function shareContent(data: ShareData): Promise<boolean> {
 
   // Fallback: Copy to clipboard
   try {
-    await navigator.clipboard.writeText(shareData.url);
-    return true;
+    // Check if clipboard API is available
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(shareData.url);
+      return true;
+    } else {
+      // Fallback for non-secure contexts or older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = shareData.url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return true;
+    }
   } catch (error) {
     console.error('Error copying to clipboard:', error);
     return false;

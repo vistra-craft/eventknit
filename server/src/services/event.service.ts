@@ -386,9 +386,14 @@ export class EventService {
       }) as Prisma.InputJsonValue;
     }
 
+    // Generate a stable ID upfront so we can derive the slug from it
+    const newEventId = crypto.randomUUID();
+
     // Create event
     const event = await prisma.event.create({
       data: {
+        id: newEventId,
+        slug: EventService.generateSlug(data.title, newEventId),
         title: data.title.trim(),
         description: data.description.trim(),
         organizerDescription: data.organizerDescription?.trim(),
@@ -644,12 +649,13 @@ export class EventService {
   }
 
   /**
-   * Get event by ID
+   * Get event by ID or slug. UUID format is matched by ID; anything else is treated as a slug.
    */
   static async getEventById(eventId: string, requestingUserId?: string, isAdmin = false) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
     const event = await prisma.event.findFirst({
       where: {
-        id: eventId,
+        ...(isUuid ? { id: eventId } : { slug: eventId }),
         deletedAt: null,
       },
       include: {
@@ -3280,6 +3286,7 @@ export class EventService {
 
       return {
         id: event.id,
+        slug: event.slug || null,
         title: event.title,
         date: dateString,
         location: event.location,
@@ -4351,6 +4358,22 @@ export class EventService {
       refreshToken,
       expiresIn,
     };
+  }
+
+  /**
+   * Generate a URL-friendly slug from an event title.
+   * Appends the first 8 chars of the event ID to guarantee uniqueness.
+   * e.g. "Mini Mornings at Unseen – March 3" + id → "mini-mornings-at-unseen-march-3-bc8cbfd6"
+   */
+  static generateSlug(title: string, id: string): string {
+    const base = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // remove special chars (keep letters, digits, spaces, hyphens)
+      .trim()
+      .replace(/\s+/g, '-')         // spaces → hyphens
+      .replace(/-+/g, '-')          // collapse multiple hyphens
+      .replace(/^-|-$/g, '');       // trim leading/trailing hyphens
+    return `${base}-${id.slice(0, 8)}`;
   }
 
   /**

@@ -366,7 +366,7 @@ const EventCollections: React.FC = () => {
                         <Card
                           key={item.id}
                           className="hover:shadow-md transition-shadow cursor-pointer"
-                          onClick={() => navigate(`/event/${item.event.id}`)}
+                          onClick={() => navigate(`/event/${item.event.slug ?? item.event.id}`)}
                         >
                           <div className="relative">
                             <EventThumbnail

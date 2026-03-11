@@ -67,10 +67,12 @@ const EventDetails = () => {
   const [isSaved, setIsSaved] = useState(false);
   const { toast } = useToast();
 
+  // Use event.id (real UUID) for API calls — id from URL may be a slug
+  const eventUuid = event?.id;
   useEffect(() => {
-    if (!user || !id) return;
+    if (!user || !eventUuid) return;
 
-    getRegistrationStatus(id).then((response) => {
+    getRegistrationStatus(eventUuid).then((response) => {
       if (response?.data?.isRegistered) {
         setUserAlreadyRegistered(true);
         setExistingRegistrationId(response.data.registrationId);
@@ -79,12 +81,12 @@ const EventDetails = () => {
       // Silently fail — non-critical check
     });
 
-    checkIfSaved(id).then((response) => {
+    checkIfSaved(eventUuid).then((response) => {
       setIsSaved(response.data.isSaved);
     }).catch(() => {
       // Silently fail — non-critical check
     });
-  }, [user, id]);
+  }, [user, eventUuid]);
 
   const isRegistrationClosed = (() => {
     if (!event) return false;
@@ -137,7 +139,10 @@ const EventDetails = () => {
   };
 
   const frontendUrl = getFrontendUrl();
-  const eventUrl = id ? `${frontendUrl}/event/${id}` : undefined;
+  // Prefer slug in the canonical URL so shared links are human-readable
+  const eventUrl = event?.slug
+    ? `${frontendUrl}/event/${event.slug}`
+    : id ? `${frontendUrl}/event/${id}` : undefined;
   const eventImage = event?.image
     ? (event.image.startsWith('http') ? event.image : `${frontendUrl}${event.image}`)
     : undefined;
@@ -169,7 +174,7 @@ const EventDetails = () => {
 
   const handleShare = useCallback(async () => {
     if (!event || !id) return;
-    const shared = await shareEvent(event.title, id);
+    const shared = await shareEvent(event.title, event.slug ?? id);
     if (shared) {
       toast({ title: "Shared", description: "Event link copied to clipboard" });
     }
@@ -182,7 +187,7 @@ const EventDetails = () => {
       return;
     }
     try {
-      const nowSaved = await toggleSaveEvent(id, isSaved);
+      const nowSaved = await toggleSaveEvent(eventUuid ?? id!, isSaved);
       setIsSaved(nowSaved);
       toast({
         title: nowSaved ? "Event saved" : "Event removed",
