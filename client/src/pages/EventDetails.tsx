@@ -198,7 +198,7 @@ const EventDetails = () => {
     } catch (error) {
       showErrorToast(toast, error, "Save failed", "Could not update saved status. Please try again.");
     }
-  }, [id, user, isSaved, navigate, toast]);
+  }, [id, user, isSaved, navigate, toast, eventUuid]);
 
   // Derived display values
   const displayDate = event?.date || (event?.startDate ? new Date(event.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : '');

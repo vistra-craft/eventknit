@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="32" fill="#00a651"/>
+  <text x="50%" y="38%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-weight="800" font-size="48" fill="#ffffff">M-PESA</text>
+  <text x="50%" y="68%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-weight="600" font-size="32" fill="#ffffff">Safaricom</text>
+</svg>

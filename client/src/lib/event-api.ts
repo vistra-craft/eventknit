@@ -554,11 +554,9 @@ export interface RegisterAsGuestResponse {
       firstName: string;
       lastName: string;
       isNewUser: boolean;
-      requiresPasswordSetup: boolean;
+      requiresPasswordSetup?: boolean;
     };
     accessToken?: string;
-    refreshToken?: string;
-    expiresIn?: number;
   };
 }
 

@@ -151,7 +151,7 @@ interface EventManagementProps {
 const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const backPath = isAdminMode ? `/admin/service-point/event/${eventId}` : '/organizer/dashboard';
+  const backPath = isAdminMode ? `/admin/event-day/event/${eventId}` : '/organizer/dashboard';
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState("overview");
   const [eventData, setEventData] = useState<EventData | null>(null);
@@ -645,7 +645,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error || 'Event not found'}</AlertDescription>
           </Alert>
-          <Button onClick={() => navigate(isAdminMode ? '/admin/service-point' : '/organizer/events')} className="mt-4">
+          <Button onClick={() => navigate(isAdminMode ? '/admin/event-day' : '/organizer/events')} className="mt-4">
             Back to Events
           </Button>
         </div>

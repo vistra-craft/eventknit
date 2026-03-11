@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus, CheckCircle, Clock } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus, CheckCircle, Clock, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -30,6 +30,9 @@ interface Event {
   slug?: string | null;
   title: string;
   organizer: string;
+  organizerId?: string;
+  organizerAvatar?: string | null;
+  organizerVerified?: boolean;
   date: string;
   startDate?: string;
   startTime?: string;
@@ -193,6 +196,9 @@ const AllEventsPage = () => {
               slug: event.slug ?? null,
               title: event.title,
               organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+              organizerId: event.organizer?.id,
+              organizerAvatar: event.organizer?.avatar ?? null,
+              organizerVerified: event.organizer?.isIdentityVerified ?? false,
               date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
               startDate: event.startDate,
               startTime: event.startTime || '',
@@ -657,7 +663,31 @@ const AllEventsPage = () => {
                           <Users className="h-4 w-4" />
                           <span>{event.attendees} attendees</span>
                         </div>
-                        <span className="text-muted-foreground">by {event.organizer}</span>
+                        {/* Organizer attribution */}
+                        <Link
+                          to={event.organizerId ? `/admin/users/organizers?id=${event.organizerId}` : "#"}
+                          onClick={e => e.stopPropagation()}
+                          className="flex items-center gap-1.5 group/org hover:text-foreground transition-colors"
+                        >
+                          {/* Avatar */}
+                          {event.organizerAvatar ? (
+                            <img
+                              src={event.organizerAvatar}
+                              alt={event.organizer}
+                              className="h-5 w-5 rounded-full object-cover ring-1 ring-border"
+                            />
+                          ) : (
+                            <span className="h-5 w-5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold flex items-center justify-center ring-1 ring-border">
+                              {event.organizer.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          <span className="text-muted-foreground group-hover/org:text-foreground transition-colors">
+                            {event.organizer}
+                          </span>
+                          {event.organizerVerified && (
+                            <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" aria-label="KYC Verified" />
+                          )}
+                        </Link>
                       </div>
                     </div>
                   <div className="flex items-center gap-2 ml-4 flex-shrink-0">

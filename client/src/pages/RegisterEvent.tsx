@@ -19,7 +19,6 @@ import CheckoutHeader from "@/components/CheckoutHeader";
 import { useEvent } from "@/hooks/useEvent";
 import { useAuth } from "@/hooks/useAuth";
 import { registerForEvent, registerAsGuest } from "@/lib/event-api";
-import { setAccessToken } from "@/lib/api";
 import { validatePromoCode } from "@/lib/promo-code-api";
 import type { RegistrationField } from "@/types/event";
 import { Badge } from "@/components/ui/badge";
@@ -378,11 +377,6 @@ const EventRegistration = () => {
           const registration = response.data.registration;
           setIsGuestRegistration(response.data.user.isNewUser || true);
 
-          // Store access token if provided (for guest users)
-          if (response.data.accessToken) {
-            setAccessToken(response.data.accessToken);
-          }
-
           // Check if event is free
           const isFree = event.isFree || event.price === 0;
 
@@ -411,7 +405,6 @@ const EventRegistration = () => {
                 userEmail: email || authUser?.email,
                 isFreeEvent: true,
                 date: new Date().toISOString(),
-                accessToken: response.data.accessToken, // Pass token to confirmation page
               },
               replace: true,
             });

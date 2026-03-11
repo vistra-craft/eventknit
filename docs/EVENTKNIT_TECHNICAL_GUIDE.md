@@ -41,7 +41,8 @@ A comprehensive engineering guide to the EventKnit platform — architecture, de
 29. [Case Study: High-Concurrency Ticketing](#29-case-study-high-concurrency-ticketing)
 30. [v2.0 Architecture Roadmap](#30-v20-architecture-roadmap)
 31. [Offline Sync & Mobile Scanning](#31-offline-sync--mobile-scanning)
-32. [Service Point & MICE Operations](#32-service-point--mice-operations)
+32. [Event Day Hub & MICE Operations](#32-event-day-hub--mice-operations)
+   - 32.1 Managed Events System
 33. [USSD & SMS Channel](#33-ussd--sms-channel)
 34. [Unified Messaging & Communication](#34-unified-messaging--communication)
 35. [Ticket Transfer & Resale Marketplace](#35-ticket-transfer--resale-marketplace)
@@ -905,6 +906,16 @@ model Event {
   allowReEntry    Boolean       @default(false)
   requireCheckOut Boolean       @default(false)
   maxReEntries    Int?
+
+  // Managed Event fields (isManaged: true = platform-operated on behalf of a client)
+  isManaged          Boolean            @default(false)
+  clientName         String?
+  clientType         ManagedClientType?
+  clientContactEmail String?
+  clientContactPhone String?
+  clientContractRef  String?
+  managedByAdminId   String?
+  managedByAdmin     User?              @relation("AdminManagedEvents", fields: [managedByAdminId], references: [id], onDelete: SetNull)
 }
 
 model EventRegistration {
@@ -942,6 +953,14 @@ enum UserRole {
 enum EventStatus { PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED }
 enum TicketStatus { ACTIVE, DEACTIVATED, EXPIRED, CANCELLED }
 enum ScanType { CHECK_IN, CHECK_OUT, MANUAL_CHECK_IN, MANUAL_CHECK_OUT }
+
+enum ManagedClientType {
+  CORPORATE    // Private companies and businesses
+  NGO          // Non-governmental / non-profit organizations
+  GOVERNMENT   // Government bodies and agencies
+  PLATFORM     // EventKnit's own events
+  OTHER        // Any other client type
+}
 ```
 
 ### Index Strategy
@@ -1913,11 +1932,15 @@ organizerAmount = grossAmount − feeAmount
 1. `POST /api/v1/events/:id/register` → Creates registration with QR
 2. Free → confirmation page; Paid → payment page
 
-**Path B: Guest Checkout (Auto-Account Creation)**
+**Path B: Guest Checkout (Invitation-Based Account Creation)**
 1. `POST /api/v1/events/:id/register-guest`
-2. Backend **automatically creates a user account** for the email
-3. Response includes `accessToken` — guest is auto-logged-in
-4. `user.isNewUser: true`, `user.requiresPasswordSetup: true`
+2. Backend creates a **passwordless user record** for the email — no session is issued
+3. An `accountInvitationToken` (32-byte hex, hashed in DB, 7-day expiry) is generated and embedded in Email 1
+4. Response returns only `{ registration, user }` — no `accessToken` or `refreshToken`
+5. Attendee lands on the confirmation page as a guest (unauthenticated)
+6. To activate their account, attendee clicks the link in their email → `GET /auth/create-account?token=...`
+7. `POST /api/v1/auth/create-account` verifies token, sets password, activates account, and issues a session
+8. Account creation is entirely optional — the registration and ticket are valid regardless
 
 ### Cart & Inventory Locking
 
@@ -2161,6 +2184,50 @@ registrationId|eventId|email|timestamp|HMAC-SHA256-signature
 
 10-character alphanumeric code generated with `crypto.randomBytes`. Unique index in database. Displayed monospaced on ticket with "Use if QR code doesn't work".
 
+### Ed25519 Key Configuration
+
+The Ed25519 keypair is configured via environment variables. The private key signs tickets at purchase time; the public key verifies them at scan time (and is served at `GET /api/v1/auth/public-key` for the mobile scanner app to cache).
+
+**Development (auto-generated):**
+
+When `NODE_ENV !== 'production'` and no keys are set in env, the server auto-generates a keypair at startup and logs a warning. Tickets issued during development are only verifiable in that process's lifetime.
+
+**Production (required):**
+
+Generate a raw 32-byte Ed25519 keypair and set in `.env`:
+
+```bash
+# Generate production keypair (Node.js):
+node -e "
+  const { generateKeyPairSync } = require('crypto');
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519', {
+    privateKeyEncoding: { type: 'pkcs8', format: 'der' },
+    publicKeyEncoding: { type: 'spki', format: 'der' }
+  });
+  // Use the raw 32-byte seed for private key, raw 32-byte for public key
+  console.log('Check crypto docs for raw Ed25519 hex extraction');
+"
+
+# Or using OpenSSL:
+openssl genpkey -algorithm ed25519 -out private.pem
+openssl pkey -in private.pem -pubout -out public.pem
+```
+
+```bash
+# .env.development / .env (set explicitly in production)
+TICKET_PRIVATE_KEY=<64-char hex string — raw 32-byte private seed>
+TICKET_PUBLIC_KEY=<64-char hex string — raw 32-byte public key>
+```
+
+**Why Ed25519 over HMAC?**
+
+| | HMAC | Ed25519 |
+|--|------|---------|
+| Verification requires | Secret key on verifier | Public key only |
+| Offline scanning | ❌ Cannot verify without server | ✅ Full offline verification |
+| Key exposure risk | Both sign + verify use same secret | Private key never leaves server |
+| Algorithm | HMAC-SHA256 | Elliptic curve (compact, fast) |
+
 ### Offline Verification
 
 Ed25519 mode enables **offline ticket scanning** — the scanner app downloads the public key once, then verifies ticket signatures locally without network access. Critical for venues with poor connectivity.
@@ -2376,11 +2443,39 @@ The web client (`client/src/lib/offline-sync.ts`) also supports offline scanning
 
 ---
 
-## 32. Service Point & MICE Operations
+## 32. Event Day Hub & MICE Operations
 
 ### Overview
 
-The Service Point system handles on-site event operations — badge printing, walk-in registration, facility tracking, and emergency reporting. Implemented across `workstation.service.ts` (1,429 lines) and the `ServicePoint*` frontend components.
+The Event Day Hub (formerly "Service Point") handles on-site event operations — badge printing, walk-in registration, facility tracking, and emergency reporting. Implemented across `workstation.service.ts` (1,429 lines) and the `ServicePoint*` frontend components.
+
+**Naming note:** The system is called "Event Day Hub" in the UI. The route prefix (`/event-day/*`) and sidebar label reflect this. Backend API routes remain under `/api/v1/workstation/*` and service-point paths for backward compatibility.
+
+### Role-Aware Event Filtering (ServicePointEvents.tsx)
+
+Tellers only see events they are assigned to — not all platform events. The event list page uses role-aware fetching:
+
+```typescript
+// ServicePointEvents.tsx
+const isTeller = user?.role === UserRole.ORGANIZER_TELLER || user?.role === UserRole.TELLER;
+
+useEffect(() => {
+  if (isTeller && user?.id) {
+    if (user.role === UserRole.ORGANIZER_TELLER) {
+      // Fetches organizer staff assignments → extracts assignment.event
+      getOrganizerStaffEvents(user.id, { status: 'APPROVED' });
+    } else {
+      // Fetches admin staff assignments → extracts assignment.event
+      getAdminStaffEvents(user.id, { status: 'APPROVED' });
+    }
+  } else {
+    // Admin staff and higher see all approved events
+    getEvents({ status: EventStatus.APPROVED, limit: 100 });
+  }
+}, [user?.id, isTeller]);
+```
+
+This ensures a teller assigned to 3 events only sees those 3 — not the full platform catalog.
 
 ### Badge Print Tracking
 
@@ -2479,6 +2574,110 @@ Real-time occupancy report for emergency scenarios:
 // Real-time occupancy tracking with threshold alerts via WebSocket
 // Access restriction rules per zone (VIP, backstage, press, etc.)
 ```
+
+---
+
+## 32.1 Managed Events System
+
+### Architecture Overview
+
+Managed Events are platform-operated events created by admins on behalf of external clients. The `isManaged` flag on the `Event` model determines creation path and edit rules at runtime. There is no separate model — managed events are regular `Event` records with extra metadata.
+
+**Key invariants:**
+- `isManaged: true` → created as `APPROVED` (skips pending queue)
+- `isManaged: true` → `organizerId` set to the creating admin's user ID
+- `isManaged: true` → `managedByAdminId` records the admin for accountability
+- `isManaged: false` → standard organizer event lifecycle
+
+### Backend
+
+**Files:**
+- `server/src/controllers/managed-event.controller.ts` — HTTP handlers
+- `server/src/services/managed-event.service.ts` — business logic
+- Routes mounted in `server/src/routes/admin.routes.ts`
+
+**API Endpoints (all under `/api/v1/admin`):**
+
+```typescript
+GET    /managed-events/stats       → { total, active, upcoming, byClientType }
+GET    /managed-events             → paginated list (filters: status, clientType, search)
+GET    /managed-events/:eventId    → single event with details
+POST   /managed-events             → create (auto-APPROVED, isManaged: true)
+PUT    /managed-events/:eventId    → update any field
+POST   /managed-events/:eventId/cancel  → cancel with reason
+```
+
+**Minimum role:** `ADMIN_STAFF` (via `requireMinRole(UserRole.ADMIN_STAFF)`)
+
+**Create payload:**
+```typescript
+interface CreateManagedEventPayload {
+  // Client metadata
+  clientName: string;
+  clientType: 'CORPORATE' | 'NGO' | 'GOVERNMENT' | 'PLATFORM' | 'OTHER';
+  clientContactEmail?: string;
+  clientContactPhone?: string;
+  clientContractRef?: string;
+
+  // Event details
+  title: string;
+  description: string;
+  category: string;
+  location: string;
+  venue?: string;
+  startDate: string;       // ISO datetime
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
+  isFree?: boolean;
+  price?: number;
+  capacity?: number;
+  isOnline?: boolean;
+  onlineLink?: string;
+}
+```
+
+**Slug generation:** `${slugify(title)}-${Date.now()}` — ensures uniqueness for same-title events.
+
+### Frontend
+
+**Files:**
+- `client/src/lib/managed-events-api.ts` — typed API client
+- `client/src/pages/admin/AdminManagedEventsPage.tsx` — list + stats page
+- `client/src/pages/admin/AdminManagedEventCreatePage.tsx` — two-step creation wizard
+- Route: `admin/managed-events` and `admin/managed-events/create` (ADMIN_STAFF_ROLES)
+
+**Two-step creation wizard:**
+
+```
+Step 1 (Client Details):
+  - Client Name, Client Type (select), Contact Email, Contact Phone, Contract Reference
+
+Step 2 (Event Details):
+  - Title, Description, Category, Location, Venue, Start/End Date+Time, Timezone
+  - isFree toggle, Price, Capacity, isOnline toggle, Online Link
+```
+
+### Support Mode (Admin Edits on Organizer Events)
+
+Admins viewing organizer-owned events cannot edit directly. The `EventDetailsPage` enforces this:
+
+```typescript
+const handleEdit = () => {
+  if (!eventData.isManaged && !supportModeActive) {
+    setSupportModeTriggeredByEdit(true);  // flag: dialog opened from Edit button
+    setSupportModeDialogOpen(true);
+    return;  // block navigation until audit session is active
+  }
+  navigate(`/organizer/events/create?edit=${eventData.id}`);
+};
+```
+
+- **Managed events** (`isManaged: true`): bypass the gate — navigate directly to edit
+- **Organizer events** (`isManaged: false`): require Support Mode activation before editing
+- The dialog shows "Activate & Edit Event" (navigates after activation) vs. "Activate Support Mode" (activation only)
+- `supportModeTriggeredByEdit` flag distinguishes the two dialog entry points
 
 ---
 
@@ -2898,7 +3097,7 @@ enum DataAccessLevel {
 
 ```typescript
 // social-media/ directory — pluggable platform architecture
-// Supported platforms: Twitter/X, Facebook, Instagram, LinkedIn
+// Supported platforms: Twitter/X, Instagram, LinkedIn
 
 // Platform Manager (singleton):
 // - Registers platform implementations
@@ -2909,12 +3108,12 @@ enum DataAccessLevel {
 ### OAuth per Platform
 
 ```typescript
-// Each platform has dedicated OAuth service:
+// Each platform has dedicated OAuth service (for publishing, NOT authentication):
 // - Twitter: OAuth 2.0 with PKCE
-// - Facebook: Facebook Login with page permissions
-// - Instagram: Instagram Graph API via Facebook
+// - Instagram: Instagram Graph API
 // - LinkedIn: OAuth 2.0 with member permissions
 
+// Note: Instagram requires Facebook Business Account setup but OAuth is via Facebook
 // Config (per platform):
 // clientId, clientSecret, redirectUri stored in server config
 ```
@@ -3351,6 +3550,11 @@ server {
 | **Affiliate** | User who earns commission for driving ticket sales via referral links |
 | **Rolling Update** | Deployment strategy where new containers start before old ones stop — zero downtime |
 | **Husky** | Git hooks manager — enforces lint, type-check, test, and build before push |
+| **Event Day Hub** | Operational workstation for tellers and check-in staff — role-aware event filtering shows only assigned events |
+| **Managed Event** | A platform-operated event (`isManaged: true`) created by an admin on behalf of an external client; auto-approved, no pending queue |
+| **Support Mode** | Audited admin editing session required before an admin can modify an organizer-owned event; logs admin identity, timestamp, and reason |
+| **ManagedClientType** | Enum categorizing managed event clients: CORPORATE, NGO, GOVERNMENT, PLATFORM, OTHER |
+| **MICE** | Meetings, Incentives, Conferences, Exhibitions — category of professional events served by Managed Events feature |
 
 ---
 

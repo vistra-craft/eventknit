@@ -535,7 +535,7 @@ const ServicePointTemplates: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <BackButton
-              to={eventId ? `/admin/service-point/dashboard/${eventId}` : "/admin/service-point"}
+              to={eventId ? `/admin/event-day/dashboard/${eventId}` : "/admin/event-day"}
               label={eventId ? "Back to Event" : "Back"}
             />
             <div>

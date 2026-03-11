@@ -56,7 +56,6 @@ import {
   Presentation,
   Camera,
   Upload,
-  LayoutDashboard,
   UserPlus,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
@@ -167,7 +166,7 @@ const ServicePointEventDashboard: React.FC = () => {
     const loadEventData = async () => {
       if (!eventId) {
         showErrorToast(toast, new Error("Event ID is required"), "Event ID is required");
-        navigate(`${basePrefix}/service-point`);
+        navigate(`${basePrefix}/event-day`);
         return;
       }
 
@@ -182,7 +181,7 @@ const ServicePointEventDashboard: React.FC = () => {
 
         if (!event) {
           showErrorToast(toast, new Error("Event not found"), "Event not found");
-          navigate(`${basePrefix}/service-point`);
+          navigate(`${basePrefix}/event-day`);
           return;
         }
 
@@ -625,21 +624,21 @@ const ServicePointEventDashboard: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to={`${basePrefix}/service-point`} label="Back to Events" />
+          <BackButton to={`${basePrefix}/event-day`} label="Back to Events" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">{eventData.title}</h1>
             <p className="text-muted-foreground mt-2">{organizerName} • {formatTimeRange()} • {eventData.location}</p>
           </div>
           <div className="flex gap-3">
             <Button
-              onClick={() => navigate(`${basePrefix}/service-point/scanner?event=${eventId}`)}
+              onClick={() => navigate(`${basePrefix}/event-day/scanner?event=${eventId}`)}
               className="bg-primary hover:bg-primary/90"
             >
               <QrCode className="w-4 h-4 mr-2" />
               QR Scanner
             </Button>
             <Button
-              onClick={() => navigate(`${basePrefix}/service-point/print?event=${eventId}`)}
+              onClick={() => navigate(`${basePrefix}/event-day/print?event=${eventId}`)}
               variant="outline"
             >
               <Printer className="w-4 h-4 mr-2" />
@@ -717,15 +716,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`${basePrefix}/service-point/event/${eventId}/manage`)}
-              >
-                <LayoutDashboard className="w-6 h-6 text-primary" />
-                <span>Manage Event</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`${basePrefix}/service-point/dashboard/${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/event-day/dashboard/${eventId}`)}
               >
                 <Activity className="w-6 h-6 text-green-600" />
                 <span>Live Dashboard</span>
@@ -733,7 +724,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`${basePrefix}/service-point/scanner?event=${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/event-day/scanner?event=${eventId}`)}
               >
                 <QrCode className="w-6 h-6" />
                 <span>QR Scanner</span>
@@ -741,7 +732,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`${basePrefix}/service-point/print?event=${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/event-day/print?event=${eventId}`)}
               >
                 <Printer className="w-6 h-6" />
                 <span>Print Center</span>
@@ -749,7 +740,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`${basePrefix}/service-point/event/${eventId}/templates`)}
+                onClick={() => navigate(`${basePrefix}/event-day/event/${eventId}/templates`)}
               >
                 <Settings className="w-6 h-6" />
                 <span>Templates</span>
@@ -757,7 +748,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`${basePrefix}/service-point/history?event=${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/event-day/history?event=${eventId}`)}
               >
                 <History className="w-6 h-6" />
                 <span>Scan History</span>
@@ -765,7 +756,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`${basePrefix}/service-point/zones/${eventId}`)}
+                onClick={() => navigate(`${basePrefix}/event-day/zones/${eventId}`)}
               >
                 <MapPin className="w-6 h-6" />
                 <span>Facility Zones</span>
@@ -773,7 +764,7 @@ const ServicePointEventDashboard: React.FC = () => {
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center justify-center space-y-2"
-                onClick={() => navigate(`${basePrefix}/service-point/event/${eventId}/walk-in`)}
+                onClick={() => navigate(`${basePrefix}/event-day/event/${eventId}/walk-in`)}
               >
                 <UserPlus className="w-6 h-6 text-primary" />
                 <span>Walk-In Reg.</span>

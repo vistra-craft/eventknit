@@ -55,7 +55,7 @@ VITE_FRONTEND_URL=http://localhost:5173
 
 # OAuth Configuration (for social login)
 VITE_GOOGLE_CLIENT_ID=your-google-client-id
-VITE_FACEBOOK_APP_ID=your-facebook-app-id
+VITE_APPLE_CLIENT_ID=your-apple-client-id
 ```
 
 ### 3. Start Development Server

@@ -4362,20 +4362,8 @@ export class EventService {
 
     logger.info(`Guest registration created: ${registration.id} for event: ${eventId} by user: ${user.id}`);
 
-    // Generate access token for guest user so they can immediately view their ticket
-    const { generateAccessToken, generateRefreshToken, parseExpiresIn } = await import('../utils/jwt.js');
-    const { config } = await import('../config/index.js');
-
-    const tokenPayload = {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    };
-
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-    const expiresIn = parseExpiresIn(config.jwt.expiresIn);
-
+    // No session is issued here — account activation happens separately via the
+    // invitation link included in the confirmation email (/auth/create-account?token=...)
     return {
       registration,
       user: {
@@ -4385,9 +4373,6 @@ export class EventService {
         lastName: user.lastName,
         isNewUser: finalIsNewUser,
       },
-      accessToken,
-      refreshToken,
-      expiresIn,
     };
   }
 

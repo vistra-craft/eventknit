@@ -23,7 +23,11 @@ import {
   ChevronDown,
   ChevronRight,
   ArrowLeft,
+  ShieldAlert,
+  LogOut,
+  Lock,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +53,7 @@ import { Label } from "@/components/ui/label";
 import { EventStaffAssignment } from "@/components/EventStaffAssignment";
 import EventCommunicationSection from "@/components/EventCommunicationSection";
 import { usePermissionsEnhanced } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 interface EventDetails {
@@ -104,6 +109,7 @@ interface EventDetails {
     description?: string;
   }>;
   organizerDataAccess?: 'RESTRICTED' | 'STANDARD' | 'FULL';
+  isManaged?: boolean;
 }
 
 interface InvitationItem {
@@ -165,6 +171,7 @@ const EventDetailsPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const permissions = usePermissionsEnhanced();
+  const { user: adminUser } = useAuth();
   const [activeSection, setActiveSection] = useState("overview");
   const [eventData, setEventData] = useState<EventDetails | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -189,6 +196,13 @@ const EventDetailsPage = () => {
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Support Mode — logged admin edit session
+  const [supportModeActive, setSupportModeActive] = useState(false);
+  const [supportModeDialogOpen, setSupportModeDialogOpen] = useState(false);
+  const [supportModeTriggeredByEdit, setSupportModeTriggeredByEdit] = useState(false);
+  const [supportReason, setSupportReason] = useState("");
+  const [supportModeStartedAt, setSupportModeStartedAt] = useState<Date | null>(null);
 
   const ticketTypeCount = eventData?.ticketTypes?.length ?? 0;
   const hasMultipleTicketTypes = ticketTypeCount > 1;
@@ -398,11 +412,12 @@ const EventDetailsPage = () => {
             ticketTypes: Array.isArray((event as { ticketTypes?: unknown }).ticketTypes)
               ? (event as { ticketTypes?: Array<{ id: string; name: string; price: number; capacity: number; sold: number; description?: string }> }).ticketTypes
               : undefined,
-            organizerDataAccess: ((event as { organizerDataAccess?: string }).organizerDataAccess === 'RESTRICTED' || 
-              (event as { organizerDataAccess?: string }).organizerDataAccess === 'STANDARD' || 
+            organizerDataAccess: ((event as { organizerDataAccess?: string }).organizerDataAccess === 'RESTRICTED' ||
+              (event as { organizerDataAccess?: string }).organizerDataAccess === 'STANDARD' ||
               (event as { organizerDataAccess?: string }).organizerDataAccess === 'FULL')
               ? (event as { organizerDataAccess?: 'RESTRICTED' | 'STANDARD' | 'FULL' }).organizerDataAccess
               : 'RESTRICTED' as 'RESTRICTED' | 'STANDARD' | 'FULL',
+            isManaged: (event as { isManaged?: boolean }).isManaged ?? false,
           });
         }
 
@@ -556,6 +571,13 @@ const EventDetailsPage = () => {
 
 
   const handleEdit = () => {
+    // Managed events: admin owns them, no support mode required
+    // Organizer events: support mode must be active (audit trail required)
+    if (!eventData.isManaged && !supportModeActive) {
+      setSupportModeTriggeredByEdit(true);
+      setSupportModeDialogOpen(true);
+      return;
+    }
     navigate(`/organizer/events/create?edit=${eventData.id}`);
   };
 
@@ -668,9 +690,18 @@ const EventDetailsPage = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={handleEdit}>
-                  <Settings className="h-4 w-4 mr-2" />
+                <DropdownMenuItem
+                  onClick={handleEdit}
+                  className={(!eventData.isManaged && !supportModeActive) ? "text-muted-foreground" : ""}
+                >
+                  {(!eventData.isManaged && !supportModeActive)
+                    ? <Lock className="h-4 w-4 mr-2" />
+                    : <Settings className="h-4 w-4 mr-2" />
+                  }
                   Edit Event
+                  {(!eventData.isManaged && !supportModeActive) && (
+                    <span className="ml-auto text-xs text-muted-foreground">Support Mode</span>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExport}>
                   <Download className="h-4 w-4 mr-2" />
@@ -687,6 +718,27 @@ const EventDetailsPage = () => {
                       <User className="h-4 w-4 mr-2" />
                       Data Access Level
                     </DropdownMenuItem>
+                    {!supportModeActive ? (
+                      <DropdownMenuItem
+                        onClick={() => { setSupportModeTriggeredByEdit(false); setSupportModeDialogOpen(true); }}
+                        className="text-amber-600 focus:text-amber-600"
+                      >
+                        <ShieldAlert className="h-4 w-4 mr-2" />
+                        Enter Support Mode
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSupportModeActive(false);
+                          setSupportReason("");
+                          setSupportModeStartedAt(null);
+                        }}
+                        className="text-muted-foreground"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Exit Support Mode
+                      </DropdownMenuItem>
+                    )}
                   </>
                 )}
               </DropdownMenuContent>
@@ -735,6 +787,120 @@ const EventDetailsPage = () => {
             </DropdownMenu>
           </div>
         </div>
+
+        {/* ── Support Mode Banner ── */}
+        {supportModeActive && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/8 px-4 py-3 flex items-start gap-3">
+            <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-600">Support Mode Active</p>
+              <p className="text-xs text-amber-600/80 mt-0.5">
+                Editing as{" "}
+                <span className="font-medium">
+                  {adminUser?.firstName} {adminUser?.lastName}
+                </span>
+                {supportModeStartedAt && (
+                  <> &middot; started {supportModeStartedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</>
+                )}
+              </p>
+              {supportReason && (
+                <p className="text-xs text-amber-600/70 mt-1 italic">
+                  Reason: "{supportReason}"
+                </p>
+              )}
+              <p className="text-xs text-amber-600/60 mt-1">
+                The organizer will be notified of any changes made during this session.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 h-7 text-xs"
+              onClick={() => {
+                setSupportModeActive(false);
+                setSupportReason("");
+                setSupportModeStartedAt(null);
+              }}
+            >
+              <LogOut className="h-3.5 w-3.5 mr-1" />
+              Exit
+            </Button>
+          </div>
+        )}
+
+        {/* ── Enter Support Mode Dialog ── */}
+        <Dialog open={supportModeDialogOpen} onOpenChange={setSupportModeDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-amber-600">
+                <ShieldAlert className="h-5 w-5" />
+                Enter Support Mode
+              </DialogTitle>
+              <DialogDescription>
+                Support Mode allows you to make changes to this organizer's event on their behalf.
+                Your session will be logged and the organizer will be notified.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/8 p-3 text-xs text-amber-600 space-y-1">
+                <p className="font-medium">Before you proceed:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-amber-600/80">
+                  <li>All changes will be attributed to your admin account</li>
+                  <li>The organizer receives an email notification</li>
+                  <li>Session activity is logged in the audit trail</li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="support-reason" className="text-sm font-medium">
+                  Reason for support session <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  id="support-reason"
+                  placeholder="e.g. Organizer requested help fixing ticket pricing after payment gateway error"
+                  value={supportReason}
+                  onChange={e => setSupportReason(e.target.value)}
+                  rows={3}
+                  className="resize-none text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Be specific — this reason is visible to the organizer and in audit logs.
+                </p>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSupportModeDialogOpen(false);
+                  setSupportReason("");
+                  setSupportModeTriggeredByEdit(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={supportReason.trim().length < 10}
+                className="bg-amber-500 hover:bg-amber-600 text-white"
+                onClick={() => {
+                  setSupportModeActive(true);
+                  setSupportModeStartedAt(new Date());
+                  setSupportModeDialogOpen(false);
+                  toast({
+                    title: "Support Mode Active",
+                    description: "Your session is now logged. The organizer will be notified.",
+                  });
+                  if (supportModeTriggeredByEdit) {
+                    setSupportModeTriggeredByEdit(false);
+                    navigate(`/organizer/events/create?edit=${eventData.id}`);
+                  }
+                }}
+              >
+                <ShieldAlert className="h-4 w-4 mr-2" />
+                {supportModeTriggeredByEdit ? "Activate & Edit Event" : "Activate Support Mode"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
           {/* Overview Tab */}
         {activeSection === "overview" && <div className="space-y-6">

@@ -16,10 +16,11 @@
    - 4.2 Organizer Journey
    - 4.3 Admin Journey
 5. [Event Management](#5-event-management)
+   - 5.1 Managed Events (Platform-Operated Events)
 6. [Ticketing System](#6-ticketing-system)
 7. [Seating and Venue Management](#7-seating-and-venue-management)
 8. [Payments and Financial Operations](#8-payments-and-financial-operations)
-9. [Check-In and Service Points](#9-check-in-and-service-points)
+9. [Event Day Hub (Check-In and On-Site Operations)](#9-event-day-hub-check-in-and-on-site-operations)
 10. [Badge System](#10-badge-system)
 11. [KYC and Verification](#11-kyc-and-verification)
 12. [Marketing and Promotions](#12-marketing-and-promotions)
@@ -72,7 +73,7 @@ EventKnit is available as a **web application** (desktop and mobile browsers) an
 | **Web Application** | Full-featured platform for all user roles | Desktop and mobile browsers |
 | **Mobile App** | Native attendee experience for iOS and Android | App Store and Google Play |
 | **Admin Dashboard** | Platform administration and oversight | Web only (admin roles) |
-| **Service Point** | Event-day operations (check-in, badge printing) | Web (tablet-optimized) |
+| **Event Day Hub** | Event-day operations (check-in, badge printing, walk-in registration) | Web (tablet-optimized) |
 
 ### How It Works
 
@@ -127,10 +128,10 @@ SUPERADMIN (Platform Owner)
 | **Admin Staff** | Platform administration | Approve events, manage users, view finances |
 | **Marketer** | Marketing operations | Manage campaigns, promotions, social media |
 | **Support** | Customer support | Handle tickets, user inquiries |
-| **Teller** | Payment and check-in | Process payments, check-in attendees |
+| **Teller** | Platform check-in staff | Scan tickets, check-in attendees at assigned events via Event Day Hub |
 | **Organizer** | Event creator | Create events, manage attendees, view revenue |
 | **Organizer Staff** | Event assistant | Manage assigned events, limited permissions |
-| **Organizer Teller** | Event check-in | Scan tickets, check-in attendees |
+| **Organizer Teller** | Organizer check-in staff | Scan tickets for assigned organizer events via Event Day Hub |
 | **Attendee** | Event participant | Register for events, manage tickets |
 
 ### Account Statuses
@@ -153,7 +154,7 @@ Attendees can create accounts through multiple methods:
 
 - **Email and Password** — Register with email, verify via 6-digit code, create a password (minimum 8 characters with at least 1 letter and 1 number)
 - **Google Sign-In** — One-tap registration using a Google account
-- **Facebook Login** — Register via Facebook OAuth
+- **Apple Sign-In** — Register via Apple Sign In OAuth
 - **Magic Link** — Passwordless login via a secure one-time link sent to email
 - **Email OTP** — Login with a 6-digit code sent to email
 - **Biometric** (mobile app only) — Fingerprint or Face ID
@@ -181,12 +182,12 @@ Each event page displays full details including title, description, date/time, v
 3. **Fill registration form** — Name, email, phone, and any custom fields the organizer has configured. Logged-in users have forms pre-filled from their profile.
 4. **Complete payment** — Select from available payment methods (card, bank transfer, USSD, mobile money, Apple Pay, Google Pay, or installment plan). Free events skip this step.
 5. **Receive confirmation** — Two emails are sent:
-   - **Email 1 (immediate):** Booking confirmation sent instantly after payment. Confirms the order, sets expectation that the ticket is on its way.
+   - **Email 1 (immediate):** Booking confirmation sent instantly. Confirms the registration, sets expectation that the ticket is on its way. For new guests, also includes an optional account setup link so they can create a password and manage future bookings — account creation is not required.
    - **Email 2 (ticket delivery):** Sent within seconds once the ticket PDF and QR code are generated in the background. Contains the PDF attachment, QR code, and calendar invite.
 
-   The ticket also appears in the attendee dashboard immediately after registration.
+   The ticket also appears in the attendee dashboard once the attendee creates their account via the invitation link.
 
-Guest registration is supported — attendees can register without creating an account, using only their email for ticket delivery.
+Guest registration is supported — attendees can register without an account, using only their email for ticket delivery. No session is created automatically; the attendee only gains dashboard access if they choose to activate their account via the link in their confirmation email.
 
 #### Ticket Management
 
@@ -392,6 +393,31 @@ The admin dashboard provides platform-wide visibility:
 
 Admins can also feature events on the homepage.
 
+#### Viewing Organizer Events (Read-Only)
+
+Admin viewing of organizer-owned events follows industry-standard audit principles:
+
+- Admins can **view all event details** from the Event Details page
+- Admins **cannot edit organizer events directly** — this ensures organizers retain ownership and accountability
+- To make changes on behalf of an organizer, an admin must activate **Support Mode** (an audited session)
+
+#### Support Mode
+
+Support Mode is an audited admin editing session for modifying organizer-owned events:
+
+1. Admin clicks "Edit Event" on an organizer's event
+2. A **Support Mode dialog** appears explaining the audit trail requirement
+3. Admin enters a reason for the changes
+4. Admin activates Support Mode — the session is logged with timestamp, admin identity, and reason
+5. Admin makes the required edits
+6. Support Mode session ends
+
+This follows the same audit-trail model used by platforms like Stripe and Shopify, where admin edits on third-party accounts are always logged. **Managed events** (created by admins on behalf of clients) are exempt from this requirement — they can be edited directly.
+
+#### Managed Events
+
+Admins can create platform-operated events for external clients via the **Managed Events** section. See [Section 5.1 — Managed Events](#51-managed-events-platform-operated-events) for full details.
+
 #### User Management
 
 - View and search all users across roles
@@ -467,7 +493,8 @@ Admins manage the document requirements for each entity type:
 | Marketing | Campaigns, promotions, social media |
 | Analytics | Platform, events, users, revenue |
 | Support | Inbox, tickets, responses |
-| Service Point | Check-in, badge printing, walk-in registration |
+| Event Day Hub | Check-in, badge printing, walk-in registration |
+| Managed Events | Platform-managed client events (MICE/corporate) |
 | Subscriptions | Plan management, subscriber tracking |
 | KYC | Review submissions, entity management |
 | System | Health, logs, backups, maintenance, careers |
@@ -553,6 +580,57 @@ Organizers can duplicate events to quickly create recurring events — all detai
 
 ---
 
+## 5.1 Managed Events (Platform-Operated Events)
+
+### What Are Managed Events?
+
+Managed Events are events created and operated directly by the EventKnit admin team on behalf of external clients — corporations, NGOs, government agencies, or any organization that wants a fully managed event experience without needing their own organizer account.
+
+This is the platform's **MICE (Meetings, Incentives, Conferences, and Exhibitions) offering** — a white-glove service where EventKnit handles end-to-end event management for clients.
+
+### How They Differ from Regular Events
+
+| Aspect | Regular Events | Managed Events |
+|--------|---------------|----------------|
+| Created by | Organizer (self-service) | Admin on behalf of a client |
+| Approval required | Yes (admin review) | No — created as APPROVED immediately |
+| Edit access | Organizer edits freely | Admin only (via Support Mode audit trail) |
+| Client branding | Organizer's own | Client's name and contact details attached |
+| Accountability | Organizer | EventKnit platform |
+
+### Who Creates Managed Events?
+
+Admins create managed events via the **Admin Dashboard → Managed Events → New Managed Event**. There are two types of events admins can create:
+
+1. **Client Events** — Created on behalf of a paying external client (corporate, NGO, government)
+2. **Platform Events** — EventKnit's own events (company conferences, partner launches)
+
+The admin does **not** create a separate organizer account for the client. The event is owned and operated by the admin, using the client's details as metadata for identification and communication.
+
+### Client Types
+
+| Type | Description |
+|------|-------------|
+| **Corporate** | Private companies and businesses |
+| **NGO** | Non-governmental and non-profit organizations |
+| **Government** | Government bodies and agencies |
+| **Platform** | EventKnit's own events |
+| **Other** | Any other client type |
+
+### Creation Flow
+
+1. Admin navigates to **Managed Events → New Managed Event**
+2. **Step 1 (Client Details):** Enter client name, type, contact email/phone, and contract reference number
+3. **Step 2 (Event Details):** Enter event title, description, category, venue, dates, ticket pricing, and capacity
+4. Event is created with `status: APPROVED` and `isManaged: true` — no approval queue needed
+5. The managing admin is recorded on the event for accountability
+
+### Editing Managed Events
+
+Managed events bypass the Support Mode requirement. Admins can edit them directly without activating an audit session, because the admin is already the accountable owner (not an external organizer).
+
+---
+
 ## 6. Ticketing System
 
 ### Ticket Tiers
@@ -617,7 +695,7 @@ EventKnit uses a **two-email model** to separate instant confirmation from ticke
 
 | Email | Timing | Contents |
 |-------|--------|----------|
-| **Email 1 — Booking Confirmed** | Instant (within seconds of payment) | Order summary, event details, account setup link (for guests), "your ticket is being prepared" message |
+| **Email 1 — Booking Confirmed** | Instant (within seconds of registration/payment) | Order summary, event details, "your ticket is being prepared" message. For new guests, also includes an **optional account setup link** — clicking it lets the attendee create a password and activate their account. This is not required to attend the event. |
 | **Email 2 — Your Ticket** | Seconds later, after background processing | PDF ticket, QR code, calendar invite (.ics), online event link if applicable |
 
 This pattern is used by Ticketmaster, Eventbrite, and AXS. It means registration always completes quickly — ticket PDF generation is handled asynchronously in the background, never blocking the checkout flow.
@@ -811,9 +889,20 @@ Supported currencies: USD, KES, NGN, GBP, EUR, ZAR, GHS, and others based on gat
 
 ---
 
-## 9. Check-In and Service Points
+## 9. Event Day Hub (Check-In and On-Site Operations)
 
-EventKnit provides a comprehensive multi-layered scanning system for event-day operations.
+EventKnit provides a comprehensive multi-layered scanning system for event-day operations. The **Event Day Hub** (formerly Service Point) is the dedicated operational workstation for tellers and check-in staff — separate from the management interfaces used by organizers and admins.
+
+### Role Access to Event Day Hub
+
+| Role | Events Visible |
+|------|---------------|
+| **Admin Teller** | Only their assigned events (via admin staff assignments) |
+| **Organizer Teller** | Only their assigned events (via organizer staff assignments) |
+| **Admin Staff** | All approved platform events |
+| **Organizer** | All their own events |
+
+Staff are assigned to events by admins or organizers. Upon logging in, tellers see only the events they are assigned to — not all platform events. This prevents accidental check-in at the wrong event.
 
 ### Workstation (Primary Check-In)
 
@@ -837,7 +926,7 @@ For events with multiple access-controlled areas:
 - Track scan counts and throughput per checkpoint
 - Duplicate checkpoints for quick setup
 
-### Service Point Facilities
+### Facility Tracking
 
 Track attendee interactions at various locations within an event:
 
@@ -1613,9 +1702,13 @@ The platform supports the following event categories:
 | **Grace Period** | Waiting period after an event ends before funds are released to the organizer |
 | **Workstation** | A check-in station used by staff to scan tickets at events |
 | **Checkpoint** | A controlled access point within an event venue |
-| **Facility/Service Point** | A location within an event (food station, VIP area, etc.) tracked by the system |
+| **Facility Zone** | A location within an event (food station, VIP area, etc.) tracked by the system |
 | **Walk-In** | An attendee who registers on-site at the event rather than in advance |
 | **Muster Report** | Emergency report showing all attendees currently inside the venue |
+| **Event Day Hub** | The dedicated operational interface for tellers and check-in staff — separate from event management dashboards |
+| **Managed Event** | An event created and operated by the admin team on behalf of an external client (corporate, NGO, government) |
+| **Support Mode** | An audited admin editing session that allows an admin to modify an organizer's event with a logged reason and timestamp |
+| **MICE** | Meetings, Incentives, Conferences, and Exhibitions — a category of professional events that Managed Events support |
 | **White-Label** | Replacing EventKnit's branding with the organizer's own branding |
 | **Promo Code** | A discount code that reduces the ticket price |
 | **Voucher** | A redeemable code that adds credits to a user's balance |

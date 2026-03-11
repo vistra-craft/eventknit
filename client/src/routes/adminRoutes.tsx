@@ -15,6 +15,7 @@ import { UserRole } from '../types/auth';
 const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
 const AdminProfilePage = lazy(() => import('../pages/admin/AdminProfilePage'));
 const AdminSettingsPage = lazy(() => import('../pages/admin/AdminSettingsPage'));
+const AdminIntegrationsPage = lazy(() => import('../pages/admin/AdminIntegrationsPage'));
 
 // Events
 const AdminAllEventsPage = lazy(() => import('../pages/admin/events/AllEventsPage'));
@@ -120,7 +121,7 @@ const KYCReviewDashboard = lazy(() => import('../pages/admin/kyc/KYCReviewDashbo
 const KYCOrganizerReviewPage = lazy(() => import('../pages/admin/kyc/KYCOrganizerReviewPage'));
 const KYCEntityManagement = lazy(() => import('../pages/admin/kyc/KYCEntityManagement'));
 
-// Service Point
+// Event Day Hub (formerly Service Point)
 const ServicePointEvents = lazy(() => import('../pages/admin/service-point/ServicePointEvents'));
 const ServicePointEventDashboard = lazy(() => import('../pages/admin/service-point/ServicePointEventDashboard'));
 const RealtimeDashboard = lazy(() => import('../pages/admin/service-point/RealtimeDashboard'));
@@ -130,7 +131,10 @@ const ServicePointTemplates = lazy(() => import('../pages/admin/service-point/Se
 const FacilityZones = lazy(() => import('../pages/admin/service-point/FacilityZones'));
 const ServicePointHistory = lazy(() => import('../pages/admin/service-point/ServicePointHistory'));
 const WalkInRegistration = lazy(() => import('../pages/admin/service-point/WalkInRegistration'));
-const EventManagement = lazy(() => import('../pages/organizer/EventManagement'));
+
+// Managed Events
+const AdminManagedEventsPage = lazy(() => import('../pages/admin/AdminManagedEventsPage'));
+const AdminManagedEventCreatePage = lazy(() => import('../pages/admin/AdminManagedEventCreatePage'));
 
 /**
  * Common role combinations
@@ -178,6 +182,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'settings',
     element: createElement(AdminSettingsPage),
+    allowedRoles: SUPERADMIN_ONLY,
+  },
+  {
+    path: 'settings/integrations',
+    element: createElement(AdminIntegrationsPage),
     allowedRoles: SUPERADMIN_ONLY,
   },
 
@@ -614,60 +623,68 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     allowedRoles: ADMIN_STAFF_ROLES,
   },
 
-  // Service Point
+  // Event Day Hub
   {
-    path: 'service-point',
+    path: 'event-day',
     element: createElement(ServicePointEvents),
     allowedRoles: TELLER_ROLES,
   },
   {
-    path: 'service-point/event/:eventId',
+    path: 'event-day/event/:eventId',
     element: createElement(ServicePointEventDashboard),
     allowedRoles: TELLER_ROLES,
   },
   {
-    path: 'service-point/dashboard/:eventId',
+    path: 'event-day/dashboard/:eventId',
     element: createElement(RealtimeDashboard),
     allowedRoles: TELLER_ROLES,
   },
   {
-    path: 'service-point/scanner',
+    path: 'event-day/scanner',
     element: createElement(ServicePointScanner),
     allowedRoles: TELLER_ROLES,
   },
   {
-    path: 'service-point/print',
+    path: 'event-day/print',
     element: createElement(ServicePointPrint),
     allowedRoles: TELLER_ROLES,
   },
   {
-    path: 'service-point/templates',
+    path: 'event-day/templates',
     element: createElement(ServicePointTemplates),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
   {
-    path: 'service-point/zones/:eventId',
+    path: 'event-day/zones/:eventId',
     element: createElement(FacilityZones),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
   {
-    path: 'service-point/history',
+    path: 'event-day/history',
     element: createElement(ServicePointHistory),
     allowedRoles: TELLER_ROLES,
   },
   {
-    path: 'service-point/event/:eventId/templates',
+    path: 'event-day/event/:eventId/templates',
     element: createElement(ServicePointTemplates),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
   {
-    path: 'service-point/event/:eventId/walk-in',
+    path: 'event-day/event/:eventId/walk-in',
     element: createElement(WalkInRegistration),
     allowedRoles: TELLER_ROLES,
   },
+  // NOTE: event/:eventId/manage removed — admin event editing belongs in Support Mode on EventDetailsPage
+
+  // Managed Events
   {
-    path: 'service-point/event/:eventId/manage',
-    element: createElement(EventManagement, { isAdminMode: true }),
+    path: 'managed-events',
+    element: createElement(AdminManagedEventsPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'managed-events/create',
+    element: createElement(AdminManagedEventCreatePage),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
 

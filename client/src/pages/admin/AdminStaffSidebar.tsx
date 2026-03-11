@@ -31,7 +31,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     events: location.pathname.startsWith('/admin/events'),
-    workstation: location.pathname.startsWith('/admin/service-point'),
+    workstation: location.pathname.startsWith('/admin/event-day'),
   });
 
   // Base navigation items - all admin staff can see these
@@ -63,13 +63,13 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
         return [
           {
             id: 'workstation',
-            label: 'Service Point',
+            label: 'Event Day Hub',
             icon: Monitor,
             group: 'main',
             children: [
-              { name: 'Events Overview', href: '/admin/service-point' },
-              { name: 'QR Scanner', href: '/admin/service-point/scanner' },
-              { name: 'Scan History', href: '/admin/service-point/history' },
+              { name: 'Events Overview', href: '/admin/event-day' },
+              { name: 'QR Scanner', href: '/admin/event-day/scanner' },
+              { name: 'Scan History', href: '/admin/event-day/history' },
             ],
           },
         ];
@@ -129,7 +129,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
     setExpandedItems((prev) => ({
       ...prev,
       events: location.pathname.startsWith('/admin/events'),
-      workstation: location.pathname.startsWith('/admin/service-point'),
+      workstation: location.pathname.startsWith('/admin/event-day'),
     }));
   }, [location.pathname]);
 

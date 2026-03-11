@@ -273,8 +273,8 @@ const WalkInRegistration: React.FC = () => {
       <div className="p-8 text-center">
         <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground/50 mb-3" />
         <p className="text-muted-foreground">No event selected</p>
-        <Button className="mt-4" onClick={() => navigate("/admin/service-point")}>
-          Go to Service Point
+        <Button className="mt-4" onClick={() => navigate("/admin/event-day")}>
+          Go to Event Day Hub
         </Button>
       </div>
     );
@@ -284,7 +284,7 @@ const WalkInRegistration: React.FC = () => {
     <div className="space-y-6 max-w-lg mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <BackButton to={`/admin/service-point/event/${eventId}`} label="Back to Dashboard" />
+        <BackButton to={`/admin/event-day/event/${eventId}`} label="Back to Dashboard" />
         <div>
           <h1 className="text-xl font-semibold text-foreground flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-primary" />
@@ -553,7 +553,7 @@ const WalkInRegistration: React.FC = () => {
                   variant="outline"
                   onClick={() =>
                     navigate(
-                      `/admin/service-point/print?event=${eventId}&attendee=${completed.registrationId}`,
+                      `/admin/event-day/print?event=${eventId}&attendee=${completed.registrationId}`,
                     )
                   }
                 >
@@ -569,7 +569,7 @@ const WalkInRegistration: React.FC = () => {
               <Button
                 variant="ghost"
                 className="w-full"
-                onClick={() => navigate(`/admin/service-point/event/${eventId}`)}
+                onClick={() => navigate(`/admin/event-day/event/${eventId}`)}
               >
                 Back to Event Dashboard
               </Button>

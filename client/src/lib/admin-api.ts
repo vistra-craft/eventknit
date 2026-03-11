@@ -719,7 +719,13 @@ export interface EventStaffAssignment {
   event?: {
     id: string;
     title: string;
+    description?: string;
     startDate?: string;
+    endDate?: string;
+    location?: string;
+    venue?: string;
+    status?: string;
+    image?: string;
   };
 }
 

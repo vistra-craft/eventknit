@@ -379,7 +379,7 @@ const ServicePointHistory: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to="/admin/service-point" label="Back" />
+          <BackButton to="/admin/event-day" label="Back" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">Scan History</h1>
             <p className="text-muted-foreground mt-2">View and analyze all QR code scans</p>

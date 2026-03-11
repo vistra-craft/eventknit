@@ -135,6 +135,14 @@ enum EventType {
   PRIVATE // Private event, invite-only
 }
 
+enum ManagedClientType {
+  CORPORATE
+  NGO
+  GOVERNMENT
+  PLATFORM // EventKnit's own events
+  OTHER
+}
+
 enum RegistrationStatus {
   PENDING // Registration pending (no payment yet)
   CONFIRMED // Registration confirmed (payment completed or free event)
@@ -392,6 +400,8 @@ model User {
   eventReports       EventReport[]       @relation("EventReports")
   // Approval Messages
   approvalMessages   EventApprovalMessage[] @relation("OrganizerApprovalMessages")
+  // Managed events administered by this admin
+  adminManagedEvents Event[]             @relation("AdminManagedEvents")
 
   @@index([email])
   @@index([role])
@@ -784,6 +794,16 @@ model Event {
   requireCheckOut Boolean @default(false) // Require check-out before re-entry
   maxReEntries    Int? // Maximum number of re-entries allowed (null = unlimited)
   scanSettings    Json? // Additional scan settings for future extensibility
+
+  // Managed Event fields (platform-operated events for corporate/NGO/government clients)
+  isManaged          Boolean            @default(false)
+  clientName         String?
+  clientType         ManagedClientType?
+  clientContactEmail String?
+  clientContactPhone String?
+  clientContractRef  String?
+  managedByAdminId   String?
+  managedByAdmin     User?              @relation("AdminManagedEvents", fields: [managedByAdminId], references: [id], onDelete: SetNull)
 
   // Audit fields
   createdAt DateTime  @default(now())

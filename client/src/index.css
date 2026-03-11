@@ -747,7 +747,7 @@
     }
   }
 
-  /* Shimmer Animation - Classic sweep effect (Facebook/Meta style) */
+  /* Shimmer Animation - Classic sweep loading effect */
   .skeleton-shimmer {
     position: relative;
     overflow: hidden;

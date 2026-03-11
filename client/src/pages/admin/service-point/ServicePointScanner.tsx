@@ -871,7 +871,7 @@ const ServicePointScanner: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to={`${basePrefix}/service-point`} label="Back" />
+          <BackButton to={`${basePrefix}/event-day`} label="Back" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">Ticket Scanner</h1>
             <p className="text-muted-foreground mt-2">
@@ -884,7 +884,7 @@ const ServicePointScanner: React.FC = () => {
               onChange={(e) => {
                 const newEventId = e.target.value;
                 setEventId(newEventId);
-                navigate(`${basePrefix}/service-point/scanner?event=${newEventId}`);
+                navigate(`${basePrefix}/event-day/scanner?event=${newEventId}`);
               }}
               className="px-3 py-2 border border-border rounded-md text-sm"
             >
@@ -1254,7 +1254,7 @@ const ServicePointScanner: React.FC = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate(`${basePrefix}/service-point/history`)}
+                      onClick={() => navigate(`${basePrefix}/event-day/history`)}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>

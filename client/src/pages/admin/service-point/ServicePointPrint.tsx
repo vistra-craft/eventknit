@@ -517,7 +517,7 @@ const ServicePointPrint: React.FC = () => {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <BackButton to="/admin/service-point" label="Back" />
+          <BackButton to="/admin/event-day" label="Back" />
           <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
         </div>
         <Card className="border-destructive/40">
@@ -538,7 +538,7 @@ const ServicePointPrint: React.FC = () => {
     return (
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <BackButton to="/admin/service-point" label="Back" />
+            <BackButton to="/admin/event-day" label="Back" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
               <p className="text-sm text-muted-foreground">Print badges for event attendees</p>
@@ -552,7 +552,7 @@ const ServicePointPrint: React.FC = () => {
                 <p className="text-muted-foreground mb-6 max-w-md">
                   Please select an event from the Service Point dashboard to print badges for attendees.
                 </p>
-                <Button onClick={() => navigate('/admin/service-point')}>
+                <Button onClick={() => navigate('/admin/event-day')}>
                   Go to Service Point
                 </Button>
               </div>
@@ -567,7 +567,7 @@ const ServicePointPrint: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <BackButton to="/admin/service-point" label="Back" />
+            <BackButton to="/admin/event-day" label="Back" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
               <p className="text-sm text-muted-foreground">{currentEvent.title}</p>
@@ -577,7 +577,7 @@ const ServicePointPrint: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(eventId ? `/admin/service-point/event/${eventId}/templates` : '/admin/service-point/templates')}
+              onClick={() => navigate(eventId ? `/admin/event-day/event/${eventId}/templates` : '/admin/event-day/templates')}
             >
               <Settings className="w-4 h-4 mr-2" />
               Edit Templates
@@ -651,7 +651,7 @@ const ServicePointPrint: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(eventId ? `/admin/service-point/event/${eventId}/templates` : '/admin/service-point/templates')}
+                    onClick={() => navigate(eventId ? `/admin/event-day/event/${eventId}/templates` : '/admin/event-day/templates')}
                   >
                     <Settings className="w-4 h-4" />
                   </Button>
@@ -688,7 +688,7 @@ const ServicePointPrint: React.FC = () => {
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => navigate(eventId ? `/admin/service-point/event/${eventId}/templates` : '/admin/service-point/templates')}
+                      onClick={() => navigate(eventId ? `/admin/event-day/event/${eventId}/templates` : '/admin/event-day/templates')}
                     >
                       Create Template
                     </Button>

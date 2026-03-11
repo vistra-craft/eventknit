@@ -56,8 +56,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
     branding: location.pathname === '/admin/white-label',
     // Auto-expand support section if on support pages
     support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
-    // Auto-expand service point section if on service-point pages
-    workstation: location.pathname.startsWith('/admin/service-point'),
+    // Auto-expand event day hub section if on event-day pages
+    workstation: location.pathname.startsWith('/admin/event-day'),
     // Auto-expand system section if on system pages
     system: location.pathname.startsWith('/admin/system')
   });
@@ -178,16 +178,23 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       ]
     },
     {
+      id: "managed-events",
+      label: "Managed Events",
+      href: "/admin/managed-events",
+      icon: Calendar,
+      group: "management",
+    },
+    {
       id: "workstation",
-      label: "Service Point",
+      label: "Event Day Hub",
       icon: Monitor,
       group: "management",
       children: [
-        { name: "Select Event", href: "/admin/service-point" },
-        { name: "QR Scanner", href: "/admin/service-point/scanner" },
-        { name: "Print Center", href: "/admin/service-point/print" },
-        { name: "Template Editor", href: "/admin/service-point/templates" },
-        { name: "Scan History", href: "/admin/service-point/history" },
+        { name: "Select Event", href: "/admin/event-day" },
+        { name: "QR Scanner", href: "/admin/event-day/scanner" },
+        { name: "Print Center", href: "/admin/event-day/print" },
+        { name: "Template Editor", href: "/admin/event-day/templates" },
+        { name: "Scan History", href: "/admin/event-day/history" },
       ]
     },
     {
@@ -211,6 +218,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       group: "management",
       children: [
         { name: "Configuration", href: "/admin/settings" },
+        { name: "Integrations", href: "/admin/settings/integrations" },
       ]
     },
     {
@@ -263,7 +271,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       settings: location.pathname.startsWith('/admin/settings'),
       branding: location.pathname === '/admin/white-label',
       support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
-      workstation: location.pathname.startsWith('/admin/service-point'),
+      workstation: location.pathname.startsWith('/admin/event-day'),
       system: location.pathname.startsWith('/admin/system')
     }));
   }, [location.pathname]);

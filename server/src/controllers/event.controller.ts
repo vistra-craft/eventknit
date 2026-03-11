@@ -625,7 +625,7 @@ export class EventController {
 
       res.status(201).json({
         success: true,
-        message: 'Registration successful. Check your email for ticket confirmation and account setup.',
+        message: 'Registration successful. Check your email for your ticket and account setup link.',
         data: {
           registration: {
             ...result.registration,
@@ -634,9 +634,6 @@ export class EventController {
               : '0.00',
           },
           user: result.user,
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-          expiresIn: result.expiresIn,
         },
       });
     } catch (error) {

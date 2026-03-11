@@ -350,24 +350,24 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     allowedRoles: ORGANIZER_ADMIN_ONLY,
   },
 
-  // Service Point (for ORGANIZER_TELLER role — same pages as admin service-point)
+  // Event Day Hub (for ORGANIZER_TELLER role — shared operational pages)
   {
-    path: 'service-point',
+    path: 'event-day',
     element: createElement(ServicePointEvents),
     allowedRoles: ALL_ORGANIZER_ROLES,
   },
   {
-    path: 'service-point/event/:eventId',
+    path: 'event-day/event/:eventId',
     element: createElement(ServicePointEventDashboard),
     allowedRoles: ALL_ORGANIZER_ROLES,
   },
   {
-    path: 'service-point/scanner',
+    path: 'event-day/scanner',
     element: createElement(ServicePointScanner),
     allowedRoles: ALL_ORGANIZER_ROLES,
   },
   {
-    path: 'service-point/history',
+    path: 'event-day/history',
     element: createElement(ServicePointHistory),
     allowedRoles: ALL_ORGANIZER_ROLES,
   },

@@ -7,27 +7,19 @@ import {
   Calendar,
   Share2,
   Mail,
-  Lock,
-  UserPlus,
   MapPin,
   Clock,
   ExternalLink,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
-
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import CheckoutHeader from "@/components/CheckoutHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { getEventById } from "@/lib/event-api";
-import { setupPassword } from "@/lib/auth-api";
-import { extractErrorMessage } from "@/lib/utils/error";
 import type { EventData } from "@/types/event";
 import { shareEvent } from "@/lib/utils/share";
 import { useToast } from "@/hooks/useToast";
 import { downloadTicketPDF, resendTicketEmail } from "@/lib/ticket-api";
-import { setAccessToken } from "@/lib/api";
 
 interface TicketType {
   name: string;
@@ -58,36 +50,19 @@ interface ConfirmationData {
 
 type EventApiData = EventData;
 
-type LocationState = {
-  accessToken?: string;
-} | null;
-
 const RegistrationConfirmation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
-  const { user, isAuthenticated, refreshProfile } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   const [eventData, setEventData] = useState<EventApiData | ConfirmationData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [settingPassword, setSettingPassword] = useState(false);
-  const [passwordSetSuccess, setPasswordSetSuccess] = useState(false);
-  const [passwordData, setPasswordData] = useState({ password: "", confirmPassword: "" });
-  const [passwordError, setPasswordError] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
   const confirmationData = location.state as ConfirmationData | null;
-
-  // Store access token if provided (for guest users)
-  useEffect(() => {
-    const state = location.state as LocationState;
-    if (state?.accessToken) {
-      setAccessToken(state.accessToken);
-      refreshProfile().catch(() => {});
-    }
-  }, [location.state, refreshProfile]);
 
   // Fetch event data if not provided
   useEffect(() => {
@@ -177,45 +152,6 @@ const RegistrationConfirmation: React.FC = () => {
   };
 
   // Handlers
-  const handleSetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordError("");
-
-    if (passwordData.password.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
-      return;
-    }
-    if (!/(?=.*[a-zA-Z])/.test(passwordData.password)) {
-      setPasswordError("Must contain at least one letter");
-      return;
-    }
-    if (!/(?=.*\d)/.test(passwordData.password)) {
-      setPasswordError("Must contain at least one number");
-      return;
-    }
-    if (passwordData.password !== passwordData.confirmPassword) {
-      setPasswordError("Passwords do not match");
-      return;
-    }
-
-    setSettingPassword(true);
-    try {
-      const response = await setupPassword(passwordData.password);
-      if (response.success) {
-        toast({ title: "Password set!", description: "You can now log in with your email and password." });
-        setPasswordData({ password: "", confirmPassword: "" });
-        setPasswordSetSuccess(true);
-        await refreshProfile();
-      } else {
-        throw new Error(response.message || "Failed to set password");
-      }
-    } catch (err: unknown) {
-      setPasswordError(extractErrorMessage(err, "Failed to set password. Please try again."));
-    } finally {
-      setSettingPassword(false);
-    }
-  };
-
   const handleDownloadTicket = async () => {
     if (!confirmationData?.registrationId) return;
     setIsDownloading(true);
@@ -285,7 +221,6 @@ const RegistrationConfirmation: React.FC = () => {
   }
 
   const isFree = confirmationData?.isFreeEvent ?? (event && "isFree" in event ? event.isFree : false);
-  const showPasswordSetup = isGuestUser && (!isAuthenticated || (user && !user.hasPassword)) && !passwordSetSuccess;
   const ticketSummary = confirmationData?.tickets?.filter(t => t.quantity > 0) || [];
 
   return (
@@ -309,92 +244,6 @@ const RegistrationConfirmation: React.FC = () => {
           )}
         </div>
 
-        {/* Account Creation Notice */}
-        {isGuestUser && isNewUser && (
-          <div className="rounded-xl border border-success/30 bg-success/10 p-4 space-y-2">
-            <div className="flex items-center gap-2 text-success">
-              <UserPlus className="w-4 h-4" />
-              <h3 className="text-sm font-semibold">Your account is ready</h3>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              We created an account for you using <strong>{userEmail}</strong>. Set a password below to
-              manage tickets and register faster next time.
-            </p>
-          </div>
-        )}
-
-        {/* Password Setup Card (Guest Users) */}
-        {showPasswordSetup && (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Lock className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm">Create a password</h3>
-                <p className="text-xs text-muted-foreground">Access your tickets and register faster next time</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSetPassword} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="password" className="text-xs">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={passwordData.password}
-                    onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
-                    placeholder="Min 8 characters"
-                    className="h-9 text-sm"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="confirmPassword" className="text-xs">Confirm</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                    placeholder="Confirm password"
-                    className="h-9 text-sm"
-                    required
-                  />
-                </div>
-              </div>
-              <p className="text-[10px] text-muted-foreground">Must contain at least one letter and one number.</p>
-              {passwordError && (
-                <p className="text-xs text-destructive">{passwordError}</p>
-              )}
-              <div className="flex gap-2">
-                <Button type="submit" size="sm" disabled={settingPassword} className="flex-1">
-                  {settingPassword ? "Setting..." : "Set Password"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPasswordData({ password: "", confirmPassword: "" })}
-                  className="text-xs"
-                >
-                  Skip
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Password Set Success */}
-        {passwordSetSuccess && (
-          <div className="rounded-xl border border-success bg-success-light p-4 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-            <p className="text-sm text-success">
-              Password set! You can now log in anytime.
-            </p>
-          </div>
-        )}
-
         {/* Email Notice */}
         <div className="rounded-xl border bg-card p-4 space-y-3">
           <div className="flex items-start gap-3">
@@ -402,7 +251,11 @@ const RegistrationConfirmation: React.FC = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">Check your email</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Your ticket with QR code is being sent to <span className="font-medium">{userEmail}</span>
+                Your ticket and QR code are on their way to{" "}
+                <span className="font-medium">{userEmail}</span>.
+                {isGuestUser && isNewUser && (
+                  <> The email also includes a link to set up your account.</>
+                )}
               </p>
             </div>
             {confirmationData?.registrationId && isAuthenticated && (

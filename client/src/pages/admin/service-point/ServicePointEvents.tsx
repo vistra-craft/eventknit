@@ -23,6 +23,10 @@ import {
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { getEvents, EventStatus, type EventData } from "@/lib/event-api";
+import { getOrganizerStaffEvents } from "@/lib/organizer-api";
+import { getAdminStaffEvents } from "@/lib/admin-api";
+import { useAuth } from "@/hooks/useAuth";
+import { UserRole } from "@/types/auth";
 
 type EventStatusFilter = "all" | "live" | "upcoming" | "completed";
 
@@ -33,7 +37,11 @@ interface EventWithComputedStatus extends EventData {
 const ServicePointEvents: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const basePrefix = location.pathname.startsWith('/organizer') ? '/organizer' : '/admin';
+
+  // Teller roles — only see their assigned events
+  const isTeller = user?.role === UserRole.ORGANIZER_TELLER || user?.role === UserRole.TELLER;
   const [events, setEvents] = useState<EventWithComputedStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,23 +68,46 @@ const ServicePointEvents: React.FC = () => {
     }
   };
 
-  // Fetch events
+  // Fetch events — tellers only see their assigned events; others see all approved events
   useEffect(() => {
+    if (!user?.id) return;
+
     const fetchEvents = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await getEvents({ status: EventStatus.APPROVED, limit: 100 });
 
-        if (response.success && response.data?.events) {
-          const eventsWithStatus = response.data.events.map((event) => ({
-            ...event,
-            computedStatus: computeEventStatus(event),
-          }));
-          setEvents(eventsWithStatus);
+        let rawEvents: EventData[] = [];
+
+        if (isTeller) {
+          // Fetch only assigned events for this teller
+          if (user.role === UserRole.ORGANIZER_TELLER) {
+            const response = await getOrganizerStaffEvents(user.id, { status: 'APPROVED' });
+            if (response.success && response.data?.assignments) {
+              rawEvents = response.data.assignments
+                .map((a) => a.event as EventData | undefined)
+                .filter((e): e is EventData => !!e);
+            }
+          } else if (user.role === UserRole.TELLER) {
+            const response = await getAdminStaffEvents(user.id, { status: 'APPROVED' });
+            if (response.success && response.data?.assignments) {
+              rawEvents = response.data.assignments
+                .map((a) => a.event as EventData | undefined)
+                .filter((e): e is EventData => !!e);
+            }
+          }
         } else {
-          setError("Failed to load events");
+          // Full access — fetch all approved events
+          const response = await getEvents({ status: EventStatus.APPROVED, limit: 100 });
+          if (response.success && response.data?.events) {
+            rawEvents = response.data.events;
+          }
         }
+
+        setEvents(rawEvents.map((event) => ({
+          ...event,
+          computedStatus: computeEventStatus(event),
+        })));
       } catch (err) {
         console.error("Error fetching events:", err);
         setError("Failed to load events. Please try again.");
@@ -86,7 +117,7 @@ const ServicePointEvents: React.FC = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [user?.id, user?.role, isTeller]);
 
   // Filter events based on search, status, and category
   const filteredEvents = useMemo(() => {
@@ -158,7 +189,7 @@ const ServicePointEvents: React.FC = () => {
   };
 
   const handleEventClick = (eventId: string) => {
-    navigate(`${basePrefix}/service-point/event/${eventId}`);
+    navigate(`${basePrefix}/event-day/event/${eventId}`);
   };
 
   return (
@@ -166,7 +197,7 @@ const ServicePointEvents: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-foreground">Service Point</h1>
+            <h1 className="text-lg font-semibold text-foreground">Event Day Hub</h1>
             <p className="text-muted-foreground text-sm">
               Select an event to manage check-ins and facilities
             </p>
@@ -175,7 +206,7 @@ const ServicePointEvents: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`${basePrefix}/service-point/templates`)}
+              onClick={() => navigate(`${basePrefix}/event-day/templates`)}
             >
               <FileText className="w-4 h-4 mr-1" />
               Templates
@@ -183,7 +214,7 @@ const ServicePointEvents: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`${basePrefix}/service-point/history`)}
+              onClick={() => navigate(`${basePrefix}/event-day/history`)}
             >
               <History className="w-4 h-4 mr-1" />
               History

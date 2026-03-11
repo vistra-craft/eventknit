@@ -474,7 +474,7 @@ export class AuthService {
 
   /**
    * Verify Email OAuth code and authenticate user (passwordless login/registration)
-   * Creates account if new, logs in if existing (like Facebook OAuth)
+   * Creates account if new, logs in if existing (like OAuth flows)
    */
   static async verifyEmailOAuthCode(
     email: string,
@@ -548,7 +548,7 @@ export class AuthService {
 
       logger.info(`User logged in via Email OAuth: ${user.email}`);
     } else {
-      // New user - create account (like Facebook OAuth)
+      // New user - create account (like other OAuth flows)
       const userRole = verification.role || UserRole.ATTENDEE;
 
       // Create new user account

@@ -48,6 +48,7 @@ import {
 } from '../validations/white-label.validations.js';
 import { extendedProfileValidations } from '../validations/extended-profile.validations.js';
 import { AdminSecurityController } from '../controllers/admin-security.controller.js';
+import { ManagedEventController } from '../controllers/managed-event.controller.js';
 import { AdminPlatformAnalyticsController } from '../controllers/admin-platform-analytics.controller.js';
 import { AdminKYCController } from '../controllers/admin-kyc.controller.js';
 import { adminKYCValidations } from '../validations/admin-kyc.validations.js';
@@ -1384,5 +1385,13 @@ router.patch(
   validateParams(Joi.object({ id: Joi.string().uuid().required() })),
   AdminController.cancelTicketIssuance,
 );
+
+// ========== Managed Events ==========
+router.get('/managed-events/stats', requireMinRole(UserRole.ADMIN_STAFF), ManagedEventController.getManagedEventStats);
+router.get('/managed-events', requireMinRole(UserRole.ADMIN_STAFF), ManagedEventController.getManagedEvents);
+router.get('/managed-events/:eventId', requireMinRole(UserRole.ADMIN_STAFF), ManagedEventController.getManagedEventById);
+router.post('/managed-events', requireMinRole(UserRole.ADMIN_STAFF), ManagedEventController.createManagedEvent);
+router.put('/managed-events/:eventId', requireMinRole(UserRole.ADMIN_STAFF), ManagedEventController.updateManagedEvent);
+router.post('/managed-events/:eventId/cancel', requireMinRole(UserRole.ADMIN_STAFF), ManagedEventController.cancelManagedEvent);
 
 export default router;
