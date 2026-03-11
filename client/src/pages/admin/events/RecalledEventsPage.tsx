@@ -16,6 +16,7 @@ import { showErrorToast } from "@/lib/utils/error";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { EventPreviewModal } from "../../../components/EventPreviewModal";
 
 interface RecalledEvent {
@@ -30,6 +31,7 @@ interface RecalledEvent {
   category: string;
   type: "public" | "private";
   isFree: boolean;
+  image?: string;
   recalledDate: string;
   recallReason: string;
   recalledBy: string;
@@ -90,8 +92,7 @@ const RecalledEventsPage = () => {
             location: event.location || event.venue || 'TBD',
             category: event.category || 'Uncategorized',
             type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
-            isFree: event.isFree || false,
-            recalledDate: event.recalledAt || event.updatedAt || event.createdAt || new Date().toISOString(),
+            isFree: event.isFree || false,          image: event.image || undefined,            recalledDate: event.recalledAt || event.updatedAt || event.createdAt || new Date().toISOString(),
             recallReason: event.recallReason || 'No reason provided',
             recalledBy: event.recalledBy ? 'Admin' : 'System',
           }));
@@ -252,9 +253,17 @@ const RecalledEventsPage = () => {
           <Card key={event.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
             <CardContent className="p-4">
               <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-base font-semibold text-foreground truncate">{event.title}</h3>
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <EventThumbnail
+                    src={event.image}
+                    alt={event.title}
+                    category={event.category}
+                    size="md"
+                    className="flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-base font-semibold text-foreground truncate">{event.title}</h3>
                     <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-700/50 text-xs">
                       Recalled
                     </Badge>
@@ -288,6 +297,7 @@ const RecalledEventsPage = () => {
                         <p className="text-xs text-orange-600 dark:text-orange-400">Recalled by {event.recalledBy}</p>
                       </div>
                     </div>
+                  </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4">
