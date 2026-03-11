@@ -26,7 +26,6 @@ import { AgendaTimeline } from "@/components/event-details/AgendaTimeline";
 import { SpeakersShowcase } from "@/components/event-details/SpeakersShowcase";
 import { SponsorsShowcase } from "@/components/event-details/SponsorsShowcase";
 import { ExhibitorsGrid } from "@/components/event-details/ExhibitorsGrid";
-import { Loader } from "@/components/ui/loader";
 import { EventDetailsSkeleton } from "@/components/event-details/EventDetailsSkeleton";
 import { getRegistrationStatus } from "@/lib/user-dashboard-api";
 import { getVenueType } from "@/types/event";
