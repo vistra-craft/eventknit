@@ -58,6 +58,7 @@ export interface EventData {
     name: string;
     price: number;
     quantity?: number | null;
+    description?: string | null;
     features?: string[];
     originalPrice?: number | null;
     discountLabel?: string | null;
