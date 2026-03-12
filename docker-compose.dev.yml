@@ -37,25 +37,23 @@ services:
       retries: 3
       start_period: 10s
 
-  # Backend Server
+  # Backend Server (Development)
   server:
     build:
       context: ./server
       dockerfile: Dockerfile
-      target: production
+      target: development
     container_name: eventknit-server
     restart: unless-stopped
-    env_file: .env
+    env_file: ./server/.env.development
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: 3001
-      DATABASE_URL: postgres://${POSTGRES_USER:-eventknit}:${POSTGRES_PASSWORD:-eventknit123}@postgres:5432/${POSTGRES_DB:-eventknit}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-eventknit}:${POSTGRES_PASSWORD:-eventknit123}@postgres:5432/${POSTGRES_DB:-eventknit}?schema=public
       REDIS_URL: redis://redis:6379
-      # Add other env vars here or use env_file
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://130.185.119.45,http://localhost:5173}
-      FRONTEND_URL: ${FRONTEND_URL:-http://130.185.119.45}
+    volumes:
+      - ./server/src:/app/src
+      - ./server/prisma:/app/prisma
     networks:
       - eventknit-network
     depends_on:
@@ -63,12 +61,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+    ports:
+      - "3001:3001"
 
   # Frontend Client
   client:
@@ -77,14 +71,15 @@ services:
       dockerfile: Dockerfile
     container_name: eventknit-client
     restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3001/api/v1
+    volumes:
+      - ./client/src:/app/src
+      - ./client/public:/app/public
     networks:
       - eventknit-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
+    ports:
+      - "5173:5173"
 
   # Nginx Reverse Proxy
   nginx:
@@ -93,15 +88,15 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
     networks:
       - eventknit-network
     depends_on:
-      server:
-        condition: service_healthy
-      client:
-        condition: service_started
+      - server
+      - client
 
 networks:
   eventknit-network:
