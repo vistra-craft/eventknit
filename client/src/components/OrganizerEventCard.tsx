@@ -155,7 +155,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
 
   const handleEditClick = (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    navigate(`/user/create-event-form?edit=${event.id}`);
+    navigate(`/organizer/events/create?edit=${event.id}`);
   };
 
   const handleViewClick = (e: React.MouseEvent) => {

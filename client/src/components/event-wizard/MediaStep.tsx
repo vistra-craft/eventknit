@@ -64,7 +64,7 @@ export function MediaStep({
     <div className="space-y-6">
       {/* Event Image */}
       <div className="space-y-4">
-        <Label>Event Image</Label>
+        <Label>Event Image <span className="text-destructive">*</span></Label>
         <input
           ref={fileInputRef}
           type="file"

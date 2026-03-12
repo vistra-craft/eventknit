@@ -1375,7 +1375,13 @@ export default function CreateEventStepwise() {
       }
     }
 
-    if (step === 2) { // Media — validate FAQs if partially filled
+    if (step === 2) { // Media — validate image and FAQs
+      // Image is required
+      if (!eventData.image?.trim()) {
+        errors.image = 'Event image is required';
+      }
+      
+      // Validate FAQs if partially filled
       faqs.forEach((faq, index) => {
         const hasQuestion = faq.question.trim().length > 0;
         const hasAnswer = faq.answer.trim().length > 0;
