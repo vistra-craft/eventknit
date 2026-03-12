@@ -139,7 +139,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const isOnboardingPage = location.pathname === '/organizer/onboarding';
   const isPendingApproval = user.status === UserStatus.PENDING_APPROVAL;
 
-  if (isOrganizer && !isOnboardingPage && !isPendingApproval && user.role === UserRole.ORGANIZER && !user.onboardingCompleted) {
+  if (isOrganizer && !isOnboardingPage && !isPendingApproval && user.role === UserRole.ORGANIZER && !user.onboardingCompleted && !hasPendingApprovalModal) {
     // Redirect to onboarding if organizer hasn't completed onboarding
     return <Navigate to="/organizer/onboarding" replace />;
   }

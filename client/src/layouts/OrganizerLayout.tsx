@@ -7,8 +7,6 @@ import { organizerRoutes } from '../routes/organizerRoutes';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
 import { Loader } from '../components/ui/loader';
-import { useOrganizerApproval } from '../hooks/useOrganizerApproval';
-import OrganizerOnboardingModal from '../components/OrganizerOnboardingModal';
 
 /**
  * Dashboard skeleton — page header + 4 metric cards
@@ -47,7 +45,6 @@ const LoadingFallback = () => {
 };
 
 const OrganizerLayout: React.FC = () => {
-  const { showApprovalModal, handleApprovalAcknowledged } = useOrganizerApproval();
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed, will be set by useEffect
   const [isMobile, setIsMobile] = useState(false);
 
@@ -88,9 +85,6 @@ const OrganizerLayout: React.FC = () => {
   };
 
   return (
-    <>
-      <OrganizerOnboardingModal open={showApprovalModal} onComplete={handleApprovalAcknowledged} />
-
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden lg:h-screen lg:overflow-hidden">
       {/* Main layout area (sidebar + header + page content) */}
       <div className="w-full flex flex-1 lg:h-full lg:overflow-hidden">
@@ -143,7 +137,6 @@ const OrganizerLayout: React.FC = () => {
       )}
 
     </div>
-    </>
   );
 };
 

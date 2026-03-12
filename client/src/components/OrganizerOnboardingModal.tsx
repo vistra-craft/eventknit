@@ -19,7 +19,7 @@ const STEPS = [
     Icon: PartyPopper,
     title: "You're now an organizer",
     description:
-      "Your first event was approved. You now have access to all organizer tools — tickets, analytics, payouts, and more.",
+      "Your first event was approved. You now have access to all organizer tools; tickets, analytics, payouts, and more.",
   },
   {
     Icon: CalendarDays,
@@ -37,7 +37,7 @@ const STEPS = [
     Icon: BarChart2,
     title: 'Know your audience',
     description:
-      "Check-in rates, registration trends, attendee breakdown — it's all in Analytics once your event goes live.",
+      "Check-in rates, registration trends, attendee breakdown, it's all in Analytics once your event goes live.",
   },
 ] as const;
 

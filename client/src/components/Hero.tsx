@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { getActiveFeaturedEvents, type ActiveFeaturedEvent } from "@/lib/featured-event-api";
 import { getFocalPointStyle } from "@/lib/image-utils";
 import { HeroSkeleton } from "./HeroSkeleton";
+import { EmptyFeaturedState } from "./EmptyFeaturedState";
 
 export const Hero = () => {
   const navigate = useNavigate();
@@ -47,9 +48,14 @@ export const Hero = () => {
     return () => clearInterval(interval);
   }, [isAutoPlaying, featuredEvents.length]);
 
-  // Show loading skeleton or placeholder while loading
-  if (isLoading || featuredEvents.length === 0) {
+  // Show loading skeleton while loading
+  if (isLoading) {
     return <HeroSkeleton />;
+  }
+
+  // Show empty state when no events exist
+  if (featuredEvents.length === 0) {
+    return <EmptyFeaturedState />;
   }
 
   const currentEvent = featuredEvents[currentEventIndex];

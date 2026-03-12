@@ -2,12 +2,20 @@
  * User Profile Dropdown Component
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole, UserStatus } from '@/types/auth';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 
 interface ProfileDropdownProps {
   onClose?: () => void;
@@ -17,31 +25,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        onClose?.();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
-
-  // Close dropdown if user logs out
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      setIsOpen(false);
-    }
-  }, [isAuthenticated, user]);
 
 
   if (!isAuthenticated || !user) return null;
@@ -137,8 +120,8 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
 
   const handleLogout = () => {
     setIsOpen(false);
-    // Logout is now synchronous - no need to await
     logout();
+    onClose?.();
   };
 
   const handleNavigate = (path: string) => {
@@ -148,75 +131,67 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-eventknit focus:ring-offset-2 transition-transform hover:scale-105"
-        aria-label="User menu"
-        aria-expanded={isOpen}
-      >
-        <Avatar
-          src={user.avatar || undefined}
-          name={`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
-          alt={`${user.firstName} ${user.lastName}`}
-          size="sm"
-          className="h-8 w-8 border-2 border-eventknit-foreground/20"
-        />
-      </button>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild>
+        <button
+          className="flex items-center gap-2 rounded-full focus:outline-none focus:ring-2 focus:ring-eventknit focus:ring-offset-2 transition-transform hover:scale-105"
+          aria-label="User menu"
+        >
+          <Avatar
+            src={user.avatar || undefined}
+            name={`${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email}
+            alt={`${user.firstName} ${user.lastName}`}
+            size="sm"
+            className="h-8 w-8 border-2 border-eventknit-foreground/20"
+          />
+        </button>
+      </DropdownMenuTrigger>
 
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-background border border-border ring-1 ring-primary/10 z-50 animate-in fade-in-0 zoom-in-95">
-          <div className="py-1">
-            {/* User Info */}
-            <div className="px-4 py-3 border-b border-border">
-              <p className="text-sm font-medium text-foreground">
-                {user.firstName} {user.lastName}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-            </div>
+      <DropdownMenuContent align="end" className="w-56">
+        {/* User Info */}
+        <DropdownMenuLabel className="flex flex-col gap-1">
+          <p className="text-sm font-medium text-foreground">
+            {user.firstName} {user.lastName}
+          </p>
+          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+        </DropdownMenuLabel>
 
-            {/* Menu Items */}
-            <button
-              onClick={() => handleNavigate(getProfileRoute())}
-              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
-            >
-              <User className="w-4 h-4" />
-              View Profile
-            </button>
+        <DropdownMenuSeparator />
 
-            <button
-              onClick={() => handleNavigate(getSettingsRoute())}
-              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </button>
+        {/* View Profile */}
+        <DropdownMenuItem onClick={() => handleNavigate(getProfileRoute())}>
+          <User className="w-4 h-4 mr-2" />
+          <span>View Profile</span>
+        </DropdownMenuItem>
 
-            <div className="border-t border-border my-1" />
+        {/* Settings */}
+        <DropdownMenuItem onClick={() => handleNavigate(getSettingsRoute())}>
+          <Settings className="w-4 h-4 mr-2" />
+          <span>Settings</span>
+        </DropdownMenuItem>
 
-            <button
-              onClick={async () => {
-                const route = await getDashboardRoute();
-                handleNavigate(route);
-              }}
-              className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted flex items-center gap-2 transition-colors"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              Dashboard
-            </button>
+        <DropdownMenuSeparator />
 
-            <div className="border-t border-border my-1" />
+        {/* Dashboard */}
+        <DropdownMenuItem
+          onClick={async () => {
+            const route = await getDashboardRoute();
+            handleNavigate(route);
+          }}
+        >
+          <LayoutDashboard className="w-4 h-4 mr-2" />
+          <span>Dashboard</span>
+        </DropdownMenuItem>
 
-            <button
-              onClick={handleLogout}
-              className="w-full text-left px-4 py-2 text-sm text-destructive hover:bg-destructive/10 flex items-center gap-2 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
-          </div>
-        </div>
-      )}
+        <DropdownMenuSeparator />
+
+        {/* Logout */}
+        <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+          <LogOut className="w-4 h-4 mr-2" />
+          <span>Logout</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
     </div>
   );
 };
