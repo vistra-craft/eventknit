@@ -398,7 +398,7 @@ const ServicePointHistory: React.FC = () => {
                     setSelectedEventId(e.target.value);
                     setPagination({ ...pagination, page: 1 });
                   }}
-                  className="px-3 py-2 border border-border rounded-md text-sm flex-1 max-w-md"
+                  className="px-3 py-2 border border-border rounded-md text-sm flex-1 max-w-md bg-input text-foreground"
                 >
                   <option value="">-- Select an event --</option>
                   {events.map(event => (
@@ -488,7 +488,7 @@ const ServicePointHistory: React.FC = () => {
                     <select
                       value={selectedSession}
                       onChange={(e) => setSelectedSession(e.target.value)}
-                      className="px-3 py-2 border border-border rounded-md text-sm"
+                      className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
                     >
                       {sessionsOptions.map(sess => (
                         <option key={sess.id} value={sess.id}>{sess.name}</option>
@@ -497,7 +497,7 @@ const ServicePointHistory: React.FC = () => {
                     <select
                       value={selectedStatus}
                       onChange={(e) => setSelectedStatus(e.target.value)}
-                      className="px-3 py-2 border border-border rounded-md text-sm"
+                      className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
                     >
                       {statuses.map(status => (
                         <option key={status.id} value={status.id}>{status.name}</option>
@@ -506,7 +506,7 @@ const ServicePointHistory: React.FC = () => {
                     <select
                       value={selectedScanType}
                       onChange={(e) => setSelectedScanType(e.target.value)}
-                      className="px-3 py-2 border border-border rounded-md text-sm"
+                      className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
                     >
                       {scanTypes.map(type => (
                         <option key={type.id} value={type.id}>{type.name}</option>
@@ -515,7 +515,7 @@ const ServicePointHistory: React.FC = () => {
                     <select
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="px-3 py-2 border border-border rounded-md text-sm"
+                      className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
                     >
                       {dates.map(date => (
                         <option key={date.id} value={date.id}>{date.name}</option>

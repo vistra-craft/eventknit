@@ -136,14 +136,14 @@ const DraggableBadgeElement: React.FC<DraggableBadgeElementProps> = ({
         <span className="whitespace-pre-wrap break-words w-full">{content}</span>
       )}
       {element.type === 'qr' && (
-        <div className="w-full h-full bg-white border border-gray-200 rounded flex items-center justify-center p-1">
+        <div className="w-full h-full bg-white border border-border rounded flex items-center justify-center p-1">
           <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 rounded-sm flex items-center justify-center">
             <QrCode className="w-1/2 h-1/2 text-white" />
           </div>
         </div>
       )}
       {element.type === 'image' && (
-        <div className="w-full h-full bg-muted border border-gray-200 rounded flex items-center justify-center">
+        <div className="w-full h-full bg-muted border border-border rounded flex items-center justify-center">
           <Image className="w-1/3 h-1/3 text-muted-foreground" />
         </div>
       )}
@@ -233,7 +233,7 @@ const DraggableBadgeElement: React.FC<DraggableBadgeElementProps> = ({
           className={`${
             isSelected && !isPreviewMode
               ? 'ring-2 ring-primary ring-offset-1 shadow-lg'
-              : 'hover:ring-1 hover:ring-gray-300'
+              : 'hover:ring-1 hover:ring-border'
           } transition-all duration-100`}
         >
           {elementContent}

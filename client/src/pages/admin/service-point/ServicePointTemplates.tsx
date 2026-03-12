@@ -755,7 +755,7 @@ const ServicePointTemplates: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-6 flex items-center justify-center min-h-[600px] bg-gradient-to-br from-muted/40 to-muted/60 overflow-auto">
+              <CardContent className="p-6 flex items-center justify-center min-h-[600px] bg-neutral-100 dark:bg-neutral-900 overflow-auto">
                 {currentTemplate ? (
                   <div
                     className="relative border-2 border-dashed border-border bg-card shadow-2xl transition-all duration-200 max-w-full hover:border-primary/50"
@@ -765,7 +765,7 @@ const ServicePointTemplates: React.FC = () => {
                       maxWidth: '100%',
                       backgroundColor: currentTemplate.backgroundColor,
                       backgroundImage: showGrid && !isPreviewMode
-                        ? 'repeating-linear-gradient(0deg, transparent, transparent 9px, #e5e5e5 9px, #e5e5e5 10px), repeating-linear-gradient(90deg, transparent, transparent 9px, #e5e5e5 9px, #e5e5e5 10px)'
+                        ? 'repeating-linear-gradient(0deg, transparent, transparent 9px, hsl(var(--border)) 9px, hsl(var(--border)) 10px), repeating-linear-gradient(90deg, transparent, transparent 9px, hsl(var(--border)) 9px, hsl(var(--border)) 10px)'
                         : 'none',
                     }}
                   >
@@ -883,7 +883,7 @@ const ServicePointTemplates: React.FC = () => {
                               <select
                                 value={selectedElementData.fontFamily || 'Inter'}
                                 onChange={(e) => updateElementWithHistory(selectedElement!, { fontFamily: e.target.value })}
-                                className="w-full h-8 px-2 border border-border rounded text-sm bg-background"
+                                className="w-full h-8 px-2 border border-border rounded text-sm bg-card text-foreground dark:bg-slate-900 dark:text-slate-100"
                               >
                                 {FONT_FAMILIES.map(font => (
                                   <option key={font} value={font}>{font}</option>
@@ -933,7 +933,7 @@ const ServicePointTemplates: React.FC = () => {
                           <select
                             value={selectedElementData.content}
                             onChange={(e) => updateElementWithHistory(selectedElement!, { content: e.target.value })}
-                            className="w-full h-8 px-2 border border-border rounded text-sm bg-background"
+                            className="w-full h-8 px-2 border border-border rounded text-sm bg-card text-foreground dark:bg-slate-900 dark:text-slate-100"
                           >
                             <option value="{{qrCode}}">QR Code</option>
                             <option value="{{backupCode}}">Backup Code</option>
@@ -1130,7 +1130,7 @@ const ServicePointTemplates: React.FC = () => {
                               height: size.height,
                             });
                           }}
-                          className="w-full h-8 px-2 border border-border rounded text-sm bg-background"
+                          className="w-full h-8 px-2 border border-border rounded text-sm bg-card text-foreground dark:bg-slate-900 dark:text-slate-100"
                         >
                           {Object.entries(BADGE_SIZE_PRESETS).map(([key, value]) => (
                             <option key={key} value={key}>{value.label}</option>
@@ -1144,7 +1144,7 @@ const ServicePointTemplates: React.FC = () => {
                             <button
                               key={color}
                               className={`w-6 h-6 rounded border transition-all ${
-                                currentTemplate.backgroundColor === color ? 'ring-2 ring-primary ring-offset-1' : 'border-gray-200'
+                                currentTemplate.backgroundColor === color ? 'ring-2 ring-primary ring-offset-1' : 'border-border'
                               }`}
                               style={{ backgroundColor: color }}
                               onClick={() => setCurrentTemplate({ ...currentTemplate, backgroundColor: color })}

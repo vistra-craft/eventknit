@@ -886,7 +886,7 @@ const ServicePointScanner: React.FC = () => {
                 setEventId(newEventId);
                 navigate(`${basePrefix}/event-day/scanner?event=${newEventId}`);
               }}
-              className="px-3 py-2 border border-border rounded-md text-sm"
+              className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
             >
               <option value="">Select Event</option>
               {events.map(event => (
@@ -1115,7 +1115,7 @@ const ServicePointScanner: React.FC = () => {
                     >
                       <div id="qr-reader" ref={scannerContainerRef} className="w-full h-full" />
                       {!isScanning && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                        <div className="absolute inset-0 flex items-center justify-center bg-muted">
                           <div className="text-center p-4">
                             <QrCode className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} text-muted-foreground mx-auto mb-4`} />
                             <p className={`${isMobile ? 'text-sm' : 'text-base'} text-muted-foreground mb-2`}>
@@ -1385,7 +1385,7 @@ const ServicePointScanner: React.FC = () => {
                   {searchResults.map((attendee) => (
                     <div
                       key={attendee.registrationId}
-                      className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-gray-50"
+                      className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
