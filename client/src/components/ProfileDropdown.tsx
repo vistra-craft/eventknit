@@ -192,7 +192,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-    </div>
   );
 };
 

@@ -14,8 +14,7 @@ import {
   Clock,
   Percent,
   Gift,
-
-
+  Calendar,
   ChevronDown,
   Copy,
   Trash2,
@@ -627,21 +626,43 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
                             <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">From</Label>
-                                <Input
-                                  type="datetime-local"
-                                  value={ticket.availableFrom || ''}
-                                  className="h-10 text-sm"
-                                  onChange={(e) => updateTicket(index, { availableFrom: e.target.value })}
-                                />
+                                <div className="relative">
+                                  <Input
+                                    id={`avail-from-${ticket.id}`}
+                                    type="datetime-local"
+                                    value={ticket.availableFrom || ''}
+                                    max={ticket.availableUntil || undefined}
+                                    className="h-10 text-sm pr-10 [&::-webkit-calendar-picker-indicator]:hidden"
+                                    onChange={(e) => updateTicket(index, { availableFrom: e.target.value })}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => (document.getElementById(`avail-from-${ticket.id}`) as HTMLInputElement | null)?.showPicker?.()}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                                  >
+                                    <Calendar className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">Until</Label>
-                                <Input
-                                  type="datetime-local"
-                                  value={ticket.availableUntil || ''}
-                                  className="h-10 text-sm"
-                                  onChange={(e) => updateTicket(index, { availableUntil: e.target.value })}
-                                />
+                                <div className="relative">
+                                  <Input
+                                    id={`avail-until-${ticket.id}`}
+                                    type="datetime-local"
+                                    value={ticket.availableUntil || ''}
+                                    min={ticket.availableFrom || undefined}
+                                    className="h-10 text-sm pr-10 [&::-webkit-calendar-picker-indicator]:hidden"
+                                    onChange={(e) => updateTicket(index, { availableUntil: e.target.value })}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => (document.getElementById(`avail-until-${ticket.id}`) as HTMLInputElement | null)?.showPicker?.()}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                                  >
+                                    <Calendar className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                             <div className="space-y-1">

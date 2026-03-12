@@ -393,9 +393,14 @@ export function ReviewStep({
               className="flex items-center justify-between gap-4 py-2.5 px-3 rounded-lg bg-muted/40"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-sm font-medium truncate">
-                  {ticket.name || `Ticket ${i + 1}`}
-                </span>
+                <div className="min-w-0">
+                  <span className="text-sm font-medium truncate block">
+                    {ticket.name || `Ticket ${i + 1}`}
+                  </span>
+                  {ticket.description && (
+                    <span className="text-xs text-muted-foreground line-clamp-1">{ticket.description}</span>
+                  )}
+                </div>
                 {ticket.isComplementary && (
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 shrink-0">
                     Comp

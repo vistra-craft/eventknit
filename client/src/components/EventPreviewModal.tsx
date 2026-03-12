@@ -296,6 +296,9 @@ export const EventPreviewModal = ({
                             {ticket.discountLabel && (
                               <p className="text-xs text-muted-foreground">{ticket.discountLabel}</p>
                             )}
+                            {ticket.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{ticket.description}</p>
+                            )}
                           </div>
                           <div className="text-right">
                             <p className="font-semibold text-sm">

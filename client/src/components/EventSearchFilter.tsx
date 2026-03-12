@@ -232,8 +232,8 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
                 </div>
 
                 {/* Location + Clear */}
-                <div className="flex flex-col gap-2 md:flex-1 lg:w-80">
-                  <div className="relative">
+                <div className="flex items-center gap-2 md:flex-1 lg:w-80">
+                  <div className="relative flex-1">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
                       type="text"
@@ -248,7 +248,7 @@ export const EventSearchFilter = ({ filters, onFiltersChange }: EventSearchFilte
                     <button
                       type="button"
                       onClick={handleClearFilters}
-                      className="inline-flex items-center justify-start gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+                      className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] text-muted-foreground hover:text-foreground"
                     >
                       <X className="w-3 h-3" />
                       <span>Clear all filters</span>
