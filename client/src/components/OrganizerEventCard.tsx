@@ -293,7 +293,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
               onClick={handleManageClick}
               className="flex-1"
             >
-              {isApproved ? "Manage Event" : "View Status"}
+              {isApproved ? "Manage" : "View Status"}
             </Button>
           </div>
         </CardContent>

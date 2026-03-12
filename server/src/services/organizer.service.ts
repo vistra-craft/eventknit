@@ -1060,8 +1060,14 @@ export class OrganizerService {
     const now = new Date();
     if (filters.upcoming === true) {
       where.startDate = { gte: now };
+      // Exclude cancelled events from upcoming tab unless explicitly filtering by status
+      if (!where.status) {
+        where.status = { not: 'CANCELLED' };
+      }
     } else if (filters.upcoming === false) {
       where.AND = [
+        // Exclude cancelled events from past tab (they belong in the Cancelled tab)
+        { status: { not: 'CANCELLED' } },
         {
           OR: [
             { endDate: { lt: now } },

@@ -115,9 +115,10 @@ export function EventsListView({
               className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
             >
               <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="upcoming">Upcoming</option>
+              <option value="approved">Approved</option>
+              <option value="pending">Pending</option>
               <option value="completed">Completed</option>
+              <option value="rejected">Rejected</option>
             </select>
           )}
           <Select

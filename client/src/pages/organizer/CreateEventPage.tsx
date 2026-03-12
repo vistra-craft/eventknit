@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import CreateEventStepwise from "../CreateEventStepwise";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -13,6 +13,7 @@ import { getDashboardAccess } from "@/lib/organizer-api";
 const CreateEventPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
@@ -22,14 +23,14 @@ const CreateEventPage: React.FC = () => {
         try {
           const accessResponse = await getDashboardAccess();
           if (accessResponse.success && !accessResponse.data.hasAccess) {
-            // No dashboard access - redirect to standalone creation
-            navigate('/organizer/events/create-standalone', { replace: true });
+            // No dashboard access - redirect to standalone creation (preserve query params e.g. ?edit=)
+            navigate(`/organizer/events/create-standalone${location.search}`, { replace: true });
             return;
           }
         } catch (error) {
           console.error('Error checking dashboard access:', error);
-          // On error, assume no access and redirect to standalone
-          navigate('/organizer/events/create-standalone', { replace: true });
+          // On error, assume no access and redirect to standalone (preserve query params e.g. ?edit=)
+          navigate(`/organizer/events/create-standalone${location.search}`, { replace: true });
           return;
         }
       }
