@@ -10,6 +10,7 @@ jest.mock('../src/config/database', () => ({
     },
     eventRegistration: {
       findMany: jest.fn(),
+      findUnique: jest.fn(),
       count: jest.fn(),
     },
     facilityZone: {
@@ -35,8 +36,26 @@ jest.mock('../src/utils/logger', () => ({
     error: jest.fn(),
     info: jest.fn(),
     debug: jest.fn(),
+    warn: jest.fn(),
   },
 }));
+
+// Mock WorkstationService used by syncScansWithCheckIn
+jest.mock('../src/services/workstation.service', () => ({
+  WorkstationService: {
+    scanTicket: jest.fn(),
+    checkOut: jest.fn(),
+  },
+}));
+
+// Mock websocketService
+jest.mock('../src/services/websocket.service', () => ({
+  websocketService: {
+    sendStatisticsUpdate: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
+import { WorkstationService } from '../src/services/workstation.service';
 
 const prismaMock = prisma as unknown as {
   event: {
@@ -44,6 +63,7 @@ const prismaMock = prisma as unknown as {
   };
   eventRegistration: {
     findMany: jest.Mock;
+    findUnique: jest.Mock;
     count: jest.Mock;
   };
   facilityZone: {
@@ -60,6 +80,11 @@ const prismaMock = prisma as unknown as {
   checkpoint: {
     findUnique: jest.Mock;
   };
+};
+
+const workstationMock = WorkstationService as unknown as {
+  scanTicket: jest.Mock;
+  checkOut: jest.Mock;
 };
 
 describe('OfflineSyncService', () => {
@@ -560,6 +585,154 @@ describe('OfflineSyncService', () => {
       expect(result.totalAttendees).toBe(0);
       expect(result.totalScans).toBe(0);
       expect(result.userScansToday).toBe(0);
+    });
+  });
+
+  describe('syncScansWithCheckIn', () => {
+    const mockRegistration = { eventId: 'event-123' };
+
+    const checkInScan = {
+      id: 'mobile-1',
+      registrationId: 'reg-1',
+      qrCode: 'QR_PAYLOAD_1',
+      codeType: 'QR_CODE',
+      signatureValid: true,
+      scanType: 'CHECK_IN',
+      scannedAt: '2026-03-12T10:00:00.000Z',
+      scannedBy: 'user-123',
+      deviceInfo: { deviceId: 'device-1', deviceType: 'MOBILE' },
+    };
+
+    const checkOutScan = {
+      id: 'mobile-2',
+      registrationId: 'reg-2',
+      qrCode: 'QR_PAYLOAD_2',
+      codeType: 'QR_CODE',
+      signatureValid: true,
+      scanType: 'CHECK_OUT',
+      scannedAt: '2026-03-12T12:00:00.000Z',
+      scannedBy: 'user-123',
+      deviceInfo: { deviceId: 'device-1', deviceType: 'MOBILE' },
+    };
+
+    beforeEach(() => {
+      prismaMock.eventRegistration.findUnique.mockResolvedValue(mockRegistration);
+    });
+
+    it('should process a CHECK_IN scan through the full check-in state machine', async () => {
+      workstationMock.scanTicket.mockResolvedValue({
+        success: true,
+        registrationId: 'reg-1',
+        checkedInAt: new Date(),
+      });
+
+      const result = await OfflineSyncService.syncScansWithCheckIn([checkInScan], 'user-123');
+
+      expect(result.successCount).toBe(1);
+      expect(result.failureCount).toBe(0);
+      expect(result.results[0]).toEqual({ id: 'mobile-1', status: 'success' });
+      expect(workstationMock.scanTicket).toHaveBeenCalledWith(
+        'QR_PAYLOAD_1',
+        'event-123',
+        'user-123',
+        undefined,
+        'device-1',
+        'MOBILE',
+      );
+    });
+
+    it('should process a CHECK_OUT scan by calling checkOut', async () => {
+      workstationMock.checkOut.mockResolvedValue({
+        success: true,
+        registrationId: 'reg-2',
+      });
+
+      const result = await OfflineSyncService.syncScansWithCheckIn([checkOutScan], 'user-123');
+
+      expect(result.successCount).toBe(1);
+      expect(result.failureCount).toBe(0);
+      expect(result.results[0]).toEqual({ id: 'mobile-2', status: 'success' });
+      expect(workstationMock.checkOut).toHaveBeenCalledWith(
+        'reg-2',
+        'user-123',
+        undefined,
+        'device-1',
+        'MOBILE',
+      );
+    });
+
+    it('should mark scan as failed when registration is not found', async () => {
+      prismaMock.eventRegistration.findUnique.mockResolvedValue(null);
+
+      const result = await OfflineSyncService.syncScansWithCheckIn([checkInScan], 'user-123');
+
+      expect(result.successCount).toBe(0);
+      expect(result.failureCount).toBe(1);
+      expect(result.results[0].status).toBe('failed');
+      expect(result.results[0].errorCode).toBe('INVALID_TICKET');
+      expect(workstationMock.scanTicket).not.toHaveBeenCalled();
+    });
+
+    it('should propagate check-in service errors as failed results', async () => {
+      workstationMock.scanTicket.mockResolvedValue({
+        success: false,
+        errorCode: 'ALREADY_CHECKED_IN',
+        errorMessage: 'Ticket already scanned',
+      });
+
+      const result = await OfflineSyncService.syncScansWithCheckIn([checkInScan], 'user-123');
+
+      expect(result.successCount).toBe(0);
+      expect(result.failureCount).toBe(1);
+      expect(result.results[0].status).toBe('failed');
+      expect(result.results[0].errorCode).toBe('ALREADY_CHECKED_IN');
+    });
+
+    it('should process a mixed batch and return per-scan results', async () => {
+      prismaMock.eventRegistration.findUnique.mockResolvedValue(mockRegistration);
+      workstationMock.scanTicket.mockResolvedValue({ success: true });
+      workstationMock.checkOut.mockResolvedValue({ success: true });
+
+      const result = await OfflineSyncService.syncScansWithCheckIn(
+        [checkInScan, checkOutScan],
+        'user-123',
+      );
+
+      expect(result.successCount).toBe(2);
+      expect(result.failureCount).toBe(0);
+      expect(result.results).toHaveLength(2);
+      expect(result.results[0].id).toBe('mobile-1');
+      expect(result.results[1].id).toBe('mobile-2');
+    });
+
+    it('should handle thrown exceptions and mark the scan as PROCESSING_ERROR', async () => {
+      workstationMock.scanTicket.mockRejectedValue(new Error('Database connection lost'));
+
+      const result = await OfflineSyncService.syncScansWithCheckIn([checkInScan], 'user-123');
+
+      expect(result.successCount).toBe(0);
+      expect(result.failureCount).toBe(1);
+      expect(result.results[0].errorCode).toBe('PROCESSING_ERROR');
+      expect(result.results[0].errorMessage).toContain('Database connection lost');
+    });
+
+    it('should treat MANUAL_CHECK_OUT scanType as a checkout operation', async () => {
+      workstationMock.checkOut.mockResolvedValue({ success: true });
+
+      const manualCheckOut = { ...checkOutScan, id: 'mobile-3', scanType: 'MANUAL_CHECK_OUT' };
+      const result = await OfflineSyncService.syncScansWithCheckIn([manualCheckOut], 'user-123');
+
+      expect(result.successCount).toBe(1);
+      expect(workstationMock.checkOut).toHaveBeenCalled();
+      expect(workstationMock.scanTicket).not.toHaveBeenCalled();
+    });
+
+    it('should return empty results for an empty batch', async () => {
+      const result = await OfflineSyncService.syncScansWithCheckIn([], 'user-123');
+
+      expect(result.successCount).toBe(0);
+      expect(result.failureCount).toBe(0);
+      expect(result.results).toHaveLength(0);
     });
   });
 });

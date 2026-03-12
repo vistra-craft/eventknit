@@ -198,6 +198,7 @@ enum ScanType {
   CHECK_OUT // Standard check-out scan
   MANUAL_CHECK_IN // Manual check-in by staff
   MANUAL_CHECK_OUT // Manual check-out by staff
+  VOID // Reversal of a check-in (resets registration to pre-check-in state)
 }
 
 model User {
@@ -1458,6 +1459,9 @@ model TicketScan {
   // Session analytics
   dayOfEvent      Int?
   durationSeconds Int?
+
+  // Staff notes (e.g. void reason)
+  notes String?
 
   @@index([registrationId])
   @@index([eventId])

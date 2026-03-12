@@ -43,6 +43,16 @@ export interface EventScanConfig {
   maxReEntries: number | null;
 }
 
+export interface VoidCheckInResult {
+  success: boolean;
+  registrationId: string;
+  eventId?: string;
+  attendeeName?: string;
+  scanId?: string;
+  errorCode?: string;
+  errorMessage?: string;
+}
+
 export interface AttendeeSearchResult {
   registrationId: string;
   eventId: string;
@@ -404,11 +414,21 @@ export class WorkstationService {
     location?: { lat: number; lng: number },
     sessionId?: string,
   ): Promise<ScanResult> {
-    // Acquire distributed lock to prevent concurrent scans
+    // Acquire distributed lock to prevent concurrent scans on the same ticket.
+    // Fail-hard: if Redis is unavailable or another process holds the lock after
+    // retries, we reject the scan rather than risk a double check-in.
     const lockKey = `scan:${registrationId}:${eventId}`;
     const lockValue = await LockService.acquireLockWithRetry(lockKey, 5000, 3, 100);
     if (!lockValue) {
-      logger.warn(`Lock acquisition failed for ${lockKey} - proceeding without lock (Redis may not be available)`);
+      logger.error(`Lock acquisition failed for ${lockKey} — rejecting scan to prevent double check-in`);
+      return {
+        success: false,
+        registrationId,
+        eventId,
+        checkedInAt: new Date(),
+        errorCode: 'LOCK_FAILED',
+        errorMessage: 'System is busy processing another scan for this ticket. Please try again in a moment.',
+      };
     }
 
     try {
@@ -659,13 +679,20 @@ export class WorkstationService {
         };
       }
 
-      // Acquire distributed lock to prevent concurrent checkouts
-      // If Redis is not available, proceed without locking (with warning)
+      // Acquire distributed lock to prevent concurrent checkouts.
+      // Fail-hard: reject rather than risk a double checkout.
       const lockKey = `scan:${registrationId}:${registration.eventId}`;
       const lockValue = await LockService.acquireLockWithRetry(lockKey, 5000, 3, 100);
 
       if (!lockValue) {
-        logger.warn(`Lock acquisition failed for ${lockKey} - proceeding without lock (Redis may not be available)`);
+        logger.error(`Lock acquisition failed for ${lockKey} — rejecting checkout to prevent double checkout`);
+        return {
+          success: false,
+          registrationId,
+          checkedOutAt: new Date(),
+          errorCode: 'LOCK_FAILED',
+          errorMessage: 'System is busy processing another scan for this ticket. Please try again in a moment.',
+        };
       }
 
       try {
@@ -1424,6 +1451,93 @@ export class WorkstationService {
       maxReEntries: event.maxReEntries,
       scanSettings: event.scanSettings,
     };
+  }
+
+  /**
+   * Void / reverse a check-in.
+   * Resets EventRegistration to pre-check-in state and creates a VOID TicketScan
+   * for the audit trail. Requires ADMIN_STAFF or higher (enforced at route level).
+   */
+  static async voidCheckIn(
+    registrationId: string,
+    voidedBy: string,
+    reason?: string,
+  ): Promise<VoidCheckInResult> {
+    const registration = await prisma.eventRegistration.findUnique({
+      where: { id: registrationId },
+      select: {
+        eventId: true,
+        checkedInAt: true,
+        isCurrentlyInside: true,
+        reEntryCount: true,
+        attendee: { select: { firstName: true, lastName: true } },
+      },
+    });
+
+    if (!registration) {
+      return { success: false, registrationId, errorCode: 'INVALID_TICKET', errorMessage: 'Registration not found' };
+    }
+
+    if (!registration.checkedInAt) {
+      return { success: false, registrationId, errorCode: 'NOT_CHECKED_IN', errorMessage: 'This ticket has never been checked in' };
+    }
+
+    const lockKey = `scan:${registrationId}:${registration.eventId}`;
+    const lockValue = await LockService.acquireLockWithRetry(lockKey, 5000, 3, 100);
+    if (!lockValue) {
+      logger.error(`Lock acquisition failed for void on ${lockKey}`);
+      return { success: false, registrationId, errorCode: 'LOCK_FAILED', errorMessage: 'System busy, please try again' };
+    }
+
+    try {
+      // Reset registration to pre-check-in state
+      await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          checkedOutAt: null,
+          isCurrentlyInside: false,
+          ticketStatus: TicketStatus.ACTIVE,
+          lastScanFacility: null,
+          ...(registration.reEntryCount > 0 ? { reEntryCount: { decrement: 1 } } : {}),
+        },
+      });
+
+      // Decrement venue occupancy if the attendee was marked inside
+      if (registration.isCurrentlyInside) {
+        try {
+          await VenueCapacityService.decrementOccupancy(registration.eventId);
+        } catch (err) {
+          logger.error('Failed to decrement venue occupancy on void', { err, registrationId });
+        }
+      }
+
+      // Create VOID scan record for the audit trail
+      const voidScan = await prisma.ticketScan.create({
+        data: {
+          registrationId,
+          eventId: registration.eventId,
+          scanType: ScanType.VOID,
+          scannedBy: voidedBy,
+          isValid: true,
+          isReEntry: false,
+          notes: reason ?? 'Check-in voided by staff',
+        },
+      });
+
+      const attendeeName = `${registration.attendee.firstName ?? ''} ${registration.attendee.lastName ?? ''}`.trim();
+
+      return {
+        success: true,
+        registrationId,
+        eventId: registration.eventId,
+        attendeeName,
+        scanId: voidScan.id,
+      };
+    } finally {
+      await LockService.releaseLock(lockKey, lockValue);
+    }
   }
 }
 

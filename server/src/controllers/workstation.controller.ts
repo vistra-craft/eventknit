@@ -1341,5 +1341,55 @@ export class WorkstationController {
       next(error);
     }
   }
+
+  /**
+   * Void / reverse a check-in
+   * POST /api/v1/workstation/registrations/:registrationId/void-checkin
+   * Requires: ADMIN_STAFF or higher (reversals need supervisor privilege)
+   */
+  static async voidCheckIn(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required' } });
+        return;
+      }
+
+      const registrationId = req.params.registrationId as string;
+      const { reason } = req.body as { reason?: string };
+
+      if (!registrationId) {
+        throw new ValidationError('Registration ID is required');
+      }
+
+      const result = await WorkstationService.voidCheckIn(registrationId, req.user.id, reason);
+
+      if (!result.success) {
+        res.status(400).json({
+          success: false,
+          error: { code: result.errorCode ?? 'VOID_ERROR', message: result.errorMessage ?? 'Void failed' },
+        });
+        return;
+      }
+
+      // Emit WebSocket events so the dashboard reflects the reversal immediately
+      if (result.eventId && result.scanId) {
+        websocketService.emitScanEvent(result.eventId, {
+          scanId: result.scanId,
+          registrationId,
+          eventId: result.eventId,
+          scanType: 'VOID' as ScanType,
+          facility: null,
+          scannedAt: new Date(),
+          attendeeName: result.attendeeName,
+          isReEntry: false,
+        });
+        await websocketService.sendStatisticsUpdate(result.eventId);
+      }
+
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 

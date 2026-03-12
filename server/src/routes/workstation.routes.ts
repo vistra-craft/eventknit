@@ -97,11 +97,11 @@ router.get('/tickets/:ticketId', requireMinRole(UserRole.TELLER), WorkstationCon
 /**
  * @route   POST /api/v1/workstation/manual-check-in
  * @desc    Manual check-in (by search term)
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (TELLER or higher)
  */
 router.post(
   '/manual-check-in',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.TELLER),
   scanRateLimiter,
   WorkstationController.manualCheckIn,
 );
@@ -109,11 +109,11 @@ router.post(
 /**
  * @route   POST /api/v1/workstation/manual-check-out
  * @desc    Manual check-out (by search term)
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (TELLER or higher)
  */
 router.post(
   '/manual-check-out',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.TELLER),
   scanRateLimiter,
   WorkstationController.manualCheckOut,
 );
@@ -193,6 +193,17 @@ router.get(
   '/events/:eventId/badge-prints',
   requireMinRole(UserRole.TELLER),
   WorkstationController.getEventBadgePrints,
+);
+
+/**
+ * @route   POST /api/v1/workstation/registrations/:registrationId/void-checkin
+ * @desc    Void / reverse a check-in (resets to pre-check-in state, creates VOID audit record)
+ * @access  Private (ADMIN_STAFF or higher — supervisors only)
+ */
+router.post(
+  '/registrations/:registrationId/void-checkin',
+  requireMinRole(UserRole.ADMIN_STAFF),
+  WorkstationController.voidCheckIn,
 );
 
 export default router;

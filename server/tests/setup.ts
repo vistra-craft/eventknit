@@ -1,10 +1,8 @@
 // Test setup file for Jest
 // This file runs before each test file
 
-// Ensure NODE_ENV is set to 'test' for rate limiter and other test-specific behavior
-if (!process.env.NODE_ENV) {
-  process.env.NODE_ENV = 'test';
-}
+// NODE_ENV is set to 'development' via tests/env-setup.cjs (setupFiles) so that
+// src/config/index.ts loads .env.development. Do not override it here.
 
 // Set test timeout
 // Use longer timeout for sequential execution (maxWorkers: 1 in jest.config.cjs)

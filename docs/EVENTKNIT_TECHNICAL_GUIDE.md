@@ -699,7 +699,8 @@ class TicketCryptoService {
 **Scan Modes:**
 - `CHECK_IN` — Entry scanning (default)
 - `CHECK_OUT` — Exit scanning (if event.requireCheckOut = true)
-- `MANUAL_CHECK_IN` / `MANUAL_CHECK_OUT` — Override by staff
+- `MANUAL_CHECK_IN` / `MANUAL_CHECK_OUT` — Override by staff (minimum role: TELLER)
+- `VOID` — Reversal of a check-in by a supervisor (minimum role: ADMIN_STAFF); resets `checkedInAt`, `isCurrentlyInside`, and `ticketStatus` to their pre-check-in state while creating an immutable audit record
 
 ### Mobile Design System
 
@@ -952,7 +953,7 @@ enum UserRole {
 
 enum EventStatus { PENDING, APPROVED, REJECTED, CANCELLED, COMPLETED }
 enum TicketStatus { ACTIVE, DEACTIVATED, EXPIRED, CANCELLED }
-enum ScanType { CHECK_IN, CHECK_OUT, MANUAL_CHECK_IN, MANUAL_CHECK_OUT }
+enum ScanType { CHECK_IN, CHECK_OUT, MANUAL_CHECK_IN, MANUAL_CHECK_OUT, VOID }
 
 enum ManagedClientType {
   CORPORATE    // Private companies and businesses
@@ -1177,10 +1178,12 @@ socket.on('leave-event', (eventId) => socket.leave(`event:${eventId}`));
 
 | Event | Payload | Use Case |
 |-------|---------|----------|
-| `scan:complete` | `{ registrationId, scanType, timestamp, checkpoint }` | Live check-in feed |
-| `stats:update` | `{ checkedInCount, currentlyInside, reEntryCount }` | Dashboard counters |
+| `scan:event` | `{ scanId, registrationId, eventId, scanType, facility, scannedAt, attendeeName, isReEntry }` | Live check-in feed (web dashboard + mobile) |
+| `statistics:update` | `{ eventId, checkedInCount, currentlyInside, reEntryCount, checkOutCount }` | Dashboard counters |
 | `registration:new` | `{ eventId, attendeeName, ticketType }` | Organizer notifications |
 | `payment:received` | `{ eventId, amount, currency }` | Revenue tracking |
+
+> **Room naming:** Clients join `event:{eventId}` via `socket.emit('join:event', eventId)` and leave via `socket.emit('leave:event', eventId)`. Both `scan:event` and `statistics:update` are emitted to this room after every check-in, check-out, or VOID operation.
 
 ### Drift Prevention
 
@@ -2407,18 +2410,29 @@ Pre-scan idempotency prevents double-scanning before items enter the queue:
 
 ### Batch Sync Protocol
 
-When connectivity returns, scans are uploaded in batches:
+When connectivity returns, scans are uploaded via the full check-in state machine endpoint:
 
 ```dart
-// POST /api/v1/offline/scans/batch
-// Body: { scans: [{ registrationId, eventId, scanType, scannedAt, deviceId }] }
-// Response: { synced: 45, duplicates: 3, failed: 1, errors: [...] }
+// POST /api/v1/offline/sync-scans
+// Body: { scans: [{ id, registrationId, qrCode, codeType, signatureValid,
+//                   scanType, scannedAt, scannedBy, deviceInfo? }] }
+// Response: { successCount: 45, failureCount: 1,
+//             results: [{ id, status: 'success'|'failed', errorCode?, errorMessage? }] }
 
 // Sync strategy:
-// - Process one-by-one with 100ms delay (server rate limiting)
-// - ALREADY_SCANNED responses treated as success (idempotent)
-// - Failed items retained with error message for retry
+// - Per-scan: CHECK_IN / MANUAL_CHECK_IN → WorkstationService.scanTicket()
+//             CHECK_OUT / MANUAL_CHECK_OUT → WorkstationService.checkOut()
+// - Full state machine runs on each scan:
+//     EventRegistration.checkedInAt, isCurrentlyInside, ticketStatus are updated
+//     WebSocket statistics:update is emitted to the event room after each success
+// - Per-scan results returned (id + status) — partial failure is normal
+// - Failed items retained with errorCode for retry or manual resolution
+// - eventId is resolved server-side from registrationId (not trusted from mobile payload)
 // - Cleanup: synced scans older than 7 days auto-purged
+
+// Legacy endpoint (checkpoint audit only — does NOT update check-in state):
+// POST /api/v1/offline/scans/batch
+// Use sync-scans for all new integrations.
 ```
 
 ### Background Sync Worker
@@ -2918,10 +2932,12 @@ await lockService.withLock('payment:order-123', async () => {
 | **TTL auto-expiry** | Prevents deadlocks if holder crashes |
 | **Lock extension** | Extend TTL for long-running operations |
 | **Retry logic** | Configurable retries with delay |
-| **Graceful fallback** | If Redis unavailable, operations proceed without locking (degraded mode) |
+| **Hard failure on lock miss** | If Redis is unavailable or lock cannot be acquired after retries, the scan is **rejected** with error code `LOCK_FAILED` — the caller must retry. This prevents double check-in at the cost of a retryable error (preferred over silent data corruption). |
 
 ### Where Locking is Used
 
+- **Ticket check-in / check-out** — Lock key `scan:{registrationId}:{eventId}`; prevents duplicate check-in across concurrent scanner stations and offline sync uploads
+- **Void check-in** — Same lock key; prevents race between a void and a concurrent re-scan
 - **Seat reservation** — Prevents two users from reserving the same seat
 - **Cart checkout** — Prevents double-processing of the same order
 - **Payment processing** — Ensures idempotent payment initialization

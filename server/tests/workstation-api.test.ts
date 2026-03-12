@@ -1,3 +1,11 @@
+// Mock LockService so Redis absence doesn't block scan operations in integration tests
+jest.mock('../src/services/lock.service', () => ({
+  LockService: {
+    acquireLockWithRetry: jest.fn().mockResolvedValue('test-lock-token'),
+    releaseLock: jest.fn().mockResolvedValue(true),
+  },
+}));
+
 import request from 'supertest';
 import app from '../src/app';
 import { prisma } from '../src/config/database';
@@ -636,11 +644,24 @@ describe('Workstation API Integration Tests', () => {
       expect(response.body.data.scanType).toBe('MANUAL_CHECK_IN');
     });
 
-    it('should reject manual check-in with insufficient role (TELLER)', async () => {
+    it('should allow TELLER to manually check-in (role lowered from ADMIN_STAFF to TELLER)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
       }
+
+      // Reset state so the check-in can proceed
+      await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          checkedInAt: null,
+          checkedOutAt: null,
+          isCurrentlyInside: false,
+          reEntryCount: 0,
+          ticketStatus: TicketStatus.ACTIVE,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId } });
 
       const response = await request(app)
         .post('/api/v1/workstation/manual-check-in')
@@ -649,12 +670,13 @@ describe('Workstation API Integration Tests', () => {
           eventId,
           searchTerm: 'attendee@test.com',
           facility: 'entrance',
-          deviceId: 'test-device-1',
-          deviceType: 'DESKTOP',
-        })
-        .expect(403);
+          deviceId: 'test-device-teller',
+          deviceType: 'MOBILE',
+        });
 
-      expect(response.body.success).toBe(false);
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.scanType).toBe('MANUAL_CHECK_IN');
     });
 
     it('should reject manual check-in with multiple matches', async () => {
@@ -878,6 +900,124 @@ describe('Workstation API Integration Tests', () => {
         .expect(403);
 
       expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('POST /api/v1/workstation/registrations/:registrationId/void-checkin', () => {
+    it('should void a check-in as ADMIN_STAFF and reset registration state', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // First, check the attendee in
+      await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          checkedInAt: null,
+          checkedOutAt: null,
+          isCurrentlyInside: false,
+          reEntryCount: 0,
+          ticketStatus: TicketStatus.ACTIVE,
+        },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId } });
+
+      const scanResponse = await request(app)
+        .post('/api/v1/workstation/scan')
+        .set('Authorization', `Bearer ${tellerToken}`)
+        .send({ code: qrCode, eventId, facility: 'entrance', deviceId: 'dev-1', deviceType: 'DESKTOP' });
+      expect(scanResponse.status).toBe(200);
+
+      // Void the check-in as admin
+      const voidResponse = await request(app)
+        .post(`/api/v1/workstation/registrations/${registrationId}/void-checkin`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ reason: 'Issued to wrong attendee' });
+
+      expect(voidResponse.status).toBe(200);
+      expect(voidResponse.body.success).toBe(true);
+      expect(voidResponse.body.data.registrationId).toBe(registrationId);
+      expect(voidResponse.body.data.scanId).toBeDefined();
+
+      // Verify DB state was reset
+      const reg = await prisma.eventRegistration.findUnique({ where: { id: registrationId } });
+      expect(reg?.checkedInAt).toBeNull();
+      expect(reg?.isCurrentlyInside).toBe(false);
+      expect(reg?.ticketStatus).toBe(TicketStatus.ACTIVE);
+
+      // Verify VOID audit record exists
+      const voidScan = await prisma.ticketScan.findFirst({
+        where: { registrationId, scanType: 'VOID' },
+      });
+      expect(voidScan).not.toBeNull();
+      expect(voidScan?.notes).toBe('Issued to wrong attendee');
+    });
+
+    it('should reject void with TELLER role (requires ADMIN_STAFF)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post(`/api/v1/workstation/registrations/${registrationId}/void-checkin`)
+        .set('Authorization', `Bearer ${tellerToken}`)
+        .send({ reason: 'Unauthorized attempt' })
+        .expect(403);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject void when ticket has never been checked in', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Ensure not checked in
+      await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: { checkedInAt: null, isCurrentlyInside: false, ticketStatus: TicketStatus.ACTIVE },
+      });
+      await prisma.ticketScan.deleteMany({ where: { registrationId } });
+
+      const response = await request(app)
+        .post(`/api/v1/workstation/registrations/${registrationId}/void-checkin`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error?.code).toBe('NOT_CHECKED_IN');
+    });
+
+    it('should return 400 with INVALID_TICKET for a non-existent registration', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/workstation/registrations/nonexistent-reg-id/void-checkin')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.error?.code).toBe('INVALID_TICKET');
+    });
+
+    it('should reject void without authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .post(`/api/v1/workstation/registrations/${registrationId}/void-checkin`)
+        .send({})
+        .expect(401);
     });
   });
 });

@@ -23,6 +23,8 @@ module.exports = {
   },
   testMatch: ["**/tests/**/*.test.ts", "**/tests/**/*.spec.ts"],
   collectCoverageFrom: ["src/**/*.ts", "!src/**/*.d.ts"],
+  // Load .env.development before any test module is imported
+  setupFiles: ["<rootDir>/tests/env-setup.cjs"],
   setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
   globalTeardown: "<rootDir>/tests/teardown.ts",
   // Run tests sequentially to avoid database race conditions

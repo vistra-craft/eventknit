@@ -1,3 +1,13 @@
+// Mock LockService so Redis absence doesn't prevent scan operations in integration tests.
+// acquireLockWithRetry returns a token string (truthy = lock acquired).
+// releaseLock is a no-op.
+jest.mock('../src/services/lock.service.js', () => ({
+  LockService: {
+    acquireLockWithRetry: jest.fn().mockResolvedValue('test-lock-token'),
+    releaseLock: jest.fn().mockResolvedValue(true),
+  },
+}));
+
 import { WorkstationService } from '../src/services/workstation.service.js';
 import { TicketService } from '../src/services/ticket.service.js';
 import { prisma } from '../src/config/database.js';
@@ -1035,6 +1045,114 @@ describe('WorkstationService', () => {
         where: { attendeeId: anotherAttendee.id },
       });
       await prisma.user.delete({ where: { id: anotherAttendee.id } });
+    });
+  });
+
+  describe('voidCheckIn', () => {
+    it('should void a check-in and reset registration to pre-check-in state', async () => {
+      if (!dbConnected) return;
+
+      // Check the attendee in first
+      await WorkstationService.scanTicket(
+        testQRCode,
+        testEventId,
+        testScannerId,
+        'Main Entrance',
+        'device-123',
+        'MOBILE',
+      );
+
+      const result = await WorkstationService.voidCheckIn(
+        testRegistrationId,
+        testScannerId,
+        'Test void reason',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.registrationId).toBe(testRegistrationId);
+      expect(result.scanId).toBeDefined();
+
+      // Registration should be reset to pre-check-in state
+      const reg = await prisma.eventRegistration.findUnique({ where: { id: testRegistrationId } });
+      expect(reg?.checkedInAt).toBeNull();
+      expect(reg?.isCurrentlyInside).toBe(false);
+      expect(reg?.ticketStatus).toBe('ACTIVE');
+      expect(reg?.lastScanFacility).toBeNull();
+
+      // VOID audit record must exist with correct notes
+      const voidScan = await prisma.ticketScan.findFirst({
+        where: { registrationId: testRegistrationId, scanType: 'VOID' },
+      });
+      expect(voidScan).toBeDefined();
+      expect(voidScan?.notes).toBe('Test void reason');
+    });
+
+    it('should return NOT_CHECKED_IN error when ticket was never checked in', async () => {
+      if (!dbConnected) return;
+
+      // Ensure clean state
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: { checkedInAt: null, isCurrentlyInside: false },
+      });
+
+      const result = await WorkstationService.voidCheckIn(
+        testRegistrationId,
+        testScannerId,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('NOT_CHECKED_IN');
+    });
+
+    it('should return INVALID_TICKET error for non-existent registration', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.voidCheckIn(
+        'nonexistent-registration-id',
+        testScannerId,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('INVALID_TICKET');
+    });
+
+    it('should use default notes when no reason is provided', async () => {
+      if (!dbConnected) return;
+
+      // Check in first
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      const result = await WorkstationService.voidCheckIn(testRegistrationId, testScannerId);
+
+      expect(result.success).toBe(true);
+
+      const voidScan = await prisma.ticketScan.findFirst({
+        where: { registrationId: testRegistrationId, scanType: 'VOID' },
+      });
+      expect(voidScan?.notes).toBe('Check-in voided by staff');
+    });
+
+    it('should decrement reEntryCount when voiding a re-entry', async () => {
+      if (!dbConnected) return;
+
+      // Simulate an attendee who has re-entered once
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: new Date(),
+          isCurrentlyInside: true,
+          ticketStatus: 'DEACTIVATED',
+          reEntryCount: 2,
+        },
+      });
+
+      const result = await WorkstationService.voidCheckIn(testRegistrationId, testScannerId);
+
+      expect(result.success).toBe(true);
+
+      const reg = await prisma.eventRegistration.findUnique({ where: { id: testRegistrationId } });
+      expect(reg?.reEntryCount).toBe(1); // decremented from 2
     });
   });
 });

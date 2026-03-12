@@ -959,7 +959,7 @@ For on-site registrations:
 Attendee presents QR code or backup code
        |
        v
-Staff scans or searches manually
+Staff scans (any role ≥ TELLER) or searches manually (any role ≥ TELLER)
        |
        v
 System validates: ticket status, signature, event, re-entry limits
@@ -968,11 +968,21 @@ System validates: ticket status, signature, event, re-entry limits
 Check-in recorded with timestamp, scanner, device, facility
        |
        v
-All workstations update in real-time
+All workstations and mobile scanners update in real-time via WebSocket
        |
        v
 Entry granted or denied with reason
 ```
+
+### Void (Reversal) of a Check-In
+
+Supervisors (ADMIN_STAFF or higher) can undo a check-in when a ticket was scanned by mistake or issued to the wrong person:
+
+- Resets the ticket to its pre-check-in state (`checkedInAt` cleared, `ticketStatus` restored to ACTIVE, `isCurrentlyInside` set to false)
+- Creates an immutable `VOID` audit record in the scan history with the reason provided
+- Decrements venue occupancy if the attendee was counted as inside
+- Emits a real-time update so all connected dashboards reflect the reversal immediately
+- The ticket can be legitimately scanned again after a void
 
 ---
 
