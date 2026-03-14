@@ -61,7 +61,7 @@ describe('PermissionService', () => {
         password: staffPassword,
         firstName: 'Test',
         lastName: 'Staff',
-        role: UserRole.ORGANIZER_STAFF,
+        role: UserRole.ORGANIZER_ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         organizationName: 'Test Org',

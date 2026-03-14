@@ -65,7 +65,7 @@ describe('Event Staff Management', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'User',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -74,7 +74,7 @@ describe('Event Staff Management', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'User',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -151,7 +151,7 @@ describe('Event Staff Management', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'Staff',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -160,7 +160,7 @@ describe('Event Staff Management', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'Staff',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -174,7 +174,7 @@ describe('Event Staff Management', () => {
         password: hashedPassword,
         firstName: 'Organizer',
         lastName: 'Staff',
-        role: UserRole.ORGANIZER_STAFF,
+        role: UserRole.ORGANIZER_ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         organizationName: 'Test Events Inc',
@@ -184,7 +184,7 @@ describe('Event Staff Management', () => {
         password: hashedPassword,
         firstName: 'Organizer',
         lastName: 'Staff',
-        role: UserRole.ORGANIZER_STAFF,
+        role: UserRole.ORGANIZER_ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         organizationName: 'Test Events Inc',
@@ -227,7 +227,7 @@ describe('Event Staff Management', () => {
         expect(response.body.data.assignment).toBeDefined();
         expect(response.body.data.assignment.staffId).toBe(adminStaffId);
         expect(response.body.data.assignment.role).toBe('SCANNER');
-        expect(response.body.data.assignment.staffType).toBe('ADMIN_STAFF');
+        expect(response.body.data.assignment.staffType).toBe('ADMIN');
       });
 
       it('should assign admin staff with shift times', async () => {
@@ -418,11 +418,11 @@ describe('Event Staff Management', () => {
           });
 
         const response = await request(app)
-          .get(`/api/v1/admin/events/${eventId}/staff?staffType=ADMIN_STAFF`)
+          .get(`/api/v1/admin/events/${eventId}/staff?staffType=ADMIN`)
           .set('Authorization', `Bearer ${adminToken}`);
 
         expect(response.status).toBe(200);
-        expect(response.body.data.assignments.every((a: { staffType: string }) => a.staffType === 'ADMIN_STAFF')).toBe(true);
+        expect(response.body.data.assignments.every((a: { staffType: string }) => a.staffType === 'ADMIN')).toBe(true);
       });
 
       it('should filter by active status', async () => {
@@ -605,7 +605,7 @@ describe('Event Staff Management', () => {
             password: await hashPassword('Test123!@$'),
             firstName: 'Admin',
             lastName: 'Staff2',
-            role: UserRole.ADMIN_STAFF,
+            role: UserRole.ADMIN,
             status: UserStatus.ACTIVE,
             isEmailVerified: true,
           },
@@ -659,7 +659,7 @@ describe('Event Staff Management', () => {
         expect(response.body.success).toBe(true);
         expect(response.body.data.assignment.staffId).toBe(organizerStaffId);
         expect(response.body.data.assignment.role).toBe('SCANNER');
-        expect(response.body.data.assignment.staffType).toBe('ORGANIZER_STAFF');
+        expect(response.body.data.assignment.staffType).toBe('ORGANIZER_ADMIN');
       });
 
       it('should reject assigning staff from different organization', async () => {
@@ -672,7 +672,7 @@ describe('Event Staff Management', () => {
             password: await hashPassword('Test123!@$'),
             firstName: 'Other',
             lastName: 'Staff',
-            role: UserRole.ORGANIZER_STAFF,
+            role: UserRole.ORGANIZER_ADMIN,
             status: UserStatus.ACTIVE,
             isEmailVerified: true,
             organizationName: 'Other Organization',
@@ -919,7 +919,7 @@ describe('Event Staff Management', () => {
           password: await hashPassword('Test123!@$'),
           firstName: 'Inactive',
           lastName: 'Staff',
-          role: UserRole.ADMIN_STAFF,
+          role: UserRole.ADMIN,
           status: UserStatus.SUSPENDED,
           isEmailVerified: true,
         },

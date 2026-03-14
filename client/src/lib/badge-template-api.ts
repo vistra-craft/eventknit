@@ -151,7 +151,7 @@ const getDefaultTemplates = (): BadgeTemplate[] => {
   return DEFAULT_TEMPLATES_BASE(s);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const DEFAULT_TEMPLATES_BASE = (s: typeof SPEAKER_COLORS.dark): BadgeTemplate[] => [
   {
     id: 'default-standard',

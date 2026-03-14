@@ -1,7 +1,9 @@
 import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import { SubscriptionTier } from '@prisma/client';
+import { SubscriptionTier, Prisma } from '@prisma/client';
+import { getPaymentGatewayManager } from './payment-gateway-manager.js';
 
 export interface CreateSubscriptionData {
   tier: SubscriptionTier;
@@ -121,27 +123,27 @@ export class SubscriptionService {
       throw new ValidationError(`Cannot upgrade to ${newTier}. Current tier is ${subscription.tier}`);
     }
 
-    // PREMIUM tier requires billing email (for future payment processing)
-    if (newTier === SubscriptionTier.PREMIUM && !billingEmail) {
-      throw new ValidationError('Billing email is required for Premium subscription');
+    // Check plan price to determine if this is a paid tier
+    const plan = await prisma.subscriptionPlan.findUnique({ where: { tier: newTier } });
+    const isPaid = plan ? Number(plan.price) > 0 : false;
+
+    // Paid tiers require billing email
+    if (isPaid && !billingEmail) {
+      throw new ValidationError(`Billing email is required for ${newTier} subscription`);
     }
 
     const updated = await prisma.organizerSubscription.update({
       where: { organizerId },
       data: {
         tier: newTier,
-        // STANDARD tier: Clear billing email (not needed for free tier)
-        // PREMIUM tier: Require and set billing email
-        billingEmail: newTier === SubscriptionTier.PREMIUM 
-          ? billingEmail 
-          : null,
+        billingEmail: isPaid ? billingEmail : null,
         isActive: true,
         canceledAt: null,
-        // Only PREMIUM has subscription dates (paid subscription)
-        expiresAt: newTier === SubscriptionTier.PREMIUM
+        // Only paid tiers have subscription dates
+        expiresAt: isPaid
           ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           : null,
-        nextBillingDate: newTier === SubscriptionTier.PREMIUM
+        nextBillingDate: isPaid
           ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           : null,
       },
@@ -191,11 +193,14 @@ export class SubscriptionService {
   static async cancelSubscription(organizerId: string) {
     const subscription = await this.getSubscription(organizerId);
 
-    if (subscription.tier !== SubscriptionTier.PREMIUM) {
-      throw new ValidationError('Only Premium subscriptions can be canceled');
+    // Check plan price — only paid subscriptions can be canceled
+    const plan = await prisma.subscriptionPlan.findUnique({ where: { tier: subscription.tier } });
+    const isPaid = plan ? Number(plan.price) > 0 : false;
+
+    if (!isPaid) {
+      throw new ValidationError('Only paid subscriptions can be canceled');
     }
 
-    // Downgrade to STANDARD when Premium expires
     const updated = await prisma.organizerSubscription.update({
       where: { organizerId },
       data: {
@@ -205,7 +210,7 @@ export class SubscriptionService {
       },
     });
 
-    logger.info(`Premium subscription canceled for organizer ${organizerId}`);
+    logger.info(`Subscription canceled for organizer ${organizerId} (tier: ${subscription.tier})`);
     return updated;
   }
 
@@ -421,6 +426,222 @@ export class SubscriptionService {
       overrides,
       effectiveTier,
     };
+  }
+
+  /**
+   * Get only active subscription plans (for organizer-facing pages)
+   */
+  static async getActivePlans() {
+    const [plans, subscriberCounts] = await Promise.all([
+      prisma.subscriptionPlan.findMany({
+        where: { isActive: true },
+        orderBy: { tier: 'asc' },
+      }),
+      prisma.organizerSubscription.groupBy({
+        by: ['tier'],
+        where: { isActive: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    const countByTier = Object.fromEntries(
+      subscriberCounts.map(row => [row.tier, row._count.id]),
+    );
+
+    return plans.map(plan => ({
+      ...plan,
+      subscriberCount: countByTier[plan.tier] ?? 0,
+    }));
+  }
+
+  // ─── Subscription Payment ──────────────────────────────────────────────
+
+  /**
+   * Initialize a subscription payment via Paystack.
+   * Creates a SubscriptionPayment record and returns the authorization URL.
+   */
+  static async initializeSubscriptionPayment(
+    organizerId: string,
+    tier: SubscriptionTier,
+    billingEmail: string,
+  ) {
+    // Verify organizer exists
+    const organizer = await prisma.user.findUnique({ where: { id: organizerId } });
+    if (!organizer) throw new NotFoundError('Organizer not found');
+
+    // Look up plan price from DB
+    const plan = await prisma.subscriptionPlan.findUnique({ where: { tier } });
+    if (!plan) throw new NotFoundError(`No subscription plan configured for tier ${tier}`);
+    if (!plan.isActive) throw new ValidationError(`The ${tier} plan is not currently available`);
+
+    const price = Number(plan.price);
+    if (price <= 0) {
+      throw new ValidationError(`${tier} is a free tier — no payment required`);
+    }
+
+    // Validate upgrade direction
+    const subscription = await this.getSubscription(organizerId);
+    const tierOrder: Record<SubscriptionTier, number> = {
+      [SubscriptionTier.BASIC]: 0,
+      [SubscriptionTier.STANDARD]: 1,
+      [SubscriptionTier.PREMIUM]: 2,
+    };
+    if (tierOrder[tier] <= tierOrder[subscription.tier]) {
+      throw new ValidationError(`Cannot upgrade to ${tier}. Current tier is ${subscription.tier}`);
+    }
+
+    // Generate unique reference with SUB- prefix for webhook routing
+    const reference = `SUB-${organizerId.slice(0, 8)}-${Date.now()}`;
+    const idempotencyKey = `sub-${organizerId}-${tier}-${Date.now()}`;
+
+    // Create payment record
+    const payment = await prisma.subscriptionPayment.create({
+      data: {
+        organizerId,
+        tier,
+        amount: new Prisma.Decimal(price),
+        currency: plan.currency,
+        gateway: 'PAYSTACK',
+        gatewayReference: reference,
+        status: 'PENDING',
+        billingEmail,
+        idempotencyKey,
+      },
+    });
+
+    // Initialize with Paystack
+    const gatewayManager = getPaymentGatewayManager();
+    const gateway = gatewayManager.getDefaultGateway();
+
+    const response = await gateway.initializePayment({
+      amount: price,
+      currency: plan.currency,
+      email: billingEmail,
+      reference,
+      metadata: {
+        type: 'subscription',
+        organizerId,
+        tier,
+        paymentId: payment.id,
+      },
+      callbackUrl: `${config.frontend.url}/organizer/subscription?reference=${reference}`,
+    });
+
+    logger.info(`Subscription payment initialized: ${reference} for organizer ${organizerId}, tier ${tier}`);
+
+    return {
+      authorizationUrl: response.authorizationUrl,
+      accessCode: response.accessCode,
+      reference,
+      paymentId: payment.id,
+    };
+  }
+
+  /**
+   * Handle successful subscription payment (called from webhook).
+   * Upgrades the subscription and creates a PlatformIncome record.
+   */
+  static async handleSubscriptionPaymentSuccess(reference: string, gatewayTransactionId?: string) {
+    const payment = await prisma.subscriptionPayment.findUnique({
+      where: { gatewayReference: reference },
+    });
+
+    if (!payment) {
+      logger.error(`Subscription payment not found for reference: ${reference}`);
+      return;
+    }
+
+    if (payment.status === 'SUCCESS') {
+      logger.warn(`Subscription payment already processed: ${reference}`);
+      return;
+    }
+
+    const amount = Number(payment.amount);
+
+    // Update payment record
+    await prisma.subscriptionPayment.update({
+      where: { id: payment.id },
+      data: {
+        status: 'SUCCESS',
+        gatewayTransactionId,
+        paymentDate: new Date(),
+      },
+    });
+
+    // Upgrade the organizer's subscription
+    await prisma.organizerSubscription.upsert({
+      where: { organizerId: payment.organizerId },
+      update: {
+        tier: payment.tier,
+        billingEmail: payment.billingEmail,
+        isActive: true,
+        canceledAt: null,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+      create: {
+        organizerId: payment.organizerId,
+        tier: payment.tier,
+        billingEmail: payment.billingEmail,
+        isActive: true,
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    // Auto-record as PlatformIncome so it shows on admin finance dashboard
+    await prisma.platformIncome.create({
+      data: {
+        category: 'Subscription',
+        description: `${payment.tier} subscription payment from organizer`,
+        amount: new Prisma.Decimal(amount),
+        currency: payment.currency,
+        source: 'Subscription Payment',
+        reference,
+        paymentMethod: 'Paystack',
+        incomeDate: new Date(),
+        status: 'received',
+      },
+    });
+
+    logger.info(`Subscription payment completed: ${reference}, tier ${payment.tier}, amount ${amount} ${payment.currency}`);
+  }
+
+  /**
+   * Verify a subscription payment by reference (called from frontend callback).
+   */
+  static async verifySubscriptionPayment(reference: string) {
+    const payment = await prisma.subscriptionPayment.findUnique({
+      where: { gatewayReference: reference },
+    });
+
+    if (!payment) throw new NotFoundError('Subscription payment not found');
+
+    // If already processed, return current state
+    if (payment.status === 'SUCCESS') {
+      const subscription = await this.getSubscription(payment.organizerId);
+      return { status: 'SUCCESS', subscription };
+    }
+
+    // Verify with gateway
+    const gatewayManager = getPaymentGatewayManager();
+    const gateway = gatewayManager.getDefaultGateway();
+    const verification = await gateway.verifyPayment({ reference });
+
+    if (verification.success) {
+      // Process the payment if webhook hasn't already
+      await this.handleSubscriptionPaymentSuccess(reference, verification.gatewayTransactionId);
+      const subscription = await this.getSubscription(payment.organizerId);
+      return { status: 'SUCCESS', subscription };
+    }
+
+    // Payment failed
+    await prisma.subscriptionPayment.update({
+      where: { id: payment.id },
+      data: { status: 'FAILED' },
+    });
+
+    return { status: 'FAILED', subscription: null };
   }
 }
 

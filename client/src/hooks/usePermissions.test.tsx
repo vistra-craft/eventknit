@@ -21,7 +21,7 @@ const mockUser = {
   email: 'test@example.com',
   firstName: 'Test',
   lastName: 'User',
-  role: UserRole.ADMIN_STAFF,
+  role: UserRole.ADMIN,
   status: 'ACTIVE' as const,
   isEmailVerified: true,
   createdAt: new Date().toISOString(),
@@ -84,9 +84,9 @@ describe('usePermissions hooks', () => {
       expect(result.current).toBe(false);
     });
 
-    it('should return true when ADMIN_STAFF can create TELLER', () => {
+    it('should return true when ADMIN can create TELLER', () => {
       mockUseAuth.mockReturnValue({
-        user: { ...mockUser, role: UserRole.ADMIN_STAFF },
+        user: { ...mockUser, role: UserRole.ADMIN },
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -102,9 +102,9 @@ describe('usePermissions hooks', () => {
       expect(result.current).toBe(true);
     });
 
-    it('should return false when ADMIN_STAFF cannot create SUPERADMIN', () => {
+    it('should return false when ADMIN cannot create SUPERADMIN', () => {
       mockUseAuth.mockReturnValue({
-        user: { ...mockUser, role: UserRole.ADMIN_STAFF },
+        user: { ...mockUser, role: UserRole.ADMIN },
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -120,7 +120,7 @@ describe('usePermissions hooks', () => {
       expect(result.current).toBe(false);
     });
 
-    it('should return true when SUPERADMIN can create ADMIN_STAFF', () => {
+    it('should return true when SUPERADMIN can create ADMIN', () => {
       mockUseAuth.mockReturnValue({
         user: { ...mockUser, role: UserRole.SUPERADMIN },
         isAuthenticated: true,
@@ -131,7 +131,7 @@ describe('usePermissions hooks', () => {
         clearError: vi.fn(),
       });
 
-      const { result } = renderHook(() => useCanCreateRole(UserRole.ADMIN_STAFF), {
+      const { result } = renderHook(() => useCanCreateRole(UserRole.ADMIN), {
         wrapper: TestWrapper,
       });
 
@@ -158,9 +158,9 @@ describe('usePermissions hooks', () => {
       expect(result.current).toBe(false);
     });
 
-    it('should return true when ADMIN_STAFF can modify TELLER', () => {
+    it('should return true when ADMIN can modify TELLER', () => {
       mockUseAuth.mockReturnValue({
-        user: { ...mockUser, role: UserRole.ADMIN_STAFF },
+        user: { ...mockUser, role: UserRole.ADMIN },
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -176,9 +176,9 @@ describe('usePermissions hooks', () => {
       expect(result.current).toBe(true);
     });
 
-    it('should return false when ADMIN_STAFF cannot modify SUPERADMIN', () => {
+    it('should return false when ADMIN cannot modify SUPERADMIN', () => {
       mockUseAuth.mockReturnValue({
-        user: { ...mockUser, role: UserRole.ADMIN_STAFF },
+        user: { ...mockUser, role: UserRole.ADMIN },
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -205,14 +205,14 @@ describe('usePermissions hooks', () => {
         clearError: vi.fn(),
       });
 
-      const { result } = renderHook(() => useCanModifyUser(UserRole.ADMIN_STAFF), {
+      const { result } = renderHook(() => useCanModifyUser(UserRole.ADMIN), {
         wrapper: TestWrapper,
       });
 
       expect(result.current).toBe(true);
     });
 
-    it('should return true when ORGANIZER can modify ORGANIZER_STAFF', () => {
+    it('should return true when ORGANIZER can modify ORGANIZER_ADMIN', () => {
       mockUseAuth.mockReturnValue({
         user: { ...mockUser, role: UserRole.ORGANIZER },
         isAuthenticated: true,
@@ -223,7 +223,7 @@ describe('usePermissions hooks', () => {
         clearError: vi.fn(),
       });
 
-      const { result } = renderHook(() => useCanModifyUser(UserRole.ORGANIZER_STAFF), {
+      const { result } = renderHook(() => useCanModifyUser(UserRole.ORGANIZER_ADMIN), {
         wrapper: TestWrapper,
       });
 
@@ -261,16 +261,16 @@ describe('usePermissions hooks', () => {
         clearError: vi.fn(),
       });
 
-      const { result } = renderHook(() => useCanDeleteUser(UserRole.ADMIN_STAFF), {
+      const { result } = renderHook(() => useCanDeleteUser(UserRole.ADMIN), {
         wrapper: TestWrapper,
       });
 
       expect(result.current).toBe(true);
     });
 
-    it('should return false when ADMIN_STAFF cannot delete SUPERADMIN', () => {
+    it('should return false when ADMIN cannot delete SUPERADMIN', () => {
       mockUseAuth.mockReturnValue({
-        user: { ...mockUser, role: UserRole.ADMIN_STAFF },
+        user: { ...mockUser, role: UserRole.ADMIN },
         isAuthenticated: true,
         isLoading: false,
         error: null,
@@ -315,9 +315,9 @@ describe('usePermissions hooks', () => {
       expect(result.current.deletableRoles).toEqual([]);
     });
 
-    it('should return correct permissions for ADMIN_STAFF modifying TELLER', () => {
+    it('should return correct permissions for ADMIN modifying TELLER', () => {
       mockUseAuth.mockReturnValue({
-        user: { ...mockUser, role: UserRole.ADMIN_STAFF },
+        user: { ...mockUser, role: UserRole.ADMIN },
         isAuthenticated: true,
         isLoading: false,
         error: null,

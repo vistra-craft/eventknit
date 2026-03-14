@@ -18,42 +18,42 @@ router.use(authenticate);
 // GET /dashboard/events/:eventId/realtime-metrics - Get current totals
 router.get(
   '/events/:eventId/realtime-metrics',
-  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]),
+  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TELLER]),
   DashboardController.getRealtimeMetrics,
 );
 
 // GET /dashboard/events/:eventId/recent-scans - Get last N scans
 router.get(
   '/events/:eventId/recent-scans',
-  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]),
+  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TELLER]),
   DashboardController.getRecentScans,
 );
 
 // GET /dashboard/events/:eventId/heatmap - Get facility heatmap
 router.get(
   '/events/:eventId/heatmap',
-  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]),
+  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN]),
   DashboardController.getFacilityHeatmap,
 );
 
 // GET /dashboard/events/:eventId/staff-metrics - Get staff performance
 router.get(
   '/events/:eventId/staff-metrics',
-  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]),
+  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN]),
   DashboardController.getStaffMetrics,
 );
 
 // GET /dashboard/events/:eventId/capacity-overview - Get all zones capacity
 router.get(
   '/events/:eventId/capacity-overview',
-  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER]),
+  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TELLER]),
   DashboardController.getCapacityOverview,
 );
 
 // GET /dashboard/events/:eventId/attendance-trend - Get hourly/daily trends
 router.get(
   '/events/:eventId/attendance-trend',
-  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN_STAFF]),
+  requireRole([UserRole.SUPERADMIN, UserRole.ADMIN]),
   DashboardController.getAttendanceTrend,
 );
 

@@ -80,6 +80,48 @@ export const getSubscriptionPlans = async (): Promise<{ success: boolean; data: 
   return apiGet('/organizer-dashboard/subscription-plans');
 };
 
+// ========== Subscription Payment ==========
+
+/**
+ * Initialize subscription payment data
+ */
+export interface InitializeSubscriptionPaymentData {
+  tier: SubscriptionTier;
+  billingEmail: string;
+}
+
+/**
+ * Initialize subscription payment (returns Paystack authorization URL)
+ */
+export const initializeSubscriptionPayment = async (
+  data: InitializeSubscriptionPaymentData,
+): Promise<{
+  success: boolean;
+  data: {
+    authorizationUrl: string;
+    accessCode: string;
+    reference: string;
+    paymentId: string;
+  };
+}> => {
+  return apiPost('/organizer-dashboard/subscription/pay', data);
+};
+
+/**
+ * Verify subscription payment after Paystack callback
+ */
+export const verifySubscriptionPayment = async (
+  reference: string,
+): Promise<{
+  success: boolean;
+  data: {
+    status: 'SUCCESS' | 'FAILED';
+    subscription: OrganizerSubscription | null;
+  };
+}> => {
+  return apiGet(`/organizer-dashboard/subscription/verify?reference=${reference}`);
+};
+
 // ========== Consent Management ==========
 
 /**

@@ -14,11 +14,11 @@ import {
   HeadphonesIcon,
   Monitor,
   LogOut,
-  Palette,
   Ticket,
   ShieldCheck,
   CreditCard,
   Server,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -36,30 +36,18 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
   const userRole = user?.role;
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-    // Auto-expand events section if on events pages
     events: location.pathname.startsWith('/admin/events'),
-    // Auto-expand marketing section if on marketing pages
     marketing: location.pathname.startsWith('/admin/marketing'),
-    // Auto-expand finance section if on finance pages
     finance: location.pathname.startsWith('/admin/finance'),
-    // Auto-expand tickets section if on tickets pages
     tickets: location.pathname.startsWith('/admin/tickets'),
-    // Auto-expand subscriptions section if on subscriptions pages
     subscriptions: location.pathname.startsWith('/admin/subscriptions'),
-    // Auto-expand users section if on users pages
     users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
-    // Auto-expand KYC section if on KYC pages
     kyc: location.pathname.startsWith('/admin/kyc'),
-    // Auto-expand settings section if on settings pages
-    settings: location.pathname.startsWith('/admin/settings'),
-    // Auto-expand branding section if on branding pages
-    branding: location.pathname === '/admin/white-label',
-    // Auto-expand support section if on support pages
-    support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
-    // Auto-expand event day hub section if on event-day pages
+    communications: location.pathname.startsWith('/admin/communications') || location.pathname === '/admin/notifications',
+    settings: location.pathname.startsWith('/admin/settings') || location.pathname === '/admin/notification-settings' || location.pathname === '/admin/white-label',
+    support: location.pathname.startsWith('/admin/support') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
     workstation: location.pathname.startsWith('/admin/event-day'),
-    // Auto-expand system section if on system pages
-    system: location.pathname.startsWith('/admin/system')
+    system: location.pathname.startsWith('/admin/system'),
   });
 
   const navigationItems = [
@@ -161,11 +149,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Promo Codes", href: "/admin/tickets/promo-codes" },
       ]
     },
+    // ── Marketing ──
     {
       id: "marketing",
       label: "Marketing",
       icon: Megaphone,
-      group: "main",
+      group: "marketing",
       children: [
         // TODO: Re-enable when backend is ready
         // { name: "Overview", href: "/admin/marketing" },
@@ -177,18 +166,19 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         // { name: "Partnerships", href: "/admin/marketing/partnerships" },
       ]
     },
+    // ── Operations ──
     {
       id: "managed-events",
       label: "Managed Events",
       href: "/admin/managed-events",
       icon: Calendar,
-      group: "management",
+      group: "operations",
     },
     {
       id: "workstation",
       label: "Event Day Hub",
       icon: Monitor,
-      group: "management",
+      group: "operations",
       children: [
         { name: "Select Event", href: "/admin/event-day" },
         { name: "QR Scanner", href: "/admin/event-day/scanner" },
@@ -198,10 +188,45 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       ]
     },
     {
+      id: "communications",
+      label: "Communications",
+      icon: MessageSquare,
+      group: "operations",
+      children: [
+        { name: "Notifications", href: "/admin/notifications" },
+        { name: "Bulk Messaging", href: "/admin/communications" },
+      ]
+    },
+    {
+      id: "support",
+      label: "Support",
+      icon: HeadphonesIcon,
+      group: "operations",
+      children: [
+        { name: "Support Services", href: "/admin/support" },
+        { name: "Platform Feedback", href: "/admin/feedback" },
+        { name: "Flagged Events", href: "/admin/flagged-events" },
+        { name: "Career Interest", href: "/admin/careers" },
+      ]
+    },
+    // ── System ──
+    {
+      id: "settings",
+      label: "Settings",
+      icon: Settings,
+      group: "system",
+      children: [
+        { name: "Configuration", href: "/admin/settings" },
+        { name: "Integrations", href: "/admin/settings/integrations" },
+        { name: "Notification Settings", href: "/admin/notification-settings" },
+        { name: "White Label", href: "/admin/white-label" },
+      ]
+    },
+    {
       id: "system",
       label: "System",
       icon: Server,
-      group: "management",
+      group: "system",
       superadminOnly: true,
       children: [
         { name: "Health", href: "/admin/system/health" },
@@ -209,37 +234,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Logs", href: "/admin/system/logs" },
         { name: "Backups", href: "/admin/system/backups" },
         { name: "Maintenance", href: "/admin/system/maintenance" },
-      ]
-    },
-    {
-      id: "settings",
-      label: "Settings",
-      icon: Settings,
-      group: "management",
-      children: [
-        { name: "Configuration", href: "/admin/settings" },
-        { name: "Integrations", href: "/admin/settings/integrations" },
-      ]
-    },
-    {
-      id: "branding",
-      label: "White Label",
-      icon: Palette,
-      href: "/admin/white-label",
-      group: "management",
-    },
-    {
-      id: "support",
-      label: "Support",
-      icon: HeadphonesIcon,
-      group: "management",
-      children: [
-        { name: "Support Services", href: "/admin/support" },
-        { name: "Communications", href: "/admin/communications" },
-        { name: "Platform Feedback", href: "/admin/feedback" },
-        { name: "Flagged Events", href: "/admin/flagged-events" },
-        { name: "Career Interest", href: "/admin/careers" },
-        { name: "Notification Settings", href: "/admin/notification-settings" },
       ]
     },
   ];
@@ -268,11 +262,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       tickets: location.pathname.startsWith('/admin/tickets'),
       subscriptions: location.pathname.startsWith('/admin/subscriptions'),
       users: location.pathname.startsWith('/admin/users'),
-      settings: location.pathname.startsWith('/admin/settings'),
-      branding: location.pathname === '/admin/white-label',
-      support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname.startsWith('/admin/notification-settings') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
+      communications: location.pathname.startsWith('/admin/communications') || location.pathname === '/admin/notifications',
+      settings: location.pathname.startsWith('/admin/settings') || location.pathname === '/admin/notification-settings' || location.pathname === '/admin/white-label',
+      support: location.pathname.startsWith('/admin/support') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
       workstation: location.pathname.startsWith('/admin/event-day'),
-      system: location.pathname.startsWith('/admin/system')
+      system: location.pathname.startsWith('/admin/system'),
     }));
   }, [location.pathname]);
 
@@ -303,13 +297,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
 
   const groupLabels = {
     main: "Main",
-    management: "Management", 
-    account: "Account"
+    marketing: "Marketing",
+    operations: "Operations",
+    system: "System",
   };
 
   // Check if user is admin staff (not full admin)
-  const isAdminStaff = userRole === UserRole.MARKETER || 
-                       userRole === UserRole.SUPPORT || 
+  const isAdminStaff = userRole === UserRole.SUPPORT ||
                        userRole === UserRole.TELLER;
 
   const handleLogout = () => {

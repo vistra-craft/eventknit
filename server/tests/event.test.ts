@@ -105,7 +105,7 @@ describe('Event System', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },

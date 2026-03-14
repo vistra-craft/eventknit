@@ -187,13 +187,13 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(201);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.staff.email).toBe('staff@test.com');
-      expect(response.body.data.staff.role).toBe(UserRole.ORGANIZER_STAFF);
+      expect(response.body.data.staff.role).toBe(UserRole.ORGANIZER_ADMIN);
       expect(response.body.data.staff.organizationName).toBe('Test Events Inc');
 
       // Verify managedBy relationship
@@ -218,7 +218,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(403);
 
@@ -261,7 +261,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'One',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(201);
 
@@ -274,7 +274,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Two',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(409);
 
@@ -295,7 +295,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         });
 
       // May return 400 (validation) or 503 (service unavailable if validation passes but service fails)
@@ -315,7 +315,7 @@ describe('Organizer Staff Management', () => {
           email: 'nostaffpass@test.com',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         });
 
       // May return 400 (validation) or 503 (service unavailable if validation passes but service fails)
@@ -342,7 +342,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         });
 
       // Service may not validate email format strictly, or may validate at database level
@@ -375,7 +375,7 @@ describe('Organizer Staff Management', () => {
           password: 'weak',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         });
 
       // Service may not validate password strength strictly
@@ -407,7 +407,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(401);
 
@@ -425,7 +425,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'One',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           // managedBy: organizerId, // Will be available after Prisma migration
           organizationName: 'Test Events Inc',
@@ -531,7 +531,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'ById',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           organizationName: 'Test Events Inc',
         },
@@ -661,7 +661,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'Update',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           organizationName: 'Test Events Inc',
         },
@@ -933,7 +933,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'Delete',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           // managedBy: organizerId, // Will be available after Prisma migration
           organizationName: 'Test Events Inc',
@@ -1065,7 +1065,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'Deactivate',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           organizationName: 'Test Events Inc',
         },

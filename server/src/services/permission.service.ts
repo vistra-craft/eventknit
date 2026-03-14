@@ -222,8 +222,8 @@ export class PermissionService {
 
   /**
    * Get effective permissions for a user.
-   * - SUPERADMIN, ADMIN_STAFF, ORGANIZER: all permissions (full access)
-   * - ORGANIZER_STAFF, ORGANIZER_TELLER: permissions from their custom role
+   * - SUPERADMIN, ADMIN, ORGANIZER: all permissions (full access)
+   * - ORGANIZER_ADMIN, ORGANIZER_TELLER: permissions from their custom role
    * - ATTENDEE and others: no permissions
    */
   static async getUserEffectivePermissions(userId: string): Promise<string[]> {
@@ -243,7 +243,7 @@ export class PermissionService {
       // Admin roles and organizer get all permissions
       if (
         user.role === 'SUPERADMIN' ||
-        user.role === 'ADMIN_STAFF' ||
+        user.role === 'ADMIN' ||
         user.role === 'ORGANIZER'
       ) {
         const allPermissions = await prisma.permission.findMany({ select: { key: true } });

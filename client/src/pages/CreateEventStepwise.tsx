@@ -164,7 +164,7 @@ export default function CreateEventStepwise() {
 
   useEffect(() => {
     const fetchVerification = async () => {
-      if (user && ['ORGANIZER', 'ORGANIZER_STAFF'].includes(user.role)) {
+      if (user && ['ORGANIZER', 'ORGANIZER_ADMIN'].includes(user.role)) {
         try {
           setLoadingVerification(true);
           const response = await getVerificationStatus();
@@ -184,7 +184,7 @@ export default function CreateEventStepwise() {
   // Auto-populate organizer fields from profile (for existing organizers)
   useEffect(() => {
     const fetchOrganizerProfile = async () => {
-      if (user && !isEditMode && ['ORGANIZER', 'ORGANIZER_STAFF'].includes(user.role)) {
+      if (user && !isEditMode && ['ORGANIZER', 'ORGANIZER_ADMIN'].includes(user.role)) {
         try {
           // Set organizer name from user profile
           if (user.organizationName) {
@@ -1683,8 +1683,8 @@ export default function CreateEventStepwise() {
     }
 
     // Check if user is an organizer or admin
-    const isOrganizerRole = ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
-    const isAdminRole = ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'].includes(user.role);
+    const isOrganizerRole = ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'].includes(user.role);
+    const isAdminRole = ['SUPERADMIN', 'ADMIN', 'SUPPORT', 'TELLER'].includes(user.role);
 
     // Track if this user was an attendee before upgrade (used for approval flow after event creation)
     const wasAttendee = !isOrganizerRole && !isAdminRole;
@@ -2359,7 +2359,7 @@ export default function CreateEventStepwise() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  const isOrgRole = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+                  const isOrgRole = user && ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'].includes(user.role);
                   navigate(isOrgRole ? '/organizer/verification' : '/user/verification', {
                     state: { redirectAfterVerification: location.pathname }
                   });
@@ -2386,7 +2386,7 @@ export default function CreateEventStepwise() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      const isOrgRole = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+                      const isOrgRole = user && ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'].includes(user.role);
                       navigate(isOrgRole ? '/organizer/kyc' : '/user/kyc', {
                         state: { redirectAfterVerification: location.pathname }
                       });

@@ -393,7 +393,7 @@ export class WorkstationController {
   /**
    * Manual check-in
    * POST /api/v1/workstation/manual-check-in
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async manualCheckIn(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -526,7 +526,7 @@ export class WorkstationController {
   /**
    * Manual check-out
    * POST /api/v1/workstation/manual-check-out
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async manualCheckOut(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -1257,7 +1257,7 @@ export class WorkstationController {
   /**
    * Update event scan configuration
    * PUT /api/v1/workstation/events/:eventId/config
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async updateEventConfig(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -1345,7 +1345,7 @@ export class WorkstationController {
   /**
    * Void / reverse a check-in
    * POST /api/v1/workstation/registrations/:registrationId/void-checkin
-   * Requires: ADMIN_STAFF or higher (reversals need supervisor privilege)
+   * Requires: ADMIN or higher (reversals need supervisor privilege)
    */
   static async voidCheckIn(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {

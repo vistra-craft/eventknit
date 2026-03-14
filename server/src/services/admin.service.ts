@@ -1220,7 +1220,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+            in: ['ADMIN', 'SUPPORT', 'TELLER'],
           },
           status: 'ACTIVE',
         },
@@ -1229,7 +1229,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+            in: ['ADMIN', 'SUPPORT', 'TELLER'],
           },
           status: 'ACTIVE',
           createdAt: { lt: startDate },
@@ -1437,7 +1437,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+            in: ['SUPERADMIN', 'ADMIN', 'SUPPORT', 'TELLER'],
           },
         },
       }),
@@ -1445,7 +1445,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+            in: ['SUPERADMIN', 'ADMIN', 'SUPPORT', 'TELLER'],
           },
           createdAt: { lt: startDate },
         },
@@ -1458,7 +1458,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'],
+            in: ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'],
           },
         },
       }),
@@ -1466,7 +1466,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'],
+            in: ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'],
           },
           createdAt: { lt: startDate },
         },

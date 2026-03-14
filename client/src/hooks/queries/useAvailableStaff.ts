@@ -4,8 +4,7 @@ import { UserRole } from '@/types/auth';
 
 const STAFF_ROLES: UserRole[] = [
   UserRole.SUPERADMIN,
-  UserRole.ADMIN_STAFF,
-  UserRole.MARKETER,
+  UserRole.ADMIN,
   UserRole.SUPPORT,
   UserRole.TELLER,
 ];
@@ -15,7 +14,7 @@ const STAFF_ROLES: UserRole[] = [
  *
  * Features:
  * - Fetches all active users with staff roles
- * - Automatically filters to SUPERADMIN, ADMIN_STAFF, MARKETER, SUPPORT, TELLER
+ * - Automatically filters to SUPERADMIN, ADMIN, SUPPORT, TELLER
  * - Cached for 5 minutes (staleTime)
  * - Invalidate with queryClient.invalidateQueries({ queryKey: ['available-staff'] })
  *

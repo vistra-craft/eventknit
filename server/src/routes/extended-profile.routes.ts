@@ -30,22 +30,22 @@ router.put(
 /**
  * @route   GET /api/v1/profile/organizer/:userId
  * @desc    Get organizer profile by user ID (admin use)
- * @access  Private (SUPERADMIN, ADMIN_STAFF)
+ * @access  Private (SUPERADMIN, ADMIN)
  */
 router.get(
   '/organizer/:userId',
-  authorize('SUPERADMIN', 'ADMIN', 'ADMIN_STAFF'),
+  authorize('SUPERADMIN', 'ADMIN'),
   ExtendedProfileController.getOrganizerProfile,
 );
 
 /**
  * @route   PUT /api/v1/profile/organizer/:userId
  * @desc    Update organizer profile by user ID (admin use)
- * @access  Private (SUPERADMIN, ADMIN_STAFF)
+ * @access  Private (SUPERADMIN, ADMIN)
  */
 router.put(
   '/organizer/:userId',
-  authorize('SUPERADMIN', 'ADMIN', 'ADMIN_STAFF'),
+  authorize('SUPERADMIN', 'ADMIN'),
   validate(extendedProfileValidations.upsertOrganizerProfile),
   ExtendedProfileController.updateOrganizerProfile,
 );

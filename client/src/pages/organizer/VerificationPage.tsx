@@ -13,7 +13,7 @@ const VerificationPage = () => {
                         new URLSearchParams(location.search).get('redirect');
 
     // Role-aware redirect to KYC page
-    const isOrganizer = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+    const isOrganizer = user && ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'].includes(user.role);
     const kycPath = isOrganizer ? '/organizer/kyc' : '/user/kyc';
 
     navigate(kycPath, {

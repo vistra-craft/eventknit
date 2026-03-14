@@ -134,7 +134,7 @@ const CreateAccount = () => {
 
         // Redirect after a short delay
         setTimeout(() => {
-          if (role === 'SUPERADMIN' || role === 'ADMIN_STAFF') {
+          if (role === 'SUPERADMIN' || role === 'ADMIN') {
             navigate('/admin/dashboard');
           } else if (needsOnboarding) {
             navigate('/onboarding/welcome');

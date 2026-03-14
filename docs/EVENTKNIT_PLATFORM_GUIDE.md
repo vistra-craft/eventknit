@@ -108,14 +108,13 @@ Post-event: Analytics, feedback, payouts to organizer
 ```
 SUPERADMIN (Platform Owner)
   |
-  +-- ADMIN STAFF (Platform Administrators)
-  |     +-- MARKETER (Marketing Campaigns)
-  |     +-- SUPPORT (Customer Support)
-  |     +-- TELLER (Payment and Check-In)
+  +-- ADMIN (Platform Administrators)
+  |     +-- SUPPORT (Customer Support, Communications, Marketing)
+  |     +-- TELLER (Event Day Hub — QR Scanning, Badge Printing, Walk-In Registration)
   |
   +-- ORGANIZER (Event Creators)
-  |     +-- ORGANIZER STAFF (Event Assistants)
-  |     +-- ORGANIZER TELLER (Event Check-In Staff)
+  |     +-- ORGANIZER_ADMIN (Team Member — Events, Attendees, Analytics)
+  |     +-- ORGANIZER_TELLER (Check-In Staff — QR Scanning for Assigned Events)
   |
   +-- ATTENDEE (Event Participants - Default Role)
 ```
@@ -124,15 +123,25 @@ SUPERADMIN (Platform Owner)
 
 | Role | Description | Key Capabilities |
 |------|-------------|-----------------|
-| **Superadmin** | Full platform access | All permissions, system configuration |
-| **Admin Staff** | Platform administration | Approve events, manage users, view finances |
-| **Marketer** | Marketing operations | Manage campaigns, promotions, social media |
-| **Support** | Customer support | Handle tickets, user inquiries |
-| **Teller** | Platform check-in staff | Scan tickets, check-in attendees at assigned events via Event Day Hub |
-| **Organizer** | Event creator | Create events, manage attendees, view revenue |
-| **Organizer Staff** | Event assistant | Manage assigned events, limited permissions |
-| **Organizer Teller** | Organizer check-in staff | Scan tickets for assigned organizer events via Event Day Hub |
-| **Attendee** | Event participant | Register for events, manage tickets |
+| **Superadmin** | Full platform access including system management | All permissions, system health, database, logs, backups |
+| **Admin** | Full admin dashboard access except system management | Approve events, manage users, view finances |
+| **Support** | Customer support and communications | Customer support, communications, marketing, flagged content review |
+| **Teller** | Platform event day operations | QR scanning, badge printing, walk-in registration via Event Day Hub |
+| **Organizer** | Event creator with full organizer dashboard | Create events, manage staff, analytics, finance, branding |
+| **Organizer Admin** | Team member with limited organizer access | Manage organizer events, attendees, and analytics (no finance or settings) |
+| **Organizer Teller** | Organizer check-in staff | Event day operations — QR scanning and check-in for assigned events |
+| **Attendee** | Event participant | Browse events, register, manage tickets and transfers |
+
+### Staff Invitation System
+
+Staff members (both platform and organizer-level) are onboarded via an **email invitation flow**:
+
+1. An admin or organizer sends an invitation specifying the recipient's email and role
+2. The system generates a unique token and sends a claim email
+3. The recipient clicks the link, creates an account (or links to an existing one), and is assigned the designated role
+4. Invitations can be resent, revoked, and expire after a configured period
+
+Invitation statuses: **PENDING**, **ACCEPTED**, **REVOKED**, **EXPIRED**
 
 ### Account Statuses
 
@@ -221,6 +230,47 @@ Attendees can sync registered events to external calendars:
 - Outlook calendar export
 - Configurable event reminders (minutes before event)
 
+#### Registered Event View
+
+When an attendee clicks on a registered event from their dashboard, they enter a dedicated **Event Attendee View** — a tabbed interface with its own sticky header, tab navigation, notification panel, and messaging access.
+
+**Header:** Back button (returns to dashboard), event title, desktop tab bar, mobile scrollable tab strip, message icon (→ `/user/messages`), notification bell (opens slide-over panel, "See all" → `/user/notifications`), and profile avatar.
+
+**Tabs** (shown only when content exists):
+
+| Tab | Content |
+|-----|---------|
+| **Home** | Hero image with overlay (title, hashtag, date/time/location), live countdown or "Happening Now" badge, profile sidebar (left column), sponsors by tier, event details (dates, timezone note, venue, description), social links, and **venue map** (embedded Google Maps via coordinates or address search) with "Get Directions" button |
+| **Agenda** | Session timeline grouped by date, color-coded session types (keynote, panel, workshop, break, etc.), speaker details per session, expandable descriptions |
+| **Speakers** | Speaker cards with photo, name, title, company, and bio |
+| **Exhibitors** | Exhibitor grid with logos, booth numbers, categories, and sponsor showcase |
+| **My Event** | Registration details (see below) |
+| **My Badge** | Digital badge with QR code (see below) |
+
+**My Event tab** — two-column layout with sidebar on the left:
+
+- *Left sidebar:*
+  - Profile card (avatar, name, title, company, email) with registration status chip
+  - Quick Actions: Add to Calendar, Share Event, Download Ticket (PDF), All Notifications, Contact Organizer (opens messaging dialog)
+- *Right content:*
+  - Registration confirmed banner (subtle emerald gradient, not blocking) with event status badge (Upcoming / Live Now / Completed)
+  - Summary cards: event date, location, time
+  - Registration Details: ticket type, registration ID, backup code, registration date
+  - Seat Allocation strip (if assigned): seat identifier, section, row, seat type with "reserved & confirmed" indicator
+  - Event Details: full date range, time, venue/location, rich text description
+  - Event Announcements: real-time organizer notifications for the event, mark as read, refresh
+
+**My Badge tab:**
+
+- Digital badge card with event header (title, date, venue), attendee avatar, name, title, company
+- Ticket type badge and seat allocation (if assigned)
+- QR code for scanning (fetched from ticket API) with fallback placeholder
+- Badge code displayed in monospace
+- Event hashtag footer
+- Actions: Download Badge (PDF), Print, Share (via Web Share API)
+- Non-blocking error handling: if ticket data fails to load, a subtle info bar appears but the badge still renders with fallback data
+- Full dark mode support using theme tokens (`bg-card`, `text-foreground`, `text-muted-foreground`)
+
 #### During the Event
 
 - View real-time agenda and schedule
@@ -229,7 +279,8 @@ Attendees can sync registered events to external calendars:
 - Explore exhibitor booths with details
 - Network with other attendees via direct messaging
 - Follow other attendees for future event connections
-- Receive event updates and announcements
+- Receive event updates and announcements via the notification bell
+- Contact the organizer directly from the My Event tab
 - View personal activity history
 
 #### Post-Event
@@ -348,25 +399,32 @@ Organizers can build event teams:
 
 Organizers can subscribe to different tiers for access to premium features:
 
-| Tier | Features |
-|------|----------|
-| Basic | Standard event creation, basic analytics |
-| Standard | Advanced ticketing, segmentation, branding |
-| Premium | Full white-label, priority support, advanced analytics, unlimited staff |
+| Tier | Price | Features |
+|------|-------|----------|
+| Basic | Free | Standard event creation, basic analytics |
+| Standard | Free | Advanced ticketing, segmentation, branding |
+| Premium | Paid | Full white-label, priority support, advanced analytics, unlimited staff |
+
+**Upgrade Flow:**
+- Free-to-free upgrades (e.g., Basic → Standard) are instant — no payment required
+- Upgrades to paid tiers (e.g., any → Premium) redirect to Paystack checkout for payment
+- After successful payment, the subscription is automatically activated
+- Paid subscriptions can be canceled; free subscriptions cannot
 
 Plans can have custom overrides granted by admins (e.g., trial periods, promotional upgrades).
 
 #### Organizer Dashboard Summary
 
-| Section | Features |
-|---------|----------|
-| Dashboard | Overview, quick stats, recent activity |
-| Events | All, upcoming, past, cancelled, drafts, templates |
-| Analytics | Event performance, attendee insights, revenue |
-| Attendees | Segmentation, tags, communications |
-| Team | Staff, roles, calendar, performance |
-| Finance | Revenue, expenses, payouts |
-| Settings | Profile, branding, domains, subscription |
+| Group | Section | Features |
+|-------|---------|----------|
+| **Main** | Dashboard | Overview, quick stats, recent activity |
+| | Events | All, upcoming, past, cancelled, drafts, templates |
+| | Attending | Events the organizer is attending as a guest |
+| | Marketing | Promo codes, affiliate program |
+| | Communications | Notifications (personal inbox), Attendee Messaging (send to segments/tags/event registrations) |
+| | Analytics | Overview, event performance, attendee insights, revenue reports |
+| | Finance | Overview, payouts, refunds, subscription |
+| **Settings** | Settings | Profile, notifications, security, appearance, branding, verification |
 
 ---
 
@@ -430,16 +488,17 @@ Admins can create platform-operated events for external clients via the **Manage
 
 | Function | Description |
 |----------|-------------|
+| Finance Dashboard | Comprehensive overview — total income, expenses, net profit, pending payments, platform fee revenue, staff wages, organizer payouts |
 | Payments | View all transactions, search by reference, export reports |
 | Disbursements | Schedule and process organizer payouts |
 | Refunds | Review and process refund requests |
 | Reconciliation | Match gateway transactions against platform records |
-| Platform Fees | Configure fee percentages, minimums, and caps |
-| Income | Track platform-level revenue by source |
-| Expenses | Track platform operational costs |
-| Wages | Staff payroll tracking with pay periods and payment methods |
+| Platform Fees | Configure fee percentages, minimums, and caps; auto-recorded as income |
+| Income | Track platform-level revenue by source (manual entries + auto-recorded platform fees) |
+| Expenses | Track platform operational costs by category |
+| Wages | Staff payroll — permanent (monthly), contract (hourly/fixed-term), and event-based (daily rate × event days); linked to specific events |
 | Resale/Transfer Reports | Secondary market transaction reporting |
-| Income Statements | Generate financial statements for reporting periods |
+| Income Statements | Full P&L report — revenue breakdown (platform fees vs manual income), expense breakdown (operating vs wages), gross ticket revenue memo with organizer payouts |
 
 #### Marketing Administration
 
@@ -484,20 +543,25 @@ Admins manage the document requirements for each entity type:
 
 #### Admin Dashboard Summary
 
-| Section | Features |
-|---------|----------|
-| Dashboard | Platform stats, alerts, activity |
-| Events | All, pending, featured, moderation |
-| Users | Attendees, organizers, staff, roles |
-| Finance | Payments, disbursements, refunds, reconciliation |
-| Marketing | Campaigns, promotions, social media |
-| Analytics | Platform, events, users, revenue |
-| Support | Inbox, tickets, responses |
-| Event Day Hub | Check-in, badge printing, walk-in registration |
-| Managed Events | Platform-managed client events (MICE/corporate) |
-| Subscriptions | Plan management, subscriber tracking |
-| KYC | Review submissions, entity management |
-| System | Health, logs, backups, maintenance, careers |
+The admin sidebar is organized into four purpose-driven groups:
+
+| Group | Section | Features |
+|-------|---------|----------|
+| **Main** | Dashboard | Platform stats, alerts, activity |
+| | Events | All, pending, featured, past, upcoming, declined, recalled |
+| | Users | All users, staff, performance, organizers, attendees, roles |
+| | KYC Review | Submissions, entity management |
+| | Analytics | Platform overview, events, users, revenue, system metrics |
+| | Finance | Dashboard (comprehensive P&L), payments, disbursements, refunds, reconciliation, expenses, income, wages (permanent/contract/event-based), income statement, platform fees, resale/transfers |
+| | Subscriptions | Plan management, subscriber tracking |
+| | Tickets | Advanced ticket types, dynamic pricing, issuances, promo codes |
+| **Marketing** | Marketing | Social media |
+| **Operations** | Managed Events | Platform-managed client events (MICE/corporate) |
+| | Event Day Hub | Select event, QR scanner, print center, template editor, scan history |
+| | Communications | Notifications (admin notification inbox), Bulk Messaging (send announcements to organizers, attendees, staff, or specific events) |
+| | Support | Support services, platform feedback, flagged events, career interest |
+| **System** | Settings | Configuration, integrations, notification settings, white label |
+| | System | Health, database, logs, backups, maintenance (superadmin only) |
 
 ---
 
@@ -844,6 +908,43 @@ EventKnit charges a **7.5% all-in fee** on every paid ticket transaction. This s
 
 No per-ticket fixed fees. The fee percentage, minimum, and maximum caps are configurable by platform admins.
 
+**Auto-Income Recording:** When a platform fee is calculated on a payment, it is automatically recorded as a `PlatformIncome` entry (category: "Platform Fees", source: "Ticket Sales"). This means platform fee revenue appears in the finance dashboard and income statements without manual data entry.
+
+### Staff Wages & Payroll
+
+EventKnit tracks staff compensation across three pay types:
+
+| Staff Type | Description | Pay Calculation |
+|------------|-------------|-----------------|
+| **Permanent** | Salaried staff on monthly payroll | Monthly gross amount, minus deductions |
+| **Contract** | Fixed-term or hourly contractors | Hours worked × hourly rate, plus overtime |
+| **Event-Based** | Staff hired per event | Daily rate × number of event days |
+
+**Key features:**
+- Wages can be linked to specific events (e.g., event security, event-day tellers)
+- Gross vs net pay tracking with configurable deductions and bonuses
+- Work detail tracking: hours worked, hourly rate, overtime hours/rate, daily rate, event days
+- Wages are included in the platform's total expenses for P&L reporting
+- Filterable by staff type, department, status, and pay period
+
+### Comprehensive Financial Reporting
+
+The **Finance Dashboard** aggregates data from four sources to provide complete financial visibility:
+
+| Source | Type | Example |
+|--------|------|---------|
+| **Platform Fees** | Automatic income | 7.5% retained from each ticket sale |
+| **Platform Income** | Manual + auto income | Subscription revenue, sponsorships, manual entries |
+| **Platform Expenses** | Operating costs | Infrastructure, marketing, office costs |
+| **Wages** | Staff compensation | Permanent salaries, contract payments, event-day staff |
+
+**Income Statement** provides a full P&L report including:
+- Revenue section with category breakdown (Platform Fees from Ticket Sales, manual income categories)
+- Ticket Sales Memo: gross ticket revenue → less organizer payouts → platform fee retained
+- Expenses section with operating expenses and staff wages as separate line items
+- Net income with profit/loss indicator and percentage of revenue
+- Available for current month, last month, quarter, or full year views
+
 ### Organizer Payouts
 
 After an event ends, funds are held for a **5 business-day grace period** to allow for refund requests and chargeback disputes. After the grace period:
@@ -899,7 +1000,7 @@ EventKnit provides a comprehensive multi-layered scanning system for event-day o
 |------|---------------|
 | **Admin Teller** | Only their assigned events (via admin staff assignments) |
 | **Organizer Teller** | Only their assigned events (via organizer staff assignments) |
-| **Admin Staff** | All approved platform events |
+| **Admin** | All approved platform events |
 | **Organizer** | All their own events |
 
 Staff are assigned to events by admins or organizers. Upon logging in, tellers see only the events they are assigned to — not all platform events. This prevents accidental check-in at the wrong event.
@@ -976,7 +1077,7 @@ Entry granted or denied with reason
 
 ### Void (Reversal) of a Check-In
 
-Supervisors (ADMIN_STAFF or higher) can undo a check-in when a ticket was scanned by mistake or issued to the wrong person:
+Supervisors (ADMIN or higher) can undo a check-in when a ticket was scanned by mistake or issued to the wrong person:
 
 - Resets the ticket to its pre-check-in state (`checkedInAt` cleared, `ticketStatus` restored to ACTIVE, `isCurrentlyInside` set to false)
 - Creates an immutable `VOID` audit record in the scan history with the reason provided
@@ -1148,46 +1249,106 @@ Features include scheduled posting, content calendar, and engagement tracking.
 
 ## 13. Communications and Notifications
 
+### Notification Bell & Dropdown
+
+All authenticated users (admin, organizer, attendee) have a notification bell icon in the header/navbar. Clicking the bell opens an inline dropdown panel showing the 8 most recent notifications with:
+- Notification icon by type (payment, registration, event update, system, etc.)
+- Title, message preview, and relative timestamp
+- Unread indicator dot and "New" badge
+- Mark as read individually or mark all as read
+- "View all notifications" link to the full Notification Center page
+
+The bell badge shows unread count (up to 99+) with real-time updates via WebSocket. A fallback poll runs every 60 seconds.
+
+### Notification Center
+
+Each role has a dedicated Notification Center page for viewing, filtering, and managing their notifications:
+
+| Role | Path | Description |
+|------|------|-------------|
+| **Admin** | `/admin/notifications` | Platform-level notifications — event approvals, security alerts, staff assignments, system announcements |
+| **Organizer** | `/organizer/notifications` | Event-related notifications — registrations, capacity milestones, payment received, event approvals/rejections |
+| **Attendee** | `/user/notifications` | Personal notifications — event reminders, ticket delivery, payment confirmations, refunds |
+
+All Notification Centers share the same feature set:
+- Tabs: All / Unread / Read
+- Filter by notification type and priority (Urgent, High, Medium, Low)
+- Mark as read (individual or bulk)
+- Delete notifications
+- Priority badges with color coding
+
 ### Notification Channels
 
 | Channel | Description | Use Case |
 |---------|-------------|----------|
 | **Email** | Transactional and marketing | Registration confirmations, ticket delivery, campaigns |
 | **SMS** | Text message alerts | Event reminders, OTP codes |
-| **Push Notification** | Browser and mobile | Real-time updates, reminders |
-| **In-App** | Notification center | All activity updates |
+| **Push Notification** | Browser (Web Push API) and mobile (FCM) | Real-time updates, reminders |
+| **In-App** | Notification center + bell dropdown | All activity updates, delivered instantly via WebSocket |
 
-### Notification Types
+### Notification Types (54 types)
 
 **Transactional (Automatic):**
 - Registration confirmation (Email 1 — instant booking acknowledgement)
 - Ticket delivery with PDF and QR code (Email 2 — sent after async background generation)
-- Payment receipt
-- Refund confirmation
+- Payment receipt, pending, failed, success
+- Refund confirmation (processed and received)
 - Transfer notifications
-- Event reminders (configurable timing)
+- Event reminders (24h and 1h before event)
+- Registration deadline reminders (24h and 1h)
 - Check-in confirmation
 - Payout notifications
+- Event updates (venue changed, time changed, postponed, cancelled)
+- Waitlist available, capacity full/reached
+- Registration milestones (50%, 75%, 100%)
+
+**Staff Notifications:**
+- Staff assigned to event, removed from event, assignment updated
+- Event updates for staff, cancellations for staff, reminders for staff
+
+**System Notifications:**
+- System announcements, platform updates
+- Maintenance scheduled, security alerts
+- Account verified, password changed, login attempts, suspension, activation
 
 **Marketing (Opt-In):**
-- Event recommendations based on interests
-- Promotional offers
-- Newsletter
+- New event available, promotional offers, early bird reminders
 
-### Organizer Bulk Messaging
+### Admin Bulk Messaging (Communications Page)
 
-- Send to all attendees for an event
-- Send to specific segments or tagged groups
-- Schedule messages for future delivery
-- Create reusable email templates with variable substitution (attendee name, event name, etc.)
-- Multi-channel: email, SMS, or push
+Admins can create and send platform-wide communications via `/admin/communications`:
+- **Target audiences**: All users, Organizers only, Attendees only, Staff only, or attendees of a specific event
+- **Message types**: Announcement, Marketing, System, Event Update
+- **Channels**: Email, SMS, Push, In-App (individually togglable per message)
+- **Workflow**: Draft → Schedule (optional) → Send → Track delivery
+- **Status tracking**: Draft, Scheduled, Sending, Sent, Cancelled
+- **Engagement metrics**: Total recipients, sent count, failed count, opens, clicks, unsubscribes
+- **Email templates**: Create reusable templates with variable substitution (`{{attendeeName}}`, `{{eventTitle}}`, etc.)
+
+### Organizer Attendee Messaging
+
+Organizers can send targeted messages to their audience via the Communications section in the organizer sidebar:
+- **Send to segments**: Pre-defined attendee groups based on criteria
+- **Send to tagged users**: Users tagged with specific labels
+- **Send to event registrations**: All registrants of a specific event
+- **Channel options**: Email and/or In-App Notification (togglable per message)
+- **Communication history**: View all sent messages with delivery status (sent count, failed count, timestamps)
 
 ### User Preferences
 
 Every user can configure:
-- Which channels they receive notifications on
-- Which notification types they want
-- Do-not-disturb hours
+- **Channel toggles**: Email, SMS, Push, In-App (each on/off)
+- **Category toggles**: Event reminders, event updates, event cancellations, payment notifications, marketing emails, system announcements, registration updates, staff notifications
+- **Reminder frequency**: All notifications, daily digest, weekly digest, or none
+- Configurable during onboarding or anytime via Settings > Notifications
+
+### Real-Time Delivery
+
+Notifications are delivered instantly via WebSocket (Socket.IO):
+- Users join a personal notification room on connect
+- Server emits `notification:new` for immediate delivery
+- Server emits `unread:count` for authoritative count updates
+- Event-scoped rooms for live scan feeds, capacity alerts, and statistics
 
 ---
 
@@ -1282,19 +1443,41 @@ Admin reviews branding for quality and appropriateness
 
 EventKnit offers tiered subscription plans for organizers, unlocking progressively more features:
 
-| Tier | Target | Key Features |
-|------|--------|-------------|
-| **Basic** | New organizers | Standard event creation, basic analytics, limited staff |
-| **Standard** | Growing organizers | Advanced ticketing, attendee segmentation, branding options |
-| **Premium** | Enterprise organizers | Full white-label, custom domains, priority support, unlimited staff, advanced analytics |
+| Tier | Price | Target | Key Features |
+|------|-------|--------|-------------|
+| **Basic** | Free | New organizers | Standard event creation, basic analytics, limited staff |
+| **Standard** | Free | Growing organizers | Advanced ticketing, attendee segmentation, branding options |
+| **Premium** | Paid | Enterprise organizers | Full white-label, custom domains, priority support, unlimited staff, advanced analytics |
 
 ### Plan Management
 
 - Each plan has configurable pricing, currency, and feature sets
-- Plans can be activated or deactivated by admins
+- Plans can be activated or deactivated by admins (only active plans are shown to organizers)
 - Subscriber counts are tracked per plan
 - Subscription overrides allow admins to grant temporary upgrades (e.g., free trials, promotional access)
 - Billing cycles with automated renewal reminders
+
+### Price-Aware Upgrade Flow
+
+The subscription system uses **price-aware logic** — whether a tier requires payment is determined by its price in the database, not by the tier name. This means pricing can change without code modifications.
+
+**Free Tier Upgrade (e.g., Basic → Standard):**
+1. Organizer selects target tier
+2. System confirms the plan price is $0
+3. Subscription is upgraded immediately — no payment flow
+
+**Paid Tier Upgrade (e.g., any → Premium):**
+1. Organizer selects target tier and provides billing email
+2. System initializes payment via Paystack (reference prefixed with `SUB-`)
+3. Organizer is redirected to Paystack checkout page
+4. After successful payment, webhook processes the upgrade automatically
+5. Subscription is activated and a `PlatformIncome` record is created (category: "Subscription")
+6. Revenue appears on the admin finance Income Statement
+
+**Cancellation:**
+- Only paid (non-zero price) subscriptions can be canceled
+- Canceling marks the subscription as inactive with a `canceledAt` timestamp
+- Attempting to cancel a free subscription returns an error
 
 ### Subscription Benefits
 
@@ -1708,7 +1891,11 @@ The platform supports the following event categories:
 | **Admin** | A platform administrator who oversees operations |
 | **KYC** | Know Your Customer — identity and business verification process |
 | **Disbursement** | Transfer of event revenue from the platform to the organizer |
-| **Platform Fee** | Percentage charged by EventKnit on each paid ticket transaction |
+| **Platform Fee** | Percentage charged by EventKnit on each paid ticket transaction; automatically recorded as platform income |
+| **Staff Pay Type** | Classification of staff compensation: Permanent (monthly salary), Contract (hourly/fixed-term), or Event-Based (daily rate × event days) |
+| **Gross Pay** | Total compensation before deductions (bonuses included) |
+| **Net Pay** | Amount paid after deductions (gross minus deductions) |
+| **Income Statement** | Profit & Loss report showing revenue, expenses, and net income for a period |
 | **Grace Period** | Waiting period after an event ends before funds are released to the organizer |
 | **Workstation** | A check-in station used by staff to scan tickets at events |
 | **Checkpoint** | A controlled access point within an event venue |

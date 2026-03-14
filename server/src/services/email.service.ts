@@ -2026,6 +2026,68 @@ class EmailService {
 
     return result;
   }
+  /**
+   * Send staff invitation email
+   */
+  async sendStaffInvitationEmail(
+    email: string,
+    data: {
+      inviterName: string;
+      organizationName?: string;
+      role: string;
+      message?: string;
+      acceptUrl: string;
+      expiryHours: number;
+    },
+  ): Promise<void> {
+    const roleLabel = data.role
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+    const orgLine = data.organizationName
+      ? ` at <strong>${data.organizationName}</strong>`
+      : ' on the EventKnit platform';
+    const messageLine = data.message
+      ? `<p style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 12px 16px; margin: 20px 0; font-style: italic;">"${data.message}"</p>`
+      : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>You're Invited to Join EventKnit</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">You're Invited!</h1>
+            <p><strong>${data.inviterName}</strong> has invited you to join${orgLine} as a <strong>${roleLabel}</strong>.</p>
+            ${messageLine}
+            <p>Click the button below to set up your account:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.acceptUrl}" style="background-color: #4a6cf7; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">Accept Invitation</a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #4a6cf7;">${data.acceptUrl}</p>
+            <p><strong>This invitation expires in ${data.expiryHours} hours.</strong></p>
+            <p>If you don't recognize this invitation, you can safely ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: `You're invited to join EventKnit as ${roleLabel}`,
+      html,
+      isCritical: true,
+    });
+
+    if (!result.success) {
+      throw new Error(`Failed to send invitation email after ${result.attempts} attempts: ${result.error?.message}`);
+    }
+  }
 }
 
 export const emailService = new EmailService();

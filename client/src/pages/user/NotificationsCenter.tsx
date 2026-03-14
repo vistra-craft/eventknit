@@ -161,9 +161,9 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
       case "URGENT":
         return <Badge variant="destructive">Urgent</Badge>;
       case "HIGH":
-        return <Badge variant="default" className="bg-orange-500">High</Badge>;
+        return <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-500/20">High</Badge>;
       case "MEDIUM":
-        return <Badge variant="default" className="bg-primary/50">Medium</Badge>;
+        return <Badge className="bg-primary/10 text-primary border border-primary/20">Medium</Badge>;
       case "LOW":
         return <Badge variant="secondary">Low</Badge>;
       default:
@@ -197,8 +197,7 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
   // Format notification time
   const formatTime = (dateString: string) => {
     try {
-      const distance = formatDistanceToNow(new Date(dateString));
-      return distance ? `${distance} ago` : "Recently";
+      return formatDistanceToNow(new Date(dateString)) || "Recently";
     } catch {
       return "Recently";
     }
@@ -232,11 +231,11 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
         </TabsList>
 
         {/* Filters */}
-        <div className="flex gap-4 mb-4">
+        <div className="flex flex-wrap gap-3 mb-4">
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as NotificationType | "all")}
-            className="px-3 py-2 border rounded-md bg-background text-foreground"
+            className="h-9 rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
           >
             <option value="all">All Types</option>
             <option value="EVENT_REMINDER_24H">Event Reminders</option>
@@ -249,7 +248,7 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value as NotificationPriority | "all")}
-            className="px-3 py-2 border rounded-md bg-background text-foreground"
+            className="h-9 rounded-md border border-border bg-card px-3 text-sm text-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background"
           >
             <option value="all">All Priorities</option>
             <option value="URGENT">Urgent</option>
@@ -333,11 +332,16 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
                 <CardContent>
                   <p className="text-foreground whitespace-pre-wrap">{notification.message}</p>
                   {notification.data && Object.keys(notification.data).length > 0 && (
-                    <div className="mt-4 p-3 bg-muted rounded-md">
-                      <p className="text-xs text-muted-foreground mb-1">Additional Details:</p>
-                      <pre className="text-xs text-foreground overflow-auto">
-                        {JSON.stringify(notification.data, null, 2)}
-                      </pre>
+                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Details</p>
+                      <div className="space-y-1">
+                        {Object.entries(notification.data).map(([key, value]) => (
+                          <div key={key} className="flex items-baseline gap-2 text-xs">
+                            <span className="text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()}:</span>
+                            <span className="text-foreground font-medium">{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </CardContent>

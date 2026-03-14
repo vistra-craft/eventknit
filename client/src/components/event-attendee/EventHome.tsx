@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { RichTextContent } from "@/components/ui/RichTextContent";
+import { EventMap } from "@/components/EventMap";
 import type { EventData, User, Sponsor } from "./EventAttendeeView";
 
 interface EventHomeProps {
@@ -388,6 +389,33 @@ export const EventHome: React.FC<EventHomeProps> = ({
                 )}
               </CardContent>
             </Card>
+
+            {/* Venue Map */}
+            {!event.isOnline && (event.venue || event.location) && (
+              <Card variant="github">
+                <CardContent className="p-0 overflow-hidden">
+                  <div className="relative h-[220px]">
+                    <EventMap
+                      venue={event.venue || ''}
+                      location={event.location}
+                      coordinates={event.coordinates}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="absolute top-3 right-3 shadow-lg z-10"
+                      onClick={() => {
+                        const query = encodeURIComponent(`${event.venue ? event.venue + ', ' : ''}${event.location}`);
+                        window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+                      }}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                      Directions
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

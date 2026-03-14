@@ -12,7 +12,7 @@ import {
   Megaphone,
   Ticket,
   DollarSign,
-  Paintbrush,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -31,14 +31,15 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
   const location = useLocation();
   
   // Check if user is organizer staff (not full organizer)
-  const isOrganizerStaff = userRole === UserRole.ORGANIZER_STAFF || 
+  const isOrganizerStaff = userRole === UserRole.ORGANIZER_ADMIN ||
                            userRole === UserRole.ORGANIZER_TELLER;
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     analytics: location.pathname.startsWith('/organizer/analytics'),
     marketing: location.pathname.startsWith('/organizer/marketing') || location.pathname === '/organizer/tickets',
-    finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts') || location.pathname.startsWith('/organizer/subscription'),
-    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/verification') || location.pathname.startsWith('/organizer/kyc'),
+    communications: location.pathname.startsWith('/organizer/communications') || location.pathname === '/organizer/notifications' || location.pathname.startsWith('/organizer/attendees/communication'),
+    finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
+    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/branding') || location.pathname.startsWith('/organizer/verification') || location.pathname.startsWith('/organizer/kyc'),
   });
 
   const navigationItems = [
@@ -74,6 +75,16 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       ]
     },
     {
+      id: "communications",
+      label: "Communications",
+      icon: MessageSquare,
+      group: "main",
+      children: [
+        { name: "Notifications", href: "/organizer/notifications" },
+        { name: "Attendee Messaging", href: "/organizer/attendees/communication" },
+      ]
+    },
+    {
       id: "analytics",
       label: "Analytics",
       icon: TrendingUp,
@@ -93,27 +104,19 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       children: [
         { name: "Overview", href: "/organizer/financial" },
         { name: "Payouts", href: "/organizer/payouts" },
-        { name: "Refunds", href: "/organizer/analytics/revenue" },
-        { name: "Subscription", href: "/organizer/subscription" },
       ]
-    },
-    {
-      id: "branding",
-      label: "Branding",
-      href: "/organizer/branding",
-      icon: Paintbrush,
-      group: "management",
     },
     {
       id: "settings",
       label: "Settings",
       icon: Settings,
-      group: "management",
+      group: "settings",
       children: [
         { name: "Profile", href: "/organizer/settings/profile" },
         { name: "Notifications", href: "/organizer/settings/notifications" },
         { name: "Security", href: "/organizer/settings/security" },
         { name: "Appearance", href: "/organizer/settings/appearance" },
+        { name: "Branding", href: "/organizer/branding" },
         { name: "Verification", href: "/organizer/kyc" },
       ]
     },
@@ -133,8 +136,9 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         ...prev,
         analytics: location.pathname.startsWith('/organizer/analytics'),
         marketing: location.pathname.startsWith('/organizer/marketing') || location.pathname === '/organizer/tickets',
-        finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts') || location.pathname.startsWith('/organizer/subscription') || location.pathname === '/organizer/analytics/revenue',
-        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/verification') || location.pathname.startsWith('/organizer/kyc'),
+        communications: location.pathname.startsWith('/organizer/communications') || location.pathname === '/organizer/notifications' || location.pathname.startsWith('/organizer/attendees/communication'),
+        finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
+        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/branding') || location.pathname.startsWith('/organizer/verification') || location.pathname.startsWith('/organizer/kyc'),
       }));
     }
   }, [location.pathname, isOrganizerStaff]);
@@ -169,8 +173,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
 
   const groupLabels = {
     main: "Main",
-    management: "Management", 
-    account: "Account"
+    settings: "Settings",
   };
 
   // If organizer staff, render role-specific sidebar (after all hooks)

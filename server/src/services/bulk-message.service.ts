@@ -194,11 +194,10 @@ export class BulkMessageService {
           where: {
             role: {
               in: [
-                UserRole.ADMIN_STAFF,
-                UserRole.MARKETER,
+                UserRole.ADMIN,
                 UserRole.SUPPORT,
                 UserRole.TELLER,
-                UserRole.ORGANIZER_STAFF,
+                UserRole.ORGANIZER_ADMIN,
                 UserRole.ORGANIZER_TELLER,
               ],
             },
@@ -635,11 +634,10 @@ export class BulkMessageService {
           where: {
             role: {
               in: [
-                UserRole.ADMIN_STAFF,
-                UserRole.MARKETER,
+                UserRole.ADMIN,
                 UserRole.SUPPORT,
                 UserRole.TELLER,
-                UserRole.ORGANIZER_STAFF,
+                UserRole.ORGANIZER_ADMIN,
                 UserRole.ORGANIZER_TELLER,
               ],
             },

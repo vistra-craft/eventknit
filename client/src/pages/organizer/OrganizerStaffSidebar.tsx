@@ -75,7 +75,7 @@ const OrganizerStaffSidebar: React.FC<OrganizerStaffSidebarProps> = ({
           },
         ];
 
-      case UserRole.ORGANIZER_STAFF:
+      case UserRole.ORGANIZER_ADMIN:
         return [
           {
             id: 'analytics',

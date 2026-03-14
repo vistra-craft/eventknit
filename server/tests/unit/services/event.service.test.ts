@@ -171,9 +171,9 @@ describe('EventService - Event Creation', () => {
         expect(result).toBeDefined();
       });
 
-      it('should allow ADMIN_STAFF to create event', async () => {
+      it('should allow ADMIN to create event', async () => {
         // Arrange
-        const staff = { ...mockOrganizer, role: UserRole.ADMIN_STAFF };
+        const staff = { ...mockOrganizer, role: UserRole.ADMIN };
         prisma.user.findUnique.mockResolvedValue(staff as any);
         prisma.event.create.mockResolvedValue({
           id: 'event-123',
@@ -185,7 +185,7 @@ describe('EventService - Event Creation', () => {
         const result = await EventService.createEvent(
           baseEventData,
           staff.id,
-          UserRole.ADMIN_STAFF,
+          UserRole.ADMIN,
         );
 
         // Assert

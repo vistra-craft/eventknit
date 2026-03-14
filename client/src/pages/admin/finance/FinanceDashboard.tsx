@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { DollarSign, TrendingUp, TrendingDown, CreditCard, Plus, Eye, Search, AlertCircle } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, CreditCard, Plus, Eye, Search, AlertCircle, Users, Percent } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,29 +9,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCombinedTransactions, type AccountingTransaction, type FinancialOverview } from "@/lib/accounting-api";
+import { getFinanceSummary, type FinanceSummary } from "@/lib/platform-finance-api";
 
 const FinanceDashboard = () => {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<AccountingTransaction[]>([]);
   const [summary, setSummary] = useState<FinancialOverview | null>(null);
+  const [comprehensiveSummary, setComprehensiveSummary] = useState<FinanceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  // Fetch transactions
+  // Fetch transactions and comprehensive summary
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await getCombinedTransactions({ limit: 100 });
-        if (response.success && response.data) {
-          setTransactions(response.data.transactions);
-          setSummary(response.data.summary);
+        const [txResponse, summaryResponse] = await Promise.all([
+          getCombinedTransactions({ limit: 100 }),
+          getFinanceSummary().catch(() => null),
+        ]);
+        if (txResponse.success && txResponse.data) {
+          setTransactions(txResponse.data.transactions);
+          setSummary(txResponse.data.summary);
         } else {
-          setError(response.message || 'Failed to fetch transactions');
+          setError('Failed to fetch transactions');
+        }
+        if (summaryResponse?.success && summaryResponse.data) {
+          setComprehensiveSummary(summaryResponse.data);
         }
       } catch (err) {
         console.error('Error fetching transactions:', err);
@@ -139,9 +147,13 @@ const FinanceDashboard = () => {
     );
   }
 
-  const totalIncome = summary?.totalIncome || 0;
-  const totalExpenses = summary?.totalExpenses || 0;
-  const netProfit = summary?.netProfit || 0;
+  // Use comprehensive summary (includes platform fees + wages) when available
+  const cs = comprehensiveSummary;
+  const totalIncome = cs?.totalIncome ?? summary?.totalIncome ?? 0;
+  const totalExpenses = cs?.totalExpenses ?? summary?.totalExpenses ?? 0;
+  const netProfit = cs?.netProfit ?? summary?.netProfit ?? 0;
+  const platformFeeRevenue = cs?.platformFeeRevenue ?? 0;
+  const totalWages = cs?.totalWages ?? 0;
 
   return (
       <div className="space-y-6">
@@ -149,7 +161,7 @@ const FinanceDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Finance Dashboard</h1>
-            <p className="text-muted-foreground">Track income, expenses, and financial performance</p>
+            <p className="text-muted-foreground">Comprehensive financial overview — income, expenses, wages, and platform fees</p>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={() => navigate('/admin/finance/expenses/new')}>
@@ -163,78 +175,109 @@ const FinanceDashboard = () => {
           </div>
         </div>
 
-        {/* Financial Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="border-border bg-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-success/10">
-                  <TrendingUp className="h-6 w-6 text-success" />
+        {/* Financial Overview — Primary KPIs */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="border-border/40 bg-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 rounded-lg bg-success/10">
+                  <TrendingUp className="h-5 w-5 text-success" />
                 </div>
-                <span className="text-success text-sm font-medium">{summary?.incomeCount || 0} entries</span>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">Total Income</h3>
-                <p className="font-semibold text-success">{formatCurrency(totalIncome)}</p>
-                <p className="text-sm text-muted-foreground">All time</p>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase">Total Income</p>
+                <p className="text-xl font-bold text-success">{formatCurrency(totalIncome)}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-destructive/10">
-                  <TrendingDown className="h-6 w-6 text-destructive" />
+          <Card className="border-border/40 bg-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 rounded-lg bg-destructive/10">
+                  <TrendingDown className="h-5 w-5 text-destructive" />
                 </div>
-                <span className="text-destructive text-sm font-medium">{summary?.expenseCount || 0} entries</span>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">Total Expenses</h3>
-                <p className="font-semibold text-destructive">{formatCurrency(totalExpenses)}</p>
-                <p className="text-sm text-muted-foreground">All time</p>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase">Total Expenses</p>
+                <p className="text-xl font-bold text-destructive">{formatCurrency(totalExpenses)}</p>
+                {totalWages > 0 && (
+                  <p className="text-xs text-muted-foreground">Includes {formatCurrency(totalWages)} wages</p>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <DollarSign className="h-6 w-6 text-primary" />
+          <Card className="border-border/40 bg-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 rounded-lg bg-primary/10">
+                  <DollarSign className="h-5 w-5 text-primary" />
                 </div>
-                <span className={`text-sm font-medium ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                <span className={`text-xs font-medium ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {netProfit >= 0 ? 'Profit' : 'Loss'}
                 </span>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">Net Profit</h3>
-                <p className={`font-semibold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase">Net Profit</p>
+                <p className={`text-xl font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
                   {formatCurrency(netProfit)}
                 </p>
-                <p className="text-sm text-muted-foreground">All time</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 rounded-lg bg-muted">
-                  <CreditCard className="h-6 w-6 text-muted-foreground" />
+          <Card className="border-border/40 bg-card">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2.5 rounded-lg bg-muted">
+                  <CreditCard className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <span className="text-muted-foreground text-sm font-medium">{pendingCount}</span>
+                <span className="text-xs text-muted-foreground">{pendingCount} pending</span>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">Pending Payments</h3>
-                <p className="font-semibold text-muted-foreground">
-                  {formatCurrency(pendingAmount)}
-                </p>
-                <p className="text-sm text-muted-foreground">Awaiting processing</p>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase">Pending Payments</p>
+                <p className="text-xl font-bold text-muted-foreground">{formatCurrency(pendingAmount)}</p>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Revenue Breakdown */}
+        {cs && (platformFeeRevenue > 0 || totalWages > 0) && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="border-border/40 bg-card">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Percent className="h-4 w-4 text-primary" />
+                  <p className="text-xs font-medium text-muted-foreground uppercase">Platform Fee Revenue</p>
+                </div>
+                <p className="text-lg font-bold text-foreground">{formatCurrency(platformFeeRevenue)}</p>
+                <p className="text-xs text-muted-foreground">{cs.platformFeeCount} transactions</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/40 bg-card">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-warning" />
+                  <p className="text-xs font-medium text-muted-foreground uppercase">Staff Wages</p>
+                </div>
+                <p className="text-lg font-bold text-foreground">{formatCurrency(totalWages)}</p>
+                <p className="text-xs text-muted-foreground">{cs.wageCount} payments</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/40 bg-card">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <DollarSign className="h-4 w-4 text-success" />
+                  <p className="text-xs font-medium text-muted-foreground uppercase">Organizer Payouts</p>
+                </div>
+                <p className="text-lg font-bold text-foreground">{formatCurrency(cs.totalOrganizerPayouts)}</p>
+                <p className="text-xs text-muted-foreground">From {formatCurrency(cs.totalGrossRevenue)} gross</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Recent Transactions */}
         <div>

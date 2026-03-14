@@ -18,7 +18,7 @@ const OrganizerDashboard = () => {
     return <OrganizerTellerDashboard />;
   }
 
-  if (userRole === UserRole.ORGANIZER_STAFF) {
+  if (userRole === UserRole.ORGANIZER_ADMIN) {
     return <OrganizerStaffDashboard />;
   }
 

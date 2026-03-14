@@ -258,6 +258,59 @@ export const uploadAvatar = async (file: File): Promise<ApiResponse<{ avatar: st
   return apiPut<ApiResponse<{ avatar: string }>>('/auth/profile', formData);
 };
 
+// ─── Staff Invitations ────────────────────────────────────────────────────────
+
+export interface StaffInvitationInfo {
+  email: string;
+  role: string;
+  scope: string;
+  organizationName?: string;
+  inviterName: string;
+  message?: string;
+  expiresAt: string;
+}
+
+export const validateStaffInvitation = async (
+  token: string,
+): Promise<ApiResponse<StaffInvitationInfo>> => {
+  return apiPost<ApiResponse<StaffInvitationInfo>>('/auth/staff-invitation/validate', { token });
+};
+
+export interface AcceptStaffInvitationData {
+  token: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+}
+
+export interface AcceptStaffInvitationResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: UserRole;
+      status: UserStatus;
+      isEmailVerified: boolean;
+      organizationName?: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    accessToken: string;
+    expiresIn: string;
+  };
+}
+
+export const acceptStaffInvitation = async (
+  data: AcceptStaffInvitationData,
+): Promise<AcceptStaffInvitationResponse> => {
+  return apiPost<AcceptStaffInvitationResponse>('/auth/staff-invitation/accept', data);
+};
+
 
 
 

@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
 import type { EventData, User } from "./EventAttendeeView";
 import { getTicket, downloadTicketPDF, type TicketData } from "@/lib/ticket-api";
 
@@ -101,12 +101,12 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
           </div>
         )}
 
-        {/* Error */}
+        {/* Error — non-blocking, badge still renders with fallback data */}
         {error && !loading && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-muted px-4 py-2.5 text-sm text-muted-foreground">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <span>Ticket details unavailable — showing basic badge info</span>
+          </div>
         )}
 
         {/* Badge Card */}
@@ -122,7 +122,7 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
               </div>
 
               {/* Attendee info */}
-              <CardContent className="p-8 bg-white">
+              <CardContent className="p-8 bg-card">
                 <div className="text-center">
                   <Avatar
                     src={user.profileImage}
@@ -132,9 +132,9 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
                     className="mx-auto mb-4 ring-4 ring-primary/20"
                   />
 
-                  <h3 className="text-2xl font-bold text-gray-800 mb-1">{user.name}</h3>
-                  {user.title && <p className="text-gray-600 font-medium">{user.title}</p>}
-                  {user.company && <p className="text-gray-500">{user.company}</p>}
+                  <h3 className="text-2xl font-bold text-foreground mb-1">{user.name}</h3>
+                  {user.title && <p className="text-muted-foreground font-medium">{user.title}</p>}
+                  {user.company && <p className="text-muted-foreground">{user.company}</p>}
 
                   {/* Ticket type badge */}
                   <div className="mt-4 mb-2">
@@ -149,7 +149,7 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
                       <div className="flex items-center justify-center gap-2 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3">
                         <Armchair className="w-4 h-4 text-primary flex-shrink-0" />
                         <div className="text-left">
-                          <p className="text-xs text-gray-500 leading-none mb-0.5">Your Seat</p>
+                          <p className="text-xs text-muted-foreground leading-none mb-0.5">Your Seat</p>
                           <p className="font-bold text-primary text-sm leading-none">
                             {seat.seatIdentifier}
                           </p>
@@ -157,9 +157,9 @@ export const EventMyBadge: React.FC<EventMyBadgeProps> = ({ event, user }) => {
                         {(seat.sectionId || seat.rowLabel) && (
                           <div className="pl-3 border-l border-primary/20 text-left">
                             {seat.sectionId && (
-                              <p className="text-xs text-gray-500 leading-none mb-0.5">Section</p>
+                              <p className="text-xs text-muted-foreground leading-none mb-0.5">Section</p>
                             )}
-                            <p className="text-sm font-semibold text-gray-700 leading-none">
+                            <p className="text-sm font-semibold text-foreground leading-none">
                               {[seat.sectionId, seat.rowLabel && `Row ${seat.rowLabel}`]
                                 .filter(Boolean)
                                 .join(' · ')}

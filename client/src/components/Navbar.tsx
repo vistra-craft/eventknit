@@ -95,15 +95,14 @@ const Navbar: React.FC<NavbarProps> = () => {
     
     const isAdminRole = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ].includes(roleToUse);
     
     const isOrganizerRole = [
       UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_TELLER,
     ].includes(roleToUse);
     
@@ -137,15 +136,14 @@ const Navbar: React.FC<NavbarProps> = () => {
     
     const isAdminRole = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ].includes(roleToUse);
     
     const isOrganizerRole = [
       UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_TELLER,
     ].includes(roleToUse);
     
@@ -188,14 +186,13 @@ const Navbar: React.FC<NavbarProps> = () => {
     // User is logged in - route based on role
     const isOrganizerRole = [
       UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_TELLER,
     ].includes(user.role);
 
     const isAdminRole = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ].includes(user.role);

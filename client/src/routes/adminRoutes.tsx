@@ -1,7 +1,7 @@
 /**
  * Admin Routes
  * All routes under /admin/* path (protected, requires admin roles)
- * Supports multiple role variations: SUPERADMIN, ADMIN_STAFF, MARKETER, SUPPORT, TELLER
+ * Supports multiple role variations: SUPERADMIN, ADMIN, SUPPORT, TELLER
  */
 
 import { lazy, createElement } from 'react';
@@ -61,8 +61,9 @@ const ModerationPage = lazy(() => import('../pages/admin/ModerationPage'));
 const FlaggedEventsPage = lazy(() => import('../pages/admin/FlaggedEventsPage'));
 const CareersPage = lazy(() => import('../pages/admin/CareersPage'));
 
-// Communications
+// Communications & Notifications
 const AdminCommunicationsPage = lazy(() => import('../pages/admin/CommunicationsPage'));
+const AdminNotificationsCenter = lazy(() => import('../pages/admin/AdminNotificationsCenter'));
 const AdminNotificationSettingsPage = lazy(() => import('../pages/admin/AdminNotificationSettingsPage'));
 
 // Support
@@ -141,21 +142,20 @@ const AdminManagedEventCreatePage = lazy(() => import('../pages/admin/AdminManag
  */
 const ALL_ADMIN_ROLES = [
   UserRole.SUPERADMIN,
-  UserRole.ADMIN_STAFF,
-  UserRole.MARKETER,
+  UserRole.ADMIN,
   UserRole.SUPPORT,
   UserRole.TELLER,
 ];
 
 const SUPERADMIN_ONLY = [UserRole.SUPERADMIN];
 
-const ADMIN_STAFF_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF];
+const ADMIN_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN];
 
-const MARKETING_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.MARKETER];
+const MARKETING_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN];
 
-const SUPPORT_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.SUPPORT];
+const SUPPORT_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SUPPORT];
 
-const TELLER_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF, UserRole.TELLER];
+const TELLER_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TELLER];
 
 /**
  * Admin route definitions
@@ -199,7 +199,7 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'events/pending',
     element: createElement(AdminPendingApprovalPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'events/featured',
@@ -229,17 +229,17 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'events/declined',
     element: createElement(AdminDeclinedEventsPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'events/recalled',
     element: createElement(AdminRecalledEventsPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'events/create',
     element: createElement(AdminCreateEventPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'events/:eventId/preview',
@@ -256,7 +256,7 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'users',
     element: createElement(UsersManagementPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'users/attendees',
@@ -286,27 +286,27 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'users/organizers',
     element: createElement(OrganizersPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'users/organizers/create',
     element: createElement(CreateOrganizerPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'users/organizers/:organizerId/preview',
     element: createElement(OrganizerPreviewPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'users/organizers/:organizerId',
     element: createElement(OrganizerDetailsPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'users/organizers/:organizerId/edit',
     element: createElement(OrganizerEditPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'users/roles',
@@ -362,20 +362,25 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'moderation',
     element: createElement(ModerationPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'flagged-events',
     element: createElement(FlaggedEventsPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'careers',
     element: createElement(CareersPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
 
-  // Communications
+  // Communications & Notifications
+  {
+    path: 'notifications',
+    element: createElement(AdminNotificationsCenter),
+    allowedRoles: ALL_ADMIN_ROLES,
+  },
   {
     path: 'communications',
     element: createElement(AdminCommunicationsPage),
@@ -396,14 +401,14 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'feedback',
     element: createElement(PlatformFeedbackPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
 
   // Branding
   {
     path: 'white-label',
     element: createElement(AdminWhiteLabelPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
 
   // Marketing
@@ -447,34 +452,34 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'subscriptions',
     element: createElement(SubscriptionPlansPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
 
   // Tickets
   {
     path: 'tickets/advanced',
     element: createElement(AdminAdvancedTicketTypes),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'event/:eventId/tickets/advanced',
     element: createElement(AdminAdvancedTicketTypes),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'tickets/pricing',
     element: createElement(AdminDynamicPricing),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'event/:eventId/tickets/pricing',
     element: createElement(AdminDynamicPricing),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'tickets/issuances',
     element: createElement(AdminTicketIssuancesPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'tickets/promo-codes',
@@ -496,22 +501,22 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'analytics',
     element: createElement(AdminAnalyticsOverview),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'analytics/events',
     element: createElement(AdminAnalyticsOverview),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'analytics/users',
     element: createElement(AdminAnalyticsOverview),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'analytics/revenue',
     element: createElement(AdminAnalyticsOverview),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'analytics/system',
@@ -543,7 +548,7 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'finance/disbursements',
     element: createElement(DisbursementsPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'finance/refunds',
@@ -558,12 +563,12 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'finance/expenses',
     element: createElement(ExpensesPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'finance/income',
     element: createElement(IncomePage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'finance/wages',
@@ -578,7 +583,7 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'finance/income-statement',
     element: createElement(IncomeStatementPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'finance/platform-fees',
@@ -588,22 +593,22 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'finance/resale-transfers',
     element: createElement(ResaleTransferReportingPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'finance/transactions/edit/:id',
     element: createElement(EditTransactionPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'finance/expenses/edit/:id',
     element: createElement(EditExpensePage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'finance/income/edit/:id',
     element: createElement(EditIncomePage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'finance/wages/edit/:id',
@@ -615,12 +620,12 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'financial',
     element: createElement(FinancialManagement),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'financial/payouts',
     element: createElement(FinancialManagement),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
 
   // Event Day Hub
@@ -652,12 +657,12 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'event-day/templates',
     element: createElement(ServicePointTemplates),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'event-day/zones/:eventId',
     element: createElement(FacilityZones),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'event-day/history',
@@ -667,7 +672,7 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'event-day/event/:eventId/templates',
     element: createElement(ServicePointTemplates),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'event-day/event/:eventId/walk-in',
@@ -680,28 +685,28 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'managed-events',
     element: createElement(AdminManagedEventsPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'managed-events/create',
     element: createElement(AdminManagedEventCreatePage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
 
   // KYC Review
   {
     path: 'kyc',
     element: createElement(KYCReviewDashboard),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'kyc/review/:userId',
     element: createElement(KYCOrganizerReviewPage),
-    allowedRoles: ADMIN_STAFF_ROLES,
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'kyc/entity-management',
     element: createElement(KYCEntityManagement),
-    allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF], // Restricted to SUPERADMIN/ADMIN_STAFF only
+    allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN], // Restricted to SUPERADMIN/ADMIN only
   },
 ];

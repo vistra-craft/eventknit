@@ -442,6 +442,17 @@ export class PaymentService {
       const verification = await this.verifyPayment(reference, detectedGatewayType);
 
       if (verification.success) {
+        // Route subscription payments (SUB- prefix) to SubscriptionService
+        if (reference.startsWith('SUB-')) {
+          const { SubscriptionService } = await import('./subscription.service.js');
+          await SubscriptionService.handleSubscriptionPaymentSuccess(
+            reference,
+            verification.reference,
+          );
+          logger.info(`Subscription payment webhook processed: ${reference}`);
+          return { status: 'SUCCESS', message: 'Subscription payment processed' };
+        }
+
         // Find registration by reference
         const registration = await prisma.eventRegistration.findFirst({
           where: {

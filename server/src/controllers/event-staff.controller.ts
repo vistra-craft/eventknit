@@ -93,7 +93,7 @@ export class EventStaffController {
 
       const filters: {
         role?: string;
-        staffType?: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+        staffType?: 'ADMIN' | 'ORGANIZER_ADMIN';
         isActive?: boolean;
       } = {};
 
@@ -102,7 +102,7 @@ export class EventStaffController {
       }
 
       if (staffType && typeof staffType === 'string') {
-        if (staffType === 'ADMIN_STAFF' || staffType === 'ORGANIZER_STAFF') {
+        if (staffType === 'ADMIN' || staffType === 'ORGANIZER_ADMIN') {
           filters.staffType = staffType;
         }
       }
@@ -464,7 +464,7 @@ export class EventStaffController {
       const { status, startDate, endDate } = req.query;
 
       // IDOR protection: verify the requester can view this staff member's events
-      if (requesterRole !== 'SUPERADMIN' && requesterRole !== 'ADMIN_STAFF') {
+      if (requesterRole !== 'SUPERADMIN' && requesterRole !== 'ADMIN') {
         if (staffId !== requesterId) {
           const [staff, requester] = await Promise.all([
             prisma.user.findUnique({ where: { id: staffId }, select: { organizationName: true } }),

@@ -143,22 +143,22 @@ router.delete(
 /**
  * @route   POST /api/v1/events/:id/approve
  * @desc    Approve event (admin function)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/:id/approve',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   EventController.approveEvent,
 );
 
 /**
  * @route   POST /api/v1/events/:id/reject
  * @desc    Reject event (admin function)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/:id/reject',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   validate(eventValidations.rejectEvent),
   EventController.rejectEvent,
 );
@@ -177,23 +177,23 @@ router.post(
 /**
  * @route   PUT /api/v1/events/bulk/organizer-data-access
  * @desc    Bulk update organizer data access level (admin function)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  * @note    Must be defined before /:id/organizer-data-access to avoid route conflict
  */
 router.put(
   '/bulk/organizer-data-access',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   EventController.bulkUpdateOrganizerDataAccess,
 );
 
 /**
  * @route   PUT /api/v1/events/:id/organizer-data-access
  * @desc    Update organizer data access level (admin function)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/:id/organizer-data-access',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   EventController.updateOrganizerDataAccess,
 );
 

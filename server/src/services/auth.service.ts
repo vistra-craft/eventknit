@@ -381,7 +381,7 @@ export class AuthService {
   }
 
   /**
-   * Notify all active admins (SUPERADMIN + ADMIN_STAFF) about a new organizer registration
+   * Notify all active admins (SUPERADMIN + ADMIN) about a new organizer registration
    */
   private static async notifyAdminsOfNewOrganizer(organizer: {
     firstName: string | null;
@@ -391,7 +391,7 @@ export class AuthService {
   }): Promise<void> {
     const admins = await prisma.user.findMany({
       where: {
-        role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF] },
+        role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN] },
         status: UserStatus.ACTIVE,
         deletedAt: null,
       },

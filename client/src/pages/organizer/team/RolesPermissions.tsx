@@ -43,7 +43,7 @@ import {
 
 // System roles (read-only)
 interface SystemRoleInfo {
-  id: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+  id: 'ORGANIZER_ADMIN' | 'ORGANIZER_TELLER';
   name: string;
   description: string;
   color: string;
@@ -77,7 +77,7 @@ const RolesPermissions = () => {
   // System-defined roles (read-only, fixed in backend)
   const systemRoles: SystemRoleInfo[] = [
     {
-      id: 'ORGANIZER_STAFF',
+      id: 'ORGANIZER_ADMIN',
       name: 'Staff Member',
       description: 'Basic staff members with scanning and check-in permissions',
       color: 'bg-primary/10 text-primary'
@@ -139,7 +139,7 @@ const RolesPermissions = () => {
   }, [fetchPermissions, fetchCustomRoles, fetchStaff]);
 
   // Get staff count for system role
-  const getSystemRoleStaffCount = (roleId: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER') => {
+  const getSystemRoleStaffCount = (roleId: 'ORGANIZER_ADMIN' | 'ORGANIZER_TELLER') => {
     return staff.filter(s => s.role === roleId && s.status === 'ACTIVE').length;
   };
 
@@ -178,7 +178,7 @@ const RolesPermissions = () => {
 
   // Get selected role data
   const selectedRoleData = selectedRoleType === 'system' 
-    ? systemRoles.find(r => r.id === selectedRoleId as 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER')
+    ? systemRoles.find(r => r.id === selectedRoleId as 'ORGANIZER_ADMIN' | 'ORGANIZER_TELLER')
     : customRoles.find(r => r.id === selectedRoleId);
 
   // Get permissions for selected role

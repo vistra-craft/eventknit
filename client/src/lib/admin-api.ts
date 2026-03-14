@@ -259,7 +259,7 @@ export const bulkUpdateOrganizerDataAccess = async (
  * User Status Management Types
  */
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED' | 'PENDING_APPROVAL';
-export type UserRole = 'SUPERADMIN' | 'ADMIN_STAFF' | 'ORGANIZER' | 'ATTENDEE';
+export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'ORGANIZER' | 'ATTENDEE';
 
 export interface User {
   id: string;
@@ -700,7 +700,7 @@ export interface EventStaffAssignment {
   eventId: string;
   staffId: string;
   role: EventStaffRole;
-  staffType: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+  staffType: 'ADMIN' | 'ORGANIZER_ADMIN';
   assignedAt: string;
   assignedBy: string;
   notes?: string;
@@ -778,7 +778,7 @@ export const getEventStaff = async (
   eventId: string,
   filters?: {
     role?: string;
-    staffType?: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+    staffType?: 'ADMIN' | 'ORGANIZER_ADMIN';
     isActive?: boolean;
   }
 ): Promise<GetEventStaffResponse> => {
@@ -1487,5 +1487,60 @@ export const cancelAdminTicketIssuance = async (issuanceId: string): Promise<{
   message: string;
 }> => {
   return apiPatch(`/admin/ticket-issuances/${issuanceId}/cancel`, {});
+};
+
+// ─── Staff Invitations ────────────────────────────────────────────────────────
+
+export interface StaffInvitation {
+  id: string;
+  email: string;
+  role: string;
+  scope: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REVOKED' | 'EXPIRED';
+  organizationName?: string;
+  invitedBy: { firstName: string | null; lastName: string | null; email: string };
+  expiresAt: string;
+  acceptedAt?: string;
+  createdAt: string;
+}
+
+export interface InviteStaffData {
+  email: string;
+  role: string;
+  message?: string;
+}
+
+export const inviteAdminStaff = async (data: InviteStaffData) => {
+  return apiPost<{ success: boolean; message: string; data: StaffInvitation }>(
+    '/admin/staff-invitations',
+    data,
+  );
+};
+
+export const getAdminStaffInvitations = async (params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const query = new URLSearchParams();
+  if (params?.status) query.set('status', params.status);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.limit) query.set('limit', String(params.limit));
+  const qs = query.toString();
+  return apiGet<{
+    success: boolean;
+    data: {
+      invitations: StaffInvitation[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    };
+  }>(`/admin/staff-invitations${qs ? `?${qs}` : ''}`);
+};
+
+export const resendAdminStaffInvitation = async (id: string) => {
+  return apiPost<{ success: boolean; message: string }>(`/admin/staff-invitations/${id}/resend`, {});
+};
+
+export const revokeAdminStaffInvitation = async (id: string) => {
+  return apiPost<{ success: boolean; message: string }>(`/admin/staff-invitations/${id}/revoke`, {});
 };
 

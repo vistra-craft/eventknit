@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   CheckCircle2,
   AlertCircle,
@@ -18,7 +19,12 @@ import { Badge } from '@/components/ui/badge';
 import { Loader, ButtonLoader } from '@/components/ui/loader';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getSubscription, upgradeSubscription, cancelSubscription, type SubscriptionTier, type OrganizerSubscription } from '@/lib/organizer-api';
-import { getSubscriptionPlans, type SubscriptionPlanConfig } from '@/lib/subscription-api';
+import {
+  getSubscriptionPlans,
+  initializeSubscriptionPayment,
+  verifySubscriptionPayment,
+  type SubscriptionPlanConfig,
+} from '@/lib/subscription-api';
 import { extractErrorMessage } from '@/lib/utils/error';
 import { useToast } from '@/hooks/useToast';
 
@@ -70,9 +76,16 @@ function formatPrice(plan: SubscriptionPlanConfig): string {
   return `${plan.currency} ${price}/month`;
 }
 
+function isPaidPlan(plan: SubscriptionPlanConfig | undefined): boolean {
+  if (!plan) return false;
+  return parseFloat(plan.price) > 0;
+}
+
 const SubscriptionManagement = () => {
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
   const [subscription, setSubscription] = useState<OrganizerSubscription | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlanConfig[]>([]);
   const [upgrading, setUpgrading] = useState(false);
@@ -112,6 +125,45 @@ const SubscriptionManagement = () => {
     loadData();
   }, [loadData]);
 
+  // Handle payment callback from Paystack
+  useEffect(() => {
+    const reference = searchParams.get('reference');
+    if (!reference || !reference.startsWith('SUB-')) return;
+
+    const verify = async () => {
+      setVerifying(true);
+      try {
+        const result = await verifySubscriptionPayment(reference);
+        if (result.success && result.data.status === 'SUCCESS' && result.data.subscription) {
+          setSubscription(result.data.subscription);
+          toast({
+            title: 'Payment successful',
+            description: `Your subscription has been upgraded to ${result.data.subscription.tier}`,
+          });
+        } else {
+          toast({
+            title: 'Payment verification failed',
+            description: 'Please contact support if you were charged',
+            variant: 'destructive',
+          });
+        }
+      } catch (error: unknown) {
+        toast({
+          title: 'Payment verification error',
+          description: extractErrorMessage(error, 'Unable to verify payment'),
+          variant: 'destructive',
+        });
+      } finally {
+        setVerifying(false);
+        // Clean up URL params
+        setSearchParams({}, { replace: true });
+      }
+    };
+
+    verify();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleUpgrade = (tier: SubscriptionTier) => {
     setTargetTier(tier);
     setShowUpgradeDialog(true);
@@ -121,35 +173,53 @@ const SubscriptionManagement = () => {
   const handleConfirmUpgrade = async () => {
     if (!targetTier) return;
 
-    // Validate billing email for Premium
-    if (targetTier === 'PREMIUM' && !billingEmail.trim()) {
-      setBillingEmailError('Billing email is required for Premium subscription');
+    const targetPlanConfig = plans.find(p => p.tier === targetTier);
+    const paid = isPaidPlan(targetPlanConfig);
+
+    // Validate billing email for paid tiers
+    if (paid && !billingEmail.trim()) {
+      setBillingEmailError('Billing email is required for paid subscriptions');
       return;
     }
 
-    if (targetTier === 'PREMIUM' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingEmail)) {
+    if (paid && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingEmail)) {
       setBillingEmailError('Please enter a valid email address');
       return;
     }
 
     try {
       setUpgrading(true);
-      const response = await upgradeSubscription({
-        tier: targetTier,
-        billingEmail: targetTier === 'PREMIUM' ? billingEmail : undefined,
-      });
 
-      if (response.success) {
-        setSubscription(response.data.subscription);
-        setShowUpgradeDialog(false);
-        setTargetTier(null);
-        setBillingEmail('');
-        const planName = plans.find(p => p.tier === targetTier)?.name ?? targetTier;
-        toast({
-          title: 'Subscription upgraded successfully',
-          description: `You are now on the ${planName} tier`,
-          variant: 'default',
+      if (paid) {
+        // Paid tier: initialize payment and redirect to Paystack
+        const paymentResponse = await initializeSubscriptionPayment({
+          tier: targetTier,
+          billingEmail: billingEmail.trim(),
         });
+
+        if (paymentResponse.success && paymentResponse.data.authorizationUrl) {
+          setShowUpgradeDialog(false);
+          // Redirect to Paystack checkout
+          window.location.href = paymentResponse.data.authorizationUrl;
+          return;
+        }
+      } else {
+        // Free tier: direct upgrade
+        const response = await upgradeSubscription({
+          tier: targetTier,
+          billingEmail: undefined,
+        });
+
+        if (response.success) {
+          setSubscription(response.data.subscription);
+          setShowUpgradeDialog(false);
+          setTargetTier(null);
+          const planName = plans.find(p => p.tier === targetTier)?.name ?? targetTier;
+          toast({
+            title: 'Subscription upgraded successfully',
+            description: `You are now on the ${planName} tier`,
+          });
+        }
       }
     } catch (error: unknown) {
       toast({
@@ -163,7 +233,7 @@ const SubscriptionManagement = () => {
   };
 
   const handleCancel = async () => {
-    if (!subscription || subscription.tier !== 'PREMIUM') return;
+    if (!subscription) return;
 
     try {
       setCanceling(true);
@@ -174,8 +244,7 @@ const SubscriptionManagement = () => {
         setShowCancelDialog(false);
         toast({
           title: 'Subscription canceled',
-          description: 'Your Premium subscription will remain active until it expires',
-          variant: 'default',
+          description: 'Your subscription will remain active until it expires',
         });
       }
     } catch (error: unknown) {
@@ -199,10 +268,11 @@ const SubscriptionManagement = () => {
     return subscription?.tier === tier;
   };
 
-  if (loading) {
+  if (loading || verifying) {
     return (
-        <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
           <Loader size="lg" />
+          {verifying && <p className="text-sm text-muted-foreground">Verifying payment...</p>}
         </div>
     );
   }
@@ -219,6 +289,7 @@ const SubscriptionManagement = () => {
   const currentTierIcon = TIER_ICONS[subscription.tier];
   const currentPlan = plans.find(p => p.tier === subscription.tier);
   const currentDescription = currentPlan?.description ?? '';
+  const currentIsPaid = isPaidPlan(currentPlan);
 
   // Build display data per plan: base features (always available) + admin-configured feature keys
   const tierEntries = (plans.length > 0 ? plans : []).map((plan) => ({
@@ -226,6 +297,7 @@ const SubscriptionManagement = () => {
     name: plan.name,
     description: plan.description ?? '',
     price: formatPrice(plan),
+    isPaid: isPaidPlan(plan),
     displayFeatures: [
       ...(TIER_BASE_FEATURES[plan.tier] ?? []),
       ...plan.features.map(key => FEATURE_LABELS[key] ?? key),
@@ -234,8 +306,9 @@ const SubscriptionManagement = () => {
     color: TIER_COLORS[plan.tier],
   }));
 
-  const targetPlan = targetTier ? plans.find(p => p.tier === targetTier) : null;
-  const targetPrice = targetPlan ? formatPrice(targetPlan) : '';
+  const targetPlanConfig = targetTier ? plans.find(p => p.tier === targetTier) : undefined;
+  const targetPrice = targetPlanConfig ? formatPrice(targetPlanConfig) : '';
+  const targetIsPaid = isPaidPlan(targetPlanConfig);
 
   return (
       <div className="space-y-6">
@@ -290,7 +363,7 @@ const SubscriptionManagement = () => {
               )}
             </div>
 
-            {subscription.tier === 'PREMIUM' && subscription.isActive && (
+            {currentIsPaid && subscription.isActive && (
               <div className="mt-4 pt-4 border-t">
                 <Button
                   variant="outline"
@@ -313,7 +386,6 @@ const SubscriptionManagement = () => {
               const TierIcon = entry.icon;
               const isCurrent = isCurrentTier(entry.tier);
               const canUpgrade = canUpgradeTo(entry.tier);
-              const isPremium = entry.tier === 'PREMIUM';
 
               return (
                 <Card
@@ -353,17 +425,8 @@ const SubscriptionManagement = () => {
                         onClick={() => handleUpgrade(entry.tier)}
                         disabled={upgrading}
                       >
-                        {isPremium ? (
-                          <>
-                            <Crown className="h-4 w-4 mr-2" />
-                            Upgrade to Premium
-                          </>
-                        ) : (
-                          <>
-                            <ArrowUpRight className="h-4 w-4 mr-2" />
-                            Upgrade to {entry.name}
-                          </>
-                        )}
+                        <ArrowUpRight className="h-4 w-4 mr-2" />
+                        {entry.isPaid ? `Upgrade to ${entry.name} — ${entry.price}` : `Upgrade to ${entry.name}`}
                       </Button>
                     )}
                     {isCurrent && (
@@ -383,15 +446,15 @@ const SubscriptionManagement = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                Upgrade to {targetPlan?.name ?? targetTier}
+                Upgrade to {targetPlanConfig?.name ?? targetTier}
               </DialogTitle>
               <DialogDescription>
-                {targetTier === 'PREMIUM'
-                  ? `Please provide your billing email to complete the upgrade. Premium subscriptions are ${targetPrice}.`
-                  : 'You\'ll be upgraded to the Standard tier for free. This includes access to attendee contact information with their consent.'}
+                {targetIsPaid
+                  ? `You'll be redirected to complete payment. ${targetPlanConfig?.name} subscriptions are ${targetPrice}.`
+                  : `You'll be upgraded to the ${targetPlanConfig?.name ?? targetTier} tier for free. This includes access to attendee contact information with their consent.`}
               </DialogDescription>
             </DialogHeader>
-            {targetTier === 'PREMIUM' && (
+            {targetIsPaid && (
               <div className="space-y-4 py-4">
                 <div>
                   <Label htmlFor="billingEmail">Billing Email *</Label>
@@ -435,6 +498,8 @@ const SubscriptionManagement = () => {
                     <ButtonLoader />
                     Processing...
                   </>
+                ) : targetIsPaid ? (
+                  'Proceed to Payment'
                 ) : (
                   'Confirm Upgrade'
                 )}
@@ -447,10 +512,10 @@ const SubscriptionManagement = () => {
         <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Cancel Premium Subscription</DialogTitle>
+              <DialogTitle>Cancel {currentPlan?.name ?? subscription.tier} Subscription</DialogTitle>
               <DialogDescription>
-                Your Premium subscription will remain active until {subscription.expiresAt ? new Date(subscription.expiresAt).toLocaleDateString() : 'the end of your billing period'}.
-                You'll be downgraded to the Standard tier (free) after expiration.
+                Your subscription will remain active until {subscription.expiresAt ? new Date(subscription.expiresAt).toLocaleDateString() : 'the end of your billing period'}.
+                You'll be downgraded after expiration.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

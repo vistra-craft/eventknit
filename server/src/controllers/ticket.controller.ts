@@ -47,7 +47,7 @@ export class TicketController {
 
       const isOwner = registration.attendeeId === req.user.id;
       const isOrganizer = registration.event.organizerId === req.user.id;
-      const isAdmin = req.user.role === 'SUPERADMIN' || req.user.role === 'ADMIN_STAFF';
+      const isAdmin = req.user.role === 'SUPERADMIN' || req.user.role === 'ADMIN';
 
       if (!isOwner && !isOrganizer && !isAdmin) {
         throw new AuthorizationError('You don\'t have access to this ticket.');
@@ -145,7 +145,7 @@ export class TicketController {
 
       const isOwner = registration.attendeeId === req.user.id;
       const isOrganizer = registration.event.organizerId === req.user.id;
-      const isAdmin = req.user.role === 'SUPERADMIN' || req.user.role === 'ADMIN_STAFF';
+      const isAdmin = req.user.role === 'SUPERADMIN' || req.user.role === 'ADMIN';
 
       if (!isOwner && !isOrganizer && !isAdmin) {
         throw new AuthorizationError('You don\'t have access to download this ticket.');

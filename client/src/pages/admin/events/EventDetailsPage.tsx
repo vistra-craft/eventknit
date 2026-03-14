@@ -1093,7 +1093,7 @@ const EventDetailsPage = () => {
                   </CardContent>
                 </Card>
 
-                {/* Organizer Data Access Control - Only for ADMIN_STAFF and SUPERADMIN */}
+                {/* Organizer Data Access Control - Only for ADMIN and SUPERADMIN */}
                 {permissions.canAccessAllEvents && (
                   <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardHeader>
@@ -1613,7 +1613,7 @@ const EventDetailsPage = () => {
             </Card>
         </div>}
 
-          {/* Refunds Tab - Only for ADMIN_STAFF and SUPERADMIN */}
+          {/* Refunds Tab - Only for ADMIN and SUPERADMIN */}
         {permissions.canAccessAllEvents && activeSection === "refunds" && <div className="space-y-6">
             {/* Refunds Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1736,7 +1736,7 @@ const EventDetailsPage = () => {
             </Card>
         </div>}
 
-          {/* Remittance Tab - Only for ADMIN_STAFF and SUPERADMIN */}
+          {/* Remittance Tab - Only for ADMIN and SUPERADMIN */}
         {permissions.canAccessAllEvents && activeSection === "remittance" && <div className="space-y-6">
             {/* Remittance Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1929,7 +1929,7 @@ const EventDetailsPage = () => {
             </Card>
         </div>}
 
-          {/* Assigned Staff Tab - Only for ADMIN_STAFF and SUPERADMIN */}
+          {/* Assigned Staff Tab - Only for ADMIN and SUPERADMIN */}
         {permissions.canAccessAllEvents && activeSection === "staff" && <div className="space-y-6">
             {eventId && (
               <EventStaffAssignment

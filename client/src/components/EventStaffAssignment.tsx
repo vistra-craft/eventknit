@@ -91,7 +91,7 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   // TanStack Query hooks - call both admin and organizer hooks unconditionally (conditional logic is inside hooks or handled by enabled flag if needed, but here we just need to satisfy order of hooks)
   const adminEventStaff = useEventStaff(eventId, {
     role: filterRole,
-    staffType: filterStaffType !== "all" ? (filterStaffType as 'ADMIN_STAFF' | 'ORGANIZER_STAFF') : undefined,
+    staffType: filterStaffType !== "all" ? (filterStaffType as 'ADMIN' | 'ORGANIZER_ADMIN') : undefined,
     isActive: filterActive !== "all" ? filterActive === "true" : undefined,
   });
   
@@ -256,13 +256,13 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
   };
 
   const getStaffTypeBadge = (staffType: string) => {
-    return staffType === "ADMIN_STAFF" ? (
+    return staffType === "ADMIN" ? (
       <Badge variant="outline" className="bg-primary/5 text-primary border-primary">
-        Admin Staff
+        Admin
       </Badge>
     ) : (
       <Badge variant="outline" className="bg-success/5 text-success border-success">
-        Organizer Staff
+        Organizer Admin
       </Badge>
     );
   };
@@ -339,8 +339,8 @@ export const EventStaffAssignment: React.FC<EventStaffAssignmentProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="ADMIN_STAFF">Admin Staff</SelectItem>
-                    <SelectItem value="ORGANIZER_STAFF">Organizer Staff</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                    <SelectItem value="ORGANIZER_ADMIN">Organizer Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

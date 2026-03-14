@@ -26,7 +26,7 @@ export class AdminNotificationSettingsController {
       // Only admins can access
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can access notification settings');
       }
@@ -63,7 +63,7 @@ export class AdminNotificationSettingsController {
       // Only admins can update
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can update notification settings');
       }
@@ -104,7 +104,7 @@ export class AdminNotificationSettingsController {
       // Only admins can access
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can access notification settings');
       }
@@ -141,7 +141,7 @@ export class AdminNotificationSettingsController {
       // Only admins can update
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can update notification settings');
       }
@@ -182,7 +182,7 @@ export class AdminNotificationSettingsController {
       // Only admins can access
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can access notification settings');
       }
@@ -219,7 +219,7 @@ export class AdminNotificationSettingsController {
       // Only admins can access
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can access notification settings');
       }
@@ -265,7 +265,7 @@ export class AdminNotificationSettingsController {
       // Only admins can update
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can update notification settings');
       }
@@ -308,7 +308,7 @@ export class AdminNotificationSettingsController {
       // Only admins can delete
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can delete notification templates');
       }
@@ -346,7 +346,7 @@ export class AdminNotificationSettingsController {
       // Only admins can access
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can access notification analytics');
       }

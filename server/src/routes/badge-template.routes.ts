@@ -30,9 +30,9 @@ router.post(
 /**
  * @route   POST /api/v1/badge-templates
  * @desc    Create a new badge template
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.post('/', requireMinRole(UserRole.ADMIN_STAFF), BadgeTemplateController.createTemplate);
+router.post('/', requireMinRole(UserRole.ADMIN), BadgeTemplateController.createTemplate);
 
 /**
  * @route   GET /api/v1/badge-templates
@@ -51,47 +51,47 @@ router.get('/:id', requireMinRole(UserRole.TELLER), BadgeTemplateController.getT
 /**
  * @route   PUT /api/v1/badge-templates/:id
  * @desc    Update a badge template
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.put('/:id', requireMinRole(UserRole.ADMIN_STAFF), BadgeTemplateController.updateTemplate);
+router.put('/:id', requireMinRole(UserRole.ADMIN), BadgeTemplateController.updateTemplate);
 
 /**
  * @route   DELETE /api/v1/badge-templates/:id
  * @desc    Delete a badge template (soft delete)
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.delete('/:id', requireMinRole(UserRole.ADMIN_STAFF), BadgeTemplateController.deleteTemplate);
+router.delete('/:id', requireMinRole(UserRole.ADMIN), BadgeTemplateController.deleteTemplate);
 
 /**
  * @route   POST /api/v1/badge-templates/:id/duplicate
  * @desc    Duplicate a badge template
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
 router.post(
   '/:id/duplicate',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   BadgeTemplateController.duplicateTemplate,
 );
 
 /**
  * @route   POST /api/v1/badge-templates/:id/set-default
  * @desc    Set a template as default
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
 router.post(
   '/:id/set-default',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   BadgeTemplateController.setDefaultTemplate,
 );
 
 /**
  * @route   POST /api/v1/badge-templates/:id/background
  * @desc    Upload background image for a badge template
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
 router.post(
   '/:id/background',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   uploadSingleImage,
   BadgeTemplateController.uploadBackgroundImage,
 );
@@ -99,11 +99,11 @@ router.post(
 /**
  * @route   DELETE /api/v1/badge-templates/:id/background
  * @desc    Remove background image from a badge template
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
 router.delete(
   '/:id/background',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   BadgeTemplateController.removeBackgroundImage,
 );
 

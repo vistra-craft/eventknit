@@ -65,15 +65,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Redirect to appropriate dashboard based on user role
     const isAdminRole = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ].includes(user.role);
-    
+
     const isOrganizerRole = [
       UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_TELLER,
     ].includes(user.role);
     
@@ -132,7 +131,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Skip for PENDING_APPROVAL organizers — they stay on /user/dashboard until approved
   const isOrganizer = [
     UserRole.ORGANIZER,
-    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_ADMIN,
     UserRole.ORGANIZER_TELLER,
   ].includes(user.role);
 

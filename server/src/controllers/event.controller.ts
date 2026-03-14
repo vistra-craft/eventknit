@@ -136,7 +136,7 @@ export class EventController {
       const userId = (req as AuthenticatedRequest).user?.id;
       const userRole = (req as AuthenticatedRequest).user?.role as string | undefined;
       const isAdmin = userRole
-        ? ['SUPERADMIN', 'ADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'].includes(userRole)
+        ? ['SUPERADMIN', 'ADMIN', 'SUPPORT', 'TELLER'].includes(userRole)
         : false;
 
       const event = await EventService.getEventById(eventId, userId, isAdmin);

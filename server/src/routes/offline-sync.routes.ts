@@ -53,14 +53,14 @@ router.get(
 // GET /offline/scans/conflicts/:eventId - Get scan conflicts
 router.get(
   '/scans/conflicts/:eventId',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   OfflineSyncController.getConflicts,
 );
 
 // POST /offline/scans/conflicts/:conflictId/resolve - Resolve conflict
 router.post(
   '/scans/conflicts/:conflictId/resolve',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   OfflineSyncController.resolveConflict,
 );
 

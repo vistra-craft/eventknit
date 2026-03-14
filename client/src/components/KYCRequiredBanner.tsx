@@ -28,7 +28,7 @@ export const KYCRequiredBanner = ({
 }: KYCRequiredBannerProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isOrganizer = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+  const isOrganizer = user && ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'].includes(user.role);
   const kycBasePath = isOrganizer ? '/organizer' : '/user';
 
   // Only show for paid events (free events don't require KYC)

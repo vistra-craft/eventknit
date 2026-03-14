@@ -10,12 +10,10 @@ datasource db {
 enum UserRole {
   SUPERADMIN
   ADMIN
-  ADMIN_STAFF
-  MARKETER
   SUPPORT
   TELLER
   ORGANIZER
-  ORGANIZER_STAFF
+  ORGANIZER_ADMIN
   ORGANIZER_TELLER
   ATTENDEE
 }
@@ -288,6 +286,7 @@ model User {
   organizerSubscription             OrganizerSubscription?       @relation("OrganizerSubscriptions")
   subscriptionOverrides             SubscriptionOverride[]       @relation("SubscriptionOverrides")
   subscriptionOverridesGranted      SubscriptionOverride[]       @relation("SubscriptionOverridesGranted")
+  subscriptionPayments              SubscriptionPayment[]        @relation("SubscriptionPayments")
   dataAccessAuditLogs               DataAccessAuditLog[]         @relation("DataAccessAuditLogs")
   auditLogs                         AuditLog[]
   eventsCreated                     Event[]                      @relation("EventOrganizer")
@@ -385,6 +384,9 @@ model User {
   organizerProfile OrganizerProfile? @relation("UserOrganizerProfile")
   emergencyContact EmergencyContact? @relation("UserEmergencyContact")
 
+  // Staff Invitations
+  staffInvitationsSent StaffInvitation[] @relation("StaffInviter")
+
   // GDPR Data Export
   dataExportRequests DataExportRequest[] @relation("DataExportRequests")
 
@@ -413,6 +415,39 @@ model User {
 }
 
 // Extended Profile Models for Admin Management
+
+enum StaffInvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+model StaffInvitation {
+  id               String                @id @default(uuid())
+  email            String
+  token            String                @unique // SHA-256 hash of the raw token
+  role             UserRole
+  invitedById      String
+  invitedBy        User                  @relation("StaffInviter", fields: [invitedById], references: [id], onDelete: Cascade)
+  organizationName String? // For org staff, inherited from inviter
+  scope            String                @default("PLATFORM") // "PLATFORM" or "ORGANIZATION"
+  status           StaffInvitationStatus @default(PENDING)
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  acceptedUserId   String? // The User record created when accepted
+  revokedAt        DateTime?
+  revokedById      String?
+  message          String? // Optional message from inviter
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([email])
+  @@index([token])
+  @@index([status])
+  @@index([invitedById])
+  @@index([expiresAt])
+}
 
 enum StaffDepartment {
   OPERATIONS
@@ -856,6 +891,7 @@ model Event {
   taggedUsers            AttendeeTaggedUser[]      @relation("EventTaggedUsers")
   // Phase 2 Features
   expenses               EventExpense[]            @relation("EventExpenses")
+  wages                  Wage[]                    @relation("EventWages")
   financialGoals         FinancialGoal[]           @relation("EventFinancialGoals")
   collaborators          EventCollaborator[]       @relation("EventCollaborators")
   activityLogs           EventActivityLog[]        @relation("EventActivityLogs")
@@ -1166,6 +1202,32 @@ model SubscriptionOverride {
 
   @@index([organizerId])
   @@index([isActive])
+}
+
+// Subscription Payment
+model SubscriptionPayment {
+  id                   String           @id @default(uuid())
+  organizerId          String
+  tier                 SubscriptionTier
+  amount               Decimal
+  currency             String           @default("USD")
+  gateway              String           @default("PAYSTACK")
+  gatewayReference     String           @unique
+  gatewayTransactionId String?
+  status               String           @default("PENDING") // PENDING, SUCCESS, FAILED, CANCELLED
+  billingEmail         String
+  paymentDate          DateTime?
+  gatewayMetadata      Json?
+  idempotencyKey       String?          @unique
+
+  organizer            User             @relation("SubscriptionPayments", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  @@index([organizerId])
+  @@index([gatewayReference])
+  @@index([status])
 }
 
 // Data Access Audit Log
@@ -1647,7 +1709,7 @@ model EventStaff {
   eventId    String
   staffId    String
   role       String // Event-specific role: "SCANNER", "SUPPORT", "MANAGER", "COORDINATOR", "SUPERVISOR", "TICKET_SELLER"
-  staffType  String // "ADMIN_STAFF" or "ORGANIZER_STAFF" - tracks which type of staff
+  staffType  String // "ADMIN" or "ORGANIZER_ADMIN" - tracks which type of staff
   assignedAt DateTime @default(now())
   assignedBy String // User ID who assigned (admin or organizer)
   notes      String? // Optional notes about assignment
@@ -5163,6 +5225,12 @@ enum PaymentMethodType {
   OTHER
 }
 
+enum StaffPayType {
+  PERMANENT // Monthly salaried staff
+  CONTRACT  // Fixed-term contract
+  EVENT     // Paid per event (daily rate x event days)
+}
+
 // Wage payments to employees/contractors
 model Wage {
   id            String               @id @default(cuid())
@@ -5170,14 +5238,36 @@ model Wage {
   employeeName  String
   department    String?
   position      String?
-  amount        Decimal              @db.Decimal(10, 2)
+  staffType     StaffPayType         @default(PERMANENT)
+
+  // Compensation
+  grossAmount   Decimal              @db.Decimal(10, 2) // Before deductions
+  amount        Decimal              @db.Decimal(10, 2) // Net pay (after deductions + bonuses)
   currency      String               @default("KES")
-  payPeriod     String // e.g., "January 2025", "Q1 2025"
+
+  // Work details
+  hoursWorked   Decimal?             @db.Decimal(8, 2)
+  hourlyRate    Decimal?             @db.Decimal(10, 2)
+  overtimeHours Decimal?             @db.Decimal(8, 2)
+  overtimeRate  Decimal?             @db.Decimal(10, 2) // Rate multiplier or flat rate
+  dailyRate     Decimal?             @db.Decimal(10, 2) // For event-based staff
+  eventDays     Int?                 // Number of days worked for this event
+
+  // Adjustments
+  bonuses       Decimal?             @db.Decimal(10, 2)
+  deductions    Decimal?             @db.Decimal(10, 2)
+
+  // Period & payment
+  payPeriod     String // e.g., "March 2025", "Q1 2025", "Event: Tech Summit 2025"
   payDate       DateTime
   status        FinancialEntryStatus @default(PENDING)
   paymentMethod PaymentMethodType    @default(BANK_TRANSFER)
   reference     String? // Payment reference/transaction ID
   notes         String?              @db.Text
+
+  // Event association (for event-based staff pay)
+  eventId String?
+  event   Event?  @relation("EventWages", fields: [eventId], references: [id], onDelete: SetNull)
 
   // Audit
   createdBy String?
@@ -5188,6 +5278,8 @@ model Wage {
   @@index([payDate])
   @@index([status])
   @@index([department])
+  @@index([eventId])
+  @@index([staffType])
 }
 
 // Income entries (revenue sources)

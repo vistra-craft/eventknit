@@ -312,7 +312,7 @@ export const mobileController = {
         deletedAt: null,
         OR: [
           { organizerId: userId },
-          { organizer: { role: { in: ['SUPERADMIN', 'ADMIN_STAFF'] } } },
+          { organizer: { role: { in: ['SUPERADMIN', 'ADMIN'] } } },
         ],
       },
       select: { id: true, title: true },

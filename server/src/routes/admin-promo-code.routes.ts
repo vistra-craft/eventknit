@@ -9,7 +9,7 @@ const router = Router();
 
 // All routes require authentication and admin role
 router.use(authenticate);
-router.use(requireMinRole(UserRole.ADMIN_STAFF));
+router.use(requireMinRole(UserRole.ADMIN));
 
 // Validation schemas
 const createPromoCodeSchema = Joi.object({
@@ -87,84 +87,84 @@ const bulkGenerateSchema = Joi.object({
 /**
  * @route   GET /api/v1/admin/promo-codes
  * @desc    Get all promo codes with filtering
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/', AdminPromoCodeController.getPromoCodes);
 
 /**
  * @route   GET /api/v1/admin/promo-codes/stats
  * @desc    Get promo code statistics
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/stats', AdminPromoCodeController.getStats);
 
 /**
  * @route   GET /api/v1/admin/promo-codes/check-availability
  * @desc    Check if a promo code is available
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/check-availability', AdminPromoCodeController.checkAvailability);
 
 /**
  * @route   GET /api/v1/admin/promo-codes/generate-code
  * @desc    Generate a unique promo code
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/generate-code', AdminPromoCodeController.generateCode);
 
 /**
  * @route   GET /api/v1/admin/promo-codes/batch/:batchId
  * @desc    Get codes by batch ID
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/batch/:batchId', AdminPromoCodeController.getCodesByBatch);
 
 /**
  * @route   DELETE /api/v1/admin/promo-codes/batch/:batchId
  * @desc    Delete a batch of promo codes
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete('/batch/:batchId', AdminPromoCodeController.deleteBatch);
 
 /**
  * @route   GET /api/v1/admin/promo-codes/:id
  * @desc    Get a single promo code by ID
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/:id', AdminPromoCodeController.getPromoCodeById);
 
 /**
  * @route   POST /api/v1/admin/promo-codes
  * @desc    Create a new promo code
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/', validate(createPromoCodeSchema), AdminPromoCodeController.createPromoCode);
 
 /**
  * @route   POST /api/v1/admin/promo-codes/bulk-generate
  * @desc    Bulk generate promo codes
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/bulk-generate', validate(bulkGenerateSchema), AdminPromoCodeController.bulkGenerate);
 
 /**
  * @route   PUT /api/v1/admin/promo-codes/:id
  * @desc    Update a promo code
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put('/:id', validate(updatePromoCodeSchema), AdminPromoCodeController.updatePromoCode);
 
 /**
  * @route   PATCH /api/v1/admin/promo-codes/:id/toggle
  * @desc    Toggle promo code active status
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.patch('/:id/toggle', AdminPromoCodeController.toggleActive);
 
 /**
  * @route   DELETE /api/v1/admin/promo-codes/:id
  * @desc    Delete a promo code
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete('/:id', AdminPromoCodeController.deletePromoCode);
 

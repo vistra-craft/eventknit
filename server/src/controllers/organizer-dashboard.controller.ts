@@ -27,7 +27,7 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { UserRole } from '@prisma/client';
 
 const isAdminRole = (role: UserRole): boolean =>
-  role === UserRole.SUPERADMIN || role === UserRole.ADMIN || role === UserRole.ADMIN_STAFF;
+  role === UserRole.SUPERADMIN || role === UserRole.ADMIN;
 
 export class OrganizerDashboardController {
   // Event Templates
@@ -2121,7 +2121,7 @@ export class OrganizerDashboardController {
    */
   static async getSubscriptionPlans(_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const plans = await SubscriptionService.getPlans();
+      const plans = await SubscriptionService.getActivePlans();
       res.status(200).json({ success: true, data: { plans } });
     } catch (error) {
       next(error);
@@ -2179,6 +2179,51 @@ export class OrganizerDashboardController {
 
       const subscription = await SubscriptionService.cancelSubscription(req.user.id);
       res.status(200).json({ success: true, message: 'Subscription canceled successfully', data: { subscription } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Initialize subscription payment (Paystack)
+   */
+  static async initializeSubscriptionPayment(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { tier, billingEmail } = req.body;
+      const result = await SubscriptionService.initializeSubscriptionPayment(
+        req.user.id,
+        tier,
+        billingEmail,
+      );
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify subscription payment (frontend callback)
+   */
+  static async verifySubscriptionPayment(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { reference } = req.query;
+      if (!reference || typeof reference !== 'string') {
+        res.status(400).json({ success: false, message: 'Payment reference is required' });
+        return;
+      }
+
+      const result = await SubscriptionService.verifySubscriptionPayment(reference);
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }

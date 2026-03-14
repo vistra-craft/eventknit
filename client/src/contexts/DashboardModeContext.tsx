@@ -24,7 +24,7 @@ export const DashboardModeProvider = ({ children }: DashboardModeProviderProps) 
   const { user } = useAuth();
 
   const canOrganize = user?.role === UserRole.ORGANIZER ||
-                     user?.role === UserRole.ORGANIZER_STAFF ||
+                     user?.role === UserRole.ORGANIZER_ADMIN ||
                      user?.role === UserRole.ORGANIZER_TELLER;
 
   const [mode, setModeState] = useState<DashboardMode>(() => {

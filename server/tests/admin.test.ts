@@ -66,7 +66,7 @@ describe('Admin User Management', () => {
         password: adminPassword,
         firstName: 'Admin',
         lastName: 'User',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         deletedAt: null, // Clear soft delete
@@ -76,7 +76,7 @@ describe('Admin User Management', () => {
         password: adminPassword,
         firstName: 'Admin',
         lastName: 'User',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -149,7 +149,7 @@ describe('Admin User Management', () => {
       expect(response.body.data.user.role).toBe(UserRole.ATTENDEE);
     });
 
-    it('should fail to create SUPERADMIN as ADMIN_STAFF', async () => {
+    it('should fail to create SUPERADMIN as ADMIN', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -314,7 +314,7 @@ describe('Admin User Management', () => {
       expect(response.body.data.user.firstName).toBe('Updated');
     });
 
-    it('should fail to update SUPERADMIN as ADMIN_STAFF', async () => {
+    it('should fail to update SUPERADMIN as ADMIN', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -365,7 +365,7 @@ describe('Admin User Management', () => {
       }
 
       // Note: Currently only SUPERADMIN can delete users based on canDeleteUser function
-      // ADMIN_STAFF cannot delete users (service limitation)
+      // ADMIN cannot delete users (service limitation)
       const response = await request(app)
         .delete(`/api/v1/admin/users/${userId}`)
         .set('Authorization', `Bearer ${superAdminToken}`)
@@ -380,7 +380,7 @@ describe('Admin User Management', () => {
       expect(user?.deletedAt).toBeDefined();
     });
 
-    it('should fail to delete SUPERADMIN as ADMIN_STAFF', async () => {
+    it('should fail to delete SUPERADMIN as ADMIN', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -632,7 +632,7 @@ describe('Admin User Management', () => {
       expect(user?.status).toBe(UserStatus.SUSPENDED);
     });
 
-    it('should fail to suspend SUPERADMIN as ADMIN_STAFF', async () => {
+    it('should fail to suspend SUPERADMIN as ADMIN', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -743,7 +743,7 @@ describe('Admin User Management', () => {
       expect(user?.status).toBe(UserStatus.DEACTIVATED);
     });
 
-    it('should fail to deactivate SUPERADMIN as ADMIN_STAFF', async () => {
+    it('should fail to deactivate SUPERADMIN as ADMIN', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;

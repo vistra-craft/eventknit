@@ -29,12 +29,12 @@ router.post(
 /**
  * @route   GET /api/v1/careers
  * @desc    Get all career inquiries
- * @access  Admin only (SUPERADMIN, ADMIN_STAFF)
+ * @access  Admin only (SUPERADMIN, ADMIN)
  */
 router.get(
   '/',
   authenticate,
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   validateQuery(careerValidations.getInquiries),
   CareerController.getAllInquiries,
 );
@@ -42,12 +42,12 @@ router.get(
 /**
  * @route   PATCH /api/v1/careers/:id
  * @desc    Update career inquiry status
- * @access  Admin only (SUPERADMIN, ADMIN_STAFF)
+ * @access  Admin only (SUPERADMIN, ADMIN)
  */
 router.patch(
   '/:id',
   authenticate,
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   validate(careerValidations.updateInquiry),
   CareerController.updateInquiry,
 );

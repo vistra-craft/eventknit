@@ -165,11 +165,11 @@ router.get('/events/:eventId/config', requireMinRole(UserRole.TELLER), Workstati
 /**
  * @route   PUT /api/v1/workstation/events/:eventId/config
  * @desc    Update event scan configuration
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
 router.put(
   '/events/:eventId/config',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   WorkstationController.updateEventConfig,
 );
 
@@ -198,11 +198,11 @@ router.get(
 /**
  * @route   POST /api/v1/workstation/registrations/:registrationId/void-checkin
  * @desc    Void / reverse a check-in (resets to pre-check-in state, creates VOID audit record)
- * @access  Private (ADMIN_STAFF or higher — supervisors only)
+ * @access  Private (ADMIN or higher — supervisors only)
  */
 router.post(
   '/registrations/:registrationId/void-checkin',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   WorkstationController.voidCheckIn,
 );
 

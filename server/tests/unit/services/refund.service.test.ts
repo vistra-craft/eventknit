@@ -1063,12 +1063,12 @@ describe('RefundService', () => {
       expect(prisma.user.findUnique).not.toHaveBeenCalled();
     });
 
-    it('should allow ADMIN_STAFF to access any refund', async () => {
+    it('should allow ADMIN to access any refund', async () => {
       // Arrange
       prisma.refund.findUnique.mockResolvedValue(mockRefundWithRelations as any);
       prisma.user.findUnique.mockResolvedValue({
         id: 'staff-001',
-        role: 'ADMIN_STAFF',
+        role: 'ADMIN',
       } as any);
 
       // Act

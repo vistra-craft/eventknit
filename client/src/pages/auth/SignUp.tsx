@@ -122,7 +122,7 @@ const SignUp = () => {
           ? !(result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
           : true;
 
-        if (role === 'SUPERADMIN' || role === 'ADMIN_STAFF') {
+        if (role === 'SUPERADMIN' || role === 'ADMIN') {
           // Admins skip onboarding, go directly to admin dashboard
           navigate('/admin/dashboard');
         } else if (needsOnboarding) {

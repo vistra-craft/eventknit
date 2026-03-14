@@ -204,10 +204,6 @@ export class StaffPerformanceService {
       responseTime = undefined;
     }
 
-    if (staff.role === UserRole.MARKETER) {
-      // TODO: Calculate campaign engagement from marketing campaigns
-      campaignEngagement = undefined;
-    }
 
     return {
       staffId: staff.id,
@@ -238,7 +234,7 @@ export class StaffPerformanceService {
    * Get performance metrics for multiple staff members
    */
   static async getTeamPerformance(
-    staffType: 'ADMIN_STAFF' | 'ORGANIZER_STAFF',
+    staffType: 'ADMIN' | 'ORGANIZER_ADMIN',
     period: PerformancePeriod = 'all',
     limit?: number,
   ): Promise<StaffPerformanceMetrics[]> {
@@ -276,7 +272,7 @@ export class StaffPerformanceService {
    * Get team performance summary
    */
   static async getTeamSummary(
-    staffType: 'ADMIN_STAFF' | 'ORGANIZER_STAFF',
+    staffType: 'ADMIN' | 'ORGANIZER_ADMIN',
     period: PerformancePeriod = 'all',
   ): Promise<TeamPerformanceSummary> {
     const { start, end } = this.getDateRange(period);
@@ -457,7 +453,7 @@ export class StaffPerformanceService {
     // Get all organizer staff assignments
     const staffAssignments = await prisma.eventStaff.findMany({
       where: {
-        staffType: 'ORGANIZER_STAFF',
+        staffType: 'ORGANIZER_ADMIN',
         assignedAt: {
           gte: start,
           lte: end,
@@ -680,7 +676,7 @@ export class StaffPerformanceService {
     // Get all staff assignments with shift times
     const assignments = await prisma.eventStaff.findMany({
       where: {
-        staffType: 'ORGANIZER_STAFF',
+        staffType: 'ORGANIZER_ADMIN',
         event: {
           organizerId,
         },

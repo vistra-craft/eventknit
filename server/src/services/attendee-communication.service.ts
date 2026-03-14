@@ -6,7 +6,7 @@ import { NotificationType, NotificationPriority, UserRole, Prisma } from '@prism
 import { emailService } from './email.service.js';
 
 /** Roles that bypass ownership checks */
-const ADMIN_ROLES: UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF];
+const ADMIN_ROLES: UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN];
 
 export class AttendeeCommunicationService {
   /**

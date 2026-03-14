@@ -193,22 +193,115 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
     <div className="container mx-auto px-4 sm:px-6 py-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        {/* ── Main column ─────────────────────────────────────────────────── */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* ── Sidebar (LEFT) ──────────────────────────────────────────────── */}
+        <div className="space-y-6 order-2 lg:order-1">
+          {/* Profile Card */}
+          <Card variant="github" className="sticky top-24">
+            <CardContent className="pt-6 text-center">
+              <Avatar
+                src={user.profileImage}
+                name={user.name}
+                alt={user.name}
+                size="lg"
+                className="mx-auto mb-4"
+              />
+              <h3 className="font-semibold text-foreground">{user.name}</h3>
+              {user.title && (
+                <p className="text-sm text-muted-foreground">{user.title}</p>
+              )}
+              {user.company && (
+                <p className="text-sm text-muted-foreground">{user.company}</p>
+              )}
+              <p className="text-sm text-muted-foreground mt-2">{user.email}</p>
+
+              {/* Registration Status Chip */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-success/10 text-success">
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="text-sm font-medium">Registered</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card variant="github">
+            <CardHeader>
+              <CardTitle className="text-sm">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start text-sm h-9"
+                onClick={handleAddToCalendar}
+              >
+                <CalendarPlus className="w-4 h-4 mr-2" />
+                Add to Calendar
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start text-sm h-9"
+                onClick={handleShare}
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share Event
+              </Button>
+
+              {event.registrationId && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-sm h-9"
+                  onClick={handleDownloadTicket}
+                  disabled={downloadingTicket}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {downloadingTicket ? 'Downloading…' : 'Download Ticket'}
+                </Button>
+              )}
+
+              <Button
+                variant="outline"
+                className="w-full justify-start text-sm h-9"
+                onClick={() => window.location.href = '/user/notifications'}
+              >
+                <Bell className="w-4 h-4 mr-2" />
+                All Notifications
+              </Button>
+
+              {event.organizerId && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-sm h-9"
+                  onClick={() => setIsContactOpen(true)}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Contact Organizer
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Main column (RIGHT) ─────────────────────────────────────────── */}
+        <div className="lg:col-span-2 space-y-6 order-1 lg:order-2">
 
           {/* Registration confirmed banner */}
           <Card variant="github" className="overflow-hidden">
-            <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6">
+            <div className="bg-success/5 border-b border-success/20 p-6">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-8 h-8" />
+                <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-success" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">You're Registered!</h2>
-                  <p className="text-white/80 text-sm mt-1">
+                  <h2 className="text-lg font-semibold text-foreground">You're Registered</h2>
+                  <p className="text-muted-foreground text-sm mt-0.5">
                     Your spot is confirmed for this event
                   </p>
                 </div>
+                <Badge className={`ml-auto ${status.color}`}>
+                  {status.label}
+                </Badge>
               </div>
             </div>
 
@@ -229,10 +322,11 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
                   </p>
                 </div>
                 <div className="col-span-2 sm:col-span-1 text-center p-4 bg-muted/50 rounded-xl">
-                  <Badge className={`mx-auto text-sm ${status.color}`}>
-                    {status.label}
-                  </Badge>
-                  <p className="text-xs text-muted-foreground mt-2">Event Status</p>
+                  <Clock className="w-5 h-5 mx-auto mb-2 text-primary" />
+                  <p className="text-xs text-muted-foreground">Time</p>
+                  <p className="font-medium text-foreground mt-1">
+                    {event.time || 'TBA'}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -474,87 +568,6 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
           </Card>
         </div>
 
-        {/* ── Sidebar ─────────────────────────────────────────────────────── */}
-        <div className="space-y-6">
-          {/* Profile Card */}
-          <Card variant="github">
-            <CardContent className="pt-6 text-center">
-              <Avatar
-                src={user.profileImage}
-                name={user.name}
-                alt={user.name}
-                size="lg"
-                className="mx-auto mb-4"
-              />
-              <h3 className="font-semibold text-foreground">{user.name}</h3>
-              {user.title && (
-                <p className="text-sm text-muted-foreground">{user.title}</p>
-              )}
-              {user.company && (
-                <p className="text-sm text-muted-foreground">{user.company}</p>
-              )}
-              <p className="text-sm text-muted-foreground mt-2">{user.email}</p>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card variant="github">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={handleAddToCalendar}
-              >
-                <CalendarPlus className="w-4 h-4 mr-2" />
-                Add to Calendar
-              </Button>
-
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={handleShare}
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                Share Event
-              </Button>
-
-              {event.registrationId && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={handleDownloadTicket}
-                  disabled={downloadingTicket}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {downloadingTicket ? 'Downloading…' : 'Download Ticket'}
-                </Button>
-              )}
-
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={() => window.location.href = '/user/dashboard?section=notifications'}
-              >
-                <Bell className="w-4 h-4 mr-2" />
-                All Notifications
-              </Button>
-
-              {event.organizerId && (
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => setIsContactOpen(true)}
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Contact Organizer
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
       {/* Contact Organizer dialog */}

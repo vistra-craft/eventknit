@@ -788,16 +788,14 @@ export class AdminController {
  */
 function getRoleDescription(role: UserRole): string {
   const descriptions: Record<UserRole, string> = {
-    [UserRole.SUPERADMIN]: 'Full system access with all permissions',
-    [UserRole.ADMIN]: 'Platform administrator with broad system-wide permissions',
-    [UserRole.ADMIN_STAFF]: 'Administrative staff with management capabilities',
-    [UserRole.MARKETER]: 'Marketing team member with event promotion access',
-    [UserRole.SUPPORT]: 'Customer support team member',
-    [UserRole.TELLER]: 'Event staff member for ticket scanning and check-in',
-    [UserRole.ORGANIZER]: 'Event organizer with full event management capabilities',
-    [UserRole.ORGANIZER_STAFF]: 'Organizer staff member with limited event management',
-    [UserRole.ORGANIZER_TELLER]: 'Organizer teller for ticket scanning at specific events',
-    [UserRole.ATTENDEE]: 'Regular event attendee',
+    [UserRole.SUPERADMIN]: 'Full platform access including system health, database, logs, and backups',
+    [UserRole.ADMIN]: 'Full admin dashboard access except system management',
+    [UserRole.SUPPORT]: 'Customer support, communications, marketing, and flagged content review',
+    [UserRole.TELLER]: 'Event day hub — QR scanning, badge printing, and walk-in registration',
+    [UserRole.ORGANIZER]: 'Full organizer dashboard — events, staff, analytics, finance, branding',
+    [UserRole.ORGANIZER_ADMIN]: 'Manage organizer events, attendees, and analytics (no finance or settings)',
+    [UserRole.ORGANIZER_TELLER]: 'Event day operations — QR scanning and check-in for assigned events',
+    [UserRole.ATTENDEE]: 'Browse events, register, manage tickets and transfers',
   };
 
   return descriptions[role] || 'No description available';

@@ -46,7 +46,7 @@ describe('UserPreferencesService', () => {
     const testUser = await prisma.user.create({
       data: {
         email: `test-user-${Date.now()}@example.com`,
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
       },
     });
     testUserId = testUser.id;

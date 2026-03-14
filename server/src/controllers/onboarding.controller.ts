@@ -140,7 +140,7 @@ export class OnboardingController {
         // Notify admins about new organizer
         prisma.user.findMany({
           where: {
-            role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF] },
+            role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN] },
             status: UserStatus.ACTIVE,
             deletedAt: null,
           },

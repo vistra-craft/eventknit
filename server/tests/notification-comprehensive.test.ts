@@ -330,7 +330,7 @@ describe('NotificationService - Comprehensive Tests', () => {
           password: await hashPassword('password123'),
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ADMIN_STAFF,
+          role: UserRole.ADMIN,
           status: UserStatus.ACTIVE,
           isEmailVerified: true,
         },
@@ -341,7 +341,7 @@ describe('NotificationService - Comprehensive Tests', () => {
         data: {
           eventId: _eventId,
           staffId: staff.id,
-          staffType: 'ADMIN_STAFF',
+          staffType: 'ADMIN',
           role: 'SUPERVISOR',
           isActive: true,
           assignedBy: organizerId,

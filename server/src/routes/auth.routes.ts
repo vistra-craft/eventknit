@@ -1,9 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { AuthController } from '../controllers/auth.controller.js';
+import { StaffInvitationController } from '../controllers/staff-invitation.controller.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { authValidations } from '../validations/auth.validations.js';
+import { staffInvitationValidations } from '../validations/staff-invitation.validations.js';
 import { authRateLimiter, ipAuthRateLimiter } from '../middleware/rateLimiter.middleware.js';
 import cookieParser from 'cookie-parser';
 
@@ -255,6 +257,30 @@ router.get(
  * @note    Mobile apps use this to verify ticket signatures offline
  */
 router.get('/public-key', AuthController.getPublicKey);
+
+/**
+ * @route   POST /api/v1/auth/staff-invitation/validate
+ * @desc    Validate a staff invitation token (for accept page)
+ * @access  Public
+ */
+router.post(
+  '/staff-invitation/validate',
+  authRateLimiter,
+  validate(staffInvitationValidations.validateToken),
+  StaffInvitationController.validateToken,
+);
+
+/**
+ * @route   POST /api/v1/auth/staff-invitation/accept
+ * @desc    Accept a staff invitation and create account
+ * @access  Public
+ */
+router.post(
+  '/staff-invitation/accept',
+  authRateLimiter,
+  validate(staffInvitationValidations.acceptInvitation),
+  StaffInvitationController.acceptInvitation,
+);
 
 // Protected routes
 router.use(authenticate);

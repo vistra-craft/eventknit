@@ -1,7 +1,7 @@
 /**
  * Organizer Routes
  * All routes under /organizer/* path (protected, requires organizer roles)
- * Supports multiple role variations: ORGANIZER, ORGANIZER_STAFF, ORGANIZER_TELLER
+ * Supports multiple role variations: ORGANIZER, ORGANIZER_ADMIN, ORGANIZER_TELLER
  */
 
 import { lazy, createElement } from 'react';
@@ -53,10 +53,11 @@ const SubscriptionManagement = lazy(() => import('../pages/organizer/Subscriptio
 // Venues
 const VenueManagement = lazy(() => import('../pages/organizer/VenueManagement'));
 
-// Attendees
+// Attendees & Communication
 const AttendeeSegmentation = lazy(() => import('../pages/organizer/AttendeeSegmentation'));
 const AttendeeTagsManagement = lazy(() => import('../pages/organizer/AttendeeTagsManagement'));
 const AttendeeCommunication = lazy(() => import('../pages/organizer/AttendeeCommunication'));
+const OrganizerNotificationsCenter = lazy(() => import('../pages/organizer/OrganizerNotificationsCenter'));
 
 // Marketing
 const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'));
@@ -76,14 +77,14 @@ const OrganizerBrandingPage = lazy(() => import('../pages/organizer/OrganizerBra
  */
 const ALL_ORGANIZER_ROLES = [
   UserRole.ORGANIZER,
-  UserRole.ORGANIZER_STAFF,
+  UserRole.ORGANIZER_ADMIN,
   UserRole.ORGANIZER_TELLER,
   UserRole.SUPERADMIN,
 ];
 
 const NON_TELLER_ROLES = [
   UserRole.ORGANIZER,
-  UserRole.ORGANIZER_STAFF,
+  UserRole.ORGANIZER_ADMIN,
   UserRole.SUPERADMIN,
 ];
 
@@ -106,7 +107,7 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
   {
     path: 'onboarding',
     element: createElement(OnboardingWizard),
-    allowedRoles: [UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER],
+    allowedRoles: [UserRole.ORGANIZER, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_TELLER],
   },
   {
     path: 'profile-setup',
@@ -281,6 +282,13 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     path: 'venues',
     element: createElement(VenueManagement),
     allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Notifications
+  {
+    path: 'notifications',
+    element: createElement(OrganizerNotificationsCenter),
+    allowedRoles: ALL_ORGANIZER_ROLES,
   },
 
   // Attendees

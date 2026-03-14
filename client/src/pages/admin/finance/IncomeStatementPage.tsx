@@ -14,6 +14,8 @@ import {
   PieChart,
   AlertCircle,
   Loader2,
+  Users,
+  Percent,
 } from 'lucide-react';
 
 import BackButton from "@/components/BackButton";
@@ -31,10 +33,16 @@ interface StatementData {
   revenue: {
     incomesByCategory: Record<string, number>;
     totalRevenue: number;
+    platformFeeRevenue: number;
+    manualIncome: number;
+    totalGrossRevenue: number;
+    totalOrganizerPayouts: number;
   };
   expenses: {
     expensesByCategory: Record<string, number>;
     totalExpenses: number;
+    operatingExpenses: number;
+    totalWages: number;
   };
   netIncome: number;
 }
@@ -76,10 +84,16 @@ const IncomeStatementPage: React.FC = () => {
             revenue: {
               incomesByCategory: d.incomesByCategory,
               totalRevenue: d.summary.totalIncome,
+              platformFeeRevenue: d.summary.platformFeeRevenue ?? 0,
+              manualIncome: d.summary.manualIncome ?? 0,
+              totalGrossRevenue: d.summary.totalGrossRevenue ?? 0,
+              totalOrganizerPayouts: d.summary.totalOrganizerPayouts ?? 0,
             },
             expenses: {
               expensesByCategory: d.expensesByCategory,
               totalExpenses: d.summary.totalExpenses,
+              operatingExpenses: d.summary.operatingExpenses ?? d.summary.totalExpenses,
+              totalWages: d.summary.totalWages ?? 0,
             },
             netIncome: d.summary.netProfit,
           });
@@ -87,7 +101,7 @@ const IncomeStatementPage: React.FC = () => {
           setError('Failed to load income statement data');
         }
       } else {
-        // Year/quarter view — use getFinancialOverview (no category breakdown available)
+        // Year/quarter view — use getFinancialOverview
         const now = new Date();
         let startDate: string;
         if (period === 'quarter') {
@@ -101,8 +115,20 @@ const IncomeStatementPage: React.FC = () => {
           const d: FinancialOverview = res.data;
           setStatement({
             period: label,
-            revenue: { incomesByCategory: {}, totalRevenue: d.totalIncome },
-            expenses: { expensesByCategory: {}, totalExpenses: d.totalExpenses },
+            revenue: {
+              incomesByCategory: {},
+              totalRevenue: d.totalIncome,
+              platformFeeRevenue: d.platformFeeRevenue ?? 0,
+              manualIncome: d.manualIncome ?? 0,
+              totalGrossRevenue: d.totalGrossRevenue ?? 0,
+              totalOrganizerPayouts: d.totalOrganizerPayouts ?? 0,
+            },
+            expenses: {
+              expensesByCategory: {},
+              totalExpenses: d.totalExpenses,
+              operatingExpenses: d.operatingExpenses ?? d.totalExpenses,
+              totalWages: d.totalWages ?? 0,
+            },
             netIncome: d.netProfit,
           });
         } else {
@@ -121,7 +147,7 @@ const IncomeStatementPage: React.FC = () => {
   }, [selectedPeriod, loadData]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
   };
 
   const formatPercentage = (value: number, total: number): string => {
@@ -199,6 +225,11 @@ const IncomeStatementPage: React.FC = () => {
                   </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Revenue</h3>
                   <p className="font-semibold text-success">{formatCurrency(statement.revenue.totalRevenue)}</p>
+                  {statement.revenue.platformFeeRevenue > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Platform fees: {formatCurrency(statement.revenue.platformFeeRevenue)}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -211,6 +242,11 @@ const IncomeStatementPage: React.FC = () => {
                   </div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-1">Total Expenses</h3>
                   <p className="font-semibold text-destructive">{formatCurrency(statement.expenses.totalExpenses)}</p>
+                  {statement.expenses.totalWages > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Includes {formatCurrency(statement.expenses.totalWages)} wages
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 
@@ -231,6 +267,51 @@ const IncomeStatementPage: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Platform Revenue Summary (when platform fee data is available) */}
+            {(statement.revenue.platformFeeRevenue > 0 || statement.expenses.totalWages > 0) && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card className="border-border/40 bg-card">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Percent className="h-4 w-4 text-primary" />
+                      <p className="text-xs font-medium text-muted-foreground uppercase">Platform Fee Revenue</p>
+                    </div>
+                    <p className="text-lg font-bold text-foreground">{formatCurrency(statement.revenue.platformFeeRevenue)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border/40 bg-card">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <DollarSign className="h-4 w-4 text-success" />
+                      <p className="text-xs font-medium text-muted-foreground uppercase">Manual Income</p>
+                    </div>
+                    <p className="text-lg font-bold text-foreground">{formatCurrency(statement.revenue.manualIncome)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border/40 bg-card">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="h-4 w-4 text-warning" />
+                      <p className="text-xs font-medium text-muted-foreground uppercase">Staff Wages</p>
+                    </div>
+                    <p className="text-lg font-bold text-foreground">{formatCurrency(statement.expenses.totalWages)}</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-border/40 bg-card">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-xs font-medium text-muted-foreground uppercase">Organizer Payouts</p>
+                    </div>
+                    <p className="text-lg font-bold text-foreground">{formatCurrency(statement.revenue.totalOrganizerPayouts)}</p>
+                    {statement.revenue.totalGrossRevenue > 0 && (
+                      <p className="text-xs text-muted-foreground">From {formatCurrency(statement.revenue.totalGrossRevenue)} gross</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Income Statement Table */}
             <Card className="border-border/40 bg-card">
@@ -268,11 +349,35 @@ const IncomeStatementPage: React.FC = () => {
                           </tr>
                         ))
                       ) : (
-                        <tr className="hover:bg-muted/20 transition-colors">
-                          <td className="py-3 px-6 pl-10 text-muted-foreground">Total Income</td>
-                          <td className="py-3 px-6 text-right font-medium text-success">{formatCurrency(statement.revenue.totalRevenue)}</td>
-                          <td className="py-3 px-6 text-right text-muted-foreground">100.0%</td>
-                        </tr>
+                        <>
+                          {/* No category breakdown — show revenue split */}
+                          {statement.revenue.platformFeeRevenue > 0 ? (
+                            <>
+                              <tr className="hover:bg-muted/20 transition-colors">
+                                <td className="py-3 px-6 pl-10 text-muted-foreground">Platform Fees (Ticket Sales)</td>
+                                <td className="py-3 px-6 text-right font-medium text-success">{formatCurrency(statement.revenue.platformFeeRevenue)}</td>
+                                <td className="py-3 px-6 text-right text-muted-foreground">
+                                  {formatPercentage(statement.revenue.platformFeeRevenue, statement.revenue.totalRevenue)}%
+                                </td>
+                              </tr>
+                              {statement.revenue.manualIncome > 0 && (
+                                <tr className="hover:bg-muted/20 transition-colors">
+                                  <td className="py-3 px-6 pl-10 text-muted-foreground">Other Income</td>
+                                  <td className="py-3 px-6 text-right font-medium text-success">{formatCurrency(statement.revenue.manualIncome)}</td>
+                                  <td className="py-3 px-6 text-right text-muted-foreground">
+                                    {formatPercentage(statement.revenue.manualIncome, statement.revenue.totalRevenue)}%
+                                  </td>
+                                </tr>
+                              )}
+                            </>
+                          ) : (
+                            <tr className="hover:bg-muted/20 transition-colors">
+                              <td className="py-3 px-6 pl-10 text-muted-foreground">Total Income</td>
+                              <td className="py-3 px-6 text-right font-medium text-success">{formatCurrency(statement.revenue.totalRevenue)}</td>
+                              <td className="py-3 px-6 text-right text-muted-foreground">100.0%</td>
+                            </tr>
+                          )}
+                        </>
                       )}
 
                       <tr className="bg-success/5 border-t-2 border-success/20">
@@ -281,30 +386,100 @@ const IncomeStatementPage: React.FC = () => {
                         <td className="py-4 px-6 text-right font-bold text-success">100.0%</td>
                       </tr>
 
+                      {/* Gross Revenue Memo (if platform fees exist) */}
+                      {statement.revenue.totalGrossRevenue > 0 && (
+                        <>
+                          <tr className="bg-muted/10">
+                            <td className="py-3 px-6 text-xs font-medium text-muted-foreground uppercase" colSpan={3}>
+                              Ticket Sales Memo
+                            </td>
+                          </tr>
+                          <tr className="hover:bg-muted/20 transition-colors">
+                            <td className="py-2 px-6 pl-10 text-xs text-muted-foreground">Gross Ticket Revenue</td>
+                            <td className="py-2 px-6 text-right text-xs text-muted-foreground">{formatCurrency(statement.revenue.totalGrossRevenue)}</td>
+                            <td />
+                          </tr>
+                          <tr className="hover:bg-muted/20 transition-colors">
+                            <td className="py-2 px-6 pl-10 text-xs text-muted-foreground">Less: Organizer Payouts</td>
+                            <td className="py-2 px-6 text-right text-xs text-muted-foreground">({formatCurrency(statement.revenue.totalOrganizerPayouts)})</td>
+                            <td />
+                          </tr>
+                          <tr className="hover:bg-muted/20 transition-colors border-t border-border/20">
+                            <td className="py-2 px-6 pl-10 text-xs font-medium text-muted-foreground">Platform Fee Retained</td>
+                            <td className="py-2 px-6 text-right text-xs font-medium text-primary">{formatCurrency(statement.revenue.platformFeeRevenue)}</td>
+                            <td />
+                          </tr>
+                        </>
+                      )}
+
                       {/* Expenses Section */}
                       <tr className="bg-destructive/5">
                         <td className="py-4 px-6 font-semibold text-destructive text-base">EXPENSES</td>
                         <td /><td />
                       </tr>
 
+                      {/* Operating Expenses */}
                       {Object.entries(statement.expenses.expensesByCategory).length > 0 ? (
-                        Object.entries(statement.expenses.expensesByCategory).map(([cat, amount]) => (
-                          <tr key={cat} className="hover:bg-muted/20 transition-colors">
-                            <td className="py-3 px-6 pl-10 text-muted-foreground">{cat}</td>
-                            <td className="py-3 px-6 text-right font-medium text-destructive">{formatCurrency(amount)}</td>
-                            <td className="py-3 px-6 text-right text-muted-foreground">
-                              {formatPercentage(amount, statement.revenue.totalRevenue)}%
-                            </td>
-                          </tr>
-                        ))
+                        <>
+                          {/* Show non-wage categories as Operating Expenses */}
+                          {Object.entries(statement.expenses.expensesByCategory)
+                            .filter(([cat]) => cat !== 'Staff Wages')
+                            .map(([cat, amount]) => (
+                              <tr key={cat} className="hover:bg-muted/20 transition-colors">
+                                <td className="py-3 px-6 pl-10 text-muted-foreground">{cat}</td>
+                                <td className="py-3 px-6 text-right font-medium text-destructive">{formatCurrency(amount)}</td>
+                                <td className="py-3 px-6 text-right text-muted-foreground">
+                                  {formatPercentage(amount, statement.revenue.totalRevenue)}%
+                                </td>
+                              </tr>
+                            ))}
+
+                          {/* Staff Wages as a separate line (from category breakdown or totalWages) */}
+                          {(statement.expenses.expensesByCategory['Staff Wages'] || statement.expenses.totalWages > 0) && (
+                            <tr className="hover:bg-muted/20 transition-colors">
+                              <td className="py-3 px-6 pl-10 text-muted-foreground">Staff Wages & Salaries</td>
+                              <td className="py-3 px-6 text-right font-medium text-destructive">
+                                {formatCurrency(statement.expenses.expensesByCategory['Staff Wages'] ?? statement.expenses.totalWages)}
+                              </td>
+                              <td className="py-3 px-6 text-right text-muted-foreground">
+                                {formatPercentage(
+                                  statement.expenses.expensesByCategory['Staff Wages'] ?? statement.expenses.totalWages,
+                                  statement.revenue.totalRevenue
+                                )}%
+                              </td>
+                            </tr>
+                          )}
+                        </>
                       ) : (
-                        <tr className="hover:bg-muted/20 transition-colors">
-                          <td className="py-3 px-6 pl-10 text-muted-foreground">Total Expenses</td>
-                          <td className="py-3 px-6 text-right font-medium text-destructive">{formatCurrency(statement.expenses.totalExpenses)}</td>
-                          <td className="py-3 px-6 text-right text-muted-foreground">
-                            {formatPercentage(statement.expenses.totalExpenses, statement.revenue.totalRevenue)}%
-                          </td>
-                        </tr>
+                        <>
+                          {/* No category breakdown — show split if wages exist */}
+                          {statement.expenses.totalWages > 0 ? (
+                            <>
+                              <tr className="hover:bg-muted/20 transition-colors">
+                                <td className="py-3 px-6 pl-10 text-muted-foreground">Operating Expenses</td>
+                                <td className="py-3 px-6 text-right font-medium text-destructive">{formatCurrency(statement.expenses.operatingExpenses)}</td>
+                                <td className="py-3 px-6 text-right text-muted-foreground">
+                                  {formatPercentage(statement.expenses.operatingExpenses, statement.revenue.totalRevenue)}%
+                                </td>
+                              </tr>
+                              <tr className="hover:bg-muted/20 transition-colors">
+                                <td className="py-3 px-6 pl-10 text-muted-foreground">Staff Wages & Salaries</td>
+                                <td className="py-3 px-6 text-right font-medium text-destructive">{formatCurrency(statement.expenses.totalWages)}</td>
+                                <td className="py-3 px-6 text-right text-muted-foreground">
+                                  {formatPercentage(statement.expenses.totalWages, statement.revenue.totalRevenue)}%
+                                </td>
+                              </tr>
+                            </>
+                          ) : (
+                            <tr className="hover:bg-muted/20 transition-colors">
+                              <td className="py-3 px-6 pl-10 text-muted-foreground">Total Expenses</td>
+                              <td className="py-3 px-6 text-right font-medium text-destructive">{formatCurrency(statement.expenses.totalExpenses)}</td>
+                              <td className="py-3 px-6 text-right text-muted-foreground">
+                                {formatPercentage(statement.expenses.totalExpenses, statement.revenue.totalRevenue)}%
+                              </td>
+                            </tr>
+                          )}
+                        </>
                       )}
 
                       <tr className="bg-destructive/5 border-t-2 border-destructive/20">

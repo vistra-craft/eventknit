@@ -35,15 +35,14 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
     
     const isAdminRole = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ].includes(roleToUse);
     
     const isOrganizerRole = [
       UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_TELLER,
     ].includes(roleToUse);
     
@@ -75,15 +74,14 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
     
     const isAdminRole = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ].includes(roleToUse);
     
     const isOrganizerRole = [
       UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_TELLER,
     ].includes(roleToUse);
     
@@ -99,15 +97,14 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
     
     const isAdminRole = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ].includes(roleToUse);
     
     const isOrganizerRole = [
       UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_TELLER,
     ].includes(roleToUse);
     

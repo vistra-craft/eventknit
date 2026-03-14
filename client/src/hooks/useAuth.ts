@@ -22,14 +22,13 @@ export const useAuth = () => {
     switch (role) {
       // Admin roles - redirect to admin dashboard
       case UserRole.SUPERADMIN:
-      case UserRole.ADMIN_STAFF:
-      case UserRole.MARKETER:
+      case UserRole.ADMIN:
       case UserRole.SUPPORT:
       case UserRole.TELLER:
         return '/admin/dashboard';
       // Organizer roles - redirect to organizer dashboard
       case UserRole.ORGANIZER:
-      case UserRole.ORGANIZER_STAFF:
+      case UserRole.ORGANIZER_ADMIN:
       case UserRole.ORGANIZER_TELLER:
         return '/organizer/dashboard';
       // Attendees and default - unified dashboard
@@ -60,8 +59,7 @@ export const useAuth = () => {
           const role = response.data.user.role;
           const isAdminRole =
             role === 'SUPERADMIN' ||
-            role === 'ADMIN_STAFF' ||
-            role === 'MARKETER' ||
+            role === 'ADMIN' ||
             role === 'SUPPORT' ||
             role === 'TELLER';
 
@@ -72,7 +70,7 @@ export const useAuth = () => {
 
           const isOrganizerRole =
             role === 'ORGANIZER' ||
-            role === 'ORGANIZER_STAFF' ||
+            role === 'ORGANIZER_ADMIN' ||
             role === 'ORGANIZER_TELLER';
 
           // Check for returnTo query param (e.g., from transfer accept page)
@@ -129,8 +127,7 @@ export const useAuth = () => {
           const role = response.data.user.role;
           const isAdminRole =
             role === 'SUPERADMIN' ||
-            role === 'ADMIN_STAFF' ||
-            role === 'MARKETER' ||
+            role === 'ADMIN' ||
             role === 'SUPPORT' ||
             role === 'TELLER';
 

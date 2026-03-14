@@ -78,13 +78,13 @@ describe('Event Listing Filters', () => {
         password: hashed,
         firstName: 'Filter',
         lastName: 'Admin',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
     });
     adminId = admin.id;
-    adminToken = generateAccessToken({ userId: admin.id, email: admin.email, role: UserRole.ADMIN_STAFF });
+    adminToken = generateAccessToken({ userId: admin.id, email: admin.email, role: UserRole.ADMIN });
 
     // Organizer
     const organizer = await prisma.user.create({

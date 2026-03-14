@@ -187,16 +187,16 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
     });
   });
 
-  // ─── ORGANIZER_STAFF Role ─────────────────────────────────────────────
+  // ─── ORGANIZER_ADMIN Role ─────────────────────────────────────────────
 
-  describe('ORGANIZER_STAFF role authorization', () => {
-    it('should allow ORGANIZER_STAFF users to fetch organizer events', async () => {
+  describe('ORGANIZER_ADMIN role authorization', () => {
+    it('should allow ORGANIZER_ADMIN users to fetch organizer events', async () => {
       prismaMock.event.findMany.mockResolvedValue(mockEvents);
       prismaMock.event.count.mockResolvedValue(1);
 
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
-        UserRole.ORGANIZER_STAFF,
+        UserRole.ORGANIZER_ADMIN,
         {},
       );
 
@@ -240,13 +240,13 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       expect(prismaMock.event.findMany).toHaveBeenCalled();
     });
 
-    it('should allow ADMIN_STAFF users to fetch organizer events', async () => {
+    it('should allow ADMIN users to fetch organizer events', async () => {
       prismaMock.event.findMany.mockResolvedValue(mockEvents);
       prismaMock.event.count.mockResolvedValue(1);
 
       const result = await OrganizerService.getOrganizerEvents(
         'user-123',
-        UserRole.ADMIN_STAFF,
+        UserRole.ADMIN,
         {},
       );
 
@@ -258,26 +258,6 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
   // ─── Unauthorized Roles ───────────────────────────────────────────────
 
   describe('Unauthorized role rejection', () => {
-    it('should reject MARKETER role', async () => {
-      await expect(
-        OrganizerService.getOrganizerEvents(
-          'user-123',
-          UserRole.MARKETER,
-          {},
-        ),
-      ).rejects.toThrow(AuthorizationError);
-
-      await expect(
-        OrganizerService.getOrganizerEvents(
-          'user-123',
-          UserRole.MARKETER,
-          {},
-        ),
-      ).rejects.toThrow('You do not have permission to view events');
-
-      expect(prismaMock.event.findMany).not.toHaveBeenCalled();
-    });
-
     it('should reject SUPPORT role', async () => {
       await expect(
         OrganizerService.getOrganizerEvents(
@@ -302,17 +282,6 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
       expect(prismaMock.event.findMany).not.toHaveBeenCalled();
     });
 
-    it('should reject ADMIN role (not ADMIN_STAFF)', async () => {
-      await expect(
-        OrganizerService.getOrganizerEvents(
-          'user-123',
-          UserRole.ADMIN,
-          {},
-        ),
-      ).rejects.toThrow(AuthorizationError);
-
-      expect(prismaMock.event.findMany).not.toHaveBeenCalled();
-    });
   });
 
   // ─── Filters and Pagination ───────────────────────────────────────────

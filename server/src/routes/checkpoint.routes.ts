@@ -47,37 +47,37 @@ const ipScanRateLimiter = rateLimit({
 /**
  * @route   POST /api/v1/checkpoints
  * @desc    Create a new checkpoint
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.post('/', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.createCheckpoint);
+router.post('/', requireMinRole(UserRole.ADMIN), CheckpointController.createCheckpoint);
 
 /**
  * @route   GET /api/v1/checkpoints/:checkpointId
  * @desc    Get checkpoint by ID
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.get('/:checkpointId', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.getCheckpoint);
+router.get('/:checkpointId', requireMinRole(UserRole.ADMIN), CheckpointController.getCheckpoint);
 
 /**
  * @route   PUT /api/v1/checkpoints/:checkpointId
  * @desc    Update checkpoint
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.put('/:checkpointId', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.updateCheckpoint);
+router.put('/:checkpointId', requireMinRole(UserRole.ADMIN), CheckpointController.updateCheckpoint);
 
 /**
  * @route   DELETE /api/v1/checkpoints/:checkpointId
  * @desc    Delete checkpoint
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.delete('/:checkpointId', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.deleteCheckpoint);
+router.delete('/:checkpointId', requireMinRole(UserRole.ADMIN), CheckpointController.deleteCheckpoint);
 
 /**
  * @route   POST /api/v1/checkpoints/:checkpointId/duplicate
  * @desc    Duplicate checkpoint
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.post('/:checkpointId/duplicate', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.duplicateCheckpoint);
+router.post('/:checkpointId/duplicate', requireMinRole(UserRole.ADMIN), CheckpointController.duplicateCheckpoint);
 
 // ========================================
 // Event Checkpoint Routes
@@ -86,18 +86,18 @@ router.post('/:checkpointId/duplicate', requireMinRole(UserRole.ADMIN_STAFF), Ch
 /**
  * @route   GET /api/v1/checkpoints/event/:eventId
  * @desc    Get checkpoints for an event
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.get('/event/:eventId', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.getEventCheckpoints);
+router.get('/event/:eventId', requireMinRole(UserRole.ADMIN), CheckpointController.getEventCheckpoints);
 
 /**
  * @route   GET /api/v1/checkpoints/event/:eventId/summary
  * @desc    Get event checkpoint summary with stats
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
 router.get(
   '/event/:eventId/summary',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   CheckpointController.getEventCheckpointSummary,
 );
 
@@ -121,16 +121,16 @@ router.post(
 /**
  * @route   GET /api/v1/checkpoints/:checkpointId/scans
  * @desc    Get checkpoint scan history
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.get('/:checkpointId/scans', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.getCheckpointScans);
+router.get('/:checkpointId/scans', requireMinRole(UserRole.ADMIN), CheckpointController.getCheckpointScans);
 
 /**
  * @route   GET /api/v1/checkpoints/:checkpointId/stats
  * @desc    Get checkpoint statistics
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.get('/:checkpointId/stats', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.getCheckpointStats);
+router.get('/:checkpointId/stats', requireMinRole(UserRole.ADMIN), CheckpointController.getCheckpointStats);
 
 // ========================================
 // Checkpoint Staff Routes
@@ -139,23 +139,23 @@ router.get('/:checkpointId/stats', requireMinRole(UserRole.ADMIN_STAFF), Checkpo
 /**
  * @route   POST /api/v1/checkpoints/:checkpointId/staff
  * @desc    Assign staff to checkpoint
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.post('/:checkpointId/staff', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.assignStaff);
+router.post('/:checkpointId/staff', requireMinRole(UserRole.ADMIN), CheckpointController.assignStaff);
 
 /**
  * @route   GET /api/v1/checkpoints/:checkpointId/staff
  * @desc    Get checkpoint staff
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.get('/:checkpointId/staff', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.getCheckpointStaff);
+router.get('/:checkpointId/staff', requireMinRole(UserRole.ADMIN), CheckpointController.getCheckpointStaff);
 
 /**
  * @route   DELETE /api/v1/checkpoints/:checkpointId/staff/:staffId
  * @desc    Remove staff from checkpoint
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.delete('/:checkpointId/staff/:staffId', requireMinRole(UserRole.ADMIN_STAFF), CheckpointController.removeStaff);
+router.delete('/:checkpointId/staff/:staffId', requireMinRole(UserRole.ADMIN), CheckpointController.removeStaff);
 
 // ========================================
 // Attendee Routes

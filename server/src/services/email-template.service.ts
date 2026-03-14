@@ -48,7 +48,7 @@ export class EmailTemplateService {
       // Only admins and staff can create templates
       if (
         userRole !== UserRole.SUPERADMIN &&
-        userRole !== UserRole.ADMIN_STAFF
+        userRole !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can create email templates');
       }
@@ -194,7 +194,7 @@ export class EmailTemplateService {
       // Only admins can update templates
       if (
         userRole !== UserRole.SUPERADMIN &&
-        userRole !== UserRole.ADMIN_STAFF
+        userRole !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can update email templates');
       }
@@ -258,7 +258,7 @@ export class EmailTemplateService {
       // Only admins can delete templates
       if (
         userRole !== UserRole.SUPERADMIN &&
-        userRole !== UserRole.ADMIN_STAFF
+        userRole !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can delete email templates');
       }

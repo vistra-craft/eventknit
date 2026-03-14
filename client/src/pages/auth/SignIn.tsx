@@ -25,9 +25,9 @@ const SignIn = () => {
       window.location.href = returnTo;
       return;
     }
-    if (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') {
+    if (role === 'ORGANIZER' || role === 'ORGANIZER_ADMIN' || role === 'ORGANIZER_TELLER') {
       window.location.href = '/organizer/dashboard';
-    } else if (role === 'SUPERADMIN' || role === 'ADMIN_STAFF' || role === 'MARKETER' || role === 'SUPPORT' || role === 'TELLER') {
+    } else if (role === 'SUPERADMIN' || role === 'ADMIN' || role === 'SUPPORT' || role === 'TELLER') {
       window.location.href = '/admin/dashboard';
     } else {
       window.location.href = '/user/dashboard';

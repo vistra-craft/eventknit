@@ -11,9 +11,9 @@ router.use(authenticate);
 /**
  * @route   POST /api/v1/zones
  * @desc    Create a new facility zone
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.post('/', requireMinRole(UserRole.ADMIN_STAFF), FacilityZoneController.createZone);
+router.post('/', requireMinRole(UserRole.ADMIN), FacilityZoneController.createZone);
 
 /**
  * @route   GET /api/v1/events/:eventId/zones
@@ -25,9 +25,9 @@ router.get('/events/:eventId/zones', requireMinRole(UserRole.TELLER), FacilityZo
 /**
  * @route   GET /api/v1/events/:eventId/zones/analytics
  * @desc    Get zone analytics for an event
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.get('/events/:eventId/zones/analytics', requireMinRole(UserRole.ADMIN_STAFF), FacilityZoneController.getZoneAnalytics);
+router.get('/events/:eventId/zones/analytics', requireMinRole(UserRole.ADMIN), FacilityZoneController.getZoneAnalytics);
 
 /**
  * @route   GET /api/v1/zones/:id
@@ -39,30 +39,30 @@ router.get('/:id', requireMinRole(UserRole.TELLER), FacilityZoneController.getZo
 /**
  * @route   PUT /api/v1/zones/:id
  * @desc    Update a zone
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.put('/:id', requireMinRole(UserRole.ADMIN_STAFF), FacilityZoneController.updateZone);
+router.put('/:id', requireMinRole(UserRole.ADMIN), FacilityZoneController.updateZone);
 
 /**
  * @route   POST /api/v1/zones/:zoneId/facilities/:facilityId
  * @desc    Assign facility to zone
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.post('/:zoneId/facilities/:facilityId', requireMinRole(UserRole.ADMIN_STAFF), FacilityZoneController.assignFacility);
+router.post('/:zoneId/facilities/:facilityId', requireMinRole(UserRole.ADMIN), FacilityZoneController.assignFacility);
 
 /**
  * @route   DELETE /api/v1/zones/:zoneId/facilities/:facilityId
  * @desc    Remove facility from zone
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.delete('/:zoneId/facilities/:facilityId', requireMinRole(UserRole.ADMIN_STAFF), FacilityZoneController.removeFacility);
+router.delete('/:zoneId/facilities/:facilityId', requireMinRole(UserRole.ADMIN), FacilityZoneController.removeFacility);
 
 /**
  * @route   POST /api/v1/zones/:zoneId/attendees/bulk-assign
  * @desc    Bulk assign attendees to zone
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.post('/:zoneId/attendees/bulk-assign', requireMinRole(UserRole.ADMIN_STAFF), FacilityZoneController.bulkAssignAttendees);
+router.post('/:zoneId/attendees/bulk-assign', requireMinRole(UserRole.ADMIN), FacilityZoneController.bulkAssignAttendees);
 
 /**
  * @route   GET /api/v1/zones/:zoneId/attendees
@@ -74,9 +74,9 @@ router.get('/:zoneId/attendees', requireMinRole(UserRole.TELLER), FacilityZoneCo
 /**
  * @route   DELETE /api/v1/zones/:zoneId/attendees/:registrationId
  * @desc    Revoke attendee access to zone
- * @access  Private (ADMIN_STAFF or higher)
+ * @access  Private (ADMIN or higher)
  */
-router.delete('/:zoneId/attendees/:registrationId', requireMinRole(UserRole.ADMIN_STAFF), FacilityZoneController.revokeAccess);
+router.delete('/:zoneId/attendees/:registrationId', requireMinRole(UserRole.ADMIN), FacilityZoneController.revokeAccess);
 
 /**
  * @route   GET /api/v1/zones/:zoneId/access/check/:registrationId

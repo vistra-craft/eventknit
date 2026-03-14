@@ -315,7 +315,7 @@ export class EventService {
     if (!isPendingAttendee &&
       actualRole !== UserRole.ORGANIZER &&
       actualRole !== UserRole.SUPERADMIN &&
-      actualRole !== UserRole.ADMIN_STAFF) {
+      actualRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers and admins can create events');
     }
 
@@ -933,7 +933,7 @@ export class EventService {
     const effectiveIsFree = data.isFree ?? event.isFree;
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to update this event');
       }
@@ -951,7 +951,7 @@ export class EventService {
     });
 
     // Verify organizer owns the event or is a collaborator (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId && !isCollaborator) {
         throw new AuthorizationError('You do not have permission to update this event');
       }
@@ -1350,7 +1350,7 @@ export class EventService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to delete this event');
       }
@@ -2242,7 +2242,7 @@ export class EventService {
     userAgent?: string,
   ) {
     // Verify admin
-    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN_STAFF) {
+    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only admins can approve events');
     }
 
@@ -2417,7 +2417,7 @@ export class EventService {
     userAgent?: string,
   ) {
     // Verify admin
-    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN_STAFF) {
+    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only admins can reject events');
     }
 
@@ -2538,7 +2538,7 @@ export class EventService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to cancel this event');
       }
@@ -2736,7 +2736,7 @@ export class EventService {
     userAgent?: string,
   ) {
     // Verify admin
-    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN_STAFF) {
+    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only admins can recall events');
     }
 
@@ -3085,7 +3085,7 @@ export class EventService {
     }
 
     // Verify organizer owns the event (unless admin)
-    const isAdmin = organizerRole === UserRole.SUPERADMIN || organizerRole === UserRole.ADMIN_STAFF;
+    const isAdmin = organizerRole === UserRole.SUPERADMIN || organizerRole === UserRole.ADMIN;
     if (!isAdmin && event.organizerId !== organizerId) {
       throw new AuthorizationError('You do not have permission to view registrations for this event');
     }
@@ -4452,7 +4452,7 @@ export class EventService {
     if (
       event.organizerId !== userId &&
       userRole !== UserRole.SUPERADMIN &&
-      userRole !== UserRole.ADMIN_STAFF
+      userRole !== UserRole.ADMIN
     ) {
       throw new AuthorizationError('Only event organizer or admin can generate registration codes');
     }
@@ -4520,7 +4520,7 @@ export class EventService {
       }
 
       // Verify organizer owns the event (unless admin)
-      if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+      if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
         if (originalEvent.organizerId !== organizerId) {
           throw new AuthorizationError('You do not have permission to duplicate this event');
         }

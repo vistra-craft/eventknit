@@ -89,6 +89,10 @@ interface ApiEvent {
   agenda?: unknown;
   socialLinks?: unknown;
   hashtag?: unknown;
+  address?: unknown;
+  coordinates?: unknown;
+  isOnline?: unknown;
+  onlineLink?: unknown;
 }
 
 const VALID_SPONSOR_LEVELS = new Set([
@@ -211,6 +215,14 @@ const transformEventData = (
       ? apiEvent.socialLinks as Record<string, string>
       : undefined,
     hashtag: typeof apiEvent.hashtag === 'string' ? apiEvent.hashtag : undefined,
+    // Location extras
+    address: typeof apiEvent.address === 'string' ? apiEvent.address : undefined,
+    coordinates: apiEvent.coordinates != null && typeof apiEvent.coordinates === 'object'
+      && 'lat' in (apiEvent.coordinates as object) && 'lng' in (apiEvent.coordinates as object)
+      ? apiEvent.coordinates as { lat: number; lng: number }
+      : undefined,
+    isOnline: typeof apiEvent.isOnline === 'boolean' ? apiEvent.isOnline : undefined,
+    onlineLink: typeof apiEvent.onlineLink === 'string' ? apiEvent.onlineLink : undefined,
     // Registration & ticket data
     registrationId: registrationInfo?.registrationId,
     ticketType: registrationInfo?.ticketType,

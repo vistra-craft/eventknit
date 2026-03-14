@@ -179,13 +179,15 @@ export const platformFinanceController = {
 
   // WAGES
   getWages: asyncHandler(async (req: Request, res: Response) => {
-    const { page, limit, department, status, payPeriod, startDate, endDate } = req.query;
+    const { page, limit, department, status, staffType, eventId, payPeriod, startDate, endDate } = req.query;
 
     const result = await WageService.getWages({
       page: page ? parseInt(page as string, 10) : undefined,
       limit: limit ? parseInt(limit as string, 10) : undefined,
       department: department as string,
       status: status as string,
+      staffType: staffType as string,
+      eventId: eventId as string,
       payPeriod: payPeriod as string,
       startDate: startDate ? new Date(startDate as string) : undefined,
       endDate: endDate ? new Date(endDate as string) : undefined,
@@ -199,6 +201,8 @@ export const platformFinanceController = {
         total: result.total,
         totalPages: result.totalPages,
       },
+      totalAmount: result.totalAmount,
+      totalGrossAmount: result.totalGrossAmount,
     });
   }),
 
@@ -218,6 +222,21 @@ export const platformFinanceController = {
 
     if (!employeeName || amount === undefined || !payPeriod || !payDate) {
       throw new ValidationError('Employee name, amount, pay period, and pay date are required');
+    }
+
+    // Parse all numeric fields
+    const numericFields = ['grossAmount', 'hoursWorked', 'hourlyRate', 'overtimeHours', 'overtimeRate', 'dailyRate', 'bonuses', 'deductions'];
+    for (const field of numericFields) {
+      if (rest[field] !== undefined && rest[field] !== null && rest[field] !== '') {
+        rest[field] = parseFloat(rest[field]);
+      } else {
+        delete rest[field];
+      }
+    }
+    if (rest.eventDays !== undefined && rest.eventDays !== null && rest.eventDays !== '') {
+      rest.eventDays = parseInt(rest.eventDays, 10);
+    } else {
+      delete rest.eventDays;
     }
 
     const wage = await WageService.createWage({
@@ -240,8 +259,15 @@ export const platformFinanceController = {
     const id = (req.params.id as string) as string;
     const data = { ...req.body };
 
-    if (data.amount !== undefined) {
-      data.amount = parseFloat(data.amount);
+    // Parse numeric fields
+    const numericFields = ['amount', 'grossAmount', 'hoursWorked', 'hourlyRate', 'overtimeHours', 'overtimeRate', 'dailyRate', 'bonuses', 'deductions'];
+    for (const field of numericFields) {
+      if (data[field] !== undefined && data[field] !== null && data[field] !== '') {
+        data[field] = parseFloat(data[field]);
+      }
+    }
+    if (data.eventDays !== undefined && data.eventDays !== null && data.eventDays !== '') {
+      data.eventDays = parseInt(data.eventDays, 10);
     }
     if (data.payDate !== undefined) {
       data.payDate = new Date(data.payDate);

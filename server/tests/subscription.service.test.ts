@@ -36,7 +36,7 @@ describe('SubscriptionService', () => {
 
     await prisma.$transaction(async (tx) => {
       await cleanupTestData(tx);
-    });
+    }, { timeout: 15000 });
 
     const password = await hashPassword('Organizer123!@$');
 
@@ -72,18 +72,18 @@ describe('SubscriptionService', () => {
     // Seed subscription plans
     await prisma.subscriptionPlan.upsert({
       where: { tier: SubscriptionTier.BASIC },
-      create: { tier: SubscriptionTier.BASIC, name: 'Basic', price: new Decimal(0), features: [] },
-      update: {},
+      create: { tier: SubscriptionTier.BASIC, name: 'Basic', price: new Decimal(0), features: [], isActive: true },
+      update: { isActive: true, price: new Decimal(0) },
     });
     await prisma.subscriptionPlan.upsert({
       where: { tier: SubscriptionTier.STANDARD },
-      create: { tier: SubscriptionTier.STANDARD, name: 'Standard', price: new Decimal(0), features: ['attendee_list', 'export'] },
-      update: {},
+      create: { tier: SubscriptionTier.STANDARD, name: 'Standard', price: new Decimal(0), features: ['attendee_list', 'export'], isActive: true },
+      update: { isActive: true, price: new Decimal(0) },
     });
     await prisma.subscriptionPlan.upsert({
       where: { tier: SubscriptionTier.PREMIUM },
-      create: { tier: SubscriptionTier.PREMIUM, name: 'Premium', price: new Decimal(10), features: ['attendee_list', 'export', 'demographics', 'analytics', 'advanced_export'] },
-      update: {},
+      create: { tier: SubscriptionTier.PREMIUM, name: 'Premium', price: new Decimal(10), features: ['attendee_list', 'export', 'demographics', 'analytics', 'advanced_export'], isActive: true },
+      update: { isActive: true, price: new Decimal(10) },
     });
   });
 
@@ -152,7 +152,7 @@ describe('SubscriptionService', () => {
           organizerId,
           SubscriptionTier.PREMIUM,
         ),
-      ).rejects.toThrow('Billing email is required for Premium subscription');
+      ).rejects.toThrow('Billing email is required');
     });
 
     it('should fail if trying to downgrade', async () => {
@@ -245,13 +245,13 @@ describe('SubscriptionService', () => {
       expect(subscription.expiresAt).toBeDefined(); // Should remain until expiry
     });
 
-    it('should fail to cancel non-Premium subscription', async () => {
+    it('should fail to cancel non-paid subscription', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
 
-      // Set to STANDARD
+      // Set to STANDARD (free tier — price is 0)
       await prisma.organizerSubscription.update({
         where: { organizerId },
         data: { tier: SubscriptionTier.STANDARD },
@@ -259,7 +259,7 @@ describe('SubscriptionService', () => {
 
       await expect(
         SubscriptionService.cancelSubscription(organizerId),
-      ).rejects.toThrow('Only Premium subscriptions can be canceled');
+      ).rejects.toThrow('Only paid subscriptions can be canceled');
     });
   });
 
@@ -738,6 +738,263 @@ describe('SubscriptionService', () => {
       expect(summary.subscription.tier).toBe(SubscriptionTier.BASIC);
       expect(summary.overrides).toHaveLength(1);
       expect(summary.effectiveTier).toBe(SubscriptionTier.PREMIUM);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // getActivePlans
+  // ═══════════════════════════════════════════════════════════════════════
+
+  describe('getActivePlans', () => {
+    it('should return only active plans', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Deactivate one plan
+      await prisma.subscriptionPlan.update({
+        where: { tier: SubscriptionTier.BASIC },
+        data: { isActive: false },
+      });
+
+      const plans = await SubscriptionService.getActivePlans();
+
+      const tiers = plans.map(p => p.tier);
+      expect(tiers).not.toContain(SubscriptionTier.BASIC);
+      expect(tiers).toContain(SubscriptionTier.STANDARD);
+      expect(tiers).toContain(SubscriptionTier.PREMIUM);
+    });
+
+    it('should include subscriber counts', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create a subscription so count > 0
+      await prisma.organizerSubscription.create({
+        data: { organizerId, tier: SubscriptionTier.STANDARD, isActive: true },
+      });
+
+      const plans = await SubscriptionService.getActivePlans();
+      const standard = plans.find(p => p.tier === SubscriptionTier.STANDARD);
+
+      expect(standard?.subscriberCount).toBe(1);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Subscription Payment — initializeSubscriptionPayment
+  // ═══════════════════════════════════════════════════════════════════════
+
+  describe('initializeSubscriptionPayment', () => {
+    it('should reject payment for a free tier', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await expect(
+        SubscriptionService.initializeSubscriptionPayment(
+          organizerId,
+          SubscriptionTier.STANDARD, // price = 0
+          'billing@test.com',
+        ),
+      ).rejects.toThrow('free tier');
+    });
+
+    it('should reject if not an upgrade', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Set organizer to PREMIUM already
+      await prisma.organizerSubscription.create({
+        data: { organizerId, tier: SubscriptionTier.PREMIUM, isActive: true, billingEmail: 'b@t.com' },
+      });
+
+      await expect(
+        SubscriptionService.initializeSubscriptionPayment(
+          organizerId,
+          SubscriptionTier.PREMIUM,
+          'billing@test.com',
+        ),
+      ).rejects.toThrow('Cannot upgrade');
+    });
+
+    it('should reject for non-existent organizer', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await expect(
+        SubscriptionService.initializeSubscriptionPayment(
+          '00000000-0000-0000-0000-000000000000',
+          SubscriptionTier.PREMIUM,
+          'billing@test.com',
+        ),
+      ).rejects.toThrow('not found');
+    });
+
+    it('should reject for inactive plan', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await prisma.subscriptionPlan.update({
+        where: { tier: SubscriptionTier.PREMIUM },
+        data: { isActive: false },
+      });
+
+      await expect(
+        SubscriptionService.initializeSubscriptionPayment(
+          organizerId,
+          SubscriptionTier.PREMIUM,
+          'billing@test.com',
+        ),
+      ).rejects.toThrow('not currently available');
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Subscription Payment — handleSubscriptionPaymentSuccess
+  // ═══════════════════════════════════════════════════════════════════════
+
+  describe('handleSubscriptionPaymentSuccess', () => {
+    const testReference = 'SUB-test1234-9999999';
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+
+      // Create a pending payment record
+      await prisma.subscriptionPayment.create({
+        data: {
+          organizerId,
+          tier: SubscriptionTier.PREMIUM,
+          amount: new Decimal(10),
+          currency: 'USD',
+          gateway: 'PAYSTACK',
+          gatewayReference: testReference,
+          status: 'PENDING',
+          billingEmail: 'billing@test.com',
+        },
+      });
+    });
+
+    it('should upgrade subscription and create PlatformIncome on success', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await SubscriptionService.handleSubscriptionPaymentSuccess(testReference, 'txn_123');
+
+      // Payment record should be SUCCESS
+      const payment = await prisma.subscriptionPayment.findUnique({
+        where: { gatewayReference: testReference },
+      });
+      expect(payment?.status).toBe('SUCCESS');
+      expect(payment?.gatewayTransactionId).toBe('txn_123');
+      expect(payment?.paymentDate).toBeDefined();
+
+      // Subscription should be PREMIUM
+      const subscription = await prisma.organizerSubscription.findUnique({
+        where: { organizerId },
+      });
+      expect(subscription?.tier).toBe(SubscriptionTier.PREMIUM);
+      expect(subscription?.isActive).toBe(true);
+      expect(subscription?.billingEmail).toBe('billing@test.com');
+      expect(subscription?.expiresAt).toBeDefined();
+
+      // PlatformIncome record should exist
+      const income = await prisma.platformIncome.findFirst({
+        where: { reference: testReference },
+      });
+      expect(income).toBeDefined();
+      expect(income?.category).toBe('Subscription');
+      expect(Number(income?.amount)).toBe(10);
+      expect(income?.status).toBe('received');
+    });
+
+    it('should be idempotent — skip if already processed', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Process once
+      await SubscriptionService.handleSubscriptionPaymentSuccess(testReference, 'txn_123');
+
+      // Process again — should not throw or duplicate
+      await SubscriptionService.handleSubscriptionPaymentSuccess(testReference, 'txn_456');
+
+      // Still only one PlatformIncome
+      const incomes = await prisma.platformIncome.findMany({
+        where: { reference: testReference },
+      });
+      expect(incomes).toHaveLength(1);
+    });
+
+    it('should not process unknown reference', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Should not throw, just log and return
+      await SubscriptionService.handleSubscriptionPaymentSuccess('SUB-unknown-000', 'txn_x');
+
+      // No PlatformIncome created
+      const income = await prisma.platformIncome.findFirst({
+        where: { reference: 'SUB-unknown-000' },
+      });
+      expect(income).toBeNull();
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Price-aware cancelSubscription
+  // ═══════════════════════════════════════════════════════════════════════
+
+  describe('cancelSubscription (price-aware)', () => {
+    it('should cancel a paid subscription', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // PREMIUM is paid (price=10 in seed)
+      await prisma.organizerSubscription.create({
+        data: {
+          organizerId,
+          tier: SubscriptionTier.PREMIUM,
+          isActive: true,
+          billingEmail: 'billing@test.com',
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      const result = await SubscriptionService.cancelSubscription(organizerId);
+      expect(result.isActive).toBe(false);
+      expect(result.canceledAt).toBeDefined();
+    });
+
+    it('should reject cancel for BASIC (free) tier', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Default subscription is BASIC
+      await SubscriptionService.getSubscription(organizerId); // creates BASIC
+
+      await expect(
+        SubscriptionService.cancelSubscription(organizerId),
+      ).rejects.toThrow('Only paid subscriptions');
     });
   });
 });

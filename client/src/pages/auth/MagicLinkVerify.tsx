@@ -41,9 +41,9 @@ const MagicLinkVerify = () => {
           // Redirect to appropriate dashboard based on role
           setTimeout(() => {
             const role = response.data.user.role;
-            if (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') {
+            if (role === 'ORGANIZER' || role === 'ORGANIZER_ADMIN' || role === 'ORGANIZER_TELLER') {
               navigate('/organizer/dashboard');
-            } else if (role === 'SUPERADMIN' || role === 'ADMIN_STAFF' || role === 'MARKETER' || role === 'SUPPORT' || role === 'TELLER') {
+            } else if (role === 'SUPERADMIN' || role === 'ADMIN' || role === 'SUPPORT' || role === 'TELLER') {
               navigate('/admin/dashboard');
             } else {
               navigate('/user/dashboard');

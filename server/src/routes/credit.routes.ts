@@ -283,7 +283,7 @@ router.delete(
  */
 router.post(
   '/admin/grant',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const adminId = req.user!.id;

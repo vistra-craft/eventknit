@@ -246,12 +246,11 @@ const AdminProfilePage = () => {
   const getRoleLabel = (role: UserRole) => {
     const roleLabels: Record<UserRole, string> = {
       [UserRole.SUPERADMIN]: "Super Admin",
-      [UserRole.ADMIN_STAFF]: "Admin Staff",
-      [UserRole.MARKETER]: "Marketer",
+      [UserRole.ADMIN]: "Admin",
       [UserRole.SUPPORT]: "Support",
       [UserRole.TELLER]: "Teller",
       [UserRole.ORGANIZER]: "Organizer",
-      [UserRole.ORGANIZER_STAFF]: "Organizer Staff",
+      [UserRole.ORGANIZER_ADMIN]: "Organizer Admin",
       [UserRole.ORGANIZER_TELLER]: "Organizer Teller",
       [UserRole.ATTENDEE]: "Attendee",
     };

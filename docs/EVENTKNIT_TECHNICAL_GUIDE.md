@@ -45,18 +45,19 @@ A comprehensive engineering guide to the EventKnit platform — architecture, de
    - 32.1 Managed Events System
 33. [USSD & SMS Channel](#33-ussd--sms-channel)
 34. [Unified Messaging & Communication](#34-unified-messaging--communication)
-35. [Ticket Transfer & Resale Marketplace](#35-ticket-transfer--resale-marketplace)
-36. [Distributed Locking & Concurrency Control](#36-distributed-locking--concurrency-control)
-37. [Audit Logging & GDPR Compliance](#37-audit-logging--gdpr-compliance)
-38. [Granular Permission System](#38-granular-permission-system)
-39. [Social Media Integration](#39-social-media-integration)
-40. [Attendee Management & Segmentation](#40-attendee-management--segmentation)
-41. [Digital Wallet, Credits & Invoicing](#41-digital-wallet-credits--invoicing)
-42. [Dynamic Pricing Engine](#42-dynamic-pricing-engine)
-43. [Batch Export & Data Operations](#43-batch-export--data-operations)
-44. [CI/CD Pipelines & DevOps](#44-cicd-pipelines--devops)
-45. [Port Configuration](#45-port-configuration)
-46. [Glossary](#46-glossary)
+35. [Attendee Event View Architecture](#35-attendee-event-view-architecture)
+36. [Ticket Transfer & Resale Marketplace](#36-ticket-transfer--resale-marketplace)
+37. [Distributed Locking & Concurrency Control](#37-distributed-locking--concurrency-control)
+38. [Audit Logging & GDPR Compliance](#38-audit-logging--gdpr-compliance)
+39. [Granular Permission System](#39-granular-permission-system)
+40. [Social Media Integration](#40-social-media-integration)
+41. [Attendee Management & Segmentation](#41-attendee-management--segmentation)
+42. [Digital Wallet, Credits & Invoicing](#42-digital-wallet-credits--invoicing)
+43. [Dynamic Pricing Engine](#43-dynamic-pricing-engine)
+44. [Batch Export & Data Operations](#44-batch-export--data-operations)
+45. [CI/CD Pipelines & DevOps](#45-cicd-pipelines--devops)
+46. [Port Configuration](#46-port-configuration)
+47. [Glossary](#47-glossary)
 
 ---
 
@@ -700,7 +701,7 @@ class TicketCryptoService {
 - `CHECK_IN` — Entry scanning (default)
 - `CHECK_OUT` — Exit scanning (if event.requireCheckOut = true)
 - `MANUAL_CHECK_IN` / `MANUAL_CHECK_OUT` — Override by staff (minimum role: TELLER)
-- `VOID` — Reversal of a check-in by a supervisor (minimum role: ADMIN_STAFF); resets `checkedInAt`, `isCurrentlyInside`, and `ticketStatus` to their pre-check-in state while creating an immutable audit record
+- `VOID` — Reversal of a check-in by a supervisor (minimum role: ADMIN); resets `checkedInAt`, `isCurrentlyInside`, and `ticketStatus` to their pre-check-in state while creating an immutable audit record
 
 ### Mobile Design System
 
@@ -936,17 +937,146 @@ model EventRegistration {
 }
 ```
 
+### Subscription Models
+
+```prisma
+model OrganizerSubscription {
+  id              String           @id @default(uuid())
+  organizerId     String           @unique
+  tier            SubscriptionTier @default(BASIC)
+  isActive        Boolean          @default(true)
+  billingEmail    String?
+  canceledAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model SubscriptionPayment {
+  id                   String           @id @default(uuid())
+  organizerId          String
+  tier                 SubscriptionTier
+  amount               Decimal
+  currency             String           @default("USD")
+  gateway              String           @default("PAYSTACK")
+  gatewayReference     String           @unique
+  gatewayTransactionId String?
+  status               String           @default("PENDING")  // PENDING → SUCCESS | FAILED
+  billingEmail         String
+  paymentDate          DateTime?
+  gatewayMetadata      Json?
+  idempotencyKey       String?          @unique
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  @@index([organizerId])
+  @@index([gatewayReference])
+  @@index([status])
+}
+
+model SubscriptionPlan {
+  id        String           @id @default(uuid())
+  tier      SubscriptionTier @unique
+  name      String
+  price     Decimal          @db.Decimal(10, 2)
+  features  String[]
+  isActive  Boolean          @default(true)
+}
+
+enum SubscriptionTier { BASIC, STANDARD, PREMIUM }
+```
+
+### Financial Models
+
+```prisma
+model PlatformFee {
+  id               String    @id @default(cuid())
+  feeNumber        String    @unique          // PF-YYYY-NNNNNN
+  transactionId    String    @unique          // One fee per payment
+  grossAmount      Decimal   @db.Decimal(10,2)
+  feePercentage    Decimal   @db.Decimal(5,2)
+  feeAmount        Decimal   @db.Decimal(10,2)
+  organizerAmount  Decimal   @db.Decimal(10,2)
+  currency         String    @default("KES")
+  status           String    @default("calculated") // calculated → disbursed
+  eventId          String?
+  registrationId   String?
+  disbursementId   String?
+  calculatedAt     DateTime  @default(now())
+}
+
+model PlatformExpense {
+  id             String               @id @default(cuid())
+  category       String
+  description    String
+  amount         Decimal              @db.Decimal(10,2)
+  currency       String               @default("KES")
+  status         FinancialEntryStatus @default(PENDING)
+  paymentMethod  PaymentMethodType?
+  recipient      String?
+  reference      String?
+  taxAmount      Decimal?             @db.Decimal(10,2)
+  taxRate        Decimal?             @db.Decimal(5,2)
+  notes          String?              @db.Text
+  recordedBy     String?
+}
+
+model PlatformIncome {
+  id             String               @id @default(cuid())
+  category       String               // "Platform Fees", "Subscription", etc.
+  description    String
+  amount         Decimal              @db.Decimal(10,2)
+  currency       String               @default("KES")
+  source         String?              // "Ticket Sales", "Manual", etc.
+  status         String               @default("pending")
+  paymentMethod  String?
+  eventId        String?              // Links to Event
+  transactionId  String?              // Links to EventPaymentTransaction
+  reference      String?
+  recordedBy     String?
+}
+
+model Wage {
+  id            String               @id @default(cuid())
+  employeeId    String?
+  employeeName  String
+  department    String?
+  position      String?
+  staffType     StaffPayType         @default(PERMANENT)
+  grossAmount   Decimal              @db.Decimal(10,2)
+  amount        Decimal              @db.Decimal(10,2)  // Net pay
+  currency      String               @default("KES")
+  hoursWorked   Decimal?             @db.Decimal(8,2)
+  hourlyRate    Decimal?             @db.Decimal(10,2)
+  overtimeHours Decimal?             @db.Decimal(8,2)
+  overtimeRate  Decimal?             @db.Decimal(10,2)
+  dailyRate     Decimal?             @db.Decimal(10,2)
+  eventDays     Int?
+  bonuses       Decimal?             @db.Decimal(10,2)
+  deductions    Decimal?             @db.Decimal(10,2)
+  payPeriod     String               // e.g., "2026-03"
+  payDate       DateTime
+  status        FinancialEntryStatus @default(PENDING)
+  paymentMethod PaymentMethodType    @default(BANK_TRANSFER)
+  reference     String?
+  notes         String?              @db.Text
+  eventId       String?              // Optional link to Event
+  createdBy     String?
+  @@index([employeeId, payDate, status, department, eventId, staffType])
+}
+
+enum StaffPayType { PERMANENT, CONTRACT, EVENT }
+enum FinancialEntryStatus { PENDING, COMPLETED, CANCELLED }
+```
+
 ### Key Enums
 
 ```prisma
 enum UserRole {
   SUPERADMIN        // Hierarchy: 10
-  ADMIN_STAFF       // 8
-  MARKETER          // 7
+  ADMIN             // 9
   SUPPORT           // 6
   TELLER            // 5
   ORGANIZER         // 4
-  ORGANIZER_STAFF   // 3
+  ORGANIZER_ADMIN   // 3
   ORGANIZER_TELLER  // 2
   ATTENDEE          // 1
 }
@@ -1061,11 +1191,11 @@ requireMinRole(role) // Check req.user.role meets minimum hierarchy level
 ### Role Hierarchy
 
 ```
-SUPERADMIN (10) → ADMIN_STAFF (8) → MARKETER (7) → SUPPORT (6) → TELLER (5)
-→ ORGANIZER (4) → ORGANIZER_STAFF (3) → ORGANIZER_TELLER (2) → ATTENDEE (1)
+SUPERADMIN (10) → ADMIN (9) → SUPPORT (6) → TELLER (5)
+→ ORGANIZER (4) → ORGANIZER_ADMIN (3) → ORGANIZER_TELLER (2) → ATTENDEE (1)
 ```
 
-`requireMinRole(UserRole.ADMIN_STAFF)` allows ADMIN_STAFF, SUPERADMIN but blocks MARKETER and below.
+`requireMinRole(UserRole.ADMIN)` allows ADMIN, SUPERADMIN but blocks SUPPORT and below.
 
 ---
 
@@ -1610,6 +1740,33 @@ jest.mock('../../../src/services/white-label.service.js', () => ({
 }));
 ```
 
+### Integration Tests (Real Database)
+
+Some test files (e.g., `organizer-subscription.test.ts`, `subscription.service.test.ts`) run against a real PostgreSQL database:
+
+```typescript
+// Pattern: check DB connection, skip gracefully if unavailable
+beforeAll(async () => {
+  try {
+    await prisma.$connect();
+    await prisma.$queryRaw`SELECT 1`;
+    dbConnected = true;
+  } catch (_error) {
+    dbConnected = false;
+  }
+});
+
+// Each test guards with:
+if (!dbConnected) { console.log('⏭️  Skipping'); return; }
+```
+
+**Key patterns for DB-connected tests:**
+- Use `cleanupTestData(tx)` in `beforeEach` inside a transaction for test isolation
+- Set transaction timeout to 15000ms: `prisma.$transaction(fn, { timeout: 15000 })`
+- Use `.com` domains for test emails (Joi rejects `.test` TLD)
+- Seed subscription plans with `upsert` and always set `update` clause to restore state (prevents cross-test contamination)
+- Focus on service-layer tests; controller tests only when route-level behavior differs from service behavior
+
 ### Architecture Rules
 
 1. **Business logic in Services, not Controllers** — Controllers are thin wrappers
@@ -1625,6 +1782,9 @@ jest.mock('../../../src/services/white-label.service.js', () => ({
 - **Hardcoding dates** → use `expect.any(Date)` in object matchers
 - **Testing implementation details** → verify outcomes, not Prisma call counts
 - **Missing `.js` extension** in mock paths → mock silently fails
+- **Using `.test` TLD in emails** → Joi's email validator rejects it; use `.com` domains
+- **Default transaction timeout** → `cleanupTestData` with many tables can exceed 5s; set `{ timeout: 15000 }`
+- **Upsert with empty `update` clause** → prior test modifications persist; always include full state in `update`
 
 ---
 
@@ -1864,13 +2024,16 @@ Attendee pays → Payment Gateway (Paystack/Stripe/M-Pesa) → Webhook confirms
 1. **Signature verification** — HMAC comparison (reject immediately if invalid)
 2. **Idempotency check** — Record in `PaymentWebhookEvent` table by `gatewayEventId` (unique index)
 3. **Re-verify with gateway** — Call `verifyPayment(reference)` to confirm amount
-4. **Amount validation** — Tolerance of ±0.01 (1 cent/kobo for rounding)
-5. **Create transaction record** — `EventPaymentTransaction`
-6. **Update registration** — Status → `CONFIRMED`
-7. **Calculate platform fee** — `PlatformFeeService.createPlatformFee()`
-8. **Generate invoice** — Async, non-blocking
-9. **Send ticket email** — With QR code and calendar invite
-10. **Notify organizer** — Payment received notification
+4. **Reference routing** — Check reference prefix to determine payment type:
+   - `SUB-*` → Route to `SubscriptionService.handleSubscriptionPaymentSuccess()` (subscription payment)
+   - Default → Continue with event payment flow (steps 5-10)
+5. **Amount validation** — Tolerance of ±0.01 (1 cent/kobo for rounding)
+6. **Create transaction record** — `EventPaymentTransaction`
+7. **Update registration** — Status → `CONFIRMED`
+8. **Calculate platform fee** — `PlatformFeeService.createPlatformFee()` (also auto-records as `PlatformIncome`)
+9. **Generate invoice** — Async, non-blocking
+10. **Send ticket email** — With QR code and calendar invite
+11. **Notify organizer** — Payment received notification
 
 ### Idempotency (Multi-Layer)
 
@@ -1896,6 +2059,112 @@ organizerAmount = grossAmount − feeAmount
 ```
 
 **Why 7.5% all-in?** Cost-leadership in Kenya: undercuts Mookh (8%), TicketSasa (10%), Eventbrite (~8-12%). M-Pesa dominance (~70% of Kenya digital payments) keeps blended processing costs low enough for a percentage-only model. `fixedFeePerTicket` exists as a reserved lever (default: 0) for card-heavy markets.
+
+### Platform Finance Architecture
+
+The finance system uses a **unified accounting model** built on four core tables that feed into a single P&L view:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    Finance Dashboard / P&L                    │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  INCOME                           EXPENSES                   │
+│  ├─ PlatformFee (automatic)       ├─ PlatformExpense         │
+│  │  (7.5% per ticket sale)        │  (operating costs)       │
+│  └─ PlatformIncome (manual+auto)  └─ Wage                    │
+│     (subscriptions, fees, other)     (staff compensation)    │
+│                                                              │
+│  NET PROFIT = Total Income − Total Expenses                  │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Services:**
+
+| Service | Responsibility |
+|---------|---------------|
+| `PlatformExpenseService` | CRUD for operating expenses (infra, marketing, office) |
+| `PlatformIncomeService` | CRUD for income entries (manual + auto-recorded platform fees) |
+| `WageService` | CRUD for staff wages with pay type, work details, event linking |
+| `PlatformFinanceSummaryService` | Aggregates all 4 tables into a comprehensive P&L summary |
+| `PlatformFeeService` | Calculates fees per transaction; auto-records income |
+| `AdminFinancialService` | Monthly summary with category breakdowns; financial overview |
+
+**API Routes:**
+
+```
+/admin/platform-finance/expenses      → PlatformExpense CRUD
+/admin/platform-finance/income        → PlatformIncome CRUD
+/admin/platform-finance/wages         → Wage CRUD
+/admin/platform-finance/summary       → Comprehensive P&L summary
+/admin/financial/monthly-summary      → Monthly P&L with category breakdown
+/admin/financial/overview             → Financial overview (date-range)
+```
+
+### Staff Pay Types (StaffPayType Enum)
+
+```prisma
+enum StaffPayType {
+  PERMANENT   // Monthly salaried staff — uses grossAmount, deductions
+  CONTRACT    // Fixed-term/hourly — uses hoursWorked, hourlyRate, overtimeHours, overtimeRate
+  EVENT       // Per-event staff — uses dailyRate, eventDays; linked to event via eventId
+}
+```
+
+**Wage Model key fields:**
+- `staffType` — determines which work detail fields apply
+- `grossAmount` / `amount` — gross pay vs net pay (amount = gross − deductions + bonuses)
+- `hoursWorked`, `hourlyRate`, `overtimeHours`, `overtimeRate` — for PERMANENT/CONTRACT
+- `dailyRate`, `eventDays` — for EVENT type
+- `bonuses`, `deductions` — adjustments
+- `eventId` — optional FK to Event (required for EVENT type, optional for others)
+- `event` relation — includes `{ id, title }` in API responses
+
+### Auto-Income Recording
+
+When `PlatformFeeService.createPlatformFee()` calculates a fee, it automatically creates a `PlatformIncome` record:
+
+```typescript
+// Non-critical — wrapped in try/catch so fee creation never fails
+await prisma.platformIncome.create({
+  data: {
+    category: 'Platform Fees',
+    description: `Platform fee from transaction ${feeNumber}`,
+    amount: feeAmount,
+    source: 'Ticket Sales',
+    reference: feeNumber,
+    paymentMethod: 'paystack',
+    eventId: transaction.eventId,
+    transactionId: transactionId,
+    status: 'received',
+  },
+});
+```
+
+This ensures platform fee revenue appears in the P&L without manual entry. The `PlatformFinanceSummaryService` also directly aggregates from `PlatformFee` records as a secondary source, so revenue is never missed even if the auto-income write fails.
+
+### Comprehensive P&L Summary
+
+`PlatformFinanceSummaryService.getFinanceSummary()` returns:
+
+```typescript
+{
+  totalIncome,            // manualIncome + platformFeeRevenue
+  totalExpenses,          // operatingExpenses + totalWages
+  totalWages,             // Sum of Wage.amount (COMPLETED only)
+  netProfit,              // totalIncome − totalExpenses
+  expenseCount,           // PlatformExpense records
+  incomeCount,            // PlatformIncome records
+  wageCount,              // Wage records
+  platformFeeRevenue,     // Sum of PlatformFee.feeAmount
+  manualIncome,           // Sum of PlatformIncome.amount
+  totalGrossRevenue,      // Sum of PlatformFee.grossAmount (total ticket sales)
+  totalOrganizerPayouts,  // Sum of PlatformFee.organizerAmount
+  platformFeeCount,       // PlatformFee records
+}
+```
+
+The `AdminFinancialService.getMonthlySummary()` adds category breakdowns (`incomesByCategory`, `expensesByCategory`) with "Platform Fees (Ticket Sales)" and "Staff Wages" as automatic categories.
 
 ### Auto-Payout System
 
@@ -1924,6 +2193,63 @@ organizerAmount = grossAmount − feeAmount
 | `partial_refund` | Fixed percentage (default 50%) |
 | `tiered` | Multiple tiers by days before event |
 | `custom` | Text-based, manually adjudicated |
+
+### Subscription Payment System
+
+Subscription payments use the same Paystack gateway infrastructure as event payments but with a distinct flow and reference prefix.
+
+**API Routes:**
+```
+POST /api/v1/organizer-dashboard/subscription/pay     → Initialize payment
+GET  /api/v1/organizer-dashboard/subscription/verify   → Verify after callback
+POST /api/v1/organizer-dashboard/subscription/upgrade  → Free tier upgrade (no payment)
+POST /api/v1/organizer-dashboard/subscription/cancel   → Cancel paid subscription
+```
+
+**Payment Flow:**
+
+```
+Organizer selects paid tier + billing email
+  → POST /subscription/pay
+  → SubscriptionService.initializeSubscriptionPayment()
+    → Validates: plan exists, is active, price > 0, is an upgrade
+    → Creates SubscriptionPayment record (status: PENDING)
+    → Initializes Paystack with reference: SUB-{organizerId}-{timestamp}
+    → Returns authorization_url
+  → Organizer redirected to Paystack checkout
+  → Payment completes
+  → Paystack webhook → POST /payments/webhook
+    → Reference starts with "SUB-" → routed to SubscriptionService
+    → handleSubscriptionPaymentSuccess():
+      1. Updates SubscriptionPayment status → SUCCESS
+      2. Upserts OrganizerSubscription to new tier
+      3. Creates PlatformIncome record (category: "Subscription", status: "received")
+  → Frontend callback → GET /subscription/verify?reference=SUB-...
+    → Verifies payment status, returns updated subscription
+```
+
+**Price-Aware Logic:**
+
+All subscription methods check `plan.price` from the database rather than hardcoding tier names:
+```typescript
+const isPaid = plan ? Number(plan.price) > 0 : false;
+```
+
+This means:
+- Upgrading to a $0 tier skips payment entirely
+- Upgrading to any tier with price > 0 requires Paystack checkout
+- Cancellation is only allowed for tiers with price > 0
+- Changing a plan's price in the database automatically changes the flow — no code changes needed
+
+**Idempotency:**
+- `SubscriptionPayment.gatewayReference` has a unique index
+- `handleSubscriptionPaymentSuccess` checks if status is already `SUCCESS` and skips re-processing
+- `idempotencyKey` field available for additional deduplication
+
+**Revenue Recording:**
+- Successful subscription payments automatically create a `PlatformIncome` record
+- Category: `"Subscription"`, status: `"received"`
+- Revenue appears on the admin Finance → Income Statement page
 
 ---
 
@@ -1956,7 +2282,12 @@ organizerAmount = grossAmount − feeAmount
 
 ### Payment Reference Format
 
-`EVT-{registrationId}-{timestamp}` — unique per payment attempt.
+| Prefix | Format | Use Case |
+|--------|--------|----------|
+| `EVT-` | `EVT-{registrationId}-{timestamp}` | Event ticket payment |
+| `SUB-` | `SUB-{organizerId}-{timestamp}` | Subscription payment |
+
+The prefix determines how the webhook handler routes the payment for processing.
 
 ### Post-Payment Email (Two-Email Model)
 
@@ -2132,7 +2463,7 @@ Drafts saved to `localStorage` every 30 seconds. Restored on mount. Includes all
 2. IP Check → Must be in allowed IPs list (if enabled)
 3. Subdomain Check → Must match required subdomain (if enabled)
 4. Authentication → Valid JWT token
-5. Authorization → ADMIN_STAFF role or higher
+5. Authorization → ADMIN role or higher
 ```
 
 ### Features
@@ -2621,7 +2952,7 @@ PUT    /managed-events/:eventId    → update any field
 POST   /managed-events/:eventId/cancel  → cancel with reason
 ```
 
-**Minimum role:** `ADMIN_STAFF` (via `requireMinRole(UserRole.ADMIN_STAFF)`)
+**Minimum role:** `ADMIN` (via `requireMinRole(UserRole.ADMIN)`)
 
 **Create payload:**
 ```typescript
@@ -2660,7 +2991,7 @@ interface CreateManagedEventPayload {
 - `client/src/lib/managed-events-api.ts` — typed API client
 - `client/src/pages/admin/AdminManagedEventsPage.tsx` — list + stats page
 - `client/src/pages/admin/AdminManagedEventCreatePage.tsx` — two-step creation wizard
-- Route: `admin/managed-events` and `admin/managed-events/create` (ADMIN_STAFF_ROLES)
+- Route: `admin/managed-events` and `admin/managed-events/create` (ADMIN roles)
 
 **Two-step creation wizard:**
 
@@ -2783,14 +3114,76 @@ EventKnit routes messages through the optimal channel based on message type and 
 // Low (marketing): Email only (if opted in)
 ```
 
+### Notification Bell & Dropdown (Frontend)
+
+All dashboards (admin, organizer, attendee) include a shared `NotificationBell` component in the header:
+
+```typescript
+// client/src/components/NotificationBell.tsx
+// Features:
+// - Real-time unread count via WebSocket (Socket.IO)
+//   - Listens to 'notification:new' (increment) and 'unread:count' (authoritative)
+// - Fallback polling every 60 seconds via GET /api/v1/notifications/unread-count
+// - Click opens inline dropdown panel (not a page navigation):
+//   - Fetches 8 most recent notifications via GET /api/v1/notifications?limit=8
+//   - Displays icon (by type), title, message preview, relative timestamp
+//   - Unread indicator dot per notification
+//   - Mark as read individually (PATCH /notifications/:id/read) or all (PATCH /notifications/read-all)
+//   - "View all notifications" footer link → role-aware full page
+// - Close on outside click
+// - Role-aware navigation for "View all":
+//   - Admin roles → /admin/notifications
+//   - Organizer roles → /organizer/notifications
+//   - Attendee → /user/notifications
+```
+
+Used in:
+- `AdminHeader.tsx` — replaces the previous hardcoded empty notification placeholder
+- `OrganizerHeader.tsx` — already used the shared component
+- `UnifiedNavbar.tsx` — added for attendee dashboard (between theme toggle and profile)
+
+### Notification Center Pages
+
+Each role has a dedicated full-page Notification Center:
+
+```typescript
+// Admin: client/src/pages/admin/AdminNotificationsCenter.tsx
+//   Route: /admin/notifications (ALL_ADMIN_ROLES)
+//   Filters: event approvals, security alerts, staff assignments, system announcements
+
+// Organizer: client/src/pages/organizer/OrganizerNotificationsCenter.tsx
+//   Route: /organizer/notifications (ALL_ORGANIZER_ROLES)
+//   Filters: registrations, capacity milestones, payments, approvals/rejections
+
+// Attendee: client/src/pages/user/NotificationsCenter.tsx
+//   Route: /user/notifications
+//   Filters: event reminders, updates, registrations, payments, system
+
+// Shared features across all centers:
+// - Tabs: All / Unread / Read
+// - Filter by NotificationType and NotificationPriority
+// - Mark as read (individual via PATCH, bulk via PATCH /read-all)
+// - Delete (DELETE /notifications/:id)
+// - Priority badges: URGENT (red), HIGH (orange), MEDIUM (primary/50), LOW (secondary)
+// - Type-specific emoji icons (⏰ reminders, 💳 payments, 📝 registrations, etc.)
+```
+
 ### Notification Preference System
 
 ```typescript
-// Per-user configurable settings:
+// Per-user configurable settings (NotificationPreference model):
 // - Channel toggles: email (on/off), SMS (on/off), push (on/off), in-app (on/off)
-// - Category toggles: 24 notification types each independently configurable
-// - Quiet hours: start time → end time (no push/SMS during this window)
-// - Digest mode: batch low-priority notifications into daily/weekly digest
+// - Category toggles: eventReminders, eventUpdates, eventCancellations,
+//   paymentNotifications, marketingEmails, systemAnnouncements,
+//   registrationUpdates, staffNotifications
+// - Reminder frequency: 'all' | 'daily_digest' | 'weekly_digest' | 'none'
+// - Configurable during onboarding (NotificationsScreen.tsx) or via Settings
+
+// API:
+// GET  /api/v1/users/me/notification-preferences
+// PUT  /api/v1/users/me/notification-preferences
+
+// Email digest processing: email-digest.job.ts (background job)
 ```
 
 ### Email System
@@ -2798,8 +3191,9 @@ EventKnit routes messages through the optimal channel based on message type and 
 **Template-Based Email Generation:**
 - Template CRUD with variable substitution (`{{attendeeName}}`, `{{eventTitle}}`, etc.)
 - Preview generation before send
-- Multiple SMTP provider support (default: Gmail SMTP)
+- Multiple SMTP provider support (default: Gmail SMTP / MailTrap for dev)
 - Email marketing campaigns with segmentation, scheduling, and open/click tracking
+- Admin template management at `/admin/communications` (Email Templates tab)
 
 **Two-Email Model for Ticket Purchase:**
 1. **Immediate confirmation** — payment received, ticket being prepared
@@ -2808,30 +3202,250 @@ EventKnit routes messages through the optimal channel based on message type and 
 ### Push Notifications
 
 ```typescript
-// Providers: Firebase Cloud Messaging (FCM) for Android, APNs for iOS
-// Features:
-// - Device registration management (multiple devices per user)
-// - Notification payload formatting (title, body, data, image)
-// - Topic-based broadcasting (event updates to all attendees)
-// - Silent push for background data sync
+// Web Push API with VAPID keys (push-notification.service.ts):
+// - GET  /api/v1/push/vapid-public-key — public key for client subscription
+// - POST /api/v1/push/subscribe — register browser push subscription
+// - POST /api/v1/push/unsubscribe — unsubscribe specific endpoint
+// - GET  /api/v1/push/subscriptions — list user's push subscriptions
+// - POST /api/v1/push/test — send test notification
+// - POST /api/v1/push/broadcast — admin: broadcast to all users
+// - Failure tracking with auto-cleanup of stale subscriptions
+
+// Mobile: Firebase Cloud Messaging (FCM) via mobile-push.service.ts
+// - Device registration with platform info (iOS/Android, model, OS version)
+// - FCM token validation and refresh
+// - MobileDevice model tracks status and usage
 ```
 
-### Bulk Messaging
+### Admin Bulk Messaging
 
 ```typescript
-// Target audience filtering:
-// - All attendees of an event
-// - Specific ticket types
-// - Checked-in vs not checked-in
-// - Custom segments (see Section 40)
-// Scheduling: Send now or schedule for future delivery
-// Status tracking: PENDING → SENDING → SENT → DELIVERED/FAILED
-// Error tracking with row-level detail
+// Admin Communications Page: client/src/pages/admin/CommunicationsPage.tsx
+// Route: /admin/communications (MARKETING_ROLES)
+// Sidebar: Operations > Communications > Bulk Messaging
+
+// Backend: /api/v1/admin/communications/bulk-messages
+// - POST   / — create bulk message
+// - GET    / — list with filters (status, type, audience)
+// - GET    /:id — get by ID
+// - PUT    /:id — update
+// - DELETE /:id — delete
+// - POST   /:id/send — send immediately
+// - POST   /:id/cancel — cancel scheduled
+
+// BulkMessage model fields:
+// - title, content, type (announcement | marketing | system | event_update)
+// - targetAudience: ALL | ORGANIZERS | ATTENDEES | STAFF | SPECIFIC_EVENT
+// - channels: { email, sms, push, inApp } (each boolean)
+// - status: DRAFT → SCHEDULED → SENDING → SENT | CANCELLED
+// - Delivery tracking: totalRecipients, sentCount, failedCount
+// - Engagement: opens, clicks, unsubscribes
+// - Scheduling: scheduledAt, sentAt
+
+// Background job: bulk-message-scheduler.job.ts
+```
+
+### Organizer Attendee Messaging
+
+```typescript
+// Organizer Communication Page: client/src/pages/organizer/AttendeeCommunication.tsx
+// Route: /organizer/attendees/communication (NON_TELLER_ROLES)
+// Sidebar: Main > Communications > Attendee Messaging
+
+// Three send functions (organizer-dashboard-api.ts):
+// - sendToSegment(segmentId, { subject, content, sendEmail?, sendNotification? })
+//   POST /api/v1/organizer-dashboard/segments/:id/send
+// - sendToTaggedUsers(tagId, { subject, content, sendEmail?, sendNotification? })
+//   POST /api/v1/organizer-dashboard/tags/:id/send
+// - sendToEventRegistrations(eventId, { subject, content, sendEmail?, sendNotification? })
+//   POST /api/v1/organizer-dashboard/events/:id/send
+
+// Communication history:
+// - getCommunicationHistory() → GET /api/v1/organizer-dashboard/communications
+// - Shows: subject, recipientType, content, sentCount, failedCount, timestamp
+```
+
+### Sidebar Navigation for Communications
+
+```
+Admin Sidebar (Operations group):
+├── Communications (MessageSquare icon)
+│   ├── Notifications → /admin/notifications (admin's own notification inbox)
+│   └── Bulk Messaging → /admin/communications (send to platform audiences)
+
+Organizer Sidebar (Main group):
+├── Communications (MessageSquare icon)
+│   ├── Notifications → /organizer/notifications (organizer's notification inbox)
+│   └── Attendee Messaging → /organizer/attendees/communication (send to segments/tags/events)
+
+Attendee (UnifiedNavbar):
+├── NotificationBell in header → dropdown panel → "View all" → /user/notifications
+```
+
+### Real-Time Delivery (WebSocket)
+
+```typescript
+// WebSocket events for notifications (websocket.service.ts):
+// Client → Server:
+//   'join:notifications' — join personal notification room
+//   'join:event' — join event-specific room
+//   'leave:event' — leave event room
+//
+// Server → Client:
+//   'notification:new' — new notification arrived (bell count increments)
+//   'unread:count' — authoritative unread count (replaces client state)
+//   'scan:new' — live check-in event feed
+//   'statistics:update' — real-time dashboard counters
+//   'capacity:alert' — zone capacity warning
+//   'staff:metrics' — staff performance metrics
 ```
 
 ---
 
-## 35. Ticket Transfer & Resale Marketplace
+## 35. Attendee Event View Architecture
+
+### Component Hierarchy
+
+```
+DashboardMyEvent.tsx (route: /user/event/:id)
+  └─ EventAttendeeView.tsx (main shell — header, tabs, notifications panel)
+       ├─ EventHome.tsx          (Home tab)
+       ├─ EventAgenda.tsx        (Agenda tab)
+       ├─ EventSpeakers.tsx      (Speakers tab)
+       ├─ EventExhibitors.tsx    (Exhibitors tab)
+       ├─ EventMyEvent.tsx       (My Event tab)
+       ├─ EventMyBadge.tsx       (My Badge tab)
+       └─ NotificationsPanel     (inline slide-over, not a route)
+```
+
+All components live in `client/src/components/event-attendee/`.
+
+### Data Flow
+
+```typescript
+// DashboardMyEvent.tsx
+// 1. Reads eventId from URL params (useParams)
+// 2. Fetches event via getEventById() → full event object from API
+// 3. Fetches user's registration info via getUserRegisteredEvents()
+// 4. Fetches seat allocation via getTicket(registrationId) → SeatInfo
+// 5. Transforms raw API response into strongly-typed EventData via transformEventData()
+// 6. Passes { event: EventData, user: User } to EventAttendeeView
+
+// EventData includes location extras for map rendering:
+// - coordinates?: { lat: number; lng: number }  — used by EventMap iframe
+// - address?: string
+// - isOnline?: boolean  — suppresses map when true
+// - onlineLink?: string
+```
+
+### EventAttendeeView Shell
+
+```typescript
+// client/src/components/event-attendee/EventAttendeeView.tsx
+// State:
+//   activeTab: TabKey ('home' | 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge')
+//   isNotificationsOpen: boolean (controls slide-over panel)
+//   unreadNotifCount: number (fetched on mount via getNotifications({ isRead: false }))
+//
+// Tab visibility is data-driven — tabs are hidden when the event lacks that content:
+//   agenda → event.agenda?.length > 0
+//   speakers → event.speakers?.length > 0
+//   exhibitors → event.exhibitors?.length > 0
+//   home, my-event, my-badge → always visible
+//
+// Header icons:
+//   Message icon → navigates to /user/messages (DirectMessaging page)
+//   Bell icon → opens NotificationsPanel (inline slide-over)
+//   "See all" in panel → navigates to /user/notifications (NotificationsCenter)
+```
+
+### EventHome (Home Tab)
+
+```typescript
+// client/src/components/event-attendee/EventHome.tsx
+// Layout: 4-column grid — 1 col sidebar (left), 3 col content (right)
+// Sections:
+//   Hero — bg-cover image with gradient overlay, title, hashtag, date/time/location
+//   Sidebar — profile card (avatar, name, title, company) with "Edit" link
+//   CountdownStrip — live countdown (d:h:m:s) or "Happening Now" pulse badge
+//   Sponsors — grouped by tier (title → community), logos with links
+//   Event Details — date range, timezone note, venue, location, description (RichTextContent)
+//   Social Links — icon buttons for twitter, facebook, instagram, linkedin, etc.
+//   Venue Map — EventMap component (Google Maps embed via coordinates or text search)
+//              — "Get Directions" button opens Google Maps in new tab
+//              — Hidden when event.isOnline is true
+```
+
+### EventMyEvent (My Event Tab)
+
+```typescript
+// client/src/components/event-attendee/EventMyEvent.tsx
+// Layout: 3-column grid — 1 col sidebar (left, order-1), 2 col content (right, order-2)
+//
+// Sidebar:
+//   Profile card with registration status chip (emerald)
+//   Quick Actions: Add to Calendar (Google Calendar URL), Share (Web Share API),
+//     Download Ticket (downloadTicketPDF), All Notifications (→ /user/notifications),
+//     Contact Organizer (opens Dialog with subject + message fields → sendMessage API)
+//
+// Content:
+//   Registration banner — emerald gradient bg, "You're Registered" with event status badge
+//   Summary cards — date, location, time in rounded boxes
+//   Registration Details — ticket type, ID, backup code, date in grid
+//   Seat Allocation — seat identifier, section, row in colored boxes
+//   Event Details — full date/time/venue/description
+//   Event Announcements — notifications filtered by event.id, mark all read, refresh
+//
+// API calls:
+//   getNotifications({ eventId, limit: 20 })
+//   markAllAsRead()
+//   downloadTicketPDF(registrationId)
+//   sendMessage({ recipientId: organizerId, subject, content, eventId })
+```
+
+### EventMyBadge (My Badge Tab)
+
+```typescript
+// client/src/components/event-attendee/EventMyBadge.tsx
+// Fetches: getTicket(registrationId) → TicketData (qrCode, backupCode, ticketType, seat)
+// Fallbacks: if ticket API fails, renders badge with data from EventData props
+// Error handling: non-blocking muted info bar ("Ticket details unavailable")
+//
+// Badge card structure:
+//   Header — primary bg with event title, date, venue
+//   Body (bg-card) — avatar, name, title, company, ticket type badge,
+//     seat allocation strip (if assigned), QR code (or placeholder), badge code
+//   Footer — event hashtag
+//
+// Actions: Download (downloadTicketPDF), Print (window.print), Share (navigator.share)
+// Dark mode: all colors use theme tokens (bg-card, text-foreground, text-muted-foreground)
+// Print styles: @media print hides action buttons, centers badge
+```
+
+### Shared Types
+
+```typescript
+// Exported from EventAttendeeView.tsx:
+interface EventData {
+  id: string; title: string; description?: string; fullDescription?: string;
+  date: string; endDate?: string; time?: string;
+  location: string; venue?: string; address?: string;
+  coordinates?: { lat: number; lng: number }; isOnline?: boolean; onlineLink?: string;
+  type: string; image?: string; category?: string;
+  status?: 'upcoming' | 'ongoing' | 'completed';
+  registrationDate?: string; organizer?: string; organizerId?: string;
+  speakers?: Speaker[]; sponsors?: Sponsor[]; exhibitors?: Exhibitor[]; agenda?: AgendaItem[];
+  socialLinks?: Record<string, string>; hashtag?: string;
+  registrationId?: string; ticketType?: string; backupCode?: string; seat?: SeatInfo;
+}
+
+interface User { name: string; email: string; initials: string; profileImage?: string; company?: string; title?: string; }
+interface SeatInfo { seatIdentifier: string; sectionId?: string; rowLabel?: string; seatLabel?: string; seatType: string; reservationStatus: string; }
+```
+
+---
+
+## 36. Ticket Transfer & Resale Marketplace
 
 ### Ticket Transfer System
 
@@ -2887,7 +3501,7 @@ Peer-to-peer secondary market for ticket resale:
 
 ---
 
-## 36. Distributed Locking & Concurrency Control
+## 37. Distributed Locking & Concurrency Control
 
 ### Redis Distributed Locking
 
@@ -2946,7 +3560,7 @@ await lockService.withLock('payment:order-123', async () => {
 
 ---
 
-## 37. Audit Logging & GDPR Compliance
+## 38. Audit Logging & GDPR Compliance
 
 ### Audit Logging System
 
@@ -3029,7 +3643,7 @@ await createAuditLog({
 
 ---
 
-## 38. Granular Permission System
+## 39. Granular Permission System
 
 ### Beyond Simple RBAC
 
@@ -3042,12 +3656,10 @@ EventKnit implements **fine-grained permissions** on top of role-based access co
 const ROLE_LEVELS = {
   SUPERADMIN: 10,
   ADMIN: 9,
-  ADMIN_STAFF: 8,
-  MARKETER: 7,
   SUPPORT: 6,
   TELLER: 5,
   ORGANIZER: 4,
-  ORGANIZER_STAFF: 3,
+  ORGANIZER_ADMIN: 3,
   ORGANIZER_TELLER: 2,
   ATTENDEE: 1,
 };
@@ -3057,7 +3669,7 @@ canCreateRole(creatorRole, targetRole)  // Can this role create that role?
 canModifyUser(actorRole, targetRole)    // Can this role modify that user?
 canManageStaff(role)                    // Can this role manage staff?
 canAccessAllEvents(role)               // Cross-event access check
-isPlatformAdmin(role)                  // SUPERADMIN | ADMIN | ADMIN_STAFF
+isPlatformAdmin(role)                  // SUPERADMIN | ADMIN
 ```
 
 ### Permission Middleware
@@ -3080,7 +3692,7 @@ router.post('/event',
 );
 
 // Bypass: SUPERADMIN, ADMIN, ORGANIZER roles skip permission checks
-// Staff roles: checked against PermissionService effective permissions
+// Staff roles (ORGANIZER_ADMIN, ORGANIZER_TELLER): checked against PermissionService effective permissions
 ```
 
 ### Permission Inheritance
@@ -3107,7 +3719,7 @@ enum DataAccessLevel {
 
 ---
 
-## 39. Social Media Integration
+## 40. Social Media Integration
 
 ### Multi-Platform Publishing
 
@@ -3166,7 +3778,7 @@ POST /api/v1/social-webhooks/:platform
 
 ---
 
-## 40. Attendee Management & Segmentation
+## 41. Attendee Management & Segmentation
 
 ### Bulk Attendee Import
 
@@ -3219,7 +3831,7 @@ POST /api/v1/social-webhooks/:platform
 
 ---
 
-## 41. Digital Wallet, Credits & Invoicing
+## 42. Digital Wallet, Credits & Invoicing
 
 ### Digital Wallet
 
@@ -3268,7 +3880,7 @@ POST /api/v1/social-webhooks/:platform
 
 ---
 
-## 42. Dynamic Pricing Engine
+## 43. Dynamic Pricing Engine
 
 ### Rules-Based Pricing
 
@@ -3302,7 +3914,7 @@ POST /api/v1/social-webhooks/:platform
 
 ---
 
-## 43. Batch Export & Data Operations
+## 44. Batch Export & Data Operations
 
 ### Export Capabilities
 
@@ -3356,7 +3968,7 @@ const exportToCSV = (data: Attendee[], filename: string) => {
 
 ---
 
-## 44. CI/CD Pipelines & DevOps
+## 45. CI/CD Pipelines & DevOps
 
 ### GitHub Actions Workflows
 
@@ -3489,7 +4101,7 @@ server {
 
 ---
 
-## 45. Port Configuration
+## 46. Port Configuration
 
 ### Development Ports
 
@@ -3519,13 +4131,13 @@ server {
 
 ---
 
-## 46. Glossary
+## 47. Glossary
 
 | Term | Definition |
 |------|-----------|
 | **Access Token** | Short-lived JWT (15 min) for API authentication |
 | **Refresh Token** | Long-lived token (7–30 days) stored in HTTP-only cookie for session persistence |
-| **RBAC** | Role-Based Access Control — 10 roles with numeric hierarchy |
+| **RBAC** | Role-Based Access Control — 8 roles with numeric hierarchy |
 | **Idempotency** | Guarantee that repeated operations produce the same result (critical for payments) |
 | **HMAC** | Hash-based Message Authentication Code — used for webhook signature verification |
 | **Ed25519** | Elliptic curve cryptographic algorithm used for offline-verifiable ticket signing |
@@ -3540,7 +4152,10 @@ server {
 | **Prisma** | Type-safe ORM that generates TypeScript types from the database schema |
 | **Socket.IO** | WebSocket library with fallback transports, room-based broadcasting |
 | **Grace Period** | 5 business days after event end before automatic organizer payout |
-| **Platform Fee** | 7.5% all-in fee on paid ticket sales (absorbs gateway processing costs) |
+| **Platform Fee** | 7.5% all-in fee on paid ticket sales (absorbs gateway processing costs); auto-recorded as `PlatformIncome` |
+| **StaffPayType** | Enum: `PERMANENT` (monthly salary), `CONTRACT` (hourly/fixed-term), `EVENT` (daily rate × event days) |
+| **Auto-Income** | Automatic `PlatformIncome` creation when a platform fee is calculated — ensures fee revenue in P&L without manual entry |
+| **Comprehensive P&L** | Summary aggregating `PlatformFee` + `PlatformIncome` + `PlatformExpense` + `Wage` into a unified financial view |
 | **Disbursement** | Payout from platform to organizer after grace period |
 | **KYC** | Know Your Customer — identity verification required for paid event payouts |
 | **White Label** | Customizable branding that replaces EventKnit's identity with the organizer's |

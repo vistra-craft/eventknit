@@ -19,14 +19,14 @@ export interface CreateStaffData {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
-  role: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+  role: 'ORGANIZER_ADMIN' | 'ORGANIZER_TELLER';
 }
 
 export interface UpdateStaffData {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
-  role?: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+  role?: 'ORGANIZER_ADMIN' | 'ORGANIZER_TELLER';
   customRoleId?: string | null; // Assign or remove custom role
   status?: UserStatus;
 }
@@ -45,7 +45,7 @@ export class OrganizerService {
     // Validate organizer can create staff
     if (organizerRole !== UserRole.ORGANIZER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can create staff members');
     }
 
@@ -134,7 +134,7 @@ export class OrganizerService {
     // Validate organizer can view staff
     if (organizerRole !== UserRole.ORGANIZER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can view staff members');
     }
 
@@ -159,7 +159,7 @@ export class OrganizerService {
         organizationName: organizer.organizationName,
         deletedAt: null,
         role: {
-          in: [UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER],
+          in: [UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_TELLER],
         },
       },
       select: {
@@ -195,7 +195,7 @@ export class OrganizerService {
     // Validate organizer can view staff
     if (organizerRole !== UserRole.ORGANIZER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can view staff members');
     }
 
@@ -236,7 +236,7 @@ export class OrganizerService {
 
     // Verify staff belongs to organizer (unless admin)
     // Note: Will use managedBy after Prisma migration
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       // For now, check organizationName match
       if (staff.organizationName !== organizer.organizationName) {
         throw new AuthorizationError('You do not have permission to view this staff member');
@@ -288,7 +288,7 @@ export class OrganizerService {
 
     // Verify staff belongs to organizer (unless admin)
     // Note: Will use managedBy after Prisma migration
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       // For now, check organizationName match
       if (staff.organizationName !== organizer.organizationName) {
         throw new AuthorizationError('You do not have permission to modify this staff member');
@@ -423,7 +423,7 @@ export class OrganizerService {
 
     // Verify staff belongs to organizer (unless admin)
     // Note: Will use managedBy after Prisma migration
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       // For now, check organizationName match
       if (staff.organizationName !== organizer.organizationName) {
         throw new AuthorizationError('You do not have permission to delete this staff member');
@@ -622,7 +622,7 @@ export class OrganizerService {
     // Validate organizer can view dashboard
     if (organizerRole !== UserRole.ORGANIZER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can view dashboard');
     }
 
@@ -885,7 +885,7 @@ export class OrganizerService {
     // Validate organizer can view dashboard
     if (organizerRole !== UserRole.ORGANIZER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can view dashboard');
     }
 
@@ -1036,10 +1036,10 @@ export class OrganizerService {
     // Allow ATTENDEE (who created pending events), ORGANIZER, and admin roles
     if (organizerRole !== UserRole.ATTENDEE &&
       organizerRole !== UserRole.ORGANIZER &&
-      organizerRole !== UserRole.ORGANIZER_STAFF &&
+      organizerRole !== UserRole.ORGANIZER_ADMIN &&
       organizerRole !== UserRole.ORGANIZER_TELLER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('You do not have permission to view events');
     }
 

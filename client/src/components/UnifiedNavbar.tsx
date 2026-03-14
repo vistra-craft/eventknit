@@ -5,10 +5,11 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, Home, Calendar, BarChart3, Users, Wallet, MessageSquare, Heart, type LucideIcon } from 'lucide-react';
+import { LogOut, Settings, Home, Calendar, BarChart3, Users, Wallet, MessageSquare, Heart, Megaphone, UserCircle, type LucideIcon } from 'lucide-react';
 import Logo from './Logo';
 import { useAuth } from '../hooks/useAuth';
 import { ThemeToggle } from './ThemeToggle';
+import NotificationBell from './NotificationBell';
 import { Badge } from './ui/badge';
 import { UserRole } from '@/types/auth';
 
@@ -36,7 +37,8 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const isOrganizer = authUser?.role === UserRole.ORGANIZER;
-  const roleDisplay = isOrganizer ? '🎪 Organizer' : '👤 Attendee';
+  const RoleIcon = isOrganizer ? Megaphone : UserCircle;
+  const roleLabel = isOrganizer ? 'Organizer' : 'Attendee';
   const roleBadgeVariant = isOrganizer ? 'default' : 'secondary';
 
   // Role-based menu items
@@ -112,7 +114,7 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border h-14">
-      <div className="container mx-auto px-6 h-full">
+      <div className="container mx-auto px-4 sm:px-6 h-full">
         <div className="flex items-center justify-between h-full">
           {/* Logo */}
           <Logo />
@@ -120,12 +122,16 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
           {/* Right Side */}
           <div className="flex items-center gap-4">
             {/* Role Badge */}
-            <Badge variant={roleBadgeVariant as 'default' | 'secondary'}>
-              {roleDisplay}
+            <Badge variant={roleBadgeVariant as 'default' | 'secondary'} className="hidden sm:inline-flex items-center gap-1.5">
+              <RoleIcon className="w-3 h-3" />
+              {roleLabel}
             </Badge>
 
             {/* Theme Toggle */}
             <ThemeToggle />
+
+            {/* Notifications */}
+            <NotificationBell />
 
             {/* Profile */}
             <div className="relative">
@@ -146,8 +152,9 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
                     <div className="px-3 py-2 border-b border-border space-y-2">
                       <p className="text-sm font-medium text-foreground">{user.name}</p>
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                      <Badge variant={roleBadgeVariant as 'default' | 'secondary'} className="text-xs">
-                        {roleDisplay}
+                      <Badge variant={roleBadgeVariant as 'default' | 'secondary'} className="text-xs inline-flex items-center gap-1">
+                        <RoleIcon className="w-3 h-3" />
+                        {roleLabel}
                       </Badge>
                     </div>
 

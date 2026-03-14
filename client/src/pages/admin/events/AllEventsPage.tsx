@@ -548,7 +548,7 @@ const AllEventsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Bulk Actions Toolbar - Only for ADMIN_STAFF and SUPERADMIN */}
+        {/* Bulk Actions Toolbar - Only for ADMIN and SUPERADMIN */}
         {selectedEvents.size > 0 && permissions.canAccessAllEvents && (
           <Card className="border-primary bg-primary/5">
             <CardContent className="p-4">
@@ -579,7 +579,7 @@ const AllEventsPage = () => {
 
         {/* Events List */}
         <div className="space-y-3">
-          {/* Select All Checkbox - Only for ADMIN_STAFF and SUPERADMIN */}
+          {/* Select All Checkbox - Only for ADMIN and SUPERADMIN */}
           {filteredEvents.length > 0 && permissions.canAccessAllEvents && (
             <div className="flex items-center gap-2 pb-2 border-b">
               <Button

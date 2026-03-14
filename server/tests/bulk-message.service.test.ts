@@ -90,7 +90,7 @@ describe('BulkMessageService', () => {
         password: await hashPassword('password123'),
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),

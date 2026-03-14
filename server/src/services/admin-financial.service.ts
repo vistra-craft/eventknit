@@ -425,63 +425,84 @@ export class AdminFinancialService {
       const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-      const [expenses, incomes] = await Promise.all([
+      const [expenses, incomes, wages, platformFeesAgg] = await Promise.all([
         prisma.platformExpense.findMany({
           where: {
-            expenseDate: {
-              gte: startDate,
-              lte: endDate,
-            },
-            status: {
-              not: 'cancelled',
-            },
+            expenseDate: { gte: startDate, lte: endDate },
+            status: { not: 'cancelled' },
           },
         }),
         prisma.platformIncome.findMany({
           where: {
-            incomeDate: {
-              gte: startDate,
-              lte: endDate,
-            },
-            status: {
-              not: 'cancelled',
-            },
+            incomeDate: { gte: startDate, lte: endDate },
+            status: { not: 'cancelled' },
           },
+        }),
+        prisma.wage.findMany({
+          where: {
+            payDate: { gte: startDate, lte: endDate },
+            status: { not: 'CANCELLED' },
+          },
+        }),
+        // Platform fee revenue (automatic income from ticket sales)
+        prisma.platformFee.aggregate({
+          where: {
+            createdAt: { gte: startDate, lte: endDate },
+          },
+          _sum: { feeAmount: true, grossAmount: true, organizerAmount: true },
+          _count: true,
         }),
       ]);
 
-      // Calculate totals
-      const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-      const totalIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
+      // Income totals
+      const manualIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
+      const platformFeeRevenue = Number(platformFeesAgg._sum.feeAmount || 0);
+      const totalIncome = manualIncome + platformFeeRevenue;
+
+      // Expense totals
+      const operatingExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+      const totalWages = wages.reduce((sum, w) => sum + Number(w.amount), 0);
+      const totalExpenses = operatingExpenses + totalWages;
+
       const netProfit = totalIncome - totalExpenses;
 
-      // Group by category
+      // Group expenses by category
       const expensesByCategory: Record<string, number> = {};
       expenses.forEach((e) => {
         expensesByCategory[e.category] = (expensesByCategory[e.category] || 0) + Number(e.amount);
       });
+      if (totalWages > 0) {
+        expensesByCategory['Staff Wages'] = totalWages;
+      }
 
+      // Group income by category
       const incomesByCategory: Record<string, number> = {};
       incomes.forEach((i) => {
         incomesByCategory[i.category] = (incomesByCategory[i.category] || 0) + Number(i.amount);
       });
+      if (platformFeeRevenue > 0) {
+        incomesByCategory['Platform Fees (Ticket Sales)'] = platformFeeRevenue;
+      }
 
       return {
-        period: {
-          year,
-          month,
-          startDate,
-          endDate,
-        },
+        period: { year, month, startDate, endDate },
         summary: {
           totalExpenses,
           totalIncome,
           netProfit,
+          totalWages,
+          platformFeeRevenue,
+          manualIncome,
+          operatingExpenses,
+          totalGrossRevenue: Number(platformFeesAgg._sum.grossAmount || 0),
+          totalOrganizerPayouts: Number(platformFeesAgg._sum.organizerAmount || 0),
         },
         expensesByCategory,
         incomesByCategory,
         expenses: expenses.length,
         incomes: incomes.length,
+        wages: wages.length,
+        platformFees: platformFeesAgg._count,
       };
     } catch (error: any) {
       logger.error('Error generating monthly summary:', error);
@@ -494,33 +515,53 @@ export class AdminFinancialService {
     endDate?: Date;
   }) {
     try {
-      const whereExpense: any = {
-        status: { not: 'cancelled' },
-      };
-      const whereIncome: any = {
-        status: { not: 'cancelled' },
-      };
+      const whereExpense: any = { status: { not: 'cancelled' } };
+      const whereIncome: any = { status: { not: 'cancelled' } };
+      const whereWage: any = { status: { not: 'CANCELLED' } };
+      const whereFee: any = {};
 
       if (filters?.startDate || filters?.endDate) {
         whereExpense.expenseDate = {};
         whereIncome.incomeDate = {};
+        whereWage.payDate = {};
+        whereFee.createdAt = {};
         if (filters.startDate) {
           whereExpense.expenseDate.gte = filters.startDate;
           whereIncome.incomeDate.gte = filters.startDate;
+          whereWage.payDate.gte = filters.startDate;
+          whereFee.createdAt.gte = filters.startDate;
         }
         if (filters.endDate) {
           whereExpense.expenseDate.lte = filters.endDate;
           whereIncome.incomeDate.lte = filters.endDate;
+          whereWage.payDate.lte = filters.endDate;
+          whereFee.createdAt.lte = filters.endDate;
         }
       }
 
-      const [expenses, incomes] = await Promise.all([
+      const [expenses, incomes, wagesAgg, platformFeesAgg] = await Promise.all([
         prisma.platformExpense.findMany({ where: whereExpense }),
         prisma.platformIncome.findMany({ where: whereIncome }),
+        prisma.wage.aggregate({
+          where: whereWage,
+          _sum: { amount: true },
+          _count: true,
+        }),
+        prisma.platformFee.aggregate({
+          where: whereFee,
+          _sum: { feeAmount: true, grossAmount: true, organizerAmount: true },
+          _count: true,
+        }),
       ]);
 
-      const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-      const totalIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
+      const operatingExpenses = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+      const totalWages = Number(wagesAgg._sum.amount || 0);
+      const totalExpenses = operatingExpenses + totalWages;
+
+      const manualIncome = incomes.reduce((sum, i) => sum + Number(i.amount), 0);
+      const platformFeeRevenue = Number(platformFeesAgg._sum.feeAmount || 0);
+      const totalIncome = manualIncome + platformFeeRevenue;
+
       const netProfit = totalIncome - totalExpenses;
 
       return {
@@ -529,6 +570,15 @@ export class AdminFinancialService {
         netProfit,
         expenseCount: expenses.length,
         incomeCount: incomes.length,
+        wageCount: wagesAgg._count,
+        // Revenue breakdown
+        platformFeeRevenue,
+        manualIncome,
+        totalWages,
+        operatingExpenses,
+        totalGrossRevenue: Number(platformFeesAgg._sum.grossAmount || 0),
+        totalOrganizerPayouts: Number(platformFeesAgg._sum.organizerAmount || 0),
+        platformFeeCount: platformFeesAgg._count,
       };
     } catch (error: any) {
       logger.error('Error fetching financial overview:', error);

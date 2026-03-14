@@ -115,7 +115,7 @@ describe('Workstation API Integration Tests', () => {
         password: adminPassword,
         firstName: 'Admin',
         lastName: 'User',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -124,7 +124,7 @@ describe('Workstation API Integration Tests', () => {
         password: adminPassword,
         firstName: 'Admin',
         lastName: 'User',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -644,7 +644,7 @@ describe('Workstation API Integration Tests', () => {
       expect(response.body.data.scanType).toBe('MANUAL_CHECK_IN');
     });
 
-    it('should allow TELLER to manually check-in (role lowered from ADMIN_STAFF to TELLER)', async () => {
+    it('should allow TELLER to manually check-in (role lowered from ADMIN to TELLER)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -904,7 +904,7 @@ describe('Workstation API Integration Tests', () => {
   });
 
   describe('POST /api/v1/workstation/registrations/:registrationId/void-checkin', () => {
-    it('should void a check-in as ADMIN_STAFF and reset registration state', async () => {
+    it('should void a check-in as ADMIN and reset registration state', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -954,7 +954,7 @@ describe('Workstation API Integration Tests', () => {
       expect(voidScan?.notes).toBe('Issued to wrong attendee');
     });
 
-    it('should reject void with TELLER role (requires ADMIN_STAFF)', async () => {
+    it('should reject void with TELLER role (requires ADMIN)', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;

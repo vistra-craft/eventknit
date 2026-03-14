@@ -77,7 +77,7 @@ describe('EventService - Registration Code', () => {
         firstName: 'Admin',
         lastName: 'Test',
         password: await hashPassword('password123'),
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -160,7 +160,7 @@ describe('EventService - Registration Code', () => {
       const code = await EventService.generateEventRegistrationCode(
         eventId,
         adminId,
-        UserRole.ADMIN_STAFF,
+        UserRole.ADMIN,
       );
 
       expect(code).toBeTruthy();

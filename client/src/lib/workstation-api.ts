@@ -463,7 +463,7 @@ export const getTicketDetails = async (ticketId: string): Promise<TicketDetailsR
 /**
  * Manual Check-in
  * POST /api/v1/workstation/manual-check-in
- * Requires: ADMIN_STAFF or higher
+ * Requires: ADMIN or higher
  * Optional code parameter for signature verification
  */
 export const manualCheckIn = async (
@@ -499,7 +499,7 @@ export const manualCheckIn = async (
 /**
  * Manual Check-out
  * POST /api/v1/workstation/manual-check-out
- * Requires: ADMIN_STAFF or higher
+ * Requires: ADMIN or higher
  * Optional code parameter for signature verification
  */
 export const manualCheckOut = async (
@@ -643,7 +643,7 @@ export const getEventScans = async (
 /**
  * Update Event Scan Configuration
  * PUT /api/v1/workstation/events/:eventId/config
- * Requires: ADMIN_STAFF or higher
+ * Requires: ADMIN or higher
  */
 export const updateEventConfig = async (
   eventId: string,

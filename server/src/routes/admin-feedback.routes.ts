@@ -7,7 +7,7 @@ const router = Router();
 
 // All admin feedback routes require authentication and admin role
 router.use(authenticate);
-router.use(requireMinRole(UserRole.ADMIN_STAFF));
+router.use(requireMinRole(UserRole.ADMIN));
 
 /**
  * @route   GET /api/v1/admin/feedback

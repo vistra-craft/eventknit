@@ -34,13 +34,13 @@ router.post('/test', pushNotificationController.sendTestNotification);
 // Admin routes
 router.post(
   '/broadcast',
-  authorize('SUPERADMIN', 'ADMIN', 'ADMIN_STAFF'),
+  authorize('SUPERADMIN', 'ADMIN'),
   pushNotificationController.broadcast,
 );
 
 router.post(
   '/cleanup',
-  authorize('SUPERADMIN', 'ADMIN', 'ADMIN_STAFF'),
+  authorize('SUPERADMIN', 'ADMIN'),
   pushNotificationController.cleanup,
 );
 

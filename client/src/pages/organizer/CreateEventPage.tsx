@@ -38,7 +38,7 @@ const CreateEventPage: React.FC = () => {
     };
 
     checkAccess();
-  }, [user, navigate]);
+  }, [user, navigate, location.search]);
 
   if (isChecking) {
     return (

@@ -8,14 +8,13 @@ import { PermissionService } from '../services/permission.service.js';
 const BYPASS_ROLES: UserRole[] = [
   UserRole.SUPERADMIN,
   UserRole.ADMIN,
-  UserRole.ADMIN_STAFF,
   UserRole.ORGANIZER,
 ];
 
 /**
  * Middleware to check if user has ALL of the required permissions.
- * SUPERADMIN, ADMIN_STAFF, and ORGANIZER bypass this check (they have full access).
- * ORGANIZER_STAFF and ORGANIZER_TELLER must have the permission via their custom role.
+ * SUPERADMIN, ADMIN, and ORGANIZER bypass this check (they have full access).
+ * ORGANIZER_ADMIN and ORGANIZER_TELLER must have the permission via their custom role.
  */
 export const requirePermission = (...permissionKeys: string[]) => {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {

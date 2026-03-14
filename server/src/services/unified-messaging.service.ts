@@ -349,7 +349,7 @@ export class UnifiedMessagingService {
           where: {
             status: 'ACTIVE',
             role: {
-              in: ['ADMIN_STAFF', 'SUPERADMIN'],
+              in: ['ADMIN', 'SUPERADMIN'],
             },
           },
           select: { id: true },

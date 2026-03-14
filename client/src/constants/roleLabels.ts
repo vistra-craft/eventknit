@@ -12,12 +12,10 @@
 export type UserRole =
   | 'ATTENDEE'
   | 'ORGANIZER'
-  | 'ORGANIZER_STAFF'
+  | 'ORGANIZER_ADMIN'
   | 'ORGANIZER_TELLER'
   | 'ADMIN'
-  | 'ADMIN_STAFF'
   | 'SUPERADMIN'
-  | 'MARKETER'
   | 'SUPPORT'
   | 'TELLER';
 
@@ -27,12 +25,10 @@ export type UserRole =
 export const ROLE_LABELS: Record<UserRole, string> = {
   ATTENDEE: 'Attendee',
   ORGANIZER: 'Event Organizer',
-  ORGANIZER_STAFF: 'Team Member',
+  ORGANIZER_ADMIN: 'Team Member',
   ORGANIZER_TELLER: 'Check-in Staff',
   ADMIN: 'Administrator',
-  ADMIN_STAFF: 'Admin Team Member',
   SUPERADMIN: 'Super Administrator',
-  MARKETER: 'Marketing Team',
   SUPPORT: 'Support Team',
   TELLER: 'Teller',
 };
@@ -43,12 +39,10 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 export const ROLE_LABELS_SHORT: Record<UserRole, string> = {
   ATTENDEE: 'Attendee',
   ORGANIZER: 'Organizer',
-  ORGANIZER_STAFF: 'Staff',
+  ORGANIZER_ADMIN: 'Staff',
   ORGANIZER_TELLER: 'Check-in',
   ADMIN: 'Admin',
-  ADMIN_STAFF: 'Admin Staff',
   SUPERADMIN: 'Super Admin',
-  MARKETER: 'Marketing',
   SUPPORT: 'Support',
   TELLER: 'Teller',
 };
@@ -57,16 +51,14 @@ export const ROLE_LABELS_SHORT: Record<UserRole, string> = {
  * Role descriptions (for tooltips, help text)
  */
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  ATTENDEE: 'Browse and attend events',
-  ORGANIZER: 'Create and manage events',
-  ORGANIZER_STAFF: 'Help manage events as a team member',
-  ORGANIZER_TELLER: 'Check-in attendees at events',
-  ADMIN: 'Manage platform and users',
-  ADMIN_STAFF: 'Support platform administration',
-  SUPERADMIN: 'Full platform control',
-  MARKETER: 'Manage marketing campaigns and promotions',
-  SUPPORT: 'Provide customer support',
-  TELLER: 'Handle ticket sales and transactions',
+  ATTENDEE: 'Browse events, register, manage tickets and transfers',
+  ORGANIZER: 'Full organizer dashboard — events, staff, analytics, finance, branding',
+  ORGANIZER_ADMIN: 'Manage organizer events, attendees, and analytics (no finance or settings)',
+  ORGANIZER_TELLER: 'Event day operations — QR scanning and check-in for assigned events',
+  ADMIN: 'Full admin dashboard access except system management',
+  SUPERADMIN: 'Full platform access including system health, database, logs, and backups',
+  SUPPORT: 'Customer support, communications, marketing, and flagged content review',
+  TELLER: 'Event day hub — QR scanning, badge printing, and walk-in registration',
 };
 
 /**
@@ -75,12 +67,10 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
 export const ROLE_BADGE_COLORS: Record<UserRole, string> = {
   ATTENDEE: 'blue',
   ORGANIZER: 'purple',
-  ORGANIZER_STAFF: 'teal',
+  ORGANIZER_ADMIN: 'teal',
   ORGANIZER_TELLER: 'cyan',
   ADMIN: 'red',
-  ADMIN_STAFF: 'orange',
   SUPERADMIN: 'pink',
-  MARKETER: 'violet',
   SUPPORT: 'green',
   TELLER: 'indigo',
 };

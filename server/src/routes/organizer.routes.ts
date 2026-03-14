@@ -4,6 +4,8 @@ import { EventStaffController } from '../controllers/event-staff.controller.js';
 import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
 import { InvoiceController } from '../controllers/invoice.controller.js';
 import { WhiteLabelController } from '../controllers/white-label.controller.js';
+import { StaffInvitationController } from '../controllers/staff-invitation.controller.js';
+import { staffInvitationValidations } from '../validations/staff-invitation.validations.js';
 import { RefundService } from '../services/refund.service.js';
 import { EventService } from '../services/event.service.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
@@ -128,7 +130,7 @@ router.get('/events/:eventId', async (req: AuthenticatedRequest & { params: { ev
       return;
     }
     const { eventId } = req.params;
-    const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN_STAFF;
+    const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN;
     const event = await EventService.getEventById(eventId, req.user.id, isAdmin);
     res.json({ success: true, data: { event } });
   } catch (error) {
@@ -307,7 +309,7 @@ const verifyEventOwner = async (req: EventIdRequest, res: Response, next: NextFu
     }
 
     // Allow admins to manage any event (for service point operations)
-    const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN_STAFF;
+    const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN;
     if (!isAdmin && event.organizerId !== req.user.id) {
       throw new AuthorizationError('You do not have permission to manage this event');
     }
@@ -359,6 +361,41 @@ router.get(
     }
   },
 );
+
+// ─── Staff Invitations ────────────────────────────────────────────────────────
+
+/**
+ * @route   POST /api/v1/organizer/staff-invitations
+ * @desc    Invite staff member to organizer team
+ * @access  Private (ORGANIZER+)
+ */
+router.post(
+  '/staff-invitations',
+  canManageStaffMiddleware,
+  validate(staffInvitationValidations.inviteStaff),
+  StaffInvitationController.inviteStaff,
+);
+
+/**
+ * @route   GET /api/v1/organizer/staff-invitations
+ * @desc    Get organizer's staff invitations
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-invitations', canManageStaffMiddleware, StaffInvitationController.getOrganizerInvitations);
+
+/**
+ * @route   POST /api/v1/organizer/staff-invitations/:id/resend
+ * @desc    Resend a staff invitation
+ * @access  Private (ORGANIZER+)
+ */
+router.post('/staff-invitations/:id/resend', canManageStaffMiddleware, StaffInvitationController.resendInvitation);
+
+/**
+ * @route   POST /api/v1/organizer/staff-invitations/:id/revoke
+ * @desc    Revoke a staff invitation
+ * @access  Private (ORGANIZER+)
+ */
+router.post('/staff-invitations/:id/revoke', canManageStaffMiddleware, StaffInvitationController.revokeInvitation);
 
 export default router;
 

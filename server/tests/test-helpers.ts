@@ -96,6 +96,8 @@ export async function cleanupTestData(tx?: any) {
   await safeDelete(() => client.refund.deleteMany(), 'refund');
   await safeDelete(() => client.paymentReconciliation.deleteMany(), 'paymentReconciliation');
   await safeDelete(() => client.dataAccessAuditLog.deleteMany(), 'dataAccessAuditLog');
+  await safeDelete(() => client.platformIncome.deleteMany(), 'platformIncome');
+  await safeDelete(() => client.subscriptionPayment.deleteMany(), 'subscriptionPayment');
   await safeDelete(() => client.subscriptionOverride.deleteMany(), 'subscriptionOverride');
   await safeDelete(() => client.organizerSubscription.deleteMany(), 'organizerSubscription');
   await safeDelete(() => client.attendeeConsent.deleteMany(), 'attendeeConsent');

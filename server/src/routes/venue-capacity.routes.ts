@@ -48,21 +48,21 @@ router.get(
 // PUT /capacity/events/:eventId - Set venue maximum capacity
 router.put(
   '/events/:eventId',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   VenueCapacityController.setVenueCapacity,
 );
 
 // POST /capacity/events/:eventId/reset - Reset occupancy counters
 router.post(
   '/events/:eventId/reset',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   VenueCapacityController.resetOccupancy,
 );
 
 // POST /capacity/events/:eventId/recalculate - Recalculate occupancy from records
 router.post(
   '/events/:eventId/recalculate',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   VenueCapacityController.recalculateOccupancy,
 );
 

@@ -93,22 +93,22 @@ router.use(authenticate);
 /**
  * @route   GET /api/v1/featured-events
  * @desc    Get all featured events (admin)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FeaturedEventController.getAllFeaturedEvents,
 );
 
 /**
  * @route   POST /api/v1/featured-events
  * @desc    Create a new featured event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   handleMulterUpload,
   FeaturedEventController.createFeaturedEvent,
 );
@@ -116,22 +116,22 @@ router.post(
 /**
  * @route   GET /api/v1/featured-events/:id
  * @desc    Get featured event by ID
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/:id',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FeaturedEventController.getFeaturedEventById,
 );
 
 /**
  * @route   PUT /api/v1/featured-events/:id
  * @desc    Update featured event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/:id',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   handleMulterUpload,
   FeaturedEventController.updateFeaturedEvent,
 );
@@ -139,11 +139,11 @@ router.put(
 /**
  * @route   DELETE /api/v1/featured-events/:id
  * @desc    Delete featured event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete(
   '/:id',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FeaturedEventController.deleteFeaturedEvent,
 );
 

@@ -96,7 +96,7 @@ export class FinancialController {
       }
 
       // Only admin can sync payments
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',
@@ -136,7 +136,7 @@ export class FinancialController {
         return;
       }
 
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',
@@ -612,7 +612,7 @@ export class FinancialController {
       }
 
       // Only admin can process disbursements
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',
@@ -656,7 +656,7 @@ export class FinancialController {
       }
 
       // Only admin can complete disbursements
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',
@@ -848,7 +848,7 @@ export class FinancialController {
       }
 
       // Only admin can process refunds
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',
@@ -892,7 +892,7 @@ export class FinancialController {
       }
 
       // Only admin can complete refunds
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',
@@ -975,7 +975,7 @@ export class FinancialController {
       }
 
       // Only admin can create reconciliations
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',
@@ -1030,7 +1030,7 @@ export class FinancialController {
       }
 
       // Only admin can view reconciliations
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',
@@ -1071,7 +1071,7 @@ export class FinancialController {
       }
 
       // Only admin can view reconciliations
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',
@@ -1105,7 +1105,7 @@ export class FinancialController {
       }
 
       // Only admin can auto-fix reconciliations
-      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN_STAFF) {
+      if (req.user.role !== UserRole.SUPERADMIN && req.user.role !== UserRole.ADMIN) {
         res.status(403).json({
           success: false,
           message: 'Access denied. Admin privileges required.',

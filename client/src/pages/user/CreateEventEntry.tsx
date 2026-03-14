@@ -27,7 +27,7 @@ const CreateEventEntry = () => {
     // Check if user can organize
     const canOrganize =
       user.role === UserRole.ORGANIZER ||
-      user.role === UserRole.ORGANIZER_STAFF ||
+      user.role === UserRole.ORGANIZER_ADMIN ||
       user.role === UserRole.ORGANIZER_TELLER;
 
     if (canOrganize) {

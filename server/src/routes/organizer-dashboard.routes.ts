@@ -22,11 +22,10 @@ const router = Router();
 router.use(authenticate);
 router.use(authorize(
   UserRole.ORGANIZER,
-  UserRole.ORGANIZER_STAFF,
+  UserRole.ORGANIZER_ADMIN,
   UserRole.ORGANIZER_TELLER,
   UserRole.SUPERADMIN,
   UserRole.ADMIN,
-  UserRole.ADMIN_STAFF,
   UserRole.ATTENDEE,
 ));
 
@@ -944,6 +943,20 @@ router.post(
  * @access  Private (ORGANIZER+)
  */
 router.post('/subscription/cancel', OrganizerDashboardController.cancelSubscription);
+
+/**
+ * @route   POST /api/v1/organizer-dashboard/subscription/pay
+ * @desc    Initialize subscription payment via Paystack
+ * @access  Private (ORGANIZER+)
+ */
+router.post('/subscription/pay', OrganizerDashboardController.initializeSubscriptionPayment);
+
+/**
+ * @route   GET /api/v1/organizer-dashboard/subscription/verify
+ * @desc    Verify subscription payment after Paystack callback
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/subscription/verify', OrganizerDashboardController.verifySubscriptionPayment);
 
 // ========== My Permissions ==========
 /**

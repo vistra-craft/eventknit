@@ -355,7 +355,7 @@ export class UserService {
   }): Promise<void> {
     const admins = await prisma.user.findMany({
       where: {
-        role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF] },
+        role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN] },
         status: UserStatus.ACTIVE,
         deletedAt: null,
       },

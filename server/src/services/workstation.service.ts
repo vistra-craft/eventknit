@@ -1456,7 +1456,7 @@ export class WorkstationService {
   /**
    * Void / reverse a check-in.
    * Resets EventRegistration to pre-check-in state and creates a VOID TicketScan
-   * for the audit trail. Requires ADMIN_STAFF or higher (enforced at route level).
+   * for the audit trail. Requires ADMIN or higher (enforced at route level).
    */
   static async voidCheckIn(
     registrationId: string,

@@ -207,6 +207,29 @@ export class PlatformFeeService {
       },
     });
 
+    // Auto-record platform fee as income in the accounting system
+    try {
+      await prisma.platformIncome.create({
+        data: {
+          category: 'Platform Fees',
+          description: `Platform fee from transaction ${platformFee.feeNumber}`,
+          amount: new Decimal(calculation.feeAmount),
+          currency: transaction.currency,
+          source: 'Ticket Sales',
+          reference: platformFee.feeNumber,
+          paymentMethod: 'paystack',
+          eventId: transaction.eventId,
+          transactionId,
+          status: 'received',
+          incomeDate: new Date(),
+          recordedBy: 'system',
+        },
+      });
+    } catch (incomeErr) {
+      // Non-critical — log but don't fail the fee creation
+      logger.warn(`Failed to auto-record platform income for fee ${platformFee.id}:`, incomeErr);
+    }
+
     logger.info(
       `Platform fee created: ${platformFee.id} for transaction: ${transactionId}. Fee: ${calculation.feeAmount}, Organizer: ${calculation.organizerAmount}`,
     );

@@ -267,6 +267,12 @@ export interface MonthlySummary {
     totalExpenses: number;
     totalIncome: number;
     netProfit: number;
+    totalWages?: number;
+    platformFeeRevenue?: number;
+    manualIncome?: number;
+    operatingExpenses?: number;
+    totalGrossRevenue?: number;
+    totalOrganizerPayouts?: number;
   };
   expensesByCategory: Record<string, number>;
   incomesByCategory: Record<string, number>;
@@ -280,6 +286,14 @@ export interface FinancialOverview {
   netProfit: number;
   expenseCount: number;
   incomeCount: number;
+  wageCount?: number;
+  platformFeeRevenue?: number;
+  manualIncome?: number;
+  totalWages?: number;
+  operatingExpenses?: number;
+  totalGrossRevenue?: number;
+  totalOrganizerPayouts?: number;
+  platformFeeCount?: number;
 }
 
 /**

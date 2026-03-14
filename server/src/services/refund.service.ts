@@ -821,7 +821,7 @@ export class RefundService {
       // Only admin or event organizer can view
       if (
         user?.role !== 'SUPERADMIN' &&
-        user?.role !== 'ADMIN_STAFF' &&
+        user?.role !== 'ADMIN' &&
         refund.transaction.event.organizerId !== userId
       ) {
         throw new AuthorizationError('Access denied');

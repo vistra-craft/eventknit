@@ -29,7 +29,7 @@ export class SystemSettingsController {
       // Only admins can access
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can access system settings');
       }
@@ -72,7 +72,7 @@ export class SystemSettingsController {
       // Only admins can access
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can access system settings');
       }
@@ -120,7 +120,7 @@ export class SystemSettingsController {
       // Only admins can update
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can update system settings');
       }
@@ -191,7 +191,7 @@ export class SystemSettingsController {
       // Only admins can update
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can update system settings');
       }
@@ -243,7 +243,7 @@ export class SystemSettingsController {
       // Only admins can delete
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can delete system settings');
       }
@@ -282,7 +282,7 @@ export class SystemSettingsController {
       // Only admins can access
       if (
         req.user.role !== UserRole.SUPERADMIN &&
-        req.user.role !== UserRole.ADMIN_STAFF
+        req.user.role !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admins can access setting history');
       }

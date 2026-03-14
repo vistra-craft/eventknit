@@ -76,7 +76,7 @@ export class UserPreferencesService {
     // Role-specific defaults
     switch (role) {
     case UserRole.ORGANIZER:
-    case UserRole.ORGANIZER_STAFF:
+    case UserRole.ORGANIZER_ADMIN:
     case UserRole.ORGANIZER_TELLER:
       return {
         ...baseDefaults,
@@ -95,10 +95,9 @@ export class UserPreferencesService {
         promotionalOffers: true,
       };
 
-    case UserRole.ADMIN_STAFF:
+    case UserRole.ADMIN:
     case UserRole.SUPERADMIN:
     case UserRole.SUPPORT:
-    case UserRole.MARKETER:
     case UserRole.TELLER:
       return {
         ...baseDefaults,

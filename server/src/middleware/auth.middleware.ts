@@ -104,19 +104,17 @@ export const authorize = (...allowedRoles: UserRole[]) => {
 
 /**
  * Role hierarchy check
- * SUPERADMIN > ADMIN_STAFF > other admin roles
- * ORGANIZER > ORGANIZER_STAFF > ORGANIZER_TELLER
+ * SUPERADMIN > ADMIN > other admin roles
+ * ORGANIZER > ORGANIZER_ADMIN > ORGANIZER_TELLER
  */
 const roleHierarchy: Record<UserRole, number> = {
   SUPERADMIN: 10,
   ADMIN: 9,
-  ADMIN_STAFF: 8,
-  MARKETER: 7,
-  SUPPORT: 6,
-  TELLER: 5,
-  ORGANIZER: 4,
-  ORGANIZER_STAFF: 3,
-  ORGANIZER_TELLER: 2,
+  SUPPORT: 7,
+  TELLER: 6,
+  ORGANIZER: 5,
+  ORGANIZER_ADMIN: 4,
+  ORGANIZER_TELLER: 3,
   ATTENDEE: 1,
 };
 

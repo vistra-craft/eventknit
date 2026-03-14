@@ -13,6 +13,7 @@ const ForgotPassword = lazy(() => import('../pages/auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('../pages/auth/ResetPassword'));
 const MagicLinkVerify = lazy(() => import('../pages/auth/MagicLinkVerify'));
 const CreateAccount = lazy(() => import('../pages/auth/CreateAccount'));
+const AcceptStaffInvite = lazy(() => import('../pages/auth/AcceptStaffInvite'));
 const OrganizerRegistration = lazy(() => import('../pages/auth/OrganizerRegistration'));
 const AttendeeRegistration = lazy(() => import('../pages/auth/AttendeeRegistration'));
 const NotFound = lazy(() => import('../pages/NotFound'));
@@ -57,6 +58,10 @@ export const authRoutes: RouteConfig[] = [
   {
     path: 'create-account',
     element: createElement(CreateAccount),
+  },
+  {
+    path: 'accept-invite',
+    element: createElement(AcceptStaffInvite),
   },
   {
     path: '*',

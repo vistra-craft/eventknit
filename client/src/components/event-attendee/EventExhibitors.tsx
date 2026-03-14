@@ -22,16 +22,16 @@ interface ExtendedExhibitor extends Exhibitor {
   }[];
 }
 
-// Sponsor tier colors
+// Sponsor tier colors — opacity-based backgrounds for dark mode safety
 const sponsorTierColors: Record<string, string> = {
-  title: 'bg-gradient-to-r from-amber-500 to-amber-600 text-white',
-  presenting: 'bg-gradient-to-r from-purple-500 to-purple-600 text-white',
-  platinum: 'bg-gradient-to-r from-slate-400 to-slate-500 text-white',
-  gold: 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white',
-  silver: 'bg-gradient-to-r from-gray-400 to-gray-500 text-white',
-  bronze: 'bg-gradient-to-r from-orange-600 to-orange-700 text-white',
-  associate: 'bg-primary/10 text-primary',
-  community: 'bg-success/10 text-success',
+  title: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20',
+  presenting: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border border-purple-500/20',
+  platinum: 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/20',
+  gold: 'bg-yellow-500/15 text-yellow-700 dark:text-yellow-300 border border-yellow-500/20',
+  silver: 'bg-muted text-muted-foreground border border-border',
+  bronze: 'bg-orange-500/15 text-orange-700 dark:text-orange-300 border border-orange-500/20',
+  associate: 'bg-primary/10 text-primary border border-primary/20',
+  community: 'bg-success/10 text-success border border-success/20',
 };
 
 // Exhibitor Card

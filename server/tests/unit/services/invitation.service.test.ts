@@ -117,7 +117,7 @@ describe('InvitationService', () => {
         expect(result).toBeDefined();
       });
 
-      it('should allow ADMIN_STAFF to create invitation', async () => {
+      it('should allow ADMIN to create invitation', async () => {
         // Arrange
         prisma.event.findFirst.mockResolvedValue(mockEvent as any);
         prisma.eventInvitation.findUnique.mockResolvedValue(null);
@@ -132,7 +132,7 @@ describe('InvitationService', () => {
           mockEvent.id,
           baseInvitationData,
           'admin-staff-123',
-          UserRole.ADMIN_STAFF,
+          UserRole.ADMIN,
         );
 
         // Assert

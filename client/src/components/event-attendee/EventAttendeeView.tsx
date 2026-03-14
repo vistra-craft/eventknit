@@ -112,6 +112,11 @@ export interface EventData {
   agenda?: AgendaItem[];
   socialLinks?: Record<string, string>;
   hashtag?: string;
+  // Location extras
+  address?: string;
+  coordinates?: { lat: number; lng: number };
+  isOnline?: boolean;
+  onlineLink?: string;
   // Registration & ticket data
   registrationId?: string;
   ticketType?: string;
@@ -425,7 +430,7 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
                 size="icon"
                 className="rounded-full hidden sm:flex"
                 title="Messages"
-                onClick={() => navigate('/user/dashboard?section=messages')}
+                onClick={() => navigate('/user/messages')}
               >
                 <MessageCircle className="w-5 h-5" />
               </Button>
@@ -489,7 +494,7 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
       <NotificationsPanel
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
-        onNavigateToAll={() => navigate('/user/dashboard?section=notifications')}
+        onNavigateToAll={() => navigate('/user/notifications')}
       />
     </div>
   );

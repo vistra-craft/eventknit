@@ -106,7 +106,7 @@ export class ServicePointRegistrationService {
         id: staffId,
         status: UserStatus.ACTIVE,
         role: {
-          in: [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.ADMIN_STAFF, UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.TELLER],
+          in: [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.ORGANIZER, UserRole.ORGANIZER_ADMIN, UserRole.TELLER],
         },
       },
     });

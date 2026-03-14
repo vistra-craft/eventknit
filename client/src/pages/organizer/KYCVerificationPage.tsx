@@ -59,7 +59,7 @@ const KYCVerificationPage = () => {
   const [maxDirectorsToCollect, setMaxDirectorsToCollect] = useState<number>();
 
   // Get the redirect path from location state, with role-aware default
-  const isOrganizer = user && ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(user.role);
+  const isOrganizer = user && ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'].includes(user.role);
   const defaultRedirect = isOrganizer ? '/organizer/dashboard' : '/user/dashboard';
   const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification || defaultRedirect;
 

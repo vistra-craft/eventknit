@@ -13,28 +13,29 @@ interface EventAgendaProps {
 }
 
 // Session type configuration — covers all creation form types + fallback
+// Colors use dark-mode-safe patterns: opacity-based backgrounds + dual-mode text
 const sessionTypeConfig: Record<string, { icon: React.ElementType; color: string; bgColor: string }> = {
-  keynote: { icon: Mic, color: 'text-purple-600', bgColor: 'bg-purple-100' },
+  keynote: { icon: Mic, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-500/10' },
   panel: { icon: Users, color: 'text-primary', bgColor: 'bg-primary/10' },
   workshop: { icon: Calendar, color: 'text-success', bgColor: 'bg-success/10' },
-  breakout: { icon: Users, color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
-  'fireside-chat': { icon: MessageCircle, color: 'text-orange-600', bgColor: 'bg-orange-100' },
-  'lightning-talk': { icon: Zap, color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
-  demo: { icon: Monitor, color: 'text-blue-600', bgColor: 'bg-blue-100' },
-  qa: { icon: MessageCircle, color: 'text-violet-600', bgColor: 'bg-violet-100' },
-  roundtable: { icon: Users, color: 'text-teal-600', bgColor: 'bg-teal-100' },
-  tutorial: { icon: Calendar, color: 'text-emerald-600', bgColor: 'bg-emerald-100' },
-  'opening-ceremony': { icon: PartyPopper, color: 'text-pink-600', bgColor: 'bg-pink-100' },
-  'closing-ceremony': { icon: Award, color: 'text-pink-600', bgColor: 'bg-pink-100' },
-  awards: { icon: Award, color: 'text-amber-600', bgColor: 'bg-amber-100' },
-  entertainment: { icon: Music, color: 'text-fuchsia-600', bgColor: 'bg-fuchsia-100' },
-  social: { icon: Users, color: 'text-rose-600', bgColor: 'bg-rose-100' },
-  networking: { icon: Users, color: 'text-pink-600', bgColor: 'bg-pink-100' },
-  break: { icon: Coffee, color: 'text-amber-600', bgColor: 'bg-amber-100' },
-  lunch: { icon: Coffee, color: 'text-orange-600', bgColor: 'bg-orange-100' },
-  registration: { icon: Calendar, color: 'text-slate-600', bgColor: 'bg-slate-100' },
-  session: { icon: Calendar, color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
-  other: { icon: Calendar, color: 'text-gray-600', bgColor: 'bg-gray-100' },
+  breakout: { icon: Users, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-500/10' },
+  'fireside-chat': { icon: MessageCircle, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-500/10' },
+  'lightning-talk': { icon: Zap, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-500/10' },
+  demo: { icon: Monitor, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-500/10' },
+  qa: { icon: MessageCircle, color: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-500/10' },
+  roundtable: { icon: Users, color: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-500/10' },
+  tutorial: { icon: Calendar, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-500/10' },
+  'opening-ceremony': { icon: PartyPopper, color: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-500/10' },
+  'closing-ceremony': { icon: Award, color: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-500/10' },
+  awards: { icon: Award, color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-500/10' },
+  entertainment: { icon: Music, color: 'text-fuchsia-600 dark:text-fuchsia-400', bgColor: 'bg-fuchsia-500/10' },
+  social: { icon: Users, color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-500/10' },
+  networking: { icon: Users, color: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-500/10' },
+  break: { icon: Coffee, color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-500/10' },
+  lunch: { icon: Coffee, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-500/10' },
+  registration: { icon: Calendar, color: 'text-muted-foreground', bgColor: 'bg-muted' },
+  session: { icon: Calendar, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-500/10' },
+  other: { icon: Calendar, color: 'text-muted-foreground', bgColor: 'bg-muted' },
 };
 
 // Resolve session type: prefer explicit sessionType/type field, fall back to inference

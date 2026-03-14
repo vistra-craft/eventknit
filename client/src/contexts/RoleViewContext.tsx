@@ -40,15 +40,14 @@ export const RoleViewProvider: React.FC<RoleViewProviderProps> = ({ children, us
     // Additional roles based on current role
     const isAdminRole = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ].includes(userRole);
-    
+
     const isOrganizerRole = [
       UserRole.ORGANIZER,
-      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_TELLER,
     ].includes(userRole);
     

@@ -97,7 +97,7 @@ const OrganizerSettingsPage = () => {
 
   const isOrganizerUser = user ? [
     UserRole.ORGANIZER,
-    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_ADMIN,
     UserRole.ORGANIZER_TELLER,
   ].includes(user.role) : false;
   const { theme: currentTheme, setTheme: setThemeContext } = useTheme();
@@ -807,7 +807,7 @@ const OrganizerSettingsPage = () => {
             <div className="mt-1">
               <Badge variant="outline" className="text-sm">
                 {accountInfo.role ? (
-                  ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'].includes(accountInfo.role) 
+                  ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'].includes(accountInfo.role)
                     ? 'Organizer' 
                     : accountInfo.role
                 ) : "Loading..."}

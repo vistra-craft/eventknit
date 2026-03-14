@@ -100,7 +100,7 @@ describe('WorkstationService', () => {
         password: 'hashedpassword',
         firstName: 'Test',
         lastName: 'Scanner',
-        role: 'ORGANIZER_STAFF',
+        role: 'ORGANIZER_ADMIN',
         status: 'ACTIVE',
         isEmailVerified: true,
       },

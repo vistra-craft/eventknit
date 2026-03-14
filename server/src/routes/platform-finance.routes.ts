@@ -7,7 +7,7 @@ const router = Router();
 
 // All routes require authentication and admin access
 router.use(authenticate);
-router.use(requireMinRole(UserRole.ADMIN_STAFF));
+router.use(requireMinRole(UserRole.ADMIN));
 
 // Summary
 router.get('/summary', platformFinanceController.getFinanceSummary);
