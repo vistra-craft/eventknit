@@ -17,12 +17,16 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mongodb:
-        image: mongo:7.0
+      postgres:
+        image: postgres:16-alpine
         ports:
-          - 27017:27017
+          - 5432:5432
+        env:
+          POSTGRES_USER: eventknit_test
+          POSTGRES_PASSWORD: eventknit_test
+          POSTGRES_DB: eventknit_test
         options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-cmd "pg_isready -U eventknit_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -49,8 +53,9 @@ jobs:
       - name: Setup test environment
         run: |
           echo "NODE_ENV=test" >> $GITHUB_ENV
-          echo "MONGODB_URI=mongodb://localhost:27017/eventknit-test" >> $GITHUB_ENV
+          echo "DATABASE_URL=postgresql://eventknit_test:eventknit_test@localhost:5432/eventknit_test?schema=public" >> $GITHUB_ENV
           echo "JWT_SECRET=test-secret-key-for-ci" >> $GITHUB_ENV
+          echo "JWT_REFRESH_SECRET=test-refresh-secret-for-ci" >> $GITHUB_ENV
           echo "PORT=3001" >> $GITHUB_ENV
           echo "REDIS_URL=redis://localhost:6379" >> $GITHUB_ENV
 
@@ -59,6 +64,12 @@ jobs:
         run: npm ci
         env:
           NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Generate Prisma client and run migrations
+        working-directory: ./server
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
 
       - name: Run server linter
         working-directory: ./server

@@ -189,10 +189,9 @@ main() {
         exit 1
     fi
 
-    # Step 10: Cleanup old dangling images
-    log_info "Cleaning up unused Docker resources..."
-    docker image prune -f
-    docker builder prune -f --filter "until=24h" 2>/dev/null || true
+    # Step 10: Cleanup old dangling images (run in background to avoid SSH timeout)
+    log_info "Cleaning up unused Docker resources (background)..."
+    nohup sh -c 'docker image prune -f && docker builder prune -f --filter "until=24h"' > /dev/null 2>&1 &
 
     # Step 11: Show final status
     log_info "=========================================="
