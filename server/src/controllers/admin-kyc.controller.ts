@@ -292,7 +292,7 @@ export class AdminKYCController {
 
       await emailService.sendKYCReminderEmail(
         organizer.email,
-        organizer.firstName,
+        organizer.firstName || 'there',
         eventTitle || 'your event',
       );
 
