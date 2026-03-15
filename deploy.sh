@@ -11,7 +11,7 @@ set -e  # Exit on any error
 set -o pipefail  # Exit on pipe failures
 
 # Configuration
-COMPOSE_FILE="docker-compose.dev.yml"
+COMPOSE_FILE="docker-compose.prod.yml"
 MAX_HEALTH_WAIT=120  # Maximum seconds to wait for health checks
 HEALTH_CHECK_INTERVAL=5  # Seconds between health checks
 

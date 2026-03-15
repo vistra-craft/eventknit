@@ -28,7 +28,7 @@ jobs:
             set -e
 
             echo "=== Syncing code from GitHub ==="
-            cd eventknit
+            cd ~/eventknit
             git fetch origin
             git checkout development
             git reset --hard origin/development
