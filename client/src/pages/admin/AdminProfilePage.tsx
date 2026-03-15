@@ -110,11 +110,13 @@ const AdminProfilePage = () => {
     loadProfile();
   }, [user]);
 
+  const userHasPassword = user?.hasPassword !== false;
+
   // Validate password change form
   const validatePasswordForm = () => {
     const errors: Record<string, string> = {};
 
-    if (!passwordData.currentPassword.trim()) {
+    if (userHasPassword && !passwordData.currentPassword.trim()) {
       errors.currentPassword = "Current password is required";
     }
 
@@ -149,13 +151,17 @@ const AdminProfilePage = () => {
     setSaveMessage("");
 
     try {
-      await authApi.changePassword(
-        passwordData.currentPassword,
-        passwordData.newPassword
-      );
+      if (userHasPassword) {
+        await authApi.changePassword(
+          passwordData.currentPassword,
+          passwordData.newPassword
+        );
+      } else {
+        await authApi.setupPassword(passwordData.newPassword);
+      }
 
       setSaveStatus("success");
-      setSaveMessage("Password changed successfully");
+      setSaveMessage(userHasPassword ? "Password changed successfully" : "Password set successfully");
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -517,47 +523,55 @@ const AdminProfilePage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Key className="h-5 w-5 mr-2" />
-                  Change Password
+                  {userHasPassword ? "Change Password" : "Set Password"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="currentPassword"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter current password"
-                        value={passwordData.currentPassword}
-                        onChange={(e) => {
-                          setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }));
-                          if (passwordErrors.currentPassword) {
-                            setPasswordErrors((prev) => ({ ...prev, currentPassword: "" }));
-                          }
-                        }}
-                        disabled={isSaving}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
+                  {!userHasPassword && (
+                    <p className="text-sm text-muted-foreground">
+                      You signed up with a social account. Set a password to also log in with your email.
+                    </p>
+                  )}
+
+                  {userHasPassword && (
+                    <div>
+                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="currentPassword"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter current password"
+                          value={passwordData.currentPassword}
+                          onChange={(e) => {
+                            setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }));
+                            if (passwordErrors.currentPassword) {
+                              setPasswordErrors((prev) => ({ ...prev, currentPassword: "" }));
+                            }
+                          }}
+                          disabled={isSaving}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      {passwordErrors.currentPassword && (
+                        <p className="text-sm text-destructive mt-1">
+                          {passwordErrors.currentPassword}
+                        </p>
+                      )}
                     </div>
-                    {passwordErrors.currentPassword && (
-                      <p className="text-sm text-destructive mt-1">
-                        {passwordErrors.currentPassword}
-                      </p>
-                    )}
-                  </div>
+                  )}
 
                   <div>
                     <Label htmlFor="newPassword">New Password</Label>
@@ -644,7 +658,7 @@ const AdminProfilePage = () => {
                       ) : (
                         <Key className="h-4 w-4 mr-2" />
                       )}
-                      {isSaving ? "Changing Password..." : "Change Password"}
+                      {isSaving ? "Saving..." : userHasPassword ? "Change Password" : "Set Password"}
                     </Button>
                   </div>
                 </div>
