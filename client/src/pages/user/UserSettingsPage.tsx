@@ -61,6 +61,14 @@ const UserSettingsPage = () => {
   // Verification status
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
 
+  const handleKYCStatusChange = useCallback(() => {
+    getVerificationStatus().then((res) => {
+      if (res.success) {
+        setVerificationStatus(res.data);
+      }
+    });
+  }, []);
+
   // Profile form state
   const [profileData, setProfileData] = useState({
     firstName: "",
@@ -241,11 +249,13 @@ const UserSettingsPage = () => {
     }
   };
 
+  const userHasPassword = user?.hasPassword !== false;
+
   // Validate password change form
   const validatePasswordForm = () => {
     const errors: Record<string, string> = {};
 
-    if (!passwordData.currentPassword.trim()) {
+    if (userHasPassword && !passwordData.currentPassword.trim()) {
       errors.currentPassword = "Current password is required";
     }
 
@@ -280,10 +290,14 @@ const UserSettingsPage = () => {
     setSaveMessage("");
 
     try {
-      await authApi.changePassword(
-        passwordData.currentPassword,
-        passwordData.newPassword
-      );
+      if (userHasPassword) {
+        await authApi.changePassword(
+          passwordData.currentPassword,
+          passwordData.newPassword
+        );
+      } else {
+        await authApi.setupPassword(passwordData.newPassword);
+      }
 
       setPasswordData({
         currentPassword: "",
@@ -292,7 +306,7 @@ const UserSettingsPage = () => {
       });
       setPasswordErrors({});
       toast({
-        title: "Password changed",
+        title: userHasPassword ? "Password changed" : "Password set",
         description: "Signing you out — please log back in with your new password.",
       });
       logout();
@@ -349,14 +363,7 @@ const UserSettingsPage = () => {
     return (
       <KYCVerificationSection
         verificationStatus={verificationStatus}
-        onKYCStatusChange={() => {
-          // Refetch verification status when KYC changes
-          getVerificationStatus().then((res) => {
-            if (res.success) {
-              setVerificationStatus(res.data);
-            }
-          });
-        }}
+        onKYCStatusChange={handleKYCStatusChange}
         isAttendeeFlow={true}
       />
     );
@@ -655,39 +662,47 @@ const UserSettingsPage = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <Key className="h-5 w-5 mr-2" />
-              Change Password
+              {userHasPassword ? "Change Password" : "Set Password"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showPassword ? "text" : "password"}
-                  value={passwordData.currentPassword}
-                  onChange={(e) =>
-                    setPasswordData((prev) => ({
-                      ...prev,
-                      currentPassword: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter current password"
-                  disabled={isSaving}
-                  className={passwordErrors.currentPassword ? "border-destructive" : ""}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-muted-foreground"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+            {!userHasPassword && (
+              <p className="text-sm text-muted-foreground">
+                You signed up with a social account. Set a password to also log in with your email.
+              </p>
+            )}
+
+            {userHasPassword && (
+              <div>
+                <Label htmlFor="currentPassword">Current Password</Label>
+                <div className="relative">
+                  <Input
+                    id="currentPassword"
+                    type={showPassword ? "text" : "password"}
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        currentPassword: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter current password"
+                    disabled={isSaving}
+                    className={passwordErrors.currentPassword ? "border-destructive" : ""}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-muted-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {passwordErrors.currentPassword && (
+                  <p className="text-xs text-destructive mt-1">{passwordErrors.currentPassword}</p>
+                )}
               </div>
-              {passwordErrors.currentPassword && (
-                <p className="text-xs text-destructive mt-1">{passwordErrors.currentPassword}</p>
-              )}
-            </div>
+            )}
 
             <div>
               <Label htmlFor="newPassword">New Password</Label>
@@ -757,7 +772,7 @@ const UserSettingsPage = () => {
               disabled={isSaving}
               className="w-full"
             >
-              {isSaving ? "Updating..." : "Update Password"}
+              {isSaving ? "Updating..." : userHasPassword ? "Update Password" : "Set Password"}
             </Button>
           </CardContent>
         </Card>

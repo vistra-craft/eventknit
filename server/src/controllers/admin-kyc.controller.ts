@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { KYCService } from '../services/kyc.service.js';
+import { emailService } from '../services/email.service.js';
+import { prisma } from '../config/database.js';
+import { logger } from '../utils/logger.js';
 import { KYCStatus, OrganizerEntityType } from '@prisma/client';
 
 // ─── Typed request shapes ───────────────────────────────────────────────
@@ -260,6 +263,41 @@ export class AdminKYCController {
       const requirementId = (req.params as Record<string, string>).requirementId;
       await KYCService.deleteEntityRequirement(requirementId);
       res.json({ success: true, message: 'Requirement deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Send KYC verification reminder email to organizer
+   */
+  static async sendKYCReminder(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const userId = req.params.userId as string;
+      const { eventTitle } = req.body as { eventTitle?: string };
+
+      const organizer = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, firstName: true },
+      });
+
+      if (!organizer) {
+        res.status(404).json({ success: false, message: 'Organizer not found' });
+        return;
+      }
+
+      await emailService.sendKYCReminderEmail(
+        organizer.email,
+        organizer.firstName,
+        eventTitle || 'your event',
+      );
+
+      logger.info(`KYC reminder email sent to ${organizer.email} by admin ${req.user!.id}`);
+      res.json({ success: true, message: 'Reminder email sent successfully' });
     } catch (error) {
       next(error);
     }

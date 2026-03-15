@@ -2088,6 +2088,140 @@ class EmailService {
       throw new Error(`Failed to send invitation email after ${result.attempts} attempts: ${result.error?.message}`);
     }
   }
+  /**
+   * Send KYC verification reminder to organizer
+   */
+  async sendKYCReminderEmail(
+    email: string,
+    firstName: string,
+    eventTitle: string,
+  ): Promise<void> {
+    const verificationUrl = `${config.frontend.url}/organizer/settings?tab=verification`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>KYC Verification Reminder</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #ffffff; margin: 0; padding: 0;">
+          <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+            <p style="font-size: 16px; margin-bottom: 24px;">Hi ${firstName},</p>
+            <p style="font-size: 15px; color: #333;">Your event <strong>${eventTitle}</strong> is pending approval, but we need you to complete your KYC verification before it can go live.</p>
+            <p style="font-size: 15px; color: #333;">Paid events on EventKnit require verified organizer documents. This helps us keep the platform safe for everyone.</p>
+            <p style="font-size: 15px; color: #333; margin-top: 28px;">
+              <a href="${verificationUrl}" style="color: #1a1a1a; font-weight: 600; text-decoration: underline;">Complete your verification here</a>
+            </p>
+            <p style="font-size: 15px; color: #333; margin-top: 28px;">Once your documents are approved, we'll review your event right away.</p>
+            <p style="font-size: 15px; color: #555; margin-top: 32px;">— The EventKnit Team</p>
+            <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;">
+            <p style="font-size: 12px; color: #999;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: `Action needed: Complete KYC verification for "${eventTitle}"`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send KYC reminder email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send KYC rejection email to organizer
+   */
+  async sendKYCRejectionEmail(
+    email: string,
+    firstName: string,
+    reason: string,
+  ): Promise<void> {
+    const verificationUrl = `${config.frontend.url}/organizer/settings?tab=verification`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>KYC Verification Update</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #ffffff; margin: 0; padding: 0;">
+          <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+            <p style="font-size: 16px; margin-bottom: 24px;">Hi ${firstName},</p>
+            <p style="font-size: 15px; color: #333;">We've reviewed your KYC verification documents and unfortunately we're unable to approve them at this time.</p>
+            <div style="border-left: 3px solid #999; padding: 12px 16px; margin: 24px 0; background-color: #fafafa;">
+              <p style="font-size: 14px; color: #333; margin: 0;"><strong>Reason:</strong></p>
+              <p style="font-size: 14px; color: #555; margin: 8px 0 0;">${reason}</p>
+            </div>
+            <p style="font-size: 15px; color: #333;">You can update your documents and resubmit for review.</p>
+            <p style="font-size: 15px; color: #333; margin-top: 28px;">
+              <a href="${verificationUrl}" style="color: #1a1a1a; font-weight: 600; text-decoration: underline;">Update your documents here</a>
+            </p>
+            <p style="font-size: 15px; color: #555; margin-top: 32px;">— The EventKnit Team</p>
+            <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;">
+            <p style="font-size: 12px; color: #999;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: 'Your KYC verification was not approved',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send KYC rejection email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send KYC approval email to organizer
+   */
+  async sendKYCApprovalEmail(
+    email: string,
+    firstName: string,
+  ): Promise<void> {
+    const dashboardUrl = `${config.frontend.url}/organizer/dashboard`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>KYC Verification Approved</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #ffffff; margin: 0; padding: 0;">
+          <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+            <p style="font-size: 16px; margin-bottom: 24px;">Hi ${firstName},</p>
+            <p style="font-size: 15px; color: #333;">Your KYC verification has been approved. You can now create paid events and receive payouts on EventKnit.</p>
+            <p style="font-size: 15px; color: #333; margin-top: 28px;">
+              <a href="${dashboardUrl}" style="color: #1a1a1a; font-weight: 600; text-decoration: underline;">Go to your dashboard</a>
+            </p>
+            <p style="font-size: 15px; color: #555; margin-top: 32px;">— The EventKnit Team</p>
+            <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;">
+            <p style="font-size: 12px; color: #999;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: 'Your KYC verification has been approved',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send KYC approval email to ${email}: ${result.error?.message}`);
+    }
+  }
 }
 
 export const emailService = new EmailService();

@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { emailService } from './email.service.js';
 import { KYCStatus, KYCDocumentType, OrganizerEntityType } from '@prisma/client';
 import {
   getEntityRequirements,
@@ -868,6 +869,11 @@ export class KYCService {
 
     logger.info(`KYC approved for user ${userId} by admin ${adminId}`);
 
+    // Notify organizer (fire-and-forget)
+    emailService.sendKYCApprovalEmail(user.email, user.firstName).catch((err) => {
+      logger.error(`Failed to send KYC approval email to ${user.email}:`, err);
+    });
+
     return { message: 'KYC approved successfully' };
   }
 
@@ -895,6 +901,11 @@ export class KYCService {
     });
 
     logger.info(`KYC rejected for user ${userId} by admin ${adminId}: ${reason}`);
+
+    // Notify organizer with rejection reason (fire-and-forget)
+    emailService.sendKYCRejectionEmail(user.email, user.firstName, reason).catch((err) => {
+      logger.error(`Failed to send KYC rejection email to ${user.email}:`, err);
+    });
 
     return { message: 'KYC rejected' };
   }
