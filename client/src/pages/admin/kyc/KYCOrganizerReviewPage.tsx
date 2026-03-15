@@ -437,7 +437,7 @@ export default function KYCOrganizerReviewPage() {
                 </Button>
                 <Button
                   variant="destructive"
-                  disabled={actionLoading !== null}
+                  disabled={actionLoading !== null || rejectReason.trim().length < 10}
                   onClick={() => {
                     if (showRejectModal === 'organizer') {
                       handleRejectKYC();

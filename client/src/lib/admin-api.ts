@@ -1232,6 +1232,13 @@ export const rejectOrganizerKYC = async (userId: string, reason: string): Promis
   return apiPost(`/admin/kyc/users/${userId}/reject`, { reason });
 };
 
+export const sendKYCReminder = async (userId: string, eventTitle: string): Promise<{
+  success: boolean;
+  message: string;
+}> => {
+  return apiPost(`/admin/kyc/users/${userId}/remind`, { eventTitle });
+};
+
 // ========== Subscription Plan Management ==========
 
 export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM';

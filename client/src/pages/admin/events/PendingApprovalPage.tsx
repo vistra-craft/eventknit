@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield, ExternalLink } from "lucide-react";
+import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield, ExternalLink, Mail } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -14,7 +14,7 @@ import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Pagination } from "../../../components/ui/pagination";
 import { Loader } from "../../../components/ui/loader";
 import { getEvents, EventStatus, type EventData } from "../../../lib/event-api";
-import { approveEvent, rejectEvent, getAdminEventById } from "../../../lib/admin-api";
+import { approveEvent, rejectEvent, getAdminEventById, sendKYCReminder } from "../../../lib/admin-api";
 import { EventPreviewModal } from "../../../components/EventPreviewModal";
 import { useToast } from "../../../hooks/useToast";
 import { exportEventData } from "../../../lib/utils/export";
@@ -66,6 +66,7 @@ const PendingApprovalPage = () => {
   const [processing, setProcessing] = useState<string | null>(null);
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [eventToApprove, setEventToApprove] = useState<Event | null>(null);
+  const [sendingReminder, setSendingReminder] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
@@ -635,16 +636,40 @@ const PendingApprovalPage = () => {
                 Close
               </Button>
               {eventToApprove?.organizerId && (
-                <Button asChild>
-                  <Link
-                    to={`/admin/kyc/review/${eventToApprove.organizerId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <>
+                  <Button
+                    variant="outline"
+                    disabled={sendingReminder}
+                    onClick={async () => {
+                      if (!eventToApprove.organizerId) return;
+                      setSendingReminder(true);
+                      try {
+                        await sendKYCReminder(eventToApprove.organizerId, eventToApprove.title);
+                        toast({
+                          title: "Reminder sent",
+                          description: `KYC verification reminder emailed to ${eventToApprove.organizerName || eventToApprove.organizer}.`,
+                        });
+                      } catch (error) {
+                        showErrorToast(toast, error, "Failed to send reminder");
+                      } finally {
+                        setSendingReminder(false);
+                      }
+                    }}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Review Organizer KYC
-                  </Link>
-                </Button>
+                    <Mail className="h-4 w-4 mr-2" />
+                    {sendingReminder ? "Sending..." : "Send Reminder"}
+                  </Button>
+                  <Button asChild>
+                    <Link
+                      to={`/admin/kyc/review/${eventToApprove.organizerId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Review Organizer KYC
+                    </Link>
+                  </Button>
+                </>
               )}
             </DialogFooter>
           </DialogContent>

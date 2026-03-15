@@ -41,7 +41,8 @@ const KYCVerificationSection: React.FC<KYCVerificationSectionProps> = ({
 
   useEffect(() => {
     onKYCStatusChange?.();
-  }, [onKYCStatusChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleStartKYC = () => {
     if (isAttendeeFlow) {

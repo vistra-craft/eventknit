@@ -1248,6 +1248,13 @@ router.post(
   AdminKYCController.rejectOrganizerKYC,
 );
 
+/**
+ * @route   POST /api/v1/admin/kyc/users/:userId/remind
+ * @desc    Send KYC verification reminder email to organizer
+ * @access  Private (ADMIN+)
+ */
+router.post('/kyc/users/:userId/remind', AdminKYCController.sendKYCReminder);
+
 // ─── KYC Entity Management Routes ──────────────────────────────────────
 
 /**

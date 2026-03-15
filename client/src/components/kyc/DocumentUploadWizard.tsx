@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, X, CheckCircle2, FileText } from 'lucide-react';
+import React, { useState, useCallback, useRef } from 'react';
+import { Upload, X, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 
 import {
   type DocumentRequirement,
@@ -104,10 +104,13 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
       (doc) => doc.status === 'APPROVED'
     ).length >= req.minQuantity;
 
+  // Keep refs to file inputs so we can reset them after upload
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   /* ---------------------------- File Handling ----------------------------- */
 
   const handleFileSelect = useCallback(
-    (documentType: KYCDocumentType, file: File) => {
+    async (documentType: KYCDocumentType, file: File, req: DocumentRequirement) => {
       if (!file.type.startsWith('image/') && !file.type.includes('pdf')) {
         toast({
           title: 'Invalid file type',
@@ -126,64 +129,56 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
         return;
       }
 
+      // Show the file name immediately while uploading
       setUploadStates((prev) => ({
         ...prev,
         [documentType]: {
           ...prev[documentType],
           file,
-          previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
         },
       }));
+
+      // Auto-upload
+      setUploading(documentType);
+
+      try {
+        const documentUrl = await uploadDocument(file);
+        const state = uploadStates[documentType];
+
+        await onUpload({
+          documentType,
+          documentNumber: state?.documentNumber,
+          documentUrl,
+          issueDate: state?.issueDate,
+          expiryDate: state?.expiryDate,
+        });
+
+        setUploadStates((prev) => {
+          const next = { ...prev };
+          delete next[documentType];
+          return next;
+        });
+
+        // Reset file input so the same file can be re-selected if needed
+        const input = fileInputRefs.current[documentType];
+        if (input) input.value = '';
+
+        toast({
+          title: 'Upload successful',
+          description: `${req.description} uploaded successfully`,
+        });
+      } catch (error: unknown) {
+        toast({
+          title: 'Upload failed',
+          description: extractErrorMessage(error, 'Something went wrong'),
+          variant: 'destructive',
+        });
+      } finally {
+        setUploading(null);
+      }
     },
-    [toast]
+    [toast, uploadStates, onUpload]
   );
-
-  /* ----------------------------- Upload ---------------------------------- */
-
-  const handleUpload = async (req: DocumentRequirement) => {
-    const state = uploadStates[req.documentType];
-    if (!state?.file) {
-      toast({
-        title: 'No file selected',
-        description: 'Please select a file before uploading',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setUploading(req.documentType);
-
-    try {
-      const documentUrl = await uploadDocument(state.file);
-
-      await onUpload({
-        documentType: req.documentType,
-        documentNumber: state.documentNumber,
-        documentUrl,
-        issueDate: state.issueDate,
-        expiryDate: state.expiryDate,
-      });
-
-      setUploadStates((prev) => {
-        const next = { ...prev };
-        delete next[req.documentType];
-        return next;
-      });
-
-      toast({
-        title: 'Upload successful',
-        description: `${req.description} uploaded successfully`,
-      });
-    } catch (error: unknown) {
-      toast({
-        title: 'Upload failed',
-        description: extractErrorMessage(error, 'Something went wrong'),
-        variant: 'destructive',
-      });
-    } finally {
-      setUploading(null);
-    }
-  };
 
   /* ----------------------------- Delete ---------------------------------- */
 
@@ -316,7 +311,7 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
                             },
                           }))
                         }
-                        disabled={disabled}
+                        disabled={disabled || uploading === req.documentType}
                       />
 
                       <input
@@ -324,33 +319,34 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
                         accept="image/*,.pdf"
                         hidden
                         id={`file-${req.documentType}`}
+                        ref={(el) => { fileInputRefs.current[req.documentType] = el; }}
                         onChange={(e) =>
                           e.target.files &&
                           handleFileSelect(
                             req.documentType,
-                            e.target.files[0]
+                            e.target.files[0],
+                            req
                           )
                         }
                       />
 
-                      <label htmlFor={`file-${req.documentType}`}>
-                        <div className="p-4 border-dashed border rounded cursor-pointer flex gap-2 items-center">
-                          <Upload className="w-4 h-4" />
-                          <span>
-                            {state?.file?.name ??
-                              'Click to select a file'}
+                      {uploading === req.documentType ? (
+                        <div className="p-4 border border-primary/30 bg-primary/5 rounded flex gap-2 items-center">
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">
+                            Uploading {state?.file?.name}...
                           </span>
                         </div>
-                      </label>
-
-                      <Button
-                        onClick={() => handleUpload(req)}
-                        disabled={!state?.file || uploading === req.documentType}
-                      >
-                        {uploading === req.documentType
-                          ? 'Uploading...'
-                          : 'Upload'}
-                      </Button>
+                      ) : (
+                        <label htmlFor={`file-${req.documentType}`}>
+                          <div className="p-4 border-dashed border rounded cursor-pointer flex gap-2 items-center hover:border-primary/50 transition-colors">
+                            <Upload className="w-4 h-4" />
+                            <span className="text-sm">
+                              Click to select and upload a file
+                            </span>
+                          </div>
+                        </label>
+                      )}
                     </>
                   )}
                 </div>

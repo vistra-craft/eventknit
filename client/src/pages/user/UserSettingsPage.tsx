@@ -61,6 +61,14 @@ const UserSettingsPage = () => {
   // Verification status
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
 
+  const handleKYCStatusChange = useCallback(() => {
+    getVerificationStatus().then((res) => {
+      if (res.success) {
+        setVerificationStatus(res.data);
+      }
+    });
+  }, []);
+
   // Profile form state
   const [profileData, setProfileData] = useState({
     firstName: "",
@@ -355,14 +363,7 @@ const UserSettingsPage = () => {
     return (
       <KYCVerificationSection
         verificationStatus={verificationStatus}
-        onKYCStatusChange={() => {
-          // Refetch verification status when KYC changes
-          getVerificationStatus().then((res) => {
-            if (res.success) {
-              setVerificationStatus(res.data);
-            }
-          });
-        }}
+        onKYCStatusChange={handleKYCStatusChange}
         isAttendeeFlow={true}
       />
     );
