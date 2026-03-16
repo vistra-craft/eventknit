@@ -145,8 +145,8 @@ export class TicketPdfQueueService {
    */
   static async addJob(data: TicketPdfJobData): Promise<string> {
     try {
-      // Update registration status to PENDING
-      await prisma.eventRegistration.update({
+      // Update registration status to PENDING (use updateMany to avoid throwing if record not yet visible)
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: {
           ticketPdfStatus: 'PENDING',
@@ -237,7 +237,7 @@ export class TicketPdfQueueService {
    */
   private static async generatePdfSync(data: TicketPdfJobData): Promise<void> {
     try {
-      await prisma.eventRegistration.update({
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: { ticketPdfStatus: 'GENERATING' },
       });
@@ -258,9 +258,12 @@ export class TicketPdfQueueService {
 
       logger.info(`PDF generated synchronously for registration ${data.registrationId}`);
     } catch (error) {
-      await prisma.eventRegistration.update({
+      // Use updateMany to avoid throwing if registration doesn't exist
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: { ticketPdfStatus: 'FAILED' },
+      }).catch((updateErr) => {
+        logger.error(`Failed to mark registration ${data.registrationId} as FAILED:`, updateErr);
       });
       throw error;
     }
