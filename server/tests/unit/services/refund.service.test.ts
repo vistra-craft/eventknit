@@ -174,6 +174,8 @@ describe('RefundService', () => {
   beforeEach(() => {
     mockReset(prisma);
     vi.clearAllMocks();
+    // Reset the cached Paystack instance so each test gets a fresh one
+    (RefundService as any).paystack = null;
   });
 
   // ===========================================================================

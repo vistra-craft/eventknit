@@ -140,7 +140,6 @@ describe('EventService - Event Creation', () => {
             id: true,
             role: true,
             status: true,
-            profileCompleted: true,
             isIdentityVerified: true,
             verificationLevel: true,
             payoutLimit: true,
@@ -824,7 +823,8 @@ describe('EventService - approveEvent', () => {
 
   it('should approve event and auto-activate pending organizer', async () => {
     prisma.event.findFirst.mockResolvedValue(mockPendingEvent as any);
-    prisma.event.update.mockResolvedValue({
+    prisma.event.updateMany.mockResolvedValue({ count: 1 } as any);
+    prisma.event.findUniqueOrThrow.mockResolvedValue({
       ...mockPendingEvent,
       status: EventStatus.APPROVED,
       approvedBy: adminId,
@@ -837,6 +837,7 @@ describe('EventService - approveEvent', () => {
         email: 'cecil@test.com',
         organizationName: 'Test Org',
         status: UserStatus.PENDING_APPROVAL,
+        role: UserRole.ORGANIZER,
       },
     } as any);
     prisma.user.update.mockResolvedValue({} as any);
@@ -859,7 +860,8 @@ describe('EventService - approveEvent', () => {
 
   it('should not update organizer if already active', async () => {
     prisma.event.findFirst.mockResolvedValue(mockPendingEvent as any);
-    prisma.event.update.mockResolvedValue({
+    prisma.event.updateMany.mockResolvedValue({ count: 1 } as any);
+    prisma.event.findUniqueOrThrow.mockResolvedValue({
       ...mockPendingEvent,
       status: EventStatus.APPROVED,
       approvedBy: adminId,
@@ -872,6 +874,7 @@ describe('EventService - approveEvent', () => {
         email: 'cecil@test.com',
         organizationName: 'Test Org',
         status: UserStatus.ACTIVE,
+        role: UserRole.ORGANIZER,
       },
     } as any);
 

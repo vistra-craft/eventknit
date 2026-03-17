@@ -25,6 +25,8 @@ vi.mock('../../../src/services/permission.service.js');
 vi.mock('../../../src/services/kyc.service.js');
 vi.mock('../../../src/services/subscription.service.js');
 vi.mock('../../../src/services/consent.service.js');
+vi.mock('../../../src/services/ticket-issuance.service.js');
+vi.mock('../../../src/services/workstation.service.js');
 
 describe('OrganizerDashboardController - Resale & Transfer Analytics', () => {
   let mockRequest: Partial<AuthenticatedRequest<{ eventId: string }>>;
@@ -60,7 +62,7 @@ describe('OrganizerDashboardController - Resale & Transfer Analytics', () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({ success: true, data: mockStats });
-      expect(ResaleTransferAnalyticsService.getEventResaleStats).toHaveBeenCalledWith('event-123', 'organizer-456');
+      expect(ResaleTransferAnalyticsService.getEventResaleStats).toHaveBeenCalledWith('event-123', 'organizer-456', false);
     });
 
     it('should return 401 when user is not authenticated', async () => {
@@ -112,6 +114,7 @@ describe('OrganizerDashboardController - Resale & Transfer Analytics', () => {
         'event-123',
         'organizer-456',
         { status: 'SOLD', page: 2, limit: 10 },
+        false,
       );
     });
 
@@ -130,6 +133,7 @@ describe('OrganizerDashboardController - Resale & Transfer Analytics', () => {
         'event-123',
         'organizer-456',
         { status: undefined, page: undefined, limit: undefined },
+        false,
       );
     });
   });
@@ -196,6 +200,7 @@ describe('OrganizerDashboardController - Resale & Transfer Analytics', () => {
         'event-123',
         'organizer-456',
         { status: 'PENDING', page: 1, limit: 20 },
+        false,
       );
     });
 

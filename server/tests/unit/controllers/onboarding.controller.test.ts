@@ -9,7 +9,24 @@ vi.mock('../../../src/config/database.js', () => ({
     user: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
     },
+  },
+}));
+
+vi.mock('../../../src/services/email.service.js', () => ({
+  emailService: {
+    sendOrganizerPendingEmail: vi.fn().mockResolvedValue(undefined),
+    sendAdminNewOrganizerNotification: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+vi.mock('../../../src/utils/logger.js', () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
