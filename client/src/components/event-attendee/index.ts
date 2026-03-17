@@ -19,4 +19,5 @@ export type {
   Exhibitor,
   AgendaItem,
   SeatInfo,
+  FAQ,
 } from './EventAttendeeView';

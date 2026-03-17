@@ -48,7 +48,7 @@ const LoadingFallback = () => (
     </div>
 
     {/* Event card list */}
-    <div className="space-y-3 max-w-3xl">
+    <div className="space-y-3 max-w-5xl">
       {[1, 2, 3, 4].map((i) => (
         <div
           key={i}

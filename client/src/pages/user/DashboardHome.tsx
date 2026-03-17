@@ -240,7 +240,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 <Loader size="default" />
               </div>
             ) : attendingEvents.length > 0 ? (
-              <div className="space-y-2 max-w-3xl">
+              <div className="space-y-2 max-w-5xl">
                 {/* Stats strip */}
                 <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
@@ -388,7 +388,7 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 <Loader size="default" aria-label="Loading saved events" />
               </div>
             ) : savedEvents.length > 0 ? (
-              <div className="space-y-2 max-w-3xl">
+              <div className="space-y-2 max-w-5xl">
                 {savedEvents.map((event, index) => (
                   <div
                     key={event.id}

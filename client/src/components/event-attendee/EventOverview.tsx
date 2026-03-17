@@ -1,11 +1,14 @@
 /**
- * EventOverview — merged replacement for EventHome + EventMyEvent.
- * Left sidebar: profile, registration status, quick actions.
- * Right main: hero, countdown, registration details, announcements,
- *             sponsors, event details, venue map.
+ * EventOverview — Redesigned attendee event overview page.
+ *
+ * Layout: Single-column, content-focused design inspired by Lu.ma and Eventbrite.
+ * - Inline event image (not a full-width hero) alongside key details
+ * - Attendee count with social proof (avatar-style tally)
+ * - Sticky action bar for quick access to ticket, calendar, share, contact
+ * - Comprehensive sections: about, organizer, speakers, agenda preview,
+ *   exhibitors, sponsors, FAQs, requirements, venue/map, announcements
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -22,7 +25,6 @@ import {
   Timer,
   Share2,
   CalendarPlus,
-  Bell,
   Download,
   CheckCircle,
   Ticket,
@@ -33,8 +35,16 @@ import {
   RefreshCw,
   Hash,
   MessageCircle,
+  Users,
+  ChevronDown,
+  ChevronRight,
+  Tag,
+  ShieldCheck,
+  AlertCircle,
+  Mic2,
+  Building2,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
@@ -57,7 +67,7 @@ import { useToast } from "@/hooks/useToast";
 import { showErrorToast } from "@/lib/utils/error";
 import type { EventData, User, Sponsor } from "./EventAttendeeView";
 
-// ─── Sponsor helpers ──────────────────────────────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────────────────────────
 
 const sponsorTierOrder: Sponsor["level"][] = [
   "title", "presenting", "platinum", "gold", "silver", "bronze", "associate", "community",
@@ -66,11 +76,11 @@ const sponsorTierOrder: Sponsor["level"][] = [
 const sponsorTierLabels: Record<Sponsor["level"], string> = {
   title: "Title Sponsor",
   presenting: "Presenting Sponsor",
-  platinum: "Platinum Sponsor",
-  gold: "Gold Sponsor",
-  silver: "Silver Sponsor",
-  bronze: "Bronze Sponsor",
-  associate: "Associate Sponsor",
+  platinum: "Platinum",
+  gold: "Gold",
+  silver: "Silver",
+  bronze: "Bronze",
+  associate: "Associate",
   community: "Community Partner",
 };
 
@@ -85,7 +95,23 @@ const socialPlatformConfig: Record<string, { icon: React.ElementType; label: str
   website: { icon: Globe2, label: "Website" },
 };
 
-// ─── Countdown ────────────────────────────────────────────────────────────────
+const sessionTypeLabels: Record<string, string> = {
+  keynote: "Keynote",
+  workshop: "Workshop",
+  panel: "Panel",
+  "breakout": "Breakout",
+  "fireside-chat": "Fireside Chat",
+  "lightning-talk": "Lightning Talk",
+  demo: "Demo",
+  "Q&A": "Q&A",
+  roundtable: "Roundtable",
+  networking: "Networking",
+  break: "Break",
+  lunch: "Lunch",
+  other: "Session",
+};
+
+// ─── Countdown ──────────────────────────────────────────────────────────────────
 
 interface CountdownParts {
   days: number;
@@ -127,55 +153,27 @@ function useCountdown(eventDate: string, endDate?: string): CountdownParts {
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
-    <div className="flex flex-col items-center min-w-[36px]">
-      <span className="bg-foreground/5 border border-border rounded-md px-2 py-0.5 font-mono text-sm font-bold text-foreground tabular-nums">
+    <div className="flex flex-col items-center">
+      <span className="bg-foreground/5 border border-border rounded-md px-2.5 py-1 font-mono text-lg font-bold text-foreground tabular-nums">
         {pad(value)}
       </span>
-      <span className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">{label}</span>
+      <span className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wide">{label}</span>
     </div>
   );
 }
 
-function CountdownStrip({ event }: { event: EventData }) {
-  const cd = useCountdown(event.date, event.endDate);
-  if (cd.isOver) return null;
+// ─── Status & Announcement helpers ──────────────────────────────────────────────
 
-  if (cd.isStarted) {
-    return (
-      <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-success/10 border border-success/20 w-fit">
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
-        </span>
-        <span className="text-success font-semibold text-sm">Happening Now</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex items-center gap-1.5 text-muted-foreground">
-        <Timer className="w-4 h-4" />
-        <span className="text-xs font-medium uppercase tracking-wide">Starts in</span>
-      </div>
-      <div className="flex items-center gap-1">
-        {cd.days > 0 && (
-          <>
-            <CountdownUnit value={cd.days} label="d" />
-            <span className="text-muted-foreground font-bold text-sm mb-1">:</span>
-          </>
-        )}
-        <CountdownUnit value={cd.hours} label="h" />
-        <span className="text-muted-foreground font-bold text-sm mb-1">:</span>
-        <CountdownUnit value={cd.minutes} label="m" />
-        <span className="text-muted-foreground font-bold text-sm mb-1">:</span>
-        <CountdownUnit value={cd.seconds} label="s" />
-      </div>
-    </div>
-  );
+function getEventStatus(event: EventData): { label: string; color: string } {
+  if (event.status === "ongoing") return { label: "Live Now", color: "bg-success/10 text-success border-success/20" };
+  if (event.status === "completed") return { label: "Completed", color: "bg-muted text-muted-foreground" };
+  const now = new Date();
+  const start = new Date(event.date);
+  const end = event.endDate ? new Date(event.endDate) : start;
+  if (now < start) return { label: "Upcoming", color: "bg-primary/10 text-primary" };
+  if (now >= start && now <= end) return { label: "Live Now", color: "bg-success/10 text-success border-success/20" };
+  return { label: "Completed", color: "bg-muted text-muted-foreground" };
 }
-
-// ─── Announcement helpers ─────────────────────────────────────────────────────
 
 function AnnouncementIcon({ type }: { type: string }) {
   if (type.includes("CANCELLED") || type.includes("FAILED"))
@@ -195,18 +193,20 @@ function relativeTime(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function getEventStatus(event: EventData): { label: string; color: string } {
-  if (event.status === "ongoing") return { label: "Live Now", color: "bg-success/10 text-success" };
-  if (event.status === "completed") return { label: "Completed", color: "bg-muted text-muted-foreground" };
-  const now = new Date();
-  const start = new Date(event.date);
-  const end = event.endDate ? new Date(event.endDate) : start;
-  if (now < start) return { label: "Upcoming", color: "bg-primary/10 text-primary" };
-  if (now >= start && now <= end) return { label: "Live Now", color: "bg-success/10 text-success" };
-  return { label: "Completed", color: "bg-muted text-muted-foreground" };
+// ─── Section heading ────────────────────────────────────────────────────────────
+
+function SectionHeading({ icon: Icon, title }: { icon: React.ElementType; title: string }) {
+  return (
+    <div className="flex items-center gap-2.5 mb-4">
+      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+        <Icon className="w-4 h-4 text-primary" />
+      </div>
+      <h2 className="text-base font-semibold text-foreground">{title}</h2>
+    </div>
+  );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main component ─────────────────────────────────────────────────────────────
 
 interface EventOverviewProps {
   event: EventData;
@@ -214,9 +214,9 @@ interface EventOverviewProps {
 }
 
 export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const status = getEventStatus(event);
+  const cd = useCountdown(event.date, event.endDate);
 
   // Announcements
   const [announcements, setAnnouncements] = useState<Notification[]>([]);
@@ -229,6 +229,13 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
   const [contactSubject, setContactSubject] = useState("");
   const [contactContent, setContactContent] = useState("");
   const [sendingContact, setSendingContact] = useState(false);
+
+  // FAQ accordion state
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  // Description & organizer expansion
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isOrganizerDescExpanded, setIsOrganizerDescExpanded] = useState(false);
 
   const loadAnnouncements = useCallback(async () => {
     try {
@@ -266,7 +273,10 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
 
   const handleShare = () => {
     if (navigator.share) void navigator.share({ title: event.title, url: window.location.href });
-    else void navigator.clipboard.writeText(window.location.href);
+    else {
+      void navigator.clipboard.writeText(window.location.href);
+      toast({ title: "Link copied", description: "Event link copied to clipboard" });
+    }
   };
 
   const handleDownloadTicket = async () => {
@@ -308,7 +318,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
   }, [event.sponsors]);
 
   const formatDateRange = (): string => {
-    const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
+    const opts: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric", year: "numeric" };
     const start = new Date(event.date).toLocaleDateString("en-US", opts);
     if (event.endDate) {
       return `${start} – ${new Date(event.endDate).toLocaleDateString("en-US", opts)}`;
@@ -316,408 +326,827 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
     return start;
   };
 
-  const formatDateLong = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  const attendeeCount = (event.registrationCount ?? 0) + 1; // +1 for organizer
+  const hasSpeakers = !!(event.speakers && event.speakers.length > 0);
+  const hasAgenda = !!(event.agenda && event.agenda.length > 0);
+  const hasExhibitors = !!(event.exhibitors && event.exhibitors.length > 0);
+  const hasSponsors = !!(event.sponsors && event.sponsors.length > 0);
+  const hasFaqs = !!(event.faqs && event.faqs.length > 0);
+  const hasRequirements = !!(event.requirements && event.requirements.length > 0) || !!event.ageRestriction;
 
   return (
     <div className="relative">
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 pt-6">
-        <div className="relative rounded-xl overflow-hidden">
-          <div
-            className="h-[240px] sm:h-[280px] bg-cover bg-center"
-            style={{
-              backgroundImage: event.image
-                ? `url(${event.image})`
-                : "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-dark)) 100%)",
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
+      <div className="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            1. EVENT HEADER — Image + Key Details side by side
+            ═══════════════════════════════════════════════════════════════════ */}
+        <div className="flex flex-col md:flex-row gap-6 mb-6">
+          {/* Event Image */}
+          <div className="flex-shrink-0 w-full md:w-72 lg:w-80">
+            <div className="relative rounded-xl overflow-hidden aspect-[4/3] bg-muted">
+              {event.image ? (
+                <img
+                  src={event.image}
+                  alt={event.title}
+                  className="w-full h-full object-cover"
+                  style={{
+                    objectPosition: event.imageFocalX != null && event.imageFocalY != null
+                      ? `${event.imageFocalX}% ${event.imageFocalY}%`
+                      : "center",
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                  <Calendar className="w-12 h-12 text-primary/40" />
+                </div>
+              )}
+              {/* Status badge overlay */}
+              <Badge className={`absolute top-3 left-3 ${status.color} border text-xs font-semibold`}>
+                {status.label}
+              </Badge>
+            </div>
           </div>
-          <div className="absolute bottom-0 left-0 right-0 p-5">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{event.title}</h1>
-            {event.hashtag && (
-              <Badge className="bg-primary/90 text-white border-0 text-sm mb-2">#{event.hashtag}</Badge>
+
+          {/* Key Details */}
+          <div className="flex-1 min-w-0">
+            {/* Category & type badges */}
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              {event.category && (
+                <Badge variant="secondary" className="text-xs">{event.category}</Badge>
+              )}
+              {event.type && event.type !== "Event" && (
+                <Badge variant="outline" className="text-xs capitalize">{event.type.replace(/-/g, " ")}</Badge>
+              )}
+              {event.hashtag && (
+                <Badge variant="outline" className="text-xs text-primary border-primary/30">#{event.hashtag}</Badge>
+              )}
+            </div>
+
+            {/* Title */}
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 leading-tight">
+              {event.title}
+            </h1>
+
+            {/* Date, time, location */}
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center gap-2.5 text-sm text-foreground">
+                <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                <span>{formatDateRange()}</span>
+              </div>
+              {event.time && (
+                <div className="flex items-center gap-2.5 text-sm text-foreground">
+                  <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>{event.time}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2.5 text-sm text-foreground">
+                {event.isOnline ? (
+                  <Globe className="w-4 h-4 text-primary flex-shrink-0" />
+                ) : (
+                  <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                )}
+                <span>{event.venue ?? event.location}</span>
+                {event.address && event.venue && event.address !== event.venue && (
+                  <span className="text-muted-foreground">· {event.address}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Countdown or Live status */}
+            {!cd.isOver && (
+              <div className="mb-4">
+                {cd.isStarted ? (
+                  <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-success/10 border border-success/20">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
+                    </span>
+                    <span className="text-success font-semibold text-sm">Happening Now</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Timer className="w-4 h-4" />
+                      <span className="text-xs font-medium uppercase tracking-wide">Starts in</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {cd.days > 0 && (
+                        <>
+                          <CountdownUnit value={cd.days} label="days" />
+                          <span className="text-muted-foreground font-bold text-sm mb-4">:</span>
+                        </>
+                      )}
+                      <CountdownUnit value={cd.hours} label="hrs" />
+                      <span className="text-muted-foreground font-bold text-sm mb-4">:</span>
+                      <CountdownUnit value={cd.minutes} label="min" />
+                      <span className="text-muted-foreground font-bold text-sm mb-4">:</span>
+                      <CountdownUnit value={cd.seconds} label="sec" />
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
-            <div className="flex flex-wrap items-center gap-4 text-white/90 text-sm">
-              <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" />{formatDateRange()}</span>
-              {event.time && <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" />{event.time}</span>}
-              <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" />{event.venue ?? event.location}</span>
+
+            {/* Attendee tally — Lu.ma-style social proof */}
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {/* Organizer avatar */}
+                <div className="w-8 h-8 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-xs font-bold text-primary" title="Organizer">
+                  O
+                </div>
+                {/* Placeholder attendee avatars */}
+                {attendeeCount > 1 && (
+                  <div className="w-8 h-8 rounded-full bg-blue-500/20 border-2 border-background flex items-center justify-center text-xs font-bold text-blue-500">
+                    {user.initials}
+                  </div>
+                )}
+                {attendeeCount > 2 && (
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 border-2 border-background flex items-center justify-center">
+                    <Users className="w-3.5 h-3.5 text-emerald-500" />
+                  </div>
+                )}
+              </div>
+              <div className="text-sm">
+                <span className="font-semibold text-foreground">{attendeeCount}</span>
+                <span className="text-muted-foreground ml-1">
+                  {attendeeCount === 1 ? "person attending" : "people attending"}
+                </span>
+                {event.capacity && (
+                  <span className="text-muted-foreground"> · {event.availableSlots ?? event.capacity} spots left</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ── Body ──────────────────────────────────────────────────────────── */}
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-
-          {/* ── Sidebar ───────────────────────────────────────────────────── */}
-          <div className="lg:col-span-1 space-y-4">
-
-            {/* Profile + registration status */}
-            <Card variant="github" className="sticky top-24 overflow-hidden">
-              <div className="absolute top-3 right-3">
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="text-xs text-muted-foreground hover:text-primary"
-                  onClick={() => navigate("/user/profile")}
-                >
-                  Edit
-                </Button>
+        {/* ═══════════════════════════════════════════════════════════════════
+            2. STICKY ACTION BAR
+            ═══════════════════════════════════════════════════════════════════ */}
+        {event.registrationId && (
+          <div className="sticky top-12 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 mb-6 bg-card/95 backdrop-blur-sm border-y border-border">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5 mr-auto">
+                <CheckCircle className="w-4 h-4 text-success" />
+                <span className="text-sm font-medium text-foreground">You're registered</span>
+                {event.ticketType && (
+                  <Badge variant="secondary" className="text-xs ml-1">{event.ticketType}</Badge>
+                )}
               </div>
-              <CardContent className="pt-8 pb-5 px-5 text-center">
-                <Avatar src={user.profileImage} name={user.name} alt={user.name} size="lg" className="mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-foreground">{user.name}</h3>
-                {user.title && <p className="text-xs text-muted-foreground mt-0.5">{user.title}</p>}
-                {user.company && <p className="text-xs text-muted-foreground">{user.company}</p>}
-                {user.email && <p className="text-xs text-muted-foreground mt-1">{user.email}</p>}
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleDownloadTicket} disabled={downloadingTicket}>
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                {downloadingTicket ? "Downloading..." : "Ticket"}
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleAddToCalendar}>
+                <CalendarPlus className="w-3.5 h-3.5 mr-1.5" />
+                Calendar
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleShare}>
+                <Share2 className="w-3.5 h-3.5 mr-1.5" />
+                Share
+              </Button>
+              {event.organizerId && (
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setIsContactOpen(true)}>
+                  <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                  Contact
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
-                {event.registrationId && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/10 text-success">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span className="text-xs font-semibold">Registered</span>
+        {/* ═══════════════════════════════════════════════════════════════════
+            3. REGISTRATION DETAILS (compact)
+            ═══════════════════════════════════════════════════════════════════ */}
+        {event.registrationId && (
+          <Card className="border-border/40 bg-card mb-6">
+            <CardContent className="p-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {event.ticketType && (
+                  <div className="flex items-start gap-2.5">
+                    <Ticket className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Ticket</p>
+                      <p className="text-sm font-medium text-foreground">{event.ticketType}</p>
                     </div>
-                    <Badge className={`mt-2 block text-center ${status.color}`}>{status.label}</Badge>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            {event.registrationId && (
-              <Card variant="github">
-                <CardHeader className="pb-2 pt-4 px-4">
-                  <CardTitle className="text-xs uppercase tracking-widest text-muted-foreground">Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="px-4 pb-4 space-y-1.5">
-                  <Button variant="outline" className="w-full justify-start text-sm h-8" onClick={handleAddToCalendar}>
-                    <CalendarPlus className="w-3.5 h-3.5 mr-2" />Add to Calendar
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start text-sm h-8" onClick={handleShare}>
-                    <Share2 className="w-3.5 h-3.5 mr-2" />Share Event
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-sm h-8"
-                    onClick={handleDownloadTicket}
-                    disabled={downloadingTicket}
-                  >
-                    <Download className="w-3.5 h-3.5 mr-2" />
-                    {downloadingTicket ? "Downloading…" : "Download Ticket"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-sm h-8"
-                    onClick={() => { window.location.href = "/user/notifications"; }}
-                  >
-                    <Bell className="w-3.5 h-3.5 mr-2" />All Notifications
-                  </Button>
-                  {event.organizerId && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start text-sm h-8"
-                      onClick={() => setIsContactOpen(true)}
-                    >
-                      <MessageCircle className="w-3.5 h-3.5 mr-2" />Contact Organizer
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* ── Main content ──────────────────────────────────────────────── */}
-          <div className="lg:col-span-3 space-y-6">
-
-            {/* Countdown / live strip */}
-            <CountdownStrip event={event} />
-
-            {/* Registration confirmed banner (compact) */}
-            {event.registrationId && (
-              <Card variant="github" className="overflow-hidden">
-                <div className="bg-success/5 border-b border-success/20 px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-success/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-4.5 h-4.5 text-success" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-foreground text-sm">You're Registered</p>
-                      <p className="text-xs text-muted-foreground">Your spot is confirmed</p>
-                    </div>
-                    <Badge className={status.color}>{status.label}</Badge>
+                <div className="flex items-start gap-2.5">
+                  <Hash className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Reg. ID</p>
+                    <p className="font-mono text-xs font-medium text-foreground truncate">{event.registrationId}</p>
                   </div>
                 </div>
-                <CardContent className="px-5 py-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center px-3 py-2.5 bg-muted/40 rounded-lg">
-                      <Calendar className="w-4 h-4 mx-auto mb-1 text-primary" />
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Date</p>
-                      <p className="text-xs font-semibold text-foreground mt-0.5">
-                        {new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </p>
+                {event.backupCode && (
+                  <div className="flex items-start gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Backup Code</p>
+                      <p className="font-mono text-sm font-semibold text-foreground tracking-wider">{event.backupCode}</p>
                     </div>
-                    <div className="text-center px-3 py-2.5 bg-muted/40 rounded-lg">
-                      <Clock className="w-4 h-4 mx-auto mb-1 text-primary" />
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Time</p>
-                      <p className="text-xs font-semibold text-foreground mt-0.5">{event.time || "TBA"}</p>
-                    </div>
-                    <div className="text-center px-3 py-2.5 bg-muted/40 rounded-lg">
-                      <MapPin className="w-4 h-4 mx-auto mb-1 text-primary" />
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Location</p>
-                      <p className="text-xs font-semibold text-foreground mt-0.5 line-clamp-1">
-                        {event.venue ?? event.location}
+                  </div>
+                )}
+                {event.registrationDate && (
+                  <div className="flex items-start gap-2.5">
+                    <Calendar className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Registered</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {new Date(event.registrationDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                )}
+              </div>
 
-            {/* Registration details */}
-            {event.registrationId && (
-              <Card variant="github">
-                <CardHeader className="pb-0">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Ticket className="w-4 h-4 text-primary" />
-                    Registration Details
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {event.ticketType && (
-                      <div className="flex items-start gap-3 px-3 py-2.5 bg-muted/40 rounded-lg">
-                        <Ticket className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Ticket Type</p>
-                          <p className="text-sm font-medium text-foreground">{event.ticketType}</p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-start gap-3 px-3 py-2.5 bg-muted/40 rounded-lg">
-                      <Hash className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Registration ID</p>
-                        <p className="font-mono text-xs font-medium text-foreground break-all">{event.registrationId}</p>
-                      </div>
+              {/* Seat allocation */}
+              {event.seat && (
+                <div className="border-t border-border mt-4 pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Armchair className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">Seat Allocation</span>
+                    <Badge className="bg-primary/10 text-primary text-xs uppercase">{event.seat.seatType}</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-center">
+                      <p className="text-[10px] text-muted-foreground mb-0.5">Seat</p>
+                      <p className="text-base font-bold text-primary">{event.seat.seatIdentifier}</p>
                     </div>
-                    {event.backupCode && (
-                      <div className="flex items-start gap-3 px-3 py-2.5 bg-muted/40 rounded-lg">
-                        <CheckCircle className="w-4 h-4 text-success mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Backup Code</p>
-                          <p className="font-mono text-sm font-semibold text-foreground tracking-widest">
-                            {event.backupCode}
-                          </p>
-                        </div>
+                    {event.seat.sectionId && (
+                      <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Section</p>
+                        <p className="text-sm font-semibold text-foreground">{event.seat.sectionId}</p>
                       </div>
                     )}
-                    {event.registrationDate && (
-                      <div className="flex items-start gap-3 px-3 py-2.5 bg-muted/40 rounded-lg">
-                        <Calendar className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Registered On</p>
-                          <p className="text-sm font-medium text-foreground">
-                            {new Date(event.registrationDate).toLocaleDateString("en-US", {
-                              month: "long", day: "numeric", year: "numeric",
-                            })}
-                          </p>
-                        </div>
+                    {event.seat.rowLabel && (
+                      <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Row</p>
+                        <p className="text-sm font-semibold text-foreground">{event.seat.rowLabel}</p>
+                      </div>
+                    )}
+                    {event.seat.seatLabel && (
+                      <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Seat #</p>
+                        <p className="text-sm font-semibold text-foreground">{event.seat.seatLabel}</p>
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-                  {/* Seat allocation */}
-                  {event.seat && (
-                    <div className="border-t border-border pt-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Armchair className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-semibold text-foreground">Seat Allocation</span>
-                        <Badge className="bg-primary/10 text-primary text-xs uppercase">
-                          {event.seat.seatType}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-center">
-                          <p className="text-[10px] text-muted-foreground mb-0.5">Seat</p>
-                          <p className="text-base font-bold text-primary">{event.seat.seatIdentifier}</p>
-                        </div>
-                        {event.seat.sectionId && (
-                          <div className="bg-muted/50 rounded-lg p-2.5 text-center">
-                            <p className="text-[10px] text-muted-foreground mb-0.5">Section</p>
-                            <p className="text-sm font-semibold text-foreground">{event.seat.sectionId}</p>
-                          </div>
-                        )}
-                        {event.seat.rowLabel && (
-                          <div className="bg-muted/50 rounded-lg p-2.5 text-center">
-                            <p className="text-[10px] text-muted-foreground mb-0.5">Row</p>
-                            <p className="text-sm font-semibold text-foreground">{event.seat.rowLabel}</p>
-                          </div>
-                        )}
-                        {event.seat.seatLabel && (
-                          <div className="bg-muted/50 rounded-lg p-2.5 text-center">
-                            <p className="text-[10px] text-muted-foreground mb-0.5">Seat #</p>
-                            <p className="text-sm font-semibold text-foreground">{event.seat.seatLabel}</p>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3 text-success" />
-                        Seat reserved &amp; confirmed
-                      </p>
+        {/* ═══════════════════════════════════════════════════════════════════
+            4. ABOUT THIS EVENT
+            ═══════════════════════════════════════════════════════════════════ */}
+        {(event.fullDescription ?? event.description) && (() => {
+          const descContent = event.fullDescription ?? event.description ?? "";
+          const descTextLength = descContent.replace(/<[^>]*>/g, "").trim().length;
+          const shouldTruncateDesc = descTextLength > 300;
+          return (
+            <section className="mb-8">
+              <SectionHeading icon={Info} title="About This Event" />
+              <Card className="border-border/40 bg-card">
+                <CardContent className="p-5">
+                  <div className="space-y-2">
+                    <div className={shouldTruncateDesc && !isDescriptionExpanded ? "line-clamp-4" : ""}>
+                      <RichTextContent
+                        content={descContent}
+                        className="text-sm text-muted-foreground leading-relaxed prose-sm max-w-none"
+                      />
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Announcements */}
-            <Card variant="github">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-sm">
-                    <Megaphone className="w-4 h-4 text-primary" />
-                    Announcements
-                    {unreadCount > 0 && (
-                      <Badge className="bg-primary text-primary-foreground text-xs px-1.5 rounded-full">
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <div className="flex items-center gap-1">
-                    {unreadCount > 0 && (
+                    {shouldTruncateDesc && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-xs text-primary h-7"
-                        onClick={handleMarkAllRead}
-                        disabled={markingRead}
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        className="h-8 text-primary hover:text-primary/80 p-0"
                       >
-                        Mark all read
+                        {isDescriptionExpanded ? (
+                          <>
+                            Show Less
+                            <ChevronDown className="w-4 h-4 ml-1 rotate-180" />
+                          </>
+                        ) : (
+                          <>
+                            See More
+                            <ChevronDown className="w-4 h-4 ml-1" />
+                          </>
+                        )}
                       </Button>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => void loadAnnouncements()}
-                      title="Refresh"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                    </Button>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {announcementsLoading ? (
-                  <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
-                    Loading announcements…
-                  </div>
-                ) : announcements.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
-                    <MessageCircle className="w-8 h-8 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground">No announcements yet</p>
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-border">
-                    {announcements.map(a => (
-                      <li
-                        key={a.id}
-                        className={`flex gap-3 py-3.5 ${a.isRead ? "" : "bg-primary/[0.03] -mx-6 px-6"}`}
-                      >
-                        <AnnouncementIcon type={a.type} />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className={`text-sm leading-snug ${a.isRead ? "text-foreground" : "font-semibold"}`}>
-                              {a.title}
-                            </p>
-                            {!a.isRead && <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{a.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{relativeTime(a.createdAt)}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Sponsors */}
-            {event.sponsors && event.sponsors.length > 0 && (
-              <Card variant="github">
-                <CardContent className="p-5 space-y-5">
-                  {sponsorTierOrder.map(tier => {
-                    const sponsors = sponsorsByTier[tier];
-                    if (!sponsors?.length) return null;
-                    return (
-                      <div key={tier}>
-                        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-                          {sponsorTierLabels[tier]}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-5">
-                          {sponsors.map((s, idx) => (
-                            <a
-                              key={s.id ?? idx}
-                              href={s.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:opacity-75 transition-opacity"
-                            >
-                              {s.logo ? (
-                                <img src={s.logo} alt={s.name} className="h-9 w-auto object-contain" />
-                              ) : (
-                                <div className="h-9 px-3 bg-muted rounded flex items-center">
-                                  <span className="text-sm font-medium text-muted-foreground">{s.name}</span>
-                                </div>
-                              )}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {/* Tags */}
+                  {event.tags && event.tags.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border">
+                      <Tag className="w-3.5 h-3.5 text-muted-foreground" />
+                      {event.tags.map((tag, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">{tag}</Badge>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            )}
+            </section>
+          );
+        })()}
 
-            {/* Event Details */}
-            <Card variant="github">
-              <CardContent className="p-5 space-y-4">
-                <div className="space-y-3 text-sm text-muted-foreground">
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-4 h-4 mt-0.5 text-muted-foreground/60 flex-shrink-0" />
-                    <div>
-                      <p>From {formatDateLong(event.date)}{event.time && ` · ${event.time}`}</p>
-                      {event.endDate && <p>To {formatDateLong(event.endDate)}</p>}
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <Globe className="w-4 h-4 mt-0.5 text-muted-foreground/60 flex-shrink-0" />
-                    <p>Dates shown in your local time zone</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground/60 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">{event.venue ?? event.location}</p>
-                      {event.venue && event.location && event.venue !== event.location && (
-                        <p>{event.location}</p>
+        {/* ═══════════════════════════════════════════════════════════════════
+            5. ORGANIZER — Compact card (Eventbrite style)
+            ═══════════════════════════════════════════════════════════════════ */}
+        {event.organizer && (() => {
+          const orgDescLength = event.organizerDescription ? event.organizerDescription.replace(/<[^>]*>/g, "").trim().length : 0;
+          const shouldTruncateOrgDesc = orgDescLength > 200;
+          return (
+            <section className="mb-8">
+              <SectionHeading icon={Building2} title="Organizer" />
+              <Card className="border-border/40 bg-card">
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-4">
+                    <Avatar
+                      src={event.organizerAvatar}
+                      name={event.organizer}
+                      alt={event.organizer}
+                      size="md"
+                      className="flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-foreground">{event.organizer}</h3>
+                      <p className="text-xs text-muted-foreground">Event Organizer</p>
+                      {event.organizerDescription && (
+                        <div className="mt-2 space-y-1">
+                          <p className={`text-sm text-muted-foreground leading-relaxed ${shouldTruncateOrgDesc && !isOrganizerDescExpanded ? "line-clamp-3" : ""}`}>
+                            {event.organizerDescription}
+                          </p>
+                          {shouldTruncateOrgDesc && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsOrganizerDescExpanded(!isOrganizerDescExpanded)}
+                              className="h-7 text-xs text-primary hover:text-primary/80 p-0"
+                            >
+                              {isOrganizerDescExpanded ? (
+                                <>
+                                  Show Less
+                                  <ChevronDown className="w-3.5 h-3.5 ml-1 rotate-180" />
+                                </>
+                              ) : (
+                                <>
+                                  See More
+                                  <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                      {event.organizerId && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-3 h-8 text-xs"
+                          onClick={() => setIsContactOpen(true)}
+                        >
+                          <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
+                          Contact Organizer
+                        </Button>
                       )}
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+            </section>
+          );
+        })()}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            6. SPEAKERS
+            ═══════════════════════════════════════════════════════════════════ */}
+        {hasSpeakers && (
+          <section className="mb-8">
+            <SectionHeading icon={Mic2} title="Speakers" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {event.speakers!.map((speaker, idx) => (
+                <Card key={speaker.id ?? idx} className="border-border/40 bg-card overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      {speaker.image ? (
+                        <img
+                          src={speaker.image}
+                          alt={speaker.name}
+                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Mic2 className="w-6 h-6 text-primary/50" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-foreground">{speaker.name}</h4>
+                        {speaker.title && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{speaker.title}</p>
+                        )}
+                        {speaker.company && (
+                          <p className="text-xs text-primary/80 mt-0.5">{speaker.company}</p>
+                        )}
+                      </div>
+                    </div>
+                    {speaker.bio && (
+                      <p className="text-xs text-muted-foreground mt-3 line-clamp-3 leading-relaxed">
+                        {speaker.bio}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            7. AGENDA PREVIEW — Top sessions + link to Schedule tab
+            ═══════════════════════════════════════════════════════════════════ */}
+        {hasAgenda && (
+          <section className="mb-8">
+            <SectionHeading icon={Calendar} title="Schedule Preview" />
+            <Card className="border-border/40 bg-card">
+              <CardContent className="p-5">
+                <div className="space-y-3">
+                  {event.agenda!.slice(0, 4).map((item, idx) => (
+                    <div key={item.id ?? idx} className="flex items-start gap-3">
+                      {/* Time column */}
+                      <div className="flex-shrink-0 w-20 text-right">
+                        <p className="text-xs font-mono font-medium text-primary">{item.startTime}</p>
+                        <p className="text-[10px] text-muted-foreground">{item.endTime}</p>
+                      </div>
+                      {/* Vertical line */}
+                      <div className="flex flex-col items-center flex-shrink-0">
+                        <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
+                        {idx < Math.min(event.agenda!.length, 4) - 1 && (
+                          <div className="w-px flex-1 bg-border mt-1" />
+                        )}
+                      </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0 pb-4">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-foreground">{item.title}</p>
+                          {(item.sessionType || item.type) && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {sessionTypeLabels[(item.sessionType || item.type)!] ?? item.sessionType ?? item.type}
+                            </Badge>
+                          )}
+                        </div>
+                        {item.room && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{item.room}</p>
+                        )}
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                {(event.fullDescription ?? event.description) && (
-                  <RichTextContent
-                    content={event.fullDescription ?? event.description ?? ""}
-                    className="text-sm text-muted-foreground"
-                  />
+                {event.agenda!.length > 4 && (
+                  <div className="pt-3 mt-3 border-t border-border text-center">
+                    <p className="text-xs text-muted-foreground">
+                      +{event.agenda!.length - 4} more sessions — switch to the <span className="font-medium text-primary">Schedule</span> tab to see the full agenda
+                    </p>
+                  </div>
                 )}
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
-                {event.socialLinks && Object.keys(event.socialLinks).length > 0 && (
-                  <div className="flex items-center gap-3 pt-3 border-t border-border">
+        {/* ═══════════════════════════════════════════════════════════════════
+            8. EXHIBITORS
+            ═══════════════════════════════════════════════════════════════════ */}
+        {hasExhibitors && (
+          <section className="mb-8">
+            <SectionHeading icon={Building2} title="Exhibitors" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {event.exhibitors!.map((exhibitor, idx) => (
+                <Card key={exhibitor.id ?? idx} className="border-border/40 bg-card">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      {exhibitor.logo ? (
+                        <img
+                          src={exhibitor.logo}
+                          alt={exhibitor.name}
+                          className="w-12 h-12 rounded-lg object-contain bg-muted p-1 flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                          <Building2 className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-semibold text-foreground">{exhibitor.name}</h4>
+                        {exhibitor.booth && (
+                          <p className="text-xs text-primary mt-0.5">Booth: {exhibitor.booth}</p>
+                        )}
+                        {exhibitor.category && (
+                          <Badge variant="secondary" className="text-[10px] mt-1">{exhibitor.category}</Badge>
+                        )}
+                      </div>
+                    </div>
+                    {exhibitor.description && (
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{exhibitor.description}</p>
+                    )}
+                    {exhibitor.website && (
+                      <a
+                        href={exhibitor.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 mt-2 transition-colors"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Visit website
+                      </a>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            9. SPONSORS
+            ═══════════════════════════════════════════════════════════════════ */}
+        {hasSponsors && (
+          <section className="mb-8">
+            <SectionHeading icon={CheckCircle} title="Sponsors" />
+            <Card className="border-border/40 bg-card">
+              <CardContent className="p-5 space-y-5">
+                {sponsorTierOrder.map(tier => {
+                  const sponsors = sponsorsByTier[tier];
+                  if (!sponsors?.length) return null;
+                  return (
+                    <div key={tier}>
+                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+                        {sponsorTierLabels[tier]}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-5">
+                        {sponsors.map((s, idx) => (
+                          <a
+                            key={s.id ?? idx}
+                            href={s.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:opacity-75 transition-opacity"
+                            title={s.name}
+                          >
+                            {s.logo ? (
+                              <img src={s.logo} alt={s.name} className="h-10 w-auto object-contain" />
+                            ) : (
+                              <div className="h-10 px-4 bg-muted rounded-lg flex items-center">
+                                <span className="text-sm font-medium text-muted-foreground">{s.name}</span>
+                              </div>
+                            )}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            10. FAQs — Accordion
+            ═══════════════════════════════════════════════════════════════════ */}
+        {hasFaqs && (
+          <section className="mb-8">
+            <SectionHeading icon={MessageCircle} title="Frequently Asked Questions" />
+            <Card className="border-border/40 bg-card">
+              <CardContent className="p-0 divide-y divide-border">
+                {event.faqs!.map((faq, idx) => (
+                  <div key={idx}>
+                    <button
+                      className="flex items-center justify-between w-full px-5 py-4 text-left hover:bg-muted/30 transition-colors"
+                      onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                    >
+                      <span className="text-sm font-medium text-foreground pr-4">{faq.question}</span>
+                      {openFaqIndex === idx ? (
+                        <ChevronDown className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      )}
+                    </button>
+                    {openFaqIndex === idx && (
+                      <div className="px-5 pb-4 -mt-1">
+                        <p className="text-sm text-muted-foreground leading-relaxed">{faq.answer}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            11. REQUIREMENTS & RESTRICTIONS
+            ═══════════════════════════════════════════════════════════════════ */}
+        {hasRequirements && (
+          <section className="mb-8">
+            <SectionHeading icon={AlertCircle} title="Important Information" />
+            <Card className="border-border/40 bg-card">
+              <CardContent className="p-5 space-y-4">
+                {event.ageRestriction && (
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Age Restriction</p>
+                      <p className="text-sm text-muted-foreground">{event.ageRestriction}</p>
+                    </div>
+                  </div>
+                )}
+                {event.requirements && event.requirements.length > 0 && (
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-2">Requirements</p>
+                      <ul className="space-y-1.5">
+                        {event.requirements.map((req, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <CheckCircle className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
+                            {req}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+                {event.refundPolicy && event.refundPolicy !== "no_refunds" && (
+                  <div className="flex items-start gap-3 pt-2 border-t border-border">
+                    <Ticket className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Refund Policy</p>
+                      <p className="text-sm text-muted-foreground">
+                        {event.refundPolicyText ?? event.refundPolicy.replace(/_/g, " ")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            12. VENUE & MAP
+            ═══════════════════════════════════════════════════════════════════ */}
+        {!event.isOnline && (event.venue || event.location) && (
+          <section className="mb-8">
+            <SectionHeading icon={MapPin} title="Venue" />
+            <Card className="border-border/40 bg-card overflow-hidden">
+              <CardContent className="p-5 pb-0">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{event.venue ?? event.location}</p>
+                    {event.venue && event.location && event.venue !== event.location && (
+                      <p className="text-sm text-muted-foreground mt-0.5">{event.location}</p>
+                    )}
+                    {event.address && (
+                      <p className="text-xs text-muted-foreground mt-1">{event.address}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs flex-shrink-0"
+                    onClick={() => {
+                      const q = encodeURIComponent(`${event.venue ? event.venue + ", " : ""}${event.location}`);
+                      window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank");
+                    }}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                    Directions
+                  </Button>
+                </div>
+              </CardContent>
+              <div className="relative h-[200px]">
+                <EventMap
+                  venue={event.venue || ""}
+                  location={event.location}
+                  coordinates={event.coordinates}
+                />
+              </div>
+            </Card>
+          </section>
+        )}
+
+        {/* Online event link */}
+        {event.isOnline && event.onlineLink && (
+          <section className="mb-8">
+            <SectionHeading icon={Globe} title="Online Event" />
+            <Card className="border-border/40 bg-card">
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">This is an online event</p>
+                      <p className="text-xs text-muted-foreground">Join via the link when the event starts</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-8"
+                    onClick={() => window.open(event.onlineLink, "_blank", "noopener,noreferrer")}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                    Join
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            13. ANNOUNCEMENTS
+            ═══════════════════════════════════════════════════════════════════ */}
+        <section className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Megaphone className="w-4 h-4 text-primary" />
+              </div>
+              <h2 className="text-base font-semibold text-foreground">Announcements</h2>
+              {unreadCount > 0 && (
+                <Badge className="bg-primary text-primary-foreground text-xs px-1.5 rounded-full">
+                  {unreadCount}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <Button variant="ghost" size="sm" className="text-xs text-primary h-7" onClick={handleMarkAllRead} disabled={markingRead}>
+                  Mark all read
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => void loadAnnouncements()} title="Refresh">
+                <RefreshCw className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          </div>
+          <Card className="border-border/40 bg-card">
+            <CardContent className="p-0">
+              {announcementsLoading ? (
+                <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
+                  Loading announcements...
+                </div>
+              ) : announcements.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
+                  <Megaphone className="w-8 h-8 text-muted-foreground/20" />
+                  <p className="text-sm text-muted-foreground">No announcements yet</p>
+                  <p className="text-xs text-muted-foreground">The organizer will post updates here</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {announcements.map(a => (
+                    <li
+                      key={a.id}
+                      className={`flex gap-3 px-5 py-4 transition-colors ${a.isRead ? "" : "bg-primary/[0.03]"}`}
+                    >
+                      <AnnouncementIcon type={a.type} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className={`text-sm leading-snug ${a.isRead ? "text-foreground" : "font-semibold"}`}>
+                            {a.title}
+                          </p>
+                          {!a.isRead && <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{a.message}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{relativeTime(a.createdAt)}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            14. SOCIAL LINKS — Footer row
+            ═══════════════════════════════════════════════════════════════════ */}
+        {event.socialLinks && Object.keys(event.socialLinks).length > 0 && (
+          <section className="mb-8">
+            <Card className="border-border/40 bg-card">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Follow this event</span>
+                  <div className="flex items-center gap-3">
                     {Object.entries(event.socialLinks).map(([platform, url]) => {
                       if (!url) return null;
                       const cfg = socialPlatformConfig[platform.toLowerCase()] ?? {
@@ -731,7 +1160,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-muted-foreground hover:text-primary transition-colors"
+                          className="w-8 h-8 rounded-lg bg-muted hover:bg-primary/10 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors"
                           title={cfg.label}
                         >
                           <Icon className="w-4 h-4" />
@@ -739,41 +1168,16 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                       );
                     })}
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
-
-            {/* Venue Map */}
-            {!event.isOnline && (event.venue || event.location) && (
-              <Card variant="github">
-                <CardContent className="p-0 overflow-hidden">
-                  <div className="relative h-[200px]">
-                    <EventMap
-                      venue={event.venue || ""}
-                      location={event.location}
-                      coordinates={event.coordinates}
-                    />
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="absolute top-3 right-3 shadow-lg z-10"
-                      onClick={() => {
-                        const q = encodeURIComponent(`${event.venue ? event.venue + ", " : ""}${event.location}`);
-                        window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, "_blank");
-                      }}
-                    >
-                      <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
-                      Directions
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
+          </section>
+        )}
       </div>
 
-      {/* Contact Organizer dialog */}
+      {/* ═══════════════════════════════════════════════════════════════════
+          CONTACT ORGANIZER DIALOG
+          ═══════════════════════════════════════════════════════════════════ */}
       <Dialog open={isContactOpen} onOpenChange={setIsContactOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -796,7 +1200,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                 id="overview-contact-content"
                 value={contactContent}
                 onChange={e => setContactContent(e.target.value)}
-                placeholder="Write your message to the organizer…"
+                placeholder="Write your message to the organizer..."
                 className="mt-2 min-h-[120px]"
               />
             </div>
@@ -805,11 +1209,8 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
             <Button variant="outline" onClick={() => setIsContactOpen(false)} disabled={sendingContact}>
               Cancel
             </Button>
-            <Button
-              onClick={handleContactOrganizer}
-              disabled={sendingContact || !contactContent.trim()}
-            >
-              {sendingContact ? "Sending…" : "Send Message"}
+            <Button onClick={handleContactOrganizer} disabled={sendingContact || !contactContent.trim()}>
+              {sendingContact ? "Sending..." : "Send Message"}
             </Button>
           </DialogFooter>
         </DialogContent>

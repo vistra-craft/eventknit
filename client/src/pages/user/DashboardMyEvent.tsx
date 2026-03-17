@@ -5,7 +5,7 @@ import { Loader } from "@/components/ui/loader";
 import { Button } from "../../components/ui/button";
 import { Alert, AlertDescription } from "../../components/ui/alert";
 import { EventAttendeeView } from "../../components/event-attendee";
-import type { EventData, User, Speaker, SeatInfo } from "../../components/event-attendee";
+import type { EventData, User, Speaker, SeatInfo, FAQ } from "../../components/event-attendee";
 import { getEventById, getUserRegisteredEvents } from "../../lib/event-api";
 import { getTicket } from "../../lib/ticket-api";
 import { useAuth } from "../../hooks/useAuth";
@@ -63,6 +63,19 @@ interface ApiExhibitor {
   website?: unknown;
 }
 
+interface ApiOrganizer {
+  id?: unknown;
+  firstName?: unknown;
+  lastName?: unknown;
+  organizationName?: unknown;
+  avatar?: unknown;
+}
+
+interface ApiFaq {
+  question?: unknown;
+  answer?: unknown;
+}
+
 interface ApiEvent {
   id?: unknown;
   title?: unknown;
@@ -73,11 +86,14 @@ interface ApiEvent {
   endDate?: unknown;
   time?: unknown;
   startTime?: unknown;
-  endTime?: unknown;  location?: unknown;
+  endTime?: unknown;
+  location?: unknown;
   venue?: unknown;
   type?: unknown;
   eventType?: unknown;
   image?: unknown;
+  imageFocalX?: unknown;
+  imageFocalY?: unknown;
   category?: unknown;
   status?: unknown;
   organizer?: unknown;
@@ -87,12 +103,23 @@ interface ApiEvent {
   sponsors?: unknown;
   exhibitors?: unknown;
   agenda?: unknown;
+  faqs?: unknown;
   socialLinks?: unknown;
   hashtag?: unknown;
+  tags?: unknown;
+  requirements?: unknown;
+  ageRestriction?: unknown;
+  capacity?: unknown;
+  availableSlots?: unknown;
+  registrationCount?: unknown;
+  _count?: unknown;
+  refundPolicy?: unknown;
+  refundPolicyText?: unknown;
   address?: unknown;
   coordinates?: unknown;
   isOnline?: unknown;
   onlineLink?: unknown;
+  organizerName?: unknown;
 }
 
 const VALID_SPONSOR_LEVELS = new Set([
@@ -187,6 +214,41 @@ const transformEventData = (
       }))
     : undefined;
 
+  // Parse FAQs
+  const faqs: FAQ[] | undefined = Array.isArray(apiEvent.faqs)
+    ? (apiEvent.faqs as ApiFaq[])
+        .filter(f => f.question && f.answer)
+        .map(f => ({
+          question: String(f.question ?? ''),
+          answer: String(f.answer ?? ''),
+        }))
+    : undefined;
+
+  // Parse organizer name and avatar
+  let organizerName: string | undefined;
+  let organizerAvatar: string | undefined;
+  if (typeof apiEvent.organizer === 'string') {
+    organizerName = apiEvent.organizer;
+  } else if (apiEvent.organizer != null && typeof apiEvent.organizer === 'object') {
+    const org = apiEvent.organizer as ApiOrganizer;
+    organizerName = org.organizationName
+      ? String(org.organizationName)
+      : `${String(org.firstName ?? '')} ${String(org.lastName ?? '')}`.trim() || undefined;
+    organizerAvatar = typeof org.avatar === 'string' ? org.avatar : undefined;
+  }
+  if (!organizerName && typeof apiEvent.organizerName === 'string') {
+    organizerName = apiEvent.organizerName;
+  }
+
+  // Parse registration count from _count or direct field
+  let registrationCount: number | undefined;
+  if (typeof apiEvent.registrationCount === 'number') {
+    registrationCount = apiEvent.registrationCount;
+  } else if (apiEvent._count != null && typeof apiEvent._count === 'object') {
+    const counts = apiEvent._count as Record<string, unknown>;
+    if (typeof counts.registrations === 'number') registrationCount = counts.registrations;
+  }
+
   return {
     id: String(apiEvent.id ?? ''),
     title: String(apiEvent.title ?? ''),
@@ -201,20 +263,35 @@ const transformEventData = (
     venue: typeof apiEvent.venue === 'string' ? apiEvent.venue : undefined,
     type: String(apiEvent.type ?? apiEvent.eventType ?? 'Event'),
     image: typeof apiEvent.image === 'string' ? apiEvent.image : undefined,
+    imageFocalX: typeof apiEvent.imageFocalX === 'number' ? apiEvent.imageFocalX : undefined,
+    imageFocalY: typeof apiEvent.imageFocalY === 'number' ? apiEvent.imageFocalY : undefined,
     category: typeof apiEvent.category === 'string' ? apiEvent.category : undefined,
     status: toEventStatus(apiEvent.status),
     registrationDate: registrationInfo?.registrationDate,
-    organizer: typeof apiEvent.organizer === 'string' ? apiEvent.organizer : undefined,
+    organizer: organizerName,
     organizerId: typeof apiEvent.organizerId === 'string' ? apiEvent.organizerId : undefined,
     organizerDescription: typeof apiEvent.organizerDescription === 'string' ? apiEvent.organizerDescription : undefined,
+    organizerAvatar,
     speakers: speakers.length > 0 ? speakers : undefined,
     sponsors,
     exhibitors,
     agenda,
+    faqs: faqs && faqs.length > 0 ? faqs : undefined,
     socialLinks: apiEvent.socialLinks != null && typeof apiEvent.socialLinks === 'object'
       ? apiEvent.socialLinks as Record<string, string>
       : undefined,
     hashtag: typeof apiEvent.hashtag === 'string' ? apiEvent.hashtag : undefined,
+    tags: Array.isArray(apiEvent.tags) ? (apiEvent.tags as unknown[]).map(String) : undefined,
+    // Event requirements & restrictions
+    requirements: Array.isArray(apiEvent.requirements) ? (apiEvent.requirements as unknown[]).map(String) : undefined,
+    ageRestriction: typeof apiEvent.ageRestriction === 'string' ? apiEvent.ageRestriction : undefined,
+    // Capacity & attendance
+    capacity: typeof apiEvent.capacity === 'number' ? apiEvent.capacity : undefined,
+    availableSlots: typeof apiEvent.availableSlots === 'number' ? apiEvent.availableSlots : undefined,
+    registrationCount,
+    // Refund policy
+    refundPolicy: typeof apiEvent.refundPolicy === 'string' ? apiEvent.refundPolicy : undefined,
+    refundPolicyText: typeof apiEvent.refundPolicyText === 'string' ? apiEvent.refundPolicyText : undefined,
     // Location extras
     address: typeof apiEvent.address === 'string' ? apiEvent.address : undefined,
     coordinates: apiEvent.coordinates != null && typeof apiEvent.coordinates === 'object'

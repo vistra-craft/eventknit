@@ -17,7 +17,7 @@ import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, AlertCircle } from "lucide-react";
+import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { FAQsAccordion } from "@/components/event-details/FAQsAccordion";
 import { RefundPolicy } from "@/components/event-details/RefundPolicy";
 import ResaleListings from "@/components/event-details/ResaleListings";
@@ -65,6 +65,7 @@ const EventDetails = () => {
   const [userAlreadyRegistered, setUserAlreadyRegistered] = useState(false);
   const [existingRegistrationId, setExistingRegistrationId] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { toast } = useToast();
 
   // Use event.id (real UUID) for API calls — id from URL may be a slug
@@ -337,10 +338,41 @@ const EventDetails = () => {
               {/* About Section */}
               <section className="pt-8 pb-8 border-b border-border/40">
                 <h2 className="text-page-title mb-4">About This Event</h2>
-                <RichTextContent
-                  content={event.fullDescription || event.description || '<p>No description available.</p>'}
-                  className="prose-lg text-muted-foreground leading-relaxed"
-                />
+                {(() => {
+                  const descriptionContent = event.fullDescription || event.description || '<p>No description available.</p>';
+                  const textLength = descriptionContent.replace(/<[^>]*>/g, '').trim().length;
+                  const shouldTruncate = textLength > 300;
+                  return (
+                    <div className="space-y-2">
+                      <div className={shouldTruncate && !isDescriptionExpanded ? "line-clamp-4" : ""}>
+                        <RichTextContent
+                          content={descriptionContent}
+                          className="prose-lg text-muted-foreground leading-relaxed"
+                        />
+                      </div>
+                      {shouldTruncate && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                          className="h-8 text-primary hover:text-primary/80 p-0"
+                        >
+                          {isDescriptionExpanded ? (
+                            <>
+                              Show Less
+                              <ChevronUp className="w-4 h-4 ml-1" />
+                            </>
+                          ) : (
+                            <>
+                              See More
+                              <ChevronDown className="w-4 h-4 ml-1" />
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })()}
               </section>
 
               {/* Event Schedule */}
