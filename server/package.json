@@ -75,6 +75,7 @@
     "@types/twilio": "^3.19.2",
     "@types/web-push": "^3.6.4",
     "@types/yamljs": "^0.2.34",
+    "@vitest/coverage-v8": "^4.1.0",
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.2",
     "husky": "^9.1.7",
