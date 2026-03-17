@@ -149,9 +149,9 @@ const CreateAccount = () => {
 
         // Redirect after a short delay
         setTimeout(() => {
-          if (role === 'SUPERADMIN' || role === 'ADMIN' || role === 'ADMIN_STAFF' || role === 'MARKETER' || role === 'SUPPORT' || role === 'TELLER') {
+          if (role === 'SUPERADMIN' || role === 'ADMIN' || role === 'SUPPORT' || role === 'TELLER') {
             navigate('/admin/dashboard');
-          } else if (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') {
+          } else if (role === 'ORGANIZER' || role === 'ORGANIZER_ADMIN' || role === 'ORGANIZER_TELLER') {
             // Organizers need onboarding if not completed
             navigate(onboardingCompleted === false ? '/organizer/onboarding' : '/organizer/dashboard');
           } else {
