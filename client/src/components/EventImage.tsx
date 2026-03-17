@@ -16,8 +16,8 @@ interface EventImageProps {
 
 /**
  * EventImage component that respects focal point positioning.
- * Use this component wherever event images are displayed to ensure
- * consistent cropping based on the organizer's selected focal point.
+ * Uses a blurred background technique so the full image is always visible
+ * regardless of the organizer's upload aspect ratio.
  */
 export function EventImage({
   src,
@@ -32,10 +32,8 @@ export function EventImage({
 }: EventImageProps) {
   const [hasError, setHasError] = useState(false);
 
-  // Default to center if focal point not provided
   const x = focalX ?? 50;
   const y = focalY ?? 50;
-
   const objectPosition = `${x}% ${y}%`;
 
   if (!src || hasError) {
@@ -71,12 +69,23 @@ export function EventImage({
   }
 
   return (
-    <img
-      src={src}
-      alt={alt}
-      className={cn('object-cover', className)}
-      style={{ objectPosition }}
-      onError={() => setHasError(true)}
-    />
+    <div className={cn('relative w-full h-full overflow-hidden', className, containerClassName)}>
+      {/* Blurred background fill — ensures no letterboxing regardless of aspect ratio */}
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 pointer-events-none select-none"
+        style={{ objectPosition }}
+      />
+      {/* Main image — always fully visible */}
+      <img
+        src={src}
+        alt={alt}
+        className="absolute inset-0 w-full h-full object-contain"
+        style={{ objectPosition }}
+        onError={() => setHasError(true)}
+      />
+    </div>
   );
 }

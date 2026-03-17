@@ -25,6 +25,8 @@ export interface FeaturedEventData {
   description?: string | null;
   linkUrl?: string | null;
   linkText?: string | null;
+  imageFocalX?: number | null;
+  imageFocalY?: number | null;
   displayStartDate?: string | null;
   displayEndDate?: string | null;
   displayOrder: number;
@@ -104,6 +106,8 @@ export interface CreateFeaturedEventData {
   description?: string;
   linkUrl?: string;
   linkText?: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
   // Common fields
   displayStartDate?: string;
   displayEndDate?: string;
@@ -125,6 +129,8 @@ export interface UpdateFeaturedEventData {
   description?: string;
   linkUrl?: string;
   linkText?: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
   // Common fields
   displayStartDate?: string;
   displayEndDate?: string;

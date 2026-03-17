@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Upload, Camera, X } from "lucide-react";
+import { ArrowLeft, Upload, Camera, X, Crosshair } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/featured-event-api";
 import { getEvents, EventStatus } from "@/lib/event-api";
 import { HeroPreview } from "@/components/admin/HeroPreview";
+import { FocalPointPicker } from "@/components/event-wizard/FocalPointPicker";
 import { showErrorToast } from "@/lib/utils/error";
 
 const CreateFeaturedEventPage = () => {
@@ -43,6 +44,9 @@ const CreateFeaturedEventPage = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null); // Track actual file for IMAGE type FormData
   const [uploadedCustomImageFile, setUploadedCustomImageFile] = useState<File | null>(null); // Track file for EVENT customImage
+  const [focalX, setFocalX] = useState(50);
+  const [focalY, setFocalY] = useState(50);
+  const [showFocalPicker, setShowFocalPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageFileInputRef = useRef<HTMLInputElement>(null); // For IMAGE type upload
 
@@ -207,6 +211,8 @@ const CreateFeaturedEventPage = () => {
           if (formData.description) formDataToSubmit.append('description', formData.description);
           if (formData.linkUrl) formDataToSubmit.append('linkUrl', formData.linkUrl);
           if (formData.linkText) formDataToSubmit.append('linkText', formData.linkText);
+          formDataToSubmit.append('imageFocalX', focalX.toString());
+          formDataToSubmit.append('imageFocalY', focalY.toString());
         }
 
         await createFeaturedEvent(formDataToSubmit);
@@ -245,6 +251,8 @@ const CreateFeaturedEventPage = () => {
           if (formData.linkText && formData.linkText.trim() !== '') {
             submitData.linkText = formData.linkText;
           }
+          submitData.imageFocalX = focalX;
+          submitData.imageFocalY = focalY;
         }
 
         await createFeaturedEvent(submitData);
@@ -489,26 +497,59 @@ const CreateFeaturedEventPage = () => {
                     className="hidden"
                   />
                   {imagePreview || formData.imageUrl ? (
-                    <div className="relative">
-                      <img
-                        src={imagePreview || formData.imageUrl}
-                        alt="Preview"
-                        className="w-full h-48 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        className="absolute top-2 right-2"
-                        onClick={() => {
-                          setImagePreview(null);
-                          setFormData(prev => ({ ...prev, imageUrl: '' }));
-                          setUploadedFile(null);
-                          if (imageFileInputRef.current) imageFileInputRef.current.value = '';
-                        }}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
+                    <div className="space-y-3">
+                      {showFocalPicker ? (
+                        <FocalPointPicker
+                          imageUrl={(imagePreview || formData.imageUrl)!}
+                          focalX={focalX}
+                          focalY={focalY}
+                          onFocalPointChange={(x, y) => { setFocalX(x); setFocalY(y); }}
+                          onReplace={() => imageFileInputRef.current?.click()}
+                          onRemove={() => {
+                            setImagePreview(null);
+                            setFormData(prev => ({ ...prev, imageUrl: '' }));
+                            setUploadedFile(null);
+                            setShowFocalPicker(false);
+                            if (imageFileInputRef.current) imageFileInputRef.current.value = '';
+                          }}
+                        />
+                      ) : (
+                        <div className="relative">
+                          <img
+                            src={imagePreview || formData.imageUrl}
+                            alt="Preview"
+                            className="w-full h-48 object-cover rounded-lg border"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2"
+                            onClick={() => {
+                              setImagePreview(null);
+                              setFormData(prev => ({ ...prev, imageUrl: '' }));
+                              setUploadedFile(null);
+                              if (imageFileInputRef.current) imageFileInputRef.current.value = '';
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                      {/* Focal point toggle */}
+                      <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Crosshair className="w-4 h-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm font-medium">Adjust focal point</p>
+                            <p className="text-xs text-muted-foreground">Control which part of the image shows in the hero</p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={showFocalPicker}
+                          onCheckedChange={setShowFocalPicker}
+                        />
+                      </div>
                     </div>
                   ) : (
                     <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
@@ -616,7 +657,14 @@ const CreateFeaturedEventPage = () => {
                     id="displayStartDate"
                     type="date"
                     value={formData.displayStartDate}
-                    onChange={(e) => setFormData({ ...formData, displayStartDate: e.target.value })}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      setFormData((prev) => ({
+                        ...prev,
+                        displayStartDate: newStart,
+                        displayEndDate: prev.displayEndDate && newStart > prev.displayEndDate ? "" : prev.displayEndDate,
+                      }));
+                    }}
                   />
                 </div>
                 <div>
@@ -624,6 +672,7 @@ const CreateFeaturedEventPage = () => {
                   <Input
                     id="displayEndDate"
                     type="date"
+                    min={formData.displayStartDate || undefined}
                     value={formData.displayEndDate}
                     onChange={(e) => setFormData({ ...formData, displayEndDate: e.target.value })}
                   />

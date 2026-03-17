@@ -1586,7 +1586,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                     <div key={sponsor.id || idx} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center space-x-4">
                         {sponsor.logo ? (
-                          <img src={sponsor.logo} alt={sponsor.name} className="w-10 h-10 rounded-full object-cover" />
+                          <img src={sponsor.logo} alt={sponsor.name} className="w-10 h-10 rounded-lg object-contain p-1" />
                         ) : (
                           <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                             <span className="text-sm font-bold text-primary">
