@@ -22,13 +22,13 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
-          timeout: 10m
-          command_timeout: 10m
+          timeout: 20m
+          command_timeout: 20m
           script: |
             set -e
 
             echo "=== Syncing code from GitHub ==="
-            cd eventknit
+            cd ~/eventknit
             git fetch origin
             git checkout development
             git reset --hard origin/development

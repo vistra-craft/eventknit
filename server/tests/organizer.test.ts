@@ -48,9 +48,7 @@ describe('Organizer Staff Management', () => {
 
     // Clear all tables using comprehensive cleanup helper
     try {
-      await prisma.$transaction(async (tx) => {
-        await cleanupTestData(tx);
-      });
+      await cleanupTestData();
     } catch (error) {
       // If cleanup fails, log but continue - might be due to missing tables
       logger.warn('Cleanup warning:', error);

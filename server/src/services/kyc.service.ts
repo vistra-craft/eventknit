@@ -870,7 +870,7 @@ export class KYCService {
     logger.info(`KYC approved for user ${userId} by admin ${adminId}`);
 
     // Notify organizer (fire-and-forget)
-    emailService.sendKYCApprovalEmail(user.email, user.firstName).catch((err) => {
+    emailService.sendKYCApprovalEmail(user.email, user.firstName || 'there').catch((err) => {
       logger.error(`Failed to send KYC approval email to ${user.email}:`, err);
     });
 
@@ -903,7 +903,7 @@ export class KYCService {
     logger.info(`KYC rejected for user ${userId} by admin ${adminId}: ${reason}`);
 
     // Notify organizer with rejection reason (fire-and-forget)
-    emailService.sendKYCRejectionEmail(user.email, user.firstName, reason).catch((err) => {
+    emailService.sendKYCRejectionEmail(user.email, user.firstName || 'there', reason).catch((err) => {
       logger.error(`Failed to send KYC rejection email to ${user.email}:`, err);
     });
 

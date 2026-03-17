@@ -204,6 +204,17 @@ router.post(
 );
 
 /**
+ * @route   GET /api/v1/auth/verify-invitation
+ * @desc    Verify invitation token and return associated email (for pre-filling the form)
+ * @access  Public
+ */
+router.get(
+  '/verify-invitation',
+  authRateLimiter,
+  AuthController.verifyInvitationToken,
+);
+
+/**
  * @route   POST /api/v1/auth/create-account
  * @desc    Create account from invitation token (for guest users)
  * @access  Public

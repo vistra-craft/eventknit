@@ -170,6 +170,43 @@ export const requireRole = (allowedRoles: UserRole[]) => {
 };
 
 /**
+ * Middleware to block users whose account is not ACTIVE.
+ * Use on routes where only fully approved, active users should operate
+ * (e.g. organizer dashboard actions, event creation, staff invitations).
+ *
+ * PENDING_APPROVAL organizers must wait for admin approval.
+ * DEACTIVATED users must contact support or wait for reactivation.
+ * SUSPENDED users are already blocked by the authenticate middleware.
+ */
+export const requireActiveStatus = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): void => {
+  try {
+    if (!req.user) {
+      throw new AuthenticationError('Authentication required');
+    }
+
+    if (req.user.status === UserStatus.PENDING_APPROVAL) {
+      throw new AuthorizationError(
+        'Your account is pending approval. You will be notified once an admin reviews your application.',
+      );
+    }
+
+    if (req.user.status === UserStatus.DEACTIVATED) {
+      throw new AuthorizationError(
+        'Your account has been deactivated. Please contact support for assistance.',
+      );
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Optional authentication - attaches user if token is present, but doesn't fail if missing
  */
 export const optionalAuth = async (

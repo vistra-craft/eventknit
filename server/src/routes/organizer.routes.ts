@@ -70,6 +70,13 @@ router.get('/staff/:id', canManageStaffMiddleware, OrganizerController.getStaffB
 router.put('/staff/:id', canManageStaffMiddleware, OrganizerController.updateStaff);
 
 /**
+ * @route   PATCH /api/v1/organizer/staff/:id/role
+ * @desc    Change staff member's role (with session revocation, email notification, and audit trail)
+ * @access  Private (ORGANIZER+)
+ */
+router.patch('/staff/:id/role', canManageStaffMiddleware, OrganizerController.changeStaffRole);
+
+/**
  * @route   DELETE /api/v1/organizer/staff/:id
  * @desc    Delete staff member (soft delete)
  * @access  Private (ORGANIZER+)

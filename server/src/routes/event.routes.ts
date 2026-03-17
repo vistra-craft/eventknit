@@ -43,6 +43,7 @@ router.get(
  */
 router.post(
   '/:id/register-guest',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
   guestRegistrationRateLimiter,
   validate(eventValidations.registerAsGuest),
   EventController.registerAsGuest,
@@ -69,6 +70,7 @@ router.use(authenticate);
  */
 router.post(
   '/',
+  requireMinRole(UserRole.ATTENDEE), // ATTENDEE with PENDING_APPROVAL can create (becomeOrganizer flow); service enforces stricter check
   validate(eventValidations.createEvent),
   EventController.createEvent,
 );
@@ -115,6 +117,7 @@ router.post(
  */
 router.post(
   '/:id/register',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
   validate(eventValidations.registerForEvent),
   EventController.registerForEvent,
 );
@@ -137,6 +140,7 @@ router.get(
  */
 router.delete(
   '/registrations/:id',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
   EventController.cancelRegistration,
 );
 

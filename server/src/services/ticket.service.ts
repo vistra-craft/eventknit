@@ -778,7 +778,9 @@ export class TicketService {
 
       // Update email status in database
       if (emailResult.success) {
-        await prisma.eventRegistration.update({
+        // Use updateMany to avoid "record not found" if registration was
+        // cancelled/deleted while the email was being sent
+        await prisma.eventRegistration.updateMany({
           where: { id: registration.id },
           data: {
             ticketEmailSentAt: new Date(),
@@ -794,11 +796,13 @@ export class TicketService {
         }
       } else {
         const errorMessage = emailResult.error?.message || 'Unknown error';
-        await prisma.eventRegistration.update({
+        // Update status — use updateMany to avoid "record not found" errors
+        // if the registration was cancelled/deleted while email was being sent
+        await prisma.eventRegistration.updateMany({
           where: { id: registration.id },
           data: {
             ticketEmailStatus: 'FAILED',
-            ticketEmailError: errorMessage.substring(0, 500), // Limit error message length
+            ticketEmailError: errorMessage.substring(0, 500),
           },
         });
 
@@ -806,10 +810,11 @@ export class TicketService {
         throw new Error(`Failed to send ticket email after ${emailResult.attempts} attempts: ${errorMessage}`);
       }
     } catch (error) {
-      // Update status even if exception occurs
+      // Update status even if exception occurs — use updateMany to be resilient
+      // if registration was deleted (e.g., cancelled) while email was being sent
       try {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        await prisma.eventRegistration.update({
+        await prisma.eventRegistration.updateMany({
           where: { id: registration.id },
           data: {
             ticketEmailStatus: 'FAILED',

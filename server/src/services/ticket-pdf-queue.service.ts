@@ -145,19 +145,21 @@ export class TicketPdfQueueService {
    */
   static async addJob(data: TicketPdfJobData): Promise<string> {
     try {
-      // Update registration status to PENDING
-      await prisma.eventRegistration.update({
+      // Update registration status to PENDING (use updateMany to avoid throwing if record not yet visible)
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: {
           ticketPdfStatus: 'PENDING',
         },
       });
 
-      // If queue is not available, generate synchronously
+      // If queue is not available (e.g., Redis not running, test environment),
+      // skip PDF generation entirely. The ticket email will still be sent
+      // without a PDF attachment — the QR code and backup code are the primary
+      // entry credentials. PDF can be regenerated later via the resend endpoint.
       if (!queue) {
-        logger.debug('Queue not available, generating PDF synchronously');
-        await this.generatePdfSync(data);
-        return 'sync';
+        logger.debug('Queue not available — skipping PDF generation (ticket email will be sent without PDF)');
+        return 'skipped-no-queue';
       }
 
       // Add to queue with priority
@@ -170,10 +172,10 @@ export class TicketPdfQueueService {
       return job.id || 'unknown';
     } catch (error) {
       logger.error('Error adding PDF job:', error);
-
-      // Fall back to sync generation
-      await this.generatePdfSync(data);
-      return 'sync-fallback';
+      // Don't fall back to sync — it's too heavy for error paths.
+      // The ticket email will be sent without PDF. Users can request
+      // a resend once the queue is available.
+      return 'skipped-error';
     }
   }
 
@@ -237,14 +239,15 @@ export class TicketPdfQueueService {
    */
   private static async generatePdfSync(data: TicketPdfJobData): Promise<void> {
     try {
-      await prisma.eventRegistration.update({
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: { ticketPdfStatus: 'GENERATING' },
       });
 
       const pdfUrl = await this.generatePdf(data);
 
-      await prisma.eventRegistration.update({
+      // Use updateMany to avoid throwing if registration was deleted during generation
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: {
           ticketPdfUrl: pdfUrl,
@@ -258,9 +261,12 @@ export class TicketPdfQueueService {
 
       logger.info(`PDF generated synchronously for registration ${data.registrationId}`);
     } catch (error) {
-      await prisma.eventRegistration.update({
+      // Use updateMany to avoid throwing if registration doesn't exist
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: { ticketPdfStatus: 'FAILED' },
+      }).catch((updateErr) => {
+        logger.error(`Failed to mark registration ${data.registrationId} as FAILED:`, updateErr);
       });
       throw error;
     }

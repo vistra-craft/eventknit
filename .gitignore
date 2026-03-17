@@ -118,4 +118,5 @@ ssl/
 !README.md
 !**/README.md
 !docs/**/*.md
+/client/vite.config.ts
 

@@ -2021,19 +2021,26 @@ Attendee pays → Payment Gateway (Paystack/Stripe/M-Pesa) → Webhook confirms
 
 **Endpoint:** `POST /api/v1/payments/webhook`
 
+**Distributed Processing with Optimistic Locking**
+- Multi-instance safe: Unique index on `PaymentWebhookEvent.gatewayEventId` ensures single processing across concurrent instances
+- Create-before-process pattern: Record webhook event with distributed constraint check before side effects
+- Race condition handling: Second concurrent instance attempting same `gatewayEventId` triggers automatic deduplication
+- Eliminates side-effect duplication (emails, notifications) even under high concurrency
+
+**Processing Pipeline:**
 1. **Signature verification** — HMAC comparison (reject immediately if invalid)
-2. **Idempotency check** — Record in `PaymentWebhookEvent` table by `gatewayEventId` (unique index)
+2. **Distributed idempotency lock** — Record in `PaymentWebhookEvent` with constraint-based synchronization
 3. **Re-verify with gateway** — Call `verifyPayment(reference)` to confirm amount
 4. **Reference routing** — Check reference prefix to determine payment type:
    - `SUB-*` → Route to `SubscriptionService.handleSubscriptionPaymentSuccess()` (subscription payment)
-   - Default → Continue with event payment flow (steps 5-10)
-5. **Amount validation** — Tolerance of ±0.01 (1 cent/kobo for rounding)
-6. **Create transaction record** — `EventPaymentTransaction`
-7. **Update registration** — Status → `CONFIRMED`
-8. **Calculate platform fee** — `PlatformFeeService.createPlatformFee()` (also auto-records as `PlatformIncome`)
-9. **Generate invoice** — Async, non-blocking
-10. **Send ticket email** — With QR code and calendar invite
-11. **Notify organizer** — Payment received notification
+   - Default → Continue with event payment flow
+5. **Amount validation with mismatch detection** — Tolerance of ±0.01 (1 cent/kobo); mismatches trigger alert flow
+6. **Status updates** — `CONFIRMED` for success; `AMOUNT_MISMATCH` for discrepancies (enables triage)
+7. **Transaction recording** — Full audit trail with all gateway verification data
+8. **Platform fee calculation** — Atomic `PlatformFeeService.createPlatformFee()` (also auto-records as `PlatformIncome`)
+9. **Invoice generation** — Async, non-blocking
+10. **Ticket email** — With QR code and calendar invite
+11. **Dual notification** — Real-time alerts to organizer and attendee
 
 ### Idempotency (Multi-Layer)
 
@@ -2044,6 +2051,14 @@ Attendee pays → Payment Gateway (Paystack/Stripe/M-Pesa) → Webhook confirms
 | Platform Fee | `PlatformFee.transactionId` (unique) | One fee per transaction |
 | Auto-Payout | Query-based dedup | Fees with `status='calculated'` AND `disbursementId=null` |
 | Fee Linking | `prisma.$transaction` | Atomic create-and-link prevents double-counting |
+
+**Amount Mismatch Detection & Dual-Notification Flow**
+- Webhook validates paid amount vs. expected amount with ±0.01 tolerance
+- Mismatch detected: Registration status set to `AMOUNT_MISMATCH` (distinct from `PENDING`, enabling visual triage)
+- **Attendee notification** — High-priority alert with amount details, reference, and support contact
+- **Organizer notification** — High-priority alert with attendee email, reference, and reconciliation action
+- **Audit trail** — All mismatch data logged with difference amount and timestamps for investigation
+- **Manual recovery** — Webhook event status persisted; operators can retry or adjust via Bull Board dashboard
 
 ### Race Condition Prevention
 
@@ -2307,6 +2322,14 @@ EventKnit separates booking confirmation from ticket delivery using an async que
 - Retry with exponential backoff — 3 attempts, backoff on failure
 - Idempotency: guarded by `ticketEmailSentAt` — re-processing a BullMQ job never sends a duplicate email
 - Fails gracefully: queue not available → falls back to synchronous PDF generation
+- PDF generation protected with timeout; Puppeteer failures don't block ticket delivery
+
+**Robust Email & PDF Handling**
+- Email 1 (confirmation): Structured error handling with detailed logging; attendee can request resend if delivery fails
+- Email 2 (ticket): Async background processing with independent retry queue
+- BullMQ resilience: Jobs survive queue restarts; exponential backoff prevents gateway hammering
+- Queue unavailable fallback: Synchronous PDF generation ensures tickets always delivered
+- Audit trail: Both emails tracked independently for support troubleshooting and delivery verification
 
 **Why not one email?**
 Waiting for PDF generation before sending any email increases p99 latency by seconds, worsens failure rates, and blocks the server during high-traffic bursts. Splitting the flow returns instant trust to the user while heavy work continues in the background.
@@ -2497,11 +2520,16 @@ const qrPayload = {
   registrationId,
   eventId,
   email,
-  timestamp: Date.now(),
+  timestamp: registration.createdAt, // Deterministic: registration time, not current time
 };
 // Signed with Ed25519 private key → verifiable with public key
 // Public key available at GET /api/v1/auth/public-key
 ```
+
+**Deterministic QR Code Generation**
+- QR payload uses registration creation timestamp (not current time), ensuring identical signature across regenerations
+- Allows safe QR resend via email without invalidating previously issued codes
+- Backup code provides fallback if QR damaged during transmission (10-char alphanumeric)
 
 **Mode 2: HMAC-Signed String (Legacy)**
 ```
@@ -4161,6 +4189,11 @@ server {
 | **White Label** | Customizable branding that replaces EventKnit's identity with the organizer's |
 | **Cart Reservation** | 8-minute inventory lock during checkout to prevent overselling |
 | **Backup Code** | 10-character alphanumeric fallback for QR code scanning |
+| **Deterministic QR Code** | QR code payload using fixed registration timestamp (not current time), ensuring identical signatures across regenerations. Prevents invalidation when QR is resent or refreshed post-delivery |
+| **Optimistic Locking** | Distributed concurrency pattern: Create record with unique constraint before processing side effects. If duplicate constraint violation, another instance is handling the same event — auto-deduplication without explicit locks |
+| **Amount Mismatch Detection** | Webhook validation flow that detects payment amount discrepancies vs. expected amount with configurable tolerance (±0.01). Triggers dual-notification (attendee + organizer) and sets registration status to `AMOUNT_MISMATCH` for triage |
+| **Webhook Race Condition Prevention** | Multi-instance safe webhook processing via distributed constraint on `PaymentWebhookEvent.gatewayEventId`. Concurrent instances attempting same webhook triggers atomic constraint violation, ensuring single processing and preventing side-effect duplication |
+| **Email Resilience** | Dual-email model with independent queue fallback: If BullMQ unavailable, PDF generation handles synchronous fallback; Puppeteer timeouts prevent job hanging; structured error logging enables manual resend |
 | **Thundering Herd** | When many concurrent requests overwhelm a resource simultaneously |
 | **CQRS** | Command Query Responsibility Segregation — separate read/write data paths |
 | **Circuit Breaker** | Pattern that fails fast when a dependency is down, preventing cascade failures |

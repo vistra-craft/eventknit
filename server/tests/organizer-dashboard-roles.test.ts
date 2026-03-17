@@ -3,6 +3,7 @@ import app from '../src/app.js';
 import { prisma } from '../src/config/database.js';
 import { UserRole, UserStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { generateAccessToken } from '../src/utils/jwt.js';
 import { PermissionService } from '../src/services/permission.service.js';
 import { cleanupTestData } from './test-helpers.js';
 
@@ -37,9 +38,7 @@ describe('Organizer Dashboard - Roles & Permissions API', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Seed permissions
     await PermissionService.seedPermissions();
@@ -52,7 +51,7 @@ describe('Organizer Dashboard - Roles & Permissions API', () => {
     const organizerPassword = await hashPassword('Organizer123!@$');
     const organizer = await prisma.user.create({
       data: {
-        email: 'organizer@roles.test',
+        email: 'organizer@roles-test.com',
         password: organizerPassword,
         firstName: 'Event',
         lastName: 'Organizer',
@@ -65,11 +64,10 @@ describe('Organizer Dashboard - Roles & Permissions API', () => {
     organizerId = organizer.id;
 
     // Create attendee
-    const attendeePassword = await hashPassword('Attendee123!@$');
-    await prisma.user.create({
+    const attendee = await prisma.user.create({
       data: {
-        email: 'attendee@roles.test',
-        password: attendeePassword,
+        email: 'attendee@roles-test.com',
+        password: await hashPassword('Attendee123!@$'),
         firstName: 'Event',
         lastName: 'Attendee',
         role: UserRole.ATTENDEE,
@@ -78,23 +76,17 @@ describe('Organizer Dashboard - Roles & Permissions API', () => {
       },
     });
 
-    // Login as organizer
-    const organizerLogin = await request(app)
-      .post('/api/v1/auth/login')
-      .send({
-        email: 'organizer@roles.test',
-        password: 'Organizer123!@$',
-      });
-    organizerToken = organizerLogin.body.data.accessToken;
-
-    // Login as attendee
-    const attendeeLogin = await request(app)
-      .post('/api/v1/auth/login')
-      .send({
-        email: 'attendee@roles.test',
-        password: 'Attendee123!@$',
-      });
-    attendeeToken = attendeeLogin.body.data.accessToken;
+    // Generate tokens directly (no HTTP login needed)
+    organizerToken = generateAccessToken({
+      userId: organizer.id,
+      email: organizer.email,
+      role: organizer.role,
+    });
+    attendeeToken = generateAccessToken({
+      userId: attendee.id,
+      email: attendee.email,
+      role: attendee.role,
+    });
   });
 
   describe('GET /api/v1/organizer-dashboard/team/permissions', () => {
@@ -382,7 +374,7 @@ describe('Organizer Dashboard - Roles & Permissions API', () => {
       const otherOrgPassword = await hashPassword('Other123!@$');
       const otherOrg = await prisma.user.create({
         data: {
-          email: 'other@roles.test',
+          email: 'other@roles-test.com',
           password: otherOrgPassword,
           firstName: 'Other',
           lastName: 'Organizer',

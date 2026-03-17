@@ -233,6 +233,22 @@ export const verifyMagicLink = async (token: string): Promise<LoginResponse> => 
 };
 
 /**
+ * Verify invitation token and get associated email (for pre-filling forms)
+ */
+export interface VerifyInvitationResponse {
+  success: boolean;
+  data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export const verifyInvitationToken = async (token: string): Promise<VerifyInvitationResponse> => {
+  return apiGet<VerifyInvitationResponse>(`/auth/verify-invitation?token=${encodeURIComponent(token)}`);
+};
+
+/**
  * Create account from invitation token (for guest users)
  */
 export const createAccountFromInvitation = async (token: string, password: string): Promise<LoginResponse> => {

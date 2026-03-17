@@ -137,6 +137,39 @@ export class AdminController {
   }
 
   /**
+   * Change user role
+   */
+  static async changeUserRole(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { role } = req.body;
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const user = await AdminService.changeUserRole(
+        req.params.id as string,
+        role,
+        req.user.id,
+        req.user.role,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Role updated to ${role}`,
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Delete user
    */
   static async deleteUser(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

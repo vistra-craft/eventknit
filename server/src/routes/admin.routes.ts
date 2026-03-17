@@ -124,6 +124,13 @@ router.get('/users/:id', AdminController.getUserById);
 router.put('/users/:id', AdminController.updateUser);
 
 /**
+ * @route   PATCH /api/v1/admin/users/:id/role
+ * @desc    Change user role (with session revocation, email notification, and audit trail)
+ * @access  Private (ADMIN+)
+ */
+router.patch('/users/:id/role', AdminController.changeUserRole);
+
+/**
  * @route   DELETE /api/v1/admin/users/:id
  * @desc    Delete user (soft delete)
  * @access  Private (ADMIN+)
