@@ -189,6 +189,32 @@ const SubscriptionPlansPage = () => {
     (a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier)
   );
 
+  if (sortedPlans.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Subscription Plans</h1>
+          <p className="text-muted-foreground mt-1">
+            Configure subscription tier pricing, descriptions, and feature access for organizers.
+          </p>
+        </div>
+        <div className="flex flex-col items-center justify-center py-20 gap-3 rounded-xl border border-dashed border-border bg-muted/30">
+          <Shield className="h-10 w-10 text-muted-foreground" />
+          <p className="font-medium text-foreground">No subscription plans found</p>
+          <p className="text-sm text-muted-foreground text-center max-w-xs">
+            Run <code className="font-mono bg-muted px-1 rounded">npm run seed</code> in the server directory to initialise the default BASIC, STANDARD, and PREMIUM plans.
+          </p>
+          <button
+            className="mt-2 text-sm text-primary underline-offset-4 hover:underline"
+            onClick={() => void loadPlans()}
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
