@@ -44,7 +44,7 @@ const CreateAccount = () => {
     return null;
   };
 
-  // Verify token and get email (optional - we can skip this and just show form)
+  // Verify token and pre-fill email from the invitation
   useEffect(() => {
     if (!token) {
       setError('Invalid invitation link. Please check your email for the correct link.');
@@ -52,9 +52,26 @@ const CreateAccount = () => {
       setIsVerifyingToken(false);
       return;
     }
-    // For now, we'll just show the form - email will be pre-filled from the token verification
-    // In a full implementation, we could verify the token first to show the email
-    setIsVerifyingToken(false);
+
+    const verifyToken = async () => {
+      try {
+        const response = await authApi.verifyInvitationToken(token);
+        if (response.success && response.data) {
+          setEmail(response.data.email);
+        }
+      } catch (err: unknown) {
+        const errorMessage =
+          err && typeof err === 'object' && 'message' in err
+            ? (err.message as string)
+            : 'Invalid or expired invitation link';
+        setError(errorMessage);
+        setShowResend(true);
+      } finally {
+        setIsVerifyingToken(false);
+      }
+    };
+
+    verifyToken();
   }, [token]);
 
   const handleResendInvitation = async () => {
@@ -128,18 +145,18 @@ const CreateAccount = () => {
 
         // Determine navigation path based on role and onboarding status
         const role = response.data.user.role;
-        const needsOnboarding = typeof (response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted === 'boolean'
-          ? !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
-          : true;
+        const onboardingCompleted = (response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted;
 
         // Redirect after a short delay
         setTimeout(() => {
-          if (role === 'SUPERADMIN' || role === 'ADMIN') {
+          if (role === 'SUPERADMIN' || role === 'ADMIN' || role === 'ADMIN_STAFF' || role === 'MARKETER' || role === 'SUPPORT' || role === 'TELLER') {
             navigate('/admin/dashboard');
-          } else if (needsOnboarding) {
-            navigate('/onboarding/welcome');
+          } else if (role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER') {
+            // Organizers need onboarding if not completed
+            navigate(onboardingCompleted === false ? '/organizer/onboarding' : '/organizer/dashboard');
           } else {
-            navigate('/dashboard');
+            // ATTENDEE — go directly to user dashboard
+            navigate('/user/dashboard');
           }
         }, 2000);
       }

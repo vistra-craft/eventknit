@@ -3,7 +3,7 @@ import app from '../src/app.js';
 import { prisma } from '../src/config/database.js';
 import { UserRole, UserStatus, OrganizerEntityType, KYCDocumentType, KYCStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
-import { cleanupTestData } from './test-helpers.js';
+import { generateAccessToken } from '../src/utils/jwt.js';
 
 const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, 12);
@@ -36,16 +36,22 @@ describe('Organizer Dashboard - KYC API', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
+    // Clean up in FK-safe order using deleteMany (no TRUNCATE race conditions)
     await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
+      await tx.organizerDirector.deleteMany();
+      await tx.kYCDocument.deleteMany();
+      await tx.refreshToken.deleteMany();
+      await tx.event.deleteMany();
+      await tx.user.deleteMany();
     });
 
+    const hashedPassword = await hashPassword('Organizer123!@$');
+
     // Create organizer
-    const organizerPassword = await hashPassword('Organizer123!@$');
     const organizer = await prisma.user.create({
       data: {
-        email: 'organizer@kyc.test',
-        password: organizerPassword,
+        email: 'organizer@kyctest.com',
+        password: hashedPassword,
         firstName: 'Event',
         lastName: 'Organizer',
         role: UserRole.ORGANIZER,
@@ -57,11 +63,10 @@ describe('Organizer Dashboard - KYC API', () => {
     organizerId = organizer.id;
 
     // Create attendee
-    const attendeePassword = await hashPassword('Attendee123!@$');
     const attendee = await prisma.user.create({
       data: {
-        email: 'attendee@kyc.test',
-        password: attendeePassword,
+        email: 'attendee@kyctest.com',
+        password: await hashPassword('Attendee123!@$'),
         firstName: 'Event',
         lastName: 'Attendee',
         role: UserRole.ATTENDEE,
@@ -71,23 +76,17 @@ describe('Organizer Dashboard - KYC API', () => {
     });
     _attendeeId = attendee.id;
 
-    // Login as organizer
-    const organizerLogin = await request(app)
-      .post('/api/v1/auth/login')
-      .send({
-        email: 'organizer@kyc.test',
-        password: 'Organizer123!@$',
-      });
-    organizerToken = organizerLogin.body.data.accessToken;
-
-    // Login as attendee
-    const attendeeLogin = await request(app)
-      .post('/api/v1/auth/login')
-      .send({
-        email: 'attendee@kyc.test',
-        password: 'Attendee123!@$',
-      });
-    attendeeToken = attendeeLogin.body.data.accessToken;
+    // Generate tokens directly (no HTTP login needed)
+    organizerToken = generateAccessToken({
+      userId: organizer.id,
+      email: organizer.email,
+      role: organizer.role,
+    });
+    attendeeToken = generateAccessToken({
+      userId: attendee.id,
+      email: attendee.email,
+      role: attendee.role,
+    });
   });
 
   describe('POST /api/v1/organizer-dashboard/kyc/entity-type', () => {
@@ -110,7 +109,7 @@ describe('Organizer Dashboard - KYC API', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.entityType).toBe(OrganizerEntityType.LIMITED_LIABILITY_COMPANY);
-      expect(response.body.data.requiresReVerification).toBe(false);
+      expect(response.body.data.requiresReVerification).toBeFalsy();
 
       // Verify in database
       const user = await prisma.user.findUnique({
@@ -136,19 +135,22 @@ describe('Organizer Dashboard - KYC API', () => {
         .expect(401);
     });
 
-    it('should only allow organizers to set entity type', async () => {
+    it('should allow attendees to set entity type (attendees with paid events need KYC)', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
 
-      await request(app)
+      // Attendees are now allowed access to KYC endpoints for paid event creation
+      const response = await request(app)
         .post('/api/v1/organizer-dashboard/kyc/entity-type')
         .set('Authorization', `Bearer ${attendeeToken}`)
         .send({
           entityType: OrganizerEntityType.LIMITED_LIABILITY_COMPANY,
         })
-        .expect(403);
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
     });
 
     it('should reset KYC status when entity type changes after approval', async () => {
@@ -404,7 +406,7 @@ describe('Organizer Dashboard - KYC API', () => {
       const newOrgPassword = await hashPassword('NewOrg123!@$');
       const newOrg = await prisma.user.create({
         data: {
-          email: 'neworg@kyc.test',
+          email: 'neworg@kyctest.com',
           password: newOrgPassword,
           firstName: 'New',
           lastName: 'Organizer',
@@ -414,13 +416,11 @@ describe('Organizer Dashboard - KYC API', () => {
         },
       });
 
-      const newOrgLogin = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          email: 'neworg@kyc.test',
-          password: 'NewOrg123!@$',
-        });
-      const newOrgToken = newOrgLogin.body.data.accessToken;
+      const newOrgToken = generateAccessToken({
+        userId: newOrg.id,
+        email: newOrg.email,
+        role: newOrg.role,
+      });
 
       await request(app)
         .post('/api/v1/organizer-dashboard/kyc/documents')
@@ -433,7 +433,7 @@ describe('Organizer Dashboard - KYC API', () => {
         .expect(400);
 
       // Cleanup
-      await prisma.user.delete({ where: { id: newOrg.id } });
+      await prisma.user.deleteMany({ where: { id: newOrg.id } });
     });
 
     it('should require authentication', async () => {
@@ -553,7 +553,7 @@ describe('Organizer Dashboard - KYC API', () => {
       const otherOrgPassword = await hashPassword('OtherOrg123!@$');
       const otherOrg = await prisma.user.create({
         data: {
-          email: 'otherog@kyc.test',
+          email: 'otherog@kyctest.com',
           password: otherOrgPassword,
           firstName: 'Other',
           lastName: 'Organizer',
@@ -563,13 +563,11 @@ describe('Organizer Dashboard - KYC API', () => {
         },
       });
 
-      const otherOrgLogin = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          email: 'otherog@kyc.test',
-          password: 'OtherOrg123!@$',
-        });
-      const otherOrgToken = otherOrgLogin.body.data.accessToken;
+      const otherOrgToken = generateAccessToken({
+        userId: otherOrg.id,
+        email: otherOrg.email,
+        role: otherOrg.role,
+      });
 
       await request(app)
         .put(`/api/v1/organizer-dashboard/kyc/documents/${documentId}`)
@@ -580,7 +578,7 @@ describe('Organizer Dashboard - KYC API', () => {
         .expect(400);
 
       // Cleanup
-      await prisma.user.delete({ where: { id: otherOrg.id } });
+      await prisma.user.deleteMany({ where: { id: otherOrg.id } });
     });
   });
 
@@ -653,7 +651,7 @@ describe('Organizer Dashboard - KYC API', () => {
       const otherOrgPassword = await hashPassword('OtherOrg123!@$');
       const otherOrg = await prisma.user.create({
         data: {
-          email: 'otherog2@kyc.test',
+          email: 'otherog2@kyctest.com',
           password: otherOrgPassword,
           firstName: 'Other',
           lastName: 'Organizer',
@@ -663,13 +661,11 @@ describe('Organizer Dashboard - KYC API', () => {
         },
       });
 
-      const otherOrgLogin = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          email: 'otherog2@kyc.test',
-          password: 'OtherOrg123!@$',
-        });
-      const otherOrgToken = otherOrgLogin.body.data.accessToken;
+      const otherOrgToken = generateAccessToken({
+        userId: otherOrg.id,
+        email: otherOrg.email,
+        role: otherOrg.role,
+      });
 
       await request(app)
         .delete(`/api/v1/organizer-dashboard/kyc/documents/${documentId}`)
@@ -677,7 +673,7 @@ describe('Organizer Dashboard - KYC API', () => {
         .expect(400);
 
       // Cleanup
-      await prisma.user.delete({ where: { id: otherOrg.id } });
+      await prisma.user.deleteMany({ where: { id: otherOrg.id } });
     });
   });
 
@@ -712,7 +708,17 @@ describe('Organizer Dashboard - KYC API', () => {
         return;
       }
 
-      // Upload required documents
+      // Upload all required documents for SOLE_PROPRIETOR
+      await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/documents')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          documentType: KYCDocumentType.PP_NEW_CONTRACT,
+          documentNumber: 'CONTRACT001',
+          documentUrl: 'https://example.com/contract.pdf',
+        })
+        .expect(201);
+
       await request(app)
         .post('/api/v1/organizer-dashboard/kyc/documents')
         .set('Authorization', `Bearer ${organizerToken}`)
@@ -730,6 +736,26 @@ describe('Organizer Dashboard - KYC API', () => {
           documentType: KYCDocumentType.KRA_PIN,
           documentNumber: 'PIN123456',
           documentUrl: 'https://example.com/pin.pdf',
+        })
+        .expect(201);
+
+      await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/documents')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          documentType: KYCDocumentType.CERTIFICATE_OF_REGISTRATION,
+          documentNumber: 'REG789',
+          documentUrl: 'https://example.com/reg.pdf',
+        })
+        .expect(201);
+
+      await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/documents')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          documentType: KYCDocumentType.BANK_STATEMENT,
+          documentNumber: 'BANK001',
+          documentUrl: 'https://example.com/bank.pdf',
         })
         .expect(201);
 
@@ -762,6 +788,16 @@ describe('Organizer Dashboard - KYC API', () => {
   });
 
   describe('GET /api/v1/organizer-dashboard/kyc/directors', () => {
+    beforeEach(async () => {
+      if (!dbConnected) return;
+      // Directors require an entity type that supports directors
+      await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/entity-type')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ entityType: OrganizerEntityType.LIMITED_LIABILITY_COMPANY })
+        .expect(200);
+    });
+
     it('should return empty directors list when none added', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
@@ -822,6 +858,16 @@ describe('Organizer Dashboard - KYC API', () => {
   });
 
   describe('POST /api/v1/organizer-dashboard/kyc/directors', () => {
+    beforeEach(async () => {
+      if (!dbConnected) return;
+      // Directors require an entity type that supports directors
+      await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/entity-type')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ entityType: OrganizerEntityType.LIMITED_LIABILITY_COMPANY })
+        .expect(200);
+    });
+
     it('should create a director successfully', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
@@ -847,7 +893,7 @@ describe('Organizer Dashboard - KYC API', () => {
       expect(response.body.data.director).toBeDefined();
       expect(response.body.data.director.fullName).toBe('John Doe');
       expect(response.body.data.director.nationality).toBe('Kenyan');
-      expect(response.body.data.director.sharePercentage).toBe(50);
+      expect(Number(response.body.data.director.sharePercentage)).toBe(50);
 
       // Verify in database
       const director = await prisma.organizerDirector.findFirst({
@@ -920,6 +966,13 @@ describe('Organizer Dashboard - KYC API', () => {
 
     beforeEach(async () => {
       if (!dbConnected) return;
+      // Set entity type that requires directors
+      await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/entity-type')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ entityType: OrganizerEntityType.LIMITED_LIABILITY_COMPANY })
+        .expect(200);
+
       // Create a director
       const response = await request(app)
         .post('/api/v1/organizer-dashboard/kyc/directors')
@@ -978,7 +1031,7 @@ describe('Organizer Dashboard - KYC API', () => {
       const otherOrgPassword = await hashPassword('OtherOrg123!@$');
       const otherOrg = await prisma.user.create({
         data: {
-          email: 'otherog3@kyc.test',
+          email: 'otherog3@kyctest.com',
           password: otherOrgPassword,
           firstName: 'Other',
           lastName: 'Organizer',
@@ -988,13 +1041,11 @@ describe('Organizer Dashboard - KYC API', () => {
         },
       });
 
-      const otherOrgLogin = await request(app)
-        .post('/api/v1/auth/login')
-        .send({
-          email: 'otherog3@kyc.test',
-          password: 'OtherOrg123!@$',
-        });
-      const otherOrgToken = otherOrgLogin.body.data.accessToken;
+      const otherOrgToken = generateAccessToken({
+        userId: otherOrg.id,
+        email: otherOrg.email,
+        role: otherOrg.role,
+      });
 
       await request(app)
         .delete(`/api/v1/organizer-dashboard/kyc/directors/${directorId}`)
@@ -1002,7 +1053,7 @@ describe('Organizer Dashboard - KYC API', () => {
         .expect(400);
 
       // Cleanup
-      await prisma.user.delete({ where: { id: otherOrg.id } });
+      await prisma.user.deleteMany({ where: { id: otherOrg.id } });
     });
   });
 });

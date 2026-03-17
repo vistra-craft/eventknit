@@ -384,6 +384,125 @@ export class OrganizerService {
   }
 
   /**
+   * Change a staff member's role.
+   * Only ORGANIZER can change their own staff roles (ORGANIZER_TELLER ↔ ORGANIZER_ADMIN).
+   * Revokes sessions, sends notification, creates audit log.
+   */
+  static async changeStaffRole(
+    staffId: string,
+    newRole: UserRole,
+    organizerId: string,
+    organizerRole: UserRole,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Only ORGANIZER_ADMIN and ORGANIZER_TELLER are valid targets
+    const allowedStaffRoles: UserRole[] = [UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_TELLER];
+    if (!allowedStaffRoles.includes(newRole)) {
+      throw new AuthorizationError('Staff can only be assigned ORGANIZER_ADMIN or ORGANIZER_TELLER roles');
+    }
+
+    const staff = await prisma.user.findUnique({
+      where: { id: staffId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        role: true,
+        status: true,
+        organizationName: true,
+      },
+    });
+
+    if (!staff) {
+      throw new NotFoundError('Staff member not found');
+    }
+
+    // Verify the staff member is actually organizer staff
+    if (!allowedStaffRoles.includes(staff.role)) {
+      throw new AuthorizationError('This user is not an organizer staff member');
+    }
+
+    if (staff.role === newRole) {
+      throw new ConflictError(`Staff member already has the ${newRole} role`);
+    }
+
+    // Verify ownership: staff belongs to this organizer's organization
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
+      const organizer = await prisma.user.findUnique({
+        where: { id: organizerId },
+        select: { organizationName: true },
+      });
+
+      if (!organizer || staff.organizationName !== organizer.organizationName) {
+        throw new AuthorizationError('You do not have permission to modify this staff member');
+      }
+    }
+
+    // Validate role creation privilege
+    validateRoleCreation(organizerRole, newRole);
+
+    const oldRole = staff.role;
+
+    // Update role
+    const updatedStaff = await prisma.user.update({
+      where: { id: staffId },
+      data: {
+        role: newRole,
+        updatedBy: organizerId,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        role: true,
+        status: true,
+        isEmailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Revoke all refresh tokens — force re-login with new role in JWT
+    await prisma.refreshToken.deleteMany({
+      where: { userId: staffId },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: organizerId,
+      action: AuditActions.USER_UPDATED,
+      entity: 'User',
+      entityId: staffId,
+      metadata: {
+        action: 'role_change',
+        oldRole,
+        newRole,
+        changedBy: organizerId,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    // Send notification email (fire-and-forget)
+    const { emailService } = await import('./email.service.js');
+    emailService.sendRoleChangeEmail(
+      staff.email,
+      staff.firstName || 'Team member',
+      oldRole,
+      newRole,
+    ).catch((err: Error) => {
+      logger.warn(`Failed to send role change email to ${staff.email}:`, err);
+    });
+
+    logger.info(`Staff role changed: ${updatedStaff.email} ${oldRole} → ${newRole} by ${organizerId}`);
+
+    return updatedStaff;
+  }
+
+  /**
    * Delete staff member (soft delete)
    */
   static async deleteStaff(

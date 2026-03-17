@@ -313,6 +313,104 @@ export class AdminService {
   }
 
   /**
+   * Change a user's role.
+   * Validates privilege hierarchy, revokes sessions (forces re-login so the
+   * new role is picked up in the JWT), sends notification email, and creates
+   * an audit log entry with old/new role metadata.
+   */
+  static async changeUserRole(
+    userId: string,
+    newRole: UserRole,
+    adminId: string,
+    adminRole: UserRole,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (targetUser.role === newRole) {
+      throw new ValidationError(`User already has the ${newRole} role`);
+    }
+
+    // Validate the admin can modify this user AND assign the target role
+    validateUserModification(adminRole, targetUser.role);
+    validateRoleCreation(adminRole, newRole);
+
+    const oldRole = targetUser.role;
+
+    // Update the role
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        role: newRole,
+        updatedBy: adminId,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        role: true,
+        status: true,
+        isEmailVerified: true,
+        organizationName: true,
+        businessEmail: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Revoke all refresh tokens so the user must re-login
+    // and receives a new JWT with the updated role
+    await prisma.refreshToken.updateMany({
+      where: { userId, revoked: false },
+      data: {
+        revoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'role_change',
+      },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: adminId,
+      action: AuditActions.USER_UPDATED,
+      entity: 'User',
+      entityId: userId,
+      metadata: {
+        action: 'role_change',
+        oldRole,
+        newRole,
+        changedBy: adminId,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    // Send notification email (fire-and-forget)
+    const { emailService } = await import('./email.service.js');
+    emailService.sendRoleChangeEmail(
+      targetUser.email,
+      targetUser.firstName || 'User',
+      oldRole,
+      newRole,
+    ).catch((err: Error) => {
+      logger.warn(`Failed to send role change email to ${targetUser.email}:`, err);
+    });
+
+    logger.info(`Role changed for ${updatedUser.email}: ${oldRole} → ${newRole} by admin ${adminId}`);
+
+    return updatedUser;
+  }
+
+  /**
    * Delete user (soft delete)
    */
   static async deleteUser(

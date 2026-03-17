@@ -23,8 +23,9 @@ export const eventValidations = {
     tags: Joi.array().items(Joi.string().trim().max(50)).optional().messages({
       'array.max': 'Tags array is too large',
     }),
-    startDate: Joi.date().iso().required().messages({
+    startDate: Joi.date().iso().min('now').required().messages({
       'date.base': 'Start date must be a valid date',
+      'date.min': 'Start date must be in the future',
       'any.required': 'Start date is required',
     }),
     endDate: Joi.date().iso().greater(Joi.ref('startDate')).optional().allow(null).messages({
@@ -293,8 +294,9 @@ export const eventValidations = {
       'string.max': 'Category must not exceed 100 characters',
     }),
     tags: Joi.array().items(Joi.string().trim().max(50)).optional(),
-    startDate: Joi.date().iso().optional().messages({
+    startDate: Joi.date().iso().min('now').optional().messages({
       'date.base': 'Start date must be a valid date',
+      'date.min': 'Start date must be in the future',
     }),
     endDate: Joi.date().iso().greater(Joi.ref('startDate')).optional().allow(null).messages({
       'date.base': 'End date must be a valid date',

@@ -126,6 +126,39 @@ export class OrganizerController {
   }
 
   /**
+   * Change staff member's role
+   */
+  static async changeStaffRole(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { role } = req.body;
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const staff = await OrganizerService.changeStaffRole(
+        req.params.id as string,
+        role,
+        req.user.id,
+        req.user.role,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Staff role updated to ${role}`,
+        data: { staff },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Delete staff member
    */
   static async deleteStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

@@ -64,11 +64,11 @@ export class StaffInvitationService {
       throw new ConflictError('A user with this email already exists');
     }
 
-    // Revoke any existing PENDING invitation for same email+role
+    // Revoke ALL existing PENDING invitations for this email (regardless of role)
+    // to prevent conflicting invitations and ensure only the latest is active
     await prisma.staffInvitation.updateMany({
       where: {
         email: data.email.toLowerCase(),
-        role: data.role,
         status: StaffInvitationStatus.PENDING,
       },
       data: {

@@ -42,6 +42,7 @@ jest.mock('../../../src/utils/logger.js', () => ({
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
+    debug: jest.fn(),
   },
 }));
 
@@ -489,7 +490,7 @@ describe('AuthService - Registration Flow', () => {
           mockFirstName,
           mockLastName,
         ),
-      ).rejects.toThrow('Invalid verification code');
+      ).rejects.toThrow('verification code you entered is incorrect');
     });
 
     it('should throw error for expired verification code', async () => {
@@ -520,7 +521,7 @@ describe('AuthService - Registration Flow', () => {
           mockFirstName,
           mockLastName,
         ),
-      ).rejects.toThrow('Verification code has expired');
+      ).rejects.toThrow('verification code has expired');
     });
 
     it('should throw error if user already exists (race condition)', async () => {
@@ -606,10 +607,10 @@ describe('AuthService - Registration Flow', () => {
       expect(jwtUtils.generateAccessToken).toHaveBeenCalled();
       expect(jwtUtils.generateRefreshToken).toHaveBeenCalled();
       expect(prisma.refreshToken.upsert).toHaveBeenCalledWith({
-        where: { token: mockTokens.refreshToken },
+        where: { token: hashToken(mockTokens.refreshToken) },
         create: expect.objectContaining({
           userId: 'user-123',
-          token: mockTokens.refreshToken,
+          token: hashToken(mockTokens.refreshToken),
           expiresAt: expect.any(Date),
         }),
         update: expect.any(Object),
@@ -703,7 +704,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.login({ email: mockEmail, password: mockPassword }),
-      ).rejects.toThrow('Invalid email or password');
+      ).rejects.toThrow('Incorrect email or password');
     });
 
     it('should throw error for wrong password', async () => {
@@ -719,7 +720,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.login({ email: mockEmail, password: 'WrongPassword' }),
-      ).rejects.toThrow('Invalid email or password');
+      ).rejects.toThrow('Incorrect email or password');
 
       // Should increment failed login attempts
       expect(prisma.user.update).toHaveBeenCalledWith({
@@ -805,7 +806,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.login({ email: mockEmail, password: mockPassword }),
-      ).rejects.toThrow('Invalid email or password');
+      ).rejects.toThrow('Incorrect email or password');
     });
   });
 
@@ -857,7 +858,7 @@ describe('AuthService - Registration Flow', () => {
       // Assert
       expect(jwtUtils.verifyRefreshToken).toHaveBeenCalledWith(mockRefreshToken);
       expect(prisma.refreshToken.findUnique).toHaveBeenCalledWith({
-        where: { token: mockRefreshToken },
+        where: { token: hashToken(mockRefreshToken) },
         include: { user: true },
       });
       expect(prisma.refreshToken.update).toHaveBeenCalledWith({
@@ -966,7 +967,7 @@ describe('AuthService - Registration Flow', () => {
       // Assert
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
         where: {
-          token: mockRefreshToken,
+          token: hashToken(mockRefreshToken),
           revoked: false,
         },
         data: {
@@ -1206,7 +1207,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.resetPassword(mockToken, mockNewPassword),
-      ).rejects.toThrow('Reset token has already been used');
+      ).rejects.toThrow('password reset link has already been used');
     });
 
     it('should throw error for expired token', async () => {
@@ -1224,7 +1225,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.resetPassword(mockToken, mockNewPassword),
-      ).rejects.toThrow('Reset token has expired');
+      ).rejects.toThrow('password reset link has expired');
     });
   });
 
@@ -1325,7 +1326,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.changePassword(mockUserId, 'WrongPassword', mockNewPassword),
-      ).rejects.toThrow('Current password is incorrect');
+      ).rejects.toThrow('current password you entered is incorrect');
     });
 
     it('should throw error if user not found', async () => {
@@ -1628,7 +1629,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.verifyEmailWithCode(mockEmail, 'wrong-code'),
-      ).rejects.toThrow('Invalid verification code');
+      ).rejects.toThrow('verification code you entered is incorrect');
     });
 
     it('should throw error for expired code', async () => {
@@ -1647,7 +1648,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.verifyEmailWithCode(mockEmail, mockCode),
-      ).rejects.toThrow('Verification code has expired');
+      ).rejects.toThrow('verification code has expired');
     });
 
     it('should throw error if user not found', async () => {

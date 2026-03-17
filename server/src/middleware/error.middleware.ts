@@ -8,17 +8,21 @@ import { logger } from '../utils/logger.js';
  */
 const isPrismaConnectionError = (error: unknown): boolean => {
   if (!(error instanceof Error)) return false;
-  
+
   const errorMessage = error.message.toLowerCase();
   const errorName = error.constructor.name;
-  
+
+  // Known Prisma request errors (P2025, P2002, etc.) are NOT connection errors
+  if (errorName === 'PrismaClientKnownRequestError') return false;
+
   return (
-    errorName.includes('Prisma') ||
-    errorMessage.includes('prisma') ||
+    errorName === 'PrismaClientInitializationError' ||
+    errorName === 'PrismaClientRustPanicError' ||
     errorMessage.includes('denied access') ||
-    errorMessage.includes('database') ||
-    errorMessage.includes('connection') ||
-    errorMessage.includes('connect econnrefused')
+    errorMessage.includes('connect econnrefused') ||
+    errorMessage.includes('connection refused') ||
+    errorMessage.includes('connection timed out') ||
+    errorMessage.includes('can\'t reach database server')
   );
 };
 
@@ -58,6 +62,10 @@ const handlePrismaError = (error: unknown): AppError => {
     // Record not found
     if (prismaError.code === 'P2025') {
       return new AppError('Record not found', 404, 'NOT_FOUND');
+    }
+    // Foreign key constraint violation
+    if (prismaError.code === 'P2003') {
+      return new AppError('Related record not found', 400, 'FK_CONSTRAINT_VIOLATION');
     }
   }
 

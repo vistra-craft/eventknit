@@ -30,6 +30,7 @@ export interface EmailResult {
 
 class EmailService {
   private transporter;
+  private readonly isConfigured: boolean;
   private readonly DEFAULT_MAX_RETRIES = 3;
   private readonly CRITICAL_MAX_RETRIES = 5;
   private readonly INITIAL_RETRY_DELAY_MS = 1000; // 1 second
@@ -37,7 +38,8 @@ class EmailService {
 
   constructor() {
     // Validate email configuration
-    if (!config.email.user || !config.email.password) {
+    this.isConfigured = !!(config.email.user && config.email.password);
+    if (!this.isConfigured) {
       logger.warn('Email service not configured: SMTP_USER and SMTP_PASSWORD are required');
       logger.warn('Ticket emails will fail. Please configure SMTP credentials in environment variables.');
     }
@@ -117,6 +119,16 @@ class EmailService {
    * to the configured test addresses instead of the actual recipients.
    */
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
+    // Fail immediately if SMTP is not configured — no point retrying a config error
+    if (!this.isConfigured) {
+      logger.warn(`Email skipped (SMTP not configured): ${options.subject} to ${options.to}`);
+      return {
+        success: false,
+        attempts: 0,
+        error: new Error('Email service not configured: SMTP credentials missing'),
+      };
+    }
+
     const maxRetries = options.retries ?? (options.isCritical ? this.CRITICAL_MAX_RETRIES : this.DEFAULT_MAX_RETRIES);
     let lastError: Error | undefined;
     let attempts = 0;
@@ -1649,6 +1661,55 @@ class EmailService {
   }
 
   /**
+   * Send email to organizer when their event is rejected
+   */
+  async sendEventRejectedEmail(
+    email: string,
+    firstName: string,
+    eventTitle: string,
+    rejectionReason: string,
+  ): Promise<void> {
+    const dashboardUrl = `${config.frontend.url}/organizer/dashboard`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Event Review Update</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">Event Review Update</h1>
+            <p>Hi ${firstName || 'there'},</p>
+            <p>Your event <strong>"${eventTitle}"</strong> was not approved in its current form.</p>
+            <div style="background-color: #fdf2f2; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0 0 5px 0;"><strong>Feedback from the review team:</strong></p>
+              <p style="margin: 0;">${rejectionReason}</p>
+            </div>
+            <p>You can update your event based on this feedback and resubmit it for review.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${dashboardUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Go to Dashboard</a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: `Event Review Update: ${eventTitle}`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send event rejected email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
    * Send notification to admin about a new promo code request
    */
   async sendPromoCodeRequestNotification(
@@ -2220,6 +2281,78 @@ class EmailService {
 
     if (!result.success) {
       logger.error(`Failed to send KYC approval email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send role change notification email
+   */
+  async sendRoleChangeEmail(
+    email: string,
+    firstName: string,
+    oldRole: string,
+    newRole: string,
+  ): Promise<void> {
+    const formatRole = (role: string) => role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Role Updated</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #4a6cf7 0%, #3b5de7 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">Your Role Has Been Updated</h1>
+            </div>
+
+            <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+              <p style="font-size: 16px;">Hi ${firstName},</p>
+
+              <p style="color: #666;">
+                Your role on EventKnit has been updated effective immediately.
+              </p>
+
+              <div style="background: #f8f9ff; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #4a6cf7;">
+                <p style="margin: 0 0 8px 0; color: #666;">Previous role:</p>
+                <p style="margin: 0 0 16px 0; font-weight: bold; font-size: 16px; color: #333;">${formatRole(oldRole)}</p>
+                <p style="margin: 0 0 8px 0; color: #666;">New role:</p>
+                <p style="margin: 0; font-weight: bold; font-size: 16px; color: #4a6cf7;">${formatRole(newRole)}</p>
+              </div>
+
+              <p style="color: #666;">
+                You will need to sign in again for the changes to take effect. Your permissions have been updated to reflect your new role.
+              </p>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${config.frontend.url}/auth/signin" style="background-color: #4a6cf7; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Sign In</a>
+              </div>
+
+              <p style="color: #999; font-size: 13px;">
+                If you have questions about this change, please contact your administrator.
+              </p>
+            </div>
+
+            <div style="padding: 20px; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #bbb;">This is an automated message. Please do not reply.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: `Your EventKnit Role Has Been Updated to ${formatRole(newRole)}`,
+      html,
+      isCritical: false,
+    });
+
+    if (!result.success) {
+      logger.warn(`Failed to send role change email to ${email}: ${result.error?.message}`);
     }
   }
 }

@@ -5,7 +5,7 @@ import { OrganizerDashboardController } from '../controllers/organizer-dashboard
 import { SocialOAuthController } from '../controllers/social-oauth.controller.js';
 import { VenueController } from '../controllers/venue.controller.js';
 import { SeatMapController } from '../controllers/seat-map.controller.js';
-import { authenticate, authorize } from '../middleware/auth.middleware.js';
+import { authenticate, authorize, requireActiveStatus } from '../middleware/auth.middleware.js';
 import { requirePermission } from '../middleware/permission.middleware.js';
 import { validate, validateQuery, validateParams } from '../middleware/validation.middleware.js';
 import { organizerDashboardValidations } from '../validations/organizer-dashboard.validations.js';
@@ -28,6 +28,8 @@ router.use(authorize(
   UserRole.ADMIN,
   UserRole.ATTENDEE,
 ));
+// Block PENDING_APPROVAL organizers and DEACTIVATED users from performing actions
+router.use(requireActiveStatus);
 
 // Event Templates
 router.post(

@@ -329,7 +329,15 @@ export class AuthController {
         return;
       }
 
-      // NOTE: email is NOT accepted here — use the dedicated /email/request-change flow
+      // Explicitly reject email changes — use the dedicated /email/request-change flow
+      if (req.body.email && req.body.email !== req.user.email) {
+        res.status(400).json({
+          success: false,
+          message: 'Email address cannot be changed through profile update. Please use the dedicated email change flow.',
+        });
+        return;
+      }
+
       const { firstName, lastName, otherName, phoneNumber, companyAffiliation, organizationName, businessEmail, avatar } = req.body;
 
       const { ProfileService } = await import('../services/profile.service.js');
@@ -547,6 +555,31 @@ export class AuthController {
       res.status(200).json({
         success: true,
         message: 'Password set successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify invitation token and return associated email (for pre-filling forms)
+   */
+  static async verifyInvitationToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const token = req.query.token as string;
+      if (!token) {
+        res.status(400).json({
+          success: false,
+          message: 'Token is required',
+        });
+        return;
+      }
+
+      const result = await AuthService.verifyInvitationToken(token);
+
+      res.status(200).json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);

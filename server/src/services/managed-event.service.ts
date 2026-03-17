@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { EventStatus, ManagedClientType, Prisma } from '@prisma/client';
+import { EventStatus, ManagedClientType, Prisma, UserRole } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -201,19 +201,27 @@ export class ManagedEventService {
   }
 
   static async cancelManagedEvent(eventId: string, adminId: string, reason?: string) {
+    // Verify this is a managed event
     const existing = await prisma.event.findFirst({
       where: { id: eventId, isManaged: true, deletedAt: null },
     });
     if (!existing) throw new NotFoundError('Managed event not found');
 
-    const event = await prisma.event.update({
-      where: { id: eventId },
-      data: {
-        status: EventStatus.CANCELLED,
-        updatedBy: adminId,
-      },
-    });
+    // Delegate to the main cancelEvent flow which handles:
+    // - Status validation (only APPROVED events can be cancelled)
+    // - Auto-refunds for paid registrations
+    // - Cancellation emails to all attendees
+    // - In-app notifications to staff and organizer
+    // - Audit logging
+    const { EventService } = await import('./event.service.js');
+    await EventService.cancelEvent(
+      eventId,
+      adminId,
+      UserRole.ADMIN,
+      reason,
+    );
 
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
     logger.info(`Managed event cancelled: ${eventId} by admin: ${adminId}. Reason: ${reason}`);
     return event;
   }
