@@ -2,47 +2,47 @@ import { AdminFinancialService } from '../src/services/admin-financial.service';
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     platformExpense: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-      aggregate: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      aggregate: vi.fn(),
     },
     platformIncome: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
     wage: {
-      aggregate: jest.fn(),
+      aggregate: vi.fn(),
     },
     platformFee: {
-      aggregate: jest.fn(),
+      aggregate: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
   platformExpense: {
-    create: jest.Mock;
-    findMany: jest.Mock;
-    count: jest.Mock;
-    aggregate: jest.Mock;
+    create: vi.Mock;
+    findMany: vi.Mock;
+    count: vi.Mock;
+    aggregate: vi.Mock;
   };
   platformIncome: {
-    findMany: jest.Mock;
+    findMany: vi.Mock;
   };
   wage: {
-    aggregate: jest.Mock;
+    aggregate: vi.Mock;
   };
   platformFee: {
-    aggregate: jest.Mock;
+    aggregate: vi.Mock;
   };
 };
 
 describe('AdminFinancialService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it('creates expense with defaults', async () => {

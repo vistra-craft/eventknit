@@ -1,14 +1,14 @@
 import { PrismaClient } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { TicketIssuanceService } from '../../../src/services/ticket-issuance.service.js';
 import { NotFoundError, ValidationError } from '../../../src/utils/errors.js';
 
 // Mock Prisma and email service so we never hit a real DB or SMTP server
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: mockDeep<PrismaClient>(),
 }));
-jest.mock('../../../src/services/email.service.js', () => ({
-  emailService: { sendEmail: jest.fn().mockResolvedValue(undefined) },
+vi.mock('../../../src/services/email.service.js', () => ({
+  emailService: { sendEmail: vi.fn().mockResolvedValue(undefined) },
 }));
 
 import { prisma } from '../../../src/config/database.js';

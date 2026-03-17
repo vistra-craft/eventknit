@@ -48,8 +48,16 @@ export class DataAccessService {
     eventId: string,
     ipAddress?: string,
     userAgent?: string,
+    dataAccessLevel?: string,
   ): Promise<Record<string, unknown>[]> {
-    const tier = await SubscriptionService.getTier(organizerId);
+    // Use event-level organizerDataAccess if provided, otherwise fall back to subscription tier
+    const effectiveLevel = dataAccessLevel || await (async () => {
+      const tier = await SubscriptionService.getTier(organizerId);
+      // Map subscription tier to data access level
+      if (tier === SubscriptionTier.BASIC) return 'RESTRICTED';
+      if (tier === SubscriptionTier.STANDARD) return 'STANDARD';
+      return 'FULL'; // PREMIUM
+    })();
 
     // Log the access
     await this.logAccess({
@@ -61,8 +69,8 @@ export class DataAccessService {
       userAgent,
     });
 
-    // BASIC tier: Return aggregated data only
-    if (tier === SubscriptionTier.BASIC) {
+    // RESTRICTED / BASIC tier: Return aggregated data only
+    if (effectiveLevel === 'RESTRICTED') {
       return registrations.map(reg => ({
         id: reg.id,
         eventId: reg.eventId,
@@ -75,20 +83,21 @@ export class DataAccessService {
       }));
     }
 
-    // STANDARD and PREMIUM tiers: Filter by consent
+    // STANDARD and FULL levels: Filter by consent (unless event-level override)
     const filtered = [];
+    const skipConsentCheck = !!dataAccessLevel; // Event-level override skips consent
 
     for (const reg of registrations) {
-      // Check if consent exists and operational consent is granted (required for basic data)
-      const hasOperationalConsent = await ConsentService.hasConsent(reg.id as string, 'operational');
-
-      if (!hasOperationalConsent) {
-        // Skip this registration if no operational consent
-        continue;
+      // Check consent only when using subscription-tier-based filtering
+      if (!skipConsentCheck) {
+        const hasOperationalConsent = await ConsentService.hasConsent(reg.id as string, 'operational');
+        if (!hasOperationalConsent) {
+          continue;
+        }
       }
 
-      // For STANDARD tier, include basic data if operational consent exists
-      if (tier === SubscriptionTier.STANDARD) {
+      // For STANDARD level, include basic data
+      if (effectiveLevel === 'STANDARD') {
         filtered.push({
           id: reg.id,
           eventId: reg.eventId,
@@ -108,7 +117,7 @@ export class DataAccessService {
         });
       }
 
-      if (tier === SubscriptionTier.PREMIUM) {
+      if (effectiveLevel === 'FULL') {
         const _hasMarketingConsent = await ConsentService.hasConsent(reg.id as string, 'marketing');
         const hasDemographicsConsent = await ConsentService.hasConsent(reg.id as string, 'demographics');
         const hasAnalyticsConsent = await ConsentService.hasConsent(reg.id as string, 'analytics');

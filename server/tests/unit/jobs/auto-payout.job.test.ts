@@ -12,72 +12,75 @@ import * as cron from 'node-cron';
 import * as auditModule from '../../../src/utils/audit.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
-    $queryRaw: jest.fn(),
+    $queryRaw: vi.fn(),
     event: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
   },
 }));
 
-jest.mock('../../../src/config/index.js', () => ({
+vi.mock('../../../src/config/index.js', () => ({
   config: {
     payout: {
       autoPayoutEnabled: true,
       gracePeriodBusinessDays: 5,
     },
+    frontend: {
+      url: 'http://localhost:3000',
+    },
   },
 }));
 
-jest.mock('../../../src/services/disbursement.service.js', () => ({
+vi.mock('../../../src/services/disbursement.service.js', () => ({
   DisbursementService: {
-    createDisbursement: jest.fn(),
-    getScheduledDisbursementsReadyToProcess: jest.fn(),
+    createDisbursement: vi.fn(),
+    getScheduledDisbursementsReadyToProcess: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/payout-management.service.js', () => ({
+vi.mock('../../../src/services/payout-management.service.js', () => ({
   PayoutManagementService: {
-    getPayoutPreferences: jest.fn(),
+    getPayoutPreferences: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/platform-fee.service.js', () => ({
+vi.mock('../../../src/services/platform-fee.service.js', () => ({
   PlatformFeeService: {
-    getPendingDisbursementFees: jest.fn(),
+    getPendingDisbursementFees: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/notification.service.js', () => ({
+vi.mock('../../../src/services/notification.service.js', () => ({
   NotificationService: {
-    sendNotification: jest.fn(),
+    sendNotification: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/email.service.js', () => ({
+vi.mock('../../../src/services/email.service.js', () => ({
   emailService: {
-    sendPayoutInitiatedEmail: jest.fn(),
+    sendPayoutInitiatedEmail: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/utils/audit.js', () => ({
-  createAuditLog: jest.fn(),
+vi.mock('../../../src/utils/audit.js', () => ({
+  createAuditLog: vi.fn(),
   AuditActions: {
     DISBURSEMENT_AUTO_CREATED: 'DISBURSEMENT_AUTO_CREATED',
   },
 }));
 
-jest.mock('node-cron');
+vi.mock('node-cron');
 
 describe('AutoPayoutJob', () => {
   let mockScheduledTask: any;
@@ -136,24 +139,24 @@ describe('AutoPayoutJob', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Default: database available
-    (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
+    (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
 
     // Default: auto-payout enabled
     (config as any).payout.autoPayoutEnabled = true;
     (config as any).payout.gracePeriodBusinessDays = 5;
 
     // Default: no eligible events
-    (prisma.event.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.event.findMany as vi.Mock).mockResolvedValue([]);
 
     // Default: no scheduled disbursements
-    (DisbursementService.getScheduledDisbursementsReadyToProcess as jest.Mock).mockResolvedValue([]);
+    (DisbursementService.getScheduledDisbursementsReadyToProcess as vi.Mock).mockResolvedValue([]);
 
     // Create mock cron task
-    mockScheduledTask = { stop: jest.fn() };
-    (cron.schedule as jest.Mock).mockReturnValue(mockScheduledTask);
+    mockScheduledTask = { stop: vi.fn() };
+    (cron.schedule as vi.Mock).mockReturnValue(mockScheduledTask);
   });
 
   afterEach(() => {
@@ -172,7 +175,7 @@ describe('AutoPayoutJob', () => {
 
     it('should warn if job is already running', () => {
       AutoPayoutJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       AutoPayoutJob.start();
 
@@ -182,7 +185,7 @@ describe('AutoPayoutJob', () => {
 
     it('should handle cron start errors', () => {
       const error = new Error('Cron failed');
-      (cron.schedule as jest.Mock).mockImplementation(() => { throw error; });
+      (cron.schedule as vi.Mock).mockImplementation(() => { throw error; });
 
       expect(() => AutoPayoutJob.start()).toThrow(error);
       expect(logger.error).toHaveBeenCalledWith('Failed to start auto-payout job:', error);
@@ -192,7 +195,7 @@ describe('AutoPayoutJob', () => {
   describe('stop', () => {
     it('should stop the job successfully', () => {
       AutoPayoutJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       AutoPayoutJob.stop();
 
@@ -211,7 +214,7 @@ describe('AutoPayoutJob', () => {
 
   describe('processAutoPayouts', () => {
     it('should skip if database is not available', async () => {
-      (prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('DB down'));
+      (prisma.$queryRaw as vi.Mock).mockRejectedValue(new Error('DB down'));
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -230,8 +233,8 @@ describe('AutoPayoutJob', () => {
 
     it('should handle database connection errors gracefully', async () => {
       const dbError = new Error('Can\'t reach database server');
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.event.findMany as jest.Mock).mockRejectedValue(dbError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.event.findMany as vi.Mock).mockRejectedValue(dbError);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -256,7 +259,7 @@ describe('AutoPayoutJob', () => {
         ...mockEligibleEvent,
         organizer: { ...mockOrganizer, isIdentityVerified: false },
       };
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([unverifiedEvent]);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([unverifiedEvent]);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -271,7 +274,7 @@ describe('AutoPayoutJob', () => {
         ...mockEligibleEvent,
         organizer: { ...mockOrganizer, kycStatus: 'PENDING' },
       };
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([pendingKycEvent]);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([pendingKycEvent]);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -282,8 +285,8 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should skip organizers with autoPayoutEnabled = false', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue({
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue({
         ...mockPayoutPreferences,
         autoPayoutEnabled: false,
       });
@@ -297,8 +300,8 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should skip organizers without complete bank details', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue({
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue({
         ...mockPayoutPreferences,
         bankName: null,
         accountNumber: null,
@@ -313,9 +316,9 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should skip events with no pending fees', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue(mockPayoutPreferences);
-      (PlatformFeeService.getPendingDisbursementFees as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue(mockPayoutPreferences);
+      (PlatformFeeService.getPendingDisbursementFees as vi.Mock).mockResolvedValue([]);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -326,12 +329,12 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should skip events where payout amount is below threshold', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue({
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue({
         ...mockPayoutPreferences,
         autoPayoutThreshold: 50000, // Higher than the 13500 total
       });
-      (PlatformFeeService.getPendingDisbursementFees as jest.Mock).mockResolvedValue(mockPendingFees);
+      (PlatformFeeService.getPendingDisbursementFees as vi.Mock).mockResolvedValue(mockPendingFees);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -342,10 +345,10 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should create disbursement for eligible event with correct data', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue(mockPayoutPreferences);
-      (PlatformFeeService.getPendingDisbursementFees as jest.Mock).mockResolvedValue(mockPendingFees);
-      (DisbursementService.createDisbursement as jest.Mock).mockResolvedValue(mockDisbursement);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue(mockPayoutPreferences);
+      (PlatformFeeService.getPendingDisbursementFees as vi.Mock).mockResolvedValue(mockPendingFees);
+      (DisbursementService.createDisbursement as vi.Mock).mockResolvedValue(mockDisbursement);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -364,10 +367,10 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should create audit log with automated flag', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue(mockPayoutPreferences);
-      (PlatformFeeService.getPendingDisbursementFees as jest.Mock).mockResolvedValue(mockPendingFees);
-      (DisbursementService.createDisbursement as jest.Mock).mockResolvedValue(mockDisbursement);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue(mockPayoutPreferences);
+      (PlatformFeeService.getPendingDisbursementFees as vi.Mock).mockResolvedValue(mockPendingFees);
+      (DisbursementService.createDisbursement as vi.Mock).mockResolvedValue(mockDisbursement);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -386,10 +389,10 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should send in-app notification on successful payout creation', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue(mockPayoutPreferences);
-      (PlatformFeeService.getPendingDisbursementFees as jest.Mock).mockResolvedValue(mockPendingFees);
-      (DisbursementService.createDisbursement as jest.Mock).mockResolvedValue(mockDisbursement);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue(mockPayoutPreferences);
+      (PlatformFeeService.getPendingDisbursementFees as vi.Mock).mockResolvedValue(mockPendingFees);
+      (DisbursementService.createDisbursement as vi.Mock).mockResolvedValue(mockDisbursement);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -409,10 +412,10 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should send email notification on successful payout creation', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue(mockPayoutPreferences);
-      (PlatformFeeService.getPendingDisbursementFees as jest.Mock).mockResolvedValue(mockPendingFees);
-      (DisbursementService.createDisbursement as jest.Mock).mockResolvedValue(mockDisbursement);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue(mockPayoutPreferences);
+      (PlatformFeeService.getPendingDisbursementFees as vi.Mock).mockResolvedValue(mockPendingFees);
+      (DisbursementService.createDisbursement as vi.Mock).mockResolvedValue(mockDisbursement);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -436,10 +439,10 @@ describe('AutoPayoutJob', () => {
         organizer: { ...mockOrganizer, id: 'org-2', email: 'org2@test.com' },
       };
 
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent, event2]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue(mockPayoutPreferences);
-      (PlatformFeeService.getPendingDisbursementFees as jest.Mock).mockResolvedValue(mockPendingFees);
-      (DisbursementService.createDisbursement as jest.Mock).mockResolvedValue(mockDisbursement);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent, event2]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue(mockPayoutPreferences);
+      (PlatformFeeService.getPendingDisbursementFees as vi.Mock).mockResolvedValue(mockPendingFees);
+      (DisbursementService.createDisbursement as vi.Mock).mockResolvedValue(mockDisbursement);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -453,10 +456,10 @@ describe('AutoPayoutJob', () => {
         title: 'Second Event',
       };
 
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent, event2]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue(mockPayoutPreferences);
-      (PlatformFeeService.getPendingDisbursementFees as jest.Mock).mockResolvedValue(mockPendingFees);
-      (DisbursementService.createDisbursement as jest.Mock)
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent, event2]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue(mockPayoutPreferences);
+      (PlatformFeeService.getPendingDisbursementFees as vi.Mock).mockResolvedValue(mockPendingFees);
+      (DisbursementService.createDisbursement as vi.Mock)
         .mockRejectedValueOnce(new Error('Database error'))
         .mockResolvedValueOnce(mockDisbursement);
 
@@ -471,10 +474,10 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should log summary when payouts are created', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([mockEligibleEvent]);
-      (PayoutManagementService.getPayoutPreferences as jest.Mock).mockResolvedValue(mockPayoutPreferences);
-      (PlatformFeeService.getPendingDisbursementFees as jest.Mock).mockResolvedValue(mockPendingFees);
-      (DisbursementService.createDisbursement as jest.Mock).mockResolvedValue(mockDisbursement);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([mockEligibleEvent]);
+      (PayoutManagementService.getPayoutPreferences as vi.Mock).mockResolvedValue(mockPayoutPreferences);
+      (PlatformFeeService.getPendingDisbursementFees as vi.Mock).mockResolvedValue(mockPendingFees);
+      (DisbursementService.createDisbursement as vi.Mock).mockResolvedValue(mockDisbursement);
 
       await AutoPayoutJob.processAutoPayouts();
 
@@ -494,7 +497,7 @@ describe('AutoPayoutJob', () => {
         organizer: { id: 'org-3', email: 'org3@test.com', organizationName: 'Org 3' },
       };
 
-      (DisbursementService.getScheduledDisbursementsReadyToProcess as jest.Mock)
+      (DisbursementService.getScheduledDisbursementsReadyToProcess as vi.Mock)
         .mockResolvedValue([scheduledDisbursement]);
 
       await AutoPayoutJob.processAutoPayouts();
@@ -506,7 +509,7 @@ describe('AutoPayoutJob', () => {
     });
 
     it('should handle errors per scheduled disbursement', async () => {
-      (DisbursementService.getScheduledDisbursementsReadyToProcess as jest.Mock)
+      (DisbursementService.getScheduledDisbursementsReadyToProcess as vi.Mock)
         .mockResolvedValue([
           { id: 'disb-s1', event: { title: 'E1' }, organizer: { email: 'o1@t.com' } },
         ]);
@@ -514,7 +517,7 @@ describe('AutoPayoutJob', () => {
       // Force the logger to throw to simulate a processing error
       const _originalInfo = logger.info;
       let callCount = 0;
-      (logger.info as jest.Mock).mockImplementation((...args: any[]) => {
+      (logger.info as vi.Mock).mockImplementation((...args: any[]) => {
         callCount++;
         if (callCount === 2 && typeof args[0] === 'string' && args[0].includes('Scheduled disbursement')) {
           throw new Error('Processing failed');

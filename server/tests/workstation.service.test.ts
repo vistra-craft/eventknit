@@ -1,10 +1,10 @@
 // Mock LockService so Redis absence doesn't prevent scan operations in integration tests.
 // acquireLockWithRetry returns a token string (truthy = lock acquired).
 // releaseLock is a no-op.
-jest.mock('../src/services/lock.service.js', () => ({
+vi.mock('../src/services/lock.service.js', () => ({
   LockService: {
-    acquireLockWithRetry: jest.fn().mockResolvedValue('test-lock-token'),
-    releaseLock: jest.fn().mockResolvedValue(true),
+    acquireLockWithRetry: vi.fn().mockResolvedValue('test-lock-token'),
+    releaseLock: vi.fn().mockResolvedValue(true),
   },
 }));
 

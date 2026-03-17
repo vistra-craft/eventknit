@@ -4,24 +4,24 @@ import { logger } from '../../../src/utils/logger.js';
 import { NotFoundError } from '../../../src/utils/errors.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     invoiceTemplate: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      delete: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/utils/logger.js');
 
 describe('InvoiceTemplateService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('createTemplate', () => {
@@ -44,7 +44,7 @@ describe('InvoiceTemplateService', () => {
         isActive: true,
       };
 
-      (prisma.invoiceTemplate.create as jest.Mock).mockResolvedValue(mockTemplate);
+      (prisma.invoiceTemplate.create as vi.Mock).mockResolvedValue(mockTemplate);
 
       // Act
       const result = await InvoiceTemplateService.createTemplate(data);
@@ -75,8 +75,8 @@ describe('InvoiceTemplateService', () => {
         isDefault: true,
       };
 
-      (prisma.invoiceTemplate.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
-      (prisma.invoiceTemplate.create as jest.Mock).mockResolvedValue({ id: 'template-1', ...data });
+      (prisma.invoiceTemplate.updateMany as vi.Mock).mockResolvedValue({ count: 1 });
+      (prisma.invoiceTemplate.create as vi.Mock).mockResolvedValue({ id: 'template-1', ...data });
 
       // Act
       await InvoiceTemplateService.createTemplate(data);
@@ -95,7 +95,7 @@ describe('InvoiceTemplateService', () => {
         htmlContent: '<html>Invoice</html>',
       };
 
-      (prisma.invoiceTemplate.create as jest.Mock).mockResolvedValue({ id: 'template-1' });
+      (prisma.invoiceTemplate.create as vi.Mock).mockResolvedValue({ id: 'template-1' });
 
       // Act
       await InvoiceTemplateService.createTemplate(data);
@@ -114,7 +114,7 @@ describe('InvoiceTemplateService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoiceTemplate.create as jest.Mock).mockRejectedValue(error);
+      (prisma.invoiceTemplate.create as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceTemplateService.createTemplate({
@@ -132,7 +132,7 @@ describe('InvoiceTemplateService', () => {
         { id: 'template-2', isActive: true, isDefault: false },
       ];
 
-      (prisma.invoiceTemplate.findMany as jest.Mock).mockResolvedValue(mockTemplates);
+      (prisma.invoiceTemplate.findMany as vi.Mock).mockResolvedValue(mockTemplates);
 
       // Act
       const result = await InvoiceTemplateService.getTemplates();
@@ -150,7 +150,7 @@ describe('InvoiceTemplateService', () => {
 
     it('should filter by type', async () => {
       // Arrange
-      (prisma.invoiceTemplate.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.invoiceTemplate.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await InvoiceTemplateService.getTemplates({ type: 'PREMIUM' });
@@ -164,7 +164,7 @@ describe('InvoiceTemplateService', () => {
 
     it('should filter by isActive', async () => {
       // Arrange
-      (prisma.invoiceTemplate.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.invoiceTemplate.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await InvoiceTemplateService.getTemplates({ isActive: false });
@@ -178,7 +178,7 @@ describe('InvoiceTemplateService', () => {
 
     it('should include inactive when includeInactive is true', async () => {
       // Arrange
-      (prisma.invoiceTemplate.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.invoiceTemplate.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await InvoiceTemplateService.getTemplates({ includeInactive: true });
@@ -193,7 +193,7 @@ describe('InvoiceTemplateService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoiceTemplate.findMany as jest.Mock).mockRejectedValue(error);
+      (prisma.invoiceTemplate.findMany as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceTemplateService.getTemplates()).rejects.toThrow(
@@ -210,7 +210,7 @@ describe('InvoiceTemplateService', () => {
         name: 'Test Template',
       };
 
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue(mockTemplate);
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue(mockTemplate);
 
       // Act
       const result = await InvoiceTemplateService.getTemplateById('template-1');
@@ -224,7 +224,7 @@ describe('InvoiceTemplateService', () => {
 
     it('should throw NotFoundError if template does not exist', async () => {
       // Arrange
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(InvoiceTemplateService.getTemplateById('nonexistent')).rejects.toThrow(
@@ -235,7 +235,7 @@ describe('InvoiceTemplateService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockRejectedValue(error);
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceTemplateService.getTemplateById('template-1')).rejects.toThrow(
@@ -253,7 +253,7 @@ describe('InvoiceTemplateService', () => {
         isActive: true,
       };
 
-      (prisma.invoiceTemplate.findFirst as jest.Mock).mockResolvedValue(mockTemplate);
+      (prisma.invoiceTemplate.findFirst as vi.Mock).mockResolvedValue(mockTemplate);
 
       // Act
       const result = await InvoiceTemplateService.getDefaultTemplate();
@@ -267,7 +267,7 @@ describe('InvoiceTemplateService', () => {
 
     it('should throw NotFoundError if no default template exists', async () => {
       // Arrange
-      (prisma.invoiceTemplate.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.invoiceTemplate.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(InvoiceTemplateService.getDefaultTemplate()).rejects.toThrow(
@@ -278,7 +278,7 @@ describe('InvoiceTemplateService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoiceTemplate.findFirst as jest.Mock).mockRejectedValue(error);
+      (prisma.invoiceTemplate.findFirst as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceTemplateService.getDefaultTemplate()).rejects.toThrow(
@@ -299,8 +299,8 @@ describe('InvoiceTemplateService', () => {
       const existingTemplate = { id: 'template-1', name: 'Old Name' };
       const updatedTemplate = { ...existingTemplate, ...updateData };
 
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue(existingTemplate);
-      (prisma.invoiceTemplate.update as jest.Mock).mockResolvedValue(updatedTemplate);
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue(existingTemplate);
+      (prisma.invoiceTemplate.update as vi.Mock).mockResolvedValue(updatedTemplate);
 
       // Act
       const result = await InvoiceTemplateService.updateTemplate('template-1', updateData);
@@ -320,9 +320,9 @@ describe('InvoiceTemplateService', () => {
 
     it('should unset other defaults when setting as default', async () => {
       // Arrange
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue({ id: 'template-1' });
-      (prisma.invoiceTemplate.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
-      (prisma.invoiceTemplate.update as jest.Mock).mockResolvedValue({ id: 'template-1', isDefault: true });
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue({ id: 'template-1' });
+      (prisma.invoiceTemplate.updateMany as vi.Mock).mockResolvedValue({ count: 1 });
+      (prisma.invoiceTemplate.update as vi.Mock).mockResolvedValue({ id: 'template-1', isDefault: true });
 
       // Act
       await InvoiceTemplateService.updateTemplate('template-1', { isDefault: true });
@@ -339,7 +339,7 @@ describe('InvoiceTemplateService', () => {
 
     it('should throw NotFoundError if template does not exist', async () => {
       // Arrange
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(InvoiceTemplateService.updateTemplate('nonexistent', {
@@ -350,8 +350,8 @@ describe('InvoiceTemplateService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue({ id: 'template-1' });
-      (prisma.invoiceTemplate.update as jest.Mock).mockRejectedValue(error);
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue({ id: 'template-1' });
+      (prisma.invoiceTemplate.update as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceTemplateService.updateTemplate('template-1', {
@@ -368,8 +368,8 @@ describe('InvoiceTemplateService', () => {
         isDefault: false,
       };
 
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue(mockTemplate);
-      (prisma.invoiceTemplate.delete as jest.Mock).mockResolvedValue(mockTemplate);
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue(mockTemplate);
+      (prisma.invoiceTemplate.delete as vi.Mock).mockResolvedValue(mockTemplate);
 
       // Act
       const result = await InvoiceTemplateService.deleteTemplate('template-1');
@@ -384,7 +384,7 @@ describe('InvoiceTemplateService', () => {
 
     it('should throw ValidationError when trying to delete default template', async () => {
       // Arrange
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue({
         id: 'template-1',
         isDefault: true,
       });
@@ -398,7 +398,7 @@ describe('InvoiceTemplateService', () => {
 
     it('should throw NotFoundError if template does not exist', async () => {
       // Arrange
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(InvoiceTemplateService.deleteTemplate('nonexistent')).rejects.toThrow(
@@ -409,8 +409,8 @@ describe('InvoiceTemplateService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoiceTemplate.findUnique as jest.Mock).mockResolvedValue({ id: 'template-1', isDefault: false });
-      (prisma.invoiceTemplate.delete as jest.Mock).mockRejectedValue(error);
+      (prisma.invoiceTemplate.findUnique as vi.Mock).mockResolvedValue({ id: 'template-1', isDefault: false });
+      (prisma.invoiceTemplate.delete as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceTemplateService.deleteTemplate('template-1')).rejects.toThrow(

@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from '@jest/globals';
 import { prisma } from '../src/config/database.js';
 import { UserPreferencesService } from '../src/services/user-preferences.service.js';
 import { ValidationError, NotFoundError } from '../src/utils/errors.js';

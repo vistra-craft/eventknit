@@ -49,11 +49,9 @@ describe('Event Staff Management', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    // Clear all tables in correct order to respect foreign keys
-    await prisma.$transaction(async (tx) => {
-      await tx.eventStaff.deleteMany();
-      await cleanupTestData(tx);
-    });
+    // Clear all tables - cleanupTestData uses TRUNCATE CASCADE which handles FKs
+    await prisma.eventStaff.deleteMany().catch(() => {});
+    await cleanupTestData();
 
     // Create test users
     const hashedPassword = await hashPassword('Test123!@$');

@@ -6,37 +6,37 @@ import { AttendeeCommunicationService } from '../../../src/services/attendee-com
 import { NotFoundError } from '../../../src/utils/errors.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     event: {
-      findFirst: jest.fn(),
+      findFirst: vi.fn(),
     },
     emailCampaign: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      count: jest.fn(),
-      update: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      count: vi.fn(),
+      update: vi.fn(),
     },
     emailAutomationRule: {
-      create: jest.fn(),
+      create: vi.fn(),
     },
     eventRegistration: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/utils/logger.js');
-jest.mock('../../../src/services/email.service.js', () => ({
+vi.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/services/email.service.js', () => ({
   emailService: {
-    sendEmail: jest.fn(),
+    sendEmail: vi.fn(),
   },
 }));
-jest.mock('../../../src/services/attendee-communication.service.js');
+vi.mock('../../../src/services/attendee-communication.service.js');
 
 describe('EmailMarketingService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('createCampaign', () => {
@@ -51,7 +51,7 @@ describe('EmailMarketingService', () => {
         status: 'draft',
       };
 
-      (prisma.emailCampaign.create as jest.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.create as vi.Mock).mockResolvedValue(mockCampaign);
 
       // Act
       const result = await EmailMarketingService.createCampaign('org-1', {
@@ -97,7 +97,7 @@ describe('EmailMarketingService', () => {
         scheduledAt: scheduledDate,
       };
 
-      (prisma.emailCampaign.create as jest.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.create as vi.Mock).mockResolvedValue(mockCampaign);
 
       // Act
       await EmailMarketingService.createCampaign('org-1', {
@@ -121,7 +121,7 @@ describe('EmailMarketingService', () => {
 
     it('should throw NotFoundError if event not found', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -138,8 +138,8 @@ describe('EmailMarketingService', () => {
     it('should verify event ownership when eventId provided', async () => {
       // Arrange
       const mockEvent = { id: 'event-1', title: 'Test Event' };
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.emailCampaign.create as jest.Mock).mockResolvedValue({ id: 'campaign-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.emailCampaign.create as vi.Mock).mockResolvedValue({ id: 'campaign-1' });
 
       // Act
       await EmailMarketingService.createCampaign('org-1', {
@@ -186,7 +186,7 @@ describe('EmailMarketingService', () => {
 
     it('should create campaign with segment and tag IDs', async () => {
       // Arrange
-      (prisma.emailCampaign.create as jest.Mock).mockResolvedValue({ id: 'campaign-1' });
+      (prisma.emailCampaign.create as vi.Mock).mockResolvedValue({ id: 'campaign-1' });
 
       // Act
       await EmailMarketingService.createCampaign('org-1', {
@@ -216,8 +216,8 @@ describe('EmailMarketingService', () => {
         { id: 'campaign-1', name: 'Campaign 1' },
         { id: 'campaign-2', name: 'Campaign 2' },
       ];
-      (prisma.emailCampaign.findMany as jest.Mock).mockResolvedValue(mockCampaigns);
-      (prisma.emailCampaign.count as jest.Mock).mockResolvedValue(2);
+      (prisma.emailCampaign.findMany as vi.Mock).mockResolvedValue(mockCampaigns);
+      (prisma.emailCampaign.count as vi.Mock).mockResolvedValue(2);
 
       // Act
       const result = await EmailMarketingService.getCampaigns('org-1');
@@ -248,8 +248,8 @@ describe('EmailMarketingService', () => {
 
     it('should filter by eventId', async () => {
       // Arrange
-      (prisma.emailCampaign.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.emailCampaign.count as jest.Mock).mockResolvedValue(0);
+      (prisma.emailCampaign.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.emailCampaign.count as vi.Mock).mockResolvedValue(0);
 
       // Act
       await EmailMarketingService.getCampaigns('org-1', { eventId: 'event-1' });
@@ -267,8 +267,8 @@ describe('EmailMarketingService', () => {
 
     it('should filter by status', async () => {
       // Arrange
-      (prisma.emailCampaign.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.emailCampaign.count as jest.Mock).mockResolvedValue(0);
+      (prisma.emailCampaign.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.emailCampaign.count as vi.Mock).mockResolvedValue(0);
 
       // Act
       await EmailMarketingService.getCampaigns('org-1', { status: 'sent' });
@@ -286,8 +286,8 @@ describe('EmailMarketingService', () => {
 
     it('should handle custom page and limit', async () => {
       // Arrange
-      (prisma.emailCampaign.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.emailCampaign.count as jest.Mock).mockResolvedValue(45);
+      (prisma.emailCampaign.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.emailCampaign.count as vi.Mock).mockResolvedValue(45);
 
       // Act
       const result = await EmailMarketingService.getCampaigns('org-1', {
@@ -307,8 +307,8 @@ describe('EmailMarketingService', () => {
 
     it('should calculate pagination correctly', async () => {
       // Arrange
-      (prisma.emailCampaign.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.emailCampaign.count as jest.Mock).mockResolvedValue(100);
+      (prisma.emailCampaign.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.emailCampaign.count as vi.Mock).mockResolvedValue(100);
 
       // Act
       const result = await EmailMarketingService.getCampaigns('org-1', {
@@ -337,8 +337,8 @@ describe('EmailMarketingService', () => {
 
     it('should throw NotFoundError if campaign not found', async () => {
       // Arrange
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(null);
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
 
       // Act & Assert
       await expect(
@@ -348,11 +348,11 @@ describe('EmailMarketingService', () => {
 
     it('should throw ValidationError if campaign already sent', async () => {
       // Arrange
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue({
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue({
         ...mockCampaign,
         status: 'sent',
       });
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
 
       // Act & Assert
       await expect(
@@ -367,10 +367,10 @@ describe('EmailMarketingService', () => {
         { attendee: { email: 'user2@example.com', firstName: 'Jane', lastName: 'Smith' } },
       ];
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue(mockRegistrations);
-      (emailService.sendEmail as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue(mockRegistrations);
+      (emailService.sendEmail as vi.Mock).mockResolvedValue({});
 
       // Act
       const result = await EmailMarketingService.sendCampaign('campaign-1', 'org-1');
@@ -403,10 +403,10 @@ describe('EmailMarketingService', () => {
         { attendee: { email: 'user1@example.com', firstName: 'John', lastName: 'Doe' } },
       ];
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue(mockRegistrations);
-      (emailService.sendEmail as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue(mockRegistrations);
+      (emailService.sendEmail as vi.Mock).mockResolvedValue({});
 
       // Act
       await EmailMarketingService.sendCampaign('campaign-1', 'org-1');
@@ -431,10 +431,10 @@ describe('EmailMarketingService', () => {
         { attendee: { email: 'user2@example.com', firstName: 'Jane', lastName: 'Smith' } },
       ];
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue(mockRegistrations);
-      (emailService.sendEmail as jest.Mock)
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue(mockRegistrations);
+      (emailService.sendEmail as vi.Mock)
         .mockResolvedValueOnce({})
         .mockRejectedValueOnce(new Error('Email send failed'));
 
@@ -465,10 +465,10 @@ describe('EmailMarketingService', () => {
         { email: 'user1@example.com', firstName: 'John', lastName: 'Doe' },
       ];
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(segmentCampaign);
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
-      (AttendeeCommunicationService.getSegmentRecipients as jest.Mock).mockResolvedValue(mockRecipients);
-      (emailService.sendEmail as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(segmentCampaign);
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
+      (AttendeeCommunicationService.getSegmentRecipients as vi.Mock).mockResolvedValue(mockRecipients);
+      (emailService.sendEmail as vi.Mock).mockResolvedValue({});
 
       // Act
       await EmailMarketingService.sendCampaign('campaign-1', 'org-1');
@@ -492,10 +492,10 @@ describe('EmailMarketingService', () => {
         { email: 'user1@example.com', firstName: 'John', lastName: 'Doe' },
       ];
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(tagCampaign);
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
-      (AttendeeCommunicationService.getTaggedUsersRecipients as jest.Mock).mockResolvedValue(mockRecipients);
-      (emailService.sendEmail as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(tagCampaign);
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
+      (AttendeeCommunicationService.getTaggedUsersRecipients as vi.Mock).mockResolvedValue(mockRecipients);
+      (emailService.sendEmail as vi.Mock).mockResolvedValue({});
 
       // Act
       await EmailMarketingService.sendCampaign('campaign-1', 'org-1');
@@ -518,10 +518,10 @@ describe('EmailMarketingService', () => {
         { email: 'user1@example.com', firstName: 'John', lastName: 'Doe' },
       ];
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(eventCampaign);
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
-      (AttendeeCommunicationService.getEventRegistrationsRecipients as jest.Mock).mockResolvedValue(mockRecipients);
-      (emailService.sendEmail as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(eventCampaign);
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
+      (AttendeeCommunicationService.getEventRegistrationsRecipients as vi.Mock).mockResolvedValue(mockRecipients);
+      (emailService.sendEmail as vi.Mock).mockResolvedValue({});
 
       // Act
       await EmailMarketingService.sendCampaign('campaign-1', 'org-1');
@@ -535,10 +535,10 @@ describe('EmailMarketingService', () => {
 
     it('should get distinct attendees for all recipients', async () => {
       // Arrange
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
-      (emailService.sendEmail as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
+      (emailService.sendEmail as vi.Mock).mockResolvedValue({});
 
       // Act
       await EmailMarketingService.sendCampaign('campaign-1', 'org-1');
@@ -567,12 +567,12 @@ describe('EmailMarketingService', () => {
 
     it('should set campaign status to failed on error', async () => {
       // Arrange
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
-      (prisma.emailCampaign.update as jest.Mock)
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.update as vi.Mock)
         .mockResolvedValueOnce({}) // First update for 'sending' status
         .mockRejectedValueOnce(new Error('Update failed')) // Second update will fail
         .mockResolvedValueOnce({}); // Third update for 'failed' status
-      (prisma.eventRegistration.findMany as jest.Mock).mockRejectedValue(new Error('Database error'));
+      (prisma.eventRegistration.findMany as vi.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act & Assert
       await expect(
@@ -589,7 +589,7 @@ describe('EmailMarketingService', () => {
   describe('createAutomationRule', () => {
     it('should throw NotFoundError if campaign not found', async () => {
       // Arrange
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -612,8 +612,8 @@ describe('EmailMarketingService', () => {
         delayType: 'immediate',
       };
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
-      (prisma.emailAutomationRule.create as jest.Mock).mockResolvedValue(mockRule);
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailAutomationRule.create as vi.Mock).mockResolvedValue(mockRule);
 
       // Act
       const result = await EmailMarketingService.createAutomationRule('org-1', {
@@ -641,8 +641,8 @@ describe('EmailMarketingService', () => {
     it('should create rule with delay configuration', async () => {
       // Arrange
       const mockCampaign = { id: 'campaign-1', organizerId: 'org-1' };
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
-      (prisma.emailAutomationRule.create as jest.Mock).mockResolvedValue({ id: 'rule-1' });
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailAutomationRule.create as vi.Mock).mockResolvedValue({ id: 'rule-1' });
 
       // Act
       await EmailMarketingService.createAutomationRule('org-1', {
@@ -668,7 +668,7 @@ describe('EmailMarketingService', () => {
   describe('getCampaignAnalytics', () => {
     it('should throw NotFoundError if campaign not found', async () => {
       // Arrange
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -692,7 +692,7 @@ describe('EmailMarketingService', () => {
         unsubscribedCount: 3,
       };
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
 
       // Act
       const result = await EmailMarketingService.getCampaignAnalytics('campaign-1', 'org-1');
@@ -736,7 +736,7 @@ describe('EmailMarketingService', () => {
         unsubscribedCount: 0,
       };
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
 
       // Act
       const result = await EmailMarketingService.getCampaignAnalytics('campaign-1', 'org-1');
@@ -767,7 +767,7 @@ describe('EmailMarketingService', () => {
         unsubscribedCount: 0,
       };
 
-      (prisma.emailCampaign.findFirst as jest.Mock).mockResolvedValue(mockCampaign);
+      (prisma.emailCampaign.findFirst as vi.Mock).mockResolvedValue(mockCampaign);
 
       // Act
       const result = await EmailMarketingService.getCampaignAnalytics('campaign-1', 'org-1');
@@ -783,7 +783,7 @@ describe('EmailMarketingService', () => {
   describe('trackEmailOpen', () => {
     it('should increment openedCount', async () => {
       // Arrange
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
 
       // Act
       const result = await EmailMarketingService.trackEmailOpen('campaign-1');
@@ -802,7 +802,7 @@ describe('EmailMarketingService', () => {
 
     it('should return success false on error', async () => {
       // Arrange
-      (prisma.emailCampaign.update as jest.Mock).mockRejectedValue(new Error('Database error'));
+      (prisma.emailCampaign.update as vi.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act
       const result = await EmailMarketingService.trackEmailOpen('campaign-1');
@@ -819,7 +819,7 @@ describe('EmailMarketingService', () => {
   describe('trackEmailClick', () => {
     it('should increment clickedCount', async () => {
       // Arrange
-      (prisma.emailCampaign.update as jest.Mock).mockResolvedValue({});
+      (prisma.emailCampaign.update as vi.Mock).mockResolvedValue({});
 
       // Act
       const result = await EmailMarketingService.trackEmailClick('campaign-1');
@@ -838,7 +838,7 @@ describe('EmailMarketingService', () => {
 
     it('should return success false on error', async () => {
       // Arrange
-      (prisma.emailCampaign.update as jest.Mock).mockRejectedValue(new Error('Database error'));
+      (prisma.emailCampaign.update as vi.Mock).mockRejectedValue(new Error('Database error'));
 
       // Act
       const result = await EmailMarketingService.trackEmailClick('campaign-1');

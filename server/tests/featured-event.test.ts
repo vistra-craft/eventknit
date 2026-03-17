@@ -12,25 +12,25 @@ const hashPassword = async (password: string): Promise<string> => {
 };
 
 // Mock cloudinary package to prevent initialization
-jest.mock('cloudinary', () => ({
+vi.mock('cloudinary', () => ({
   v2: {
-    config: jest.fn(),
+    config: vi.fn(),
     uploader: {
-      upload_stream: jest.fn(),
-      destroy: jest.fn(),
+      upload_stream: vi.fn(),
+      destroy: vi.fn(),
     },
   },
 }));
 
 // Mock Cloudinary service
-jest.mock('../src/services/cloudinary.service.js', () => ({
-  uploadImageToCloudinary: jest.fn().mockResolvedValue({
+vi.mock('../src/services/cloudinary.service.js', () => ({
+  uploadImageToCloudinary: vi.fn().mockResolvedValue({
     url: 'https://res.cloudinary.com/test/image/upload/v1234567890/test-image.jpg',
     publicId: 'featured-events/test-image',
     secureUrl: 'https://res.cloudinary.com/test/image/upload/v1234567890/test-image.jpg',
   }),
-  deleteImageFromCloudinary: jest.fn().mockResolvedValue(undefined),
-  extractPublicIdFromUrl: jest.fn((url: string) => {
+  deleteImageFromCloudinary: vi.fn().mockResolvedValue(undefined),
+  extractPublicIdFromUrl: vi.fn((url: string) => {
     const match = url.match(/\/upload\/.*\/(.+)$/);
     return match ? match[1] : null;
   }),

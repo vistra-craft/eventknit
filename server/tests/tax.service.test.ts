@@ -1,23 +1,23 @@
 import { TaxService } from '../src/services/tax.service';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     taxRate: {
-      findFirst: jest.fn(),
+      findFirst: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
   taxRate: {
-    findFirst: jest.Mock;
+    findFirst: vi.Mock;
   };
 };
 
 describe('TaxService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it('returns zero tax when no rate', async () => {

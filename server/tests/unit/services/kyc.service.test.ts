@@ -6,48 +6,48 @@ import { KYCStatus, KYCDocumentType, OrganizerEntityType } from '@prisma/client'
 import * as kycRequirements from '../../../src/config/kyc-requirements.config.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     user: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
     kYCDocument: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      deleteMany: jest.fn(),
-      count: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn(),
+      count: vi.fn(),
     },
     organizerDirector: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
     },
     entityRequirement: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      aggregate: jest.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      aggregate: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/utils/logger.js');
-jest.mock('../../../src/config/kyc-requirements.config.js', () => ({
-  getEntityRequirements: jest.fn(),
-  getRequiredDocuments: jest.fn(),
-  requiresDirectorsOrShareholders: jest.fn(),
+vi.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/config/kyc-requirements.config.js', () => ({
+  getEntityRequirements: vi.fn(),
+  getRequiredDocuments: vi.fn(),
+  requiresDirectorsOrShareholders: vi.fn(),
 }));
 
 describe('KYCService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('setEntityType', () => {
@@ -59,13 +59,13 @@ describe('KYCService', () => {
         industry: 'Events',
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         id: userId,
         organizerEntityType: null,
         kycStatus: null,
       });
 
-      (prisma.user.update as jest.Mock).mockResolvedValue({
+      (prisma.user.update as vi.Mock).mockResolvedValue({
         id: userId,
         organizerEntityType: data.entityType,
       });
@@ -95,13 +95,13 @@ describe('KYCService', () => {
         registrationNumber: 'REG-123',
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         id: userId,
         organizerEntityType: OrganizerEntityType.INDIVIDUAL,
         kycStatus: KYCStatus.APPROVED,
       });
 
-      (prisma.user.update as jest.Mock).mockResolvedValue({
+      (prisma.user.update as vi.Mock).mockResolvedValue({
         id: userId,
         organizerEntityType: data.entityType,
       });
@@ -131,7 +131,7 @@ describe('KYCService', () => {
 
     it('should throw NotFoundError if user does not exist', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(KYCService.setEntityType('nonexistent', {
@@ -146,13 +146,13 @@ describe('KYCService', () => {
         entityType: OrganizerEntityType.INDIVIDUAL,
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         id: userId,
         organizerEntityType: OrganizerEntityType.INDIVIDUAL,
         kycStatus: KYCStatus.APPROVED,
       });
 
-      (prisma.user.update as jest.Mock).mockResolvedValue({});
+      (prisma.user.update as vi.Mock).mockResolvedValue({});
 
       // Act
       const result = await KYCService.setEntityType(userId, data);
@@ -180,14 +180,14 @@ describe('KYCService', () => {
         requiresShareholders: false,
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: OrganizerEntityType.INDIVIDUAL,
         organizerIndustry: null,
       });
 
-      (kycRequirements.getEntityRequirements as jest.Mock).mockReturnValue(mockRequirements);
-      (kycRequirements.getRequiredDocuments as jest.Mock).mockReturnValue(mockDocuments);
-      (kycRequirements.requiresDirectorsOrShareholders as jest.Mock).mockReturnValue(mockDirectorReqs);
+      (kycRequirements.getEntityRequirements as vi.Mock).mockReturnValue(mockRequirements);
+      (kycRequirements.getRequiredDocuments as vi.Mock).mockReturnValue(mockDocuments);
+      (kycRequirements.requiresDirectorsOrShareholders as vi.Mock).mockReturnValue(mockDirectorReqs);
 
       // Act
       const result = await KYCService.getKYCRequirements(userId);
@@ -201,7 +201,7 @@ describe('KYCService', () => {
 
     it('should return null requirements for user without entity type', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: null,
         organizerIndustry: null,
       });
@@ -218,12 +218,12 @@ describe('KYCService', () => {
 
     it('should throw ValidationError for invalid entity type', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: OrganizerEntityType.INDIVIDUAL,
         organizerIndustry: null,
       });
 
-      (kycRequirements.getEntityRequirements as jest.Mock).mockReturnValue(null);
+      (kycRequirements.getEntityRequirements as vi.Mock).mockReturnValue(null);
 
       // Act & Assert
       await expect(KYCService.getKYCRequirements('user-1')).rejects.toThrow(ValidationError);
@@ -231,7 +231,7 @@ describe('KYCService', () => {
 
     it('should throw NotFoundError if user does not exist', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(KYCService.getKYCRequirements('nonexistent')).rejects.toThrow(NotFoundError);
@@ -270,13 +270,13 @@ describe('KYCService', () => {
         },
       ];
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: OrganizerEntityType.INDIVIDUAL,
         organizerIndustry: null,
       });
 
-      (prisma.kYCDocument.findMany as jest.Mock).mockResolvedValue(mockDocuments);
-      (kycRequirements.getRequiredDocuments as jest.Mock).mockReturnValue(mockRequirements);
+      (prisma.kYCDocument.findMany as vi.Mock).mockResolvedValue(mockDocuments);
+      (kycRequirements.getRequiredDocuments as vi.Mock).mockReturnValue(mockRequirements);
 
       // Act
       const result = await KYCService.getUserKYCDocuments(userId);
@@ -293,12 +293,12 @@ describe('KYCService', () => {
 
     it('should handle user without entity type', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: null,
         organizerIndustry: null,
       });
 
-      (prisma.kYCDocument.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.kYCDocument.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       const result = await KYCService.getUserKYCDocuments('user-1');
@@ -319,7 +319,7 @@ describe('KYCService', () => {
         documentType: KYCDocumentType.NATIONAL_ID,
       };
 
-      (prisma.kYCDocument.findUnique as jest.Mock).mockResolvedValue(mockDocument);
+      (prisma.kYCDocument.findUnique as vi.Mock).mockResolvedValue(mockDocument);
 
       // Act
       const result = await KYCService.getKYCDocument('doc-1', 'user-1');
@@ -330,7 +330,7 @@ describe('KYCService', () => {
 
     it('should throw NotFoundError if document does not exist', async () => {
       // Arrange
-      (prisma.kYCDocument.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.kYCDocument.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(KYCService.getKYCDocument('nonexistent', 'user-1')).rejects.toThrow(NotFoundError);
@@ -344,7 +344,7 @@ describe('KYCService', () => {
         documentType: KYCDocumentType.NATIONAL_ID,
       };
 
-      (prisma.kYCDocument.findUnique as jest.Mock).mockResolvedValue(mockDocument);
+      (prisma.kYCDocument.findUnique as vi.Mock).mockResolvedValue(mockDocument);
 
       // Act & Assert
       await expect(KYCService.getKYCDocument('doc-1', 'user-2')).rejects.toThrow(ValidationError);
@@ -369,7 +369,7 @@ describe('KYCService', () => {
         minQuantity: 1,
       };
 
-      (prisma.user.findUnique as jest.Mock)
+      (prisma.user.findUnique as vi.Mock)
         .mockResolvedValueOnce({
           organizerEntityType: OrganizerEntityType.INDIVIDUAL,
           organizerIndustry: null,
@@ -378,14 +378,14 @@ describe('KYCService', () => {
           kycDocuments: [{ id: 'doc-1' }],
         });
 
-      (kycRequirements.getRequiredDocuments as jest.Mock).mockReturnValue([mockRequirement]);
-      (prisma.kYCDocument.count as jest.Mock).mockResolvedValue(0);
-      (prisma.kYCDocument.create as jest.Mock).mockResolvedValue({
+      (kycRequirements.getRequiredDocuments as vi.Mock).mockReturnValue([mockRequirement]);
+      (prisma.kYCDocument.count as vi.Mock).mockResolvedValue(0);
+      (prisma.kYCDocument.create as vi.Mock).mockResolvedValue({
         id: 'doc-1',
         ...data,
         status: KYCStatus.PENDING,
       });
-      (prisma.user.update as jest.Mock).mockResolvedValue({});
+      (prisma.user.update as vi.Mock).mockResolvedValue({});
 
       // Act
       const result = await KYCService.createKYCDocument(userId, data);
@@ -404,7 +404,7 @@ describe('KYCService', () => {
 
     it('should throw ValidationError if entity type not set', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: null,
         organizerIndustry: null,
       });
@@ -417,12 +417,12 @@ describe('KYCService', () => {
 
     it('should throw ValidationError for document type not required for entity', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: OrganizerEntityType.INDIVIDUAL,
         organizerIndustry: null,
       });
 
-      (kycRequirements.getRequiredDocuments as jest.Mock).mockReturnValue([]);
+      (kycRequirements.getRequiredDocuments as vi.Mock).mockReturnValue([]);
 
       // Act & Assert
       await expect(KYCService.createKYCDocument('user-1', {
@@ -441,13 +441,13 @@ describe('KYCService', () => {
         maxQuantity: 2,
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: OrganizerEntityType.INDIVIDUAL,
         organizerIndustry: null,
       });
 
-      (kycRequirements.getRequiredDocuments as jest.Mock).mockReturnValue([mockRequirement]);
-      (prisma.kYCDocument.count as jest.Mock).mockResolvedValue(2);
+      (kycRequirements.getRequiredDocuments as vi.Mock).mockReturnValue([mockRequirement]);
+      (prisma.kYCDocument.count as vi.Mock).mockResolvedValue(2);
 
       // Act & Assert
       await expect(KYCService.createKYCDocument('user-1', {
@@ -465,8 +465,8 @@ describe('KYCService', () => {
         status: KYCStatus.PENDING,
       };
 
-      (prisma.kYCDocument.findUnique as jest.Mock).mockResolvedValue(mockDocument);
-      (prisma.kYCDocument.update as jest.Mock).mockResolvedValue({
+      (prisma.kYCDocument.findUnique as vi.Mock).mockResolvedValue(mockDocument);
+      (prisma.kYCDocument.update as vi.Mock).mockResolvedValue({
         ...mockDocument,
         documentNumber: 'NEW-123',
       });
@@ -489,7 +489,7 @@ describe('KYCService', () => {
         status: KYCStatus.APPROVED,
       };
 
-      (prisma.kYCDocument.findUnique as jest.Mock).mockResolvedValue(mockDocument);
+      (prisma.kYCDocument.findUnique as vi.Mock).mockResolvedValue(mockDocument);
 
       // Act & Assert
       await expect(KYCService.updateKYCDocument('doc-1', 'user-1', {
@@ -507,8 +507,8 @@ describe('KYCService', () => {
         status: KYCStatus.PENDING,
       };
 
-      (prisma.kYCDocument.findUnique as jest.Mock).mockResolvedValue(mockDocument);
-      (prisma.kYCDocument.delete as jest.Mock).mockResolvedValue(mockDocument);
+      (prisma.kYCDocument.findUnique as vi.Mock).mockResolvedValue(mockDocument);
+      (prisma.kYCDocument.delete as vi.Mock).mockResolvedValue(mockDocument);
 
       // Act
       await KYCService.deleteKYCDocument('doc-1', 'user-1');
@@ -528,7 +528,7 @@ describe('KYCService', () => {
         status: KYCStatus.APPROVED,
       };
 
-      (prisma.kYCDocument.findUnique as jest.Mock).mockResolvedValue(mockDocument);
+      (prisma.kYCDocument.findUnique as vi.Mock).mockResolvedValue(mockDocument);
 
       // Act & Assert
       await expect(KYCService.deleteKYCDocument('doc-1', 'user-1')).rejects.toThrow('Cannot delete approved documents');
@@ -567,13 +567,13 @@ describe('KYCService', () => {
         },
       ];
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-      (kycRequirements.getRequiredDocuments as jest.Mock).mockReturnValue(mockRequirements);
-      (kycRequirements.requiresDirectorsOrShareholders as jest.Mock).mockReturnValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser);
+      (kycRequirements.getRequiredDocuments as vi.Mock).mockReturnValue(mockRequirements);
+      (kycRequirements.requiresDirectorsOrShareholders as vi.Mock).mockReturnValue({
         requiresDirectors: false,
         requiresShareholders: false,
       });
-      (prisma.user.update as jest.Mock).mockResolvedValue({});
+      (prisma.user.update as vi.Mock).mockResolvedValue({});
 
       // Act
       const result = await KYCService.submitKYCForReview(userId);
@@ -609,9 +609,9 @@ describe('KYCService', () => {
         },
       ];
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-      (kycRequirements.getRequiredDocuments as jest.Mock).mockReturnValue(mockRequirements);
-      (kycRequirements.requiresDirectorsOrShareholders as jest.Mock).mockReturnValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser);
+      (kycRequirements.getRequiredDocuments as vi.Mock).mockReturnValue(mockRequirements);
+      (kycRequirements.requiresDirectorsOrShareholders as vi.Mock).mockReturnValue({
         requiresDirectors: false,
         requiresShareholders: false,
       });
@@ -643,9 +643,9 @@ describe('KYCService', () => {
         },
       ];
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-      (kycRequirements.getRequiredDocuments as jest.Mock).mockReturnValue(mockRequirements);
-      (kycRequirements.requiresDirectorsOrShareholders as jest.Mock).mockReturnValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser);
+      (kycRequirements.getRequiredDocuments as vi.Mock).mockReturnValue(mockRequirements);
+      (kycRequirements.requiresDirectorsOrShareholders as vi.Mock).mockReturnValue({
         requiresDirectors: true,
         requiresShareholders: true,
         minDirectors: 2,
@@ -659,7 +659,7 @@ describe('KYCService', () => {
 
     it('should throw ValidationError if entity type not set', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: null,
         kycDocuments: [],
         organizerDirectors: [],
@@ -680,7 +680,7 @@ describe('KYCService', () => {
         { id: 'dir-2', isTopFive: true, sharePercentage: 25 },
       ];
 
-      (prisma.organizerDirector.findMany as jest.Mock).mockResolvedValue(mockDirectors);
+      (prisma.organizerDirector.findMany as vi.Mock).mockResolvedValue(mockDirectors);
 
       // Act
       const result = await KYCService.getDirectors('user-1');
@@ -711,18 +711,18 @@ describe('KYCService', () => {
         sharePercentage: 25,
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: OrganizerEntityType.LIMITED_LIABILITY_COMPANY,
       });
 
-      (kycRequirements.requiresDirectorsOrShareholders as jest.Mock).mockReturnValue({
+      (kycRequirements.requiresDirectorsOrShareholders as vi.Mock).mockReturnValue({
         requiresDirectors: true,
         requiresShareholders: true,
         maxDirectorsToCollect: 5,
       });
 
-      (prisma.organizerDirector.count as jest.Mock).mockResolvedValue(3);
-      (prisma.organizerDirector.create as jest.Mock).mockResolvedValue({
+      (prisma.organizerDirector.count as vi.Mock).mockResolvedValue(3);
+      (prisma.organizerDirector.create as vi.Mock).mockResolvedValue({
         id: 'dir-1',
         ...data,
         isTopFive: true,
@@ -746,18 +746,18 @@ describe('KYCService', () => {
         documentNumber: 'ID-123',
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: OrganizerEntityType.LIMITED_LIABILITY_COMPANY,
       });
 
-      (kycRequirements.requiresDirectorsOrShareholders as jest.Mock).mockReturnValue({
+      (kycRequirements.requiresDirectorsOrShareholders as vi.Mock).mockReturnValue({
         requiresDirectors: true,
         requiresShareholders: true,
         maxDirectorsToCollect: 5,
       });
 
-      (prisma.organizerDirector.count as jest.Mock).mockResolvedValue(5);
-      (prisma.organizerDirector.create as jest.Mock).mockResolvedValue({
+      (prisma.organizerDirector.count as vi.Mock).mockResolvedValue(5);
+      (prisma.organizerDirector.create as vi.Mock).mockResolvedValue({
         id: 'dir-6',
         ...data,
         isTopFive: false,
@@ -772,11 +772,11 @@ describe('KYCService', () => {
 
     it('should throw ValidationError if entity type does not require directors', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: OrganizerEntityType.INDIVIDUAL,
       });
 
-      (kycRequirements.requiresDirectorsOrShareholders as jest.Mock).mockReturnValue({
+      (kycRequirements.requiresDirectorsOrShareholders as vi.Mock).mockReturnValue({
         requiresDirectors: false,
         requiresShareholders: false,
       });
@@ -793,7 +793,7 @@ describe('KYCService', () => {
 
     it('should throw ValidationError if entity type not set', async () => {
       // Arrange
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         organizerEntityType: null,
       });
 
@@ -816,8 +816,8 @@ describe('KYCService', () => {
         userId: 'user-1',
       };
 
-      (prisma.organizerDirector.findUnique as jest.Mock).mockResolvedValue(mockDirector);
-      (prisma.organizerDirector.delete as jest.Mock).mockResolvedValue(mockDirector);
+      (prisma.organizerDirector.findUnique as vi.Mock).mockResolvedValue(mockDirector);
+      (prisma.organizerDirector.delete as vi.Mock).mockResolvedValue(mockDirector);
 
       // Act
       await KYCService.deleteDirector('dir-1', 'user-1');
@@ -831,7 +831,7 @@ describe('KYCService', () => {
 
     it('should throw NotFoundError if director does not exist', async () => {
       // Arrange
-      (prisma.organizerDirector.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.organizerDirector.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(KYCService.deleteDirector('nonexistent', 'user-1')).rejects.toThrow(NotFoundError);
@@ -844,7 +844,7 @@ describe('KYCService', () => {
         userId: 'user-1',
       };
 
-      (prisma.organizerDirector.findUnique as jest.Mock).mockResolvedValue(mockDirector);
+      (prisma.organizerDirector.findUnique as vi.Mock).mockResolvedValue(mockDirector);
 
       // Act & Assert
       await expect(KYCService.deleteDirector('dir-1', 'user-2')).rejects.toThrow(
@@ -882,7 +882,7 @@ describe('KYCService', () => {
         },
       ];
 
-      (prisma.entityRequirement.findMany as jest.Mock).mockResolvedValue(mockRequirements);
+      (prisma.entityRequirement.findMany as vi.Mock).mockResolvedValue(mockRequirements);
 
       // Act
       const result = await KYCService.getEntityRequirements(entityType);
@@ -898,7 +898,7 @@ describe('KYCService', () => {
     it('should create default requirements when none exist', async () => {
       // Arrange
       const entityType = OrganizerEntityType.INDIVIDUAL;
-      (prisma.entityRequirement.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.entityRequirement.findMany as vi.Mock).mockResolvedValue([]);
 
       const defaultReqs = [
         {
@@ -914,7 +914,7 @@ describe('KYCService', () => {
         },
       ];
 
-      (prisma.entityRequirement.create as jest.Mock)
+      (prisma.entityRequirement.create as vi.Mock)
         .mockResolvedValueOnce(defaultReqs[0]);
 
       // Act
@@ -933,8 +933,8 @@ describe('KYCService', () => {
       const documentType = 'NATIONAL_ID';
       const description = 'Valid national ID';
 
-      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.entityRequirement.aggregate as jest.Mock).mockResolvedValue({
+      (prisma.entityRequirement.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.entityRequirement.aggregate as vi.Mock).mockResolvedValue({
         _max: { displayOrder: 2 },
       });
 
@@ -950,7 +950,7 @@ describe('KYCService', () => {
         updatedAt: new Date(),
       };
 
-      (prisma.entityRequirement.create as jest.Mock).mockResolvedValue(mockNewReq);
+      (prisma.entityRequirement.create as vi.Mock).mockResolvedValue(mockNewReq);
 
       // Act
       const result = await KYCService.addEntityRequirement(entityType, documentType, description, true);
@@ -974,7 +974,7 @@ describe('KYCService', () => {
       const entityType = OrganizerEntityType.LIMITED_LIABILITY_COMPANY;
       const documentType = 'CERTIFICATE_OF_INCORPORATION';
 
-      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.entityRequirement.findUnique as vi.Mock).mockResolvedValue({
         id: 'existing-req',
         entityType,
         documentType,
@@ -993,7 +993,7 @@ describe('KYCService', () => {
       const requirementId = 'req-1';
       const newDescription = 'Updated description';
 
-      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.entityRequirement.findUnique as vi.Mock).mockResolvedValue({
         id: requirementId,
         entityType: OrganizerEntityType.SOLE_PROPRIETOR,
       });
@@ -1010,7 +1010,7 @@ describe('KYCService', () => {
         updatedAt: new Date(),
       };
 
-      (prisma.entityRequirement.update as jest.Mock).mockResolvedValue(mockUpdated);
+      (prisma.entityRequirement.update as vi.Mock).mockResolvedValue(mockUpdated);
 
       // Act
       const result = await KYCService.updateEntityRequirement(requirementId, newDescription, false);
@@ -1029,7 +1029,7 @@ describe('KYCService', () => {
 
     it('should throw NotFoundError if requirement does not exist', async () => {
       // Arrange
-      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.entityRequirement.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -1043,12 +1043,12 @@ describe('KYCService', () => {
       // Arrange
       const requirementId = 'req-1';
 
-      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.entityRequirement.findUnique as vi.Mock).mockResolvedValue({
         id: requirementId,
         entityType: OrganizerEntityType.INDIVIDUAL,
       });
 
-      (prisma.entityRequirement.delete as jest.Mock).mockResolvedValue({
+      (prisma.entityRequirement.delete as vi.Mock).mockResolvedValue({
         id: requirementId,
       });
 
@@ -1064,7 +1064,7 @@ describe('KYCService', () => {
 
     it('should throw NotFoundError if requirement does not exist', async () => {
       // Arrange
-      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.entityRequirement.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(KYCService.deleteEntityRequirement('nonexistent')).rejects.toThrow(NotFoundError);

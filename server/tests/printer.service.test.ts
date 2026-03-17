@@ -9,55 +9,55 @@ import { prisma } from '../src/config/database';
 import { exec } from 'child_process';
 
 // Mock database
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     printer: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
     },
     badgeTemplate: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     eventRegistration: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     printJob: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
 
 // Mock child_process
-jest.mock('child_process', () => ({
-  exec: jest.fn(),
+vi.mock('child_process', () => ({
+  exec: vi.fn(),
 }));
 
 // Mock logger
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    error: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
 // Mock fs promises
-jest.mock('fs/promises', () => ({
-  unlink: jest.fn().mockResolvedValue(undefined),
-  readFile: jest.fn().mockResolvedValue(Buffer.from('mock pdf content')),
+vi.mock('fs/promises', () => ({
+  unlink: vi.fn().mockResolvedValue(undefined),
+  readFile: vi.fn().mockResolvedValue(Buffer.from('mock pdf content')),
 }));
 
 // Mock cloudinary
-jest.mock('../src/services/cloudinary.service', () => ({
-  uploadImageToCloudinary: jest.fn().mockResolvedValue({ secureUrl: 'https://cloudinary.com/test.pdf' }),
+vi.mock('../src/services/cloudinary.service', () => ({
+  uploadImageToCloudinary: vi.fn().mockResolvedValue({ secureUrl: 'https://cloudinary.com/test.pdf' }),
 }));
 
 describe('PrinterService - Integration Tests', () => {
@@ -67,11 +67,11 @@ describe('PrinterService - Integration Tests', () => {
   const mockRegistrationId = 'reg-123';
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Printer Discovery', () => {
@@ -81,7 +81,7 @@ describe('PrinterService - Integration Tests', () => {
 printer Canon_Pixma is idle. enabled since Mon Jan 29 09:30:00 2026
 printer Brother_HL is idle. disabled since Mon Jan 29 08:00:00 2026`;
 
-      (exec as unknown as jest.Mock).mockImplementation((command: string, callback: Function) => {
+      (exec as unknown as vi.Mock).mockImplementation((command: string, callback: Function) => {
         if (command.includes('lpstat -p -d')) {
           callback(null, { stdout: mockOutput, stderr: '' });
         }
@@ -117,7 +117,7 @@ DESKTOP-ABC,Microsoft Print to PDF,Idle
 DESKTOP-ABC,HP LaserJet Pro,Printing
 DESKTOP-ABC,Canon Printer,Error`;
 
-      (exec as unknown as jest.Mock).mockImplementation((command: string, callback: Function) => {
+      (exec as unknown as vi.Mock).mockImplementation((command: string, callback: Function) => {
         if (command.includes('wmic printer')) {
           callback(null, { stdout: mockOutput, stderr: '' });
         }
@@ -148,7 +148,7 @@ DESKTOP-ABC,Canon Printer,Error`;
     });
 
     it('should return empty array on discovery errors', async () => {
-      (exec as unknown as jest.Mock).mockImplementation((command: string, callback: Function) => {
+      (exec as unknown as vi.Mock).mockImplementation((command: string, callback: Function) => {
         callback(new Error('Command not found'), { stdout: '', stderr: 'lpstat: command not found' });
         return {} as any;
       });
@@ -185,12 +185,12 @@ DESKTOP-ABC,Canon Printer,Error`;
         createdBy: mockUserId,
       };
 
-      (prisma.printer.create as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.printer.update as jest.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.create as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.update as vi.Mock).mockResolvedValue(mockPrinter);
 
       // Mock exec for status check
-      (exec as unknown as jest.Mock).mockImplementation((command: string, callback: Function) => {
+      (exec as unknown as vi.Mock).mockImplementation((command: string, callback: Function) => {
         callback(null, { stdout: 'printer HP_LaserJet_Badge is idle. enabled', stderr: '' });
         return {} as any;
       });
@@ -247,9 +247,9 @@ DESKTOP-ABC,Canon Printer,Error`;
         createdBy: mockUserId,
       };
 
-      (prisma.printer.create as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.printer.update as jest.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.create as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.update as vi.Mock).mockResolvedValue(mockPrinter);
 
       const result = await PrinterService.registerPrinter(printerConfig, mockUserId);
 
@@ -280,14 +280,14 @@ DESKTOP-ABC,Canon Printer,Error`;
         orientation: 'portrait',
       };
 
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.printer.update as jest.Mock).mockResolvedValue({
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.update as vi.Mock).mockResolvedValue({
         ...mockPrinter,
         isOnline: true,
         lastChecked: new Date(),
       });
 
-      (exec as unknown as jest.Mock).mockImplementation((command: string, callback: Function) => {
+      (exec as unknown as vi.Mock).mockImplementation((command: string, callback: Function) => {
         if (command.includes('lpstat -p')) {
           callback(null, { stdout: 'printer HP_LaserJet is idle. enabled', stderr: '' });
         }
@@ -327,13 +327,13 @@ DESKTOP-ABC,Canon Printer,Error`;
         orientation: 'portrait',
       };
 
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.printer.update as jest.Mock).mockResolvedValue({
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.update as vi.Mock).mockResolvedValue({
         ...mockPrinter,
         isOnline: false,
       });
 
-      (exec as unknown as jest.Mock).mockImplementation((command: string, callback: Function) => {
+      (exec as unknown as vi.Mock).mockImplementation((command: string, callback: Function) => {
         callback(new Error('Printer not found'), { stdout: '', stderr: 'lpstat: Unknown destination' });
         return {} as any;
       });
@@ -427,10 +427,10 @@ DESKTOP-ABC,Canon Printer,Error`;
         updatedAt: new Date(),
       };
 
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.badgeTemplate.findUnique as jest.Mock).mockResolvedValue(mockTemplate);
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.printJob.create as jest.Mock).mockResolvedValue(mockPrintJob);
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.badgeTemplate.findUnique as vi.Mock).mockResolvedValue(mockTemplate);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
+      (prisma.printJob.create as vi.Mock).mockResolvedValue(mockPrintJob);
 
       const result = await PrinterService.createPrintJob({
         printerId: 'printer-123',
@@ -488,10 +488,10 @@ DESKTOP-ABC,Canon Printer,Error`;
         status: 'queued',
       };
 
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.badgeTemplate.findUnique as jest.Mock).mockResolvedValue(mockTemplate);
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.printJob.create as jest.Mock).mockResolvedValue(mockPrintJob);
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.badgeTemplate.findUnique as vi.Mock).mockResolvedValue(mockTemplate);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
+      (prisma.printJob.create as vi.Mock).mockResolvedValue(mockPrintJob);
 
       // Job creation should succeed - offline status is checked during processing
       const result = await PrinterService.createPrintJob({
@@ -527,7 +527,7 @@ DESKTOP-ABC,Canon Printer,Error`;
         orientation: 'portrait',
       };
 
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
 
       await expect(
         PrinterService.createPrintJob({
@@ -559,8 +559,8 @@ DESKTOP-ABC,Canon Printer,Error`;
         },
       ];
 
-      (prisma.printJob.findMany as jest.Mock).mockResolvedValue(mockJobs);
-      (prisma.printJob.count as jest.Mock).mockResolvedValue(2);
+      (prisma.printJob.findMany as vi.Mock).mockResolvedValue(mockJobs);
+      (prisma.printJob.count as vi.Mock).mockResolvedValue(2);
 
       const result = await PrinterService.getPrintJobs({
         printerId: 'printer-123',
@@ -596,8 +596,8 @@ DESKTOP-ABC,Canon Printer,Error`;
         updatedAt: new Date(),
       };
 
-      (prisma.printJob.findUnique as jest.Mock).mockResolvedValue(mockJob);
-      (prisma.printJob.update as jest.Mock).mockResolvedValue({
+      (prisma.printJob.findUnique as vi.Mock).mockResolvedValue(mockJob);
+      (prisma.printJob.update as vi.Mock).mockResolvedValue({
         ...mockJob,
         status: 'cancelled',
       });
@@ -632,7 +632,7 @@ DESKTOP-ABC,Canon Printer,Error`;
         updatedAt: new Date(),
       };
 
-      (prisma.printJob.findUnique as jest.Mock).mockResolvedValue(mockJob);
+      (prisma.printJob.findUnique as vi.Mock).mockResolvedValue(mockJob);
 
       await expect(PrinterService.cancelPrintJob('job-completed')).rejects.toThrow(
         'Cannot cancel completed job',
@@ -642,13 +642,13 @@ DESKTOP-ABC,Canon Printer,Error`;
 
   describe('Error Handling', () => {
     it('should handle template not found error', async () => {
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue({
         id: 'printer-123',
         isOnline: true,
         isActive: true,
       });
 
-      (prisma.badgeTemplate.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.badgeTemplate.findUnique as vi.Mock).mockResolvedValue(null);
 
       await expect(
         PrinterService.createPrintJob({
@@ -663,18 +663,18 @@ DESKTOP-ABC,Canon Printer,Error`;
     });
 
     it('should handle registration not found error', async () => {
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue({
         id: 'printer-123',
         isOnline: true,
         isActive: true,
       });
 
-      (prisma.badgeTemplate.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.badgeTemplate.findUnique as vi.Mock).mockResolvedValue({
         id: mockTemplateId,
         eventId: mockEventId,
       });
 
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
 
       await expect(
         PrinterService.createPrintJob({
@@ -689,7 +689,7 @@ DESKTOP-ABC,Canon Printer,Error`;
     });
 
     it('should handle printer not found error', async () => {
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(null);
 
       await expect(
         PrinterService.createPrintJob({
@@ -723,7 +723,7 @@ DESKTOP-ABC,Canon Printer,Error`;
         },
       ];
 
-      (prisma.printer.findMany as jest.Mock).mockResolvedValue(mockPrinters);
+      (prisma.printer.findMany as vi.Mock).mockResolvedValue(mockPrinters);
 
       const result = await PrinterService.getPrinters(mockEventId, false);
 
@@ -764,7 +764,7 @@ DESKTOP-ABC,Canon Printer,Error`;
         isActive: true,
       };
 
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
 
       const result = await PrinterService.getPrinterById('printer-123');
 
@@ -785,8 +785,8 @@ DESKTOP-ABC,Canon Printer,Error`;
         isActive: true,
       };
 
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.printer.update as jest.Mock).mockResolvedValue({
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.update as vi.Mock).mockResolvedValue({
         ...mockPrinter,
         name: 'Updated Printer',
       });
@@ -812,8 +812,8 @@ DESKTOP-ABC,Canon Printer,Error`;
         isActive: true,
       };
 
-      (prisma.printer.findUnique as jest.Mock).mockResolvedValue(mockPrinter);
-      (prisma.printer.update as jest.Mock).mockResolvedValue({
+      (prisma.printer.findUnique as vi.Mock).mockResolvedValue(mockPrinter);
+      (prisma.printer.update as vi.Mock).mockResolvedValue({
         ...mockPrinter,
         isActive: false,
       });

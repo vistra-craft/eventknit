@@ -5,34 +5,34 @@ import { NotFoundError } from '../../../src/utils/errors.js';
 import { Decimal } from '@prisma/client/runtime/library';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     eventRegistration: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
     paymentPlan: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     paymentInstallment: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      createMany: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      count: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      createMany: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      count: vi.fn(),
     },
-    $transaction: jest.fn(),
+    $transaction: vi.fn(),
   },
 }));
-jest.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/utils/logger.js');
 
 describe('PaymentPlanService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('createPaymentPlan', () => {
@@ -54,9 +54,9 @@ describe('PaymentPlanService', () => {
         event: { id: 'event-1', currency: 'NGN' },
       };
 
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
-      (prisma.paymentPlan.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.paymentPlan.create as jest.Mock).mockResolvedValue({
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
+      (prisma.paymentPlan.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.paymentPlan.create as vi.Mock).mockResolvedValue({
         id: 'plan-1',
         registrationId,
         planName: data.planName,
@@ -66,7 +66,7 @@ describe('PaymentPlanService', () => {
         frequency: data.frequency,
         currency: 'NGN',
       });
-      (prisma.paymentInstallment.createMany as jest.Mock).mockResolvedValue({ count: 4 });
+      (prisma.paymentInstallment.createMany as vi.Mock).mockResolvedValue({ count: 4 });
 
       // Act
       const result = await PaymentPlanService.createPaymentPlan(registrationId, data);
@@ -79,7 +79,7 @@ describe('PaymentPlanService', () => {
 
     it('should throw NotFoundError if registration does not exist', async () => {
       // Arrange
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(PaymentPlanService.createPaymentPlan('nonexistent', {
@@ -92,13 +92,13 @@ describe('PaymentPlanService', () => {
 
     it('should throw ValidationError if payment plan already exists', async () => {
       // Arrange
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue({
         id: 'reg-1',
         eventId: 'event-1',
         totalAmount: new Decimal(1000),
         event: { id: 'event-1', currency: 'NGN' },
       });
-      (prisma.paymentPlan.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.paymentPlan.findUnique as vi.Mock).mockResolvedValue({
         id: 'existing-plan',
       });
 
@@ -126,7 +126,7 @@ describe('PaymentPlanService', () => {
         event: { title: 'Test Event' },
       };
 
-      (prisma.paymentPlan.findUnique as jest.Mock).mockResolvedValue(mockPlan);
+      (prisma.paymentPlan.findUnique as vi.Mock).mockResolvedValue(mockPlan);
 
       // Act
       const result = await PaymentPlanService.getPaymentPlanByRegistration('reg-1');
@@ -138,7 +138,7 @@ describe('PaymentPlanService', () => {
 
     it('should throw NotFoundError if plan does not exist', async () => {
       // Arrange
-      (prisma.paymentPlan.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.paymentPlan.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(PaymentPlanService.getPaymentPlanByRegistration('nonexistent')).rejects.toThrow(NotFoundError);
@@ -153,7 +153,7 @@ describe('PaymentPlanService', () => {
         { id: 'plan-2', status: 'ACTIVE' },
       ];
 
-      (prisma.paymentPlan.findMany as jest.Mock).mockResolvedValue(mockPlans);
+      (prisma.paymentPlan.findMany as vi.Mock).mockResolvedValue(mockPlans);
 
       // Act
       const result = await PaymentPlanService.getUserPaymentPlans('user-1', {
@@ -186,12 +186,12 @@ describe('PaymentPlanService', () => {
         },
       };
 
-      (prisma.paymentInstallment.findUnique as jest.Mock).mockResolvedValue(mockInstallment);
-      (prisma.paymentInstallment.update as jest.Mock).mockResolvedValue({
+      (prisma.paymentInstallment.findUnique as vi.Mock).mockResolvedValue(mockInstallment);
+      (prisma.paymentInstallment.update as vi.Mock).mockResolvedValue({
         ...mockInstallment,
         status: 'PAID',
       });
-      (prisma.paymentInstallment.count as jest.Mock).mockResolvedValue(2); // 2 remaining
+      (prisma.paymentInstallment.count as vi.Mock).mockResolvedValue(2); // 2 remaining
 
       // Act
       const result = await PaymentPlanService.processInstallmentPayment('inst-1', {
@@ -216,14 +216,14 @@ describe('PaymentPlanService', () => {
         },
       };
 
-      (prisma.paymentInstallment.findUnique as jest.Mock).mockResolvedValue(mockInstallment);
-      (prisma.paymentInstallment.update as jest.Mock).mockResolvedValue({
+      (prisma.paymentInstallment.findUnique as vi.Mock).mockResolvedValue(mockInstallment);
+      (prisma.paymentInstallment.update as vi.Mock).mockResolvedValue({
         ...mockInstallment,
         status: 'PAID',
       });
-      (prisma.paymentInstallment.count as jest.Mock).mockResolvedValue(0); // No remaining
-      (prisma.paymentPlan.update as jest.Mock).mockResolvedValue({ status: 'COMPLETED' });
-      (prisma.eventRegistration.update as jest.Mock).mockResolvedValue({ paymentStatus: 'COMPLETED' });
+      (prisma.paymentInstallment.count as vi.Mock).mockResolvedValue(0); // No remaining
+      (prisma.paymentPlan.update as vi.Mock).mockResolvedValue({ status: 'COMPLETED' });
+      (prisma.eventRegistration.update as vi.Mock).mockResolvedValue({ paymentStatus: 'COMPLETED' });
 
       // Act
       await PaymentPlanService.processInstallmentPayment('inst-1', {
@@ -241,7 +241,7 @@ describe('PaymentPlanService', () => {
 
     it('should throw ValidationError if installment already paid', async () => {
       // Arrange
-      (prisma.paymentInstallment.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.paymentInstallment.findUnique as vi.Mock).mockResolvedValue({
         id: 'inst-1',
         status: 'PAID',
       });
@@ -261,8 +261,8 @@ describe('PaymentPlanService', () => {
         { id: 'inst-2', dueDate: new Date('2026-01-15') },
       ];
 
-      (prisma.paymentInstallment.findMany as jest.Mock).mockResolvedValue(mockOverdue);
-      (prisma.paymentInstallment.updateMany as jest.Mock).mockResolvedValue({ count: 2 });
+      (prisma.paymentInstallment.findMany as vi.Mock).mockResolvedValue(mockOverdue);
+      (prisma.paymentInstallment.updateMany as vi.Mock).mockResolvedValue({ count: 2 });
 
       // Act
       const result = await PaymentPlanService.getOverdueInstallments('user-1');
@@ -289,8 +289,8 @@ describe('PaymentPlanService', () => {
         registration: { attendeeId: 'user-1' },
       };
 
-      (prisma.paymentPlan.findUnique as jest.Mock).mockResolvedValue(mockPlan);
-      (prisma.$transaction as jest.Mock).mockImplementation(async (operations) => {
+      (prisma.paymentPlan.findUnique as vi.Mock).mockResolvedValue(mockPlan);
+      (prisma.$transaction as vi.Mock).mockImplementation(async (operations) => {
         return operations;
       });
 
@@ -305,7 +305,7 @@ describe('PaymentPlanService', () => {
 
     it('should throw ValidationError if user does not own plan', async () => {
       // Arrange
-      (prisma.paymentPlan.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.paymentPlan.findUnique as vi.Mock).mockResolvedValue({
         id: 'plan-1',
         registration: { attendeeId: 'other-user' },
       });
@@ -318,7 +318,7 @@ describe('PaymentPlanService', () => {
 
     it('should throw ValidationError if plan already completed', async () => {
       // Arrange
-      (prisma.paymentPlan.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.paymentPlan.findUnique as vi.Mock).mockResolvedValue({
         id: 'plan-1',
         status: 'COMPLETED',
         registration: { attendeeId: 'user-1' },

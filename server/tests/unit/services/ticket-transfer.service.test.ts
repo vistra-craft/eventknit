@@ -1,31 +1,31 @@
 import { PrismaClient, RegistrationStatus, TicketStatus } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { TicketTransferService } from '../../../src/services/ticket-transfer.service.js';
 import { ValidationError } from '../../../src/utils/errors.js';
 import { emailService } from '../../../src/services/email.service.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/services/ticket.service.js', () => ({
+vi.mock('../../../src/services/ticket.service.js', () => ({
   TicketService: {
-    generateBackupTicketCode: jest.fn().mockReturnValue('BACKUP-123456'),
+    generateBackupTicketCode: vi.fn().mockReturnValue('BACKUP-123456'),
   },
 }));
 
-jest.mock('../../../src/services/digital-wallet.service.js', () => ({
+vi.mock('../../../src/services/digital-wallet.service.js', () => ({
   DigitalWalletService: {
-    addTicketToWallet: jest.fn().mockResolvedValue(undefined),
+    addTicketToWallet: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
-jest.mock('../../../src/services/email.service.js', () => ({
+vi.mock('../../../src/services/email.service.js', () => ({
   emailService: {
-    sendTicketTransferOfferEmail: jest.fn().mockResolvedValue({ success: true }),
-    sendTicketTransferAcceptedEmail: jest.fn().mockResolvedValue({ success: true }),
-    sendTicketTransferCancelledEmail: jest.fn().mockResolvedValue({ success: true }),
+    sendTicketTransferOfferEmail: vi.fn().mockResolvedValue({ success: true }),
+    sendTicketTransferAcceptedEmail: vi.fn().mockResolvedValue({ success: true }),
+    sendTicketTransferCancelledEmail: vi.fn().mockResolvedValue({ success: true }),
   },
 }));
 
@@ -84,7 +84,7 @@ describe('TicketTransferService', () => {
 
   beforeEach(() => {
     mockReset(prismaMock);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('initiateTransfer', () => {

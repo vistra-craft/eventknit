@@ -2,29 +2,29 @@ import { EventTemplateService } from '../src/services/event-template.service';
 import { NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     eventTemplate: {
-      create: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
   eventTemplate: {
-    create: jest.Mock;
-    findFirst: jest.Mock;
-    findMany: jest.Mock;
-    update: jest.Mock;
+    create: vi.Mock;
+    findFirst: vi.Mock;
+    findMany: vi.Mock;
+    update: vi.Mock;
   };
 };
 
 describe('EventTemplateService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it('creates template', async () => {

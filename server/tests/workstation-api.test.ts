@@ -1,8 +1,8 @@
 // Mock LockService so Redis absence doesn't block scan operations in integration tests
-jest.mock('../src/services/lock.service', () => ({
+vi.mock('../src/services/lock.service', () => ({
   LockService: {
-    acquireLockWithRetry: jest.fn().mockResolvedValue('test-lock-token'),
-    releaseLock: jest.fn().mockResolvedValue(true),
+    acquireLockWithRetry: vi.fn().mockResolvedValue('test-lock-token'),
+    releaseLock: vi.fn().mockResolvedValue(true),
   },
 }));
 

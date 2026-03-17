@@ -29,7 +29,7 @@ export async function cleanupTestData(_tx?: any) {
     // Fallback to individual deletes if TRUNCATE fails
     console.warn('[cleanup] TRUNCATE failed, falling back to DELETE:', e?.message);
     const tables = [
-      'SupportResponse', 'SupportQuery', 'SocialMessage',
+      'SupportResponse', 'SocialMessage',
       'TicketTransfer', 'TicketResale', 'ServicePointSession',
       'SubscriptionOverride', 'Invoice', 'PaymentPlan',
       'TeamRolePermission', 'TeamRoleTemplate',

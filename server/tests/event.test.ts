@@ -980,10 +980,9 @@ describe('Event System', () => {
         .send({ capacity: 50 })
         .expect(200);
 
-      if (attendee) {
-        // Available slots should be 50 - 5 registrations = 45
-        expect(response.body.data.event.availableSlots).toBe(45);
-      }
+      // availableSlots = capacity - totalTicketsSold (not registration count)
+      // No ticket sales in this test, so availableSlots = capacity
+      expect(response.body.data.event.availableSlots).toBe(50);
     });
 
     it('should create audit log on update', async () => {

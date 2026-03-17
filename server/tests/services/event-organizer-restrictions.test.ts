@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { EventService } from '../../src/services/event.service.js';
 import { prisma } from '../../src/config/database.js';
 import { UserRole, UserStatus, OrganizerEntityType } from '@prisma/client';

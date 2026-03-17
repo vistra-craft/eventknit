@@ -1,40 +1,40 @@
 import { ResaleTransferAnalyticsService } from '../../../src/services/resale-transfer-analytics.service.js';
 import { prisma } from '../../../src/config/database.js';
 
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     event: {
-      findFirst: jest.fn(),
+      findFirst: vi.fn(),
     },
     ticketResale: {
-      aggregate: jest.fn(),
-      groupBy: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
+      aggregate: vi.fn(),
+      groupBy: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
     },
     ticketTransfer: {
-      count: jest.fn(),
-      groupBy: jest.fn(),
-      findMany: jest.fn(),
+      count: vi.fn(),
+      groupBy: vi.fn(),
+      findMany: vi.fn(),
     },
-    $queryRaw: jest.fn(),
+    $queryRaw: vi.fn(),
   },
 }));
 
 const prismaMock = prisma as unknown as {
-  event: { findFirst: jest.Mock };
+  event: { findFirst: vi.Mock };
   ticketResale: {
-    aggregate: jest.Mock;
-    groupBy: jest.Mock;
-    findMany: jest.Mock;
-    count: jest.Mock;
+    aggregate: vi.Mock;
+    groupBy: vi.Mock;
+    findMany: vi.Mock;
+    count: vi.Mock;
   };
   ticketTransfer: {
-    count: jest.Mock;
-    groupBy: jest.Mock;
-    findMany: jest.Mock;
+    count: vi.Mock;
+    groupBy: vi.Mock;
+    findMany: vi.Mock;
   };
-  $queryRaw: jest.Mock;
+  $queryRaw: vi.Mock;
 };
 
 // ─── Shared test data ───
@@ -86,7 +86,7 @@ const mockTransfer = {
 
 describe('ResaleTransferAnalyticsService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ─── getEventResaleStats ───

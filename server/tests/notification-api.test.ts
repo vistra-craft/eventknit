@@ -596,7 +596,7 @@ describe('Notification API', () => {
       // Mock SMS service as disabled
       const { smsService } = await import('../src/services/sms.service.js');
       const originalIsEnabled = smsService.isEnabled;
-      (smsService.isEnabled as any) = jest.fn().mockReturnValue(false);
+      (smsService.isEnabled as any) = vi.fn().mockReturnValue(false);
 
       const response = await request(app)
         .put('/api/v1/user/me/notification-preferences')

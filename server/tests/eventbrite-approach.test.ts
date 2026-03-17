@@ -95,6 +95,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
         isIdentityVerified: true, // Verified
         identityVerifiedAt: new Date(),
         verificationLevel: 2,
+        kycStatus: 'APPROVED',
       },
     });
     verifiedOrganizerId = verifiedOrganizer.id;
@@ -541,6 +542,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
           isIdentityVerified: true,
           identityVerifiedAt: new Date(),
           verificationLevel: 2,
+          kycStatus: 'APPROVED',
         },
       });
 

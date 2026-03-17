@@ -48,8 +48,8 @@ describe('QR Code Storage at Registration (Eventbrite/vf-ticket Approach)', () =
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    jest.clearAllMocks();
-    jest.restoreAllMocks();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
 
     await cleanupTestData();
 
@@ -246,7 +246,7 @@ describe('QR Code Storage at Registration (Eventbrite/vf-ticket Approach)', () =
       // Set up spy BEFORE registration to intercept the untracked fire-and-forget
       // confirmation email (line 2168 of event.service.ts — not tracked by backgroundTasks).
       // This prevents real SMTP calls and gives us a clean call history.
-      const spy = jest.spyOn(emailService, 'sendEmail').mockResolvedValue({
+      const spy = vi.spyOn(emailService, 'sendEmail').mockResolvedValue({
         success: true,
         attempts: 1,
       });
@@ -536,7 +536,7 @@ describe('QR Code Storage at Registration (Eventbrite/vf-ticket Approach)', () =
 
       // Set up spy BEFORE registration to intercept the untracked fire-and-forget
       // confirmation email (not tracked by backgroundTasks — see event.service.ts:2168)
-      const spy = jest.spyOn(emailService, 'sendEmail').mockResolvedValue({
+      const spy = vi.spyOn(emailService, 'sendEmail').mockResolvedValue({
         success: true,
         attempts: 1,
       });

@@ -350,6 +350,8 @@ export class OrganizerService {
         role: true,
         status: true,
         isEmailVerified: true,
+        customRoleId: true,
+        customRole: true,
         createdAt: true,
         updatedAt: true,
       },

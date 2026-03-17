@@ -109,7 +109,7 @@ export default [
         clearTimeout: "readonly",
         setInterval: "readonly",
         clearInterval: "readonly",
-        // Jest globals
+        // Vitest globals
         describe: "readonly",
         it: "readonly",
         test: "readonly",
@@ -118,7 +118,7 @@ export default [
         afterEach: "readonly",
         beforeAll: "readonly",
         afterAll: "readonly",
-        jest: "readonly",
+        vi: "readonly",
       },
     },
     rules: {
@@ -127,6 +127,6 @@ export default [
     },
   },
   {
-    ignores: ["node_modules/", "dist/", "coverage/", "*.js", "*.d.ts"],
+    ignores: ["node_modules/", "dist/", "coverage/", "*.js", "*.d.ts", "**/*.d.ts"],
   },
 ];

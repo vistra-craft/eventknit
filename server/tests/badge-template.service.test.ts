@@ -4,55 +4,55 @@ import { prisma } from '../src/config/database';
 import * as cloudinaryService from '../src/services/cloudinary.service';
 
 // Mock database
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     badgeTemplate: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
 
 // Mock cloudinary service
-jest.mock('../src/services/cloudinary.service', () => ({
-  uploadImageToCloudinary: jest.fn(),
-  deleteImageFromCloudinary: jest.fn(),
-  extractPublicIdFromUrl: jest.fn(),
+vi.mock('../src/services/cloudinary.service', () => ({
+  uploadImageToCloudinary: vi.fn(),
+  deleteImageFromCloudinary: vi.fn(),
+  extractPublicIdFromUrl: vi.fn(),
 }));
 
 // Mock logger
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    error: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
 const prismaMock = prisma as unknown as {
   badgeTemplate: {
-    create: jest.Mock;
-    findUnique: jest.Mock;
-    findFirst: jest.Mock;
-    findMany: jest.Mock;
-    update: jest.Mock;
-    updateMany: jest.Mock;
-    delete: jest.Mock;
-    count: jest.Mock;
+    create: vi.Mock;
+    findUnique: vi.Mock;
+    findFirst: vi.Mock;
+    findMany: vi.Mock;
+    update: vi.Mock;
+    updateMany: vi.Mock;
+    delete: vi.Mock;
+    count: vi.Mock;
   };
 };
 
-const cloudinaryMock = cloudinaryService as jest.Mocked<typeof cloudinaryService>;
+const cloudinaryMock = cloudinaryService as vi.Mocked<typeof cloudinaryService>;
 
 describe('BadgeTemplateService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('createTemplate', () => {

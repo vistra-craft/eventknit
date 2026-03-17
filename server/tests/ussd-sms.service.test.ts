@@ -18,14 +18,14 @@ const hashPassword = async (password: string): Promise<string> => {
 };
 
 // Mock dependencies
-jest.mock('../src/services/sms.service');
-jest.mock('../src/services/auth.service');
-jest.mock('../src/services/event.service');
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/services/sms.service');
+vi.mock('../src/services/auth.service');
+vi.mock('../src/services/event.service');
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
@@ -143,11 +143,11 @@ describe('USSDSMSService', () => {
     eventId = event.id;
 
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Mock formatPhoneNumber to return the phone number properly formatted
     // This is critical - without this, phoneNumber will be undefined
-    (smsService.formatPhoneNumber as jest.Mock) = jest.fn((phone: string) => {
+    (smsService.formatPhoneNumber as vi.Mock) = vi.fn((phone: string) => {
       if (!phone) return phone;
       // If already formatted with +, return as-is
       if (phone.startsWith('+')) {
@@ -168,7 +168,7 @@ describe('USSDSMSService', () => {
         body: 'REGISTER',
       };
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
 
       await USSDSMSService.processIncomingSMS(incoming);
 
@@ -191,7 +191,7 @@ describe('USSDSMSService', () => {
         body: 'START',
       };
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
 
       await USSDSMSService.processIncomingSMS(incoming);
 
@@ -210,7 +210,7 @@ describe('USSDSMSService', () => {
         body: '*123#',
       };
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
 
       await USSDSMSService.processIncomingSMS(incoming);
 
@@ -229,8 +229,8 @@ describe('USSDSMSService', () => {
         body: eventCode,
       };
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
-      (EventService.registerForEvent as jest.Mock).mockRejectedValue(new Error('User not found'));
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
+      (EventService.registerForEvent as vi.Mock).mockRejectedValue(new Error('User not found'));
 
       await USSDSMSService.processIncomingSMS(incoming);
 
@@ -251,7 +251,7 @@ describe('USSDSMSService', () => {
         body: 'RANDOM MESSAGE',
       };
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
 
       await USSDSMSService.processIncomingSMS(incoming);
 
@@ -271,7 +271,7 @@ describe('USSDSMSService', () => {
         body: 'REGISTER',
       };
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
 
       await USSDSMSService.processIncomingSMS(incoming);
 
@@ -302,7 +302,7 @@ describe('USSDSMSService', () => {
       });
       sessionId = session.id;
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
     });
 
     it('should process first name step', async () => {
@@ -764,8 +764,8 @@ describe('USSDSMSService', () => {
         },
       });
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
-      (AuthService.requestRegistrationCode as jest.Mock).mockResolvedValue(undefined);
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
+      (AuthService.requestRegistrationCode as vi.Mock).mockResolvedValue(undefined);
 
       await USSDSMSService['completeRegistration'](session.id, session.state as any);
 
@@ -805,9 +805,9 @@ describe('USSDSMSService', () => {
         },
       });
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
-      (AuthService.requestRegistrationCode as jest.Mock).mockResolvedValue(undefined);
-      (EventService.registerForEvent as jest.Mock).mockResolvedValue({
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
+      (AuthService.requestRegistrationCode as vi.Mock).mockResolvedValue(undefined);
+      (EventService.registerForEvent as vi.Mock).mockResolvedValue({
         id: 'reg-id',
         eventId,
         attendeeId: 'user-id',
@@ -845,7 +845,7 @@ describe('USSDSMSService', () => {
         },
       });
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
 
       await USSDSMSService['completeRegistration'](session.id, session.state as any);
 
@@ -980,7 +980,7 @@ describe('USSDSMSService', () => {
         body: 'INVALID',
       };
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
 
       await USSDSMSService.processIncomingSMS(incoming);
 
@@ -1015,7 +1015,7 @@ describe('USSDSMSService', () => {
         body: 'CLOSED',
       };
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
 
       await USSDSMSService.processIncomingSMS(incoming);
 
@@ -1034,8 +1034,8 @@ describe('USSDSMSService', () => {
         body: eventCode,
       };
 
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true });
-      (EventService.registerForEvent as jest.Mock).mockResolvedValue({
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true });
+      (EventService.registerForEvent as vi.Mock).mockResolvedValue({
         id: 'reg-id',
         eventId,
         attendeeId,
@@ -1046,7 +1046,7 @@ describe('USSDSMSService', () => {
       // The service calls registerForEvent with event.id and existingUser.id
       // We need to check that it was called with the correct event and user
       expect(EventService.registerForEvent).toHaveBeenCalled();
-      const callArgs = (EventService.registerForEvent as jest.Mock).mock.calls[0];
+      const callArgs = (EventService.registerForEvent as vi.Mock).mock.calls[0];
       expect(callArgs[0]).toBe(eventId); // event.id should match eventId
       // The attendeeId might be different if the service finds a different user by phone number
       // So we just verify that some user ID was passed

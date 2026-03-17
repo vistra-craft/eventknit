@@ -6,7 +6,7 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { UserRole } from '@prisma/client';
 
 // Mock the service
-jest.mock('../../../src/services/payment-plan.service.js');
+vi.mock('../../../src/services/payment-plan.service.js');
 
 describe('PaymentPlanController', () => {
   let mockRequest: Partial<AuthenticatedRequest>;
@@ -21,11 +21,11 @@ describe('PaymentPlanController', () => {
       user: { id: 'user-1', email: 'test@example.com', role: UserRole.ATTENDEE },
     };
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
     };
-    mockNext = jest.fn();
-    jest.clearAllMocks();
+    mockNext = vi.fn();
+    vi.clearAllMocks();
   });
 
   describe('createPaymentPlan', () => {
@@ -50,7 +50,7 @@ describe('PaymentPlanController', () => {
         installmentAmount: new Decimal(250),
       };
 
-      (PaymentPlanService.createPaymentPlan as jest.Mock).mockResolvedValue(mockPlan);
+      (PaymentPlanService.createPaymentPlan as vi.Mock).mockResolvedValue(mockPlan);
 
       // Act
       await PaymentPlanController.createPaymentPlan(
@@ -79,7 +79,7 @@ describe('PaymentPlanController', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Service error');
-      (PaymentPlanService.createPaymentPlan as jest.Mock).mockRejectedValue(error);
+      (PaymentPlanService.createPaymentPlan as vi.Mock).mockRejectedValue(error);
 
       mockRequest.body = {
         registrationId: 'reg-1',
@@ -111,7 +111,7 @@ describe('PaymentPlanController', () => {
         installments: [{ id: 'inst-1' }],
       };
 
-      (PaymentPlanService.getPaymentPlanByRegistration as jest.Mock).mockResolvedValue(mockPlan);
+      (PaymentPlanService.getPaymentPlanByRegistration as vi.Mock).mockResolvedValue(mockPlan);
 
       // Act
       await PaymentPlanController.getPaymentPlanByRegistration(
@@ -133,7 +133,7 @@ describe('PaymentPlanController', () => {
       // Arrange
       const error = new Error('Not found');
       mockRequest.params = { registrationId: 'reg-1' };
-      (PaymentPlanService.getPaymentPlanByRegistration as jest.Mock).mockRejectedValue(error);
+      (PaymentPlanService.getPaymentPlanByRegistration as vi.Mock).mockRejectedValue(error);
 
       // Act
       await PaymentPlanController.getPaymentPlanByRegistration(
@@ -156,7 +156,7 @@ describe('PaymentPlanController', () => {
         { id: 'plan-2', status: 'ACTIVE' },
       ];
 
-      (PaymentPlanService.getUserPaymentPlans as jest.Mock).mockResolvedValue(mockPlans);
+      (PaymentPlanService.getUserPaymentPlans as vi.Mock).mockResolvedValue(mockPlans);
 
       // Act
       await PaymentPlanController.getUserPaymentPlans(
@@ -200,7 +200,7 @@ describe('PaymentPlanController', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Service error');
-      (PaymentPlanService.getUserPaymentPlans as jest.Mock).mockRejectedValue(error);
+      (PaymentPlanService.getUserPaymentPlans as vi.Mock).mockRejectedValue(error);
 
       // Act
       await PaymentPlanController.getUserPaymentPlans(
@@ -231,7 +231,7 @@ describe('PaymentPlanController', () => {
         paidAmount: new Decimal(250),
       };
 
-      (PaymentPlanService.processInstallmentPayment as jest.Mock).mockResolvedValue(mockInstallment);
+      (PaymentPlanService.processInstallmentPayment as vi.Mock).mockResolvedValue(mockInstallment);
 
       // Act
       await PaymentPlanController.processInstallmentPayment(
@@ -260,7 +260,7 @@ describe('PaymentPlanController', () => {
       const error = new Error('Payment failed');
       mockRequest.params = { installmentId: 'inst-1' };
       mockRequest.body = { amount: 250 };
-      (PaymentPlanService.processInstallmentPayment as jest.Mock).mockRejectedValue(error);
+      (PaymentPlanService.processInstallmentPayment as vi.Mock).mockRejectedValue(error);
 
       // Act
       await PaymentPlanController.processInstallmentPayment(
@@ -282,7 +282,7 @@ describe('PaymentPlanController', () => {
         { id: 'inst-2', status: 'OVERDUE' },
       ];
 
-      (PaymentPlanService.getOverdueInstallments as jest.Mock).mockResolvedValue(mockInstallments);
+      (PaymentPlanService.getOverdueInstallments as vi.Mock).mockResolvedValue(mockInstallments);
 
       // Act
       await PaymentPlanController.getOverdueInstallments(
@@ -305,7 +305,7 @@ describe('PaymentPlanController', () => {
       mockRequest.user = undefined;
       const mockInstallments = [{ id: 'inst-1', status: 'OVERDUE' }];
 
-      (PaymentPlanService.getOverdueInstallments as jest.Mock).mockResolvedValue(mockInstallments);
+      (PaymentPlanService.getOverdueInstallments as vi.Mock).mockResolvedValue(mockInstallments);
 
       // Act
       await PaymentPlanController.getOverdueInstallments(
@@ -322,7 +322,7 @@ describe('PaymentPlanController', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Service error');
-      (PaymentPlanService.getOverdueInstallments as jest.Mock).mockRejectedValue(error);
+      (PaymentPlanService.getOverdueInstallments as vi.Mock).mockRejectedValue(error);
 
       // Act
       await PaymentPlanController.getOverdueInstallments(
@@ -340,7 +340,7 @@ describe('PaymentPlanController', () => {
     it('should cancel payment plan successfully', async () => {
       // Arrange
       mockRequest.params = { planId: 'plan-1' };
-      (PaymentPlanService.cancelPaymentPlan as jest.Mock).mockResolvedValue({ success: true });
+      (PaymentPlanService.cancelPaymentPlan as vi.Mock).mockResolvedValue({ success: true });
 
       // Act
       await PaymentPlanController.cancelPaymentPlan(
@@ -383,7 +383,7 @@ describe('PaymentPlanController', () => {
       // Arrange
       const error = new Error('Cannot cancel');
       mockRequest.params = { planId: 'plan-1' };
-      (PaymentPlanService.cancelPaymentPlan as jest.Mock).mockRejectedValue(error);
+      (PaymentPlanService.cancelPaymentPlan as vi.Mock).mockRejectedValue(error);
 
       // Act
       await PaymentPlanController.cancelPaymentPlan(

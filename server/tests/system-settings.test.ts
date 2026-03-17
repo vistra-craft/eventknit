@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from '@jest/globals';
 import { prisma } from '../src/config/database.js';
 import { SystemSettingsService } from '../src/services/system-settings.service.js';
 import { ValidationError, NotFoundError } from '../src/utils/errors.js';

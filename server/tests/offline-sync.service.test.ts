@@ -3,55 +3,55 @@ import { NotFoundError, ValidationError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
 // Mock database
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     event: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     eventRegistration: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      count: jest.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      count: vi.fn(),
     },
     facilityZone: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
     checkpointScan: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      count: jest.fn(),
-      delete: jest.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      count: vi.fn(),
+      delete: vi.fn(),
     },
     checkpoint: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
   },
 }));
 
 // Mock logger
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    error: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn(),
-    warn: jest.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
 // Mock WorkstationService used by syncScansWithCheckIn
-jest.mock('../src/services/workstation.service', () => ({
+vi.mock('../src/services/workstation.service', () => ({
   WorkstationService: {
-    scanTicket: jest.fn(),
-    checkOut: jest.fn(),
+    scanTicket: vi.fn(),
+    checkOut: vi.fn(),
   },
 }));
 
 // Mock websocketService
-jest.mock('../src/services/websocket.service', () => ({
+vi.mock('../src/services/websocket.service', () => ({
   websocketService: {
-    sendStatisticsUpdate: jest.fn().mockResolvedValue(undefined),
+    sendStatisticsUpdate: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -59,37 +59,37 @@ import { WorkstationService } from '../src/services/workstation.service';
 
 const prismaMock = prisma as unknown as {
   event: {
-    findUnique: jest.Mock;
+    findUnique: vi.Mock;
   };
   eventRegistration: {
-    findMany: jest.Mock;
-    findUnique: jest.Mock;
-    count: jest.Mock;
+    findMany: vi.Mock;
+    findUnique: vi.Mock;
+    count: vi.Mock;
   };
   facilityZone: {
-    findMany: jest.Mock;
+    findMany: vi.Mock;
   };
   checkpointScan: {
-    findFirst: jest.Mock;
-    findMany: jest.Mock;
-    findUnique: jest.Mock;
-    create: jest.Mock;
-    count: jest.Mock;
-    delete: jest.Mock;
+    findFirst: vi.Mock;
+    findMany: vi.Mock;
+    findUnique: vi.Mock;
+    create: vi.Mock;
+    count: vi.Mock;
+    delete: vi.Mock;
   };
   checkpoint: {
-    findUnique: jest.Mock;
+    findUnique: vi.Mock;
   };
 };
 
 const workstationMock = WorkstationService as unknown as {
-  scanTicket: jest.Mock;
-  checkOut: jest.Mock;
+  scanTicket: vi.Mock;
+  checkOut: vi.Mock;
 };
 
 describe('OfflineSyncService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getEventDataForOffline', () => {

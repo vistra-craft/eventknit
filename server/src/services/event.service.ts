@@ -3165,16 +3165,19 @@ export class EventService {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Use new tier-based filtering system (admins always see everything)
+    // Use data access filtering (admins always see everything)
     if (!isAdmin) {
       // Import DataAccessService dynamically to avoid circular dependencies
       const { DataAccessService } = await import('./data-access.service.js');
 
-      // Filter data based on subscription tier and consent
+      // Filter data based on event's organizerDataAccess level and consent
       return await DataAccessService.filterAttendeeData(
         registrations,
         organizerId,
         eventId,
+        undefined,
+        undefined,
+        event.organizerDataAccess,
       );
     }
 

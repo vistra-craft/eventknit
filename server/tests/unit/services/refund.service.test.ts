@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { RefundService } from '../../../src/services/refund.service.js';
 import {
   NotFoundError,
@@ -11,29 +11,29 @@ import * as databaseModule from '../../../src/config/database.js';
 import { generateRefundNumber } from '../../../src/utils/transaction-helpers.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/notification.service.js', () => ({
+vi.mock('../../../src/services/notification.service.js', () => ({
   NotificationService: {
-    sendNotification: jest.fn().mockResolvedValue(undefined),
-    createNotification: jest.fn().mockResolvedValue(undefined),
+    sendNotification: vi.fn().mockResolvedValue(undefined),
+    createNotification: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
-jest.mock('../../../src/utils/audit.js', () => ({
-  createAuditLog: jest.fn().mockResolvedValue(undefined),
+vi.mock('../../../src/utils/audit.js', () => ({
+  createAuditLog: vi.fn().mockResolvedValue(undefined),
   AuditActions: {
     REFUND_REQUESTED: 'REFUND_REQUESTED',
     REFUND_PROCESSED: 'REFUND_PROCESSED',
@@ -41,11 +41,11 @@ jest.mock('../../../src/utils/audit.js', () => ({
   },
 }));
 
-jest.mock('../../../src/utils/transaction-helpers.js', () => ({
-  generateRefundNumber: jest.fn(() => 'REF-2026-000001'),
+vi.mock('../../../src/utils/transaction-helpers.js', () => ({
+  generateRefundNumber: vi.fn(() => 'REF-2026-000001'),
 }));
 
-jest.mock('../../../src/config/index.js', () => ({
+vi.mock('../../../src/config/index.js', () => ({
   config: {
     paystack: {
       secretKey: 'sk_test_fake_key',
@@ -54,10 +54,10 @@ jest.mock('../../../src/config/index.js', () => ({
 }));
 
 // Mock Paystack module
-jest.mock('paystack', () => {
-  return jest.fn().mockImplementation(() => ({
+vi.mock('paystack', () => {
+  return vi.fn().mockImplementation(() => ({
     refund: {
-      create: jest.fn().mockResolvedValue({
+      create: vi.fn().mockResolvedValue({
         data: {
           id: 12345,
           transaction: { id: 67890 },
@@ -172,7 +172,7 @@ describe('RefundService', () => {
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ===========================================================================
@@ -346,7 +346,7 @@ describe('RefundService', () => {
 
     it('should generate a refund number matching pattern REF-YYYY-NNNNNN', async () => {
       // Arrange
-      const mockedGenerateRefundNumber = jest.mocked(generateRefundNumber);
+      const mockedGenerateRefundNumber = vi.mocked(generateRefundNumber);
       mockedGenerateRefundNumber.mockReturnValue('REF-2026-000042');
 
       prisma.eventPaymentTransaction.findUnique.mockResolvedValue(mockTransaction as any);
@@ -375,7 +375,7 @@ describe('RefundService', () => {
 
     it('should retry refund number generation on collision', async () => {
       // Arrange
-      const mockedGenerateRefundNumber = jest.mocked(generateRefundNumber);
+      const mockedGenerateRefundNumber = vi.mocked(generateRefundNumber);
       // First call collides, second call is unique
       mockedGenerateRefundNumber
         .mockReturnValueOnce('REF-2026-000001')

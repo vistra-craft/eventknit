@@ -5,7 +5,7 @@ import { AuthenticatedRequest } from '../../../src/middleware/auth.middleware';
 import { ValidationError, NotFoundError } from '../../../src/utils/errors';
 
 // Mock dependencies
-jest.mock('../../../src/services/service-point-registration.service');
+vi.mock('../../../src/services/service-point-registration.service');
 
 describe('ServicePointRegistrationController', () => {
   let mockRequest: Partial<AuthenticatedRequest>;
@@ -25,11 +25,11 @@ describe('ServicePointRegistrationController', () => {
       user: mockUser as any,
     };
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
     };
-    mockNext = jest.fn();
-    jest.clearAllMocks();
+    mockNext = vi.fn();
+    vi.clearAllMocks();
   });
 
   describe('initiateRegistration', () => {
@@ -44,7 +44,7 @@ describe('ServicePointRegistrationController', () => {
       // Arrange
       mockRequest.params = { eventId: 'event-123' };
       mockRequest.body = { phoneNumber: '+254712345678', facilityId: 'facility-123' };
-      (ServicePointRegistrationService.initiateRegistration as jest.Mock).mockResolvedValue(mockResult);
+      (ServicePointRegistrationService.initiateRegistration as vi.Mock).mockResolvedValue(mockResult);
 
       // Act
       await ServicePointRegistrationController.initiateRegistration(
@@ -113,7 +113,7 @@ describe('ServicePointRegistrationController', () => {
       mockRequest.params = { eventId: 'event-123' };
       mockRequest.body = { phoneNumber: '+254712345678' };
       const error = new NotFoundError('Event not found');
-      (ServicePointRegistrationService.initiateRegistration as jest.Mock).mockRejectedValue(error);
+      (ServicePointRegistrationService.initiateRegistration as vi.Mock).mockRejectedValue(error);
 
       // Act
       await ServicePointRegistrationController.initiateRegistration(
@@ -138,7 +138,7 @@ describe('ServicePointRegistrationController', () => {
     it('should verify OTP successfully', async () => {
       // Arrange
       mockRequest.body = { sessionId: 'session-123', otp: '1234' };
-      (ServicePointRegistrationService.verifyOTP as jest.Mock).mockResolvedValue(mockResult);
+      (ServicePointRegistrationService.verifyOTP as vi.Mock).mockResolvedValue(mockResult);
 
       // Act
       await ServicePointRegistrationController.verifyOTP(
@@ -224,7 +224,7 @@ describe('ServicePointRegistrationController', () => {
         company: 'Acme Corp',
         ticketTypeId: 'ticket-1',
       };
-      (ServicePointRegistrationService.completeRegistration as jest.Mock).mockResolvedValue(mockResult);
+      (ServicePointRegistrationService.completeRegistration as vi.Mock).mockResolvedValue(mockResult);
 
       // Act
       await ServicePointRegistrationController.completeRegistration(
@@ -297,7 +297,7 @@ describe('ServicePointRegistrationController', () => {
     it('should get session status successfully', async () => {
       // Arrange
       mockRequest.params = { sessionId: 'session-123' };
-      (ServicePointRegistrationService.getSessionStatus as jest.Mock).mockResolvedValue(mockResult);
+      (ServicePointRegistrationService.getSessionStatus as vi.Mock).mockResolvedValue(mockResult);
 
       // Act
       await ServicePointRegistrationController.getSessionStatus(
@@ -336,7 +336,7 @@ describe('ServicePointRegistrationController', () => {
       // Arrange
       mockRequest.params = { sessionId: 'invalid-session' };
       const error = new NotFoundError('Session not found');
-      (ServicePointRegistrationService.getSessionStatus as jest.Mock).mockRejectedValue(error);
+      (ServicePointRegistrationService.getSessionStatus as vi.Mock).mockRejectedValue(error);
 
       // Act
       await ServicePointRegistrationController.getSessionStatus(
@@ -354,7 +354,7 @@ describe('ServicePointRegistrationController', () => {
     it('should cancel session successfully', async () => {
       // Arrange
       mockRequest.params = { sessionId: 'session-123' };
-      (ServicePointRegistrationService.cancelSession as jest.Mock).mockResolvedValue(undefined);
+      (ServicePointRegistrationService.cancelSession as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await ServicePointRegistrationController.cancelSession(
@@ -402,7 +402,7 @@ describe('ServicePointRegistrationController', () => {
     it('should get kiosk config successfully (no auth required)', async () => {
       // Arrange
       mockRequest.params = { eventId: 'event-123' };
-      (ServicePointRegistrationService.getKioskConfig as jest.Mock).mockResolvedValue(mockResult);
+      (ServicePointRegistrationService.getKioskConfig as vi.Mock).mockResolvedValue(mockResult);
 
       // Act
       await ServicePointRegistrationController.getKioskConfig(
@@ -424,7 +424,7 @@ describe('ServicePointRegistrationController', () => {
       // Arrange
       mockRequest.params = { eventId: 'invalid-event' };
       const error = new NotFoundError('Event not found');
-      (ServicePointRegistrationService.getKioskConfig as jest.Mock).mockRejectedValue(error);
+      (ServicePointRegistrationService.getKioskConfig as vi.Mock).mockRejectedValue(error);
 
       // Act
       await ServicePointRegistrationController.getKioskConfig(
@@ -451,7 +451,7 @@ describe('ServicePointRegistrationController', () => {
     it('should get stats successfully', async () => {
       // Arrange
       mockRequest.params = { eventId: 'event-123' };
-      (ServicePointRegistrationService.getServicePointStats as jest.Mock).mockResolvedValue(mockResult);
+      (ServicePointRegistrationService.getServicePointStats as vi.Mock).mockResolvedValue(mockResult);
 
       // Act
       await ServicePointRegistrationController.getStats(
@@ -500,7 +500,7 @@ describe('ServicePointRegistrationController', () => {
     it('should find active session', async () => {
       // Arrange
       mockRequest.params = { eventId: 'event-123', phoneNumber: '254712345678' };
-      (ServicePointRegistrationService.getActiveSession as jest.Mock).mockResolvedValue(mockResult);
+      (ServicePointRegistrationService.getActiveSession as vi.Mock).mockResolvedValue(mockResult);
 
       // Act
       await ServicePointRegistrationController.checkActiveSession(
@@ -525,7 +525,7 @@ describe('ServicePointRegistrationController', () => {
     it('should return hasActiveSession false when no session exists', async () => {
       // Arrange
       mockRequest.params = { eventId: 'event-123', phoneNumber: '254712345678' };
-      (ServicePointRegistrationService.getActiveSession as jest.Mock).mockResolvedValue(null);
+      (ServicePointRegistrationService.getActiveSession as vi.Mock).mockResolvedValue(null);
 
       // Act
       await ServicePointRegistrationController.checkActiveSession(

@@ -3,27 +3,27 @@ import { ScheduledPostsService } from '../../../src/services/social-media/schedu
 import { logger } from '../../../src/utils/logger.js';
 
 // Mock dependencies
-jest.mock('../../../src/services/social-media/scheduled-posts.service.js');
-jest.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/services/social-media/scheduled-posts.service.js');
+vi.mock('../../../src/utils/logger.js');
 
 describe('SocialMediaScheduler', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
 
     // Stop scheduler if running from previous tests
     socialMediaScheduler.stop();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
     socialMediaScheduler.stop();
   });
 
   describe('start', () => {
     it('should start the scheduler with default interval (5 minutes)', () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 0,
       });
@@ -39,7 +39,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should start the scheduler with custom interval', () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 0,
       });
@@ -55,12 +55,12 @@ describe('SocialMediaScheduler', () => {
 
     it('should warn if scheduler is already running', () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 0,
       });
       socialMediaScheduler.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       socialMediaScheduler.start();
@@ -72,7 +72,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should process scheduled posts immediately on start', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 0,
       });
@@ -89,7 +89,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should schedule interval to run every N minutes', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 0,
       });
@@ -98,7 +98,7 @@ describe('SocialMediaScheduler', () => {
       socialMediaScheduler.start(5);
 
       // Fast-forward time by 5 minutes (300000ms)
-      await jest.advanceTimersByTimeAsync(5 * 60 * 1000);
+      await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
 
       // Assert - should have been called twice (once on start, once after 5 min)
       expect(ScheduledPostsService.processScheduledPosts).toHaveBeenCalledTimes(2);
@@ -108,12 +108,12 @@ describe('SocialMediaScheduler', () => {
   describe('stop', () => {
     it('should stop the scheduler successfully', () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 0,
       });
       socialMediaScheduler.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       socialMediaScheduler.stop();
@@ -132,7 +132,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should prevent further scheduled posts after stopping', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 0,
       });
@@ -140,13 +140,13 @@ describe('SocialMediaScheduler', () => {
       socialMediaScheduler.start(5);
       await Promise.resolve(); // Wait for initial call
 
-      const callCountBeforeStop = (ScheduledPostsService.processScheduledPosts as jest.Mock).mock.calls.length;
+      const callCountBeforeStop = (ScheduledPostsService.processScheduledPosts as vi.Mock).mock.calls.length;
 
       // Act
       socialMediaScheduler.stop();
 
       // Fast-forward time
-      jest.advanceTimersByTime(10 * 60 * 1000);
+      vi.advanceTimersByTime(10 * 60 * 1000);
 
       // Assert - no additional calls after stop
       expect(ScheduledPostsService.processScheduledPosts).toHaveBeenCalledTimes(callCountBeforeStop);
@@ -161,7 +161,7 @@ describe('SocialMediaScheduler', () => {
         resolveFirst = resolve;
       });
 
-      (ScheduledPostsService.processScheduledPosts as jest.Mock)
+      (ScheduledPostsService.processScheduledPosts as vi.Mock)
         .mockImplementationOnce(() => firstCallPromise)
         .mockResolvedValue({ success: 1, failed: 0 });
 
@@ -172,7 +172,7 @@ describe('SocialMediaScheduler', () => {
       await Promise.resolve();
 
       // Try to trigger another call while first is still running (use non-async version)
-      jest.advanceTimersByTime(1 * 60 * 1000);
+      vi.advanceTimersByTime(1 * 60 * 1000);
       await Promise.resolve();
 
       // Assert - second call should be skipped
@@ -187,7 +187,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should log results when posts are processed successfully', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 5,
         failed: 2,
       });
@@ -202,7 +202,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should not log if no posts were processed', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 0,
       });
@@ -221,7 +221,7 @@ describe('SocialMediaScheduler', () => {
     it('should handle errors during post processing', async () => {
       // Arrange
       const processError = new Error('Processing failed');
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockRejectedValue(processError);
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockRejectedValue(processError);
 
       // Act
       socialMediaScheduler.start();
@@ -234,7 +234,7 @@ describe('SocialMediaScheduler', () => {
     it('should reset isRunning flag after error', async () => {
       // Arrange
       const processError = new Error('Processing failed');
-      (ScheduledPostsService.processScheduledPosts as jest.Mock)
+      (ScheduledPostsService.processScheduledPosts as vi.Mock)
         .mockRejectedValueOnce(processError) // First call fails
         .mockResolvedValue({ success: 1, failed: 0 }); // Second call succeeds
 
@@ -243,7 +243,7 @@ describe('SocialMediaScheduler', () => {
       await Promise.resolve(); // Wait for initial call
 
       // Wait for interval to trigger again
-      jest.advanceTimersByTime(1 * 60 * 1000);
+      vi.advanceTimersByTime(1 * 60 * 1000);
       await Promise.resolve();
 
       // Assert - second call should proceed (not be skipped)
@@ -252,7 +252,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should reset isRunning flag after successful processing', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 3,
         failed: 0,
       });
@@ -262,7 +262,7 @@ describe('SocialMediaScheduler', () => {
       await Promise.resolve(); // Wait for initial call
 
       // Advance time for next interval
-      jest.advanceTimersByTime(1 * 60 * 1000);
+      vi.advanceTimersByTime(1 * 60 * 1000);
       await Promise.resolve();
 
       // Assert - should be called multiple times (not blocked)
@@ -271,7 +271,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should process posts with only successful results', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 10,
         failed: 0,
       });
@@ -286,7 +286,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should process posts with only failed results', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 3,
       });
@@ -303,7 +303,7 @@ describe('SocialMediaScheduler', () => {
   describe('interval timing', () => {
     it('should respect custom interval timing', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 0,
         failed: 0,
       });
@@ -315,13 +315,13 @@ describe('SocialMediaScheduler', () => {
       await Promise.resolve(); // Wait for initial call
 
       // Fast-forward by 14 minutes - should not trigger yet
-      jest.advanceTimersByTime(14 * 60 * 1000);
-      const callsAfter14Min = (ScheduledPostsService.processScheduledPosts as jest.Mock).mock.calls.length;
+      vi.advanceTimersByTime(14 * 60 * 1000);
+      const callsAfter14Min = (ScheduledPostsService.processScheduledPosts as vi.Mock).mock.calls.length;
 
       // Fast-forward by 1 more minute - should trigger now
-      jest.advanceTimersByTime(1 * 60 * 1000);
+      vi.advanceTimersByTime(1 * 60 * 1000);
       await Promise.resolve();
-      const callsAfter15Min = (ScheduledPostsService.processScheduledPosts as jest.Mock).mock.calls.length;
+      const callsAfter15Min = (ScheduledPostsService.processScheduledPosts as vi.Mock).mock.calls.length;
 
       // Assert
       expect(callsAfter14Min).toBe(1); // Only initial call
@@ -330,7 +330,7 @@ describe('SocialMediaScheduler', () => {
 
     it('should continue running at intervals after first execution', async () => {
       // Arrange
-      (ScheduledPostsService.processScheduledPosts as jest.Mock).mockResolvedValue({
+      (ScheduledPostsService.processScheduledPosts as vi.Mock).mockResolvedValue({
         success: 1,
         failed: 0,
       });
@@ -340,11 +340,11 @@ describe('SocialMediaScheduler', () => {
       await Promise.resolve(); // Initial call
 
       // Run multiple intervals
-      jest.advanceTimersByTime(5 * 60 * 1000); // +5 min
+      vi.advanceTimersByTime(5 * 60 * 1000); // +5 min
       await Promise.resolve();
-      jest.advanceTimersByTime(5 * 60 * 1000); // +5 min
+      vi.advanceTimersByTime(5 * 60 * 1000); // +5 min
       await Promise.resolve();
-      jest.advanceTimersByTime(5 * 60 * 1000); // +5 min
+      vi.advanceTimersByTime(5 * 60 * 1000); // +5 min
       await Promise.resolve();
 
       // Assert - should have been called 4 times (initial + 3 intervals)

@@ -1,6 +1,6 @@
 import { PrismaClient, UserRole, EventType, EventStatus, UserStatus, RegistrationStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { EventService, CreateEventData } from '../../../src/services/event.service.js';
 import {
   NotFoundError,
@@ -10,22 +10,22 @@ import {
 import * as databaseModule from '../../../src/config/database.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/utils/audit.js', () => ({
-  createAuditLog: jest.fn(),
+vi.mock('../../../src/utils/audit.js', () => ({
+  createAuditLog: vi.fn(),
   AuditActions: {
     EVENT_CREATED: 'EVENT_CREATED',
     EVENT_UPDATED: 'EVENT_UPDATED',
@@ -34,49 +34,49 @@ jest.mock('../../../src/utils/audit.js', () => ({
   },
 }));
 
-jest.mock('../../../src/services/ticket.service.js', () => ({
+vi.mock('../../../src/services/ticket.service.js', () => ({
   TicketService: {
-    createTicketsForEvent: jest.fn(),
-    generateBackupTicketCode: jest.fn(() => 'BACKUP-CODE-123'),
-    generateTicketData: jest.fn(() => 'ticket-data-json'),
-    generateQRCode: jest.fn().mockResolvedValue('data:image/png;base64,qrcode'),
-    sendTicketEmail: jest.fn(),
-    sendPaymentPendingEmail: jest.fn(),
+    createTicketsForEvent: vi.fn(),
+    generateBackupTicketCode: vi.fn(() => 'BACKUP-CODE-123'),
+    generateTicketData: vi.fn(() => 'ticket-data-json'),
+    generateQRCode: vi.fn().mockResolvedValue('data:image/png;base64,qrcode'),
+    sendTicketEmail: vi.fn(),
+    sendPaymentPendingEmail: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/notification.service.js', () => ({
+vi.mock('../../../src/services/notification.service.js', () => ({
   NotificationService: {
-    sendNotification: jest.fn(),
+    sendNotification: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/utils/ticket-helpers.js', () => ({
-  isTicketTypeAvailable: jest.fn(() => ({ available: true })),
+vi.mock('../../../src/utils/ticket-helpers.js', () => ({
+  isTicketTypeAvailable: vi.fn(() => ({ available: true })),
 }));
 
-jest.mock('../../../src/services/event-collaboration.service.js', () => ({
+vi.mock('../../../src/services/event-collaboration.service.js', () => ({
   EventCollaborationService: {
-    logActivity: jest.fn(),
+    logActivity: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/attendee-communication.service.js', () => ({
+vi.mock('../../../src/services/attendee-communication.service.js', () => ({
   AttendeeCommunicationService: {
-    sendEventPostponementEmails: jest.fn(),
-    sendEventUpdateEmails: jest.fn(),
+    sendEventPostponementEmails: vi.fn(),
+    sendEventUpdateEmails: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/refund.service.js', () => ({
+vi.mock('../../../src/services/refund.service.js', () => ({
   RefundService: {},
 }));
 
 const mockSeatSelectionService = {
-  reserveSeats: jest.fn(),
+  reserveSeats: vi.fn(),
 };
 
-jest.mock('../../../src/services/seat-selection.service.js', () => ({
+vi.mock('../../../src/services/seat-selection.service.js', () => ({
   SeatSelectionService: mockSeatSelectionService,
 }));
 
@@ -110,7 +110,7 @@ describe('EventService - Event Creation', () => {
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('createEvent', () => {
@@ -810,7 +810,7 @@ describe('EventService - approveEvent', () => {
   beforeEach(() => {
     prisma = databaseModule.prisma as unknown as DeepMockProxy<PrismaClient>;
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const adminId = 'admin-123';
@@ -966,7 +966,7 @@ describe('EventService - registerForEvent (seatIds)', () => {
   beforeEach(() => {
     prisma = databaseModule.prisma as unknown as DeepMockProxy<PrismaClient>;
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Common mocks for registerForEvent
     prisma.event.findFirst.mockResolvedValue(mockFreeEvent as any);
@@ -1052,7 +1052,7 @@ describe('EventService - getEventById', () => {
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const mockEvent = {
@@ -1183,7 +1183,7 @@ describe('EventService - updateEvent capacity recalculation', () => {
   beforeEach(() => {
     prisma = databaseModule.prisma as unknown as DeepMockProxy<PrismaClient>;
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should recalculate availableSlots using SUM of ticket quantities, not registration count', async () => {
@@ -1292,7 +1292,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
   beforeEach(() => {
     prisma = databaseModule.prisma as unknown as DeepMockProxy<PrismaClient>;
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     prisma.event.findFirst.mockResolvedValue(existingEvent as any);
     prisma.eventCollaborator.findFirst.mockResolvedValue(null);
@@ -1313,7 +1313,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ quantity: 4 })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).rejects.toThrow(ValidationError);
 
     await expect(
@@ -1322,7 +1322,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ quantity: 4 })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).rejects.toThrow('Cannot set quantity of "General Admission" below 5');
   });
 
@@ -1339,7 +1339,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ name: 'VIP', price: 10000, quantity: 1 })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).rejects.toThrow('Cannot set quantity of "VIP" below 2');
   });
 
@@ -1356,7 +1356,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ quantity: 5 })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).resolves.toBeDefined();
   });
 
@@ -1373,7 +1373,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ quantity: 200 })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).resolves.toBeDefined();
   });
 
@@ -1390,7 +1390,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ quantity: null })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).resolves.toBeDefined();
   });
 
@@ -1407,7 +1407,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ name: 'General Admission', quantity: 1 })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).resolves.toBeDefined();
   });
 
@@ -1426,7 +1426,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ name: 'Early Bird', quantity: 5 })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).rejects.toThrow('Cannot set quantity of "Early Bird" below 6');
 
     // quantity of 6 should succeed
@@ -1436,7 +1436,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ name: 'Early Bird', quantity: 6 })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).resolves.toBeDefined();
   });
 
@@ -1453,7 +1453,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
         { ticketTypes: [paidTicket({ quantity: 0 })] } as any,
         'organizer-123',
         UserRole.ORGANIZER,
-      )
+      ),
     ).rejects.toThrow('Cannot set quantity of "General Admission" below 1');
   });
 
@@ -1489,7 +1489,7 @@ describe('EventService - updateEvent sold-count floor validation', () => {
           status: { not: 'CANCELLED' },
           paymentStatus: { not: 'FAILED' },
         }),
-      })
+      }),
     );
   });
 });

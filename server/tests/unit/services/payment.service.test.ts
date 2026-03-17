@@ -1,5 +1,5 @@
 import { PrismaClient, RegistrationStatus } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { PaymentService, InitializePaymentData } from '../../../src/services/payment.service.js';
 import {
   NotFoundError,
@@ -9,56 +9,56 @@ import * as databaseModule from '../../../src/config/database.js';
 import * as paymentGatewayManager from '../../../src/services/payment-gateway-manager.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/payment-gateway-manager.js', () => ({
-  getPaymentGatewayManager: jest.fn(),
+vi.mock('../../../src/services/payment-gateway-manager.js', () => ({
+  getPaymentGatewayManager: vi.fn(),
   GatewayType: {
     PAYSTACK: 'PAYSTACK',
     STRIPE: 'STRIPE',
   },
 }));
 
-jest.mock('../../../src/services/ticket.service.js', () => ({
+vi.mock('../../../src/services/ticket.service.js', () => ({
   TicketService: {
-    generateTicket: jest.fn(),
+    generateTicket: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/platform-fee.service.js', () => ({
+vi.mock('../../../src/services/platform-fee.service.js', () => ({
   PlatformFeeService: {
-    calculateAndRecordFees: jest.fn(),
+    calculateAndRecordFees: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/notification.service.js', () => ({
+vi.mock('../../../src/services/notification.service.js', () => ({
   NotificationService: {
-    sendNotification: jest.fn(),
+    sendNotification: vi.fn(),
   },
 }));
 
 const mockSeatSelectionService = {
-  confirmSeatReservation: jest.fn(),
+  confirmSeatReservation: vi.fn(),
 };
 
-jest.mock('../../../src/services/seat-selection.service.js', () => ({
+vi.mock('../../../src/services/seat-selection.service.js', () => ({
   SeatSelectionService: mockSeatSelectionService,
 }));
 
-jest.mock('../../../src/utils/transaction-helpers.js', () => ({
-  generatePaymentTransactionNumber: jest.fn(() => 'TXN-123456'),
+vi.mock('../../../src/utils/transaction-helpers.js', () => ({
+  generatePaymentTransactionNumber: vi.fn(() => 'TXN-123456'),
 }));
 
 describe('PaymentService', () => {
@@ -93,26 +93,26 @@ describe('PaymentService', () => {
 
     // Mock gateway manager
     const mockGateway = {
-      initializePayment: jest.fn(),
-      verifyPayment: jest.fn(),
-      processWebhook: jest.fn(),
-      handleWebhook: jest.fn(),
-      getName: jest.fn().mockReturnValue('PAYSTACK'),
+      initializePayment: vi.fn(),
+      verifyPayment: vi.fn(),
+      processWebhook: vi.fn(),
+      handleWebhook: vi.fn(),
+      getName: vi.fn().mockReturnValue('PAYSTACK'),
     };
 
     mockGatewayManager = {
-      initializePayment: jest.fn(),
-      verifyPayment: jest.fn(),
-      processWebhook: jest.fn(),
-      getDefaultGateway: jest.fn().mockReturnValue(mockGateway),
-      getGateway: jest.fn().mockReturnValue(mockGateway),
+      initializePayment: vi.fn(),
+      verifyPayment: vi.fn(),
+      processWebhook: vi.fn(),
+      getDefaultGateway: vi.fn().mockReturnValue(mockGateway),
+      getGateway: vi.fn().mockReturnValue(mockGateway),
     };
-    (paymentGatewayManager.getPaymentGatewayManager as jest.Mock).mockReturnValue(mockGatewayManager);
+    (paymentGatewayManager.getPaymentGatewayManager as vi.Mock).mockReturnValue(mockGatewayManager);
   });
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Reset all gateway mock methods
     const mockGateway = mockGatewayManager.getDefaultGateway();
@@ -174,7 +174,7 @@ describe('PaymentService', () => {
 
       await expect(
         paymentService.validateGuestPayment('registration-123', 'wrong@example.com'),
-      ).rejects.toThrow('Email does not match the registration');
+      ).rejects.toThrow('email address doesn\'t match this registration');
     });
 
     it('should throw error if payment already completed', async () => {
@@ -192,7 +192,7 @@ describe('PaymentService', () => {
 
       await expect(
         paymentService.validateGuestPayment('registration-123', 'test@example.com'),
-      ).rejects.toThrow('Payment already completed');
+      ).rejects.toThrow('Payment has already been completed');
     });
 
     it('should handle case-insensitive email matching', async () => {
@@ -369,7 +369,7 @@ describe('PaymentService', () => {
 
       await expect(
         paymentService.verifyPayment(reference),
-      ).rejects.toThrow('Failed to verify payment');
+      ).rejects.toThrow('couldn\'t verify your payment');
     });
   });
 

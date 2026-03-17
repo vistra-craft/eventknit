@@ -6,48 +6,48 @@ import { RegistrationStatus } from '@prisma/client';
 import * as cron from 'node-cron';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
-    $queryRaw: jest.fn(),
-    $transaction: jest.fn(),
+    $queryRaw: vi.fn(),
+    $transaction: vi.fn(),
     eventRegistration: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
     },
     event: {
-      update: jest.fn(),
+      update: vi.fn(),
     },
     seatReservation: {
-      findMany: jest.fn(),
-      updateMany: jest.fn(),
+      findMany: vi.fn(),
+      updateMany: vi.fn(),
     },
     seat: {
-      updateMany: jest.fn(),
+      updateMany: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/services/event.service.js');
-jest.mock('../../../src/utils/logger.js');
-jest.mock('node-cron');
+vi.mock('../../../src/services/event.service.js');
+vi.mock('../../../src/utils/logger.js');
+vi.mock('node-cron');
 
 describe('PaymentTimeoutJob', () => {
   let mockScheduledTask: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Mock database as available by default
-    (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
+    (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
 
     // Create mock scheduled task
     mockScheduledTask = {
-      stop: jest.fn(),
+      stop: vi.fn(),
     };
 
     // Mock cron.schedule to return the mock task
-    (cron.schedule as jest.Mock).mockReturnValue(mockScheduledTask);
+    (cron.schedule as vi.Mock).mockReturnValue(mockScheduledTask);
   });
 
   afterEach(() => {
@@ -72,7 +72,7 @@ describe('PaymentTimeoutJob', () => {
 
     it('should run cleanup immediately on startup', () => {
       // Arrange
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       PaymentTimeoutJob.start();
@@ -84,7 +84,7 @@ describe('PaymentTimeoutJob', () => {
     it('should warn if job is already running', () => {
       // Arrange
       PaymentTimeoutJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       PaymentTimeoutJob.start();
@@ -99,7 +99,7 @@ describe('PaymentTimeoutJob', () => {
     it('should stop the payment timeout job successfully', () => {
       // Arrange
       PaymentTimeoutJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       PaymentTimeoutJob.stop();
@@ -122,7 +122,7 @@ describe('PaymentTimeoutJob', () => {
   describe('cancelAbandonedPayments', () => {
     it('should skip if database is not available', async () => {
       // Arrange
-      (prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('Database unavailable'));
+      (prisma.$queryRaw as vi.Mock).mockRejectedValue(new Error('Database unavailable'));
 
       // Act
       await PaymentTimeoutJob.cancelAbandonedPayments();
@@ -136,7 +136,7 @@ describe('PaymentTimeoutJob', () => {
 
     it('should log when no abandoned payments found', async () => {
       // Arrange
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await PaymentTimeoutJob.cancelAbandonedPayments();
@@ -148,9 +148,9 @@ describe('PaymentTimeoutJob', () => {
     it('should use 30-minute timeout cutoff', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await PaymentTimeoutJob.cancelAbandonedPayments();
@@ -167,18 +167,18 @@ describe('PaymentTimeoutJob', () => {
       );
 
       // Verify the cutoff date is 30 minutes ago
-      const callArgs = (prisma.eventRegistration.findMany as jest.Mock).mock.calls[0][0];
+      const callArgs = (prisma.eventRegistration.findMany as vi.Mock).mock.calls[0][0];
       const cutoffDate = callArgs.where.createdAt.lt;
       const expectedCutoff = new Date('2026-01-29T11:30:00Z'); // 30 minutes before noon
       expect(cutoffDate.getTime()).toBe(expectedCutoff.getTime());
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should cancel abandoned payments and restore event capacity', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
       const mockRegistration = {
         id: 'reg-1',
@@ -200,35 +200,35 @@ describe('PaymentTimeoutJob', () => {
         },
       };
 
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([mockRegistration]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([mockRegistration]);
 
       // Mock transaction
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         return callback({
           eventRegistration: {
-            findUnique: jest.fn().mockResolvedValue({
+            findUnique: vi.fn().mockResolvedValue({
               id: 'reg-1',
               status: RegistrationStatus.PENDING,
               paymentStatus: 'PENDING',
               quantity: 2,
               createdAt: new Date('2026-01-29T11:20:00Z'),
             }),
-            update: jest.fn().mockResolvedValue({}),
+            update: vi.fn().mockResolvedValue({}),
           },
           event: {
-            update: jest.fn().mockResolvedValue({}),
+            update: vi.fn().mockResolvedValue({}),
           },
           seatReservation: {
-            findMany: jest.fn().mockResolvedValue([]),
-            updateMany: jest.fn().mockResolvedValue({}),
+            findMany: vi.fn().mockResolvedValue([]),
+            updateMany: vi.fn().mockResolvedValue({}),
           },
           seat: {
-            updateMany: jest.fn().mockResolvedValue({}),
+            updateMany: vi.fn().mockResolvedValue({}),
           },
         });
       });
 
-      (EventService.validateAndSyncStatus as jest.Mock).mockReturnValue({
+      (EventService.validateAndSyncStatus as vi.Mock).mockReturnValue({
         status: RegistrationStatus.CANCELLED,
         paymentStatus: 'FAILED',
       });
@@ -251,7 +251,7 @@ describe('PaymentTimeoutJob', () => {
         'Payment timeout job completed: 1 registration(s) cancelled, 1 event(s) capacity restored',
       );
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should release seat reservations when cancelling abandoned payment', async () => {
@@ -276,7 +276,7 @@ describe('PaymentTimeoutJob', () => {
         },
       };
 
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([mockRegistration]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([mockRegistration]);
 
       const mockSeatReservations = [
         { id: 'seat-res-1', seatId: 'seat-1' },
@@ -284,34 +284,34 @@ describe('PaymentTimeoutJob', () => {
       ];
 
       const mockTxSeatReservation = {
-        findMany: jest.fn().mockResolvedValue(mockSeatReservations),
-        updateMany: jest.fn().mockResolvedValue({}),
+        findMany: vi.fn().mockResolvedValue(mockSeatReservations),
+        updateMany: vi.fn().mockResolvedValue({}),
       };
       const mockTxSeat = {
-        updateMany: jest.fn().mockResolvedValue({}),
+        updateMany: vi.fn().mockResolvedValue({}),
       };
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         return callback({
           eventRegistration: {
-            findUnique: jest.fn().mockResolvedValue({
+            findUnique: vi.fn().mockResolvedValue({
               id: 'reg-1',
               status: RegistrationStatus.PENDING,
               paymentStatus: 'PENDING',
               quantity: 1,
               createdAt: new Date('2026-01-27T12:00:00Z'),
             }),
-            update: jest.fn().mockResolvedValue({}),
+            update: vi.fn().mockResolvedValue({}),
           },
           event: {
-            update: jest.fn().mockResolvedValue({}),
+            update: vi.fn().mockResolvedValue({}),
           },
           seatReservation: mockTxSeatReservation,
           seat: mockTxSeat,
         });
       });
 
-      (EventService.validateAndSyncStatus as jest.Mock).mockReturnValue({
+      (EventService.validateAndSyncStatus as vi.Mock).mockReturnValue({
         status: RegistrationStatus.CANCELLED,
         paymentStatus: 'FAILED',
       });
@@ -352,28 +352,28 @@ describe('PaymentTimeoutJob', () => {
         attendee: { id: 'user-2', email: 'user@example.com', firstName: 'Jane', lastName: 'Smith' },
       };
 
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([mockRegistration]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([mockRegistration]);
 
       // Mock transaction - registration already cancelled
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         return callback({
           eventRegistration: {
-            findUnique: jest.fn().mockResolvedValue({
+            findUnique: vi.fn().mockResolvedValue({
               id: 'reg-2',
               status: RegistrationStatus.CANCELLED, // Already cancelled
               paymentStatus: 'FAILED',
             }),
-            update: jest.fn(),
+            update: vi.fn(),
           },
           event: {
-            update: jest.fn(),
+            update: vi.fn(),
           },
           seatReservation: {
-            findMany: jest.fn().mockResolvedValue([]),
-            updateMany: jest.fn(),
+            findMany: vi.fn().mockResolvedValue([]),
+            updateMany: vi.fn(),
           },
           seat: {
-            updateMany: jest.fn(),
+            updateMany: vi.fn(),
           },
         });
       });
@@ -399,28 +399,28 @@ describe('PaymentTimeoutJob', () => {
         attendee: { id: 'user-3', email: 'user3@example.com', firstName: 'Bob', lastName: 'Johnson' },
       };
 
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([mockRegistration]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([mockRegistration]);
 
       // Mock transaction - payment completed
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         return callback({
           eventRegistration: {
-            findUnique: jest.fn().mockResolvedValue({
+            findUnique: vi.fn().mockResolvedValue({
               id: 'reg-3',
               status: RegistrationStatus.CONFIRMED,
               paymentStatus: 'COMPLETED', // Payment completed
             }),
-            update: jest.fn(),
+            update: vi.fn(),
           },
           event: {
-            update: jest.fn(),
+            update: vi.fn(),
           },
           seatReservation: {
-            findMany: jest.fn().mockResolvedValue([]),
-            updateMany: jest.fn(),
+            findMany: vi.fn().mockResolvedValue([]),
+            updateMany: vi.fn(),
           },
           seat: {
-            updateMany: jest.fn(),
+            updateMany: vi.fn(),
           },
         });
       });
@@ -449,35 +449,35 @@ describe('PaymentTimeoutJob', () => {
         attendee: { id: 'user-4', email: 'user4@example.com', firstName: 'Alice', lastName: 'Wonder' },
       };
 
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([mockRegistration]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([mockRegistration]);
 
-      const mockEventUpdate = jest.fn();
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      const mockEventUpdate = vi.fn();
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         return callback({
           eventRegistration: {
-            findUnique: jest.fn().mockResolvedValue({
+            findUnique: vi.fn().mockResolvedValue({
               id: 'reg-4',
               status: RegistrationStatus.PENDING,
               paymentStatus: 'PENDING',
               quantity: 5,
               createdAt: new Date('2026-01-27T12:00:00Z'),
             }),
-            update: jest.fn().mockResolvedValue({}),
+            update: vi.fn().mockResolvedValue({}),
           },
           event: {
             update: mockEventUpdate,
           },
           seatReservation: {
-            findMany: jest.fn().mockResolvedValue([]),
-            updateMany: jest.fn(),
+            findMany: vi.fn().mockResolvedValue([]),
+            updateMany: vi.fn(),
           },
           seat: {
-            updateMany: jest.fn(),
+            updateMany: vi.fn(),
           },
         });
       });
 
-      (EventService.validateAndSyncStatus as jest.Mock).mockReturnValue({
+      (EventService.validateAndSyncStatus as vi.Mock).mockReturnValue({
         status: RegistrationStatus.CANCELLED,
         paymentStatus: 'FAILED',
       });
@@ -514,38 +514,38 @@ describe('PaymentTimeoutJob', () => {
         },
       ];
 
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue(mockRegistrations);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue(mockRegistrations);
 
       const mockError = new Error('Transaction failed');
-      (prisma.$transaction as jest.Mock)
+      (prisma.$transaction as vi.Mock)
         .mockRejectedValueOnce(mockError) // First registration fails
         .mockImplementation(async (callback) => {
           // Second registration succeeds
           return callback({
             eventRegistration: {
-              findUnique: jest.fn().mockResolvedValue({
+              findUnique: vi.fn().mockResolvedValue({
                 id: 'reg-6',
                 status: RegistrationStatus.PENDING,
                 paymentStatus: 'PENDING',
                 quantity: 2,
                 createdAt: new Date('2026-01-27T12:00:00Z'),
               }),
-              update: jest.fn().mockResolvedValue({}),
+              update: vi.fn().mockResolvedValue({}),
             },
             event: {
-              update: jest.fn().mockResolvedValue({}),
+              update: vi.fn().mockResolvedValue({}),
             },
             seatReservation: {
-              findMany: jest.fn().mockResolvedValue([]),
-              updateMany: jest.fn(),
+              findMany: vi.fn().mockResolvedValue([]),
+              updateMany: vi.fn(),
             },
             seat: {
-              updateMany: jest.fn(),
+              updateMany: vi.fn(),
             },
           });
         });
 
-      (EventService.validateAndSyncStatus as jest.Mock).mockReturnValue({
+      (EventService.validateAndSyncStatus as vi.Mock).mockReturnValue({
         status: RegistrationStatus.CANCELLED,
         paymentStatus: 'FAILED',
       });
@@ -566,8 +566,8 @@ describe('PaymentTimeoutJob', () => {
     it('should handle database connection errors gracefully', async () => {
       // Arrange
       const dbError = new Error('Can\'t reach database server');
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.eventRegistration.findMany as jest.Mock).mockRejectedValue(dbError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockRejectedValue(dbError);
 
       // Act
       await PaymentTimeoutJob.cancelAbandonedPayments();
@@ -584,8 +584,8 @@ describe('PaymentTimeoutJob', () => {
       const prismaError = new Error('Prisma init error');
       prismaError.constructor = { name: 'PrismaClientInitializationError' } as any;
 
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.eventRegistration.findMany as jest.Mock).mockRejectedValue(prismaError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockRejectedValue(prismaError);
 
       // Act
       await PaymentTimeoutJob.cancelAbandonedPayments();
@@ -614,38 +614,38 @@ describe('PaymentTimeoutJob', () => {
         attendee: { id: 'user-cap', email: 'cap@example.com', firstName: 'Cap', lastName: 'Test' },
       };
 
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([mockRegistration]);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([mockRegistration]);
 
       let capturedAvailableSlots: number | null = null;
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         return callback({
           eventRegistration: {
-            findUnique: jest.fn().mockResolvedValue({
+            findUnique: vi.fn().mockResolvedValue({
               id: 'reg-cap',
               status: RegistrationStatus.PENDING,
               paymentStatus: 'PENDING',
               quantity: 10,
               createdAt: new Date('2026-01-27T12:00:00Z'),
             }),
-            update: jest.fn().mockResolvedValue({}),
+            update: vi.fn().mockResolvedValue({}),
           },
           event: {
-            update: jest.fn().mockImplementation((args) => {
+            update: vi.fn().mockImplementation((args) => {
               capturedAvailableSlots = args.data.availableSlots;
               return Promise.resolve({});
             }),
           },
           seatReservation: {
-            findMany: jest.fn().mockResolvedValue([]),
-            updateMany: jest.fn(),
+            findMany: vi.fn().mockResolvedValue([]),
+            updateMany: vi.fn(),
           },
           seat: {
-            updateMany: jest.fn(),
+            updateMany: vi.fn(),
           },
         });
       });
 
-      (EventService.validateAndSyncStatus as jest.Mock).mockReturnValue({
+      (EventService.validateAndSyncStatus as vi.Mock).mockReturnValue({
         status: RegistrationStatus.CANCELLED,
         paymentStatus: 'FAILED',
       });
@@ -661,7 +661,7 @@ describe('PaymentTimeoutJob', () => {
   describe('getTimeoutStats', () => {
     it('should return count of abandoned payments', async () => {
       // Arrange
-      (prisma.eventRegistration.count as jest.Mock).mockResolvedValue(5);
+      (prisma.eventRegistration.count as vi.Mock).mockResolvedValue(5);
 
       // Act
       const result = await PaymentTimeoutJob.getTimeoutStats();
@@ -674,9 +674,9 @@ describe('PaymentTimeoutJob', () => {
     it('should use 30-minute timeout for stats calculation', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
-      (prisma.eventRegistration.count as jest.Mock).mockResolvedValue(0);
+      (prisma.eventRegistration.count as vi.Mock).mockResolvedValue(0);
 
       // Act
       const result = await PaymentTimeoutJob.getTimeoutStats();
@@ -685,13 +685,13 @@ describe('PaymentTimeoutJob', () => {
       const expectedTimeout = new Date('2026-01-29T11:30:00Z');
       expect(result.timeoutDate.getTime()).toBe(expectedTimeout.getTime());
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should return 0 if database is not available', async () => {
       // Arrange
       const dbError = new Error('Can\'t reach database server');
-      (prisma.eventRegistration.count as jest.Mock).mockRejectedValue(dbError);
+      (prisma.eventRegistration.count as vi.Mock).mockRejectedValue(dbError);
 
       // Act
       const result = await PaymentTimeoutJob.getTimeoutStats();
@@ -705,7 +705,7 @@ describe('PaymentTimeoutJob', () => {
       // Arrange
       const prismaError = new Error('Prisma init error');
       prismaError.constructor = { name: 'PrismaClientInitializationError' } as any;
-      (prisma.eventRegistration.count as jest.Mock).mockRejectedValue(prismaError);
+      (prisma.eventRegistration.count as vi.Mock).mockRejectedValue(prismaError);
 
       // Act
       const result = await PaymentTimeoutJob.getTimeoutStats();
@@ -717,7 +717,7 @@ describe('PaymentTimeoutJob', () => {
     it('should throw other errors', async () => {
       // Arrange
       const otherError = new Error('Other error');
-      (prisma.eventRegistration.count as jest.Mock).mockRejectedValue(otherError);
+      (prisma.eventRegistration.count as vi.Mock).mockRejectedValue(otherError);
 
       // Act & Assert
       await expect(PaymentTimeoutJob.getTimeoutStats()).rejects.toThrow(otherError);

@@ -164,7 +164,7 @@ describe('DisbursementService', () => {
 
       expect(disbursement.id).toBeDefined();
       expect(disbursement.disbursementNumber).toMatch(/^DISB-\d{4}-\d{6}$/);
-      expect(Number(disbursement.totalAmount)).toBe(9000); // Organizer amount from platform fee
+      expect(Number(disbursement.totalAmount)).toBe(9250); // Organizer amount from platform fee (7.5%)
       expect(disbursement.status).toBe('pending');
       expect(disbursement.platformFees.length).toBe(1);
 
@@ -836,7 +836,7 @@ describe('DisbursementService', () => {
 
       const summary = await DisbursementService.getOrganizerDisbursementSummary(organizerId);
 
-      expect(summary.totalDisbursed).toBe(9000);
+      expect(summary.totalDisbursed).toBe(9250);
       expect(summary.totalPending).toBe(0);
       expect(summary.completedCount).toBe(1);
       expect(summary.pendingCount).toBe(0);

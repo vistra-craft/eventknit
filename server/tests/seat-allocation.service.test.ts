@@ -4,7 +4,6 @@
  * Tests for multi-seat reservations, assignments, and preferences
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import { SeatAllocationService } from '../src/services/seat-allocation.service.js';
 import { prisma } from '../src/config/database.js';
 import {

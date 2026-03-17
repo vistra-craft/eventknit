@@ -4,7 +4,6 @@
  * Tests for seating configuration, validation, and management
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { SeatingConfigurationService } from '../src/services/seating-configuration.service.js';
 import { prisma } from '../src/config/database.js';
 import {

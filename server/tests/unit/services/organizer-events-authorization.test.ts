@@ -9,22 +9,22 @@ import { AuthorizationError } from '../../../src/utils/errors.js';
 import { UserRole, EventStatus } from '@prisma/client';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     event: {
-      findMany: jest.fn(),
-      count: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/utils/logger.js');
 
 // Cast prisma to any to allow jest methods
 const prismaMock = prisma as any;
 
 describe('OrganizerService.getOrganizerEvents - Authorization', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const mockEvents = [

@@ -1,31 +1,31 @@
 import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { TicketService } from '../../../src/services/ticket.service.js';
 import { emailService } from '../../../src/services/email.service.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/services/email.service.js', () => ({
+vi.mock('../../../src/services/email.service.js', () => ({
   emailService: {
-    sendEmail: jest.fn().mockResolvedValue({ success: true, attempts: 1 }),
+    sendEmail: vi.fn().mockResolvedValue({ success: true, attempts: 1 }),
   },
 }));
 
-jest.mock('../../../src/services/ticket-security.service.js', () => ({
+vi.mock('../../../src/services/ticket-security.service.js', () => ({
   TicketSecurityService: {
-    generateSignature: jest.fn((payload: string) => `SIGNATURE-${payload.substring(0, 10).replace(/\|/g, '-')}`),
-    validateTicketData: jest.fn().mockReturnValue(true),
-    isSignedTicketsEnabled: jest.fn().mockReturnValue(false),
-    generateSignedTicket: jest.fn(),
+    generateSignature: vi.fn((payload: string) => `SIGNATURE-${payload.substring(0, 10).replace(/\|/g, '-')}`),
+    validateTicketData: vi.fn().mockReturnValue(true),
+    isSignedTicketsEnabled: vi.fn().mockReturnValue(false),
+    generateSignedTicket: vi.fn(),
   },
 }));
 
-jest.mock('qrcode', () => ({
-  toDataURL: jest.fn().mockResolvedValue('data:image/png;base64,MOCK_QR_CODE'),
+vi.mock('qrcode', () => ({
+  toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,MOCK_QR_CODE'),
 }));
 
 import QRCode from 'qrcode';
@@ -88,7 +88,7 @@ describe('TicketService', () => {
 
   beforeEach(() => {
     mockReset(prismaMock);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('generateQRCode', () => {
@@ -106,7 +106,7 @@ describe('TicketService', () => {
 
     it('should throw error if QR generation fails', async () => {
       // Arrange
-      (QRCode.toDataURL as jest.Mock).mockRejectedValueOnce(new Error('QR generation failed'));
+      (QRCode.toDataURL as vi.Mock).mockRejectedValueOnce(new Error('QR generation failed'));
 
       // Act & Assert
       await expect(
@@ -378,7 +378,7 @@ describe('TicketService', () => {
       await TicketService.sendTicketEmail(mockRegistration as any);
 
       // Assert
-      const emailCall = (emailService.sendEmail as jest.Mock).mock.calls[0][0];
+      const emailCall = (emailService.sendEmail as vi.Mock).mock.calls[0][0];
       expect(emailCall).toMatchObject({
         to: mockAttendee.email,
         subject: expect.stringContaining(mockEvent.title),
@@ -406,7 +406,7 @@ describe('TicketService', () => {
         .mockResolvedValueOnce({} as any);
 
       // Mock PDF generation to avoid puppeteer issues
-      jest.spyOn(TicketService, 'generateTicketPDF').mockResolvedValue(Buffer.from('<!-- FALLBACK_HTML -->'));
+      vi.spyOn(TicketService, 'generateTicketPDF').mockResolvedValue(Buffer.from('<!-- FALLBACK_HTML -->'));
 
       // Act
       await TicketService.sendTicketEmail(mockRegistration as any);

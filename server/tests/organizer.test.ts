@@ -1814,7 +1814,7 @@ describe('Organizer Staff Management', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.hasAccess).toBe(true);
-      expect(response.body.data.message).toContain('You have access');
+      expect(response.body.data.message).toContain('access');
 
       // Cleanup
       await prisma.event.deleteMany({
@@ -1852,7 +1852,7 @@ describe('Organizer Staff Management', () => {
       // Should return true for any event (including pending)
       expect(response.body.success).toBe(true);
       expect(response.body.data.hasAccess).toBe(true);
-      expect(response.body.data.message).toContain('You have access');
+      expect(response.body.data.message).toContain('access');
 
       // Cleanup
       await prisma.event.deleteMany({

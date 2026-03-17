@@ -211,14 +211,15 @@ app.use('/api/v1/workstation', workstationRoutes);
 app.use('/api/v1/checkpoints', checkpointRoutes);
 app.use('/api/v1/badge-templates', badgeTemplateRoutes);
 app.use('/api/v1/facilities', facilityRoutes);
-app.use('/api/v1', facilityZoneRoutes);
-app.use('/api/v1', printerRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/offline', offlineSyncRoutes);
 app.use('/api/v1/capacity', venueCapacityRoutes);
 app.use('/api/v1/admin/finance', financialRoutes);
 app.use('/api/v1/admin/platform-finance', platformFinanceRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+// Mount catch-all /:id routes LAST to avoid shadowing specific routes above
+app.use('/api/v1', facilityZoneRoutes);
+app.use('/api/v1', printerRoutes);
 app.use('/api/v1/push', pushNotificationRoutes);
 app.use('/api/v1/admin/communications/bulk-messages', bulkMessageRoutes);
 app.use('/api/v1/admin/social-media', socialMediaRoutes);

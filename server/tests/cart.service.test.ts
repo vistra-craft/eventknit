@@ -11,55 +11,55 @@ const CartStatus = {
   ABANDONED: 'ABANDONED',
 } as const;
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     cartReservation: {
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
     },
     cartItem: {
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
     },
     event: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
-    $transaction: jest.fn((fn) => fn(prisma)),
+    $transaction: vi.fn((fn) => fn(prisma)),
   },
 }));
 
 const prismaMock = prisma as unknown as {
   cartReservation: {
-    findFirst: jest.Mock;
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    create: jest.Mock;
-    update: jest.Mock;
-    count: jest.Mock;
+    findFirst: vi.Mock;
+    findUnique: vi.Mock;
+    findMany: vi.Mock;
+    create: vi.Mock;
+    update: vi.Mock;
+    count: vi.Mock;
   };
   cartItem: {
-    create: jest.Mock;
-    update: jest.Mock;
-    delete: jest.Mock;
-    count: jest.Mock;
+    create: vi.Mock;
+    update: vi.Mock;
+    delete: vi.Mock;
+    count: vi.Mock;
   };
   event: {
-    findUnique: jest.Mock;
-    update: jest.Mock;
+    findUnique: vi.Mock;
+    update: vi.Mock;
   };
-  $transaction: jest.Mock;
+  $transaction: vi.Mock;
 };
 
 describe('CartService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     // Reset $transaction to pass through the function
     prismaMock.$transaction.mockImplementation((fn) => fn(prisma));
   });

@@ -4,34 +4,34 @@ import { logger } from '../../../src/utils/logger.js';
 import * as cron from 'node-cron';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
-    $queryRaw: jest.fn(),
+    $queryRaw: vi.fn(),
     emailVerification: {
-      deleteMany: jest.fn(),
-      count: jest.fn(),
+      deleteMany: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/utils/logger.js');
-jest.mock('node-cron');
+vi.mock('../../../src/utils/logger.js');
+vi.mock('node-cron');
 
 describe('TokenCleanupJob', () => {
   let mockScheduledTask: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Mock database as available by default
-    (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
+    (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
 
     // Create mock scheduled task
     mockScheduledTask = {
-      stop: jest.fn(),
+      stop: vi.fn(),
     };
 
     // Mock cron.schedule to return the mock task
-    (cron.schedule as jest.Mock).mockReturnValue(mockScheduledTask);
+    (cron.schedule as vi.Mock).mockReturnValue(mockScheduledTask);
   });
 
   afterEach(() => {
@@ -56,7 +56,7 @@ describe('TokenCleanupJob', () => {
 
     it('should run cleanup immediately on startup', () => {
       // Arrange
-      (prisma.emailVerification.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+      (prisma.emailVerification.deleteMany as vi.Mock).mockResolvedValue({ count: 0 });
 
       // Act
       TokenCleanupJob.start();
@@ -68,7 +68,7 @@ describe('TokenCleanupJob', () => {
     it('should warn if job is already running', () => {
       // Arrange
       TokenCleanupJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       TokenCleanupJob.start();
@@ -83,7 +83,7 @@ describe('TokenCleanupJob', () => {
     it('should stop the token cleanup job successfully', () => {
       // Arrange
       TokenCleanupJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       TokenCleanupJob.stop();
@@ -106,7 +106,7 @@ describe('TokenCleanupJob', () => {
   describe('cleanupExpiredTokens', () => {
     it('should skip if database is not available', async () => {
       // Arrange
-      (prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('Database unavailable'));
+      (prisma.$queryRaw as vi.Mock).mockRejectedValue(new Error('Database unavailable'));
 
       // Act
       await TokenCleanupJob.cleanupExpiredTokens();
@@ -121,11 +121,11 @@ describe('TokenCleanupJob', () => {
     it('should delete expired tokens older than 7 days', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
       const expectedCutoffDate = new Date('2026-01-22T12:00:00Z'); // 7 days ago
 
-      (prisma.emailVerification.deleteMany as jest.Mock).mockResolvedValue({ count: 15 });
+      (prisma.emailVerification.deleteMany as vi.Mock).mockResolvedValue({ count: 15 });
 
       // Act
       await TokenCleanupJob.cleanupExpiredTokens();
@@ -143,12 +143,12 @@ describe('TokenCleanupJob', () => {
       );
       expect(logger.info).toHaveBeenCalledWith('Token cleanup completed: 15 expired tokens removed');
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should log when no tokens are deleted', async () => {
       // Arrange
-      (prisma.emailVerification.deleteMany as jest.Mock).mockResolvedValue({ count: 0 });
+      (prisma.emailVerification.deleteMany as vi.Mock).mockResolvedValue({ count: 0 });
 
       // Act
       await TokenCleanupJob.cleanupExpiredTokens();
@@ -160,8 +160,8 @@ describe('TokenCleanupJob', () => {
     it('should handle database connection errors gracefully', async () => {
       // Arrange
       const dbError = new Error('Can\'t reach database server');
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.emailVerification.deleteMany as jest.Mock).mockRejectedValue(dbError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.emailVerification.deleteMany as vi.Mock).mockRejectedValue(dbError);
 
       // Act
       await TokenCleanupJob.cleanupExpiredTokens();
@@ -176,8 +176,8 @@ describe('TokenCleanupJob', () => {
     it('should handle P1001 Prisma error code', async () => {
       // Arrange
       const dbError = new Error('P1001: Connection refused');
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.emailVerification.deleteMany as jest.Mock).mockRejectedValue(dbError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.emailVerification.deleteMany as vi.Mock).mockRejectedValue(dbError);
 
       // Act
       await TokenCleanupJob.cleanupExpiredTokens();
@@ -194,8 +194,8 @@ describe('TokenCleanupJob', () => {
       const prismaError = new Error('Prisma init error');
       prismaError.constructor = { name: 'PrismaClientInitializationError' } as any;
 
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.emailVerification.deleteMany as jest.Mock).mockRejectedValue(prismaError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.emailVerification.deleteMany as vi.Mock).mockRejectedValue(prismaError);
 
       // Act
       await TokenCleanupJob.cleanupExpiredTokens();
@@ -210,8 +210,8 @@ describe('TokenCleanupJob', () => {
     it('should log general errors without throwing', async () => {
       // Arrange
       const generalError = new Error('Some other error');
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.emailVerification.deleteMany as jest.Mock).mockRejectedValue(generalError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.emailVerification.deleteMany as vi.Mock).mockRejectedValue(generalError);
 
       // Act
       await TokenCleanupJob.cleanupExpiredTokens();
@@ -225,9 +225,9 @@ describe('TokenCleanupJob', () => {
     it('should return count of expired tokens', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
-      (prisma.emailVerification.count as jest.Mock).mockResolvedValue(42);
+      (prisma.emailVerification.count as vi.Mock).mockResolvedValue(42);
 
       // Act
       const result = await TokenCleanupJob.getCleanupStats();
@@ -237,13 +237,13 @@ describe('TokenCleanupJob', () => {
       expect(result.cutoffDate).toBeInstanceOf(Date);
       expect(result.cutoffDate.getTime()).toBe(new Date('2026-01-22T12:00:00Z').getTime());
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should return 0 if database is not available', async () => {
       // Arrange
       const dbError = new Error('Can\'t reach database server');
-      (prisma.emailVerification.count as jest.Mock).mockRejectedValue(dbError);
+      (prisma.emailVerification.count as vi.Mock).mockRejectedValue(dbError);
 
       // Act
       const result = await TokenCleanupJob.getCleanupStats();
@@ -256,7 +256,7 @@ describe('TokenCleanupJob', () => {
     it('should return 0 for P1001 error code', async () => {
       // Arrange
       const dbError = new Error('P1001: Connection refused');
-      (prisma.emailVerification.count as jest.Mock).mockRejectedValue(dbError);
+      (prisma.emailVerification.count as vi.Mock).mockRejectedValue(dbError);
 
       // Act
       const result = await TokenCleanupJob.getCleanupStats();
@@ -269,7 +269,7 @@ describe('TokenCleanupJob', () => {
       // Arrange
       const prismaError = new Error('Prisma init error');
       prismaError.constructor = { name: 'PrismaClientInitializationError' } as any;
-      (prisma.emailVerification.count as jest.Mock).mockRejectedValue(prismaError);
+      (prisma.emailVerification.count as vi.Mock).mockRejectedValue(prismaError);
 
       // Act
       const result = await TokenCleanupJob.getCleanupStats();
@@ -281,7 +281,7 @@ describe('TokenCleanupJob', () => {
     it('should throw other errors', async () => {
       // Arrange
       const otherError = new Error('Other error');
-      (prisma.emailVerification.count as jest.Mock).mockRejectedValue(otherError);
+      (prisma.emailVerification.count as vi.Mock).mockRejectedValue(otherError);
 
       // Act & Assert
       await expect(TokenCleanupJob.getCleanupStats()).rejects.toThrow(otherError);

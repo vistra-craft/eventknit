@@ -4,11 +4,11 @@ import { prisma } from '../../../src/config/database.js';
 import { AuthenticatedRequest } from '../../../src/middleware/auth.middleware.js';
 
 // Mock Prisma
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     user: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
@@ -29,13 +29,13 @@ describe('OnboardingController', () => {
     };
 
     res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
     };
 
-    next = jest.fn();
+    next = vi.fn();
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('completeOnboarding', () => {
@@ -70,8 +70,8 @@ describe('OnboardingController', () => {
         updatedAt: new Date(),
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser as any);
-      (prisma.user.update as jest.Mock).mockResolvedValue(mockUpdatedUser as any);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser as any);
+      (prisma.user.update as vi.Mock).mockResolvedValue(mockUpdatedUser as any);
 
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,
@@ -111,8 +111,8 @@ describe('OnboardingController', () => {
         role: 'ATTENDEE',
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser as any);
-      (prisma.user.update as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser as any);
+      (prisma.user.update as vi.Mock).mockResolvedValue({
         id: 'test-user-id',
         role: 'ORGANIZER',
         onboardingCompleted: true,
@@ -147,8 +147,8 @@ describe('OnboardingController', () => {
         role: 'ATTENDEE',
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser as any);
-      (prisma.user.update as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser as any);
+      (prisma.user.update as vi.Mock).mockResolvedValue({
         id: 'test-user-id',
         role: 'ATTENDEE',
         onboardingCompleted: true,
@@ -181,8 +181,8 @@ describe('OnboardingController', () => {
         role: 'ATTENDEE',
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser as any);
-      (prisma.user.update as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser as any);
+      (prisma.user.update as vi.Mock).mockResolvedValue({
         id: 'test-user-id',
         role: 'ATTENDEE',
         onboardingCompleted: true,
@@ -218,8 +218,8 @@ describe('OnboardingController', () => {
         role: 'ATTENDEE',
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser as any);
-      (prisma.user.update as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser as any);
+      (prisma.user.update as vi.Mock).mockResolvedValue({
         id: 'test-user-id',
         role: 'ORGANIZER',
         eventPreferences: {
@@ -268,7 +268,7 @@ describe('OnboardingController', () => {
       req.body = { preferences: { intent: 'organize' } };
 
       const error = new Error('Database error');
-      (prisma.user.findUnique as jest.Mock).mockRejectedValue(error);
+      (prisma.user.findUnique as vi.Mock).mockRejectedValue(error);
 
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,
@@ -304,8 +304,8 @@ describe('OnboardingController', () => {
         },
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser as any);
-      (prisma.user.update as jest.Mock).mockResolvedValue(mockUpdatedUser as any);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser as any);
+      (prisma.user.update as vi.Mock).mockResolvedValue(mockUpdatedUser as any);
 
       await OnboardingController.saveProgress(
         req as AuthenticatedRequest,
@@ -363,7 +363,7 @@ describe('OnboardingController', () => {
         eventPreferences: null,
       };
 
-      (prisma.user.update as jest.Mock).mockResolvedValue(mockUpdatedUser as any);
+      (prisma.user.update as vi.Mock).mockResolvedValue(mockUpdatedUser as any);
 
       await OnboardingController.skipOnboarding(
         req as AuthenticatedRequest,
@@ -400,7 +400,7 @@ describe('OnboardingController', () => {
         },
       };
 
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser as any);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser as any);
 
       await OnboardingController.getOnboardingStatus(
         req as AuthenticatedRequest,
@@ -422,7 +422,7 @@ describe('OnboardingController', () => {
     });
 
     it('should return 404 if user not found', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
 
       await OnboardingController.getOnboardingStatus(
         req as AuthenticatedRequest,

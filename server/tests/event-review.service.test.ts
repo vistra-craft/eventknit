@@ -7,17 +7,17 @@ describe('EventReviewService', () => {
 
   beforeEach(() => {
     prismaAny.eventRegistration = {
-      findFirst: jest.fn(),
+      findFirst: vi.fn(),
     };
     prismaAny.event = {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     };
     prismaAny.eventReview = {
-      upsert: jest.fn(),
-      aggregate: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-      update: jest.fn(),
+      upsert: vi.fn(),
+      aggregate: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      update: vi.fn(),
     };
   });
 

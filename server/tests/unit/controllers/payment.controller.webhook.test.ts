@@ -3,20 +3,20 @@ import { PaymentController } from '../../../src/controllers/payment.controller.j
 import { paymentService } from '../../../src/services/payment.service.js';
 
 // Mock the payment service
-jest.mock('../../../src/services/payment.service.js', () => ({
+vi.mock('../../../src/services/payment.service.js', () => ({
   paymentService: {
-    verifyWebhookSignature: jest.fn(),
-    handleWebhook: jest.fn(),
+    verifyWebhookSignature: vi.fn(),
+    handleWebhook: vi.fn(),
   },
 }));
 
 // Mock the logger to suppress output during tests
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    warn: jest.fn(),
-    error: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -33,8 +33,8 @@ const makeReq = (overrides: Partial<WebhookRequest> = {}): WebhookRequest => ({
 
 const makeRes = () => {
   const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn(),
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn(),
   } as unknown as Response;
   return res;
 };
@@ -43,8 +43,8 @@ describe('PaymentController.handleWebhook', () => {
   let mockNext: NextFunction;
 
   beforeEach(() => {
-    mockNext = jest.fn();
-    jest.clearAllMocks();
+    mockNext = vi.fn();
+    vi.clearAllMocks();
   });
 
   describe('Signature detection', () => {
@@ -62,8 +62,8 @@ describe('PaymentController.handleWebhook', () => {
     });
 
     it('should detect Paystack via x-paystack-signature header', async () => {
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(true);
-      (paymentService.handleWebhook as jest.Mock).mockResolvedValue({ status: 'OK' });
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
+      (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const req = makeReq({
         headers: { 'x-paystack-signature': 'valid-paystack-sig' },
@@ -83,8 +83,8 @@ describe('PaymentController.handleWebhook', () => {
     });
 
     it('should detect Stripe via stripe-signature header', async () => {
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(true);
-      (paymentService.handleWebhook as jest.Mock).mockResolvedValue({ status: 'OK' });
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
+      (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const stripeBody = {
         id: 'evt_stripe_001',
@@ -111,7 +111,7 @@ describe('PaymentController.handleWebhook', () => {
 
   describe('Paystack webhook', () => {
     it('should return 401 for invalid Paystack signature', async () => {
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(false);
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(false);
 
       const req = makeReq({
         headers: { 'x-paystack-signature': 'bad-sig' },
@@ -129,8 +129,8 @@ describe('PaymentController.handleWebhook', () => {
     });
 
     it('should process Paystack event and return 200 on valid signature', async () => {
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(true);
-      (paymentService.handleWebhook as jest.Mock).mockResolvedValue({ status: 'OK' });
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
+      (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const paystackBody = {
         event: 'charge.success',
@@ -157,8 +157,8 @@ describe('PaymentController.handleWebhook', () => {
     });
 
     it('should use rawBody over JSON.stringify for HMAC verification', async () => {
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(true);
-      (paymentService.handleWebhook as jest.Mock).mockResolvedValue({ status: 'OK' });
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
+      (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const rawBody = '{"event":"charge.success","data":{"id":"evt_001"}}';
       const req = makeReq({
@@ -178,8 +178,8 @@ describe('PaymentController.handleWebhook', () => {
     });
 
     it('should fall back to JSON.stringify when rawBody is absent', async () => {
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(true);
-      (paymentService.handleWebhook as jest.Mock).mockResolvedValue({ status: 'OK' });
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
+      (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const body = { event: 'charge.success', data: { id: 'evt_001' } };
       const req = makeReq({
@@ -200,7 +200,7 @@ describe('PaymentController.handleWebhook', () => {
 
   describe('Stripe webhook', () => {
     it('should return 401 for invalid Stripe signature', async () => {
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(false);
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(false);
 
       const req = makeReq({
         headers: { 'stripe-signature': 'bad-sig' },
@@ -215,8 +215,8 @@ describe('PaymentController.handleWebhook', () => {
     });
 
     it('should process Stripe event with correct event structure extraction', async () => {
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(true);
-      (paymentService.handleWebhook as jest.Mock).mockResolvedValue({ status: 'OK' });
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
+      (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const stripeEventId = 'evt_stripe_abc123';
       const stripeBody = {
@@ -257,8 +257,8 @@ describe('PaymentController.handleWebhook', () => {
     it('should merge top-level Stripe event ID into data object', async () => {
       // Ensures the controller does: { ...data.object, id: stripeBody.id }
       // so paymentService receives the event ID alongside the payment intent fields.
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(true);
-      (paymentService.handleWebhook as jest.Mock).mockResolvedValue({ status: 'OK' });
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
+      (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const req = makeReq({
         headers: { 'stripe-signature': 'valid-sig' },
@@ -272,7 +272,7 @@ describe('PaymentController.handleWebhook', () => {
 
       await PaymentController.handleWebhook(req, res, mockNext);
 
-      const [, stripeData] = (paymentService.handleWebhook as jest.Mock).mock.calls[0];
+      const [, stripeData] = (paymentService.handleWebhook as vi.Mock).mock.calls[0];
       expect(stripeData.id).toBe('evt_top_level_id');
       expect(stripeData.amount_captured).toBe(1000);
     });
@@ -280,8 +280,8 @@ describe('PaymentController.handleWebhook', () => {
 
   describe('Error handling', () => {
     it('should return 200 even when handleWebhook throws (stops provider retries)', async () => {
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(true);
-      (paymentService.handleWebhook as jest.Mock).mockRejectedValue(new Error('DB error'));
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
+      (paymentService.handleWebhook as vi.Mock).mockRejectedValue(new Error('DB error'));
 
       const req = makeReq({
         headers: { 'x-paystack-signature': 'valid-sig' },
@@ -300,8 +300,8 @@ describe('PaymentController.handleWebhook', () => {
 
     it('should prefer stripe-signature over x-paystack-signature when both present', async () => {
       // Per the controller: isStripe = !!stripeSig — Stripe takes priority
-      (paymentService.verifyWebhookSignature as jest.Mock).mockReturnValue(true);
-      (paymentService.handleWebhook as jest.Mock).mockResolvedValue({ status: 'OK' });
+      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
+      (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const req = makeReq({
         headers: {

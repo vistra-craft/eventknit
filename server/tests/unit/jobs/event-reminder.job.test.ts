@@ -6,37 +6,37 @@ import { NotificationType, NotificationPriority } from '@prisma/client';
 import * as cron from 'node-cron';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
-    $queryRaw: jest.fn(),
+    $queryRaw: vi.fn(),
     event: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
     notification: {
-      findFirst: jest.fn(),
+      findFirst: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/services/notification.service.js');
-jest.mock('../../../src/utils/logger.js');
-jest.mock('node-cron');
+vi.mock('../../../src/services/notification.service.js');
+vi.mock('../../../src/utils/logger.js');
+vi.mock('node-cron');
 
 describe('EventReminderJob', () => {
   let mockScheduledTask: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Mock database as available by default
-    (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
+    (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
 
     // Create mock scheduled task
     mockScheduledTask = {
-      stop: jest.fn(),
+      stop: vi.fn(),
     };
 
     // Mock cron.schedule to return the mock task
-    (cron.schedule as jest.Mock).mockReturnValue(mockScheduledTask);
+    (cron.schedule as vi.Mock).mockReturnValue(mockScheduledTask);
   });
 
   afterEach(() => {
@@ -56,7 +56,7 @@ describe('EventReminderJob', () => {
     it('should warn if job is already running', () => {
       // Arrange
       EventReminderJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       EventReminderJob.start();
@@ -69,7 +69,7 @@ describe('EventReminderJob', () => {
     it('should handle error when starting job', () => {
       // Arrange
       const mockError = new Error('Cron start failed');
-      (cron.schedule as jest.Mock).mockImplementation(() => {
+      (cron.schedule as vi.Mock).mockImplementation(() => {
         throw mockError;
       });
 
@@ -83,7 +83,7 @@ describe('EventReminderJob', () => {
     it('should stop the event reminder job successfully', () => {
       // Arrange
       EventReminderJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       EventReminderJob.stop();
@@ -106,7 +106,7 @@ describe('EventReminderJob', () => {
   describe('sendEventReminders', () => {
     it('should skip if database is not available', async () => {
       // Arrange
-      (prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('Database unavailable'));
+      (prisma.$queryRaw as vi.Mock).mockRejectedValue(new Error('Database unavailable'));
 
       // Act
       await EventReminderJob.sendEventReminders();
@@ -119,7 +119,7 @@ describe('EventReminderJob', () => {
     it('should send 24h event reminders to attendees and staff', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
       const mockEvent = {
         id: 'event-1',
@@ -127,14 +127,14 @@ describe('EventReminderJob', () => {
         startDate: new Date('2026-01-30T12:00:00Z'),
       };
 
-      (prisma.event.findMany as jest.Mock)
+      (prisma.event.findMany as vi.Mock)
         .mockResolvedValueOnce([mockEvent]) // 24h events
         .mockResolvedValueOnce([]) // 1h events
         .mockResolvedValueOnce([]) // 24h deadlines
         .mockResolvedValueOnce([]); // 1h deadlines
 
-      (prisma.notification.findFirst as jest.Mock).mockResolvedValue(null);
-      (NotificationService.sendEventNotification as jest.Mock).mockResolvedValue(undefined);
+      (prisma.notification.findFirst as vi.Mock).mockResolvedValue(null);
+      (NotificationService.sendEventNotification as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await EventReminderJob.sendEventReminders();
@@ -164,13 +164,13 @@ describe('EventReminderJob', () => {
         NotificationPriority.MEDIUM,
       );
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should send 1h event reminders with HIGH priority', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
       const mockEvent = {
         id: 'event-2',
@@ -178,14 +178,14 @@ describe('EventReminderJob', () => {
         startDate: new Date('2026-01-29T13:00:00Z'),
       };
 
-      (prisma.event.findMany as jest.Mock)
+      (prisma.event.findMany as vi.Mock)
         .mockResolvedValueOnce([]) // 24h events
         .mockResolvedValueOnce([mockEvent]) // 1h events
         .mockResolvedValueOnce([]) // 24h deadlines
         .mockResolvedValueOnce([]); // 1h deadlines
 
-      (prisma.notification.findFirst as jest.Mock).mockResolvedValue(null);
-      (NotificationService.sendEventNotification as jest.Mock).mockResolvedValue(undefined);
+      (prisma.notification.findFirst as vi.Mock).mockResolvedValue(null);
+      (NotificationService.sendEventNotification as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await EventReminderJob.sendEventReminders();
@@ -204,13 +204,13 @@ describe('EventReminderJob', () => {
         NotificationPriority.HIGH,
       );
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should skip sending reminder if already sent recently (24h)', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
       const mockEvent = {
         id: 'event-3',
@@ -218,14 +218,14 @@ describe('EventReminderJob', () => {
         startDate: new Date('2026-01-30T12:00:00Z'),
       };
 
-      (prisma.event.findMany as jest.Mock)
+      (prisma.event.findMany as vi.Mock)
         .mockResolvedValueOnce([mockEvent])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
       // Mock existing notification (already sent)
-      (prisma.notification.findFirst as jest.Mock).mockResolvedValue({
+      (prisma.notification.findFirst as vi.Mock).mockResolvedValue({
         id: 'notif-1',
         eventId: 'event-3',
         type: NotificationType.EVENT_REMINDER_24H,
@@ -239,13 +239,13 @@ describe('EventReminderJob', () => {
       expect(logger.debug).toHaveBeenCalledWith('24h reminder already sent for event event-3');
       expect(NotificationService.sendEventNotification).not.toHaveBeenCalled();
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should send registration deadline reminders', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
       const mockEvent24h = {
         id: 'event-4',
@@ -259,14 +259,14 @@ describe('EventReminderJob', () => {
         registrationDeadline: new Date('2026-01-29T13:00:00Z'),
       };
 
-      (prisma.event.findMany as jest.Mock)
+      (prisma.event.findMany as vi.Mock)
         .mockResolvedValueOnce([]) // 24h events
         .mockResolvedValueOnce([]) // 1h events
         .mockResolvedValueOnce([mockEvent24h]) // 24h deadlines
         .mockResolvedValueOnce([mockEvent1h]); // 1h deadlines
 
-      (prisma.notification.findFirst as jest.Mock).mockResolvedValue(null);
-      (NotificationService.sendEventNotification as jest.Mock).mockResolvedValue(undefined);
+      (prisma.notification.findFirst as vi.Mock).mockResolvedValue(null);
+      (NotificationService.sendEventNotification as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await EventReminderJob.sendEventReminders();
@@ -296,29 +296,29 @@ describe('EventReminderJob', () => {
         NotificationPriority.HIGH,
       );
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should handle notification service errors and continue processing', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
       const mockEvents = [
         { id: 'event-6', title: 'Event 6', startDate: new Date('2026-01-30T12:00:00Z') },
         { id: 'event-7', title: 'Event 7', startDate: new Date('2026-01-30T12:00:00Z') },
       ];
 
-      (prisma.event.findMany as jest.Mock)
+      (prisma.event.findMany as vi.Mock)
         .mockResolvedValueOnce(mockEvents)
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
-      (prisma.notification.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.notification.findFirst as vi.Mock).mockResolvedValue(null);
 
       const mockError = new Error('Notification service failed');
-      (NotificationService.sendEventNotification as jest.Mock)
+      (NotificationService.sendEventNotification as vi.Mock)
         .mockRejectedValueOnce(mockError) // First event attendee fails (staff not sent)
         .mockResolvedValueOnce(undefined) // Second event attendee succeeds
         .mockResolvedValueOnce(undefined); // Second event staff succeeds
@@ -333,14 +333,14 @@ describe('EventReminderJob', () => {
       );
       expect(NotificationService.sendEventNotification).toHaveBeenCalledTimes(3);
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should handle database connection errors gracefully', async () => {
       // Arrange
       const dbError = new Error('Can\'t reach database server');
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.event.findMany as jest.Mock).mockRejectedValue(dbError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.event.findMany as vi.Mock).mockRejectedValue(dbError);
 
       // Act
       await EventReminderJob.sendEventReminders();
@@ -357,8 +357,8 @@ describe('EventReminderJob', () => {
       const prismaError = new Error('Prisma init error');
       prismaError.constructor = { name: 'PrismaClientInitializationError' } as any;
 
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.event.findMany as jest.Mock).mockRejectedValue(prismaError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.event.findMany as vi.Mock).mockRejectedValue(prismaError);
 
       // Act
       await EventReminderJob.sendEventReminders();
@@ -372,7 +372,7 @@ describe('EventReminderJob', () => {
 
     it('should log when no reminders need to be sent', async () => {
       // Arrange
-      (prisma.event.findMany as jest.Mock)
+      (prisma.event.findMany as vi.Mock)
         .mockResolvedValueOnce([]) // 24h events
         .mockResolvedValueOnce([]) // 1h events
         .mockResolvedValueOnce([]) // 24h deadlines
@@ -388,21 +388,21 @@ describe('EventReminderJob', () => {
     it('should log summary when reminders are sent', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
       const event24h = { id: 'e1', title: 'Event 1', startDate: new Date('2026-01-30T12:00:00Z') };
       const event1h = { id: 'e2', title: 'Event 2', startDate: new Date('2026-01-29T13:00:00Z') };
       const deadline24h = { id: 'e3', title: 'Event 3', registrationDeadline: new Date('2026-01-30T12:00:00Z') };
       const deadline1h = { id: 'e4', title: 'Event 4', registrationDeadline: new Date('2026-01-29T13:00:00Z') };
 
-      (prisma.event.findMany as jest.Mock)
+      (prisma.event.findMany as vi.Mock)
         .mockResolvedValueOnce([event24h])
         .mockResolvedValueOnce([event1h])
         .mockResolvedValueOnce([deadline24h])
         .mockResolvedValueOnce([deadline1h]);
 
-      (prisma.notification.findFirst as jest.Mock).mockResolvedValue(null);
-      (NotificationService.sendEventNotification as jest.Mock).mockResolvedValue(undefined);
+      (prisma.notification.findFirst as vi.Mock).mockResolvedValue(null);
+      (NotificationService.sendEventNotification as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await EventReminderJob.sendEventReminders();
@@ -412,7 +412,7 @@ describe('EventReminderJob', () => {
         'Event reminder job completed. Sent 1 24h event reminders, 1 1h event reminders, 1 24h deadline reminders, and 1 1h deadline reminders',
       );
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 });

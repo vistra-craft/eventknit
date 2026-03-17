@@ -3,13 +3,13 @@ import { AuthenticatedRequest } from '../../../src/middleware/auth.middleware.js
 import { AdminPlatformAnalyticsController } from '../../../src/controllers/admin-platform-analytics.controller.js';
 import { ResaleTransferAnalyticsService } from '../../../src/services/resale-transfer-analytics.service.js';
 
-jest.mock('../../../src/services/resale-transfer-analytics.service.js');
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/services/resale-transfer-analytics.service.js');
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -23,10 +23,10 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
       user: { id: 'admin-1', email: 'admin@test.com', role: 'SUPERADMIN' } as AuthenticatedRequest['user'],
     };
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn(),
     };
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ─── getResaleStats ───
@@ -41,7 +41,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
         pendingPayouts: { count: 5, amount: 500 },
         topEvents: [],
       };
-      (ResaleTransferAnalyticsService.getPlatformResaleStats as jest.Mock).mockResolvedValue(mockStats);
+      (ResaleTransferAnalyticsService.getPlatformResaleStats as vi.Mock).mockResolvedValue(mockStats);
 
       await AdminPlatformAnalyticsController.getResaleStats(
         mockRequest as AuthenticatedRequest,
@@ -53,7 +53,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
 
     it('should pass date filters to service', async () => {
       mockRequest.query = { startDate: '2026-01-01', endDate: '2026-03-01' };
-      (ResaleTransferAnalyticsService.getPlatformResaleStats as jest.Mock).mockResolvedValue({});
+      (ResaleTransferAnalyticsService.getPlatformResaleStats as vi.Mock).mockResolvedValue({});
 
       await AdminPlatformAnalyticsController.getResaleStats(
         mockRequest as AuthenticatedRequest,
@@ -67,7 +67,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
     });
 
     it('should return 500 on service error', async () => {
-      (ResaleTransferAnalyticsService.getPlatformResaleStats as jest.Mock).mockRejectedValue(
+      (ResaleTransferAnalyticsService.getPlatformResaleStats as vi.Mock).mockRejectedValue(
         new Error('DB connection failed'),
       );
 
@@ -84,7 +84,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
     });
 
     it('should handle non-Error exceptions with fallback message', async () => {
-      (ResaleTransferAnalyticsService.getPlatformResaleStats as jest.Mock).mockRejectedValue('unexpected');
+      (ResaleTransferAnalyticsService.getPlatformResaleStats as vi.Mock).mockRejectedValue('unexpected');
 
       await AdminPlatformAnalyticsController.getResaleStats(
         mockRequest as AuthenticatedRequest,
@@ -104,7 +104,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
   describe('getTransferStats', () => {
     it('should return platform transfer stats', async () => {
       const mockStats = { totalTransfers: 100, pendingTransfers: 10, acceptedTransfers: 70 };
-      (ResaleTransferAnalyticsService.getPlatformTransferStats as jest.Mock).mockResolvedValue(mockStats);
+      (ResaleTransferAnalyticsService.getPlatformTransferStats as vi.Mock).mockResolvedValue(mockStats);
 
       await AdminPlatformAnalyticsController.getTransferStats(
         mockRequest as AuthenticatedRequest,
@@ -116,7 +116,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
 
     it('should pass date filters', async () => {
       mockRequest.query = { startDate: '2026-02-01' };
-      (ResaleTransferAnalyticsService.getPlatformTransferStats as jest.Mock).mockResolvedValue({});
+      (ResaleTransferAnalyticsService.getPlatformTransferStats as vi.Mock).mockResolvedValue({});
 
       await AdminPlatformAnalyticsController.getTransferStats(
         mockRequest as AuthenticatedRequest,
@@ -130,7 +130,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
     });
 
     it('should return 500 on error', async () => {
-      (ResaleTransferAnalyticsService.getPlatformTransferStats as jest.Mock).mockRejectedValue(
+      (ResaleTransferAnalyticsService.getPlatformTransferStats as vi.Mock).mockRejectedValue(
         new Error('Query timeout'),
       );
 
@@ -153,7 +153,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
     it('should return resale activity with all filters', async () => {
       mockRequest.query = { status: 'SOLD', eventId: 'evt-1', page: '2', limit: '10' };
       const mockResult = { listings: [], total: 0, page: 2, totalPages: 0 };
-      (ResaleTransferAnalyticsService.getPlatformResaleActivity as jest.Mock).mockResolvedValue(mockResult);
+      (ResaleTransferAnalyticsService.getPlatformResaleActivity as vi.Mock).mockResolvedValue(mockResult);
 
       await AdminPlatformAnalyticsController.getResaleActivity(
         mockRequest as AuthenticatedRequest,
@@ -171,7 +171,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
 
     it('should handle empty filters', async () => {
       mockRequest.query = {};
-      (ResaleTransferAnalyticsService.getPlatformResaleActivity as jest.Mock).mockResolvedValue({
+      (ResaleTransferAnalyticsService.getPlatformResaleActivity as vi.Mock).mockResolvedValue({
         listings: [], total: 0, page: 1, totalPages: 0,
       });
 
@@ -189,7 +189,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
     });
 
     it('should return 500 on error', async () => {
-      (ResaleTransferAnalyticsService.getPlatformResaleActivity as jest.Mock).mockRejectedValue(
+      (ResaleTransferAnalyticsService.getPlatformResaleActivity as vi.Mock).mockRejectedValue(
         new Error('Service unavailable'),
       );
 
@@ -214,7 +214,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
         totalPages: 1,
         summary: { totalPending: 1, totalPayoutAmount: 135, totalPlatformFees: 15 },
       };
-      (ResaleTransferAnalyticsService.getResalePendingPayouts as jest.Mock).mockResolvedValue(mockResult);
+      (ResaleTransferAnalyticsService.getResalePendingPayouts as vi.Mock).mockResolvedValue(mockResult);
 
       await AdminPlatformAnalyticsController.getResalePendingPayouts(
         mockRequest as AuthenticatedRequest,
@@ -230,7 +230,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
 
     it('should use default pagination when no params', async () => {
       mockRequest.query = {};
-      (ResaleTransferAnalyticsService.getResalePendingPayouts as jest.Mock).mockResolvedValue({
+      (ResaleTransferAnalyticsService.getResalePendingPayouts as vi.Mock).mockResolvedValue({
         payouts: [], total: 0, page: 1, totalPages: 0,
         summary: { totalPending: 0, totalPayoutAmount: 0, totalPlatformFees: 0 },
       });
@@ -247,7 +247,7 @@ describe('AdminPlatformAnalyticsController - Resale & Transfer', () => {
     });
 
     it('should return 500 on error', async () => {
-      (ResaleTransferAnalyticsService.getResalePendingPayouts as jest.Mock).mockRejectedValue(
+      (ResaleTransferAnalyticsService.getResalePendingPayouts as vi.Mock).mockRejectedValue(
         new Error('Aggregation failed'),
       );
 
