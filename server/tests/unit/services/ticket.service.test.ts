@@ -25,6 +25,9 @@ vi.mock('../../../src/services/ticket-security.service.js', () => ({
 }));
 
 vi.mock('qrcode', () => ({
+  default: {
+    toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,MOCK_QR_CODE'),
+  },
   toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,MOCK_QR_CODE'),
 }));
 

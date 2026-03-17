@@ -819,6 +819,7 @@ describe('EventService - approveEvent', () => {
     id: 'event-456',
     title: 'Test Event',
     status: EventStatus.PENDING,
+    isFree: true,
   };
 
   it('should approve event and auto-activate pending organizer', async () => {

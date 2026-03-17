@@ -3,7 +3,7 @@ import { prisma } from '../src/config/database';
 
 // Mock ioredis
 vi.mock('ioredis', () => {
-  return vi.fn().mockImplementation(() => ({
+  const RedisMock = vi.fn().mockImplementation(() => ({
     on: vi.fn(),
     connect: vi.fn().mockResolvedValue(undefined),
     quit: vi.fn().mockResolvedValue(undefined),
@@ -19,6 +19,7 @@ vi.mock('ioredis', () => {
     })),
     status: 'ready',
   }));
+  return { default: RedisMock, Redis: RedisMock };
 });
 
 vi.mock('../src/config/database', () => ({

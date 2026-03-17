@@ -217,9 +217,6 @@ app.use('/api/v1/capacity', venueCapacityRoutes);
 app.use('/api/v1/admin/finance', financialRoutes);
 app.use('/api/v1/admin/platform-finance', platformFinanceRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
-// Mount catch-all /:id routes LAST to avoid shadowing specific routes above
-app.use('/api/v1', facilityZoneRoutes);
-app.use('/api/v1', printerRoutes);
 app.use('/api/v1/push', pushNotificationRoutes);
 app.use('/api/v1/admin/communications/bulk-messages', bulkMessageRoutes);
 app.use('/api/v1/admin/social-media', socialMediaRoutes);
@@ -248,6 +245,10 @@ app.use('/api/v1/cart', cartRoutes); // Cart reservation system
 app.use('/api/v1/configuration', configurationRoutes); // System configuration (mailTrap, maintenance mode)
 app.use('/api/v1/profile', extendedProfileRoutes); // Extended profile (organizer profile, staff profile)
 app.use('/api/v1/uploads', uploadRoutes); // Generic image upload (Cloudinary)
+
+// Mount catch-all /:id routes LAST to avoid shadowing specific routes above
+app.use('/api/v1', facilityZoneRoutes);
+app.use('/api/v1', printerRoutes);
 
 // Queue monitoring dashboard — superadmin only
 app.use('/admin/queues', authenticate, authorize(UserRole.SUPERADMIN), queueServerAdapter.getRouter());

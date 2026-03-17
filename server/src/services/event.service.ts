@@ -3170,14 +3170,18 @@ export class EventService {
       // Import DataAccessService dynamically to avoid circular dependencies
       const { DataAccessService } = await import('./data-access.service.js');
 
-      // Filter data based on event's organizerDataAccess level and consent
+      // Filter data based on event's organizerDataAccess level (if explicitly set)
+      // or fall back to subscription tier filtering
+      const dataAccessOverride = event.organizerDataAccess !== 'RESTRICTED'
+        ? event.organizerDataAccess
+        : undefined;
       return await DataAccessService.filterAttendeeData(
         registrations,
         organizerId,
         eventId,
         undefined,
         undefined,
-        event.organizerDataAccess,
+        dataAccessOverride,
       );
     }
 

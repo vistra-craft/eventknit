@@ -55,7 +55,7 @@ vi.mock('../../../src/config/index.js', () => ({
 
 // Mock Paystack module
 vi.mock('paystack', () => {
-  return vi.fn().mockImplementation(() => ({
+  const PaystackMock = vi.fn().mockImplementation(() => ({
     refund: {
       create: vi.fn().mockResolvedValue({
         data: {
@@ -68,6 +68,7 @@ vi.mock('paystack', () => {
       }),
     },
   }));
+  return { default: PaystackMock };
 });
 
 describe('RefundService', () => {
