@@ -479,7 +479,7 @@ export function ReviewStep({
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/60 bg-card text-sm"
                     >
                       {ex.logo ? (
-                        <img src={ex.logo} alt="" className="w-5 h-5 rounded object-cover" />
+                        <img src={ex.logo} alt="" className="w-5 h-5 rounded object-contain" />
                       ) : (
                         <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
                       )}
@@ -510,7 +510,7 @@ export function ReviewStep({
                       }`}
                     >
                       {sp.logo && (
-                        <img src={sp.logo} alt="" className="w-4 h-4 rounded-full object-cover" />
+                        <img src={sp.logo} alt="" className="w-4 h-4 rounded-full object-contain" />
                       )}
                       {sp.name}
                       <span className="text-[10px] opacity-70 capitalize">{sp.level}</span>

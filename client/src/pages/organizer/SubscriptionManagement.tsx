@@ -381,6 +381,15 @@ const SubscriptionManagement = () => {
         {/* Tier Comparison */}
         <div>
           <h2 className="text-section-header mb-4">Available Plans</h2>
+          {tierEntries.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3 rounded-xl border border-dashed border-border bg-muted/30">
+              <AlertCircle className="h-8 w-8 text-muted-foreground" />
+              <p className="font-medium text-foreground">No plans available right now</p>
+              <p className="text-sm text-muted-foreground text-center max-w-xs">
+                Subscription plans are temporarily unavailable. Please check back later or contact support.
+              </p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {tierEntries.map((entry) => {
               const TierIcon = entry.icon;
@@ -439,6 +448,7 @@ const SubscriptionManagement = () => {
               );
             })}
           </div>
+          )}
         </div>
 
         {/* Upgrade Dialog */}

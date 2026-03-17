@@ -220,7 +220,12 @@ export class SubscriptionService {
    */
   static async getEffectiveTier(organizerId: string): Promise<SubscriptionTier> {
     const subscription = await this.getSubscription(organizerId);
-    const baseTier = subscription.tier;
+    const now = new Date();
+
+    // If the subscription has an expiry date that has passed, fall back to BASIC.
+    // This covers both canceled-and-expired and simply-expired paid subscriptions.
+    const isExpired = subscription.expiresAt !== null && subscription.expiresAt < now;
+    const baseTier = isExpired ? SubscriptionTier.BASIC : subscription.tier;
 
     const activeOverride = await prisma.subscriptionOverride.findFirst({
       where: {
@@ -228,7 +233,7 @@ export class SubscriptionService {
         isActive: true,
         OR: [
           { expiresAt: null },
-          { expiresAt: { gt: new Date() } },
+          { expiresAt: { gt: now } },
         ],
       },
       orderBy: { createdAt: 'desc' },

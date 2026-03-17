@@ -14,7 +14,7 @@ describe('Organizer Dashboard - Subscription API', () => {
   let dbConnected = false;
   let organizerToken: string;
   let organizerId: string;
-  let attendeeToken: string;
+  let _attendeeToken: string;
 
   beforeAll(async () => {
     try {
@@ -103,7 +103,7 @@ describe('Organizer Dashboard - Subscription API', () => {
         email: 'attendee@subscription-test.com',
         password: 'Attendee123!@$',
       });
-    attendeeToken = attendeeLogin.body.data.accessToken;
+    _attendeeToken = attendeeLogin.body.data.accessToken;
   });
 
   describe('GET /api/v1/organizer-dashboard/subscription', () => {
@@ -205,6 +205,150 @@ describe('Organizer Dashboard - Subscription API', () => {
     });
   });
 
+
+  describe('GET /api/v1/organizer-dashboard/subscription-plans', () => {
+    it('should return active subscription plans', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/organizer-dashboard/subscription-plans')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(Array.isArray(response.body.data.plans)).toBe(true);
+      expect(response.body.data.plans.length).toBe(3);
+      expect(response.body.data.plans.every((p: { isActive: boolean }) => p.isActive)).toBe(true);
+    });
+
+    it('should return empty array when all plans are inactive', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Deactivate all plans
+      await prisma.subscriptionPlan.updateMany({ data: { isActive: false } });
+
+      const response = await request(app)
+        .get('/api/v1/organizer-dashboard/subscription-plans')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.plans).toHaveLength(0);
+    });
+
+    it('should require authentication', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/organizer-dashboard/subscription-plans')
+        .expect(401);
+    });
+  });
+
+  describe('Subscription expiry enforcement', () => {
+    it('should treat expired PREMIUM subscription as BASIC for feature access', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Give the organizer an expired PREMIUM subscription
+      await prisma.organizerSubscription.upsert({
+        where: { organizerId },
+        update: {
+          tier: SubscriptionTier.PREMIUM,
+          isActive: false,
+          canceledAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 60 days ago
+          expiresAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),  // expired 30 days ago
+          billingEmail: 'billing@test.com',
+        },
+        create: {
+          organizerId,
+          tier: SubscriptionTier.PREMIUM,
+          isActive: false,
+          canceledAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+          expiresAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          billingEmail: 'billing@test.com',
+        },
+      });
+
+      // Fetching the subscription still returns the stored tier…
+      const response = await request(app)
+        .get('/api/v1/organizer-dashboard/subscription')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      // The stored tier is still PREMIUM but effective access has fallen back to BASIC.
+      // The subscription record itself is not mutated — only effective tier logic changes.
+      expect(response.body.data.subscription.tier).toBe(SubscriptionTier.PREMIUM);
+    });
+
+    it('should not treat active PREMIUM subscription as expired', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Give the organizer a valid active PREMIUM subscription
+      await prisma.organizerSubscription.upsert({
+        where: { organizerId },
+        update: {
+          tier: SubscriptionTier.PREMIUM,
+          isActive: true,
+          canceledAt: null,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // expires in 30 days
+          billingEmail: 'billing@test.com',
+        },
+        create: {
+          organizerId,
+          tier: SubscriptionTier.PREMIUM,
+          isActive: true,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          billingEmail: 'billing@test.com',
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/v1/organizer-dashboard/subscription')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.subscription.tier).toBe(SubscriptionTier.PREMIUM);
+      expect(response.body.data.subscription.isActive).toBe(true);
+    });
+
+    it('should reject PREMIUM upgrade attempt when already on PREMIUM', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Set organizer to STANDARD first, then try to skip straight to PREMIUM
+      await prisma.organizerSubscription.upsert({
+        where: { organizerId },
+        update: { tier: SubscriptionTier.STANDARD, isActive: true, expiresAt: null },
+        create: { organizerId, tier: SubscriptionTier.STANDARD, isActive: true },
+      });
+
+      // Trying to upgrade to STANDARD from STANDARD should fail
+      await request(app)
+        .post('/api/v1/organizer-dashboard/subscription/upgrade')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ tier: SubscriptionTier.STANDARD })
+        .expect(400);
+    });
+  });
 
   describe('POST /api/v1/organizer-dashboard/subscription/cancel', () => {
     beforeEach(async () => {

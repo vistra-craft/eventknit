@@ -97,14 +97,14 @@ const UnifiedOrganizerDashboard = () => {
     }
   }, [location.state]);
 
-  // Load verification status once on mount to power the persistent KYC banner
+  // Load verification status on mount and whenever the user navigates back to this page
   useEffect(() => {
     getVerificationStatus()
       .then((res) => {
         if (res.success && res.data) setVerificationStatus(res.data);
       })
       .catch(() => { /* non-critical — banner simply won't show */ });
-  }, []);
+  }, [location.key]);
 
   // Intersection Observer for infinite scroll
   const handleLoadMore = useCallback(() => {

@@ -1,11 +1,14 @@
 // Event Attendee View Components
 export { EventAttendeeView } from './EventAttendeeView';
-export { EventHome } from './EventHome';
+export { EventOverview } from './EventOverview';
 export { EventAgenda } from './EventAgenda';
+export { EventPeople } from './EventPeople';
+export { EventMyBadge } from './EventMyBadge';
+// Legacy exports kept for any remaining direct references
+export { EventHome } from './EventHome';
 export { EventSpeakers } from './EventSpeakers';
 export { EventExhibitors } from './EventExhibitors';
 export { EventMyEvent } from './EventMyEvent';
-export { EventMyBadge } from './EventMyBadge';
 
 // Re-export types
 export type {

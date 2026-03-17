@@ -105,10 +105,15 @@ export const errorHandler = (
     convertedErrorType: appError.constructor?.name,
     statusCode: appError.statusCode,
     code: appError.code,
-    stack: config.env === 'development' ? err.stack : undefined,
+    stack: err.stack,
     path: req.path,
     method: req.method,
     userMessage: appError.message,
+    body: req.body,
+    query: req.query,
+    params: req.params,
+    user: req.user,
+    timestamp: new Date().toISOString(),
   });
 
   // Send user-friendly error response

@@ -195,7 +195,7 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
                             <div className="flex items-start gap-3">
                               <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
                                 {exhibitor.logo && exhibitor.logo !== '/api/placeholder/200/100' ? (
-                                  <img src={exhibitor.logo} alt={exhibitor.name} className="w-full h-full object-cover rounded-lg" />
+                                  <img src={exhibitor.logo} alt={exhibitor.name} className="w-full h-full object-contain rounded-lg p-1" />
                                 ) : (
                                   <Building2 className="w-6 h-6 text-muted-foreground" />
                                 )}
