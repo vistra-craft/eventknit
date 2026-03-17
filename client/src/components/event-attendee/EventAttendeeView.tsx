@@ -1,11 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Home,
+  LayoutDashboard,
   CalendarDays,
-  Mic2,
-  Building2,
-  Heart,
+  Users,
   BadgeCheck,
   ChevronLeft,
   Bell,
@@ -20,11 +18,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { EventHome } from "./EventHome";
+import { EventOverview } from "./EventOverview";
 import { EventAgenda } from "./EventAgenda";
-import { EventSpeakers } from "./EventSpeakers";
-import { EventExhibitors } from "./EventExhibitors";
-import { EventMyEvent } from "./EventMyEvent";
+import { EventPeople } from "./EventPeople";
 import { EventMyBadge } from "./EventMyBadge";
 import {
   getNotifications,
@@ -139,7 +135,7 @@ interface EventAttendeeViewProps {
   user: User;
 }
 
-type TabKey = 'home' | 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge';
+type TabKey = 'overview' | 'schedule' | 'people' | 'badge';
 
 interface TabConfig {
   key: TabKey;
@@ -321,7 +317,7 @@ const NotificationsPanel: React.FC<NotificationsPanelProps> = ({
 
 export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, user }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
 
@@ -345,38 +341,36 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
   }, []);
 
   const tabs = useMemo((): TabConfig[] => {
-    const hasAgenda = event.agenda && event.agenda.length > 0;
-    const hasSpeakers = event.speakers && event.speakers.length > 0;
-    const hasExhibitors = event.exhibitors && event.exhibitors.length > 0;
+    const hasAgenda = !!(event.agenda && event.agenda.length > 0);
+    const hasPeople = !!(
+      (event.speakers && event.speakers.length > 0) ||
+      (event.exhibitors && event.exhibitors.length > 0) ||
+      (event.sponsors && event.sponsors.length > 0)
+    );
 
     return [
-      { key: 'home' as TabKey, label: 'Home', icon: Home, available: true },
-      { key: 'agenda' as TabKey, label: 'Agenda', icon: CalendarDays, available: !!hasAgenda },
-      { key: 'speakers' as TabKey, label: 'Speakers', icon: Mic2, available: !!hasSpeakers },
-      { key: 'exhibitors' as TabKey, label: 'Exhibitors', icon: Building2, available: !!hasExhibitors },
-      { key: 'my-event' as TabKey, label: 'My Event', icon: Heart, available: true },
-      { key: 'my-badge' as TabKey, label: 'My Badge', icon: BadgeCheck, available: true },
+      { key: 'overview' as TabKey, label: 'Overview', icon: LayoutDashboard, available: true },
+      { key: 'schedule' as TabKey, label: 'Schedule', icon: CalendarDays, available: hasAgenda },
+      { key: 'people' as TabKey, label: 'People', icon: Users, available: hasPeople },
+      { key: 'badge' as TabKey, label: 'Badge', icon: BadgeCheck, available: true },
     ].filter(tab => tab.available) as TabConfig[];
   }, [event]);
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'home':
+      case 'overview':
+        return <EventOverview event={event} user={user} />;
+      case 'schedule':
+        return <EventAgenda event={event} user={user} />;
+      case 'people':
         return (
-          <EventHome
-            event={event}
-            user={user}
+          <EventPeople
+            speakers={event.speakers ?? []}
+            exhibitors={event.exhibitors ?? []}
+            sponsors={event.sponsors ?? []}
           />
         );
-      case 'agenda':
-        return <EventAgenda event={event} user={user} />;
-      case 'speakers':
-        return <EventSpeakers speakers={event.speakers ?? []} />;
-      case 'exhibitors':
-        return <EventExhibitors exhibitors={event.exhibitors ?? []} sponsors={event.sponsors} />;
-      case 'my-event':
-        return <EventMyEvent event={event} user={user} />;
-      case 'my-badge':
+      case 'badge':
         return <EventMyBadge event={event} user={user} />;
       default:
         return null;

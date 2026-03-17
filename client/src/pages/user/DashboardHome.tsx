@@ -6,7 +6,7 @@
 
 import { lazy, Suspense, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
-import { Calendar, MapPin, Download, Share2, Heart, Settings as SettingsIcon, Sparkles } from 'lucide-react';
+import { Calendar, MapPin, Download, Share2, Heart, Settings as SettingsIcon, Sparkles, Clock } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
@@ -240,30 +240,48 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 <Loader size="default" />
               </div>
             ) : attendingEvents.length > 0 ? (
-              <div className="space-y-3 max-w-3xl">
+              <div className="space-y-2 max-w-3xl">
+                {/* Stats strip */}
+                <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-primary" />
+                    <span className="font-medium text-foreground">
+                      {attendingEvents.filter(e => e.status === 'upcoming').length}
+                    </span>
+                    &nbsp;upcoming
+                  </span>
+                  <span className="w-px h-3.5 bg-border" />
+                  <span className="flex items-center gap-1">
+                    <span className="font-medium text-foreground">
+                      {attendingEvents.filter(e => e.status !== 'upcoming').length}
+                    </span>
+                    &nbsp;past
+                  </span>
+                </div>
+
                 {attendingEvents.map((event, index) => (
                   <div
                     key={event.id}
                     onClick={() => navigate(`/user/event/${event.id}`)}
-                    className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="flex items-center gap-3 px-4 py-3 bg-background border border-border rounded-lg hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
+                    style={{ animationDelay: `${index * 40}ms` }}
                     role="article"
                     aria-label={`Event: ${event.title}`}
                   >
                     <img
                       src={event.image}
                       alt={`Cover image for ${event.title}`}
-                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
+                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                       loading="lazy"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
                           {event.title}
                         </h3>
                         <Badge
                           variant="secondary"
-                          className={`text-xs flex-shrink-0 ${
+                          className={`text-[10px] px-1.5 py-0 flex-shrink-0 ${
                             event.status === 'upcoming'
                               ? 'bg-primary/10 text-primary'
                               : 'bg-muted text-muted-foreground'
@@ -272,44 +290,35 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                           {event.status === 'upcoming' ? 'Upcoming' : 'Past'}
                         </Badge>
                       </div>
-                      <div className="space-y-1 text-sm text-muted-foreground mb-2">
-                        <p className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {formatDate(event.date)}
-                        </p>
-                        <p className="flex items-center gap-1.5 line-clamp-1">
-                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                          {event.location}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs hover:scale-105 active:scale-95 transition-transform duration-200"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDownload(event);
-                          }}
-                          aria-label={`Download ticket for ${event.title}`}
-                        >
-                          <Download className="w-3.5 h-3.5 mr-1" />
-                          Download
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs hover:scale-105 active:scale-95 transition-transform duration-200"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShare(event);
-                          }}
-                          aria-label={`Share ${event.title}`}
-                        >
-                          <Share2 className="w-3.5 h-3.5 mr-1" />
-                          Share
-                        </Button>
-                      </div>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        {formatDate(event.date)}
+                        <span className="mx-1 opacity-40">·</span>
+                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{event.location}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); handleDownload(event); }}
+                        aria-label={`Download ticket for ${event.title}`}
+                        title="Download ticket"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); handleShare(event); }}
+                        aria-label={`Share ${event.title}`}
+                        title="Share event"
+                      >
+                        <Share2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -379,42 +388,44 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
                 <Loader size="default" aria-label="Loading saved events" />
               </div>
             ) : savedEvents.length > 0 ? (
-              <div className="space-y-3 max-w-3xl">
+              <div className="space-y-2 max-w-3xl">
                 {savedEvents.map((event, index) => (
                   <div
                     key={event.id}
                     onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
-                    className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    className="flex items-center gap-3 px-4 py-3 bg-background border border-border rounded-lg hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
+                    style={{ animationDelay: `${index * 40}ms` }}
                     role="article"
                     aria-label={`Saved event: ${event.title}`}
                   >
                     <img
                       src={event.image}
                       alt={`Cover image for ${event.title}`}
-                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
+                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                       loading="lazy"
                     />
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1 mb-1">
+                      <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate mb-0.5">
                         {event.title}
-                      </h3>
-                      <div className="space-y-1 text-sm text-muted-foreground mb-2">
-                        <p className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {formatDate(event.date)}
-                        </p>
-                        <p className="flex items-center gap-1.5 line-clamp-1">
-                          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                          {event.location}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                          <Heart className="w-3.5 h-3.5 mr-1 fill-current text-destructive" />
-                          Saved
-                        </Button>
-                      </div>
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        {formatDate(event.date)}
+                        <span className="mx-1 opacity-40">·</span>
+                        <MapPin className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate">{event.location}</span>
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Saved"
+                      >
+                        <Heart className="w-3.5 h-3.5 fill-current text-destructive" />
+                      </Button>
                     </div>
                   </div>
                 ))}
