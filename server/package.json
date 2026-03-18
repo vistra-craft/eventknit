@@ -8,7 +8,7 @@
     "start": "npm run prisma:migrate:deploy && node dist/src/server.js",
     "dev": "npx tsx src/server.ts",
     "dev:watch": "npx tsx --watch src/server.ts",
-    "build": "tsc",
+    "build": "NODE_OPTIONS='--max-old-space-size=2048' tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:run": "vitest run --reporter=default",
