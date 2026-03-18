@@ -1382,7 +1382,7 @@ router.delete(
  */
 router.get(
   '/ticket-issuances',
-  validate(Joi.object({
+  validateQuery(Joi.object({
     status: Joi.string().valid('PENDING', 'CLAIMED', 'CANCELLED', 'EXPIRED').optional(),
     eventId: Joi.string().uuid().optional(),
     page: Joi.number().integer().min(1).optional(),

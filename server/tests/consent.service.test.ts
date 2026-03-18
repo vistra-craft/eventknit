@@ -364,10 +364,23 @@ describe('ConsentService', () => {
         return;
       }
 
+      // Create a separate attendee so we don't violate the unique (eventId, attendeeId) constraint
+      const noConsentAttendee = await prisma.user.create({
+        data: {
+          email: 'no-consent-attendee@consent.com',
+          password: await hashPassword('Pass123!'),
+          firstName: 'NoConsent',
+          lastName: 'Attendee',
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+        },
+      });
+
       const newRegistration = await prisma.eventRegistration.create({
         data: {
           eventId,
-          attendeeId,
+          attendeeId: noConsentAttendee.id,
           status: RegistrationStatus.CONFIRMED,
           totalAmount: 0,
         },

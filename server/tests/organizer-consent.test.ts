@@ -45,7 +45,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
     const organizerPassword = await hashPassword('Organizer123!@$');
     const organizer = await prisma.user.create({
       data: {
-        email: 'organizer@consent.test',
+        email: 'organizer@consent-test.com',
         password: organizerPassword,
         firstName: 'Event',
         lastName: 'Organizer',
@@ -61,7 +61,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
     const attendeePassword = await hashPassword('Attendee123!@$');
     const attendee = await prisma.user.create({
       data: {
-        email: 'attendee@consent.test',
+        email: 'attendee@consent-test.com',
         password: attendeePassword,
         firstName: 'Test',
         lastName: 'Attendee',
@@ -100,7 +100,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
     const organizerLogin = await request(app)
       .post('/api/v1/auth/login')
       .send({
-        email: 'organizer@consent.test',
+        email: 'organizer@consent-test.com',
         password: 'Organizer123!@$',
       });
     organizerToken = organizerLogin.body.data.accessToken;
@@ -109,7 +109,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
     const attendeeLogin = await request(app)
       .post('/api/v1/auth/login')
       .send({
-        email: 'attendee@consent.test',
+        email: 'attendee@consent-test.com',
         password: 'Attendee123!@$',
       });
     _attendeeToken = attendeeLogin.body.data.accessToken;
@@ -122,7 +122,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
       const { ConsentService } = await import('../src/services/consent.service.js');
 
       await ConsentService.createConsent(registrationId, (await prisma.user.findUnique({
-        where: { email: 'attendee@consent.test' },
+        where: { email: 'attendee@consent-test.com' },
       }))!.id, eventId, {
         marketingConsent: true,
         demographicsConsent: true,
@@ -168,7 +168,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
 
       const _otherOrg = await prisma.user.create({
         data: {
-          email: 'otherorg@consent.test',
+          email: 'otherorg@consent-test.com',
           password: await hashPassword('Pass123!'),
           firstName: 'Other',
           lastName: 'Organizer',
@@ -180,7 +180,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
       const otherOrgLogin = await request(app)
         .post('/api/v1/auth/login')
         .send({
-          email: 'otherorg@consent.test',
+          email: 'otherorg@consent-test.com',
           password: 'Pass123!',
         });
       const otherOrgToken = otherOrgLogin.body.data.accessToken;

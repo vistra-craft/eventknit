@@ -24,9 +24,11 @@ describe('Attendee Dashboard — Ticket & Seat Data', () => {
   let dbConnected = false;
   let organizerToken: string;
   let attendeeToken: string;
+  let seatedAttendeeToken: string;
   let otherAttendeeToken: string;
   let organizerId: string;
   let attendeeId: string;
+  let seatedAttendeeId: string;
   let eventId: string;
   let registrationId: string;
   let seatedRegistrationId: string;
@@ -149,6 +151,34 @@ describe('Attendee Dashboard — Ticket & Seat Data', () => {
       role: otherAttendee.role,
     });
 
+    // Create seated attendee (separate user to avoid unique constraint on eventId+attendeeId)
+    const seatedAttendee = await prisma.user.upsert({
+      where: { email: 'dash-seated@test.com' },
+      update: {
+        password: hashedPassword,
+        firstName: 'Seated',
+        lastName: 'Attendee',
+        role: UserRole.ATTENDEE,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+      create: {
+        email: 'dash-seated@test.com',
+        password: hashedPassword,
+        firstName: 'Seated',
+        lastName: 'Attendee',
+        role: UserRole.ATTENDEE,
+        status: UserStatus.ACTIVE,
+        isEmailVerified: true,
+      },
+    });
+    seatedAttendeeId = seatedAttendee.id;
+    seatedAttendeeToken = generateAccessToken({
+      userId: seatedAttendee.id,
+      email: seatedAttendee.email,
+      role: seatedAttendee.role,
+    });
+
     // Create event
     const event = await prisma.event.create({
       data: {
@@ -216,7 +246,7 @@ describe('Attendee Dashboard — Ticket & Seat Data', () => {
     const seatedRegistration = await prisma.eventRegistration.create({
       data: {
         eventId,
-        attendeeId,
+        attendeeId: seatedAttendeeId,
         quantity: 1,
         status: 'CONFIRMED',
         paymentStatus: 'COMPLETED',
@@ -292,7 +322,7 @@ describe('Attendee Dashboard — Ticket & Seat Data', () => {
 
       const response = await request(app)
         .get(`/api/v1/tickets/${seatedRegistrationId}`)
-        .set('Authorization', `Bearer ${attendeeToken}`)
+        .set('Authorization', `Bearer ${seatedAttendeeToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -381,7 +411,7 @@ describe('Attendee Dashboard — Ticket & Seat Data', () => {
 
       const response = await request(app)
         .get(`/api/v1/tickets/${seatedRegistrationId}/view`)
-        .query({ email: 'dash-attendee@test.com' })
+        .query({ email: 'dash-seated@test.com' })
         .expect(200);
 
       expect(response.body.success).toBe(true);

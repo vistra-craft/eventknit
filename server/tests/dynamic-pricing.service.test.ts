@@ -52,8 +52,10 @@ describe('DynamicPricingService', () => {
         data: expect.objectContaining({
           eventId: 'evt-1',
           name: 'Early surge',
-          priceChangeType: 'PERCENTAGE',
-          priceChangeValue: 10,
+          discountType: 'PERCENTAGE',
+          discountValue: 10,
+          demandThreshold: 50,
+          organizerId: 'org-1',
         }),
       }),
     );

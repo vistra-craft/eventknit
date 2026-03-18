@@ -332,7 +332,8 @@ describe('usePermissions hooks', () => {
 
       expect(result.current.canCreateRole(UserRole.TELLER)).toBe(true);
       expect(result.current.canModifyUser(UserRole.TELLER)).toBe(true);
-      expect(result.current.canDeleteUser(UserRole.TELLER)).toBe(false);
+      // ADMIN can delete anyone except SUPERADMIN (per permissions.ts)
+      expect(result.current.canDeleteUser(UserRole.TELLER)).toBe(true);
     });
   });
 

@@ -229,6 +229,11 @@ describe('Workstation Concurrency Tests', () => {
         return;
       }
 
+      if (!redisAvailable) {
+        logger.info('⏭️  Skipping test - Redis not available (lock required for check-in)');
+        return;
+      }
+
       // Create multiple registrations with different attendees
       const registrations = await Promise.all(
         Array.from({ length: 5 }, async (_, i) => {
@@ -329,10 +334,10 @@ describe('Workstation Concurrency Tests', () => {
       );
 
       // Attempt simultaneous check-out from multiple devices
+      // checkOut signature: (registrationId, scannedBy, facility?, deviceId?, deviceType?, ...)
       const checkoutPromises = Array.from({ length: 3 }, (_, i) =>
         WorkstationService.checkOut(
-          testQRCode,
-          testEventId,
+          testRegistrationId,
           testUserId,
           'exit',
           `device-${i}`,
@@ -416,11 +421,24 @@ describe('Workstation Concurrency Tests', () => {
         return;
       }
 
-      // This test verifies that if Redis is unavailable, the system
-      // still works (though without distributed locking)
-      // The service should log a warning but proceed
+      if (!redisAvailable) {
+        // When Redis is unavailable, the service rejects scans (fail-hard)
+        // to prevent double check-ins. Verify the graceful rejection.
+        const result = await WorkstationService.scanTicket(
+          testQRCode,
+          testEventId,
+          testUserId,
+          'entrance',
+          'device-1',
+          'DESKTOP',
+        );
 
-      // Simulate by scanning normally
+        expect(result.success).toBe(false);
+        expect(result.errorCode).toBe('LOCK_FAILED');
+        return;
+      }
+
+      // When Redis is available, verify a normal scan succeeds
       const result = await WorkstationService.scanTicket(
         testQRCode,
         testEventId,
@@ -447,6 +465,11 @@ describe('Workstation Concurrency Tests', () => {
     it('should handle rapid sequential scans of different tickets', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      if (!redisAvailable) {
+        logger.info('⏭️  Skipping test - Redis not available (lock required for check-in)');
         return;
       }
 

@@ -89,6 +89,7 @@ describe('OnboardingController', () => {
 
       (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser as any);
       (prisma.user.update as vi.Mock).mockResolvedValue(mockUpdatedUser as any);
+      (prisma.user.findMany as vi.Mock).mockResolvedValue([]);
 
       await OnboardingController.completeOnboarding(
         req as AuthenticatedRequest,

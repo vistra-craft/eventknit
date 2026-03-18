@@ -51,6 +51,13 @@ vi.mock('../../../src/services/notification.service.js', () => ({
   },
 }));
 
+vi.mock('../../../src/services/websocket.service.js', () => ({
+  websocketService: {
+    emitToRoom: vi.fn(),
+    emitToUser: vi.fn(),
+  },
+}));
+
 vi.mock('../../../src/utils/ticket-helpers.js', () => ({
   isTicketTypeAvailable: vi.fn(() => ({ available: true })),
 }));
