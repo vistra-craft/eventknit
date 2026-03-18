@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { ExternalLink, MapPin } from "lucide-react";
+import { stripHtml } from "@/lib/utils";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -102,7 +104,7 @@ function ExhibitorCard({ exhibitor, onSeeMore }: { exhibitor: Exhibitor; onSeeMo
         )}
         {exhibitor.description && (
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed line-clamp-2">
-            {exhibitor.description}
+            {stripHtml(exhibitor.description || '')}
           </p>
         )}
         {exhibitor.website && (
@@ -182,7 +184,7 @@ function ExhibitorDialog({
             )}
           </div>
           {exhibitor.description && (
-            <p className="text-sm text-muted-foreground leading-relaxed">{exhibitor.description}</p>
+            <RichTextContent content={exhibitor.description || ''} className="text-sm text-muted-foreground leading-relaxed" />
           )}
           {exhibitor.website && (
             <div className="flex justify-center">

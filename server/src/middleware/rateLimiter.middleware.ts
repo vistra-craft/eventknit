@@ -90,5 +90,15 @@ export const guestPaymentRateLimiter = rateLimit({
   skip: skipRateLimit, // Skip rate limiting in test environment
 });
 
-
-
+/**
+ * Rate limiter for sensitive staff management operations
+ * Limits: 20 requests per 15 minutes per IP
+ */
+export const staffManagementRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  message: 'Too many staff management requests, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: skipRateLimit,
+});

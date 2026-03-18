@@ -114,6 +114,12 @@ describe('PaymentService', () => {
     mockReset(prisma);
     vi.clearAllMocks();
 
+    // Transaction mock — pass through to the same prisma mock so nested queries work
+    prisma.$transaction.mockImplementation((callback: any) => {
+      if (typeof callback === 'function') return callback(prisma);
+      return Promise.all(callback);
+    });
+
     // Reset all gateway mock methods
     const mockGateway = mockGatewayManager.getDefaultGateway();
     mockGateway.initializePayment.mockResolvedValue({
@@ -226,6 +232,7 @@ describe('PaymentService', () => {
 
     it('should initialize payment for valid registration', async () => {
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null); // No existing payment
       prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
       const mockGateway = mockGatewayManager.getDefaultGateway();
 
@@ -239,6 +246,7 @@ describe('PaymentService', () => {
 
     it('should throw error if registration not found', async () => {
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
       prisma.eventRegistration.findUnique.mockResolvedValue(null);
 
       // Act & Assert
@@ -250,6 +258,7 @@ describe('PaymentService', () => {
     it('should throw error if registration is not pending', async () => {
       // Service now validates registration.status === RegistrationStatus.PENDING
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
       const confirmedRegistration = {
         ...mockRegistration,
         status: RegistrationStatus.CONFIRMED,
@@ -264,6 +273,7 @@ describe('PaymentService', () => {
 
     it('should use event currency if not specified', async () => {
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
       prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
       const mockGateway = mockGatewayManager.getDefaultGateway();
 
@@ -285,6 +295,7 @@ describe('PaymentService', () => {
 
     it('should include event metadata in payment initialization', async () => {
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
       prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
       const mockGateway = mockGatewayManager.getDefaultGateway();
 
@@ -298,6 +309,90 @@ describe('PaymentService', () => {
           amount: expect.any(Number),
         }),
       );
+    });
+
+    it('should generate deterministic idempotency key without timestamp', async () => {
+      // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+
+      // Act
+      await paymentService.initializePayment(paymentData);
+
+      // Assert — idempotency check should use registrationId-amount (no Date.now)
+      expect(prisma.eventPaymentTransaction.findUnique).toHaveBeenCalledWith({
+        where: { idempotencyKey: `${paymentData.registrationId}-${paymentData.amount}` },
+      });
+    });
+
+    it('should return existing payment for duplicate idempotent request (success)', async () => {
+      // Arrange — existing successful payment with same idempotency key
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue({
+        id: 'txn-existing',
+        idempotencyKey: `${paymentData.registrationId}-${paymentData.amount}`,
+        gatewayReference: 'PAY-EXISTING',
+        gateway: 'PAYSTACK',
+        paymentStatus: 'success',
+      } as any);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+
+      // Act
+      const result = await paymentService.initializePayment(paymentData);
+
+      // Assert — returns existing payment, doesn't call gateway
+      expect(result.status).toBe('ALREADY_PAID');
+      expect(result.reference).toBe('PAY-EXISTING');
+      const mockGateway = mockGatewayManager.getDefaultGateway();
+      expect(mockGateway.initializePayment).not.toHaveBeenCalled();
+    });
+
+    it('should return pending status for duplicate idempotent request (pending)', async () => {
+      // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue({
+        id: 'txn-pending',
+        idempotencyKey: `${paymentData.registrationId}-${paymentData.amount}`,
+        gatewayReference: 'PAY-PENDING',
+        gateway: 'PAYSTACK',
+        paymentStatus: 'pending',
+      } as any);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+
+      // Act
+      const result = await paymentService.initializePayment(paymentData);
+
+      // Assert
+      expect(result.status).toBe('PENDING');
+      expect(result.reference).toBe('PAY-PENDING');
+    });
+
+    it('should use client-provided idempotency key when given', async () => {
+      // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+      const customKey = 'client-custom-key-12345';
+
+      // Act
+      await paymentService.initializePayment({
+        ...paymentData,
+        idempotencyKey: customKey,
+      });
+
+      // Assert
+      expect(prisma.eventPaymentTransaction.findUnique).toHaveBeenCalledWith({
+        where: { idempotencyKey: customKey },
+      });
+    });
+
+    it('should run idempotency check and registration lookup in a transaction', async () => {
+      // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+
+      // Act
+      await paymentService.initializePayment(paymentData);
+
+      // Assert — $transaction was called
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
 

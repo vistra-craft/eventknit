@@ -33,7 +33,7 @@ describe('Role Change API', () => {
     if (!dbConnected) return;
     await prisma.$transaction(async (tx) => {
       await cleanupTestData(tx);
-    });
+    }, { timeout: 15000 });
   });
 
   // ──────────────────────────────────────────────────────────────────────
@@ -333,7 +333,7 @@ describe('Role Change API', () => {
         .patch(`/api/v1/organizer/staff/${staffId}/role`)
         .set('Authorization', `Bearer ${organizerToken}`)
         .send({ role: UserRole.ADMIN })
-        .expect(403);
+        .expect(400);
     });
 
     it('should reject changing role to same role', async () => {

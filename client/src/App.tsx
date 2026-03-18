@@ -9,6 +9,7 @@ import { useAuth } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { GuestRoute } from "./components/GuestRoute";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { lazy, Suspense } from "react";
 import type { ComponentType, ReactNode } from "react";
 
@@ -52,6 +53,7 @@ const RoleViewWrapper = ({ children }: { children: ReactNode }) => {
 
 
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
@@ -71,15 +73,19 @@ const App = () => (
       } />
       {/* Organizer Routes */}
       <Route path="/organizer/*" element={
-        <Suspense fallback={<div className="min-h-screen bg-background" />}>
-          <OrganizerLayout />
-        </Suspense>
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <OrganizerLayout />
+          </Suspense>
+        </ProtectedRoute>
       } />
       {/* Admin Routes */}
       <Route path="/admin/*" element={
-        <Suspense fallback={<div className="min-h-screen bg-background" />}>
-          <AdminLayout />
-        </Suspense>
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <AdminLayout />
+          </Suspense>
+        </ProtectedRoute>
       } />
       {/* Auth Routes - Guest only (redirects authenticated users to dashboard) */}
       <Route path="/auth/*" element={
@@ -139,6 +145,7 @@ const App = () => (
     </ThemeProvider>
     <ReactQueryDevtools initialIsOpen={false} />
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

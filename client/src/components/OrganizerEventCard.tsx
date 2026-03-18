@@ -23,6 +23,7 @@ import {
 } from "./ui/dialog";
 import { Loader } from "./ui/loader";
 import { RichTextContent } from "./ui/RichTextContent";
+import { stripHtml } from "@/lib/utils";
 import { EventImage } from "./EventImage";
 import { getEventById } from "../lib/event-api";
 import type { EventData } from "../types/event";
@@ -474,7 +475,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
                             </div>
                           )}
                           {item.description && (
-                            <div className="text-xs text-muted-foreground mt-1">{item.description}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{stripHtml(item.description)}</div>
                           )}
                         </div>
                       ))}
@@ -491,7 +492,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
                         <div key={`${speaker.name}-${index}`} className="rounded-lg border border-border p-3">
                           <div className="font-medium">{speaker.name}</div>
                           {speaker.title && <div className="text-xs text-muted-foreground">{speaker.title}</div>}
-                          {speaker.bio && <div className="text-xs text-muted-foreground mt-1">{speaker.bio}</div>}
+                          {speaker.bio && <div className="text-xs text-muted-foreground mt-1">{stripHtml(speaker.bio)}</div>}
                         </div>
                       ))}
                     </div>
@@ -508,7 +509,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
                           <div className="font-medium">{sponsor.name}</div>
                           {sponsor.level && <div className="text-xs text-muted-foreground">{sponsor.level}</div>}
                           {sponsor.description && (
-                            <div className="text-xs text-muted-foreground mt-1">{sponsor.description}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{stripHtml(sponsor.description)}</div>
                           )}
                         </div>
                       ))}
@@ -528,7 +529,7 @@ const OrganizerEventCard = ({ event }: EventCardProps) => {
                             <div className="text-xs text-muted-foreground">Booth {exhibitor.booth}</div>
                           )}
                           {exhibitor.description && (
-                            <div className="text-xs text-muted-foreground mt-1">{exhibitor.description}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{stripHtml(exhibitor.description)}</div>
                           )}
                         </div>
                       ))}

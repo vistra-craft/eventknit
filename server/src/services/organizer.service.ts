@@ -996,30 +996,51 @@ export class OrganizerService {
    * Get organizer events with dashboard data
    */
   static async getDashboardEvents(
-    organizerId: string,
-    organizerRole: UserRole,
+    userId: string,
+    userRole: UserRole,
     filters?: {
       page?: number;
       limit?: number;
     },
   ) {
-    // Validate organizer can view dashboard
-    if (organizerRole !== UserRole.ORGANIZER &&
-      organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN) {
-      throw new AuthorizationError('Only organizers can view dashboard');
+    // Validate user can view dashboard
+    const allowedRoles: UserRole[] = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_TELLER,
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN,
+    ];
+    if (!allowedRoles.includes(userRole)) {
+      throw new AuthorizationError('You do not have permission to view dashboard');
     }
 
     const limit = filters?.limit || 12; // Default 12 for infinite scroll
     const page = filters?.page || 1;
     const skip = (page - 1) * limit;
 
+    // For staff roles, find events they are assigned to via EventStaff
+    let where: Record<string, unknown>;
+    if (userRole === UserRole.ORGANIZER_ADMIN || userRole === UserRole.ORGANIZER_TELLER) {
+      const assignments = await prisma.eventStaff.findMany({
+        where: { staffId: userId, isActive: true },
+        select: { eventId: true },
+      });
+      const assignedEventIds = assignments.map(a => a.eventId);
+      where = {
+        id: { in: assignedEventIds },
+        deletedAt: null,
+      };
+    } else {
+      where = {
+        organizerId: userId,
+        deletedAt: null,
+      };
+    }
+
     const [events, total] = await Promise.all([
       prisma.event.findMany({
-        where: {
-          organizerId,
-          deletedAt: null,
-        },
+        where,
         include: {
           organizer: {
             select: {
@@ -1043,12 +1064,7 @@ export class OrganizerService {
         take: limit,
         skip,
       }),
-      prisma.event.count({
-        where: {
-          organizerId,
-          deletedAt: null,
-        },
-      }),
+      prisma.event.count({ where }),
     ]);
 
     // Transform events with dashboard data
@@ -1141,8 +1157,8 @@ export class OrganizerService {
    * Now supports ATTENDEE users who have created events (pending approval)
    */
   static async getOrganizerEvents(
-    organizerId: string,
-    organizerRole: UserRole,
+    userId: string,
+    userRole: UserRole,
     filters: {
       status?: string;
       category?: string;
@@ -1153,21 +1169,33 @@ export class OrganizerService {
       upcoming?: boolean; // true for upcoming, false for past
     } = {},
   ) {
-    // Validate user can view events they created
-    // Allow ATTENDEE (who created pending events), ORGANIZER, and admin roles
-    if (organizerRole !== UserRole.ATTENDEE &&
-      organizerRole !== UserRole.ORGANIZER &&
-      organizerRole !== UserRole.ORGANIZER_ADMIN &&
-      organizerRole !== UserRole.ORGANIZER_TELLER &&
-      organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN) {
+    // Validate user can view events they created or are assigned to
+    // Allow ATTENDEE (who created pending events), ORGANIZER, staff, and admin roles
+    const allowedRoles: UserRole[] = [
+      UserRole.ATTENDEE,
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_TELLER,
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN,
+    ];
+    if (!allowedRoles.includes(userRole)) {
       throw new AuthorizationError('You do not have permission to view events');
     }
 
-    const where: Record<string, unknown> = {
-      organizerId,
-      deletedAt: null,
-    };
+    // For staff roles, find events they are assigned to via EventStaff
+    const where: Record<string, unknown> = {};
+    if (userRole === UserRole.ORGANIZER_ADMIN || userRole === UserRole.ORGANIZER_TELLER) {
+      const assignments = await prisma.eventStaff.findMany({
+        where: { staffId: userId, isActive: true },
+        select: { eventId: true },
+      });
+      const assignedEventIds = assignments.map(a => a.eventId);
+      where.id = { in: assignedEventIds };
+    } else {
+      where.organizerId = userId;
+    }
+    where.deletedAt = null;
 
     if (filters.status) {
       where.status = filters.status;

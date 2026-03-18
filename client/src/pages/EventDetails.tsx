@@ -336,13 +336,14 @@ const EventDetails = () => {
               </div>
 
               {/* About Section */}
-              <section className="pt-8 pb-8 border-b border-border/40">
-                <h2 className="text-page-title mb-4">About This Event</h2>
-                {(() => {
-                  const descriptionContent = event.fullDescription || event.description || '<p>No description available.</p>';
-                  const textLength = descriptionContent.replace(/<[^>]*>/g, '').trim().length;
-                  const shouldTruncate = textLength > 300;
-                  return (
+              {(() => {
+                const descriptionContent = event.fullDescription || event.description || '';
+                const textLength = descriptionContent.replace(/<[^>]*>/g, '').trim().length;
+                if (textLength === 0) return null;
+                const shouldTruncate = textLength > 300;
+                return (
+                  <section className="pt-8 pb-8 border-b border-border/40">
+                    <h2 className="text-page-title mb-4">About This Event</h2>
                     <div className="space-y-2">
                       <div className={shouldTruncate && !isDescriptionExpanded ? "line-clamp-4" : ""}>
                         <RichTextContent
@@ -371,9 +372,9 @@ const EventDetails = () => {
                         </Button>
                       )}
                     </div>
-                  );
-                })()}
-              </section>
+                  </section>
+                );
+              })()}
 
               {/* Event Schedule */}
               {(() => {

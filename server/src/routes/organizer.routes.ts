@@ -6,6 +6,7 @@ import { InvoiceController } from '../controllers/invoice.controller.js';
 import { WhiteLabelController } from '../controllers/white-label.controller.js';
 import { StaffInvitationController } from '../controllers/staff-invitation.controller.js';
 import { staffInvitationValidations } from '../validations/staff-invitation.validations.js';
+import { organizerValidations } from '../validations/organizer.validations.js';
 import { RefundService } from '../services/refund.service.js';
 import { EventService } from '../services/event.service.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
@@ -14,6 +15,7 @@ import { AuthorizationError, NotFoundError } from '../utils/errors.js';
 import { UserRole } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
+import { staffManagementRateLimiter } from '../middleware/rateLimiter.middleware.js';
 import {
   createBrandingSchema,
   createCustomDomainSchema,
@@ -39,7 +41,7 @@ const canManageStaffMiddleware = (req: AuthenticatedRequest, res: Response, next
  * @desc    Create staff member
  * @access  Private (ORGANIZER+)
  */
-router.post('/staff', canManageStaffMiddleware, OrganizerController.createStaff);
+router.post('/staff', staffManagementRateLimiter, canManageStaffMiddleware, validate(organizerValidations.createStaff), OrganizerController.createStaff);
 
 /**
  * @route   GET /api/v1/organizer/staff
@@ -53,7 +55,7 @@ router.get('/staff', canManageStaffMiddleware, OrganizerController.getStaff);
  * @desc    Get all staff assignments for organizer's events
  * @access  Private (ORGANIZER+)
  */
-router.get('/staff/assignments', EventStaffController.getOrganizerStaffAssignments);
+router.get('/staff/assignments', canManageStaffMiddleware, EventStaffController.getOrganizerStaffAssignments);
 
 /**
  * @route   GET /api/v1/organizer/staff/:id
@@ -74,7 +76,14 @@ router.put('/staff/:id', canManageStaffMiddleware, OrganizerController.updateSta
  * @desc    Change staff member's role (with session revocation, email notification, and audit trail)
  * @access  Private (ORGANIZER+)
  */
-router.patch('/staff/:id/role', canManageStaffMiddleware, OrganizerController.changeStaffRole);
+router.patch(
+  '/staff/:id/role',
+  staffManagementRateLimiter,
+  canManageStaffMiddleware,
+  validateParams(organizerValidations.staffIdParam),
+  validate(organizerValidations.changeStaffRole),
+  OrganizerController.changeStaffRole,
+);
 
 /**
  * @route   DELETE /api/v1/organizer/staff/:id
@@ -88,7 +97,7 @@ router.delete('/staff/:id', canManageStaffMiddleware, OrganizerController.delete
  * @desc    Deactivate staff member
  * @access  Private (ORGANIZER+)
  */
-router.post('/staff/:id/deactivate', canManageStaffMiddleware, OrganizerController.deactivateStaff);
+router.post('/staff/:id/deactivate', staffManagementRateLimiter, canManageStaffMiddleware, OrganizerController.deactivateStaff);
 
 /**
  * @route   GET /api/v1/organizer/dashboard/stats

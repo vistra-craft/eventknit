@@ -60,20 +60,19 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Textarea } from "../../components/ui/textarea";
 import { Switch } from "../../components/ui/switch";
-import { ConsentStatisticsCard } from "../../components/organizer/ConsentStatisticsCard";
+import { EventOverviewTab } from "../../components/organizer/EventOverviewTab";
 import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTierBadge";
 import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
 import BackButton from "@/components/BackButton";
 import { EventSeatMapManager } from "@/components/organizer/EventSeatMapManager";
 import { SeatManagementDashboard } from "@/components/organizer/SeatManagementDashboard";
-import { SeatAllocationOverviewCard } from "@/components/organizer/SeatAllocationOverviewCard";
-import { SeatAllocationByTypeCard } from "@/components/organizer/SeatAllocationByTypeCard";
 import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
 import { exportAttendees, quickRegisterAttendee } from "../../lib/attendee-import-api";
 import type { QuickRegisterRequest } from "../../lib/attendee-import-api";
 import { getEventResaleStats, getEventResaleListings, getEventTransferStats, getEventTransferHistory, type ResaleStats, type ResaleListing, type TransferStats, type TransferRecord, getEventScanOverview, getEventScanHistory, getEventScanAttendees, updateEventScanConfig, type OrganizerScanConfig, type OrganizerScanStatistics, type OrganizerScanRecord, type OrganizerScanAttendee } from "../../lib/organizer-dashboard-api";
 import { extractErrorMessage, showErrorToast } from "../../lib/utils/error";
+import { stripHtml } from "@/lib/utils";
 import { updateEvent } from "../../lib/event-api";
 
 // Ticket type with all fields (including ones not in EventData type)
@@ -332,13 +331,14 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
         if (summaryRes.success && summaryRes.data) {
           setRefundSummary(summaryRes.data);
         }
-      } catch {
-        // Silently fail — empty state will show
+      } catch (err) {
+        showErrorToast(toast, err, 'Load failed', 'Failed to load refund data.');
       } finally {
         setRefundsLoading(false);
       }
     };
     fetchRefunds();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, activeSection, refundStatusFilter]);
 
   // Fetch invitations when the invitations tab is active (lazy loading)
@@ -351,13 +351,14 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
         if (response.success && response.data) {
           setInvitations(response.data.invitations || []);
         }
-      } catch {
-        // Silently fail — empty state will show
+      } catch (err) {
+        showErrorToast(toast, err, 'Load failed', 'Failed to load invitations.');
       } finally {
         setInvitationsLoading(false);
       }
     };
     fetchInvitations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId, activeSection]);
 
   // Fetch resale & transfer data when the tab is active (lazy loading)
@@ -549,9 +550,8 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
     availableUntil: form.availableUntil || undefined,
   });
 
-  const refreshEventData = (updatedEvent: Record<string, unknown>) => {
-    const normalized = { ...updatedEvent, timezone: (updatedEvent.timezone as string | null) ?? undefined };
-    setEventData(transformEventData(normalized as Parameters<typeof transformEventData>[0]));
+  const refreshEventData = (updatedEvent: Parameters<typeof transformEventData>[0]) => {
+    setEventData(transformEventData(updatedEvent));
   };
 
   const handleSaveTicket = async () => {
@@ -579,7 +579,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
       setSavingTicket(true);
       const response = await updateEvent(eventId, { ticketTypes: newTicketTypes } as Parameters<typeof updateEvent>[1]);
       if (response.success && response.data) {
-        refreshEventData(response.data.event as unknown as Record<string, unknown>);
+        refreshEventData(response.data.event);
         setTicketSheetOpen(false);
         toast({ title: 'Saved', description: editingTicketIndex === null ? 'New ticket type added.' : 'Ticket type updated.' });
       }
@@ -598,7 +598,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
       setSavingTicket(true);
       const response = await updateEvent(eventId, { ticketTypes: newTicketTypes } as Parameters<typeof updateEvent>[1]);
       if (response.success && response.data) {
-        refreshEventData(response.data.event as unknown as Record<string, unknown>);
+        refreshEventData(response.data.event);
         toast({ title: 'Archived', description: 'Ticket is now hidden from new purchases.' });
       }
     } catch (err) {
@@ -616,7 +616,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
       setSavingTicket(true);
       const response = await updateEvent(eventId, { ticketTypes: newTicketTypes } as Parameters<typeof updateEvent>[1]);
       if (response.success && response.data) {
-        refreshEventData(response.data.event as unknown as Record<string, unknown>);
+        refreshEventData(response.data.event);
         toast({ title: 'Removed', description: 'Ticket type removed.' });
       }
     } catch (err) {
@@ -1597,7 +1597,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                         <div>
                           <p className="font-medium">{sponsor.name}</p>
                           {sponsor.level && <p className="text-sm text-muted-foreground">{sponsor.level}</p>}
-                          {sponsor.description && <p className="text-xs text-muted-foreground line-clamp-1">{sponsor.description}</p>}
+                          {sponsor.description && <p className="text-xs text-muted-foreground line-clamp-1">{stripHtml(sponsor.description)}</p>}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -2070,200 +2070,29 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
       case "overview":
       default:
         return (
-          <div className="space-y-6">
-            {/* Key Metrics - Cleaner presentation */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="border-l-4 border-l-primary">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase">Attendees</p>
-                      <p className="text-2xl font-bold text-primary mt-1">{apiData.attendees.length}</p>
-                      <p className="text-xs text-muted-foreground mt-1">of {eventData.capacity || '∞'}</p>
-                    </div>
-                    <Users className="w-10 h-10 text-primary/60" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-l-4 border-l-success">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase">Revenue</p>
-                      <p className="text-2xl font-bold text-success mt-1">
-                        ${hasPaymentDetailsAccess
-                          ? (apiData.attendees.reduce((sum: number, a) => sum + (Number(a.totalAmount) || 0), 0)).toLocaleString()
-                          : '---'}
-                      </p>
-                    </div>
-                    <DollarSign className="w-10 h-10 text-success/60" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-l-4 border-l-primary">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase">Fill Rate</p>
-                      <p className="text-2xl font-bold text-primary mt-1">
-                        {eventData.capacity && eventData.capacity > 0
-                          ? ((apiData.attendees.length / eventData.capacity) * 100).toFixed(0)
-                          : 0}%
-                      </p>
-                    </div>
-                    <Target className="w-10 h-10 text-primary/60" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-l-4 border-l-amber-500">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground uppercase">Pending</p>
-                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{pendingAttendees}</p>
-                      <p className="text-xs text-muted-foreground mt-1">registrations</p>
-                    </div>
-                    <Clock className="w-10 h-10 text-amber-600/60 dark:text-amber-400/60" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Pending Actions Alert */}
-            {(pendingAttendees > 0 || (refunds.length > 0 && refunds.filter(r => r.status === 'pending').length > 0)) && (
-              <Alert className="border-amber-500/50 bg-amber-500/5 dark:bg-amber-950/20">
-                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                <AlertDescription>
-                  <div className="space-y-2">
-                    <p className="font-semibold text-amber-900 dark:text-amber-100">Pending Actions</p>
-                    {pendingAttendees > 0 && (
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-amber-800 dark:text-amber-200">
-                          {pendingAttendees} registration{pendingAttendees !== 1 ? 's' : ''} need{pendingAttendees === 1 ? 's' : ''} confirmation
-                        </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="shrink-0"
-                          onClick={() => setActiveSection('attendees')}
-                        >
-                          Review
-                        </Button>
-                      </div>
-                    )}
-                    {refunds.filter(r => r.status === 'pending').length > 0 && (
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-amber-800 dark:text-amber-200">
-                          {refunds.filter(r => r.status === 'pending').length} refund request{refunds.filter(r => r.status === 'pending').length !== 1 ? 's' : ''} waiting for review
-                        </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="shrink-0"
-                          onClick={() => setActiveSection('refunds')}
-                        >
-                          Review
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Seat Allocation Cards - Show if event has seating */}
-            {eventData.hasSeatMap && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <SeatAllocationOverviewCard eventId={eventId!} />
-                <SeatAllocationByTypeCard eventId={eventId!} />
-              </div>
-            )}
-
-            {/* Secondary Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Mic className="w-8 h-8 text-muted-foreground/60" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Speakers</p>
-                      <p className="text-xl font-semibold">{apiData.speakers.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="w-8 h-8 text-success/60" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Confirmed</p>
-                      <p className="text-xl font-semibold">{confirmedAttendees}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Star className="w-8 h-8 text-muted-foreground/60" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Sponsors</p>
-                      <p className="text-xl font-semibold">{apiData.sponsors.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Recent Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {apiData.attendees.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No recent activity</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {apiData.attendees.slice(0, 5).map((attendee, idx) => (
-                      <div key={idx} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <Users className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{attendee.name} registered</p>
-                          <p className="text-xs text-muted-foreground">{attendee.ticketType}</p>
-                        </div>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {attendee.registeredDate}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Consent Statistics Section */}
-            {!subscriptionLoading && eventId && (
-              <ConsentStatisticsCard 
-                eventId={eventId} 
-                subscriptionTier={subscription?.tier}
-              />
-            )}
-          </div>
+          <EventOverviewTab
+            eventData={{
+              capacity: eventData.capacity,
+              hasSeatMap: eventData.hasSeatMap ?? undefined,
+              currency: eventData.currency ?? undefined,
+              ticketTypes: eventData.ticketTypes ?? undefined,
+              speakers: eventData.speakers ?? undefined,
+              sponsors: eventData.sponsors ?? undefined,
+              startDate: eventData.startDate,
+              endDate: eventData.endDate ?? undefined,
+              status: eventData.status,
+            }}
+            attendees={apiData.attendees}
+            hasPaymentDetailsAccess={hasPaymentDetailsAccess}
+            pendingAttendees={pendingAttendees}
+            confirmedAttendees={confirmedAttendees}
+            totalRevenue={totalRevenue}
+            refunds={refunds}
+            subscription={subscription}
+            subscriptionLoading={subscriptionLoading}
+            eventId={eventId!}
+            onNavigate={setActiveSection}
+          />
         );
 
       case "communication":
@@ -3566,7 +3395,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                           )}
                         </div>
                         <p className="text-sm font-medium mt-1">{item.title}</p>
-                        {item.description && <p className="text-xs text-muted-foreground">{item.description}</p>}
+                        {item.description && <p className="text-xs text-muted-foreground">{stripHtml(item.description)}</p>}
                       </div>
                     ))}
                   </div>

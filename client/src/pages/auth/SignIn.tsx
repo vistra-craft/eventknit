@@ -12,6 +12,7 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import BackButton from '@/components/BackButton';
 import Logo from '@/components/Logo';
 import { requestEmailOAuthCode, verifyEmailOAuthCode, googleAuth, appleAuth } from '@/lib/auth-api';
+import { extractErrorMessage } from '@/lib/utils/error';
 import loginImage from '@/assets/login.jpeg';
 
 const SignIn = () => {
@@ -84,12 +85,7 @@ const SignIn = () => {
       await login(formData.email, formData.password, rememberMe);
       // Navigation is handled by the useAuth hook
     } catch (error: unknown) {
-      // Extract error message and store locally so it can't be cleared
-      // by concurrent auth state changes (e.g., initAuth's refreshProfile failing)
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Invalid email or password. Please try again.';
-      setLoginError(errorMessage);
+      setLoginError(extractErrorMessage(error, 'Invalid email or password. Please try again.'));
     }
   };
 
@@ -107,7 +103,7 @@ const SignIn = () => {
       }
       const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
       if (!clientId) {
-        console.error('Google Client ID not configured');
+        setLoginError('Google sign-in is not configured. Please try another method.');
         return;
       }
       const tokenClient = window.google!.accounts.oauth2.initTokenClient({
@@ -123,18 +119,18 @@ const SignIn = () => {
               redirectAfterLogin(result.data.user.role);
             }
           } catch (error: unknown) {
-            console.error('Google login error:', error);
+            setLoginError(extractErrorMessage(error, 'Google sign-in failed. Please try again.'));
           }
         },
         error_callback: (err) => {
           if (err.type !== 'popup_closed') {
-            console.error('Google sign in error:', err);
+            setLoginError('Google sign-in was interrupted. Please try again.');
           }
         },
       });
       tokenClient.requestAccessToken();
     } catch (error: unknown) {
-      console.error('Google sign in error:', error);
+      setLoginError(extractErrorMessage(error, 'Google sign-in failed. Please try again.'));
     }
   };
 
@@ -153,7 +149,7 @@ const SignIn = () => {
       }
       const clientId = import.meta.env.VITE_APPLE_CLIENT_ID || '';
       if (!clientId) {
-        console.error('Apple Client ID not configured');
+        setLoginError('Apple sign-in is not configured. Please try another method.');
         return;
       }
       window.AppleID?.auth.init({
@@ -176,10 +172,10 @@ const SignIn = () => {
           redirectAfterLogin(result.data.user.role);
         }
       } catch (error: unknown) {
-        console.error('Apple login error:', error);
+        setLoginError(extractErrorMessage(error, 'Apple sign-in failed. Please try again.'));
       }
     } catch (error: unknown) {
-      console.error('Apple sign in error:', error);
+      setLoginError(extractErrorMessage(error, 'Apple sign-in failed. Please try again.'));
     }
   };
 
@@ -195,8 +191,7 @@ const SignIn = () => {
       await requestEmailOAuthCode(emailOAuthEmail, emailOAuthRole);
       setEmailOAuthCodeSent(true);
     } catch (error: unknown) {
-      console.error('Email OAuth code request error:', error);
-      clearError();
+      setLoginError(extractErrorMessage(error, 'Failed to send sign-in code. Please try again.'));
     }
   };
 
@@ -216,8 +211,7 @@ const SignIn = () => {
         redirectAfterLogin(result.data.user.role);
       }
     } catch (error: unknown) {
-      console.error('Email OAuth verification error:', error);
-      clearError();
+      setLoginError(extractErrorMessage(error, 'Verification failed. Please check your code and try again.'));
     }
   };
 

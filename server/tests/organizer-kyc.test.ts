@@ -1056,4 +1056,112 @@ describe('Organizer Dashboard - KYC API', () => {
       await prisma.user.deleteMany({ where: { id: otherOrg.id } });
     });
   });
+
+  // ── Input validation tests for KYC endpoints ──
+
+  describe('POST /api/v1/organizer-dashboard/kyc/entity-type - Validation', () => {
+    it('should reject invalid entity type value', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/entity-type')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ entityType: 'INVALID_TYPE' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject missing entity type', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/entity-type')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({})
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('POST /api/v1/organizer-dashboard/kyc/documents - Validation', () => {
+    it('should reject missing document type', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/documents')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({})
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject invalid document URL', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/documents')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          documentType: 'NATIONAL_ID',
+          documentUrl: 'not-a-valid-url',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('POST /api/v1/organizer-dashboard/kyc/directors - Validation', () => {
+    it('should reject missing required fields', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/directors')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ fullName: 'John Doe' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject invalid share percentage', async () => {
+      if (!dbConnected) {
+        console.log('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/organizer-dashboard/kyc/directors')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          fullName: 'John Doe',
+          nationality: 'Kenyan',
+          dateOfBirth: '1990-01-15',
+          documentType: 'NATIONAL_ID',
+          documentNumber: '12345678',
+          sharePercentage: 150,
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
 });

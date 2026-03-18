@@ -12,6 +12,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { RichTextContent } from './ui/RichTextContent';
+import { stripHtml } from '@/lib/utils';
 import { Loader } from './ui/loader';
 import { getOrganizerEventById } from '../lib/organizer-api';
 import type { OrganizingEvent } from '../hooks/useMyEvents';
@@ -486,7 +487,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete, context = 'at
                             </div>
                           )}
                           {item.description && (
-                            <div className="text-xs text-muted-foreground mt-1">{item.description}</div>
+                            <div className="text-xs text-muted-foreground mt-1">{stripHtml(item.description)}</div>
                           )}
                         </div>
                       ))}
@@ -517,7 +518,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete, context = 'at
                           <div className="min-w-0">
                             <div className="font-medium">{speaker.name}</div>
                             {speaker.title && <div className="text-xs text-muted-foreground">{speaker.title}</div>}
-                            {speaker.bio && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{speaker.bio}</div>}
+                            {speaker.bio && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{stripHtml(speaker.bio)}</div>}
                           </div>
                         </div>
                       ))}
@@ -550,7 +551,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete, context = 'at
                           <div className="min-w-0">
                             <div className="font-medium">{sponsor.name}</div>
                             {sponsor.level && <div className="text-xs text-muted-foreground">{sponsor.level}</div>}
-                            {sponsor.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{sponsor.description}</div>}
+                            {sponsor.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{stripHtml(sponsor.description)}</div>}
                           </div>
                         </div>
                       ))}
@@ -583,7 +584,7 @@ const OrganizingEventCardComponent = ({ event, onManage, onDelete, context = 'at
                           <div className="min-w-0">
                             <div className="font-medium">{exhibitor.name}</div>
                             {exhibitor.booth && <div className="text-xs text-muted-foreground">Booth {exhibitor.booth}</div>}
-                            {exhibitor.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{exhibitor.description}</div>}
+                            {exhibitor.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{stripHtml(exhibitor.description)}</div>}
                           </div>
                         </div>
                       ))}

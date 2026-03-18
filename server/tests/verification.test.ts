@@ -47,7 +47,7 @@ describe('Verification Service', () => {
     // Clean up test data
     await prisma.$transaction(async (tx: any) => {
       await cleanupTestData(tx);
-    });
+    }, { timeout: 15000 });
 
     // Create test organizer
     const organizerPassword = await hashPassword('Organizer123!@$');

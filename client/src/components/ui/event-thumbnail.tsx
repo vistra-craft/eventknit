@@ -54,19 +54,11 @@ const EventThumbnail = React.forwardRef<HTMLDivElement, EventThumbnailProps>(
             {!imageLoaded && (
               <div className="absolute inset-0 bg-muted animate-pulse" />
             )}
-            {/* Blurred background fill */}
-            <img
-              src={src || undefined}
-              alt=""
-              aria-hidden
-              className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl opacity-60 pointer-events-none select-none"
-            />
-            {/* Main image — fully visible */}
             <img
               src={src || undefined}
               alt={alt || "Event thumbnail"}
               className={cn(
-                "absolute inset-0 w-full h-full object-contain transition-opacity duration-200",
+                "absolute inset-0 w-full h-full object-cover transition-opacity duration-200",
                 imageLoaded ? "opacity-100" : "opacity-0"
               )}
               onLoad={() => setImageLoaded(true)}

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { ExternalLink, Linkedin, Twitter } from "lucide-react";
+import { stripHtml } from "@/lib/utils";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import {
   Dialog,
   DialogContent,
@@ -69,7 +71,7 @@ function SpeakerCard({ speaker, onSeeMore }: { speaker: Speaker; onSeeMore: () =
         )}
         {speaker.bio && (
           <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-            {speaker.bio}
+            {stripHtml(speaker.bio || '')}
           </p>
         )}
         <SocialLinks speaker={speaker} className="mt-2" />
@@ -122,7 +124,7 @@ function SpeakerDialog({
             </p>
           )}
           {speaker.bio && (
-            <p className="text-sm text-muted-foreground leading-relaxed">{speaker.bio}</p>
+            <RichTextContent content={speaker.bio || ''} className="text-sm text-muted-foreground leading-relaxed" />
           )}
           <SocialLinks speaker={speaker} className="justify-center" />
         </div>

@@ -15,6 +15,9 @@ vi.mock('../../../src/config/database.js', () => ({
       findMany: vi.fn(),
       count: vi.fn(),
     },
+    eventStaff: {
+      findMany: vi.fn(),
+    },
   },
 }));
 vi.mock('../../../src/utils/logger.js');
@@ -191,6 +194,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
 
   describe('ORGANIZER_ADMIN role authorization', () => {
     it('should allow ORGANIZER_ADMIN users to fetch organizer events', async () => {
+      prismaMock.eventStaff.findMany.mockResolvedValue([{ eventId: 'event-1' }]);
       prismaMock.event.findMany.mockResolvedValue(mockEvents);
       prismaMock.event.count.mockResolvedValue(1);
 
@@ -209,6 +213,7 @@ describe('OrganizerService.getOrganizerEvents - Authorization', () => {
 
   describe('ORGANIZER_TELLER role authorization', () => {
     it('should allow ORGANIZER_TELLER users to fetch events', async () => {
+      prismaMock.eventStaff.findMany.mockResolvedValue([{ eventId: 'event-1' }]);
       prismaMock.event.findMany.mockResolvedValue(mockEvents);
       prismaMock.event.count.mockResolvedValue(1);
 

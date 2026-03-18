@@ -272,103 +272,112 @@ export class TicketService {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Registration Confirmed - ${eventTitle}</title>
       </head>
-      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-        <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f5f5f5;">
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
           <tr>
             <td align="center" style="padding: 40px 20px;">
-              <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <table role="presentation" style="max-width: 560px; width: 100%; border-collapse: collapse;">
 
                 <!-- Header -->
                 <tr>
-                  <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">🎉 You're registered!</h1>
-                    <p style="margin: 10px 0 0 0; color: #ffffff; font-size: 16px; opacity: 0.9;">EventKnit</p>
+                  <td style="padding: 0 0 24px 0;">
+                    <p style="margin: 0; color: #1a1a1a; font-size: 14px; font-weight: 600; letter-spacing: -0.2px;">EventKnit</p>
                   </td>
                 </tr>
 
-                <!-- Confirmation Banner -->
+                <!-- Confirmation -->
                 <tr>
-                  <td style="padding: 25px 30px; background-color: #f0f9ff; border-bottom: 1px solid #e0e7ff; text-align: center;">
-                    <p style="margin: 0 0 6px 0; color: #1e40af; font-size: 16px; font-weight: 600;">✅ Registration confirmed, ${attendeeFirstName}!</p>
-                    <p style="margin: 0; color: #3b82f6; font-size: 14px;">Your ticket with QR code is being prepared and will arrive in a separate email shortly.</p>
+                  <td style="padding: 0 0 8px 0;">
+                    <h1 style="margin: 0; color: #1a1a1a; font-size: 24px; font-weight: 700; line-height: 1.3;">You're registered, ${attendeeFirstName}.</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 0 0 28px 0;">
+                    <p style="margin: 0; color: #666666; font-size: 15px; line-height: 1.5;">Your spot is confirmed. A separate email with your ticket and QR code will arrive shortly.</p>
                   </td>
                 </tr>
 
                 ${eventImage ? `
                 <tr>
-                  <td style="padding: 0;">
-                    <img src="${eventImage}" alt="${eventTitle}" style="width: 100%; height: 180px; object-fit: cover; display: block;">
+                  <td style="padding: 0 0 24px 0;">
+                    <img src="${eventImage}" alt="${eventTitle}" style="width: 100%; height: 180px; object-fit: cover; display: block; border-radius: 8px;">
                   </td>
                 </tr>
                 ` : ''}
 
                 <!-- Event Details -->
                 <tr>
-                  <td style="padding: 30px;">
-                    <h2 style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 22px; font-weight: 700;">${eventTitle}</h2>
-                    <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px;">
-                      <table role="presentation" style="width: 100%; border-collapse: collapse;">
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-size: 14px; width: 120px;">📅 Date</td>
-                          <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${dateTime}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-size: 14px;">📍 Location</td>
-                          <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${venue}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-size: 14px;">👤 Attendee</td>
-                          <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${attendeeName}</td>
-                        </tr>
-                        <tr>
-                          <td style="padding: 8px 0; color: #666; font-size: 14px;">🎫 Ticket</td>
-                          <td style="padding: 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">${ticketType || 'General Admission'} × ${quantity}</td>
-                        </tr>
-                      </table>
-                    </div>
+                  <td style="padding: 0 0 28px 0;">
+                    <h2 style="margin: 0 0 16px 0; color: #1a1a1a; font-size: 18px; font-weight: 700;">${eventTitle}</h2>
+                    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                      <tr>
+                        <td style="padding: 6px 0; color: #999999; font-size: 13px; width: 90px; vertical-align: top;">Date</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-size: 14px;">${dateTime}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #999999; font-size: 13px; vertical-align: top;">Location</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-size: 14px;">${venue}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #999999; font-size: 13px; vertical-align: top;">Attendee</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-size: 14px;">${attendeeName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #999999; font-size: 13px; vertical-align: top;">Ticket</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-size: 14px;">${ticketType || 'General Admission'} × ${quantity}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 0 0 24px 0;">
+                    <div style="border-top: 1px solid #e5e5e5;"></div>
                   </td>
                 </tr>
 
                 <!-- What Happens Next -->
                 <tr>
-                  <td style="padding: 0 30px 30px 30px;">
-                    <div style="background-color: #fefce8; border-radius: 8px; padding: 20px; border: 1px solid #fde68a;">
-                      <h3 style="margin: 0 0 12px 0; color: #92400e; font-size: 16px; font-weight: 700;">📬 What happens next?</h3>
-                      <p style="margin: 0 0 8px 0; color: #78350f; font-size: 14px;">1. Your ticket with QR code will arrive in a <strong>second email</strong> within a few minutes.</p>
-                      <p style="margin: 0 0 8px 0; color: #78350f; font-size: 14px;">2. Save the QR code or backup code — you'll need it at the entrance.</p>
-                      <p style="margin: 0; color: #78350f; font-size: 14px;">3. You can also view your ticket anytime at:</p>
-                      <div style="margin-top: 12px; text-align: center;">
-                        <a href="${config.frontend.url}/user/tickets/${registrationId}" style="display: inline-block; background-color: #667eea; color: #ffffff; text-decoration: none; padding: 10px 22px; border-radius: 6px; font-weight: 600; font-size: 14px;">View My Ticket</a>
-                      </div>
-                    </div>
+                  <td style="padding: 0 0 24px 0;">
+                    <p style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">What happens next</p>
+                    <p style="margin: 0 0 6px 0; color: #666666; font-size: 14px; line-height: 1.6;">1. Your ticket with QR code arrives in a <strong style="color: #1a1a1a;">second email</strong> within a few minutes.</p>
+                    <p style="margin: 0 0 6px 0; color: #666666; font-size: 14px; line-height: 1.6;">2. Save the QR code or backup code — you'll need it at the entrance.</p>
+                    <p style="margin: 0 0 16px 0; color: #666666; font-size: 14px; line-height: 1.6;">3. You can also view your ticket anytime online.</p>
+                    <a href="${config.frontend.url}/user/tickets/${registrationId}" style="display: inline-block; background-color: #1a8cff; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px;">View My Ticket</a>
                   </td>
                 </tr>
 
                 ${accountInvitationToken ? `
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 0 0 24px 0;">
+                    <div style="border-top: 1px solid #e5e5e5;"></div>
+                  </td>
+                </tr>
+
                 <!-- Account Setup -->
                 <tr>
-                  <td style="padding: 0 30px 30px 30px;">
-                    <div style="background-color: #fff7ed; border-radius: 12px; padding: 25px; border: 1px solid #ffedd5; text-align: center;">
-                      <h3 style="margin: 0 0 10px 0; color: #9a3412; font-size: 18px; font-weight: 700;">Complete Your Account Setup</h3>
-                      <p style="margin: 0 0 20px 0; color: #c2410c; font-size: 14px; line-height: 1.5;">
-                        Set up your password to manage your tickets, view event history, and register for future events with one click.
-                      </p>
-                      <a href="${config.frontend.url}/auth/create-account?token=${accountInvitationToken}" style="display: inline-block; background-color: #ea580c; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 700; font-size: 15px;">
-                        Set Up Password
-                      </a>
-                      <p style="margin: 15px 0 0 0; color: #9a3412; font-size: 12px; font-style: italic;">This link is valid for 7 days.</p>
-                    </div>
+                  <td style="padding: 0 0 24px 0;">
+                    <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Set up your account</p>
+                    <p style="margin: 0 0 16px 0; color: #666666; font-size: 14px; line-height: 1.6;">
+                      Create a password to manage your tickets and register for future events faster.
+                    </p>
+                    <a href="${config.frontend.url}/auth/create-account?token=${accountInvitationToken}" style="display: inline-block; background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                      Set Up Password
+                    </a>
+                    <p style="margin: 10px 0 0 0; color: #999999; font-size: 12px;">This link is valid for 7 days.</p>
                   </td>
                 </tr>
                 ` : ''}
 
                 <!-- Footer -->
                 <tr>
-                  <td style="background-color: #f8f9fa; padding: 25px 30px; text-align: center; border-top: 1px solid #e9ecef;">
-                    <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;">
-                      Need help? <a href="mailto:support@eventknit.com" style="color: #667eea; text-decoration: none;">support@eventknit.com</a>
+                  <td style="padding: 24px 0 0 0; border-top: 1px solid #e5e5e5;">
+                    <p style="margin: 0 0 4px 0; color: #999999; font-size: 13px;">
+                      Need help? <a href="mailto:support@eventknit.com" style="color: #1a8cff; text-decoration: none;">support@eventknit.com</a>
                     </p>
-                    <p style="margin: 0; color: #999; font-size: 12px;">© ${new Date().getFullYear()} EventKnit. All rights reserved.</p>
+                    <p style="margin: 0; color: #cccccc; font-size: 12px;">&copy; ${new Date().getFullYear()} EventKnit</p>
                   </td>
                 </tr>
 

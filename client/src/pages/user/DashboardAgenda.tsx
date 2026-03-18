@@ -5,6 +5,7 @@ import { Loader } from '@/components/ui/loader';
 import EmptyState from '@/components/EmptyState';
 import { Calendar, Clock, MapPin, Users, Mic, Coffee, Utensils } from 'lucide-react';
 import { getEventById } from '@/lib/event-api';
+import { stripHtml } from '@/lib/utils';
 
 interface EventData {
   id: number;
@@ -341,7 +342,7 @@ const DashboardAgenda: React.FC<DashboardAgendaProps> = ({ eventData }) => {
                                     )}
                                     {item.description && (
                                       <p className="text-sm text-muted-foreground mb-2">
-                                        {item.description}
+                                        {stripHtml(item.description)}
                                       </p>
                                     )}
                                   </div>

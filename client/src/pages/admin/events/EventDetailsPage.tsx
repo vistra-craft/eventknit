@@ -34,7 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { cn, stripHtml } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "@/components/ui/loader";
 import { RichTextContent } from "@/components/ui/RichTextContent";
@@ -2059,7 +2059,7 @@ const EventDetailsPage = () => {
                             <div>
                               <h3 className="font-semibold">{ticket.name}</h3>
                               {ticket.description && (
-                                <p className="text-sm text-muted-foreground">{ticket.description}</p>
+                                <p className="text-sm text-muted-foreground">{stripHtml(ticket.description)}</p>
                               )}
                             </div>
                           </div>

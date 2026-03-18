@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { Exhibitor, Sponsor } from "./EventAttendeeView";
+import { stripHtml } from "@/lib/utils";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 
 interface EventExhibitorsProps {
   exhibitors: Exhibitor[];
@@ -74,7 +76,7 @@ const ExhibitorCard: React.FC<{
 
             {exhibitor.description && (
               <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                {exhibitor.description}
+                {stripHtml(exhibitor.description)}
               </p>
             )}
 
@@ -146,9 +148,7 @@ const ExhibitorModal: React.FC<{
           {exhibitor.description && (
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-foreground mb-2 uppercase tracking-wide">About</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                {exhibitor.description}
-              </p>
+              <RichTextContent content={exhibitor.description} className="text-muted-foreground leading-relaxed" />
             </div>
           )}
 

@@ -57,7 +57,9 @@ A comprehensive engineering guide to the EventKnit platform — architecture, de
 44. [Batch Export & Data Operations](#44-batch-export--data-operations)
 45. [CI/CD Pipelines & DevOps](#45-cicd-pipelines--devops)
 46. [Port Configuration](#46-port-configuration)
-47. [Glossary](#47-glossary)
+47. [Post-Event Survey System](#47-post-event-survey-system)
+48. [Financial Data Integrity Standards](#48-financial-data-integrity-standards)
+49. [Glossary](#49-glossary)
 
 ---
 
@@ -4159,7 +4161,293 @@ server {
 
 ---
 
-## 47. Glossary
+## 47. Post-Event Survey System
+
+EventKnit provides a **Post-Event Survey System** that allows organizers to design custom surveys for their events, collect structured feedback from attendees, and analyze results. This system is distinct from the existing EventReview (public star ratings) and EventFeedback (platform-level NPS) systems — it gives organizers full control over what questions are asked.
+
+### 47.1 Architecture Overview
+
+The survey system introduces two new Prisma models:
+
+```
+EventSurvey ──────── belongs to ──────── Event
+     │                                      │
+     │ has many                             │ has many
+     ▼                                      ▼
+SurveyResponse ──── belongs to ──── User (attendee)
+     │
+     └──── validated against ──── EventRegistration
+```
+
+- **EventSurvey** — One survey per event, created by the event organizer or an admin (for managed events). Defines which sections are active and holds custom questions.
+- **SurveyResponse** — One response per attendee per survey. Stores all answers (ratings, NPS score, custom question responses, comment).
+
+The survey is only available after an event's `endDate` has passed and the attendee must have a confirmed `EventRegistration` for that event.
+
+### 47.2 Database Schema
+
+**EventSurvey**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `String` (cuid) | Primary key |
+| `eventId` | `String` (unique) | Foreign key to `Event` |
+| `overallRatingEnabled` | `Boolean` | Always `true` — overall star rating is mandatory |
+| `npsEnabled` | `Boolean` | Toggle for "How likely to recommend?" (0-10) |
+| `categoryRatingsEnabled` | `Boolean` | Toggle for 5 predefined category ratings |
+| `customQuestions` | `Json` | Array of up to 5 custom questions |
+| `isActive` | `Boolean` | Whether the survey is accepting responses |
+| `createdAt` | `DateTime` | Creation timestamp |
+| `updatedAt` | `DateTime` | Last update timestamp |
+
+**SurveyResponse**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `String` (cuid) | Primary key |
+| `surveyId` | `String` | Foreign key to `EventSurvey` |
+| `userId` | `String` | Foreign key to `User` (respondent) |
+| `overallRating` | `Int` | 1-5 star rating (required) |
+| `npsScore` | `Int?` | 0-10 NPS score (if NPS section enabled) |
+| `venueRating` | `Int?` | 1-5 (if category ratings enabled) |
+| `organizationRating` | `Int?` | 1-5 (if category ratings enabled) |
+| `contentRating` | `Int?` | 1-5 (if category ratings enabled) |
+| `valueRating` | `Int?` | 1-5 (if category ratings enabled) |
+| `communicationRating` | `Int?` | 1-5 (if category ratings enabled) |
+| `customAnswers` | `Json` | Answers to custom questions |
+| `comment` | `String?` | Free-form comment |
+| `createdAt` | `DateTime` | Submission timestamp |
+
+**Unique constraint:** `@@unique([surveyId, userId])` — one response per attendee per survey.
+
+### 47.3 API Endpoints
+
+All endpoints are under `/api/v1/`:
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/organizer/events/:eventId/survey` | Organizer | Create survey for own event |
+| `PUT` | `/organizer/events/:eventId/survey` | Organizer | Update survey configuration |
+| `DELETE` | `/organizer/events/:eventId/survey` | Organizer | Delete survey (and all responses) |
+| `GET` | `/organizer/events/:eventId/survey` | Organizer | Get survey config and metadata |
+| `GET` | `/organizer/events/:eventId/survey/results` | Organizer | Get aggregated results and individual responses |
+| `GET` | `/events/:eventId/survey` | Attendee | Get survey form for a completed event |
+| `POST` | `/events/:eventId/survey/respond` | Attendee | Submit survey response |
+| `GET` | `/admin/surveys` | Admin | List all surveys across the platform |
+
+**Authorization rules:**
+- Organizers can only manage surveys for events they own
+- Admins can access surveys for managed events (where `event.isManaged = true`)
+- Attendees can only view and respond to surveys for events they have a confirmed registration for
+- Duplicate submissions are rejected (unique constraint on `surveyId` + `userId`)
+
+### 47.4 Survey Structure
+
+A survey has three fixed sections and a custom questions section:
+
+**Fixed Sections:**
+
+1. **Overall Rating** (always enabled)
+   - 1-5 star rating
+   - Cannot be toggled off
+
+2. **NPS Score** (toggleable via `npsEnabled`)
+   - "How likely are you to recommend this event?" (0-10 scale)
+   - Used for Net Promoter Score calculation
+
+3. **Category Ratings** (toggleable via `categoryRatingsEnabled`)
+   - Five predefined categories, each rated 1-5 stars:
+     - Venue & Location
+     - Organization & Logistics
+     - Content & Programming
+     - Value for Money
+     - Communication & Updates
+
+**Custom Questions (max 5):**
+
+Stored as JSON array in `customQuestions`. Each question object:
+
+```json
+{
+  "id": "q1",
+  "type": "multiple_choice | text | rating",
+  "question": "How did you hear about this event?",
+  "options": ["Social media", "Friend", "Email", "Other"],
+  "required": true
+}
+```
+
+| Question Type | Answer Format | Notes |
+|--------------|---------------|-------|
+| `multiple_choice` | Single selected option string | `options` array required (2-6 choices) |
+| `text` | Free-form string | Max 500 characters |
+| `rating` | Integer 1-5 | Star rating scale |
+
+### 47.5 NPS Calculation
+
+Net Promoter Score is calculated from all responses where `npsScore` is present:
+
+| Score Range | Category | Description |
+|-------------|----------|-------------|
+| 9-10 | Promoters | Enthusiastic supporters likely to recommend |
+| 7-8 | Passives | Satisfied but not enthusiastic |
+| 0-6 | Detractors | Unlikely to recommend, may discourage others |
+
+**Formula:**
+
+```
+NPS = ((promoterCount - detractorCount) / totalResponses) * 100
+```
+
+**Range:** -100 (all detractors) to +100 (all promoters)
+
+The `/survey/results` endpoint returns the NPS score along with a breakdown of promoter, passive, and detractor counts and percentages.
+
+### 47.6 Results Aggregation
+
+The results endpoint (`GET /organizer/events/:eventId/survey/results`) returns:
+
+- **Response count** — Total submissions and response rate (vs. total registrations)
+- **Overall rating** — Average and distribution (count per star)
+- **NPS** — Score, breakdown by category (promoters, passives, detractors)
+- **Category averages** — Average rating per category (venue, organization, content, value, communication)
+- **Custom question summaries** — For multiple choice: option counts; for text: all responses; for rating: average
+- **Individual responses** — Paginated list of full responses with respondent info
+
+### 47.7 Relationship to Existing Feedback Systems
+
+EventKnit has three distinct feedback mechanisms:
+
+| System | Purpose | Created By | Scope |
+|--------|---------|-----------|-------|
+| **EventReview** | Public star ratings and reviews visible on the event page | Attendees (self-initiated) | Public-facing event reputation |
+| **EventFeedback** | Platform-level NPS and satisfaction survey | Platform (automated post-event emails) | Platform improvement metrics |
+| **EventSurvey** | Custom organizer-designed surveys with structured questions | Organizers (manual creation) | Event-specific insights for organizers |
+
+Key differences:
+- **EventReview** is public and attendee-initiated — it appears on the event listing for future attendees to see
+- **EventFeedback** is platform-operated — it measures satisfaction with EventKnit itself, not the event
+- **EventSurvey** is organizer-controlled — the organizer decides which questions to ask and only they see the results
+
+---
+
+## 48. Financial Data Integrity Standards
+
+This section codifies the standards that govern how EventKnit stores, processes, and protects financial data. Every engineer working on payment-related features must understand and follow these patterns.
+
+### 48.1 Currency Value Storage
+
+All monetary values in EventKnit use `Decimal @db.Decimal(10, 2)`, which maps to PostgreSQL's `NUMERIC(10, 2)` type. This applies to 20+ money fields across the schema, including ticket prices, payment amounts, refund amounts, disbursement totals, platform fees, and credit balances.
+
+**Rules:**
+- **Never use `Float` or `Int` for monetary values.** Floating-point arithmetic introduces rounding errors (e.g., `0.1 + 0.2 !== 0.3` in IEEE 754). Integer-cents representations add unnecessary conversion complexity.
+- Prisma's `Decimal` type maps to JavaScript `Decimal.js` objects at runtime. These are arbitrary-precision and safe for arithmetic.
+- When a monetary value needs to be sent to the frontend or serialized to JSON, convert with `Number()` for display. The two-decimal-place constraint at the database level ensures precision is preserved.
+- All arithmetic on monetary values (totals, fee calculations, splits) should be performed using `Decimal.js` methods or at the database level — never with native JavaScript `number` math.
+
+### 48.2 Currency Code Storage (ISO 4217)
+
+All currency code fields are constrained to `@db.VarChar(3)` at the database level, storing standard 3-letter ISO 4217 codes.
+
+**Supported currencies:** KES (default for payments), USD, NGN, EUR, GBP, UGX, TZS.
+
+**Rules:**
+- Currency conversion is delegated to the frontend — the backend stores amounts in their original transaction currency. A ticket priced in USD is stored as USD; a ticket priced in KES is stored as KES.
+- Joi validation on currency inputs must enforce `Joi.string().length(3).uppercase()` to reject malformed codes before they reach the database.
+- The `VarChar(3)` constraint acts as a secondary safety net at the database level, but validation should always catch invalid codes at the application layer first.
+
+### 48.3 ACID Transaction Patterns
+
+All critical financial operations are wrapped in `prisma.$transaction()` to guarantee atomicity. If any step fails, the entire operation rolls back — no partial state is ever persisted.
+
+**Operations that require transactions:**
+
+| Operation | Steps inside transaction |
+|-----------|------------------------|
+| **Payment success** | Registration status update + capacity adjustment + seat confirmation |
+| **Payment failure** | Registration cancellation + capacity restoration + seat release |
+| **Ticket transfer** | New registration creation + line item copy + seat transfer + old ticket void |
+| **Credit operations** | Balance update + transaction record (always atomic) |
+| **Seat reservation** | Row-level locking with `SELECT ... FOR UPDATE` to prevent double-booking |
+| **Payment initialization** | Idempotency check + registration lookup (prevents TOCTOU race conditions) |
+
+**Concurrency control strategy:**
+- **Low-contention paths** (webhooks, refunds, idempotency checks): Optimistic Concurrency Control — no upfront locks, detect conflicts at write time via unique constraints or precondition checks (see Glossary: *Optimistic Locking*, *Optimistic Concurrency Control*)
+- **High-contention paths** (seat reservation during peak sales): Pessimistic locking — `SELECT ... FOR UPDATE` acquires row-level locks before modification (see Glossary: *Pessimistic Locking*)
+
+**Timeout policy:**
+- Complex operations (multi-step payment flows, transfers): 30-second timeout
+- Simple operations (single-record updates): Prisma default timeout
+
+### 48.4 Double-Charge & Duplicate Payment Protection
+
+EventKnit implements multiple layers of protection against duplicate financial operations:
+
+**Deterministic idempotency keys:**
+- Generated as `${registrationId}-${amount}` — no timestamp component, so the same logical request always produces the same key.
+- Clients can provide explicit keys for custom deduplication scenarios.
+- The `EventPaymentTransaction` model has a `idempotencyKey @unique` constraint, so duplicate payment initializations are caught at the database level with a unique violation error.
+
+**Webhook deduplication:**
+- The `PaymentWebhookEvent` model stores a unique `gatewayEventId` for every webhook received.
+- Uses optimistic insert: the handler attempts to insert the webhook event, and if a `P2002` unique constraint violation is thrown, the webhook is recognized as a duplicate and skipped.
+- This pattern handles concurrent webhook deliveries from payment gateways that retry aggressively.
+
+**Refund double-processing prevention:**
+- Refund processing uses `updateMany` with a status precondition (`WHERE status = 'pending'`) as an optimistic lock.
+- Only the first request gets `count === 1` and proceeds; the second request gets `count === 0` and fails gracefully without processing the refund again.
+- If the refund gateway call fails after the status update, the transaction rolls back, restoring the `pending` status for retry.
+
+**Amount validation:**
+- The webhook handler validates that the received payment amount matches the expected amount with a tolerance of ±0.01 (to account for minor gateway rounding).
+- Mismatched amounts trigger an alert and the payment is flagged for manual review rather than automatically confirmed.
+
+### 48.5 Audit Trail — Gaps Found & Resolved (March 2026)
+
+This subsection documents the financial integrity gaps discovered during the March 2026 audit and how each was resolved. It serves as a reference for future audits.
+
+#### Currency Value Storage
+
+| Field | Before | After |
+|-------|--------|-------|
+| `SubscriptionPlan.price` | `Decimal @default(0)` (no precision) | `Decimal @default(0) @db.Decimal(10, 2)` |
+| `SubscriptionPayment.amount` | `Decimal` (no precision) | `Decimal @db.Decimal(10, 2)` |
+
+The remaining 20 money fields already had `@db.Decimal(10, 2)`. No fields used `Float` for money.
+
+#### Currency Code Storage
+
+**Gap:** All 20 currency fields were `String` with no length constraint — a value like `"BITCOIN"` would be accepted by the database.
+
+**Fix:** Added `@db.VarChar(3)` to all 20 currency fields, enforcing 3-character ISO 4217 codes at the database level.
+
+#### ACID Transactions
+
+| Operation | Gap | Fix |
+|-----------|-----|-----|
+| `initializePayment` | Idempotency key lookup and registration fetch were separate queries — two concurrent "Pay" clicks could both pass the check | Wrapped both queries in a single `prisma.$transaction()` |
+| `processRefund` | Status check (`status === 'pending'`) and Paystack call were separate — two admins could both trigger duplicate refunds | Replaced with `updateMany WHERE status = 'pending'` (optimistic lock) — only first request gets `count === 1`. Added rollback to `pending` if gateway call fails |
+
+34 other critical operations already used `$transaction` correctly.
+
+#### Double-Charge Protection
+
+**Gap:** The auto-generated idempotency key included `Date.now()`, making every request unique and defeating the purpose of idempotency entirely.
+
+| Before | After |
+|--------|-------|
+| `${registrationId}-${amount}-${Date.now()}` | `${registrationId}-${amount}` |
+
+Now the same registration + amount always produces the same key, so rapid duplicate clicks return the existing pending/completed payment.
+
+**Already working correctly (no changes needed):**
+- Webhook deduplication via `PaymentWebhookEvent.gatewayEventId` unique constraint with optimistic insert
+- Amount mismatch detection (±0.01 tolerance)
+- `paymentStatus === 'COMPLETED'` early return in webhook handler
+
+---
+
+## 49. Glossary
 
 | Term | Definition |
 |------|-----------|
@@ -4189,8 +4477,11 @@ server {
 | **White Label** | Customizable branding that replaces EventKnit's identity with the organizer's |
 | **Cart Reservation** | 8-minute inventory lock during checkout to prevent overselling |
 | **Backup Code** | 10-character alphanumeric fallback for QR code scanning |
+| **Deterministic Idempotency Key** | An idempotency key derived from stable business identifiers (e.g., `${registrationId}-${amount}`) rather than transient values like timestamps. Because the same logical request always produces the same key, duplicate requests (e.g., user double-clicking "Pay") are automatically caught by the database unique constraint — the second request finds the existing record and returns it instead of creating a new payment. Contrast with timestamp-based keys (`${id}-${Date.now()}`) which generate a unique key per request and defeat idempotency entirely. |
 | **Deterministic QR Code** | QR code payload using fixed registration timestamp (not current time), ensuring identical signatures across regenerations. Prevents invalidation when QR is resent or refreshed post-delivery |
-| **Optimistic Locking** | Distributed concurrency pattern: Create record with unique constraint before processing side effects. If duplicate constraint violation, another instance is handling the same event — auto-deduplication without explicit locks |
+| **Optimistic Locking** | Concurrency control strategy that assumes conflicts are rare and checks for them at write time rather than acquiring locks upfront. EventKnit uses two variants: **(1) Insert-based** — attempt INSERT with unique constraint; catch P2002 violation to detect duplicate (used for webhook dedup via `PaymentWebhookEvent.gatewayEventId`). **(2) Precondition-based** — use `updateMany` with a WHERE condition on the current state; if `count === 0`, another process already changed the state (used for refund processing: `WHERE status = 'pending'`). Both patterns are lock-free and scale across multiple server instances. |
+| **Optimistic Concurrency Control (OCC)** | The broader design principle behind optimistic locking. Instead of pessimistic locking (acquire lock → read → write → release), OCC follows: read → compute → write-with-precondition → retry-on-conflict. EventKnit applies OCC throughout its financial operations: payment initialization (deterministic idempotency key), webhook processing (unique gateway event ID), refund processing (status precondition), and seat reservation (row-level `FOR UPDATE` for the pessimistic fallback where contention is high). The choice between optimistic and pessimistic depends on contention: low contention (webhooks, refunds) → optimistic; high contention (seat selection during popular event sales) → pessimistic with `FOR UPDATE`. |
+| **Pessimistic Locking** | Concurrency control that acquires exclusive locks before reading/writing. Used in EventKnit for seat reservation (`SELECT ... FOR UPDATE` in `SeatAllocationService.reserveSeats`) where contention is high during popular event ticket sales. Trades throughput for correctness in hot-path scenarios. |
 | **Amount Mismatch Detection** | Webhook validation flow that detects payment amount discrepancies vs. expected amount with configurable tolerance (±0.01). Triggers dual-notification (attendee + organizer) and sets registration status to `AMOUNT_MISMATCH` for triage |
 | **Webhook Race Condition Prevention** | Multi-instance safe webhook processing via distributed constraint on `PaymentWebhookEvent.gatewayEventId`. Concurrent instances attempting same webhook triggers atomic constraint violation, ensuring single processing and preventing side-effect duplication |
 | **Email Resilience** | Dual-email model with independent queue fallback: If BullMQ unavailable, PDF generation handles synchronous fallback; Puppeteer timeouts prevent job hanging; structured error logging enables manual resend |

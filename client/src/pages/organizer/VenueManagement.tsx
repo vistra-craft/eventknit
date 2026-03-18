@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Loader } from '@/components/ui/loader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -140,7 +141,10 @@ const VenueManagement = () => {
   if (loading) {
     return (
         <div className="flex items-center justify-center h-64">
-          <div className="text-center">Loading venues...</div>
+          <div className="text-center">
+            <Loader size="lg" className="mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">Loading venues...</p>
+          </div>
         </div>
     );
   }

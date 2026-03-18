@@ -16,8 +16,8 @@ interface EventImageProps {
 
 /**
  * EventImage component that respects focal point positioning.
- * Uses a blurred background technique so the full image is always visible
- * regardless of the organizer's upload aspect ratio.
+ * Uses object-cover with focal-point-aware objectPosition so the image
+ * fills the entire container with the organizer's chosen focal area visible.
  */
 export function EventImage({
   src,
@@ -70,19 +70,10 @@ export function EventImage({
 
   return (
     <div className={cn('relative w-full h-full overflow-hidden', className, containerClassName)}>
-      {/* Blurred background fill — ensures no letterboxing regardless of aspect ratio */}
-      <img
-        src={src}
-        alt=""
-        aria-hidden
-        className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60 pointer-events-none select-none"
-        style={{ objectPosition }}
-      />
-      {/* Main image — always fully visible */}
       <img
         src={src}
         alt={alt}
-        className="absolute inset-0 w-full h-full object-contain"
+        className="absolute inset-0 w-full h-full object-cover"
         style={{ objectPosition }}
         onError={() => setHasError(true)}
       />

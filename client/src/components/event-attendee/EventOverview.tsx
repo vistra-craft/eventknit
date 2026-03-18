@@ -35,7 +35,6 @@ import {
   RefreshCw,
   Hash,
   MessageCircle,
-  Users,
   ChevronDown,
   ChevronRight,
   Tag,
@@ -65,7 +64,9 @@ import { getNotifications, markAllAsRead, type Notification } from "@/lib/notifi
 import { sendMessage } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
 import { showErrorToast } from "@/lib/utils/error";
-import type { EventData, User, Sponsor } from "./EventAttendeeView";
+import { stripHtml } from "@/lib/utils";
+import type { EventData, Sponsor } from "./EventAttendeeView";
+import { EventSurveyPrompt } from "./EventSurveyPrompt";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -210,10 +211,9 @@ function SectionHeading({ icon: Icon, title }: { icon: React.ElementType; title:
 
 interface EventOverviewProps {
   event: EventData;
-  user: User;
 }
 
-export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => {
+export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
   const { toast } = useToast();
   const status = getEventStatus(event);
   const cd = useCountdown(event.date, event.endDate);
@@ -221,6 +221,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
   // Announcements
   const [announcements, setAnnouncements] = useState<Notification[]>([]);
   const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [announcementsError, setAnnouncementsError] = useState(false);
   const [markingRead, setMarkingRead] = useState(false);
 
   // Actions state
@@ -240,10 +241,13 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
   const loadAnnouncements = useCallback(async () => {
     try {
       setAnnouncementsLoading(true);
+      setAnnouncementsError(false);
       const res = await getNotifications({ eventId: event.id, limit: 20 });
-      if (res.success && res.data) setAnnouncements(res.data.notifications);
+      if (res.success && res.data) {
+        setAnnouncements(res.data.notifications);
+      }
     } catch {
-      // non-critical
+      setAnnouncementsError(true);
     } finally {
       setAnnouncementsLoading(false);
     }
@@ -448,22 +452,44 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
               </div>
             )}
 
-            {/* Attendee tally — Lu.ma-style social proof */}
+            {/* Attendee tally — Lu.ma-style social proof with real avatars */}
             <div className="flex items-center gap-3">
               <div className="flex -space-x-2">
                 {/* Organizer avatar */}
-                <div className="w-8 h-8 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-xs font-bold text-primary" title="Organizer">
-                  O
-                </div>
-                {/* Placeholder attendee avatars */}
-                {attendeeCount > 1 && (
-                  <div className="w-8 h-8 rounded-full bg-blue-500/20 border-2 border-background flex items-center justify-center text-xs font-bold text-blue-500">
-                    {user.initials}
+                {event.organizerAvatar ? (
+                  <img
+                    src={event.organizerAvatar}
+                    alt={event.organizer ?? "Organizer"}
+                    className="w-8 h-8 rounded-full border-2 border-background object-cover"
+                    title={event.organizer ?? "Organizer"}
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-xs font-bold text-primary" title={event.organizer ?? "Organizer"}>
+                    {event.organizer?.[0]?.toUpperCase() ?? "O"}
                   </div>
                 )}
-                {attendeeCount > 2 && (
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/20 border-2 border-background flex items-center justify-center">
-                    <Users className="w-3.5 h-3.5 text-emerald-500" />
+                {/* Real attendee avatars */}
+                {event.attendeeAvatars?.slice(0, 4).map((attendee) => (
+                  attendee.avatar ? (
+                    <img
+                      key={attendee.id}
+                      src={attendee.avatar}
+                      alt={`${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
+                      className="w-8 h-8 rounded-full border-2 border-background object-cover"
+                    />
+                  ) : (
+                    <div
+                      key={attendee.id}
+                      className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-bold text-muted-foreground"
+                    >
+                      {attendee.firstName?.[0]?.toUpperCase() ?? "?"}
+                    </div>
+                  )
+                ))}
+                {/* Overflow indicator */}
+                {attendeeCount > 5 && (
+                  <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                    +{attendeeCount - 5}
                   </div>
                 )}
               </div>
@@ -604,6 +630,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
         {(event.fullDescription ?? event.description) && (() => {
           const descContent = event.fullDescription ?? event.description ?? "";
           const descTextLength = descContent.replace(/<[^>]*>/g, "").trim().length;
+          if (descTextLength === 0) return null;
           const shouldTruncateDesc = descTextLength > 300;
           return (
             <section className="mb-8">
@@ -675,11 +702,14 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-semibold text-foreground">{event.organizer}</h3>
                       <p className="text-xs text-muted-foreground">Event Organizer</p>
-                      {event.organizerDescription && (
+                      {event.organizerDescription && orgDescLength > 0 && (
                         <div className="mt-2 space-y-1">
-                          <p className={`text-sm text-muted-foreground leading-relaxed ${shouldTruncateOrgDesc && !isOrganizerDescExpanded ? "line-clamp-3" : ""}`}>
-                            {event.organizerDescription}
-                          </p>
+                          <div className={shouldTruncateOrgDesc && !isOrganizerDescExpanded ? "line-clamp-3" : ""}>
+                            <RichTextContent
+                              content={event.organizerDescription}
+                              className="text-sm text-muted-foreground leading-relaxed"
+                            />
+                          </div>
                           {shouldTruncateOrgDesc && (
                             <Button
                               variant="ghost"
@@ -728,7 +758,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
           <section className="mb-8">
             <SectionHeading icon={Mic2} title="Speakers" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {event.speakers!.map((speaker, idx) => (
+              {(event.speakers ?? []).map((speaker, idx) => (
                 <Card key={speaker.id ?? idx} className="border-border/40 bg-card overflow-hidden">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
@@ -753,9 +783,9 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                         )}
                       </div>
                     </div>
-                    {speaker.bio && (
+                    {speaker.bio && stripHtml(speaker.bio).length > 0 && (
                       <p className="text-xs text-muted-foreground mt-3 line-clamp-3 leading-relaxed">
-                        {speaker.bio}
+                        {stripHtml(speaker.bio)}
                       </p>
                     )}
                   </CardContent>
@@ -774,7 +804,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
             <Card className="border-border/40 bg-card">
               <CardContent className="p-5">
                 <div className="space-y-3">
-                  {event.agenda!.slice(0, 4).map((item, idx) => (
+                  {(event.agenda ?? []).slice(0, 4).map((item, idx) => (
                     <div key={item.id ?? idx} className="flex items-start gap-3">
                       {/* Time column */}
                       <div className="flex-shrink-0 w-20 text-right">
@@ -784,7 +814,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                       {/* Vertical line */}
                       <div className="flex flex-col items-center flex-shrink-0">
                         <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
-                        {idx < Math.min(event.agenda!.length, 4) - 1 && (
+                        {idx < Math.min((event.agenda ?? []).length, 4) - 1 && (
                           <div className="w-px flex-1 bg-border mt-1" />
                         )}
                       </div>
@@ -801,17 +831,17 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                         {item.room && (
                           <p className="text-xs text-muted-foreground mt-0.5">{item.room}</p>
                         )}
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
+                        {item.description && stripHtml(item.description).length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{stripHtml(item.description)}</p>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
-                {event.agenda!.length > 4 && (
+                {(event.agenda ?? []).length > 4 && (
                   <div className="pt-3 mt-3 border-t border-border text-center">
                     <p className="text-xs text-muted-foreground">
-                      +{event.agenda!.length - 4} more sessions — switch to the <span className="font-medium text-primary">Schedule</span> tab to see the full agenda
+                      +{(event.agenda ?? []).length - 4} more sessions — switch to the <span className="font-medium text-primary">Schedule</span> tab to see the full agenda
                     </p>
                   </div>
                 )}
@@ -827,7 +857,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
           <section className="mb-8">
             <SectionHeading icon={Building2} title="Exhibitors" />
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {event.exhibitors!.map((exhibitor, idx) => (
+              {(event.exhibitors ?? []).map((exhibitor, idx) => (
                 <Card key={exhibitor.id ?? idx} className="border-border/40 bg-card">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
@@ -852,8 +882,8 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                         )}
                       </div>
                     </div>
-                    {exhibitor.description && (
-                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{exhibitor.description}</p>
+                    {exhibitor.description && stripHtml(exhibitor.description).length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{stripHtml(exhibitor.description)}</p>
                     )}
                     {exhibitor.website && (
                       <a
@@ -893,8 +923,8 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                         {sponsors.map((s, idx) => (
                           <a
                             key={s.id ?? idx}
-                            href={s.website}
-                            target="_blank"
+                            href={s.website || '#'}
+                            target={s.website ? "_blank" : undefined}
                             rel="noopener noreferrer"
                             className="hover:opacity-75 transition-opacity"
                             title={s.name}
@@ -925,7 +955,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
             <SectionHeading icon={MessageCircle} title="Frequently Asked Questions" />
             <Card className="border-border/40 bg-card">
               <CardContent className="p-0 divide-y divide-border">
-                {event.faqs!.map((faq, idx) => (
+                {(event.faqs ?? []).map((faq, idx) => (
                   <div key={idx}>
                     <button
                       className="flex items-center justify-between w-full px-5 py-4 text-left hover:bg-muted/30 transition-colors"
@@ -1105,6 +1135,14 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
                 <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
                   Loading announcements...
                 </div>
+              ) : announcementsError ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
+                  <AlertCircle className="w-8 h-8 text-muted-foreground/20" />
+                  <p className="text-sm text-muted-foreground">Could not load announcements</p>
+                  <Button variant="ghost" size="sm" className="text-xs text-primary" onClick={() => void loadAnnouncements()}>
+                    Try again
+                  </Button>
+                </div>
               ) : announcements.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 gap-2 text-center">
                   <Megaphone className="w-8 h-8 text-muted-foreground/20" />
@@ -1138,7 +1176,14 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event, user }) => 
         </section>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            14. SOCIAL LINKS — Footer row
+            14. POST-EVENT SURVEY — shown for completed events
+            ═══════════════════════════════════════════════════════════════════ */}
+        <section className="mb-8">
+          <EventSurveyPrompt eventId={event.id} eventStatus={event.status} />
+        </section>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            15. SOCIAL LINKS — Footer row
             ═══════════════════════════════════════════════════════════════════ */}
         {event.socialLinks && Object.keys(event.socialLinks).length > 0 && (
           <section className="mb-8">

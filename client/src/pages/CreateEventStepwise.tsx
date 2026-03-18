@@ -42,6 +42,7 @@ import { applyTemplate } from '@/lib/organizer-dashboard-api';
 import { useToast } from '@/hooks/useToast';
 import { extractErrorMessage } from '@/lib/utils/error';
 import { getMyOrganizerProfile } from '@/lib/organizer-profile-api';
+import { stripHtml } from '@/lib/utils';
 import { uploadImage } from '@/lib/upload-api';
 import { refreshAccessToken } from '@/lib/api';
 import { RichTextContent } from '@/components/ui/RichTextContent';
@@ -2186,7 +2187,7 @@ export default function CreateEventStepwise() {
                         )}
                       </div>
                       <p className="font-medium mt-1">{item.title}</p>
-                      {item.description && <p className="text-sm text-muted-foreground">{item.description}</p>}
+                      {item.description && <p className="text-sm text-muted-foreground">{stripHtml(item.description)}</p>}
                       {item.room && <p className="text-xs text-muted-foreground mt-1">Room: {item.room}</p>}
                     </div>
                   ))}
@@ -2202,7 +2203,7 @@ export default function CreateEventStepwise() {
                   {filledExhibitors.map((exhibitor, i) => (
                     <div key={i} className="p-3 border rounded-lg">
                       <p className="font-medium">{exhibitor.name}</p>
-                      {exhibitor.description && <p className="text-sm text-muted-foreground">{exhibitor.description}</p>}
+                      {exhibitor.description && <p className="text-sm text-muted-foreground">{stripHtml(exhibitor.description)}</p>}
                       {exhibitor.booth && <p className="text-xs text-muted-foreground">Booth: {exhibitor.booth}</p>}
                     </div>
                   ))}

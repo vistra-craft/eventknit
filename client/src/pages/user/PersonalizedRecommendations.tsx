@@ -8,6 +8,7 @@ import { Loader } from "@/components/ui/loader";
 import { EventThumbnail } from "@/components/ui/event-thumbnail";
 import { getPersonalizedRecommendations } from "@/lib/user-dashboard-api";
 import { useNavigate } from "react-router-dom";
+import { stripHtml } from "@/lib/utils";
 import { useToast } from "@/hooks/useToast";
 import { showErrorToast } from "@/lib/utils/error";
 import EmptyState from "@/components/EmptyState";
@@ -118,7 +119,7 @@ const PersonalizedRecommendations: React.FC = () => {
 
                 {event.description && (
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {event.description}
+                    {stripHtml(event.description)}
                   </p>
                 )}
 

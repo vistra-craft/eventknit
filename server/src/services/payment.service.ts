@@ -79,22 +79,53 @@ export class PaymentService {
    * Supports idempotency keys to prevent duplicate payments
    */
   async initializePayment(data: InitializePaymentData) {
-    // Generate or use provided idempotency key
-    // Format: registrationId-amount-timestamp or provided key
+    // Deterministic idempotency key — same registration + amount always produces the same key.
+    // This prevents double-charges when users click "Pay" twice rapidly.
+    // Client-provided keys take priority for explicit dedup control.
     const idempotencyKey = data.idempotencyKey ||
-      `${data.registrationId}-${data.amount}-${Date.now()}`;
+      `${data.registrationId}-${data.amount}`;
 
-    // Check for existing payment with same idempotency key
-    const existingTransaction = await prisma.eventPaymentTransaction.findUnique({
-      where: { idempotencyKey },
+    // Atomic check: verify idempotency + registration status inside a transaction
+    // to prevent TOCTOU races between concurrent payment requests.
+    const { registration, existingTransaction } = await prisma.$transaction(async (tx) => {
+      const existing = await tx.eventPaymentTransaction.findUnique({
+        where: { idempotencyKey },
+      });
+
+      const reg = await tx.eventRegistration.findUnique({
+        where: { id: data.registrationId },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              currency: true,
+              organizer: {
+                select: {
+                  organizationName: true,
+                },
+              },
+            },
+          },
+          attendee: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      return { registration: reg, existingTransaction: existing };
     });
 
+    // Handle idempotent duplicate requests
     if (existingTransaction) {
-      // If payment succeeded, return the existing successful payment
       if (existingTransaction.paymentStatus === 'success') {
         logger.info(`Idempotent payment request: returning existing successful payment for key ${idempotencyKey}`);
         return {
-          authorizationUrl: null, // Already paid
+          authorizationUrl: null,
           accessCode: null,
           reference: existingTransaction.gatewayReference,
           gateway: existingTransaction.gateway,
@@ -103,11 +134,8 @@ export class PaymentService {
         };
       }
 
-      // If payment is pending, return the existing pending payment URL
       if (existingTransaction.paymentStatus === 'pending') {
         logger.info(`Idempotent payment request: returning existing pending payment for key ${idempotencyKey}`);
-        // Note: We could potentially fetch the authorization URL from the gateway
-        // For now, we'll return the reference so client can verify or retry
         return {
           authorizationUrl: null,
           accessCode: null,
@@ -118,35 +146,9 @@ export class PaymentService {
         };
       }
 
-      // If payment failed, allow retry but log the idempotency key reuse
+      // If payment failed, allow retry
       logger.info(`Idempotent payment retry: previous payment failed for key ${idempotencyKey}`);
     }
-
-    // Get registration to verify it exists and is pending
-    const registration = await prisma.eventRegistration.findUnique({
-      where: { id: data.registrationId },
-      include: {
-        event: {
-          select: {
-            id: true,
-            title: true,
-            currency: true,
-            organizer: {
-              select: {
-                organizationName: true,
-              },
-            },
-          },
-        },
-        attendee: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
 
     if (!registration) {
       throw new NotFoundError('Registration not found');

@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Avatar } from './ui/avatar';
 import { X, Building2, MapPin, Phone, Mail, Globe, Send } from 'lucide-react';
 import { SocialConnections } from './SocialConnections';
+import { RichTextContent } from '@/components/ui/RichTextContent';
 
 interface Exhibitor {
   id: number;
@@ -144,7 +145,7 @@ const ExhibitorDetailsModal: React.FC<ExhibitorDetailsModalProps> = ({ exhibitor
                         {exhibitor.sponsorType.toUpperCase()}
                       </Badge>
                     </div>
-                    <p className="text-muted-foreground mb-4">{exhibitor.description}</p>
+                    <RichTextContent content={exhibitor.description} className="text-muted-foreground mb-4" />
                     <div className="flex items-center gap-6 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <MapPin className="w-4 h-4" />

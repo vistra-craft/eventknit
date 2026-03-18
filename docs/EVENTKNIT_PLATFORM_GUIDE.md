@@ -38,7 +38,9 @@
 24. [Integrations and Extensibility](#24-integrations-and-extensibility)
 25. [Platform Pages and Legal](#25-platform-pages-and-legal)
 26. [Event Categories](#26-event-categories)
-27. [Glossary](#27-glossary)
+27. [Post-Event Surveys](#27-post-event-surveys)
+28. [Payment & Financial Security](#28-payment--financial-security)
+29. [Glossary](#29-glossary)
 
 ---
 
@@ -1882,7 +1884,100 @@ The platform supports the following event categories:
 
 ---
 
-## 27. Glossary
+## 27. Post-Event Surveys
+
+Post-event surveys allow organizers to collect structured feedback from attendees after an event has ended. Unlike platform feedback (which measures satisfaction with EventKnit) or public reviews (which appear on the event listing), surveys are private, organizer-designed questionnaires tailored to each event.
+
+### For Organizers
+
+#### Creating a Survey
+
+Organizers can create one survey per event from the event management dashboard:
+
+1. **Navigate** to your event's settings or post-event section
+2. **Toggle sections** to include in the survey:
+   - **Overall Rating** — Always included (1-5 stars)
+   - **Net Promoter Score (NPS)** — "How likely are you to recommend this event?" (0-10 scale). Toggle on or off
+   - **Category Ratings** — Five predefined categories (Venue, Organization, Content, Value, Communication), each rated 1-5 stars. Toggle on or off
+3. **Add custom questions** (up to 5):
+   - **Multiple Choice** — Provide 2-6 answer options (e.g., "How did you hear about this event?")
+   - **Text** — Open-ended response (e.g., "What topic would you like at the next event?")
+   - **Rating** — Additional 1-5 star rating (e.g., "Rate the food quality")
+4. **Set timing** — The survey becomes available to attendees once the event's end date has passed
+5. **Activate** — Toggle the survey active to start collecting responses
+
+#### Viewing Results
+
+The survey results dashboard provides:
+
+- **Response rate** — Number of submissions vs. total registrations
+- **Overall rating average** — With star distribution breakdown
+- **NPS breakdown** — Score (-100 to +100) with counts of Promoters (9-10), Passives (7-8), and Detractors (0-6)
+- **Category averages** — Bar chart of average ratings across the five categories
+- **Custom question summaries** — Option counts for multiple choice, averages for ratings, full list for text responses
+- **Individual responses** — Paginated view of each attendee's complete submission
+
+### For Attendees
+
+#### Finding the Survey
+
+- After an event ends, the survey appears in the **event overview page** (the same page where event details, schedule, and reviews are shown)
+- The survey is only visible if the organizer has created and activated one for that event
+- You must have a confirmed registration for the event to access the survey
+
+#### Filling Out the Survey
+
+- **Star ratings** — Tap or click to rate (1-5 stars) for overall experience and any enabled categories
+- **NPS question** — Select a number from 0-10 indicating how likely you are to recommend the event
+- **Custom questions** — Answer the organizer's specific questions (multiple choice, text, or rating)
+- **Comment** — Optional free-form text to share additional thoughts
+
+Each attendee can submit only one response per survey. Once submitted, the response cannot be changed.
+
+### For Admins
+
+- **Platform-wide survey list** — View all surveys created across the platform, with response counts and average ratings
+- **Managed event surveys** — Full access to survey configuration and results for events managed by the admin team
+- **Survey analytics** — Aggregate data on survey adoption (how many organizers create surveys) and response rates across the platform
+
+### How Surveys Differ from Reviews and Platform Feedback
+
+| Feature | Public Reviews | Platform Feedback | Post-Event Surveys |
+|---------|---------------|-------------------|-------------------|
+| **Who creates it** | Attendee-initiated | Platform-automated | Organizer-designed |
+| **Visibility** | Public (on event page) | Admin only | Organizer + Admin only |
+| **Purpose** | Event reputation for future attendees | Measure platform satisfaction | Custom event-specific insights |
+| **Questions** | Fixed (star rating + comment) | Fixed (NPS + categories) | Configurable (sections + custom questions) |
+| **Timing** | Anytime after attending | Automated email post-event | After event ends, when activated by organizer |
+
+---
+
+## 28. Payment & Financial Security
+
+EventKnit applies bank-grade financial safeguards across every payment, refund, and disbursement on the platform. This section explains what those protections mean for each user role.
+
+### For Organizers
+
+- **Exact decimal storage:** All ticket prices and revenue figures are stored as exact decimal values (not floating-point approximations). This means the revenue you see in your dashboard matches what was actually collected — no rounding errors, no missing cents.
+- **Multi-currency preservation:** Currency is preserved per-transaction. If you price a ticket in USD, the amount is stored in USD. If you price in KES, it is stored in KES. There is no silent currency conversion on the backend, so your financial reports reflect the real currency of each sale.
+- **Refund safety:** Refunds are protected against double-processing. If two admins or staff members attempt to process the same refund simultaneously, only one will succeed — the system uses optimistic locking to ensure a refund is executed exactly once.
+
+### For Attendees
+
+- **Double-charge protection:** Payments are protected against accidental double-charges. If you click "Pay" twice (or your browser retries the request), the system recognizes the duplicate and processes the payment only once. This is enforced by deterministic idempotency keys at the database level.
+- **Unique tracking references:** Each payment is assigned a unique tracking reference that you can use for dispute resolution with your bank or payment provider. This reference is included in your confirmation email and visible in your order history.
+- **Precise refund amounts:** When a refund is issued, the refunded amount exactly matches what you were charged. The platform uses precise decimal arithmetic to ensure no money is gained or lost due to rounding.
+
+### For Admins
+
+- **ACID-compliant transactions:** All financial operations are atomic, consistent, isolated, and durable (ACID). If a payment succeeds, the registration, capacity counts, and seat assignments all update together. If any step fails, everything rolls back — there is no partial state.
+- **Webhook deduplication:** Payment gateway webhook events are deduplicated automatically. If a gateway retries a webhook notification (which is common), the system detects the duplicate by its unique gateway event ID and ignores it. This prevents phantom transactions from appearing in your records.
+- **Idempotency enforcement:** Every payment initialization carries an idempotency key (derived from the registration ID and amount). Duplicate initialization attempts are rejected at the database level, preventing double-charge scenarios before they reach the payment gateway.
+- **Full audit trail:** All financial operations — payments, refunds, disbursements, credit adjustments — are recorded with timestamps, acting user, and transaction details. This audit trail supports dispute resolution, compliance reporting, and forensic analysis.
+
+---
+
+## 29. Glossary
 
 | Term | Definition |
 |------|------------|

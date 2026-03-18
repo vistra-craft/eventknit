@@ -1649,4 +1649,85 @@ describe('RefundService', () => {
       expect(result.totalCount).toBe(3);
     });
   });
+
+  // ===========================================================================
+  // processRefund — optimistic locking tests
+  // ===========================================================================
+
+  describe('processRefund', () => {
+    const refundId = 'refund-001';
+    const processedBy = 'admin-123';
+
+    const mockRefundData = {
+      id: refundId,
+      status: 'processing',
+      refundAmount: new Decimal('50.00'),
+      refundReason: 'Customer request',
+      currency: 'KES',
+      transactionId: 'txn-001',
+      eventId: 'event-001',
+      registrationId: 'reg-001',
+      transaction: {
+        id: 'txn-001',
+        paystackReference: 'paystack-ref-001',
+        amount: new Decimal('100.00'),
+        currency: 'KES',
+      },
+      event: {
+        id: 'event-001',
+        title: 'Test Event',
+      },
+    };
+
+    it('should use updateMany with status precondition to prevent double-processing', async () => {
+      // Arrange — claim succeeds (count: 1)
+      prisma.refund.updateMany.mockResolvedValue({ count: 1 } as any);
+      prisma.refund.findUnique.mockResolvedValue(mockRefundData as any);
+
+      // Mock Paystack
+      const mockPaystack = {
+        refund: {
+          create: vi.fn().mockResolvedValue({
+            data: { id: 12345, transaction: { id: 67890 }, amount: 5000, status: 'processed', reference: 'ref-001' },
+          }),
+        },
+      };
+      (RefundService as any).paystack = mockPaystack;
+
+      prisma.refund.update.mockResolvedValue(mockRefundData as any);
+
+      // Act
+      await RefundService.processRefund(refundId, {}, processedBy);
+
+      // Assert — updateMany called with status precondition
+      expect(prisma.refund.updateMany).toHaveBeenCalledWith({
+        where: { id: refundId, status: 'pending' },
+        data: expect.objectContaining({
+          status: 'processing',
+        }),
+      });
+    });
+
+    it('should throw ValidationError when refund already processed (count: 0)', async () => {
+      // Arrange — claim fails (another admin already processed it)
+      prisma.refund.updateMany.mockResolvedValue({ count: 0 } as any);
+      prisma.refund.findUnique.mockResolvedValue({ status: 'processing' } as any);
+
+      // Act & Assert
+      await expect(
+        RefundService.processRefund(refundId, {}, processedBy),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it('should throw NotFoundError when refund does not exist (count: 0, not in db)', async () => {
+      // Arrange
+      prisma.refund.updateMany.mockResolvedValue({ count: 0 } as any);
+      prisma.refund.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        RefundService.processRefund(refundId, {}, processedBy),
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
 });

@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RichTextContent } from '@/components/ui/RichTextContent';
+import { stripHtml } from '@/lib/utils';
 import {
   Calendar,
   ShieldCheck,
@@ -111,7 +112,7 @@ function AgendaReviewItem({
           {expanded && (
             <div className="mt-2 space-y-1.5 pl-0 sm:pl-16">
               {item.description && (
-                <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{stripHtml(item.description)}</p>
               )}
               {speakerNames.length > 0 && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -398,7 +399,7 @@ export function ReviewStep({
                     {ticket.name || `Ticket ${i + 1}`}
                   </span>
                   {ticket.description && (
-                    <span className="text-xs text-muted-foreground line-clamp-1">{ticket.description}</span>
+                    <span className="text-xs text-muted-foreground line-clamp-1">{stripHtml(ticket.description)}</span>
                   )}
                 </div>
                 {ticket.isComplementary && (

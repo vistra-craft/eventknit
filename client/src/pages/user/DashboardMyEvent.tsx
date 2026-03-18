@@ -120,6 +120,7 @@ interface ApiEvent {
   isOnline?: unknown;
   onlineLink?: unknown;
   organizerName?: unknown;
+  attendeeAvatars?: unknown;
 }
 
 const VALID_SPONSOR_LEVELS = new Set([
@@ -304,6 +305,15 @@ const transformEventData = (
     registrationId: registrationInfo?.registrationId,
     ticketType: registrationInfo?.ticketType,
     backupCode: registrationInfo?.backupCode,
+    // Attendee avatars for social proof
+    attendeeAvatars: Array.isArray(apiEvent.attendeeAvatars)
+      ? (apiEvent.attendeeAvatars as Array<Record<string, unknown>>).map(a => ({
+          id: String(a.id ?? ''),
+          firstName: typeof a.firstName === 'string' ? a.firstName : undefined,
+          lastName: typeof a.lastName === 'string' ? a.lastName : undefined,
+          avatar: typeof a.avatar === 'string' ? a.avatar : undefined,
+        }))
+      : undefined,
     // Seat allocation from ticket endpoint
     seat,
   };

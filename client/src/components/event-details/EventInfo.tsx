@@ -1,6 +1,7 @@
 import { CheckCircle, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { RichTextContent } from "@/components/ui/RichTextContent";
+import { stripHtml } from "@/lib/utils";
 import type { EventData } from "@/types/event";
 
 interface EventInfoProps {
@@ -74,7 +75,7 @@ export const EventInfo = ({ description, fullDescription, requirements, ageRestr
                 <div>
                   <h4 className="font-bold text-lg">{speaker.name}</h4>
                   <p className="text-primary font-medium text-sm">{speaker.title}</p>
-                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{speaker.bio}</p>
+                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{stripHtml(speaker.bio || '')}</p>
                 </div>
               </Card>
             ))}

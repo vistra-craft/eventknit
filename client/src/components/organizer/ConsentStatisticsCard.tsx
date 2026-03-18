@@ -111,7 +111,7 @@ export const ConsentStatisticsCard: React.FC<ConsentStatisticsCardProps> = ({
       <div
         key={type}
         className={cn(
-          'relative p-4 rounded-lg border bg-card',
+          'relative p-4 rounded-lg border border-border/40 bg-muted/50',
           isLocked && 'opacity-60'
         )}
       >

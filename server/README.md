@@ -280,6 +280,30 @@ npm run prisma:release-lock
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run test:run` | Run tests once (CI mode) |
 
+**Running a single test file:**
+
+```bash
+npx vitest run tests/organizer.test.ts
+```
+
+**Running a single test by name (pattern match):**
+
+```bash
+npx vitest run tests/organizer.test.ts -t "should return only assigned"
+```
+
+**Running with verbose output:**
+
+```bash
+npx vitest run tests/organizer.test.ts --reporter=verbose
+```
+
+**Running all tests in a directory:**
+
+```bash
+npx vitest run tests/unit/services/
+```
+
 ### Pre-push validation
 
 ```bash

@@ -14,6 +14,7 @@ import { SpeakersShowcase } from './event-details/SpeakersShowcase';
 import { SponsorsShowcase } from './event-details/SponsorsShowcase';
 import { ExhibitorsGrid } from './event-details/ExhibitorsGrid';
 import type { EventData } from '../types/event';
+import { stripHtml } from '@/lib/utils';
 
 interface EventPreviewModalProps {
   isOpen: boolean;
@@ -297,7 +298,7 @@ export const EventPreviewModal = ({
                               <p className="text-xs text-muted-foreground">{ticket.discountLabel}</p>
                             )}
                             {ticket.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{ticket.description}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{stripHtml(ticket.description)}</p>
                             )}
                           </div>
                           <div className="text-right">
@@ -354,7 +355,7 @@ export const EventPreviewModal = ({
                           </p>
                         )}
                         {item.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{stripHtml(item.description)}</p>
                         )}
                       </div>
                     ))}

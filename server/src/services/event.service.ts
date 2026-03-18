@@ -763,6 +763,33 @@ export class EventService {
       (event as Record<string, unknown>).ticketTypes = ticketTypesWithStatus;
     }
 
+    // Fetch a few attendee avatars for social proof display (Lu.ma-style)
+    const recentAttendees = await prisma.eventRegistration.findMany({
+      where: {
+        eventId: event.id,
+        status: { in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING] },
+      },
+      select: {
+        attendee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    (event as Record<string, unknown>).attendeeAvatars = (recentAttendees ?? []).map((r) => ({
+      id: r.attendee.id,
+      firstName: r.attendee.firstName,
+      lastName: r.attendee.lastName,
+      avatar: r.attendee.avatar,
+    }));
+
     return event;
   }
 

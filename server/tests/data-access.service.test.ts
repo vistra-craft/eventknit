@@ -43,7 +43,7 @@ describe('DataAccessService', () => {
 
     await prisma.$transaction(async (tx) => {
       await cleanupTestData(tx);
-    });
+    }, { timeout: 15000 });
 
     // Create organizer
     const organizerPassword = await hashPassword('Organizer123!@$');

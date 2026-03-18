@@ -7,6 +7,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { Building2, MapPin, Mail, Globe } from 'lucide-react';
 import ExhibitorDetailsModal from '@/components/ExhibitorDetailsModal';
 import { getEventById } from '@/lib/event-api';
+import { stripHtml } from '@/lib/utils';
 
 interface EventData {
   id: number;
@@ -205,7 +206,7 @@ const DashboardExhibitors: React.FC<DashboardExhibitorsProps> = ({ eventData }) 
                                   {exhibitor.name}
                                 </h3>
                                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                  {exhibitor.description}
+                                  {stripHtml(exhibitor.description)}
                                 </p>
                               </div>
                             </div>

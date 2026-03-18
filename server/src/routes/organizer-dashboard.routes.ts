@@ -835,7 +835,7 @@ router.get(
  * @desc    Set organizer entity type
  * @access  Private (ORGANIZER+)
  */
-router.post('/kyc/entity-type', OrganizerDashboardController.setEntityType);
+router.post('/kyc/entity-type', validate(organizerDashboardValidations.setEntityType), OrganizerDashboardController.setEntityType);
 
 /**
  * @route   GET /api/v1/organizer-dashboard/kyc/requirements
@@ -856,7 +856,7 @@ router.get('/kyc/documents', OrganizerDashboardController.getKYCDocuments);
  * @desc    Create/upload a KYC document
  * @access  Private (ORGANIZER+)
  */
-router.post('/kyc/documents', OrganizerDashboardController.createKYCDocument);
+router.post('/kyc/documents', validate(organizerDashboardValidations.createKYCDocument), OrganizerDashboardController.createKYCDocument);
 
 /**
  * @route   PUT /api/v1/organizer-dashboard/kyc/documents/:documentId
@@ -899,7 +899,7 @@ router.get('/kyc/directors', OrganizerDashboardController.getDirectors);
  * @desc    Create/add a director/shareholder
  * @access  Private (ORGANIZER+)
  */
-router.post('/kyc/directors', OrganizerDashboardController.createDirector);
+router.post('/kyc/directors', validate(organizerDashboardValidations.createDirector), OrganizerDashboardController.createDirector);
 
 /**
  * @route   DELETE /api/v1/organizer-dashboard/kyc/directors/:directorId
@@ -951,7 +951,7 @@ router.post('/subscription/cancel', OrganizerDashboardController.cancelSubscript
  * @desc    Initialize subscription payment via Paystack
  * @access  Private (ORGANIZER+)
  */
-router.post('/subscription/pay', OrganizerDashboardController.initializeSubscriptionPayment);
+router.post('/subscription/pay', validate(organizerDashboardValidations.initializeSubscriptionPayment), OrganizerDashboardController.initializeSubscriptionPayment);
 
 /**
  * @route   GET /api/v1/organizer-dashboard/subscription/verify

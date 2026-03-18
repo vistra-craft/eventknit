@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { ExternalLink } from "lucide-react";
+import { stripHtml } from "@/lib/utils";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import {
   Dialog,
   DialogContent,
@@ -146,7 +148,7 @@ function SponsorCard({ sponsor, tier, onSeeMore }: { sponsor: Sponsor; tier: str
         </div>
         {sponsor.description && (
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed line-clamp-2">
-            {sponsor.description}
+            {stripHtml(sponsor.description || '')}
           </p>
         )}
         {sponsor.website && (
@@ -222,7 +224,7 @@ function SponsorDialog({
             </span>
           </div>
           {sponsor.description && (
-            <p className="text-sm text-muted-foreground leading-relaxed">{sponsor.description}</p>
+            <RichTextContent content={sponsor.description || ''} className="text-sm text-muted-foreground leading-relaxed" />
           )}
           {sponsor.website && (
             <div className="flex justify-center">

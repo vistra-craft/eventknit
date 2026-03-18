@@ -49,7 +49,7 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
       </div>
 
       {/* Organizer Description */}
-      {organizerDescription && (
+      {organizerDescription && textLength > 0 && (
         <div className="space-y-2">
           <div className={shouldTruncate && !isExpanded ? "line-clamp-3" : ""}>
             <RichTextContent

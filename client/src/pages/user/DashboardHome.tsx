@@ -52,7 +52,7 @@ interface User {
 }
 
 export interface DashboardHomeProps {
-  user: User;
+  user?: User;
   eventData?: unknown;
   registration?: unknown;
 }
@@ -94,11 +94,18 @@ function getDaysUntil(dateString: string): number {
 
 // ─── Component ──────────────────────────────────────────────────────────────────
 
-const DashboardHome = ({ user }: DashboardHomeProps) => {
+const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user: authUser } = useAuth();
+
+  // Derive user from prop or auth context (route may not pass the prop)
+  const user = userProp ?? {
+    name: authUser ? `${authUser.firstName ?? ''} ${authUser.lastName ?? ''}`.trim() || authUser.email || 'User' : 'User',
+    email: authUser?.email ?? '',
+    initials: authUser?.firstName?.[0]?.toUpperCase() ?? 'U',
+  };
 
   const {
     attendingEvents,
@@ -142,8 +149,9 @@ const DashboardHome = ({ user }: DashboardHomeProps) => {
   );
 
   // Split attending events into upcoming and past
-  const upcomingEvents = attendingEvents.filter(e => e.status === 'upcoming');
-  const pastEvents = attendingEvents.filter(e => e.status !== 'upcoming');
+  // Events without an explicit status default to 'upcoming' (not yet started)
+  const upcomingEvents = attendingEvents.filter(e => !e.status || e.status === 'upcoming' || e.status === 'ongoing');
+  const pastEvents = attendingEvents.filter(e => e.status === 'completed');
 
   // The next event to attend (first upcoming)
   const nextEvent = upcomingEvents[0];
