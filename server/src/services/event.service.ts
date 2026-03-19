@@ -22,6 +22,7 @@ import { backgroundTasks } from '../utils/background-tasks.js';
 import { RefundService } from './refund.service.js';
 import { AttendeeCommunicationService } from './attendee-communication.service.js';
 import { websocketService } from './websocket.service.js';
+import { isValidUUID } from '../utils/id.utils.js';
 
 export interface CreateEventData {
   title: string;
@@ -656,7 +657,7 @@ export class EventService {
    * Get event by ID or slug. UUID format is matched by ID; anything else is treated as a slug.
    */
   static async getEventById(eventId: string, requestingUserId?: string, isAdmin = false) {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
+    const isUuid = isValidUUID(eventId);
     const event = await prisma.event.findFirst({
       where: {
         ...(isUuid ? { id: eventId } : { slug: eventId }),
@@ -1465,7 +1466,7 @@ export class EventService {
     userAgent?: string,
   ) {
     // Resolve slug or UUID to actual event
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
+    const isUuid = isValidUUID(eventId);
 
     // Get event
     const event = await prisma.event.findFirst({
@@ -3722,7 +3723,7 @@ export class EventService {
     }
 
     // Resolve slug or UUID to actual event
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
+    const isUuid = isValidUUID(eventId);
 
     // Get event
     const event = await prisma.event.findFirst({
@@ -4519,8 +4520,10 @@ export class EventService {
       .replace(/-+/g, '-')          // collapse multiple hyphens
       .replace(/^-|-$/g, '');       // trim leading/trailing hyphens
 
-    // Find a unique slug — append -2, -3, etc. only if there's a conflict
-    let slug = base;
+    // Guard: ensure the slug can never be mistaken for a UUID.
+    // If the base happens to match UUID format (e.g. title is a hex string),
+    // prefix with "evt-" so the resolver always treats it as a slug.
+    let slug = isValidUUID(base) ? `evt-${base}` : base;
     let counter = 1;
     const maxAttempts = 100;
     while (counter <= maxAttempts) {

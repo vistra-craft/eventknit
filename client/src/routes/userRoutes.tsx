@@ -204,27 +204,26 @@ export const userRoutes: RouteConfig[] = [
     element: createElement(UserProfilePage),
   },
 
-  // Settings — rendered inline in DashboardHome via ?view=settings query param
-  // Direct URL visits are redirected to the dashboard settings view
+  // Settings — rendered as a full section in UserDashboard via ?section=settings
   {
     path: 'settings',
-    element: createElement(Navigate, { to: '/user/dashboard?view=settings', replace: true }),
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings', replace: true }),
   },
   {
     path: 'settings/profile',
-    element: createElement(Navigate, { to: '/user/dashboard?view=settings&tab=profile', replace: true }),
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings&tab=profile', replace: true }),
   },
   {
     path: 'settings/notifications',
-    element: createElement(Navigate, { to: '/user/dashboard?view=settings&tab=notifications', replace: true }),
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings&tab=notifications', replace: true }),
   },
   {
     path: 'settings/security',
-    element: createElement(Navigate, { to: '/user/dashboard?view=settings&tab=security', replace: true }),
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings&tab=security', replace: true }),
   },
   {
     path: 'settings/appearance',
-    element: createElement(Navigate, { to: '/user/dashboard?view=settings&tab=appearance', replace: true }),
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings&tab=appearance', replace: true }),
   },
 
   // Verification & KYC (same components as organizer, rendered in attendee layout)

@@ -14,6 +14,7 @@ export const Hero = () => {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [featuredEvents, setFeaturedEvents] = useState<ActiveFeaturedEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [imageReady, setImageReady] = useState(false);
 
   // Fetch featured events on mount
   useEffect(() => {
@@ -23,6 +24,16 @@ export const Hero = () => {
         setFeaturedEvents(events);
         if (events.length > 0) {
           setCurrentEventIndex(0);
+          // Preload the first image so the transition from skeleton is smooth
+          const firstImage = events[0]?.image;
+          if (firstImage) {
+            const img = new Image();
+            img.onload = () => setImageReady(true);
+            img.onerror = () => setImageReady(true);
+            img.src = firstImage;
+          } else {
+            setImageReady(true);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch featured events:", error);
@@ -48,8 +59,8 @@ export const Hero = () => {
     return () => clearInterval(interval);
   }, [isAutoPlaying, featuredEvents.length]);
 
-  // Show loading skeleton while loading
-  if (isLoading) {
+  // Show loading skeleton while data or first image is loading
+  if (isLoading || (!imageReady && featuredEvents.length > 0)) {
     return <HeroSkeleton />;
   }
 

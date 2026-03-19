@@ -2250,5 +2250,124 @@ describe('Event Registration System', () => {
       expect(registration!.status).toBe('CANCELLED');
     });
   });
+
+  describe('Slug-based event registration (resolveEventId middleware)', () => {
+    it('should register for a free event using its slug', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'Slug Test Event',
+          description: 'Testing slug-based registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+          slug: 'slug-test-event',
+        },
+      });
+
+      // Register using slug instead of UUID
+      const response = await request(app)
+        .post('/api/v1/events/slug-test-event/register')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({ quantity: 1 })
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.registration.status).toBe('CONFIRMED');
+
+      // Verify the registration was linked to the correct event
+      const registration = await prisma.eventRegistration.findFirst({
+        where: { eventId: event.id, attendeeId },
+      });
+      expect(registration).not.toBeNull();
+    });
+
+    it('should register as guest using event slug', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await prisma.event.create({
+        data: {
+          title: 'Guest Slug Event',
+          description: 'Testing guest slug-based registration',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+          slug: 'guest-slug-event',
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/v1/events/guest-slug-event/register-guest')
+        .send({
+          email: 'guestslug@example.com',
+          firstName: 'Guest',
+          lastName: 'Slug',
+          quantity: 1,
+        });
+
+      // Guest registration may return 201 or fail due to email service;
+      // the key assertion is that it does NOT return 400 "id must be a valid guid"
+      expect(response.status).not.toBe(400);
+      if (response.status === 201) {
+        expect(response.body.success).toBe(true);
+      }
+    });
+
+    it('should return 404 for a non-existent slug', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .post('/api/v1/events/totally-nonexistent-slug/register')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({ quantity: 1 })
+        .expect(404);
+    });
+
+    it('should still accept UUID-based registration', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const event = await prisma.event.create({
+        data: {
+          title: 'UUID Compat Event',
+          description: 'Verifying UUID still works',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Location',
+          isFree: true,
+          organizerId,
+          status: EventStatus.APPROVED,
+          capacity: 100,
+        },
+      });
+
+      // Register using UUID directly
+      const response = await request(app)
+        .post(`/api/v1/events/${event.id}/register`)
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .send({ quantity: 1 })
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.registration.status).toBe('CONFIRMED');
+    });
+  });
 });
 

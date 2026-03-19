@@ -5,18 +5,18 @@
  * - Personalized greeting with time-aware message
  * - Featured next event card (hero-style)
  * - Event cards in a responsive grid
- * - Tabs: Attending | Saved | Settings
+ * - Tabs: Attending | Saved | Tickets
  */
 
-import { lazy, Suspense, useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import {
   Calendar,
   MapPin,
   Download,
   Share2,
   Heart,
-  Settings as SettingsIcon,
+  Ticket,
   Sparkles,
   ArrowRight,
   Bookmark,
@@ -43,7 +43,7 @@ import {
   CTA_LABELS,
 } from '../../constants/navigationLabels';
 
-const SettingsPage = lazy(() => import('./UserSettingsPage'));
+import TicketsTabContent from './TicketsTabContent';
 
 interface User {
   name: string;
@@ -96,7 +96,6 @@ function getDaysUntil(dateString: string): number {
 
 const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user: authUser } = useAuth();
 
@@ -116,7 +115,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     savedLoading,
   } = useMyEvents();
 
-  const [currentTab, setCurrentTab] = useState<'attending' | 'my-events' | 'saved' | 'settings'>('attending');
+  const [currentTab, setCurrentTab] = useState<'attending' | 'my-events' | 'saved' | 'tickets'>('attending');
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
 
   useEffect(() => {
@@ -130,15 +129,6 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     };
     loadVerification();
   }, []);
-
-  useEffect(() => {
-    if (searchParams.get('view') === 'settings') {
-      setCurrentTab('settings');
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('view');
-      setSearchParams(newParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
 
   if (authUser?.role === UserRole.ORGANIZER) {
     return <Navigate to="/organizer/dashboard" replace />;
@@ -190,13 +180,13 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
       { key: 'my-events' as const, label: 'My Events', badge: pendingEvents.length }
     ] : []),
     { key: 'saved' as const, label: TAB_LABELS.SAVED, icon: Bookmark },
-    { key: 'settings' as const, label: 'Settings', icon: SettingsIcon },
+    { key: 'tickets' as const, label: 'Tickets', icon: Ticket },
   ];
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-6xl">
       {/* KYC Banner */}
-      {currentTab !== 'settings' && (() => {
+      {(() => {
         const hasApprovedPaidEvents = organizingEvents.some(
           event => event.status.toLowerCase() !== 'pending' && !event.isFree
         );
@@ -213,48 +203,158 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
               isKYCIncomplete={isKYCIncomplete}
               variant="banner"
               onNavigateToKYC={() => {
-                setCurrentTab('settings');
-                setSearchParams({ tab: 'verification' }, { replace: true });
+                navigate('/user/dashboard?section=settings&tab=verification');
               }}
             />
           </div>
         ) : null;
       })()}
 
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      {currentTab !== 'settings' && (
+      {/* ── Hero — Merged Greeting + Featured Event ────────────────────── */}
         <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                {getGreeting()}, {getFirstName(user.name)}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {upcomingEvents.length > 0
-                  ? `You have ${upcomingEvents.length} upcoming ${upcomingEvents.length === 1 ? 'event' : 'events'}`
-                  : "Discover events you'll love"
-                }
-              </p>
+          {nextEvent && currentTab === 'attending' ? (
+            <div
+              onClick={() => navigate(`/user/event/${nextEvent.id}`)}
+              className="rounded-2xl overflow-hidden border border-border/40 bg-card cursor-pointer group transition-all duration-300 hover:shadow-lg hover:border-primary/20 mb-5"
+            >
+              <div className="flex flex-col sm:flex-row">
+                {/* Left — Greeting + Event Info */}
+                <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between">
+                  <div>
+                    <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-0.5">
+                      {getGreeting()}, {getFirstName(user.name)}
+                    </h1>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {upcomingEvents.length > 0
+                        ? `You have ${upcomingEvents.length} upcoming ${upcomingEvents.length === 1 ? 'event' : 'events'}`
+                        : "Discover events you'll love"
+                      }
+                    </p>
+
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-primary/10 text-primary border-0 text-xs font-semibold">
+                        Next Up
+                      </Badge>
+                      {getDaysUntil(nextEvent.date) <= 7 && (
+                        <Badge className="bg-success/10 text-success border-0 text-xs">
+                          <Timer className="w-3 h-3 mr-1" />
+                          {getDaysUntil(nextEvent.date) === 0
+                            ? 'Today'
+                            : getDaysUntil(nextEvent.date) === 1
+                              ? 'Tomorrow'
+                              : `In ${getDaysUntil(nextEvent.date)} days`
+                          }
+                        </Badge>
+                      )}
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-bold text-foreground group-hover:text-primary transition-colors mb-2">
+                      {nextEvent.title}
+                    </h2>
+                    <div className="space-y-1">
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                        {formatEventDateLong(nextEvent.date)}
+                      </p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                        {nextEvent.location}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 mt-4">
+                    <Button
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/user/event/${nextEvent.id}`); }}
+                    >
+                      View Event
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleDownload(nextEvent); }}
+                    >
+                      <Download className="w-3.5 h-3.5 mr-1.5" />
+                      Ticket
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => { e.stopPropagation(); handleShare(nextEvent); }}
+                      title="Share event"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </Button>
+                    <div className="hidden sm:flex items-center gap-2 ml-auto">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); navigate('/'); }}
+                        className="gap-2 text-xs"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Browse
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); navigate('/user/create-event'); }}
+                        className="gap-2 text-xs bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+                        aria-label={CTA_LABELS.CREATE_EVENT}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        {CTA_LABELS.CREATE_EVENT}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right — Event Image */}
+                <div className="hidden sm:block sm:w-2/5 relative">
+                  <img
+                    src={nextEvent.image}
+                    alt={nextEvent.title}
+                    className="w-full h-full object-cover min-h-[200px]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-card/50 to-transparent" />
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/')}
-                className="gap-2 text-sm"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Browse Events
-              </Button>
-              <Button
-                onClick={() => navigate('/user/create-event')}
-                className="gap-2 text-sm bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm"
-                aria-label={CTA_LABELS.CREATE_EVENT}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                {CTA_LABELS.CREATE_EVENT}
-              </Button>
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  {getGreeting()}, {getFirstName(user.name)}
+                </h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {upcomingEvents.length > 0
+                    ? `You have ${upcomingEvents.length} upcoming ${upcomingEvents.length === 1 ? 'event' : 'events'}`
+                    : "Discover events you'll love"
+                  }
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/')}
+                  className="gap-2 text-sm"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Browse Events
+                </Button>
+                <Button
+                  onClick={() => navigate('/user/create-event')}
+                  className="gap-2 text-sm bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm"
+                  aria-label={CTA_LABELS.CREATE_EVENT}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {CTA_LABELS.CREATE_EVENT}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Tabs */}
           <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-fit overflow-x-auto border border-border" role="tablist">
@@ -281,15 +381,6 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
             ))}
           </div>
         </div>
-      )}
-
-      {/* Settings header */}
-      {currentTab === 'settings' && (
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage your account settings</p>
-        </div>
-      )}
 
       {/* ── Tab Content ────────────────────────────────────────────────── */}
       <div className="min-h-[400px]">
@@ -303,85 +394,6 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
               </div>
             ) : attendingEvents.length > 0 ? (
               <div className="space-y-8">
-                {/* Featured Next Event */}
-                {nextEvent && (
-                  <div
-                    onClick={() => navigate(`/user/event/${nextEvent.id}`)}
-                    className="relative rounded-2xl overflow-hidden border border-border/40 bg-card cursor-pointer group transition-all duration-300 hover:shadow-lg hover:border-primary/20"
-                  >
-                    <div className="flex flex-col sm:flex-row">
-                      {/* Image */}
-                      <div className="sm:w-72 lg:w-96 flex-shrink-0">
-                        <img
-                          src={nextEvent.image}
-                          alt={nextEvent.title}
-                          className="w-full h-48 sm:h-full object-cover"
-                        />
-                      </div>
-                      {/* Content */}
-                      <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge className="bg-primary/10 text-primary border-0 text-xs font-semibold">
-                              Next Up
-                            </Badge>
-                            {getDaysUntil(nextEvent.date) <= 7 && (
-                              <Badge className="bg-success/10 text-success border-0 text-xs">
-                                <Timer className="w-3 h-3 mr-1" />
-                                {getDaysUntil(nextEvent.date) === 0
-                                  ? 'Today'
-                                  : getDaysUntil(nextEvent.date) === 1
-                                    ? 'Tomorrow'
-                                    : `In ${getDaysUntil(nextEvent.date)} days`
-                                }
-                              </Badge>
-                            )}
-                          </div>
-                          <h2 className="text-xl sm:text-2xl font-bold text-foreground group-hover:text-primary transition-colors mb-3">
-                            {nextEvent.title}
-                          </h2>
-                          <div className="space-y-1.5">
-                            <p className="text-sm text-muted-foreground flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                              {formatEventDateLong(nextEvent.date)}
-                            </p>
-                            <p className="text-sm text-muted-foreground flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-                              {nextEvent.location}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-4">
-                          <Button
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={(e) => { e.stopPropagation(); navigate(`/user/event/${nextEvent.id}`); }}
-                          >
-                            View Event
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleDownload(nextEvent); }}
-                          >
-                            <Download className="w-3.5 h-3.5 mr-1.5" />
-                            Ticket
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => { e.stopPropagation(); handleShare(nextEvent); }}
-                            title="Share event"
-                          >
-                            <Share2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Remaining Upcoming Events */}
                 {remainingUpcoming.length > 0 && (
@@ -491,7 +503,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                   <div
                     key={event.id}
                     onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
-                    className="flex items-center gap-4 p-4 bg-card border border-border/40 rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
+                    className="flex items-center gap-4 p-4 bg-card border border-border rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
                     style={{ animationDelay: `${index * 40}ms` }}
                     role="article"
                   >
@@ -528,12 +540,10 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
           </div>
         )}
 
-        {/* ── Settings ───────────────────────────────────────────────── */}
-        {currentTab === 'settings' && (
-          <div role="tabpanel" id="settings-panel">
-            <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader size="default" /></div>}>
-              <SettingsPage />
-            </Suspense>
+        {/* ── Tickets ────────────────────────────────────────────────── */}
+        {currentTab === 'tickets' && (
+          <div role="tabpanel" id="tickets-panel">
+            <TicketsTabContent />
           </div>
         )}
       </div>
@@ -564,7 +574,7 @@ function EventCard({ event, index, isPast, onNavigate, onDownload, onShare }: Ev
   return (
     <div
       onClick={onNavigate}
-      className={`flex items-center gap-4 p-4 bg-card border border-border/40 rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2 ${
+      className={`flex items-center gap-4 p-4 bg-card border border-border rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2 ${
         isPast ? 'opacity-75' : ''
       }`}
       style={{ animationDelay: `${index * 40}ms` }}

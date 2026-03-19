@@ -54,7 +54,7 @@ const About = () => {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
             {features.map((feature, index) => (
-              <div key={index} className="text-center">
+              <div key={index} className="text-center p-4 rounded-xl border border-border bg-background hover:border-primary/30 transition-colors">
                 <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                   {feature.icon}
                 </div>

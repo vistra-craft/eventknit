@@ -7,9 +7,9 @@ import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
 import { cleanupTestData } from './test-helpers';
 
-const hashPassword = async (password: string): Promise<string> => {
+async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
-};
+}
 
 // Mock cloudinary package to prevent initialization
 vi.mock('cloudinary', () => ({
@@ -19,6 +19,20 @@ vi.mock('cloudinary', () => ({
       upload_stream: vi.fn(),
       destroy: vi.fn(),
     },
+  },
+}));
+
+// Mock Geolocation service to avoid real HTTP calls (ipapi.co, ip-api.com)
+// These calls take ~3s each and always fail with "Reserved IP Address" in tests,
+// creating a timing window that can cause FK violations on audit logs.
+vi.mock('../src/services/geolocation.service.js', () => ({
+  GeolocationService: {
+    getLocationFromIP: vi.fn().mockResolvedValue({
+      country: 'Test Country',
+      countryCode: 'TC',
+      region: 'Test Region',
+      city: 'Test City',
+    }),
   },
 }));
 
