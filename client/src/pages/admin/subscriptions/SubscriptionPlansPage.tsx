@@ -202,7 +202,7 @@ const SubscriptionPlansPage = () => {
           <Shield className="h-10 w-10 text-muted-foreground" />
           <p className="font-medium text-foreground">No subscription plans found</p>
           <p className="text-sm text-muted-foreground text-center max-w-xs">
-            Run <code className="font-mono bg-muted px-1 rounded">npm run seed</code> in the server directory to initialise the default BASIC, STANDARD, and PREMIUM plans.
+            Subscription plans are initialised automatically on server startup. Try refreshing.
           </p>
           <button
             className="mt-2 text-sm text-primary underline-offset-4 hover:underline"

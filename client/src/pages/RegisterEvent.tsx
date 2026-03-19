@@ -97,7 +97,7 @@ const EventRegistration = () => {
 
       const response = await validatePromoCode(
         code.trim(),
-        eventId,
+        event?.id ?? eventId,
         firstSelectedTicketType,
         totalAmount
       );
@@ -133,7 +133,7 @@ const EventRegistration = () => {
     // 2. Event is loaded
     // 3. We haven't already applied it
     // 4. No discount is currently applied
-    if (urlPromoCode && event && !urlPromoApplied.current && !appliedDiscount) {
+    if (urlPromoCode && event && event.hasPromoCodes && !urlPromoApplied.current && !appliedDiscount) {
       // Set the promo code in input immediately for UX
       setPromoCode(urlPromoCode.toUpperCase());
 
@@ -158,7 +158,7 @@ const EventRegistration = () => {
     const hasSelectedTickets = Object.values(selectedTickets).some(qty => qty > 0);
 
     // If URL has promo code, tickets just got selected, and we haven't applied yet
-    if (urlPromoCode && hasSelectedTickets && !urlPromoApplied.current && !appliedDiscount && event && !event.isFree) {
+    if (urlPromoCode && hasSelectedTickets && !urlPromoApplied.current && !appliedDiscount && event && !event.isFree && event.hasPromoCodes) {
       urlPromoApplied.current = true;
       handleApplyPromoCode(urlPromoCode);
     }
@@ -356,7 +356,7 @@ const EventRegistration = () => {
         }
 
         // Register as guest
-        const response = await registerAsGuest(eventId, {
+        const response = await registerAsGuest(event.id, {
           email,
           firstName,
           lastName,
@@ -436,7 +436,7 @@ const EventRegistration = () => {
         }
       } else {
         // Authenticated user - use regular registration
-      const response = await registerForEvent(eventId, {
+      const response = await registerForEvent(event.id, {
         tickets: tickets.length > 0 ? tickets : undefined,
         ticketType, // Backward compatibility
         quantity, // Backward compatibility
@@ -1032,7 +1032,7 @@ const EventRegistration = () => {
                       </div>
                     )}
 
-                    {!event.isFree && Object.values(selectedTickets).some(qty => qty > 0) && (
+                    {!event.isFree && event.hasPromoCodes && Object.values(selectedTickets).some(qty => qty > 0) && (
                       <div className="pt-4 mt-2 border-t space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                           <Ticket className="w-4 h-4" />

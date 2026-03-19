@@ -158,6 +158,9 @@ export interface EventData {
   // Seating
   hasSeatMap?: boolean; // Whether a seat map is configured for this event
 
+  // Promo codes
+  hasPromoCodes?: boolean; // Whether this event has active promo codes
+
   // Computed fields
   organizerName?: string; // Computed from organizer
   registrationCount?: number; // From _count

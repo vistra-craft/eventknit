@@ -261,7 +261,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       finance: location.pathname.startsWith('/admin/finance'),
       tickets: location.pathname.startsWith('/admin/tickets'),
       subscriptions: location.pathname.startsWith('/admin/subscriptions'),
-      users: location.pathname.startsWith('/admin/users'),
+      users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
       communications: location.pathname.startsWith('/admin/communications') || location.pathname === '/admin/notifications',
       settings: location.pathname.startsWith('/admin/settings') || location.pathname === '/admin/notification-settings' || location.pathname === '/admin/white-label',
       support: location.pathname.startsWith('/admin/support') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',

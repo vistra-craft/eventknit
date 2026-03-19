@@ -790,6 +790,15 @@ export class EventService {
       avatar: r.attendee.avatar,
     }));
 
+    // Check if this event has any active promo codes
+    const promoCodeCount = await prisma.promoCode.count({
+      where: {
+        eventId: event.id,
+        isActive: true,
+      },
+    });
+    (event as Record<string, unknown>).hasPromoCodes = promoCodeCount > 0;
+
     return event;
   }
 

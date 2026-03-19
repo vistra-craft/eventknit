@@ -1064,6 +1064,9 @@ describe('EventService - getEventById', () => {
   beforeEach(() => {
     mockReset(prisma);
     vi.clearAllMocks();
+    // Default: no attendee avatars, no promo codes
+    prisma.eventRegistration.findMany.mockResolvedValue([]);
+    prisma.promoCode.count.mockResolvedValue(0);
   });
 
   const mockEvent = {
@@ -1172,6 +1175,33 @@ describe('EventService - getEventById', () => {
     await expect(
       EventService.getEventById('event-123'),
     ).rejects.toThrow(NotFoundError);
+  });
+
+  it('should set hasPromoCodes to true when active promo codes exist', async () => {
+    // Arrange
+    prisma.event.findFirst.mockResolvedValue(JSON.parse(JSON.stringify(mockEvent)) as any);
+    prisma.promoCode.count.mockResolvedValue(2);
+
+    // Act
+    const result = await EventService.getEventById('event-123');
+
+    // Assert
+    expect((result as any).hasPromoCodes).toBe(true);
+    expect(prisma.promoCode.count).toHaveBeenCalledWith({
+      where: { eventId: 'event-123', isActive: true },
+    });
+  });
+
+  it('should set hasPromoCodes to false when no active promo codes exist', async () => {
+    // Arrange
+    prisma.event.findFirst.mockResolvedValue(JSON.parse(JSON.stringify(mockEvent)) as any);
+    prisma.promoCode.count.mockResolvedValue(0);
+
+    // Act
+    const result = await EventService.getEventById('event-123');
+
+    // Assert
+    expect((result as any).hasPromoCodes).toBe(false);
   });
 });
 

@@ -104,14 +104,15 @@ npm run prisma:migrate
 
 ### 5. Seed Database (Optional)
 
-Populate the database with initial test data:
+The server automatically seeds required data on every startup — no manual step needed:
+
+- **Super admin** — `vistracraft@gmail.com` (created/updated via `ensureSuperAdmin`)
+- **Subscription plans** — BASIC, STANDARD, and PREMIUM tiers (created/updated via `ensureSubscriptionPlans`)
+
+For additional test/demo data:
 
 ```bash
-# Full seed (users, roles, permissions)
-npm run prisma:seed
-
-# Or seed specific data
-npm run seed:test-users    # Create test users
+npm run seed:test-users    # Create test users for all roles
 npm run seed:events        # Create sample events
 npm run seed:dummy-data    # Create comprehensive test data
 ```
@@ -379,6 +380,8 @@ npm run verify-test-users
 ```
 
 ### Seed Commands
+
+The super admin and subscription plans are seeded automatically on server startup. For additional test/demo data:
 
 ```bash
 npm run seed:test-users    # Create test users for all roles

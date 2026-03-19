@@ -3,7 +3,7 @@ import { config } from './config/index.js';
 import { logger } from './utils/logger.js';
 import app from './app.js';
 import { initializeJobs, stopJobs } from './jobs/index.js';
-import { ensureSuperAdmin } from './utils/ensureSuperAdmin.js';
+import { ensureSuperAdmin, ensureSubscriptionPlans } from './utils/ensureSuperAdmin.js';
 import { createServer } from 'http';
 import { websocketService } from './services/websocket.service.js';
 import { mobilePushService } from './services/mobile-push.service.js';
@@ -38,6 +38,7 @@ const startServer = async () => {
     try {
       await connectDB();
       try { await ensureSuperAdmin(); } catch { /* logged internally */ }
+      try { await ensureSubscriptionPlans(); } catch { /* logged internally */ }
     } catch { /* logged internally */ }
 
     // Initialize scheduled jobs

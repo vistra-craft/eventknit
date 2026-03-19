@@ -1,249 +1,538 @@
-#!/usr/bin/env node
-
 /**
- * Script to seed 10 events for existing organizers
- * Usage: node scripts/seed-events.js
+ * Seed Events Script
+ * Seeds 14 free events for organizer bkelvin138@gmail.com
+ * 
+ * Usage: node seed-events.js
  */
 
-import { PrismaClient, EventStatus, EventType, UserRole } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const API_URL = 'http://178.18.249.49/api/v1';
+const ORGANIZER_EMAIL = 'bkelvin138@gmail.com';
+const ORGANIZER_PASSWORD = 'Somesuperhardpassword2guess!'; // REPLACE WITH ACTUAL PASSWORD
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Unsplash images for different event types
+const eventImages = {
+  tech: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200',
+  music: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200',
+  food: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1200',
+  sports: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=1200',
+  art: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=1200',
+  business: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=1200',
+  workshop: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200',
+  networking: 'https://images.unsplash.com/photo-1528605105345-5344ea20e269?w=1200',
+  conference: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200',
+  yoga: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=1200',
+  gaming: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200',
+  charity: 'https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=1200',
+  education: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1200',
+  community: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=1200',
+};
 
-// Load environment variables
-const env = process.env.NODE_ENV || 'development';
-const envPath = path.resolve(__dirname, '..', `.env.${env}`);
-dotenv.config({ path: envPath });
-dotenv.config(); // Also load .env for fallback
+// Helper to get future dates
+const getFutureDate = (daysFromNow) => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  return date.toISOString().split('T')[0];
+};
 
-const prisma = new PrismaClient({
-  log: ['error'],
-});
-
-const eventTemplates = [
+// Event data templates
+const events = [
   {
-    title: "Tech Innovation Summit 2025",
-    description: "Join industry leaders to discuss the future of technology, AI, and sustainable innovation. Network with professionals and discover the latest trends.",
-    category: "Technology",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1000&q=80",
-    price: 150.00,
-    venue: "Grand Convention Center",
-    location: "Nairobi, Kenya"
+    title: 'AI & Machine Learning Workshop 2026',
+    description: 'Join us for an intensive hands-on workshop exploring the latest in AI and machine learning. Perfect for developers and data scientists looking to level up their skills.',
+    category: 'Technology',
+    tags: ['AI', 'Machine Learning', 'Workshop', 'Tech', 'Python'],
+    startDate: getFutureDate(15),
+    startTime: '09:00',
+    endTime: '17:00',
+    venue: 'Tech Hub Innovation Center',
+    location: 'San Francisco, CA',
+    address: '123 Market Street, San Francisco, CA 94103',
+    coordinates: { lat: 37.7749, lng: -122.4194 },
+    isOnline: false,
+    isFree: true,
+    capacity: 100,
+    image: eventImages.tech,
+    requirements: ['Laptop with Python installed', 'Basic programming knowledge'],
+    ageRestriction: '18+',
+    duration: '8 hours',
+    speakers: [
+      { name: 'Dr. Sarah Chen', title: 'AI Research Lead', bio: 'Leading AI researcher with 15+ years experience at Google Brain and OpenAI. Author of 30+ peer-reviewed papers.', image: 'https://i.pravatar.cc/300?img=5', company: 'DeepMind', linkedin: 'https://linkedin.com/in/sarahchen', twitter: 'https://twitter.com/sarahchenai' },
+      { name: 'Mark Johnson', title: 'ML Engineer', bio: 'Senior ML engineer at a top tech company with expertise in production ML systems and LLM fine-tuning.', image: 'https://i.pravatar.cc/300?img=12', company: 'Meta AI', website: 'https://markjohnson.dev' },
+      { name: 'Priya Nair', title: 'Data Science Manager', bio: 'Leads a team of 20 data scientists building recommendation systems at scale.', image: 'https://i.pravatar.cc/300?img=47', company: 'Netflix', linkedin: 'https://linkedin.com/in/priyanair' }
+    ],
+    agenda: [
+      { title: 'Registration & Breakfast', startTime: '08:30', endTime: '09:00', sessionType: 'registration', room: 'Lobby' },
+      { title: 'Keynote: The State of AI in 2026', startTime: '09:00', endTime: '10:30', sessionType: 'keynote', room: 'Main Hall', description: 'Dr. Sarah Chen explores breakthroughs in large language models and multimodal AI.' },
+      { title: 'Neural Networks Deep Dive', startTime: '10:45', endTime: '12:30', sessionType: 'workshop', room: 'Lab A', description: 'Hands-on session building and training transformer models from scratch.' },
+      { title: 'Lunch Break', startTime: '12:30', endTime: '13:30', sessionType: 'lunch', room: 'Cafeteria' },
+      { title: 'Production ML Systems', startTime: '13:30', endTime: '15:00', sessionType: 'panel', room: 'Main Hall', description: 'Panel discussion on deploying and monitoring ML in production environments.' },
+      { title: 'Hands-on Projects', startTime: '15:15', endTime: '17:00', sessionType: 'tutorial', room: 'Lab A', description: 'Build your own fine-tuned model using provided datasets and GPU instances.' }
+    ],
+    exhibitors: [
+      { name: 'NVIDIA', description: 'AI computing hardware and software solutions — showcasing H100 GPUs and CUDA toolkit demos.', booth: 'A1', website: 'https://nvidia.com', category: 'Hardware' },
+      { name: 'Hugging Face', description: 'Open-source ML platform with pre-trained models and datasets for the community.', booth: 'A2', website: 'https://huggingface.co', category: 'Platform' },
+      { name: 'Weights & Biases', description: 'MLOps platform for experiment tracking, model versioning, and collaboration.', booth: 'B1', website: 'https://wandb.ai', category: 'Tools' },
+      { name: 'DataRobot', description: 'Enterprise AI platform enabling automated machine learning and model deployment.', booth: 'B2', category: 'Enterprise AI' }
+    ],
+    sponsors: [
+      { name: 'Google Cloud', level: 'platinum', website: 'https://cloud.google.com', description: 'Providing $50K in cloud credits for workshop participants.' },
+      { name: 'NVIDIA', level: 'gold', website: 'https://nvidia.com', description: 'Supplying GPU hardware for hands-on labs.' },
+      { name: 'Andreessen Horowitz', level: 'silver', website: 'https://a16z.com', description: 'Supporting AI education and research initiatives.' }
+    ],
+    faqs: [
+      { question: 'Do I need prior AI experience?', answer: 'Basic programming knowledge is sufficient. We will cover fundamentals.' },
+      { question: 'Will materials be provided?', answer: 'Yes, all workshop materials and code samples will be provided.' }
+    ],
+    timezone: 'America/Los_Angeles'
   },
   {
-    title: "Summer Music Festival",
-    description: "A three-day extravaganza featuring top artists from around the globe. Experience music, food, and art in an open-air setting.",
-    category: "Music",
-    image: "https://images.unsplash.com/photo-1459749411177-2a296581dca1?auto=format&fit=crop&w=1000&q=80",
-    price: 50.00,
-    venue: "Uhuru Gardens",
-    location: "Nairobi, Kenya"
+    title: 'Summer Jazz Festival 2026',
+    description: 'Experience an unforgettable evening of smooth jazz featuring local and international artists. Bring your friends and enjoy great music under the stars!',
+    category: 'Music',
+    tags: ['Jazz', 'Music', 'Festival', 'Live Performance', 'Entertainment'],
+    startDate: getFutureDate(30),
+    startTime: '18:00',
+    endTime: '23:00',
+    venue: 'Riverside Amphitheater',
+    location: 'Austin, TX',
+    address: '456 Riverside Drive, Austin, TX 78701',
+    coordinates: { lat: 30.2672, lng: -97.7431 },
+    isOnline: false,
+    isFree: true,
+    capacity: 500,
+    image: eventImages.music,
+    duration: '5 hours',
+    speakers: [
+      { name: 'The Austin Jazz Ensemble', title: 'Headliner', bio: 'Award-winning jazz band with 20+ years of performances', image: 'https://i.pravatar.cc/300?img=33' }
+    ],
+    agenda: [
+      { title: 'Opening Act - Local Talent', startTime: '18:00', endTime: '19:00' },
+      { title: 'Main Performance', startTime: '19:30', endTime: '21:30' },
+      { title: 'Jam Session', startTime: '22:00', endTime: '23:00' }
+    ],
+    timezone: 'America/Chicago'
   },
   {
-    title: "Digital Marketing Masterclass",
-    description: "Learn actionable strategies to grow your brand online. Covers SEO, social media marketing, and content strategy.",
-    category: "Business",
-    image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=1000&q=80",
-    price: 75.00,
-    venue: "Innovation Hub",
-    location: "Westlands, Nairobi"
+    title: 'Gourmet Food & Wine Tasting',
+    description: 'Discover exquisite flavors from around the world. Sample premium wines, artisan cheeses, and gourmet dishes prepared by renowned chefs.',
+    category: 'Food & Drink',
+    tags: ['Food', 'Wine', 'Tasting', 'Culinary', 'Gourmet'],
+    startDate: getFutureDate(20),
+    startTime: '19:00',
+    endTime: '22:00',
+    venue: 'Grand Ballroom Hotel Luxe',
+    location: 'New York, NY',
+    address: '789 Fifth Avenue, New York, NY 10022',
+    coordinates: { lat: 40.7128, lng: -74.0060 },
+    isOnline: false,
+    isFree: true,
+    capacity: 150,
+    image: eventImages.food,
+    ageRestriction: '21+',
+    duration: '3 hours',
+    requirements: ['Valid ID for age verification'],
+    speakers: [
+      { name: 'Chef Michael Romano', title: 'Executive Chef', bio: 'Michelin-starred chef with expertise in fusion cuisine', image: 'https://i.pravatar.cc/300?img=13' }
+    ],
+    faqs: [
+      { question: 'Are there vegetarian options?', answer: 'Yes, we offer vegetarian and vegan tasting options.' },
+      { question: 'What should I wear?', answer: 'Smart casual attire is recommended.' }
+    ],
+    timezone: 'America/New_York'
   },
   {
-    title: "Contemporary Art Exhibition",
-    description: "Showcasing works from emerging local artists. A journey through modern expressionism and abstract art.",
-    category: "Arts",
-    image: "https://images.unsplash.com/photo-1460661619277-d6db9268e435?auto=format&fit=crop&w=1000&q=80",
-    price: 20.00,
-    venue: "National Museum",
-    location: "Nairobi, Kenya"
+    title: 'Community Marathon 2026',
+    description: 'Run for a cause! Join hundreds of runners in our annual community marathon. All fitness levels welcome. Proceeds support local charities.',
+    category: 'Sports',
+    tags: ['Marathon', 'Running', 'Fitness', 'Community', 'Charity'],
+    startDate: getFutureDate(45),
+    startTime: '06:00',
+    endTime: '12:00',
+    venue: 'City Park',
+    location: 'Seattle, WA',
+    address: 'Green Lake Park, Seattle, WA 98103',
+    coordinates: { lat: 47.6062, lng: -122.3321 },
+    isOnline: false,
+    isFree: true,
+    capacity: 1000,
+    image: eventImages.sports,
+    duration: '6 hours',
+    requirements: ['Running shoes', 'Water bottle', 'Physical fitness'],
+    ageRestriction: 'All ages (under 16 with guardian)',
+    agenda: [
+      { title: 'Registration & Warm-up', startTime: '06:00', endTime: '07:00' },
+      { title: 'Marathon Start', startTime: '07:00', endTime: '07:15' },
+      { title: 'Awards Ceremony', startTime: '11:00', endTime: '12:00' }
+    ],
+    timezone: 'America/Los_Angeles'
   },
   {
-    title: "Startup Pitch Night",
-    description: "Watch 10 startups pitch their ideas to a panel of investors. Great networking opportunity for entrepreneurs.",
-    category: "Business",
-    image: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=1000&q=80",
-    price: 0.00,
-    venue: "The Nexus",
-    location: "Kilimani, Nairobi"
+    title: 'Digital Art Exhibition: Future Visions',
+    description: 'Explore the intersection of technology and art. This immersive exhibition features works from emerging digital artists using AI, VR, and interactive installations.',
+    category: 'Arts',
+    tags: ['Art', 'Digital Art', 'Exhibition', 'Technology', 'Creative'],
+    startDate: getFutureDate(10),
+    endDate: getFutureDate(17),
+    startTime: '10:00',
+    endTime: '18:00',
+    venue: 'Modern Art Museum',
+    location: 'Chicago, IL',
+    address: '220 E Chicago Avenue, Chicago, IL 60611',
+    coordinates: { lat: 41.8781, lng: -87.6298 },
+    isOnline: false,
+    isFree: true,
+    capacity: 200,
+    image: eventImages.art,
+    duration: '8 hours daily',
+    speakers: [
+      { name: 'Alexandra Torres', title: 'Curator', bio: 'Contemporary art curator specializing in digital media', image: 'https://i.pravatar.cc/300?img=23' }
+    ],
+    timezone: 'America/Chicago'
   },
   {
-    title: "Wellness & Yoga Retreat",
-    description: "A day of relaxation, meditation, and yoga. Reconnect with your inner self in a serene environment.",
-    category: "Health",
-    image: "https://images.unsplash.com/photo-1544367563-12123d8965cd?auto=format&fit=crop&w=1000&q=80",
-    price: 40.00,
-    venue: "Karura Forest",
-    location: "Nairobi, Kenya"
+    title: 'Startup Pitch Competition 2026',
+    description: 'Watch innovative startups pitch their ideas to top investors. Network with entrepreneurs, investors, and tech enthusiasts. Winner receives $50K in funding!',
+    category: 'Business',
+    tags: ['Startup', 'Entrepreneurship', 'Pitch', 'Business', 'Networking'],
+    startDate: getFutureDate(25),
+    startTime: '14:00',
+    endTime: '18:00',
+    venue: 'Innovation Hub',
+    location: 'Boston, MA',
+    address: '100 Northern Avenue, Boston, MA 02210',
+    coordinates: { lat: 42.3601, lng: -71.0589 },
+    isOnline: true,
+    onlineLink: 'https://zoom.us/j/startup-pitch-2026',
+    isFree: true,
+    capacity: 300,
+    image: eventImages.business,
+    duration: '4 hours',
+    speakers: [
+      { name: 'David Park', title: 'VC Partner', bio: 'Venture capitalist with portfolio of 50+ startups totaling $2B in exits. Focuses on SaaS, fintech, and deep tech.', image: 'https://i.pravatar.cc/300?img=15', company: 'Sequoia Capital', linkedin: 'https://linkedin.com/in/davidpark' },
+      { name: 'Lisa Chen', title: 'Serial Entrepreneur', bio: 'Founded and exited 3 successful tech companies. Current advisor to Y Combinator and mentor at Techstars.', image: 'https://i.pravatar.cc/300?img=29', company: 'Chen Ventures', twitter: 'https://twitter.com/lisachen' },
+      { name: 'Marcus Webb', title: 'Angel Investor', bio: 'Early backer of Airbnb, Stripe, and Figma. Writes a weekly newsletter on startup strategy read by 80K subscribers.', image: 'https://i.pravatar.cc/300?img=11', website: 'https://marcuswebb.com' }
+    ],
+    agenda: [
+      { title: 'Registration & Networking', startTime: '13:30', endTime: '14:00', sessionType: 'registration', room: 'Lobby' },
+      { title: 'Opening Keynote: Startup Ecosystem 2026', startTime: '14:00', endTime: '14:30', sessionType: 'keynote', room: 'Main Stage', description: 'David Park shares his perspective on the most promising startup verticals for the next decade.' },
+      { title: 'Startup Pitches – Round 1', startTime: '14:30', endTime: '16:00', sessionType: 'other', room: 'Main Stage', description: 'Eight startups pitch live to a panel of investors. 10 minutes per team, 5-minute Q&A.' },
+      { title: 'Break & Exhibitor Showcase', startTime: '16:00', endTime: '16:30', sessionType: 'break', room: 'Exhibition Hall' },
+      { title: 'Startup Pitches – Round 2 & Finals', startTime: '16:30', endTime: '17:30', sessionType: 'other', room: 'Main Stage', description: 'Top 4 finalists pitch again for the $50K grand prize.' },
+      { title: 'Judging, Awards & Closing', startTime: '17:30', endTime: '18:00', sessionType: 'awards', room: 'Main Stage' }
+    ],
+    exhibitors: [
+      { name: 'AngelList', description: 'Platform connecting startups with investors and talent. Sign up for free investor intros at our booth.', booth: 'E1', website: 'https://angellist.com', category: 'Funding Platform' },
+      { name: 'Stripe Atlas', description: 'Incorporate your startup and open a US bank account in days. Live demo and Q&A available.', booth: 'E2', website: 'https://stripe.com/atlas', category: 'Legal & Finance' },
+      { name: 'AWS Startups', description: '$100K in AWS credits available for qualifying startups. Meet our startup solutions architects.', booth: 'E3', website: 'https://aws.amazon.com/startups', category: 'Cloud Infrastructure' },
+      { name: 'Notion', description: 'All-in-one workspace for your startup — docs, wikis, databases. Free Team plan for attendees.', booth: 'E4', website: 'https://notion.so', category: 'Productivity' }
+    ],
+    sponsors: [
+      { name: 'Sequoia Capital', level: 'platinum', website: 'https://sequoiacap.com', description: 'Title sponsor and lead judge panel for the $50K prize competition.' },
+      { name: 'AWS', level: 'gold', website: 'https://aws.amazon.com', description: 'Providing cloud infrastructure credits to all pitching startups.' },
+      { name: 'Stripe', level: 'silver', website: 'https://stripe.com', description: 'Supporting the next generation of fintech and payment innovators.' },
+      { name: 'Boston Innovation District', level: 'partner', description: 'Local ecosystem partner connecting startups to Boston\'s vibrant tech community.' }
+    ],
+    timezone: 'America/New_York'
   },
   {
-    title: "Culinary Arts Workshop",
-    description: "Hands-on cooking class with a celebrity chef. Learn to prepare gourmet meals at home.",
-    category: "Food",
-    image: "https://images.unsplash.com/photo-1556910103-1c02745a30bf?auto=format&fit=crop&w=1000&q=80",
-    price: 100.00,
-    venue: "Culinary Institute",
-    location: "Karen, Nairobi"
+    title: 'Web Development Bootcamp: React & Next.js',
+    description: 'Master modern web development! Build production-ready applications with React and Next.js. Includes hands-on projects and career guidance.',
+    category: 'Technology',
+    tags: ['Web Development', 'React', 'Next.js', 'Coding', 'Workshop'],
+    startDate: getFutureDate(18),
+    endDate: getFutureDate(20),
+    startTime: '10:00',
+    endTime: '18:00',
+    venue: 'Code Academy Center',
+    location: 'Denver, CO',
+    address: '1650 Larimer Street, Denver, CO 80202',
+    coordinates: { lat: 39.7392, lng: -104.9903 },
+    isOnline: false,
+    isFree: true,
+    capacity: 80,
+    image: eventImages.workshop,
+    requirements: ['Laptop', 'Basic HTML/CSS/JavaScript knowledge', 'Node.js installed'],
+    duration: '3 days, 8 hours each',
+    speakers: [
+      { name: 'Tom Williams', title: 'Senior Developer', bio: '10+ years building web applications at FAANG companies', image: 'https://i.pravatar.cc/300?img=17' }
+    ],
+    timezone: 'America/Denver'
   },
   {
-    title: "Charity Gala Dinner",
-    description: "An evening of elegance to support local education initiatives. Dinner, entertainment, and auction included.",
-    category: "Charity",
-    image: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=1000&q=80",
-    price: 200.00,
-    venue: "Villa Rosa Kempinski",
-    location: "Nairobi, Kenya"
+    title: 'Tech Networking Mixer: Connect & Collaborate',
+    description: 'Meet fellow tech professionals, share ideas, and build valuable connections. Whether you\'re looking for cofounders, employees, or just tech friends!',
+    category: 'Networking',
+    tags: ['Networking', 'Tech', 'Professionals', 'Career', 'Social'],
+    startDate: getFutureDate(12),
+    startTime: '18:30',
+    endTime: '21:00',
+    venue: 'Rooftop Lounge @ Tech Tower',
+    location: 'Miami, FL',
+    address: '1101 Brickell Avenue, Miami, FL 33131',
+    coordinates: { lat: 25.7617, lng: -80.1918 },
+    isOnline: false,
+    isFree: true,
+    capacity: 120,
+    image: eventImages.networking,
+    duration: '2.5 hours',
+    ageRestriction: '18+',
+    timezone: 'America/New_York'
   },
   {
-    title: "Future of AI Conference",
-    description: "Exploring the impact of Artificial Intelligence on various industries. Keynotes, panels, and demos.",
-    category: "Technology",
-    image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1000&q=80",
-    price: 120.00,
-    venue: "Radisson Blu",
-    location: "Upper Hill, Nairobi"
+    title: 'Global Marketing Summit 2026',
+    description: 'Learn cutting-edge marketing strategies from industry leaders. Topics include social media, content marketing, SEO, and growth hacking.',
+    category: 'Business',
+    tags: ['Marketing', 'Conference', 'Business', 'Digital Marketing', 'Strategy'],
+    startDate: getFutureDate(35),
+    startTime: '09:00',
+    endTime: '17:00',
+    venue: 'Convention Center Hall A',
+    location: 'Las Vegas, NV',
+    address: '3150 Paradise Road, Las Vegas, NV 89109',
+    coordinates: { lat: 36.1699, lng: -115.1398 },
+    isOnline: true,
+    onlineLink: 'https://zoom.us/j/marketing-summit-2026',
+    isFree: true,
+    capacity: 500,
+    image: eventImages.conference,
+    duration: '8 hours',
+    speakers: [
+      { name: 'Emily Rodriguez', title: 'CMO', bio: 'Chief Marketing Officer at a Fortune 500 consumer brand. Led campaigns that generated $500M in revenue growth.', image: 'https://i.pravatar.cc/300?img=9', company: 'PepsiCo', linkedin: 'https://linkedin.com/in/emilyrodriguez', twitter: 'https://twitter.com/emilyrodmktg' },
+      { name: 'James Lee', title: 'Growth Lead', bio: 'Head of Growth at three unicorn startups. Helped 100+ early-stage companies achieve 10x user growth through data-driven marketing.', image: 'https://i.pravatar.cc/300?img=32', company: 'GrowthLab', website: 'https://jamesleegrowth.com', twitter: 'https://twitter.com/jamesleegrowth' },
+      { name: 'Sofia Martins', title: 'Head of Content', bio: 'Built content programs from 0 to 5M monthly organic visitors. Specializes in SEO, video, and creator partnerships.', image: 'https://i.pravatar.cc/300?img=44', company: 'HubSpot', linkedin: 'https://linkedin.com/in/sofiamartins' },
+      { name: 'Ryan Okafor', title: 'Paid Media Director', bio: 'Manages $50M+ in annual ad spend across Google, Meta, and TikTok. Expert in performance marketing and attribution.', image: 'https://i.pravatar.cc/300?img=56', company: 'Omnicom', linkedin: 'https://linkedin.com/in/ryanokafor' }
+    ],
+    agenda: [
+      { title: 'Registration & Welcome Coffee', startTime: '08:30', endTime: '09:00', sessionType: 'registration', room: 'Lobby' },
+      { title: 'Keynote: The Future of Marketing in an AI-First World', startTime: '09:00', endTime: '10:00', sessionType: 'keynote', room: 'Hall A', description: 'Emily Rodriguez explores how AI is reshaping brand strategy, customer acquisition, and personalization at scale.' },
+      { title: 'Breakout: Content & SEO in 2026', startTime: '10:15', endTime: '11:15', sessionType: 'breakout', room: 'Room 1', description: 'Sofia Martins on building content engines that compound over time.' },
+      { title: 'Breakout: Paid Media & Attribution', startTime: '10:15', endTime: '11:15', sessionType: 'breakout', room: 'Room 2', description: 'Ryan Okafor on multi-touch attribution models and maximizing ROAS.' },
+      { title: 'Fireside Chat: Growth Hacking at Scale', startTime: '11:30', endTime: '12:30', sessionType: 'fireside-chat', room: 'Hall A', description: 'James Lee in conversation about the growth playbooks that moved the needle at Slack, Notion, and Linear.' },
+      { title: 'Networking Lunch & Exhibitor Hall', startTime: '12:30', endTime: '14:00', sessionType: 'lunch', room: 'Exhibition Hall' },
+      { title: 'Panel: B2B vs B2C Marketing — What Actually Works', startTime: '14:00', endTime: '15:30', sessionType: 'panel', room: 'Hall A', description: 'All four speakers discuss tactics that translate across markets.' },
+      { title: 'Lightning Talks: Emerging Channels', startTime: '15:45', endTime: '16:30', sessionType: 'lightning-talk', room: 'Hall A', description: 'Five 8-minute rapid-fire talks on TikTok ads, newsletter growth, podcast sponsorships, and more.' },
+      { title: 'Q&A & Closing Remarks', startTime: '16:30', endTime: '17:00', sessionType: 'qa', room: 'Hall A' }
+    ],
+    exhibitors: [
+      { name: 'HubSpot', description: 'All-in-one CRM and marketing platform. Live product demos and exclusive summit discounts available.', booth: 'M1', website: 'https://hubspot.com', category: 'CRM & Marketing' },
+      { name: 'Semrush', description: 'SEO and competitive intelligence platform. Get a free 30-day trial and live site audit at our booth.', booth: 'M2', website: 'https://semrush.com', category: 'SEO Tools' },
+      { name: 'Klaviyo', description: 'Email and SMS marketing automation built for ecommerce growth.', booth: 'M3', website: 'https://klaviyo.com', category: 'Email Marketing' },
+      { name: 'Sprout Social', description: 'Social media management and analytics platform. Book a live demo for a free 60-day trial.', booth: 'M4', website: 'https://sproutsocial.com', category: 'Social Media' },
+      { name: 'Triple Whale', description: 'Ecommerce analytics and attribution platform trusted by 10,000+ Shopify brands.', booth: 'M5', website: 'https://triplewhale.com', category: 'Analytics' }
+    ],
+    sponsors: [
+      { name: 'HubSpot', level: 'platinum', website: 'https://hubspot.com', description: 'Presenting sponsor. Supporting marketers with world-class tools and education.' },
+      { name: 'Google', level: 'gold', website: 'https://google.com', description: 'Powering the summit\'s digital advertising and analytics workshops.' },
+      { name: 'Meta', level: 'gold', website: 'https://meta.com', description: 'Sponsoring the Paid Media & Attribution breakout track.' },
+      { name: 'Semrush', level: 'silver', website: 'https://semrush.com', description: 'Providing all attendees with a free 30-day premium trial.' },
+      { name: 'Las Vegas Convention Authority', level: 'partner', description: 'Local partner supporting event logistics and hospitality.' }
+    ],
+    timezone: 'America/Los_Angeles'
   },
   {
-    title: "Photography Walk",
-    description: "Join us for a guided photography walk through the city's historic districts. All skill levels welcome.",
-    category: "Arts",
-    image: "https://images.unsplash.com/photo-1552168324-d612d77725e3?auto=format&fit=crop&w=1000&q=80",
-    price: 15.00,
-    venue: "CBD",
-    location: "Nairobi, Kenya"
+    title: 'Morning Yoga in the Park',
+    description: 'Start your day with mindfulness and movement. All levels welcome! Bring your mat and enjoy a peaceful practice surrounded by nature.',
+    category: 'Health & Wellness',
+    tags: ['Yoga', 'Wellness', 'Fitness', 'Meditation', 'Outdoor'],
+    startDate: getFutureDate(8),
+    startTime: '07:00',
+    endTime: '08:30',
+    venue: 'Central Park Great Lawn',
+    location: 'New York, NY',
+    address: 'Central Park, New York, NY 10024',
+    coordinates: { lat: 40.7829, lng: -73.9654 },
+    isOnline: false,
+    isFree: true,
+    capacity: 50,
+    image: eventImages.yoga,
+    requirements: ['Yoga mat', 'Comfortable clothing', 'Water bottle'],
+    duration: '1.5 hours',
+    ageRestriction: 'All ages',
+    speakers: [
+      { name: 'Maya Patel', title: 'Yoga Instructor', bio: 'Certified yoga instructor with 8 years experience', image: 'https://i.pravatar.cc/300?img=27' }
+    ],
+    timezone: 'America/New_York'
+  },
+  {
+    title: 'Esports Tournament: League of Champions',
+    description: 'Watch top gamers compete for glory! Multiple game titles including League of Legends, CS:GO, and Valorant. Food trucks and merch available.',
+    category: 'Gaming',
+    tags: ['Esports', 'Gaming', 'Tournament', 'Competition', 'Entertainment'],
+    startDate: getFutureDate(28),
+    startTime: '12:00',
+    endTime: '20:00',
+    venue: 'Arena Gaming Center',
+    location: 'Los Angeles, CA',
+    address: '1111 S Figueroa Street, Los Angeles, CA 90015',
+    coordinates: { lat: 34.0522, lng: -118.2437 },
+    isOnline: true,
+    onlineLink: 'https://twitch.tv/league-of-champions-2026',
+    isFree: true,
+    capacity: 300,
+    image: eventImages.gaming,
+    duration: '8 hours',
+    ageRestriction: '13+',
+    timezone: 'America/Los_Angeles'
+  },
+  {
+    title: 'Charity Fundraiser Gala: Kids Education',
+    description: 'An elegant evening supporting education for underprivileged children. Features silent auction, live music, and inspiring stories from scholarship recipients.',
+    category: 'Charity',
+    tags: ['Charity', 'Fundraiser', 'Education', 'Community', 'Gala'],
+    startDate: getFutureDate(40),
+    startTime: '19:00',
+    endTime: '23:00',
+    venue: 'The Grand Hotel Ballroom',
+    location: 'Philadelphia, PA',
+    address: '200 S Broad Street, Philadelphia, PA 19102',
+    coordinates: { lat: 39.9526, lng: -75.1652 },
+    isOnline: false,
+    isFree: true,
+    capacity: 250,
+    image: eventImages.charity,
+    duration: '4 hours',
+    ageRestriction: '18+',
+    requirements: ['Formal attire'],
+    sponsors: [
+      { name: 'Tech Corp Foundation', level: 'Platinum', logo: 'https://via.placeholder.com/150' },
+      { name: 'Community Bank', level: 'Gold', logo: 'https://via.placeholder.com/150' }
+    ],
+    timezone: 'America/New_York'
+  },
+  {
+    title: 'Climate Action Workshop: Building Sustainable Communities',
+    description: 'Learn practical ways to reduce your carbon footprint and create sustainable communities. Experts share insights on renewable energy, waste reduction, and eco-friendly living.',
+    category: 'Education',
+    tags: ['Environment', 'Sustainability', 'Climate', 'Education', 'Workshop'],
+    startDate: getFutureDate(22),
+    startTime: '13:00',
+    endTime: '17:00',
+    venue: 'Eco Center',
+    location: 'Portland, OR',
+    address: '1234 Green Street, Portland, OR 97209',
+    coordinates: { lat: 45.5152, lng: -122.6784 },
+    isOnline: true,
+    onlineLink: 'https://meet.google.com/climate-action-workshop',
+    isFree: true,
+    capacity: 150,
+    image: eventImages.education,
+    duration: '4 hours',
+    speakers: [
+      { name: 'Dr. Green Anderson', title: 'Environmental Scientist', bio: 'Leading researcher in sustainable development', image: 'https://i.pravatar.cc/300?img=8' },
+      { name: 'Rachel Kim', title: 'Sustainability Consultant', bio: 'Helps organizations achieve carbon neutrality', image: 'https://i.pravatar.cc/300?img=20' }
+    ],
+    faqs: [
+      { question: 'Will there be actionable takeaways?', answer: 'Yes! You will receive a comprehensive guide with steps you can implement immediately.' },
+      { question: 'Is this suitable for businesses?', answer: 'Absolutely. We cover both individual and organizational sustainability.' }
+    ],
+    timezone: 'America/Los_Angeles'
+  },
+  {
+    title: 'Local Book Club Meetup: Modern Classics',
+    description: 'Join fellow book lovers for a lively discussion of contemporary literature. This month: "The Night Circus" by Erin Morgenstern. Coffee and snacks provided!',
+    category: 'Community',
+    tags: ['Books', 'Reading', 'Community', 'Literature', 'Social'],
+    startDate: getFutureDate(14),
+    startTime: '18:00',
+    endTime: '20:00',
+    venue: 'Cozy Corner Bookshop',
+    location: 'Nashville, TN',
+    address: '567 Main Street, Nashville, TN 37203',
+    coordinates: { lat: 36.1627, lng: -86.7816 },
+    isOnline: false,
+    isFree: true,
+    capacity: 25,
+    image: eventImages.community,
+    duration: '2 hours',
+    requirements: ['Have read the selected book (optional for first-timers)'],
+    ageRestriction: 'All ages',
+    faqs: [
+      { question: 'Do I need to finish the book?', answer: 'Not required, but recommended to fully participate in discussions.' },
+      { question: 'Can I bring a friend?', answer: 'Yes! New members are always welcome.' }
+    ],
+    timezone: 'America/Chicago'
   }
 ];
 
-async function seedEvents() {
+// Helper functions
+async function loginOrganizer() {
+  console.log('🔐 Logging in as organizer...');
+  const response = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: ORGANIZER_EMAIL,
+      password: ORGANIZER_PASSWORD
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Login failed: ${error}`);
+  }
+
+  const data = await response.json();
+  console.log('✅ Login successful!');
+  return data.data.accessToken;
+}
+
+async function createEvent(token, eventData) {
+  console.log(`📝 Creating event: ${eventData.title}...`);
+  
+  const response = await fetch(`${API_URL}/events`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(eventData)
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error(`❌ Failed to create "${eventData.title}": ${error}`);
+    return null;
+  }
+
+  const data = await response.json();
+  console.log(`✅ Created: ${eventData.title}`);
+  return data.data.event;
+}
+
+async function main() {
+  console.log('🚀 Starting event seeding process...\n');
+  
   try {
-    console.log('🌱 Seeding events...');
-    console.log(`📊 Environment: ${env}`);
+    // Login
+    const token = await loginOrganizer();
+    console.log('');
+
+    // Create events
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const event of events) {
+      const created = await createEvent(token, event);
+      if (created) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    console.log('\n' + '='.repeat(50));
+    console.log('📊 Seeding Summary:');
+    console.log(`✅ Successfully created: ${successCount} events`);
+    console.log(`❌ Failed: ${failCount} events`);
+    console.log('='.repeat(50));
     
-    await prisma.$connect();
-
-    // 1. Get Organizers
-    const organizers = await prisma.user.findMany({
-      where: { role: UserRole.ORGANIZER },
-      take: 5,
-      orderBy: { createdAt: 'desc' }
-    });
-
-    if (organizers.length === 0) {
-      console.error('❌ No organizers found! Please run seed-dummy-data.js first.');
-      process.exit(1);
-    }
-
-    console.log(`✅ Found ${organizers.length} organizers.`);
-
-    let eventCount = 0;
-
-    // 2. Create Events
-    for (let i = 0; i < eventTemplates.length; i++) {
-      const template = eventTemplates[i];
-      // Distribute events among organizers (round-robin)
-      const organizer = organizers[i % organizers.length];
-
-      // Set date to be in the future (randomly between 7 and 120 days from now)
-      // This ensures all events are upcoming and spread across the next 4 months
-      const daysToAdd = Math.floor(Math.random() * 113) + 7; // 7 to 120 days
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() + daysToAdd);
-      startDate.setHours(9, 0, 0, 0); // 9:00 AM
-
-      const endDate = new Date(startDate);
-      endDate.setHours(17, 0, 0, 0); // 5:00 PM
-
-      const isFree = template.price === 0;
-      
-      // Build ticket types array matching the backend format
-      // Backend expects: { name, price, quantity?, features?, originalPrice?, discountLabel?, isComplementary?, requiresInvitation?, availableFrom?, availableUntil? }
-      const ticketTypes = isFree 
-        ? [
-            {
-              name: "Free Admission",
-              price: 0,
-              quantity: 200,
-              features: [],
-              isComplementary: false,
-              requiresInvitation: false
-            }
-          ]
-        : [
-            {
-              name: "General Admission",
-              price: template.price,
-              quantity: 200,
-              features: [],
-              isComplementary: false,
-              requiresInvitation: false
-            }
-          ];
-
-      // Determine single price if all tickets have same price
-      const singlePrice = !isFree && ticketTypes.length === 1 
-        ? ticketTypes[0].price 
-        : undefined;
-
-      // Create the event
-      await prisma.event.create({
-        data: {
-          title: template.title,
-          description: template.description,
-          fullDescription: template.description + " This is a detailed description of the event, providing more context and information for attendees.",
-          category: template.category,
-          tags: [template.category, "Event", "Nairobi"],
-          startDate: startDate,
-          endDate: endDate,
-          startTime: "09:00",
-          endTime: "17:00",
-          venue: template.venue,
-          location: template.location,
-          address: `${template.venue}, ${template.location}`,
-          isOnline: false,
-          onlineLink: null,
-          isFree: isFree,
-          price: singlePrice ? new Decimal(singlePrice) : (isFree ? new Decimal(0) : null),
-          currency: "KES",
-          ticketTypes: ticketTypes.length > 0 ? ticketTypes : undefined,
-          capacity: 200,
-          availableSlots: 200,
-          image: template.image,
-          images: [],
-          type: EventType.PUBLIC,
-          status: EventStatus.APPROVED, // Auto-approve for visibility
-          requirements: [],
-          ageRestriction: null,
-          duration: null,
-          speakers: null,
-          sponsors: null,
-          faqs: null,
-          registrationFields: null,
-          organizerId: organizer.id,
-          createdBy: organizer.id,
-          approvedAt: new Date(),
-          approvedBy: "system-seed"
-        }
-      });
-
-      console.log(`   ✅ Created event: "${template.title}" for ${organizer.email}`);
-      eventCount++;
-    }
-
-    console.log(`\n✅ Successfully seeded ${eventCount} events!`);
-
   } catch (error) {
-    console.error('❌ Error seeding events:', error.message);
-    console.error(error);
+    console.error('❌ Fatal error:', error.message);
     process.exit(1);
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
-seedEvents().catch((error) => {
-  console.error('❌ Unexpected error:', error);
-  process.exit(1);
-});
+// Run the script
+main();
