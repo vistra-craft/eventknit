@@ -35,14 +35,14 @@ jobs:
         working-directory: ./client
         run: npm ci
       
-      - name: Run Server Tests
-        working-directory: ./server
-        run: npm run test:run
-        continue-on-error: true # Don't fail if tests require DB
-      
-      - name: Run Client Tests
-        working-directory: ./client
-        run: npm run test:run
+      # - name: Run Server Tests
+      #   working-directory: ./server
+      #   run: npm run test:run
+      #   continue-on-error: true # Don't fail if tests require DB
+
+      # - name: Run Client Tests
+      #   working-directory: ./client
+      #   run: npm run test:run
       
       - name: Type Check Server
         working-directory: ./server

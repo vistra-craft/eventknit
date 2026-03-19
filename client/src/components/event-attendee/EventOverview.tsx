@@ -343,164 +343,165 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
 
         {/* ═══════════════════════════════════════════════════════════════════
-            1. EVENT HEADER — Image + Key Details side by side
+            1. EVENT HEADER — Full-width hero banner with overlay
             ═══════════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col md:flex-row gap-6 mb-6">
-          {/* Event Image */}
-          <div className="flex-shrink-0 w-full md:w-72 lg:w-80">
-            <div className="relative rounded-xl overflow-hidden aspect-[4/3] bg-muted">
-              {event.image ? (
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="w-full h-full object-cover"
-                  style={{
-                    objectPosition: event.imageFocalX != null && event.imageFocalY != null
-                      ? `${event.imageFocalX}% ${event.imageFocalY}%`
-                      : "center",
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <Calendar className="w-12 h-12 text-primary/40" />
-                </div>
-              )}
-              {/* Status badge overlay */}
-              <Badge className={`absolute top-3 left-3 ${status.color} border text-xs font-semibold`}>
-                {status.label}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Key Details */}
-          <div className="flex-1 min-w-0">
-            {/* Category & type badges */}
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              {event.category && (
-                <Badge variant="secondary" className="text-xs">{event.category}</Badge>
-              )}
-              {event.type && event.type !== "Event" && (
-                <Badge variant="outline" className="text-xs capitalize">{event.type.replace(/-/g, " ")}</Badge>
-              )}
-              {event.hashtag && (
-                <Badge variant="outline" className="text-xs text-primary border-primary/30">#{event.hashtag}</Badge>
-              )}
-            </div>
-
-            {/* Title */}
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 leading-tight">
-              {event.title}
-            </h1>
-
-            {/* Date, time, location */}
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-2.5 text-sm text-foreground">
-                <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                <span>{formatDateRange()}</span>
-              </div>
-              {event.time && (
-                <div className="flex items-center gap-2.5 text-sm text-foreground">
-                  <Clock className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span>{event.time}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2.5 text-sm text-foreground">
-                {event.isOnline ? (
-                  <Globe className="w-4 h-4 text-primary flex-shrink-0" />
-                ) : (
-                  <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-                )}
-                <span>{event.venue ?? event.location}</span>
-                {event.address && event.venue && event.address !== event.venue && (
-                  <span className="text-muted-foreground">· {event.address}</span>
-                )}
-              </div>
-            </div>
-
-            {/* Countdown or Live status */}
-            {!cd.isOver && (
-              <div className="mb-4">
-                {cd.isStarted ? (
-                  <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-success/10 border border-success/20">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
-                    </span>
-                    <span className="text-success font-semibold text-sm">Happening Now</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Timer className="w-4 h-4" />
-                      <span className="text-xs font-medium uppercase tracking-wide">Starts in</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {cd.days > 0 && (
-                        <>
-                          <CountdownUnit value={cd.days} label="days" />
-                          <span className="text-muted-foreground font-bold text-sm mb-4">:</span>
-                        </>
-                      )}
-                      <CountdownUnit value={cd.hours} label="hrs" />
-                      <span className="text-muted-foreground font-bold text-sm mb-4">:</span>
-                      <CountdownUnit value={cd.minutes} label="min" />
-                      <span className="text-muted-foreground font-bold text-sm mb-4">:</span>
-                      <CountdownUnit value={cd.seconds} label="sec" />
-                    </div>
-                  </div>
-                )}
+        <div className="relative rounded-2xl overflow-hidden mb-6">
+          {/* Background image */}
+          <div className="relative w-full min-h-[280px] sm:min-h-[320px]">
+            {event.image ? (
+              <img
+                src={event.image}
+                alt={event.title}
+                className="w-full h-full object-cover absolute inset-0"
+                style={{
+                  objectPosition: event.imageFocalX != null && event.imageFocalY != null
+                    ? `${event.imageFocalX}% ${event.imageFocalY}%`
+                    : "center",
+                }}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <Calendar className="w-16 h-16 text-primary/30" />
               </div>
             )}
 
-            {/* Attendee tally — Lu.ma-style social proof with real avatars */}
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {/* Organizer avatar */}
-                {event.organizerAvatar ? (
-                  <img
-                    src={event.organizerAvatar}
-                    alt={event.organizer ?? "Organizer"}
-                    className="w-8 h-8 rounded-full border-2 border-background object-cover"
-                    title={event.organizer ?? "Organizer"}
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-xs font-bold text-primary" title={event.organizer ?? "Organizer"}>
-                    {event.organizer?.[0]?.toUpperCase() ?? "O"}
-                  </div>
+            {/* Gradient overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
+
+            {/* Status badge */}
+            <Badge className={`absolute top-4 left-4 ${status.color} border text-xs font-semibold z-10`}>
+              {status.label}
+            </Badge>
+
+            {/* Content overlay — bottom-aligned */}
+            <div className="relative z-10 flex flex-col justify-end h-full min-h-[280px] sm:min-h-[320px] p-5 sm:p-6">
+              {/* Category badges */}
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                {event.category && (
+                  <Badge className="bg-white/15 text-white border-0 backdrop-blur-sm text-xs">{event.category}</Badge>
                 )}
-                {/* Real attendee avatars */}
-                {event.attendeeAvatars?.slice(0, 4).map((attendee) => (
-                  attendee.avatar ? (
-                    <img
-                      key={attendee.id}
-                      src={attendee.avatar}
-                      alt={`${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
-                      className="w-8 h-8 rounded-full border-2 border-background object-cover"
-                    />
-                  ) : (
-                    <div
-                      key={attendee.id}
-                      className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-bold text-muted-foreground"
-                    >
-                      {attendee.firstName?.[0]?.toUpperCase() ?? "?"}
-                    </div>
-                  )
-                ))}
-                {/* Overflow indicator */}
-                {attendeeCount > 5 && (
-                  <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                    +{attendeeCount - 5}
-                  </div>
+                {event.type && event.type !== "Event" && (
+                  <Badge className="bg-white/15 text-white border-0 backdrop-blur-sm text-xs capitalize">{event.type.replace(/-/g, " ")}</Badge>
+                )}
+                {event.hashtag && (
+                  <Badge className="bg-primary/30 text-white border-0 backdrop-blur-sm text-xs">#{event.hashtag}</Badge>
                 )}
               </div>
-              <div className="text-sm">
-                <span className="font-semibold text-foreground">{attendeeCount}</span>
-                <span className="text-muted-foreground ml-1">
-                  {attendeeCount === 1 ? "person attending" : "people attending"}
-                </span>
-                {event.capacity && (
-                  <span className="text-muted-foreground"> · {event.availableSlots ?? event.capacity} spots left</span>
+
+              {/* Title */}
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">
+                {event.title}
+              </h1>
+
+              {/* Info row — date, time, location in a horizontal flow */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-white/90 mb-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatDateRange()}</span>
+                </div>
+                {event.time && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="w-4 h-4" />
+                    <span>{event.time}</span>
+                  </div>
                 )}
+                <div className="flex items-center gap-2 text-sm">
+                  {event.isOnline ? (
+                    <Globe className="w-4 h-4" />
+                  ) : (
+                    <MapPin className="w-4 h-4" />
+                  )}
+                  <span>
+                    {event.venue ?? event.location}
+                    {event.address && event.venue && event.address !== event.venue && (
+                      <span className="text-white/60 ml-1">· {event.address}</span>
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom row — countdown + attendees side by side */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                {/* Countdown or Live status */}
+                {!cd.isOver && (
+                  cd.isStarted ? (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/20 border border-success/30 backdrop-blur-sm">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+                      </span>
+                      <span className="text-success font-semibold text-sm">Happening Now</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 text-white/60">
+                        <Timer className="w-3.5 h-3.5" />
+                        <span className="text-[10px] font-medium uppercase tracking-wide">Starts in</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {cd.days > 0 && (
+                          <>
+                            <CountdownUnit value={cd.days} label="days" />
+                            <span className="text-white/50 font-bold text-sm mb-4">:</span>
+                          </>
+                        )}
+                        <CountdownUnit value={cd.hours} label="hrs" />
+                        <span className="text-white/50 font-bold text-sm mb-4">:</span>
+                        <CountdownUnit value={cd.minutes} label="min" />
+                        <span className="text-white/50 font-bold text-sm mb-4">:</span>
+                        <CountdownUnit value={cd.seconds} label="sec" />
+                      </div>
+                    </div>
+                  )
+                )}
+
+                {/* Attendee tally */}
+                <div className="flex items-center gap-2.5">
+                  <div className="flex -space-x-2">
+                    {event.organizerAvatar ? (
+                      <img
+                        src={event.organizerAvatar}
+                        alt={event.organizer ?? "Organizer"}
+                        className="w-7 h-7 rounded-full border-2 border-white/30 object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center text-[10px] font-bold text-white">
+                        {event.organizer?.[0]?.toUpperCase() ?? "O"}
+                      </div>
+                    )}
+                    {event.attendeeAvatars?.slice(0, 4).map((attendee) => (
+                      attendee.avatar ? (
+                        <img
+                          key={attendee.id}
+                          src={attendee.avatar}
+                          alt={`${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
+                          className="w-7 h-7 rounded-full border-2 border-white/30 object-cover"
+                        />
+                      ) : (
+                        <div
+                          key={attendee.id}
+                          className="w-7 h-7 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center text-[10px] font-bold text-white/80"
+                        >
+                          {attendee.firstName?.[0]?.toUpperCase() ?? "?"}
+                        </div>
+                      )
+                    ))}
+                    {attendeeCount > 5 && (
+                      <div className="w-7 h-7 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center text-[10px] font-bold text-white/80">
+                        +{attendeeCount - 5}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm text-white/80">
+                    <span className="font-semibold text-white">{attendeeCount}</span>
+                    <span className="ml-1">
+                      {attendeeCount === 1 ? "attending" : "attending"}
+                    </span>
+                    {event.capacity && (
+                      <span> · {event.availableSlots ?? event.capacity} spots left</span>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
