@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Bell, ChevronLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
@@ -54,6 +55,7 @@ interface NotificationsCenterProps {
 }
 
 const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -206,13 +208,24 @@ const NotificationsCenter: React.FC<NotificationsCenterProps> = () => {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
-          {unreadCount > 0 && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
-            </p>
-          )}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full"
+            title="Go back"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
+            {unreadCount > 0 && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
         </div>
         {unreadCount > 0 && (
           <Button onClick={handleMarkAllAsRead} variant="outline" size="sm">

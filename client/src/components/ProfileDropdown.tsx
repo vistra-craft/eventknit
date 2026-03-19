@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { User, LogOut, Settings, LayoutDashboard, MessageSquare } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole, UserStatus } from '@/types/auth';
@@ -159,6 +159,12 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
         <DropdownMenuItem onClick={() => handleNavigate(getProfileRoute())}>
           <User className="w-4 h-4 mr-2" />
           <span>View Profile</span>
+        </DropdownMenuItem>
+
+        {/* Messages */}
+        <DropdownMenuItem onClick={() => handleNavigate('/user/messages')}>
+          <MessageSquare className="w-4 h-4 mr-2" />
+          <span>Messages</span>
         </DropdownMenuItem>
 
         {/* Settings */}

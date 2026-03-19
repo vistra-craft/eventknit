@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Send, Mail, MailOpen, Trash2, Reply, Calendar } from "lucide-react";
+import { Send, Mail, MailOpen, Trash2, Reply, Calendar, ChevronLeft } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Avatar } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/useToast";
@@ -17,6 +18,7 @@ import EmptyState from "@/components/EmptyState";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const DirectMessaging: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [inbox, setInbox] = useState<any[]>([]);
@@ -148,11 +150,22 @@ const DirectMessaging: React.FC = () => {
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Direct Messaging</h1>
-          <p className="text-muted-foreground">
-            Send and receive messages with organizers and other attendees
-          </p>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="rounded-full"
+            title="Go back"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground mb-1">Messages</h1>
+            <p className="text-muted-foreground text-sm">
+              Send and receive messages with organizers and other attendees
+            </p>
+          </div>
         </div>
         <Dialog open={showComposeDialog} onOpenChange={setShowComposeDialog}>
           <DialogTrigger asChild>

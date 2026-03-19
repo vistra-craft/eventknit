@@ -9,6 +9,7 @@
  *   exhibitors, sponsors, FAQs, requirements, venue/map, announcements
  */
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -214,6 +215,7 @@ interface EventOverviewProps {
 }
 
 export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const status = getEventStatus(event);
   const cd = useCountdown(event.date, event.endDate);
@@ -530,7 +532,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
                 Share
               </Button>
               {event.organizerId && (
-                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setIsContactOpen(true)}>
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => navigate('/user/messages')}>
                   <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
                   Contact
                 </Button>
