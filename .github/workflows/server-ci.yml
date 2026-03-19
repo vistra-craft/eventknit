@@ -65,11 +65,12 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Generate Prisma client and run migrations
+      - name: Generate Prisma client
         working-directory: ./server
-        run: |
-          npx prisma generate
-          npx prisma migrate deploy
+        run: npx prisma generate
+      # - name: Run database migrations
+      #   working-directory: ./server
+      #   run: npx prisma migrate deploy
 
       - name: Run server linter
         working-directory: ./server
