@@ -343,11 +343,11 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
 
         {/* ═══════════════════════════════════════════════════════════════════
-            1. EVENT HEADER — Full-width hero banner with overlay
+            1. EVENT HEADER — Image (3/4) + Details (1/4) side by side
             ═══════════════════════════════════════════════════════════════════ */}
-        <div className="relative rounded-2xl overflow-hidden mb-6">
-          {/* Background image */}
-          <div className="relative w-full min-h-[280px] sm:min-h-[320px]">
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-5 mb-6">
+          {/* ── Image (3/4 width) ── */}
+          <div className="relative rounded-2xl overflow-hidden bg-muted min-h-[240px] sm:min-h-[320px] lg:min-h-[380px]">
             {event.image ? (
               <img
                 src={event.image}
@@ -364,143 +364,140 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
                 <Calendar className="w-16 h-16 text-primary/30" />
               </div>
             )}
-
-            {/* Gradient overlay for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
-
             {/* Status badge */}
             <Badge className={`absolute top-4 left-4 ${status.color} border text-xs font-semibold z-10`}>
               {status.label}
             </Badge>
+          </div>
 
-            {/* Content overlay — bottom-aligned */}
-            <div className="relative z-10 flex flex-col justify-end h-full min-h-[280px] sm:min-h-[320px] p-5 sm:p-6">
+          {/* ── Details (1/4 width) ── */}
+          <div className="flex flex-col justify-between gap-4 py-1">
+            {/* Top section — badges + title + meta */}
+            <div className="space-y-3">
               {/* Category badges */}
-              <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {event.category && (
-                  <Badge className="bg-white/15 text-white border-0 backdrop-blur-sm text-xs">{event.category}</Badge>
+                  <Badge variant="secondary" className="text-xs">{event.category}</Badge>
                 )}
                 {event.type && event.type !== "Event" && (
-                  <Badge className="bg-white/15 text-white border-0 backdrop-blur-sm text-xs capitalize">{event.type.replace(/-/g, " ")}</Badge>
+                  <Badge variant="outline" className="text-xs capitalize">{event.type.replace(/-/g, " ")}</Badge>
                 )}
                 {event.hashtag && (
-                  <Badge className="bg-primary/30 text-white border-0 backdrop-blur-sm text-xs">#{event.hashtag}</Badge>
+                  <Badge className="bg-primary/10 text-primary border-0 text-xs">#{event.hashtag}</Badge>
                 )}
               </div>
 
               {/* Title */}
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-3 leading-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
                 {event.title}
               </h1>
 
-              {/* Info row — date, time, location in a horizontal flow */}
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-white/90 mb-4">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4" />
+              {/* Date + Time */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
                   <span>{formatDateRange()}</span>
                 </div>
                 {event.time && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4" />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="w-4 h-4 text-primary flex-shrink-0" />
                     <span>{event.time}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   {event.isOnline ? (
-                    <Globe className="w-4 h-4" />
+                    <Globe className="w-4 h-4 text-primary flex-shrink-0" />
                   ) : (
-                    <MapPin className="w-4 h-4" />
+                    <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
                   )}
                   <span>
                     {event.venue ?? event.location}
                     {event.address && event.venue && event.address !== event.venue && (
-                      <span className="text-white/60 ml-1">· {event.address}</span>
+                      <span className="text-muted-foreground/60 ml-1">· {event.address}</span>
                     )}
                   </span>
                 </div>
               </div>
+            </div>
 
-              {/* Bottom row — countdown + attendees side by side */}
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                {/* Countdown or Live status */}
-                {!cd.isOver && (
-                  cd.isStarted ? (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/20 border border-success/30 backdrop-blur-sm">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
-                      </span>
-                      <span className="text-success font-semibold text-sm">Happening Now</span>
+            {/* Bottom section — countdown + attendees */}
+            <div className="space-y-4">
+              {/* Countdown or Live status */}
+              {!cd.isOver && (
+                cd.isStarted ? (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+                    </span>
+                    <span className="text-success font-semibold text-sm">Happening Now</span>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Timer className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-medium uppercase tracking-wide">Starts in</span>
                     </div>
+                    <div className="flex items-center gap-1">
+                      {cd.days > 0 && (
+                        <>
+                          <CountdownUnit value={cd.days} label="days" />
+                          <span className="text-muted-foreground/50 font-bold text-sm mb-4">:</span>
+                        </>
+                      )}
+                      <CountdownUnit value={cd.hours} label="hrs" />
+                      <span className="text-muted-foreground/50 font-bold text-sm mb-4">:</span>
+                      <CountdownUnit value={cd.minutes} label="min" />
+                      <span className="text-muted-foreground/50 font-bold text-sm mb-4">:</span>
+                      <CountdownUnit value={cd.seconds} label="sec" />
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* Attendee tally */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex -space-x-2">
+                  {event.organizerAvatar ? (
+                    <img
+                      src={event.organizerAvatar}
+                      alt={event.organizer ?? "Organizer"}
+                      className="w-7 h-7 rounded-full border-2 border-background object-cover"
+                    />
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center gap-1 text-white/60">
-                        <Timer className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-medium uppercase tracking-wide">Starts in</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {cd.days > 0 && (
-                          <>
-                            <CountdownUnit value={cd.days} label="days" />
-                            <span className="text-white/50 font-bold text-sm mb-4">:</span>
-                          </>
-                        )}
-                        <CountdownUnit value={cd.hours} label="hrs" />
-                        <span className="text-white/50 font-bold text-sm mb-4">:</span>
-                        <CountdownUnit value={cd.minutes} label="min" />
-                        <span className="text-white/50 font-bold text-sm mb-4">:</span>
-                        <CountdownUnit value={cd.seconds} label="sec" />
-                      </div>
+                    <div className="w-7 h-7 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center text-[10px] font-bold text-primary">
+                      {event.organizer?.[0]?.toUpperCase() ?? "O"}
                     </div>
-                  )
-                )}
-
-                {/* Attendee tally */}
-                <div className="flex items-center gap-2.5">
-                  <div className="flex -space-x-2">
-                    {event.organizerAvatar ? (
+                  )}
+                  {event.attendeeAvatars?.slice(0, 4).map((attendee) => (
+                    attendee.avatar ? (
                       <img
-                        src={event.organizerAvatar}
-                        alt={event.organizer ?? "Organizer"}
-                        className="w-7 h-7 rounded-full border-2 border-white/30 object-cover"
+                        key={attendee.id}
+                        src={attendee.avatar}
+                        alt={`${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
+                        className="w-7 h-7 rounded-full border-2 border-background object-cover"
                       />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-white/20 border-2 border-white/30 flex items-center justify-center text-[10px] font-bold text-white">
-                        {event.organizer?.[0]?.toUpperCase() ?? "O"}
+                      <div
+                        key={attendee.id}
+                        className="w-7 h-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-bold text-muted-foreground"
+                      >
+                        {attendee.firstName?.[0]?.toUpperCase() ?? "?"}
                       </div>
-                    )}
-                    {event.attendeeAvatars?.slice(0, 4).map((attendee) => (
-                      attendee.avatar ? (
-                        <img
-                          key={attendee.id}
-                          src={attendee.avatar}
-                          alt={`${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
-                          className="w-7 h-7 rounded-full border-2 border-white/30 object-cover"
-                        />
-                      ) : (
-                        <div
-                          key={attendee.id}
-                          className="w-7 h-7 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center text-[10px] font-bold text-white/80"
-                        >
-                          {attendee.firstName?.[0]?.toUpperCase() ?? "?"}
-                        </div>
-                      )
-                    ))}
-                    {attendeeCount > 5 && (
-                      <div className="w-7 h-7 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center text-[10px] font-bold text-white/80">
-                        +{attendeeCount - 5}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-sm text-white/80">
-                    <span className="font-semibold text-white">{attendeeCount}</span>
-                    <span className="ml-1">
-                      {attendeeCount === 1 ? "attending" : "attending"}
-                    </span>
-                    {event.capacity && (
-                      <span> · {event.availableSlots ?? event.capacity} spots left</span>
-                    )}
-                  </div>
+                    )
+                  ))}
+                  {attendeeCount > 5 && (
+                    <div className="w-7 h-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                      +{attendeeCount - 5}
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{attendeeCount}</span>
+                  <span className="ml-1">attending</span>
+                  {event.capacity && (
+                    <span> · {event.availableSlots ?? event.capacity} spots left</span>
+                  )}
                 </div>
               </div>
             </div>
