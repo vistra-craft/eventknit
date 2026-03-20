@@ -164,10 +164,10 @@ const DynamicPricing = () => {
 
   return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Dynamic Pricing</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold">Dynamic Pricing</h1>
+            <p className="text-muted-foreground mt-1 text-sm">
               Create pricing rules for time-based, demand-based, and group discounts
             </p>
           </div>
@@ -193,7 +193,7 @@ const DynamicPricing = () => {
                   Create Rule
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create Pricing Rule</DialogTitle>
                 </DialogHeader>
@@ -414,7 +414,7 @@ const CreateRuleForm = ({
 
       {formData.type === "time_based" && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="startDate">Start Date *</Label>
               <Input
@@ -436,7 +436,7 @@ const CreateRuleForm = ({
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="discountType">Discount Type</Label>
               <Select
@@ -514,7 +514,7 @@ const CreateRuleForm = ({
               required
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="discountType">Discount Type</Label>
               <Select

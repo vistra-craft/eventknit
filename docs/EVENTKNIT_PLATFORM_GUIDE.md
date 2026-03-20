@@ -198,14 +198,21 @@ Each event page displays full details including title, description, date/time, v
 
    The ticket also appears in the attendee dashboard once the attendee creates their account via the invitation link.
 
-Guest registration is supported — attendees can register without an account, using only their email for ticket delivery. No session is created automatically; the attendee only gains dashboard access if they choose to activate their account via the link in their confirmation email.
+Guest registration is supported — attendees can register without an account, using only their email. When registering as a guest:
+- A passwordless account is created (or existing account is found by email)
+- The attendee is **silently authenticated** — an access token is issued so they can immediately proceed to payment, view their ticket, and download it without being redirected to log in
+- An account setup link is included in the confirmation email for optional password creation
+- **Existing users who aren't logged in** are recognized by email and treated as returning users (not new guests) — they receive a session token and can complete their purchase seamlessly
+
+Public endpoints are available as fallbacks for ticket viewing, downloading, and payment initialization using email verification — no login required.
 
 #### Ticket Management
 
 From the Attendee Dashboard, users can:
 
-- View all registered events (upcoming and past)
-- Download ticket PDFs
+- View all registered events (upcoming and past) with payment status and amount shown inline
+- View detailed ticket page with payment information (status, amount, method)
+- Download ticket PDFs (authenticated or via public link with email verification)
 - Display QR code for scanning
 - Transfer tickets to another person via email
 - List tickets for resale on the marketplace
@@ -911,6 +918,18 @@ EventKnit charges a **7.5% all-in fee** on every paid ticket transaction. This s
 No per-ticket fixed fees. The fee percentage, minimum, and maximum caps are configurable by platform admins.
 
 **Auto-Income Recording:** When a platform fee is calculated on a payment, it is automatically recorded as a `PlatformIncome` entry (category: "Platform Fees", source: "Ticket Sales"). This means platform fee revenue appears in the finance dashboard and income statements without manual data entry.
+
+### Payment Visibility by Role
+
+| What's Visible | Admin | Organizer | Attendee |
+|----------------|-------|-----------|----------|
+| Full transaction details (reference, gateway metadata) | Yes | No | No |
+| Payment amount and status | Yes | Yes | Yes |
+| Payment method | Yes | Yes | Yes |
+| Platform fee breakdown | Yes | No | No |
+| Attendee personal info | Yes | Tiered by subscription | Own data only |
+
+Attendees see their payment status (Paid/Pending/Failed), amount, and method on both the ticket detail page and the tickets list in their dashboard. Sensitive transaction details (gateway references, risk scores) are visible only to platform admins.
 
 ### Staff Wages & Payroll
 

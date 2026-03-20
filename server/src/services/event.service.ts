@@ -18,6 +18,7 @@ import { TicketPdfQueueService } from './ticket-pdf-queue.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
 import { EventCollaborationService } from './event-collaboration.service.js';
+import { AuthService } from './auth.service.js';
 import { backgroundTasks } from '../utils/background-tasks.js';
 import { RefundService } from './refund.service.js';
 import { AttendeeCommunicationService } from './attendee-communication.service.js';
@@ -3435,6 +3436,14 @@ export class EventService {
         ticketEmailStatus: registration.ticketEmailStatus,
         ticketEmailSentAt: registration.ticketEmailSentAt ? registration.ticketEmailSentAt.toISOString() : null,
         ticketEmailError: registration.ticketEmailError,
+        // Payment data for attendee visibility
+        totalAmount: registration.totalAmount !== null && registration.totalAmount !== undefined
+          ? Number(registration.totalAmount)
+          : 0,
+        paymentStatus: registration.paymentStatus || null,
+        paymentMethod: registration.paymentMethod || null,
+        isFree: event.isFree,
+        currency: event.currency || 'KES',
       };
     });
 
@@ -4492,8 +4501,13 @@ export class EventService {
 
     logger.info(`Guest registration created: ${registration.id} for event: ${eventId} by user: ${user.id}`);
 
-    // No session is issued here — account activation happens separately via the
-    // invitation link included in the confirmation email (/auth/create-account?token=...)
+    // Issue an access token so the guest can proceed to payment seamlessly
+    const tokens = await AuthService.generateTokens({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
     return {
       registration,
       user: {
@@ -4502,7 +4516,9 @@ export class EventService {
         firstName: user.firstName,
         lastName: user.lastName,
         isNewUser: finalIsNewUser,
+        requiresPasswordSetup: !user.password,
       },
+      accessToken: tokens.accessToken,
     };
   }
 

@@ -46,9 +46,7 @@ describe('DisbursementService', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test organizer with identity verification and KYC approval (required for payouts)
     const organizer = await prisma.user.create({

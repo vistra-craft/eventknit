@@ -349,7 +349,7 @@ const DirectMessaging: React.FC = () => {
       {/* Message Detail Dialog */}
       {selectedMessage && (
         <Dialog open={Boolean(selectedMessage)} onOpenChange={() => setSelectedMessage(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>{selectedMessage.subject || "Message"}</DialogTitle>
               <DialogDescription>

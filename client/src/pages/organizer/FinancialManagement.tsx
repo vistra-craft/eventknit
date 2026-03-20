@@ -191,7 +191,7 @@ const FinancialManagement = () => {
                     Add Expense
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Add Expense</DialogTitle>
                   </DialogHeader>
@@ -343,7 +343,7 @@ const FinancialManagement = () => {
                     Create Goal
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
                   <DialogHeader>
                     <DialogTitle>Create Financial Goal</DialogTitle>
                   </DialogHeader>

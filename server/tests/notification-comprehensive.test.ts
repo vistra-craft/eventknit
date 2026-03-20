@@ -66,9 +66,9 @@ describe('NotificationService - Comprehensive Tests', () => {
     if (!dbConnected) return;
 
     // Clear all tables using comprehensive cleanup helper
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    // Called directly (not inside $transaction) — cleanupTestData uses TRUNCATE CASCADE
+    // which is inherently atomic and can exceed the default 5s transaction timeout
+    await cleanupTestData();
 
     // Create test organizer (use upsert to handle existing users)
     const organizer = await prisma.user.upsert({

@@ -335,7 +335,7 @@ const OrganizerBrandingPage = () => {
             <div className="lg:col-span-2 space-y-4">
               {activeSection === 'identity' && (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Brand Name</Label>
                       <Input
@@ -361,7 +361,7 @@ const OrganizerBrandingPage = () => {
                       placeholder="https://..."
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Logo (Light BG)</Label>
                       <Input
@@ -379,7 +379,7 @@ const OrganizerBrandingPage = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Favicon URL</Label>
                       <Input
@@ -401,7 +401,7 @@ const OrganizerBrandingPage = () => {
               )}
 
               {activeSection === 'colors' && (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <ColorField label="Primary" value={formData.primaryColor || ''} onChange={(v) => updateField('primaryColor', v)} />
                   <ColorField label="Secondary" value={formData.secondaryColor || ''} onChange={(v) => updateField('secondaryColor', v)} />
                   <ColorField label="Accent" value={formData.accentColor || ''} onChange={(v) => updateField('accentColor', v)} />
@@ -412,7 +412,7 @@ const OrganizerBrandingPage = () => {
               )}
 
               {activeSection === 'typography' && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Body Font</Label>
                     <Input
@@ -434,7 +434,7 @@ const OrganizerBrandingPage = () => {
 
               {activeSection === 'contact' && (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Support Email</Label>
                       <Input

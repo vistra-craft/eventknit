@@ -48,9 +48,7 @@ describe('Event System', () => {
     if (!dbConnected) return;
 
     // Clear all tables in correct order to respect foreign keys
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    }, { timeout: 15000 });
+    await cleanupTestData();
 
     // Create test users
     const hashedPassword = await hashPassword('Test123!@$');

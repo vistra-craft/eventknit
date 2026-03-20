@@ -51,9 +51,7 @@ describe('Notification API', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test attendee
     const attendee = await prisma.user.create({

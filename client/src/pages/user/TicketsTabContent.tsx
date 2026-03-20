@@ -28,6 +28,10 @@ interface Ticket {
   registrationId?: string;
   image: string;
   emailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null;
+  totalAmount?: number;
+  paymentStatus?: string | null;
+  currency?: string;
+  isFree?: boolean;
 }
 
 const TicketsTabContent = () => {
@@ -45,7 +49,7 @@ const TicketsTabContent = () => {
         setLoading(true);
         const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
         if (response.success && response.data) {
-          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string; ticketEmailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null }) => ({
+          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string; ticketEmailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null; totalAmount?: number; paymentStatus?: string | null; currency?: string; isFree?: boolean }) => ({
             id: event.id,
             title: event.title,
             date: event.date || '',
@@ -55,6 +59,10 @@ const TicketsTabContent = () => {
             registrationId: event.registrationId,
             image: event.image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',
             emailStatus: event.ticketEmailStatus,
+            totalAmount: event.totalAmount,
+            paymentStatus: event.paymentStatus,
+            currency: event.currency,
+            isFree: event.isFree,
           })));
         }
       } catch (error) {
@@ -188,9 +196,34 @@ const TicketsTabContent = () => {
                   <MapPin className="w-3 h-3" />
                   <span className="truncate">{ticket.location}</span>
                 </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5 flex-wrap">
                   <QrCode className="w-3 h-3" />
                   <span className="font-mono">{ticket.ticketId}</span>
+                  {!ticket.isFree && ticket.totalAmount != null && ticket.totalAmount > 0 && (
+                    <>
+                      <span className="opacity-30">|</span>
+                      <span className="font-medium text-foreground">{ticket.currency || 'KES'} {ticket.totalAmount.toLocaleString()}</span>
+                      {ticket.paymentStatus && (
+                        <Badge
+                          className={`text-[9px] px-1 py-0 border-0 ${
+                            ticket.paymentStatus === 'COMPLETED'
+                              ? 'bg-success/10 text-success'
+                              : ticket.paymentStatus === 'PENDING'
+                                ? 'bg-amber-500/10 text-amber-600'
+                                : 'bg-destructive/10 text-destructive'
+                          }`}
+                        >
+                          {ticket.paymentStatus === 'COMPLETED' ? 'Paid' : ticket.paymentStatus}
+                        </Badge>
+                      )}
+                    </>
+                  )}
+                  {ticket.isFree && (
+                    <>
+                      <span className="opacity-30">|</span>
+                      <span className="text-success font-medium">Free</span>
+                    </>
+                  )}
                   {ticket.emailStatus === 'FAILED' && ticket.registrationId && (
                     <Button
                       variant="ghost"
@@ -205,12 +238,12 @@ const TicketsTabContent = () => {
                 </div>
               </div>
 
-              {/* Actions — visible on hover */}
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-0.5 flex-shrink-0">
+              {/* Actions — always visible on mobile, hover-reveal on desktop */}
+              <div className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-0.5 flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="h-8 w-8 sm:h-7 sm:w-7"
                   disabled={downloadingId === ticket.id}
                   onClick={(e) => { e.stopPropagation(); handleDownload(ticket); }}
                   title="Download ticket"
@@ -220,7 +253,7 @@ const TicketsTabContent = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className="h-8 w-8 sm:h-7 sm:w-7"
                   onClick={(e) => { e.stopPropagation(); handleShare(ticket); }}
                   title="Share event"
                 >
@@ -231,7 +264,7 @@ const TicketsTabContent = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-8 w-8 sm:h-7 sm:w-7"
                       onClick={(e) => { e.stopPropagation(); navigate('/user/dashboard?section=ticket-transfer', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
                       title="Transfer ticket"
                     >
@@ -240,7 +273,7 @@ const TicketsTabContent = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7"
+                      className="h-8 w-8 sm:h-7 sm:w-7"
                       onClick={(e) => { e.stopPropagation(); navigate('/user/dashboard?section=ticket-resale', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
                       title="Resell ticket"
                     >

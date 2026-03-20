@@ -66,25 +66,14 @@ import { sendMessage } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
 import { showErrorToast } from "@/lib/utils/error";
 import { stripHtml } from "@/lib/utils";
-import type { EventData, Sponsor } from "./EventAttendeeView";
+import type { EventData } from "./EventAttendeeView";
 import { EventSurveyPrompt } from "./EventSurveyPrompt";
+import { SpeakersShowcase } from "@/components/event-details/SpeakersShowcase";
+import { SponsorsShowcase } from "@/components/event-details/SponsorsShowcase";
+import { ExhibitorsGrid } from "@/components/event-details/ExhibitorsGrid";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-const sponsorTierOrder: Sponsor["level"][] = [
-  "title", "presenting", "platinum", "gold", "silver", "bronze", "associate", "community",
-];
-
-const sponsorTierLabels: Record<Sponsor["level"], string> = {
-  title: "Title Sponsor",
-  presenting: "Presenting Sponsor",
-  platinum: "Platinum",
-  gold: "Gold",
-  silver: "Silver",
-  bronze: "Bronze",
-  associate: "Associate",
-  community: "Community Partner",
-};
 
 const socialPlatformConfig: Record<string, { icon: React.ElementType; label: string }> = {
   twitter: { icon: Twitter, label: "Twitter" },
@@ -312,17 +301,6 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
 
   const unreadCount = announcements.filter(n => !n.isRead).length;
 
-  const sponsorsByTier = React.useMemo(() => {
-    if (!event.sponsors?.length) return {};
-    const grouped: Record<string, Sponsor[]> = {};
-    event.sponsors.forEach(s => {
-      const tier = s.level || "associate";
-      if (!grouped[tier]) grouped[tier] = [];
-      grouped[tier].push(s);
-    });
-    return grouped;
-  }, [event.sponsors]);
-
   const formatDateRange = (): string => {
     const opts: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric", year: "numeric" };
     const start = new Date(event.date).toLocaleDateString("en-US", opts);
@@ -547,7 +525,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
         {event.registrationId && (
           <Card className="border-border/40 bg-card mb-6">
             <CardContent className="p-5">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {event.ticketType && (
                   <div className="flex items-start gap-2.5">
                     <Ticket className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -594,7 +572,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
                     <span className="text-sm font-semibold text-foreground">Seat Allocation</span>
                     <Badge className="bg-primary/10 text-primary text-xs uppercase">{event.seat.seatType}</Badge>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                     <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-center">
                       <p className="text-[10px] text-muted-foreground mb-0.5">Seat</p>
                       <p className="text-base font-bold text-primary">{event.seat.seatIdentifier}</p>
@@ -757,41 +735,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
         {hasSpeakers && (
           <section className="mb-8">
             <SectionHeading icon={Mic2} title="Speakers" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(event.speakers ?? []).map((speaker, idx) => (
-                <Card key={speaker.id ?? idx} className="border-border/40 bg-card overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      {speaker.image ? (
-                        <img
-                          src={speaker.image}
-                          alt={speaker.name}
-                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Mic2 className="w-6 h-6 text-primary/50" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-foreground">{speaker.name}</h4>
-                        {speaker.title && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{speaker.title}</p>
-                        )}
-                        {speaker.company && (
-                          <p className="text-xs text-primary/80 mt-0.5">{speaker.company}</p>
-                        )}
-                      </div>
-                    </div>
-                    {speaker.bio && stripHtml(speaker.bio).length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-3 line-clamp-3 leading-relaxed">
-                        {stripHtml(speaker.bio)}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <SpeakersShowcase speakers={event.speakers ?? []} />
           </section>
         )}
 
@@ -856,50 +800,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
         {hasExhibitors && (
           <section className="mb-8">
             <SectionHeading icon={Building2} title="Exhibitors" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(event.exhibitors ?? []).map((exhibitor, idx) => (
-                <Card key={exhibitor.id ?? idx} className="border-border/40 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      {exhibitor.logo ? (
-                        <img
-                          src={exhibitor.logo}
-                          alt={exhibitor.name}
-                          className="w-12 h-12 rounded-lg object-contain bg-muted p-1 flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                          <Building2 className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-foreground">{exhibitor.name}</h4>
-                        {exhibitor.booth && (
-                          <p className="text-xs text-primary mt-0.5">Booth: {exhibitor.booth}</p>
-                        )}
-                        {exhibitor.category && (
-                          <Badge variant="secondary" className="text-[10px] mt-1">{exhibitor.category}</Badge>
-                        )}
-                      </div>
-                    </div>
-                    {exhibitor.description && stripHtml(exhibitor.description).length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{stripHtml(exhibitor.description)}</p>
-                    )}
-                    {exhibitor.website && (
-                      <a
-                        href={exhibitor.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 mt-2 transition-colors"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Visit website
-                      </a>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <ExhibitorsGrid exhibitors={event.exhibitors ?? []} />
           </section>
         )}
 
@@ -909,41 +810,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
         {hasSponsors && (
           <section className="mb-8">
             <SectionHeading icon={CheckCircle} title="Sponsors" />
-            <Card className="border-border/40 bg-card">
-              <CardContent className="p-5 space-y-5">
-                {sponsorTierOrder.map(tier => {
-                  const sponsors = sponsorsByTier[tier];
-                  if (!sponsors?.length) return null;
-                  return (
-                    <div key={tier}>
-                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-                        {sponsorTierLabels[tier]}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-5">
-                        {sponsors.map((s, idx) => (
-                          <a
-                            key={s.id ?? idx}
-                            href={s.website || '#'}
-                            target={s.website ? "_blank" : undefined}
-                            rel="noopener noreferrer"
-                            className="hover:opacity-75 transition-opacity"
-                            title={s.name}
-                          >
-                            {s.logo ? (
-                              <img src={s.logo} alt={s.name} className="h-10 w-auto object-contain" />
-                            ) : (
-                              <div className="h-10 px-4 bg-muted rounded-lg flex items-center">
-                                <span className="text-sm font-medium text-muted-foreground">{s.name}</span>
-                              </div>
-                            )}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
+            <SponsorsShowcase sponsors={event.sponsors ?? []} />
           </section>
         )}
 

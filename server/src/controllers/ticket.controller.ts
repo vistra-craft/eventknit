@@ -116,6 +116,61 @@ export class TicketController {
   }
 
   /**
+   * Download ticket as PDF (public - with email verification)
+   */
+  static async downloadTicketPDFPublic(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const registrationId = routeParam(req.params as Record<string, string | string[]>, 'registrationId');
+      const { email } = req.query;
+
+      if (!email || typeof email !== 'string') {
+        throw new ValidationError('Email is required');
+      }
+
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: registrationId },
+        include: {
+          attendee: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!registration) {
+        throw new NotFoundError('Ticket not found');
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
+      const registrationEmail = registration.attendee.email?.toLowerCase().trim();
+
+      if (registrationEmail !== normalizedEmail) {
+        throw new AuthorizationError(
+          'The email address doesn\'t match this ticket. Please use the same email you registered with.',
+        );
+      }
+
+      const pdfBuffer = await TicketService.generateTicketPDF(registrationId);
+
+      const isHTML = pdfBuffer.toString('utf-8').trim().startsWith('<!-- FALLBACK_HTML -->');
+
+      if (isHTML) {
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `inline; filename="ticket-${registrationId}.html"`);
+        res.status(200).send(pdfBuffer);
+      } else {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="ticket-${registrationId}.pdf"`);
+        res.setHeader('Content-Length', pdfBuffer.length.toString());
+        res.status(200).send(pdfBuffer);
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Download ticket as PDF
    */
   static async downloadTicketPDF(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

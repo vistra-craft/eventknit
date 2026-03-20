@@ -154,7 +154,7 @@ const AffiliateProgram = () => {
                 Create Program
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create Affiliate Program</DialogTitle>
               </DialogHeader>

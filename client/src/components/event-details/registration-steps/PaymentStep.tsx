@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import type { EventData } from '@/types/event';
 import type { TicketSelection, PromoDiscount } from '../UnifiedRegistrationModal';
 import { registerForEvent } from '@/lib/event-api';
-import { initializePayment, verifyPayment } from '@/lib/payment-api';
+import { initializePayment, initializeGuestPayment, verifyPayment } from '@/lib/payment-api';
+import { useAuth } from '@/hooks/useAuth';
 import { extractErrorMessage } from '@/lib/utils/error';
 
 interface RegistrationData {
@@ -70,6 +71,7 @@ export const PaymentStep = ({
   promoDiscount,
   selectedSeatIds,
 }: PaymentStepProps) => {
+  const { isAuthenticated } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'mpesa'>('card');
@@ -150,8 +152,14 @@ export const PaymentStep = ({
     }
 
     try {
-      // Initialize payment on backend
-      const initResponse = await initializePayment(regId);
+      // Initialize payment on backend — try authenticated endpoint, fall back to guest
+      let initResponse;
+      if (isAuthenticated) {
+        initResponse = await initializePayment(regId);
+      } else {
+        const email = registrationData.email as string;
+        initResponse = await initializeGuestPayment(regId, email);
+      }
 
       if (!initResponse.success) {
         throw new Error(initResponse.message || 'Unable to start the payment process. Please try again.');
@@ -216,7 +224,7 @@ export const PaymentStep = ({
       setError(extractErrorMessage(err, 'Unable to start the payment process. Please check your connection and try again.'));
       setIsProcessing(false);
     }
-  }, [registrationData.email, totalPrice, currency, onContinue]);
+  }, [registrationData.email, totalPrice, currency, onContinue, isAuthenticated]);
 
   const handlePayment = async () => {
     setIsProcessing(true);

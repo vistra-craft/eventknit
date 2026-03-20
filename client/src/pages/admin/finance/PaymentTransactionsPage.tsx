@@ -143,7 +143,7 @@ const PaymentTransactionsPage = () => {
         {/* Filters */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -154,7 +154,7 @@ const PaymentTransactionsPage = () => {
                 />
               </div>
               <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value, page: 1 })}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>

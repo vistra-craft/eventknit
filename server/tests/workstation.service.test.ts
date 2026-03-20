@@ -61,9 +61,7 @@ describe('WorkstationService', () => {
     if (!dbConnected) return;
 
     // Clean up
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test organizer
     const organizer = await prisma.user.create({

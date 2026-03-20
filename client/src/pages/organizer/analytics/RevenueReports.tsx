@@ -299,7 +299,7 @@ const RevenueReports = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="breakdown">Ticket Breakdown</TabsTrigger>
             <TabsTrigger value="refunds">Refunds & Forecast</TabsTrigger>
@@ -324,7 +324,7 @@ const RevenueReports = () => {
                       formatter={(value) => formatCurrency(value as number, currency)}
                     />
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+                    <div className="h-[220px] sm:h-[300px] flex items-center justify-center text-muted-foreground text-sm">
                       No ticket sales in this period
                     </div>
                   )}
@@ -346,7 +346,7 @@ const RevenueReports = () => {
                       formatter={(value) => formatCurrency(value as number, currency)}
                     />
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+                    <div className="h-[220px] sm:h-[300px] flex items-center justify-center text-muted-foreground text-sm">
                       No ticket sales in this period
                     </div>
                   )}
@@ -567,7 +567,7 @@ const RevenueReports = () => {
                 <CardContent className="space-y-4">
                   {revenueData ? (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4">
                           <p className="text-xs text-muted-foreground uppercase font-medium">
                             Total Refunded
@@ -646,7 +646,7 @@ const RevenueReports = () => {
                 <CardContent className="space-y-4">
                   {revenueData ? (
                     <>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="rounded-xl bg-success-light border border-success/20 p-4">
                           <p className="text-xs text-muted-foreground uppercase font-medium">
                             Projected Revenue

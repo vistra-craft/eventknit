@@ -105,6 +105,49 @@ export const downloadTicketPDF = async (registrationId: string): Promise<void> =
 };
 
 /**
+ * Download ticket as PDF (public - with email verification, no auth required)
+ */
+export const downloadTicketPDFPublic = async (registrationId: string, email: string): Promise<void> => {
+  const response = await fetch(
+    `${API_BASE_URL}/tickets/${registrationId}/download-public?email=${encodeURIComponent(email)}`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to download ticket' }));
+    throw new Error(error.message || 'Failed to download ticket');
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('text/html')) {
+    const html = await response.text();
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ticket-${registrationId}.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } else {
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ticket-${registrationId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+};
+
+/**
  * Refund eligibility response
  */
 export interface RefundEligibility {

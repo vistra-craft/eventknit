@@ -363,7 +363,7 @@ const FeaturedEventsPage = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex items-center gap-2 ml-0 sm:ml-4 flex-shrink-0">
                         {/* Reorder buttons */}
                         <div className="flex flex-col gap-0.5">
                           <Button

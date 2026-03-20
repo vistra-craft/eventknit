@@ -623,13 +623,13 @@ const ServicePointEventDashboard: React.FC = () => {
     <>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <BackButton to={`${basePrefix}/event-day`} label="Back to Events" />
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold text-foreground">{eventData.title}</h1>
-            <p className="text-muted-foreground mt-2">{organizerName} • {formatTimeRange()} • {eventData.location}</p>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-semibold text-foreground truncate">{eventData.title}</h1>
+            <p className="text-muted-foreground mt-1 text-sm truncate">{organizerName} • {formatTimeRange()} • {eventData.location}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3 flex-shrink-0">
             <Button
               onClick={() => navigate(`${basePrefix}/event-day/scanner?event=${eventId}`)}
               className="bg-primary hover:bg-primary/90"
@@ -782,10 +782,11 @@ const ServicePointEventDashboard: React.FC = () => {
         </Card>
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b">
+        <div className="flex gap-2 border-b overflow-x-auto">
           <Button
             variant={activeTab === 'overview' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('overview')}
+            className="whitespace-nowrap"
           >
             <Monitor className="w-4 h-4 mr-2" />
             Overview

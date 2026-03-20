@@ -55,9 +55,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     const hashedPassword = await hashPassword('Test123!@$');
 

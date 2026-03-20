@@ -293,10 +293,10 @@ const AdminDynamicPricing = () => {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-page-title">Dynamic Pricing</h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm">
             Create pricing rules for time-based, demand-based, and group discounts
           </p>
         </div>
@@ -548,7 +548,7 @@ const CreateRuleForm = ({
 
       {formData.type === "time_based" && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="startDate">Start Date *</Label>
               <Input
@@ -570,7 +570,7 @@ const CreateRuleForm = ({
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="discountType">Discount Type *</Label>
               <Select
@@ -607,7 +607,7 @@ const CreateRuleForm = ({
 
       {formData.type === "demand_based" && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="demandThreshold">Demand Threshold (%) *</Label>
               <Input
@@ -658,7 +658,7 @@ const CreateRuleForm = ({
               placeholder="5"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="discountType">Discount Type *</Label>
               <Select

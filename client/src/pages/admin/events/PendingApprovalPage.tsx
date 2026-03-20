@@ -462,7 +462,7 @@ const PendingApprovalPage = () => {
                     )}
                     <p className="text-sm text-muted-foreground line-clamp-2">{stripHtml(event.description)}</p>
                   </div>
-                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                  <div className="flex items-center gap-2 ml-0 sm:ml-4 flex-shrink-0">
                     <Button variant="outline" size="sm" onClick={() => handlePreviewEvent(event.id)} className="border-primary text-primary hover:bg-muted">
                       <Eye className="h-4 w-4 mr-1" />
                       Preview

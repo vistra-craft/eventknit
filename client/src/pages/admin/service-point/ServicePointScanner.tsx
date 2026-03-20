@@ -1016,7 +1016,7 @@ const ServicePointScanner: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {sessionsLoading ? (
                       <div className="col-span-full text-center text-muted-foreground py-4">
                         Loading sessions...
@@ -1261,7 +1261,7 @@ const ServicePointScanner: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-3 max-h-64 md:max-h-96 overflow-y-auto">
                     {scanResults.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <Scan className="w-8 h-8 mx-auto mb-2" />
@@ -1347,7 +1347,7 @@ const ServicePointScanner: React.FC = () => {
 
         {/* Manual Search Modal */}
         <Dialog open={showSearchModal} onOpenChange={setShowSearchModal}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Manual Search & Check {scanMode === 'check-in' ? 'In' : 'Out'}</DialogTitle>
               <DialogDescription>
@@ -1380,7 +1380,7 @@ const ServicePointScanner: React.FC = () => {
               </Button>
 
               {searchResults.length > 0 && (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="space-y-2 max-h-64 md:max-h-96 overflow-y-auto">
                   <p className="text-sm font-medium">Search Results ({searchResults.length})</p>
                   {searchResults.map((attendee) => (
                     <div

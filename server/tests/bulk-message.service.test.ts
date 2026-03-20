@@ -49,9 +49,7 @@ describe('BulkMessageService', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test organizer
     const organizer = await prisma.user.create({

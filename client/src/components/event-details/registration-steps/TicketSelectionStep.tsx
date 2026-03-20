@@ -212,11 +212,11 @@ export const TicketSelectionStep = ({
                 </span>
 
                 {/* Quantity Selector */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:gap-2">
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 sm:h-8 sm:w-8"
                     onClick={() => updateQuantity(ticket.name, -1)}
                     disabled={!quantity}
                   >
@@ -226,7 +226,7 @@ export const TicketSelectionStep = ({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 sm:h-8 sm:w-8"
                     onClick={() => updateQuantity(ticket.name, 1)}
                     disabled={
                       !isAvailable ||

@@ -913,7 +913,7 @@ const ExpenseForm = ({
           rows={3}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="amount">Amount *</Label>
           <Input
@@ -951,7 +951,7 @@ const ExpenseForm = ({
           </SelectContent>
         </Select>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="recipient">Recipient</Label>
           <Input
@@ -1078,7 +1078,7 @@ const IncomeForm = ({
           rows={3}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="amount">Amount *</Label>
           <Input
@@ -1099,7 +1099,7 @@ const IncomeForm = ({
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="source">Source</Label>
           <Input

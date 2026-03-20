@@ -100,7 +100,7 @@ const EditTransactionPage = () => {
               <CardTitle className="text-base font-semibold text-foreground">Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="type">Type</Label>
                   <Select value={formData.type} onValueChange={(value) => handleInputChange("type", value)}>
@@ -145,7 +145,7 @@ const EditTransactionPage = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="amount">Amount</Label>
                   <Input
@@ -167,7 +167,7 @@ const EditTransactionPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
@@ -231,7 +231,7 @@ const EditTransactionPage = () => {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="eventId">Event ID</Label>
                   <Input
@@ -252,7 +252,7 @@ const EditTransactionPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="attendeeId">Attendee ID</Label>
                   <Input
@@ -273,7 +273,7 @@ const EditTransactionPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="organizerId">Organizer ID</Label>
                   <Input
@@ -294,7 +294,7 @@ const EditTransactionPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="ticketType">Ticket Type</Label>
                   <Input
@@ -316,7 +316,7 @@ const EditTransactionPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="platformFee">Platform Fee</Label>
                   <Input
@@ -339,7 +339,7 @@ const EditTransactionPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="source">Source</Label>
                   <Input

@@ -392,7 +392,7 @@ const UserSettingsPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-muted-foreground text-sm">Role</Label>
                 <p className="text-foreground font-medium">{accountInfo.role && ROLE_LABELS[accountInfo.role as UserRole] ? ROLE_LABELS[accountInfo.role as UserRole] : accountInfo.role}</p>
@@ -1016,7 +1016,7 @@ const UserSettingsPage = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`grid w-full grid-cols-${tabs.length} mb-8`}>
+        <TabsList className={`flex w-full mb-8 overflow-x-auto sm:grid ${tabs.length === 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (

@@ -19,7 +19,7 @@ import { getEventById } from "@/lib/event-api";
 import type { EventData } from "@/types/event";
 import { shareEvent } from "@/lib/utils/share";
 import { useToast } from "@/hooks/useToast";
-import { downloadTicketPDF, resendTicketEmail } from "@/lib/ticket-api";
+import { downloadTicketPDF, downloadTicketPDFPublic, resendTicketEmail } from "@/lib/ticket-api";
 
 interface TicketType {
   name: string;
@@ -156,7 +156,11 @@ const RegistrationConfirmation: React.FC = () => {
     if (!confirmationData?.registrationId) return;
     setIsDownloading(true);
     try {
-      await downloadTicketPDF(confirmationData.registrationId);
+      if (isAuthenticated) {
+        await downloadTicketPDF(confirmationData.registrationId);
+      } else {
+        await downloadTicketPDFPublic(confirmationData.registrationId, userEmail);
+      }
       toast({ title: "Downloaded!", description: "Your ticket has been downloaded." });
     } catch {
       toast({ title: "Download failed", description: "We couldn't download your ticket. Please try again or check your email for a copy.", variant: "destructive" });
@@ -196,8 +200,13 @@ const RegistrationConfirmation: React.FC = () => {
     window.open(url, "_blank");
   };
 
-  const handleShareEvent = () => {
-    shareEvent(getTitle(), eventId || confirmationData?.eventId || "");
+  const handleShareEvent = async () => {
+    const shared = await shareEvent(getTitle(), eventId || confirmationData?.eventId || "");
+    if (shared) {
+      toast({ title: "Link copied!", description: "Event link has been copied to your clipboard." });
+    } else {
+      toast({ title: "Couldn't share", description: "Please copy the URL from the address bar manually.", variant: "destructive" });
+    }
   };
 
   if (loading) {
@@ -282,7 +291,7 @@ const RegistrationConfirmation: React.FC = () => {
           <div className="space-y-3 text-sm">
             <div className="font-medium">{getTitle()}</div>
 
-            <div className="flex items-center gap-6 text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span>{formatDate(getStartDate())}</span>
@@ -318,34 +327,34 @@ const RegistrationConfirmation: React.FC = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <Button
             variant="outline"
             size="sm"
             onClick={handleAddToCalendar}
-            className="flex-col h-auto py-3 gap-1"
+            className="flex-col h-auto min-h-[52px] py-3 gap-1"
           >
             <Calendar className="w-4 h-4" />
-            <span className="text-[10px]">Add to Calendar</span>
+            <span className="text-[10px] sm:text-xs">Calendar</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleDownloadTicket}
             disabled={isDownloading || !confirmationData?.registrationId}
-            className="flex-col h-auto py-3 gap-1"
+            className="flex-col h-auto min-h-[52px] py-3 gap-1"
           >
             {isDownloading ? <Loader size="sm" /> : <Download className="w-4 h-4" />}
-            <span className="text-[10px]">Download</span>
+            <span className="text-[10px] sm:text-xs">Download</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleShareEvent}
-            className="flex-col h-auto py-3 gap-1"
+            className="flex-col h-auto min-h-[52px] py-3 gap-1"
           >
             <Share2 className="w-4 h-4" />
-            <span className="text-[10px]">Share</span>
+            <span className="text-[10px] sm:text-xs">Share</span>
           </Button>
         </div>
 
@@ -354,9 +363,14 @@ const RegistrationConfirmation: React.FC = () => {
           {confirmationData?.registrationId && (
             <Button
               className="w-full"
-              onClick={() => navigate(`/user/tickets/${confirmationData.registrationId}`, {
-                state: { userEmail, email: userEmail }
-              })}
+              onClick={() => {
+                const path = isAuthenticated
+                  ? `/user/tickets/${confirmationData.registrationId}`
+                  : `/tickets/${confirmationData.registrationId}/view`;
+                navigate(path, {
+                  state: { userEmail, email: userEmail },
+                });
+              }}
             >
               <Ticket className="w-4 h-4 mr-2" />
               View My Ticket

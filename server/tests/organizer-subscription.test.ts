@@ -36,9 +36,7 @@ describe('Organizer Dashboard - Subscription API', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    }, { timeout: 15000 });
+    await cleanupTestData();
 
     // Create organizer
     const organizerPassword = await hashPassword('Organizer123!@$');

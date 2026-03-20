@@ -247,7 +247,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
                   Create Template
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Create Event Template</DialogTitle>
                 </DialogHeader>
@@ -269,7 +269,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
                   Create Template
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Create Event Template</DialogTitle>
                 </DialogHeader>
@@ -333,7 +333,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
 
         {selectedTemplate && (
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{selectedTemplate.name}</DialogTitle>
               </DialogHeader>

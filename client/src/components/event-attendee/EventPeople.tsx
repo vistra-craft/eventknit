@@ -1,11 +1,13 @@
 /**
  * EventPeople — merged replacement for EventSpeakers + EventExhibitors tabs.
+ * Reuses the same showcase components from event details page.
  * Shows sub-tab switcher only when both sections have content.
  */
 import React, { useState } from "react";
 import { Users, Building2 } from "lucide-react";
-import { EventSpeakers } from "./EventSpeakers";
-import { EventExhibitors } from "./EventExhibitors";
+import { SpeakersShowcase } from "@/components/event-details/SpeakersShowcase";
+import { SponsorsShowcase } from "@/components/event-details/SponsorsShowcase";
+import { ExhibitorsGrid } from "@/components/event-details/ExhibitorsGrid";
 import type { Speaker, Exhibitor, Sponsor } from "./EventAttendeeView";
 
 interface EventPeopleProps {
@@ -18,8 +20,10 @@ type PeopleTab = "speakers" | "exhibitors";
 
 export const EventPeople: React.FC<EventPeopleProps> = ({ speakers = [], exhibitors = [], sponsors = [] }) => {
   const hasSpeakers = speakers.length > 0;
-  const hasExhibitors = exhibitors.length > 0 || (sponsors && sponsors.length > 0);
-  const showSubTabs = hasSpeakers && hasExhibitors;
+  const hasExhibitors = exhibitors.length > 0;
+  const hasSponsors = sponsors.length > 0;
+  const hasExhibitorsOrSponsors = hasExhibitors || hasSponsors;
+  const showSubTabs = hasSpeakers && hasExhibitorsOrSponsors;
 
   const [activeTab, setActiveTab] = useState<PeopleTab>(hasSpeakers ? "speakers" : "exhibitors");
 
@@ -28,7 +32,7 @@ export const EventPeople: React.FC<EventPeopleProps> = ({ speakers = [], exhibit
       {/* Sub-tab switcher — only rendered when both sections have content */}
       {showSubTabs && (
         <div className="container mx-auto max-w-7xl px-4 sm:px-6 pt-6">
-          <div className="flex items-center gap-1 p-1 bg-muted/50 border border-border rounded-lg w-fit">
+          <div className="flex items-center gap-1 p-1 bg-muted/50 border border-border rounded-lg w-fit overflow-x-auto">
             <button
               onClick={() => setActiveTab("speakers")}
               className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
@@ -51,10 +55,10 @@ export const EventPeople: React.FC<EventPeopleProps> = ({ speakers = [], exhibit
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
-              <Building2 className="w-3.5 h-3.5" />
-              Exhibitors &amp; Sponsors
+              <Building2 className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="whitespace-nowrap">Exhibitors &amp; Sponsors</span>
               <span className="ml-1 text-xs bg-muted text-muted-foreground rounded-full px-1.5 py-0.5">
-                {exhibitors.length + (sponsors?.length ?? 0)}
+                {exhibitors.length + sponsors.length}
               </span>
             </button>
           </div>
@@ -63,10 +67,26 @@ export const EventPeople: React.FC<EventPeopleProps> = ({ speakers = [], exhibit
 
       {/* Content */}
       {(!showSubTabs || activeTab === "speakers") && hasSpeakers && (
-        <EventSpeakers speakers={speakers} />
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-6">
+          <h2 className="text-xl font-bold text-foreground mb-4">Speakers</h2>
+          <SpeakersShowcase speakers={speakers} />
+        </div>
       )}
-      {(!showSubTabs || activeTab === "exhibitors") && hasExhibitors && (
-        <EventExhibitors exhibitors={exhibitors} sponsors={sponsors} />
+      {(!showSubTabs || activeTab === "exhibitors") && hasExhibitorsOrSponsors && (
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-6 space-y-8">
+          {hasSponsors && (
+            <div>
+              <h2 className="text-xl font-bold text-foreground mb-4">Sponsors</h2>
+              <SponsorsShowcase sponsors={sponsors} />
+            </div>
+          )}
+          {hasExhibitors && (
+            <div>
+              <h2 className="text-xl font-bold text-foreground mb-4">Exhibitors</h2>
+              <ExhibitorsGrid exhibitors={exhibitors} />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

@@ -2,12 +2,12 @@ name: Client CI Pipeline
 
 on:
   push:
-    branches: [main, development, staging]
+    branches: [development]
     paths:
       - "client/**"
       - ".github/workflows/client-ci.yml"
   pull_request:
-    branches: [main, development, staging]
+    branches: [development]
     paths:
       - "client/**"
       - ".github/workflows/client-ci.yml"
@@ -46,9 +46,9 @@ jobs:
         working-directory: ./client
         run: npm run type-check
 
-      # - name: Run client tests
-      #   working-directory: ./client
-      #   run: npm run test:run
+      - name: Run client tests
+        working-directory: ./client
+        run: npm run test:run
 
       - name: Build client
         working-directory: ./client
@@ -62,9 +62,9 @@ jobs:
           name: client-build-files
           path: client/dist/
 
-      # - name: Upload client test results
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: client-test-results
-      #     path: client/coverage/
+      - name: Upload client test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-test-results
+          path: client/coverage/
 

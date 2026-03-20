@@ -2,12 +2,12 @@ name: Server CI Pipeline
 
 on:
   push:
-    branches: [main, development, staging]
+    branches: [development]
     paths:
       - "server/**"
       - ".github/workflows/server-ci.yml"
   pull_request:
-    branches: [main, development, staging]
+    branches: [development]
     paths:
       - "server/**"
       - ".github/workflows/server-ci.yml"
@@ -16,30 +16,30 @@ jobs:
   server-test:
     runs-on: ubuntu-latest
 
-    # services:
-    #   postgres:
-    #     image: postgres:16-alpine
-    #     ports:
-    #       - 5432:5432
-    #     env:
-    #       POSTGRES_USER: eventknit_test
-    #       POSTGRES_PASSWORD: eventknit_test
-    #       POSTGRES_DB: eventknit_test
-    #     options: >-
-    #       --health-cmd "pg_isready -U eventknit_test"
-    #       --health-interval 10s
-    #       --health-timeout 5s
-    #       --health-retries 5
+    services:
+      postgres:
+        image: postgres:16-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: eventknit_test
+          POSTGRES_PASSWORD: eventknit_test
+          POSTGRES_DB: eventknit_test
+        options: >-
+          --health-cmd "pg_isready -U eventknit_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-    #   redis:
-    #     image: redis:7-alpine
-    #     ports:
-    #       - 6379:6379
-    #     options: >-
-    #       --health-cmd "redis-cli ping"
-    #       --health-interval 10s
-    #       --health-timeout 5s
-    #       --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -65,12 +65,11 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=4096
 
-      - name: Generate Prisma client
+      - name: Generate Prisma client and run migrations
         working-directory: ./server
-        run: npx prisma generate
-      # - name: Run database migrations
-      #   working-directory: ./server
-      #   run: npx prisma migrate deploy
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
 
       - name: Run server linter
         working-directory: ./server
@@ -80,9 +79,9 @@ jobs:
         working-directory: ./server
         run: npm run type-check
 
-      # - name: Run server tests
-      #   working-directory: ./server
-      #   run: npm run test:coverage
+      - name: Run server tests
+        working-directory: ./server
+        run: npm run test:coverage
 
       - name: Build server
         working-directory: ./server
@@ -96,9 +95,9 @@ jobs:
           name: server-build-files
           path: server/dist/
 
-      # - name: Upload server coverage reports
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: server-coverage-report
-      #     path: server/coverage/
+      - name: Upload server coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage-report
+          path: server/coverage/
 

@@ -165,7 +165,7 @@ const ReconciliationPage = () => {
             <CardTitle className="text-base font-semibold text-foreground">Create Reconciliation</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground mb-2 block">
                   Start Date

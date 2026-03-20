@@ -217,7 +217,7 @@ const EditWagePage = () => {
             <CardTitle className="text-base font-semibold text-foreground">Employee Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="employeeId">Employee ID</Label>
                 <Input id="employeeId" value={formData.employeeId} onChange={(e) => handleInputChange("employeeId", e.target.value)} placeholder="EMP-001" />
@@ -227,7 +227,7 @@ const EditWagePage = () => {
                 <Input id="employeeName" value={formData.employeeName} onChange={(e) => handleInputChange("employeeName", e.target.value)} placeholder="Employee name" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="position">Position</Label>
                 <Input id="position" value={formData.position} onChange={(e) => handleInputChange("position", e.target.value)} placeholder="Job position" />
@@ -270,7 +270,7 @@ const EditWagePage = () => {
             <CardTitle className="text-base font-semibold text-foreground">Payment Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="grossAmount">Gross Amount</Label>
                 <Input id="grossAmount" type="number" value={formData.grossAmount} onChange={(e) => handleInputChange("grossAmount", e.target.value)} placeholder="0.00" />
@@ -280,7 +280,7 @@ const EditWagePage = () => {
                 <Input id="amount" type="number" value={formData.amount} onChange={(e) => handleInputChange("amount", e.target.value)} placeholder="0.00" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="payPeriod">Pay Period *</Label>
                 <Input id="payPeriod" value={formData.payPeriod} onChange={(e) => handleInputChange("payPeriod", e.target.value)} placeholder="March 2025" />
@@ -290,7 +290,7 @@ const EditWagePage = () => {
                 <Input id="payDate" type="date" value={formData.payDate} onChange={(e) => handleInputChange("payDate", e.target.value)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
@@ -330,7 +330,7 @@ const EditWagePage = () => {
               <CardTitle className="text-base font-semibold text-foreground">Work Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="hoursWorked">Hours Worked</Label>
                   <Input id="hoursWorked" type="number" value={formData.hoursWorked} onChange={(e) => handleInputChange("hoursWorked", e.target.value)} placeholder="160" />
@@ -340,7 +340,7 @@ const EditWagePage = () => {
                   <Input id="hourlyRate" type="number" value={formData.hourlyRate} onChange={(e) => handleInputChange("hourlyRate", e.target.value)} placeholder="0.00" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="overtimeHours">Overtime Hours</Label>
                   <Input id="overtimeHours" type="number" value={formData.overtimeHours} onChange={(e) => handleInputChange("overtimeHours", e.target.value)} placeholder="0" />
@@ -361,7 +361,7 @@ const EditWagePage = () => {
               <CardTitle className="text-base font-semibold text-foreground">Event Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="dailyRate">Daily Rate</Label>
                   <Input id="dailyRate" type="number" value={formData.dailyRate} onChange={(e) => handleInputChange("dailyRate", e.target.value)} placeholder="0.00" />
@@ -385,7 +385,7 @@ const EditWagePage = () => {
             <CardTitle className="text-base font-semibold text-foreground">Adjustments & Notes</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="bonuses">Bonuses</Label>
                 <Input id="bonuses" type="number" value={formData.bonuses} onChange={(e) => handleInputChange("bonuses", e.target.value)} placeholder="0.00" />

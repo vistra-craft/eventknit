@@ -108,7 +108,7 @@ export const OnboardingLayout = ({
         </div>
 
         {/* Content */}
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
+        <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-sm">
           {children}
         </div>
       </div>

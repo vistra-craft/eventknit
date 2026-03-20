@@ -943,7 +943,7 @@ const ServicePointPrint: React.FC = () => {
         {/* Preview Modal */}
         {showPreviewModal && previewAttendee && selectedTemplate && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-card rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div className="bg-card rounded-xl shadow-xl w-[calc(100vw-2rem)] sm:max-w-2xl mx-4 max-h-[90vh] overflow-auto">
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <h3 className="font-semibold text-foreground">Badge Preview - {previewAttendee.attendeeName}</h3>
                 <Button variant="ghost" size="sm" onClick={() => setShowPreviewModal(false)}>

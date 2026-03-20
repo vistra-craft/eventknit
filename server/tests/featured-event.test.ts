@@ -106,9 +106,7 @@ describe('Featured Events System', () => {
     if (!dbConnected) return;
 
     // Clean up in correct order to respect foreign keys
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test users
     const hashedPassword = await hashPassword('Test123!@$');

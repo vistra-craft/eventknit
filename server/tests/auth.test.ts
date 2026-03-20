@@ -63,9 +63,7 @@ describe('Authentication System', () => {
     if (!dbConnected) return;
     
     // Clear all tables before each test (in correct order to respect foreign keys)
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
   });
 
   describe('POST /api/v1/auth/signup', () => {

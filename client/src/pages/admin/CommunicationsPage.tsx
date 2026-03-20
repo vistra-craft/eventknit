@@ -1219,7 +1219,7 @@ const CommunicationsPage = () => {
                   rows={4}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="announcement-type">Type</Label>
                   <Select value={announcementForm.type} onValueChange={(value) => setAnnouncementForm(prev => ({ ...prev, type: value as "general" | "maintenance" | "feature" | "urgent" }))}>
@@ -1299,7 +1299,7 @@ const CommunicationsPage = () => {
                   rows={3}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="notification-type">Type</Label>
                   <Select value={notificationForm.type} onValueChange={(value) => setNotificationForm(prev => ({ ...prev, type: value as "info" | "warning" | "error" | "success" }))}>
@@ -1329,7 +1329,7 @@ const CommunicationsPage = () => {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="notification-start">Start Date</Label>
                   <Input
@@ -1371,7 +1371,7 @@ const CommunicationsPage = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="template-name">Template Name</Label>
                   <Input
@@ -1601,7 +1601,7 @@ const CommunicationsPage = () => {
                   rows={6}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="bulk-type">Type</Label>
                   <Select value={bulkMessageForm.type} onValueChange={(value) => setBulkMessageForm(prev => ({ ...prev, type: value as BulkMessageType }))}>
@@ -1645,7 +1645,7 @@ const CommunicationsPage = () => {
               )}
               <div>
                 <Label>Delivery Channels</Label>
-                <div className="grid grid-cols-2 gap-4 mt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="channel-email" className="cursor-pointer">Email</Label>
                     <Switch

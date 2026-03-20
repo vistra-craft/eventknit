@@ -395,7 +395,7 @@ const AnalyticsOverview = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="events">Top Events</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
@@ -569,7 +569,7 @@ const AnalyticsOverview = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {recentInsights.map((insight) => (
                 <Card key={insight.id} className={`border ${getImpactColor(insight.impact).split(' ')[2]}`}>
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-start space-x-3">
                       <div className={`w-8 h-8 rounded-full ${getImpactColor(insight.impact).split(' ')[1]} flex items-center justify-center`}>
                         <insight.icon className={`h-4 w-4 ${getImpactColor(insight.impact).split(' ')[0]}`} />

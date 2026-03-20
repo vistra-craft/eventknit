@@ -226,7 +226,7 @@ const SubscriptionPlansPage = () => {
       </div>
 
       {/* Plan Cards */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {sortedPlans.map(plan => {
           const config = TIER_CONFIG[plan.tier];
           const Icon = config.icon;
@@ -320,7 +320,7 @@ const SubscriptionPlansPage = () => {
                             </button>
                           </div>
                         ))}
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <select
                             value={editState.newFeature}
                             onChange={e =>
