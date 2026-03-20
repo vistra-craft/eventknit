@@ -7,13 +7,66 @@ on:
       - "server/**"
       - ".github/workflows/server-ci.yml"
   pull_request:
-    branches: [development]
+    branches: [main, development, staging]
     paths:
       - "server/**"
       - ".github/workflows/server-ci.yml"
 
 jobs:
-  server-test:
+  # ─── Fast Gate (~2-3 min) ─────────────────────────────────
+  # Runs on every push: lint, type-check, unit tests, build
+  server-quick:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install server dependencies
+        working-directory: ./server
+        run: npm ci
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Generate Prisma client
+        working-directory: ./server
+        run: npx prisma generate
+
+      - name: Run server linter
+        working-directory: ./server
+        run: npm run lint
+
+      - name: Run server type checking
+        working-directory: ./server
+        run: npm run type-check
+
+      - name: Run unit tests
+        working-directory: ./server
+        run: npx vitest run tests/unit/ --reporter=default
+
+      - name: Build server
+        working-directory: ./server
+        run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Upload server build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-build-files
+          path: server/dist/
+
+  # ─── Full Integration Tests (~25-30 min) ──────────────────
+  # Runs only on PRs to main/development/staging (not every push)
+  server-integration:
+    if: github.event_name == 'pull_request'
+    needs: server-quick
     runs-on: ubuntu-latest
 
     services:
@@ -49,6 +102,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
+          cache-dependency-path: server/package-lock.json
 
       - name: Setup test environment
         run: |
@@ -71,33 +126,13 @@ jobs:
           npx prisma generate
           npx prisma migrate deploy
 
-      - name: Run server linter
-        working-directory: ./server
-        run: npm run lint
-
-      - name: Run server type checking
-        working-directory: ./server
-        run: npm run type-check
-
-      - name: Run server tests
+      - name: Run integration tests with coverage
         working-directory: ./server
         run: npm run test:coverage
 
-      - name: Build server
-        working-directory: ./server
-        run: npm run build
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-
-      - name: Upload server build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: server-build-files
-          path: server/dist/
-
       - name: Upload server coverage reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: server-coverage-report
           path: server/coverage/
-
