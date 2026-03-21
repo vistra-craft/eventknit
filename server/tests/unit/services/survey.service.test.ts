@@ -220,12 +220,13 @@ describe('SurveyService', () => {
       // Arrange
       prisma.eventSurvey.findUnique.mockResolvedValue({
         ...mockSurvey,
+        event: { organizerId, isManaged: false, managedByAdminId: null },
         _count: { responses: 0 },
       } as any);
       prisma.eventSurvey.delete.mockResolvedValue(mockSurvey as any);
 
       // Act
-      await SurveyService.deleteSurvey(surveyId);
+      await SurveyService.deleteSurvey(surveyId, organizerId);
 
       // Assert
       expect(prisma.eventSurvey.delete).toHaveBeenCalledWith({ where: { id: surveyId } });
@@ -235,11 +236,12 @@ describe('SurveyService', () => {
       // Arrange
       prisma.eventSurvey.findUnique.mockResolvedValue({
         ...mockSurvey,
+        event: { organizerId, isManaged: false, managedByAdminId: null },
         _count: { responses: 5 },
       } as any);
 
       // Act & Assert
-      await expect(SurveyService.deleteSurvey(surveyId)).rejects.toThrow(ValidationError);
+      await expect(SurveyService.deleteSurvey(surveyId, organizerId)).rejects.toThrow(ValidationError);
     });
 
     it('should throw NotFoundError when survey does not exist', async () => {
@@ -247,7 +249,7 @@ describe('SurveyService', () => {
       prisma.eventSurvey.findUnique.mockResolvedValue(null);
 
       // Act & Assert
-      await expect(SurveyService.deleteSurvey(surveyId)).rejects.toThrow(NotFoundError);
+      await expect(SurveyService.deleteSurvey(surveyId, organizerId)).rejects.toThrow(NotFoundError);
     });
   });
 

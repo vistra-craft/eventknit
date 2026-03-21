@@ -1940,9 +1940,11 @@ The survey results dashboard provides:
 
 #### Finding the Survey
 
-- After an event ends, the survey appears in the **event overview page** (the same page where event details, schedule, and reviews are shown)
-- The survey is only visible if the organizer has created and activated one for that event
-- You must have a confirmed registration for the event to access the survey
+- **Email link (automatic):** 24 hours after an event ends, all confirmed attendees receive an email with a direct link to the survey. Clicking the link opens a standalone survey page — no need to navigate through the dashboard.
+- **In-app notification:** An in-app notification is also sent at the same time, linking to the survey.
+- **Event overview page:** The survey also appears at the bottom of the event's Overview tab in the attendee dashboard. It is only visible once the event status is "completed."
+- The survey is only visible if the organizer has created and activated one for that event.
+- You must have a confirmed registration for the event to access the survey.
 
 #### Filling Out the Survey
 
@@ -1956,8 +1958,9 @@ Each attendee can submit only one response per survey. Once submitted, the respo
 ### For Admins
 
 - **Platform-wide survey list** — View all surveys created across the platform, with response counts and average ratings
-- **Managed event surveys** — Full access to survey configuration and results for events managed by the admin team
+- **Managed event surveys** — Admins can create, configure, and view survey results for events managed by the admin team via the admin dashboard (`/admin/events/:eventId/survey`). The same survey management interface used by organizers is available to admins for managed events.
 - **Survey analytics** — Aggregate data on survey adoption (how many organizers create surveys) and response rates across the platform
+- **Authorization** — Survey create, update, and delete operations verify the caller is the event organizer, the admin managing the event, or a platform admin. This prevents unauthorized users from creating surveys for events they don't own.
 
 ### How Surveys Differ from Reviews and Platform Feedback
 

@@ -108,7 +108,7 @@ const UserDashboard = () => {
       case "networking":
         return <AttendeeDiscovery eventData={eventData} />;
       case "notifications":
-        return <NotificationsCenter eventData={eventData} />;
+        return <NotificationsCenter />;
       case "analytics":
         return <PersonalAnalytics eventData={eventData} user={user} />;
       case "recommendations":

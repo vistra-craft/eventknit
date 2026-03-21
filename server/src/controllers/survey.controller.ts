@@ -63,7 +63,7 @@ export class SurveyController {
       if (!req.user) throw new AuthenticationError('Authentication required');
 
       const surveyId = req.params.surveyId as string;
-      await SurveyService.deleteSurvey(surveyId);
+      await SurveyService.deleteSurvey(surveyId, req.user.id);
 
       res.status(200).json({
         success: true,

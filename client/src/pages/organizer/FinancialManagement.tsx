@@ -165,17 +165,15 @@ const FinancialManagement = () => {
 
   return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Financial Management</h1>
-            <p className="text-muted-foreground mt-1">
-              Track expenses, set goals, and analyze financial performance
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold">Financial Management</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Track expenses, set goals, and analyze financial performance
+          </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
             <TabsTrigger value="profit-loss">Profit & Loss</TabsTrigger>
             <TabsTrigger value="goals">Financial Goals</TabsTrigger>
@@ -512,7 +510,7 @@ const ExpenseForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="category">Category *</Label>
           <Input
@@ -545,7 +543,7 @@ const ExpenseForm = ({
           rows={3}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="expenseDate">Expense Date</Label>
           <Input
@@ -640,7 +638,7 @@ const GoalForm = ({
           rows={3}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="targetAmount">Target Amount *</Label>
           <Input
@@ -669,7 +667,7 @@ const GoalForm = ({
           </Select>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="startDate">Start Date *</Label>
           <Input

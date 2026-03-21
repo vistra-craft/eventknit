@@ -4262,22 +4262,35 @@ The survey is only available after an event's `endDate` has passed and the atten
 
 All endpoints are under `/api/v1/`:
 
+**Backend API Endpoints:**
+
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/organizer/events/:eventId/survey` | Organizer | Create survey for own event |
-| `PUT` | `/organizer/events/:eventId/survey` | Organizer | Update survey configuration |
-| `DELETE` | `/organizer/events/:eventId/survey` | Organizer | Delete survey (and all responses) |
-| `GET` | `/organizer/events/:eventId/survey` | Organizer | Get survey config and metadata |
-| `GET` | `/organizer/events/:eventId/survey/results` | Organizer | Get aggregated results and individual responses |
-| `GET` | `/events/:eventId/survey` | Attendee | Get survey form for a completed event |
-| `POST` | `/events/:eventId/survey/respond` | Attendee | Submit survey response |
-| `GET` | `/admin/surveys` | Admin | List all surveys across the platform |
+| `POST` | `/api/v1/surveys` | Authenticated | Create survey for an event |
+| `PUT` | `/api/v1/surveys/:surveyId` | Authenticated | Update survey configuration |
+| `DELETE` | `/api/v1/surveys/:surveyId` | Authenticated | Delete survey (only if zero responses) |
+| `GET` | `/api/v1/surveys/event/:eventId` | Authenticated | Get survey config for organizer view |
+| `GET` | `/api/v1/surveys/event/:eventId/results` | Authenticated | Get aggregated results with NPS breakdown |
+| `GET` | `/api/v1/surveys/event/:eventId/public` | Authenticated | Get survey form for attendee |
+| `POST` | `/api/v1/surveys/:surveyId/respond` | Authenticated | Submit survey response |
+| `GET` | `/api/v1/admin/surveys` | Admin | List all surveys platform-wide |
 
-**Authorization rules:**
-- Organizers can only manage surveys for events they own
-- Admins can access surveys for managed events (where `event.isManaged = true`)
+**Frontend Routes:**
+
+| Route | Role | Description |
+|-------|------|-------------|
+| `/events/:eventId/survey` | Public (attendee) | Standalone survey page linked from email |
+| `/organizer/event/:eventId/survey` | Organizer | Survey creation, configuration, and results |
+| `/admin/events/:eventId/survey` | Admin | Survey management for managed events (reuses organizer component) |
+
+**Authorization (enforced in service layer):**
+- `createSurvey`, `updateSurvey`, `deleteSurvey` verify the caller is the event organizer, managed event admin, or a platform admin (SUPERADMIN/ADMIN role)
 - Attendees can only view and respond to surveys for events they have a confirmed registration for
-- Duplicate submissions are rejected (unique constraint on `surveyId` + `userId`)
+- Duplicate submissions are rejected (unique constraint on `surveyId` + `attendeeId`)
+
+**Automatic Trigger:**
+- `PostEventSurveyJob` runs hourly, finds events that ended 23–25 hours ago, and sends in-app notifications + emails to all confirmed attendees with a link to `/events/{eventId}/survey`
+- Prevents duplicate sends with a 48-hour deduplication window
 
 ### 47.4 Survey Structure
 

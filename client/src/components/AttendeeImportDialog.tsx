@@ -200,7 +200,7 @@ export function AttendeeImportDialog({
     return (
       <div className="space-y-4">
         {/* Summary */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="text-center p-3 bg-muted rounded-lg">
             <p className="text-2xl font-bold">{validationResult.totalRows}</p>
             <p className="text-xs text-muted-foreground">Total Rows</p>
@@ -352,7 +352,7 @@ export function AttendeeImportDialog({
         </div>
 
         {/* Results Summary */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="text-center p-3 bg-success/5 rounded-lg">
             <p className="text-2xl font-bold text-success">{importResult.successCount}</p>
             <p className="text-xs text-muted-foreground">Imported</p>

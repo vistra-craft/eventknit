@@ -335,8 +335,8 @@ export default function OrganizerProfileSetup() {
             <Label className="mb-3 block">Social Media Links</Label>
             <div className="space-y-3">
               {SOCIAL_PLATFORMS.map(platform => (
-                <div key={platform.key} className="flex items-center gap-3">
-                  <span className="text-sm text-muted-foreground w-24 shrink-0">{platform.label}</span>
+                <div key={platform.key} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                  <span className="text-sm text-muted-foreground sm:w-24 sm:shrink-0">{platform.label}</span>
                   <Input
                     value={socialLinks[platform.key] || ''}
                     onChange={(e) => setSocialLinks(prev => ({

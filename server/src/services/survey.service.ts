@@ -93,6 +93,15 @@ export class SurveyService {
       throw new NotFoundError('Event not found');
     }
 
+    // Verify caller owns the event or is admin for managed events
+    if (event.organizerId !== createdById && !(event.isManaged && event.managedByAdminId === createdById)) {
+      // Check if user is a platform admin
+      const user = await prisma.user.findUnique({ where: { id: createdById }, select: { role: true } });
+      if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN')) {
+        throw new AuthorizationError('You do not have permission to create a survey for this event');
+      }
+    }
+
     // Validate custom questions (max 5)
     if (data.customQuestions && data.customQuestions.length > 5) {
       throw new ValidationError('Maximum 5 custom questions allowed');
@@ -158,6 +167,14 @@ export class SurveyService {
       throw new NotFoundError('Survey not found');
     }
 
+    // Verify caller owns the event or is admin
+    if (survey.event.organizerId !== userId && !(survey.event.isManaged && survey.event.managedByAdminId === userId)) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN')) {
+        throw new AuthorizationError('You do not have permission to update this survey');
+      }
+    }
+
     // Validate custom questions (max 5)
     if (data.customQuestions && data.customQuestions.length > 5) {
       throw new ValidationError('Maximum 5 custom questions allowed');
@@ -220,14 +237,25 @@ export class SurveyService {
   /**
    * Delete a survey. Only allowed if no responses have been submitted.
    */
-  static async deleteSurvey(surveyId: string) {
+  static async deleteSurvey(surveyId: string, userId: string) {
     const survey = await prisma.eventSurvey.findUnique({
       where: { id: surveyId },
-      include: { _count: { select: { responses: true } } },
+      include: {
+        event: { select: { organizerId: true, isManaged: true, managedByAdminId: true } },
+        _count: { select: { responses: true } },
+      },
     });
 
     if (!survey) {
       throw new NotFoundError('Survey not found');
+    }
+
+    // Verify caller owns the event or is admin
+    if (survey.event.organizerId !== userId && !(survey.event.isManaged && survey.event.managedByAdminId === userId)) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+      if (!user || (user.role !== 'SUPERADMIN' && user.role !== 'ADMIN')) {
+        throw new AuthorizationError('You do not have permission to delete this survey');
+      }
     }
 
     if (survey._count.responses > 0) {
