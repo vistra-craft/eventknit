@@ -5,7 +5,7 @@
  */
 
 import { useParams } from 'react-router-dom';
-import EventManagement from '../organizer/EventManagement';
+import EventManagement from '../organizer/events/EventManagement';
 
 /**
  * EventManagementHub

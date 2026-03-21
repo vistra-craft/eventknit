@@ -27,7 +27,7 @@ import { Button } from '../../components/ui/button';
 import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
 import EmptyState from '../../components/EmptyState';
-import { OrganizingEventCard } from '../../components/OrganizingEventCard';
+import { OrganizingEventCard } from '@/components/organizer-ui/OrganizingEventCard';
 import { KYCRequiredBanner } from '../../components/KYCRequiredBanner';
 import { useMyEvents } from '../../hooks/useMyEvents';
 import { useAuth } from '../../hooks/useAuth';

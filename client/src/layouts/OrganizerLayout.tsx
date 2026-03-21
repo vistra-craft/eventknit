@@ -4,7 +4,7 @@ import { Suspense } from 'react';
 import OrganizerSidebar from "../pages/organizer/OrganizerSidebar";
 import OrganizerHeader from "../pages/organizer/OrganizerHeader";
 import { organizerRoutes } from '../routes/organizerRoutes';
-import { ProtectedRoute } from '../components/ProtectedRoute';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
 import { Loader } from '../components/ui/loader';
 

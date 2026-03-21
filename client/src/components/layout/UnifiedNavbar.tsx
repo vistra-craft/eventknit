@@ -7,10 +7,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Settings, Home, Calendar, BarChart3, Users, Wallet, MessageSquare, Heart, Megaphone, UserCircle, type LucideIcon } from 'lucide-react';
 import Logo from './Logo';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from './ThemeToggle';
-import NotificationBell from './NotificationBell';
-import { Badge } from './ui/badge';
+import NotificationBell from '../profile/NotificationBell';
+import { Badge } from '@/components/ui/badge';
 import { UserRole } from '@/types/auth';
 
 interface MenuItem {

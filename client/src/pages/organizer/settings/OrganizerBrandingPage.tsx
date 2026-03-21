@@ -15,7 +15,7 @@ import {
   type WhiteLabelBranding,
   type CustomDomain,
 } from '@/lib/white-label-api';
-import BrandingPreview from '../admin/white-label/BrandingPreview';
+import BrandingPreview from '../../admin/white-label/BrandingPreview';
 import {
   Palette,
   Type,

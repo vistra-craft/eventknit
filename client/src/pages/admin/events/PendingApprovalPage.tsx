@@ -15,7 +15,7 @@ import { Pagination } from "../../../components/ui/pagination";
 import { Loader } from "../../../components/ui/loader";
 import { getEvents, EventStatus, type EventData } from "../../../lib/event-api";
 import { approveEvent, rejectEvent, getAdminEventById, sendKYCReminder } from "../../../lib/admin-api";
-import { EventPreviewModal } from "../../../components/EventPreviewModal";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 import { useToast } from "../../../hooks/useToast";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";

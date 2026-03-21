@@ -60,9 +60,9 @@ import {
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import BackButton from "@/components/BackButton";
-import { AttendeeImportDialog } from "@/components/AttendeeImportDialog";
-import { AttendeeDetailModal } from "@/components/AttendeeDetailModal";
-import { QuickRegisterDialog } from "@/components/QuickRegisterDialog";
+import { AttendeeImportDialog } from '@/components/attendee/AttendeeImportDialog';
+import { AttendeeDetailModal } from '@/components/attendee/AttendeeDetailModal';
+import { QuickRegisterDialog } from '@/components/attendee/QuickRegisterDialog';
 import { getEvent, getEventAttendees, type EventAttendee, type EventStatistics, TicketStatus } from "../../../lib/workstation-api";
 import { exportAttendees } from "@/lib/attendee-import-api";
 import { getEventById, type EventData } from "../../../lib/event-api";

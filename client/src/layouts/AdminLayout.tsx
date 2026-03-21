@@ -14,7 +14,7 @@ import { Suspense } from 'react';
 import AdminSidebar from "../pages/admin/AdminSidebar";
 import AdminHeader from "../pages/admin/AdminHeader";
 import { adminRoutes } from '../routes/adminRoutes';
-import { ProtectedRoute } from '../components/ProtectedRoute';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
 import { Loader } from '../components/ui/loader';
 

@@ -7,7 +7,7 @@ import { useToast } from "../hooks/useToast";
 import { extractErrorMessage, showErrorToast } from "../lib/utils/error";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { getTransferByToken, acceptTicketTransfer } from "../lib/user-dashboard-api";
-import Logo from "../components/Logo";
+import Logo from '@/components/layout/Logo';
 
 interface TransferDetails {
   id: string;

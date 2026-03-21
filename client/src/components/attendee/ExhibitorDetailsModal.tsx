@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Input } from './ui/input';
-import { Avatar } from './ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Avatar } from '@/components/ui/avatar';
 import { X, Building2, MapPin, Phone, Mail, Globe, Send } from 'lucide-react';
-import { SocialConnections } from './SocialConnections';
+import { SocialConnections } from '../profile/SocialConnections';
 import { RichTextContent } from '@/components/ui/RichTextContent';
 
 interface Exhibitor {

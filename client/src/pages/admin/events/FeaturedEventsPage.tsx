@@ -16,7 +16,7 @@ import {
   type FeaturedEventData,
 } from "../../../lib/featured-event-api";
 import { getEventById, type EventData } from "../../../lib/event-api";
-import { EventPreviewModal } from "../../../components/EventPreviewModal";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 import { showErrorToast } from "@/lib/utils/error";
 
 /**

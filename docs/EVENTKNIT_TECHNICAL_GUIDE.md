@@ -460,28 +460,29 @@ className="bg-white dark:bg-gray-800 border-border/50"
 
 ## 5. Mobile Application Architecture
 
-### Hybrid Architecture
+### Clean Architecture (All Roles)
 
-The mobile app uses **two architecture patterns** depending on the user role:
+The mobile app uses **Clean Architecture across all user roles** — attendee, organizer, and admin. All API calls go through the Dio interceptor chain for automatic auth token injection, 401 token refresh, and request logging.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                  ATTENDEE FEATURES                               │
-│          Clean Architecture (Full Layers)                        │
+│              ALL FEATURES (Attendee, Organizer, Admin)           │
+│                   Clean Architecture                             │
 │                                                                  │
-│  Screen → Controller → UseCase → Repository → DataSource        │
-│                                           ├── API (Remote)       │
-│                                           └── Drift DB (Local)   │
-├─────────────────────────────────────────────────────────────────┤
-│             ADMIN / ORGANIZER FEATURES                           │
-│          Direct API Pattern (Simplified)                         │
-│                                                                  │
-│  Screen → Controller → API Client → Server                      │
-│  (No UseCases, no Repositories — faster to build)               │
+│  Screen (Get.find<Controller>())                                 │
+│    → Controller (injected use cases via constructor)             │
+│      → UseCase (single-responsibility operation)                 │
+│        → Repository interface (domain layer)                     │
+│          → RepositoryImpl (data layer)                           │
+│            → ApiClient → DioClient (4 interceptors)              │
+│                                   ├── API (Remote)               │
+│                                   └── Drift DB (Local/offline)   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Why hybrid?** Attendee features need offline support (scanning, cached tickets), so Clean Architecture with repositories + local data sources justifies the complexity. Admin/organizer features are always online, so the extra layers add overhead without benefit.
+**9 Repositories:** Auth, Event, Ticket, Scan, Organizer, Admin, Notification, Attendee, ServicePoint
+**73 Use Cases:** Covering auth, events, tickets, organizer, attendee, and notification domains
+**DI:** `AppBindings` for app-lifetime singletons + `OrganizerBinding`/`AdminBinding` for route-level controllers
 
 ### Technology Stack
 
@@ -506,57 +507,78 @@ The mobile app uses **two architecture patterns** depending on the user role:
 
 ```
 eventknit_mobile/lib/
-├── api/                          # API layer (all HTTP calls)
-│   ├── endpoints.dart            # Centralized URL management (21KB)
-│   ├── auth_api.dart             # Login, register, OAuth
-│   ├── events_api.dart           # Event discovery
-│   ├── organizer_api.dart        # Organizer features (59KB — largest)
-│   ├── admin_api.dart            # Admin operations (26KB)
-│   ├── user_dashboard_api.dart   # Attendee dashboard (21KB)
-│   ├── tickets_api.dart          # Ticket operations
-│   ├── payments_api.dart         # Payment processing
-│   ├── transfer_api.dart         # Ticket transfers
-│   ├── verification_api.dart     # KYC verification
-│   └── ...                       # 15+ API files
+├── api/                          # Legacy API files (deprecated — kept for backward compat)
+│   ├── endpoints.dart            # Centralized URL management + base URL switching
+│   └── *.dart                    # Legacy raw HTTP functions (no external consumers)
 ├── core/
+│   ├── bindings/                # GetX dependency injection
+│   │   ├── app_bindings.dart    # App-lifetime: repos, use cases, core controllers
+│   │   ├── organizer_binding.dart # Route-level: organizer controllers
+│   │   └── admin_binding.dart   # Route-level: admin controllers
 │   ├── network/
-│   │   ├── dio_client.dart       # Dio setup with interceptor chain
-│   │   └── interceptors/        # 6 interceptors (auth, cookie, refresh, logging...)
+│   │   ├── dio_client.dart      # Dio setup with 4-interceptor chain
+│   │   └── interceptors/       # auth, cookie, refresh, logging
 │   ├── services/                # Cross-cutting services
-│   │   ├── offline_ticket_service.dart    # Local ticket caching
-│   │   ├── ticket_crypto_service.dart     # Ed25519 verification (8.6KB)
-│   │   ├── storage_service.dart           # Secure + fast storage
-│   │   ├── database_service.dart          # Drift initialization
-│   │   ├── location_service.dart          # GPS + geocoding
-│   │   ├── notification_service.dart      # Local notifications
-│   │   └── push_notification_service.dart # FCM handling
+│   │   ├── api_client.dart      # ApiClient wrapper (centralized Dio access)
+│   │   ├── device_service.dart  # Device identification (device_info_plus)
+│   │   ├── storage_service.dart # Secure + fast storage
+│   │   ├── database_service.dart # Drift initialization
+│   │   ├── push_notification_service.dart # Firebase Cloud Messaging
+│   │   └── ...
+│   ├── utils/
+│   │   └── error_utils.dart     # handleApiError() — classified exception handling
 │   └── constants/               # Design tokens (colors, typography, spacing)
-├── controllers/                  # GetX controllers (state management)
-│   ├── auth_controller.dart      # Auth state (12.7KB)
-│   ├── events_controller.dart    # Event discovery (16.3KB)
-│   ├── tickets_controller.dart   # Ticket management (9.2KB)
-│   ├── theme_controller.dart     # Dark/light mode
-│   └── ...
+├── controllers/                  # App-lifetime GetX controllers
+│   ├── auth_controller.dart     # Auth state (use case injection)
+│   ├── events_controller.dart   # Event discovery (use case injection)
+│   ├── tickets_controller.dart  # Ticket management (use case injection)
+│   ├── notifications_controller.dart # Notifications (use case injection)
+│   └── theme_controller.dart    # Dark/light mode
 ├── data/
 │   ├── local/database/
 │   │   ├── tables/              # Drift table definitions (7 tables)
 │   │   └── daos/                # Data access objects
-│   └── repositories/            # Repository implementations (offline + API)
+│   └── repositories/            # 9 repository implementations (ApiClient + Dio)
+│       ├── auth_repository_impl.dart
+│       ├── event_repository_impl.dart
+│       ├── ticket_repository_impl.dart
+│       ├── scan_repository_impl.dart
+│       ├── organizer_repository_impl.dart
+│       ├── admin_repository_impl.dart
+│       ├── notification_repository_impl.dart
+│       ├── attendee_repository_impl.dart
+│       └── service_point_repository_impl.dart
 ├── domain/
-│   ├── entities/                # Business entities
-│   ├── repositories/            # Repository interfaces
-│   ├── usecases/                # Use case classes
+│   ├── entities/                # Freezed entity classes
+│   ├── repositories/            # 9 repository interfaces (contracts)
+│   ├── usecases/                # 73 use cases
+│   │   ├── auth/               # Login, register, OAuth, password
+│   │   ├── events/             # Discovery, categories, save/unsave
+│   │   ├── tickets/            # Purchase, transfer, cancel, wallet pass
+│   │   ├── organizer/          # Dashboard, analytics, attendees, refunds, invitations
+│   │   ├── attendee/           # Wallet, interests, invoices, reviews, payments, transfers
+│   │   └── notifications/      # Get, mark read, delete
 │   └── services/
 │       └── offline_sync_service.dart  # Core sync engine (595 lines)
-├── presentation/                 # Screens and widgets
-│   ├── attendee/                # Attendee-facing screens
-│   ├── auth/                    # Login/signup
+├── models/                       # Domain models by feature
+│   ├── admin/                   # Admin dashboard, events, users, analytics
+│   ├── organizer/               # Dashboard stats, events, attendees, refunds, promo codes
+│   ├── attendee/                # Payments, transfers, invoices, verification
+│   └── notification/            # Notification, preferences
+├── presentation/                 # UI layer by role
+│   ├── admin/                   # Admin dashboard, events, scanner, notifications, profile
+│   ├── organizer/               # Organizer dashboard, events, scanner, attendees, profile
+│   ├── attendee/                # Checkout, registration, tickets, search, event details
+│   ├── auth/                    # Login, signup, forgot password
+│   ├── public/                  # Discovery (not logged in)
 │   └── shared/                  # Reusable widgets
 └── workers/
     └── sync_worker.dart         # Background sync (WorkManager)
 ```
 
 ### Dio Interceptor Chain (order matters)
+
+All API calls go through this chain via `ApiClient` → `DioClient`:
 
 ```
 Request → CookieTokenInterceptor → AuthInterceptor → RefreshTokenInterceptor → LoggingInterceptor → Server
@@ -565,7 +587,9 @@ Request → CookieTokenInterceptor → AuthInterceptor → RefreshTokenIntercept
 1. **CookieTokenInterceptor** — Extracts `refreshToken` from `Set-Cookie` on auth responses (browsers handle this automatically; Dio does not)
 2. **AuthInterceptor** — Adds `Authorization: Bearer <accessToken>` to all requests
 3. **RefreshTokenInterceptor** — On 401, queues all pending requests, refreshes token via cookie, retries all queued. On refresh failure → clears storage, navigates to login
-4. **LoggingInterceptor** — Debug-mode request/response logging
+4. **LoggingInterceptor** — Debug-mode request/response logging with sensitive data masking
+
+Error handling: All repository implementations catch `ApiException`, `SocketException`, `TimeoutException`, and `FormatException` — returning `Either<Failure, T>` to controllers.
 
 ### Token Storage
 
@@ -805,28 +829,33 @@ void callbackDispatcher() {
 
 | Layer | Target | Priority |
 |-------|--------|----------|
+| Use Cases | 90% | Critical (business logic isolation) |
 | Controllers | 80% | Critical (auth, scanner, events) |
+| Repositories | 80% | High (API integration) |
 | Services | 90% | Critical (crypto, offline sync) |
-| API Clients | 70% | High |
 | Widgets | 60% | Medium |
 
-**Common GetX Test Pattern:**
+**Common Test Pattern (Clean Architecture):**
 ```dart
 void main() {
-  late MockAuthApi mockApi;
+  late MockLoginUseCase mockLoginUseCase;
   late AuthController controller;
 
   setUp(() {
-    mockApi = MockAuthApi();
-    Get.put<AuthApi>(mockApi);
-    controller = Get.put(AuthController());
+    mockLoginUseCase = MockLoginUseCase();
+    // Inject mocked use cases — repository layer is NOT tested here
+    controller = AuthController(
+      loginUseCase: mockLoginUseCase,
+      // ... other use cases
+    );
+    Get.put(controller);
   });
 
   tearDown(() => Get.reset());
 
   test('login success', () async {
-    when(() => mockApi.login(any(), any()))
-      .thenAnswer((_) async => AuthResponse(...));
+    when(() => mockLoginUseCase(email: any(), password: any()))
+      .thenAnswer((_) async => Right(LoginResult(...)));
     await controller.login('test@email.com', 'password');
     expect(controller.isLoggedIn.value, true);
   });

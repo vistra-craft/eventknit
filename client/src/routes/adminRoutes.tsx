@@ -32,22 +32,22 @@ const EventPreviewPage = lazy(() => import('../pages/admin/events/EventPreviewPa
 const EventDetailsPage = lazy(() => import('../pages/admin/events/EventDetailsPage'));
 
 // Users
-const UsersManagementPage = lazy(() => import('../pages/admin/UsersManagementPage'));
-const AttendeesPage = lazy(() => import('../pages/admin/AttendeesPage'));
-const AttendeeDetailsPage = lazy(() => import('../pages/admin/AttendeeDetailsPage'));
-const AdminStaffManagementPage = lazy(() => import('../pages/admin/StaffManagementPage'));
-const StaffDetailsPage = lazy(() => import('../pages/admin/StaffDetailsPage'));
-const StaffEditPage = lazy(() => import('../pages/admin/StaffEditPage'));
-const OrganizersPage = lazy(() => import('../pages/admin/OrganizersPage'));
+const UsersManagementPage = lazy(() => import('../pages/admin/users/UsersManagementPage'));
+const AttendeesPage = lazy(() => import('../pages/admin/users/AttendeesPage'));
+const AttendeeDetailsPage = lazy(() => import('../pages/admin/users/AttendeeDetailsPage'));
+const AdminStaffManagementPage = lazy(() => import('../pages/admin/users/StaffManagementPage'));
+const StaffDetailsPage = lazy(() => import('../pages/admin/users/StaffDetailsPage'));
+const StaffEditPage = lazy(() => import('../pages/admin/users/StaffEditPage'));
+const OrganizersPage = lazy(() => import('../pages/admin/users/OrganizersPage'));
 const CreateOrganizerPage = lazy(() => import('../pages/admin/organizers/CreateOrganizerPage'));
 const OrganizerPreviewPage = lazy(() => import('../pages/admin/organizers/OrganizerPreviewPage'));
-const OrganizerDetailsPage = lazy(() => import('../pages/admin/OrganizerDetailsPage'));
-const OrganizerEditPage = lazy(() => import('../pages/admin/OrganizerEditPage'));
-const UserRolesPage = lazy(() => import('../pages/admin/UserRolesPage'));
+const OrganizerDetailsPage = lazy(() => import('../pages/admin/users/OrganizerDetailsPage'));
+const OrganizerEditPage = lazy(() => import('../pages/admin/users/OrganizerEditPage'));
+const UserRolesPage = lazy(() => import('../pages/admin/users/UserRolesPage'));
 
 // Staff Performance
-const StaffPerformanceDashboard = lazy(() => import('../pages/admin/StaffPerformanceDashboard'));
-const StaffPerformanceDetail = lazy(() => import('../pages/admin/StaffPerformanceDetail'));
+const StaffPerformanceDashboard = lazy(() => import('../pages/admin/users/StaffPerformanceDashboard'));
+const StaffPerformanceDetail = lazy(() => import('../pages/admin/users/StaffPerformanceDetail'));
 
 // System
 const SystemHealthPage = lazy(() => import('../pages/admin/system').then(m => ({ default: m.SystemHealthPage })));
@@ -62,12 +62,12 @@ const FlaggedEventsPage = lazy(() => import('../pages/admin/FlaggedEventsPage'))
 const CareersPage = lazy(() => import('../pages/admin/CareersPage'));
 
 // Communications & Notifications
-const AdminCommunicationsPage = lazy(() => import('../pages/admin/CommunicationsPage'));
+const AdminCommunicationsPage = lazy(() => import('../pages/admin/communications/CommunicationsPage'));
 const AdminNotificationsCenter = lazy(() => import('../pages/admin/AdminNotificationsCenter'));
 const AdminNotificationSettingsPage = lazy(() => import('../pages/admin/AdminNotificationSettingsPage'));
 
 // Support
-const SupportPage = lazy(() => import('../pages/admin/SupportPage'));
+const SupportPage = lazy(() => import('../pages/admin/support/SupportPage'));
 const PlatformFeedbackPage = lazy(() => import('../pages/admin/PlatformFeedbackPage'));
 
 // Branding
@@ -94,7 +94,7 @@ const AdminTicketIssuancesPage = lazy(() => import('../pages/admin/tickets/Admin
 const AdminAnalyticsOverview = lazy(() => import('../pages/admin/analytics').then(m => ({ default: m.AdminAnalyticsOverview })));
 
 // Financial
-const FinancialManagement = lazy(() => import('../pages/organizer/FinancialManagement'));
+const FinancialManagement = lazy(() => import('../pages/organizer/finance/FinancialManagement'));
 const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'));
 
 // Finance
@@ -136,7 +136,7 @@ const WalkInRegistration = lazy(() => import('../pages/admin/service-point/WalkI
 // Managed Events
 const AdminManagedEventsPage = lazy(() => import('../pages/admin/AdminManagedEventsPage'));
 const AdminManagedEventCreatePage = lazy(() => import('../pages/admin/AdminManagedEventCreatePage'));
-const EventSurveyManagement = lazy(() => import('../pages/organizer/EventSurveyManagement'));
+const EventSurveyManagement = lazy(() => import('../pages/organizer/events/EventSurveyManagement'));
 
 /**
  * Common role combinations

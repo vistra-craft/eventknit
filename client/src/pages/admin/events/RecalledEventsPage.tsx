@@ -17,7 +17,7 @@ import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
-import { EventPreviewModal } from "../../../components/EventPreviewModal";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 
 interface RecalledEvent {
   id: string;

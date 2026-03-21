@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Bell, Check, CheckCheck, ExternalLink } from "lucide-react";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import {
@@ -11,10 +11,10 @@ import {
   markAllAsRead,
   type Notification,
   type NotificationType,
-} from "../lib/notification-api";
-import { useAuth } from "../hooks/useAuth";
-import { useRoleView } from "../contexts/RoleViewContext";
-import { UserRole } from "../types/auth";
+} from '@/lib/notification-api';
+import { useAuth } from '@/hooks/useAuth';
+import { useRoleView } from '@/contexts/RoleViewContext';
+import { UserRole } from '@/types/auth';
 
 interface NotificationBellProps {
   className?: string;

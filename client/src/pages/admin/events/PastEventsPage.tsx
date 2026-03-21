@@ -15,7 +15,7 @@ import { getEvents, EventStatus, getEventById, type EventData } from "../../../l
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 import { exportEventData } from "../../../lib/utils/export";
 import { shareEvent } from "../../../lib/utils/share";
-import { EventPreviewModal } from "../../../components/EventPreviewModal";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 
 interface Event {
   id: string;

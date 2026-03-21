@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { EventMap } from "@/components/EventMap";
+import { EventMap } from '@/components/events/EventMap';
 import type { EventData, User, Sponsor } from "./EventAttendeeView";
 
 interface EventHomeProps {

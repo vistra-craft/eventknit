@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination } from '@/components/ui/pagination';
 import { Building2, MapPin, Mail, Globe } from 'lucide-react';
-import ExhibitorDetailsModal from '@/components/ExhibitorDetailsModal';
+import ExhibitorDetailsModal from '@/components/attendee/ExhibitorDetailsModal';
 import { getEventById } from '@/lib/event-api';
 import { stripHtml } from '@/lib/utils';
 

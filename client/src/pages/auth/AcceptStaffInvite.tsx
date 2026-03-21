@@ -16,7 +16,7 @@ import {
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { ROLE_LABELS } from '@/constants/roleLabels';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 
 const AcceptStaffInvite = () => {
   const navigate = useNavigate();

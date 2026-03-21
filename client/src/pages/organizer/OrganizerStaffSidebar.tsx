@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/auth';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 
 interface OrganizerStaffSidebarProps {
   isOpen: boolean;

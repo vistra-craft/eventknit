@@ -1,5 +1,5 @@
-import MinimalHeader from "@/components/MinimalHeader";
-import LegalFooter from "@/components/LegalFooter";
+import MinimalHeader from '@/components/layout/MinimalHeader';
+import LegalFooter from '@/components/layout/LegalFooter';
 
 const CookiePolicy = () => {
   const cookieTypes = [
