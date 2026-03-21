@@ -15,7 +15,7 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "test:run": "vitest --run",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc -b --noEmit",
     "pre-push": "npm run lint && npm run type-check && npm run test:run && npm run build"
   },
   "dependencies": {
