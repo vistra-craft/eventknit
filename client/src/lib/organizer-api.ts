@@ -1304,19 +1304,7 @@ export const cancelSubscription = async (): Promise<{ success: boolean; message:
 export interface ConsentStatistics {
   totalRegistrations: number;
   totalConsents: number;
-  operational: {
-    count: number;
-    percentage: number;
-  };
   marketing: {
-    count: number;
-    percentage: number;
-  };
-  demographics: {
-    count: number;
-    percentage: number;
-  };
-  analytics: {
     count: number;
     percentage: number;
   };

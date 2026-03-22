@@ -1124,10 +1124,7 @@ model AttendeeConsent {
   registrationId String @unique
 
   // Consent flags
-  operationalConsent  Boolean @default(true) // Required for ticket delivery
-  marketingConsent    Boolean @default(false) // Opt-in for marketing/analytics
-  demographicsConsent Boolean @default(false) // Opt-in for demographics (Premium)
-  analyticsConsent    Boolean @default(false) // Opt-in for engagement tracking (Premium)
+  marketingConsent    Boolean @default(false) // Opt-in for marketing emails from organizer
 
   // Consent metadata
   consentedAt    DateTime  @default(now())
@@ -1143,8 +1140,6 @@ model AttendeeConsent {
   @@index([eventId])
   @@index([registrationId])
   @@index([marketingConsent])
-  @@index([demographicsConsent])
-  @@index([analyticsConsent])
 }
 
 // Organizer Subscription Management

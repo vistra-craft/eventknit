@@ -137,20 +137,15 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
       },
     });
 
-    // Create consents with different patterns
     await ConsentService.createConsent(registration1.id, attendee1Id, eventId, {
-      operationalConsent: true,
       marketingConsent: true,
-      demographicsConsent: true,
     });
 
     await ConsentService.createConsent(registration2.id, attendee2Id, eventId, {
-      operationalConsent: true,
       marketingConsent: true,
-      demographicsConsent: false,
     });
 
-    // registration3 has no consent
+    // registration3 has no consent record
   });
 
   describe('EventService.getEventRegistrations with tier filtering', () => {
@@ -174,13 +169,12 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
       expect(hasAttendeeData).toBe(false);
     });
 
-    it('should show attendee data for STANDARD tier (consented only)', async () => {
+    it('should show all attendee data for STANDARD tier', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
 
-      // Upgrade to STANDARD
       await SubscriptionService.upgradeSubscription(organizerId, SubscriptionTier.STANDARD);
 
       const registrations = await EventService.getEventRegistrations(
@@ -189,22 +183,20 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
         UserRole.ORGANIZER,
       );
 
-      // Should only return consented attendees (2 out of 3)
-      expect(registrations.length).toBe(2);
+      // All 3 returned — organizer paid for access to their own event data
+      expect(registrations.length).toBe(3);
 
-      // Should have attendee data
       expect(registrations[0]).toHaveProperty('attendee');
       expect(registrations[0].attendee).toHaveProperty('email');
       expect(registrations[0].attendee).toHaveProperty('firstName');
     });
 
-    it('should show demographics for PREMIUM tier (with consent)', async () => {
+    it('should show all attendee data for PREMIUM tier', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
 
-      // Create PREMIUM subscription
       await prisma.organizerSubscription.create({
         data: {
           organizerId,
@@ -214,57 +206,14 @@ describe('Data Access Integration - Tier-Based Filtering', () => {
         },
       });
 
-      // Update attendee with location
-      await prisma.user.update({
-        where: { id: attendee1Id },
-        data: {
-          city: 'Nairobi',
-          state: 'Nairobi',
-          country: 'Kenya',
-        },
-      });
-
       const registrations = await EventService.getEventRegistrations(
         eventId,
         organizerId,
         UserRole.ORGANIZER,
       );
 
-      // Should return consented attendees
-      const withDemographics = registrations.find((r: any) =>
-        r.attendee?.email === 'attendee1@integration.test',
-      );
-
-      expect(withDemographics).toBeDefined();
-      // PREMIUM tier with demographics consent should include location
-      if (withDemographics?.attendee) {
-        // Location data should be available if demographics consent exists
-        expect(withDemographics.attendee).toHaveProperty('city');
-      }
-    });
-
-    it('should exclude non-consented attendees for STANDARD tier', async () => {
-      if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
-        return;
-      }
-
-      await SubscriptionService.upgradeSubscription(organizerId, SubscriptionTier.STANDARD);
-
-      const registrations = await EventService.getEventRegistrations(
-        eventId,
-        organizerId,
-        UserRole.ORGANIZER,
-      );
-
-      // Should only have 2 (consented), not 3
-      expect(registrations.length).toBe(2);
-
-      // Should not include attendee3 (no consent)
-      const hasAttendee3 = registrations.some((r: any) =>
-        r.attendee?.email === 'attendee3@integration.test',
-      );
-      expect(hasAttendee3).toBe(false);
+      expect(registrations.length).toBe(3);
+      expect(registrations[0]).toHaveProperty('attendee');
     });
   });
 });
