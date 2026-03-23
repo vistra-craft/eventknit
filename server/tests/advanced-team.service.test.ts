@@ -35,9 +35,7 @@ describe('AdvancedTeamService', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Seed permissions
     await PermissionService.seedPermissions();

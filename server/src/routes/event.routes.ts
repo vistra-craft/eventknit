@@ -3,6 +3,7 @@ import { EventController } from '../controllers/event.controller.js';
 import { SeatSelectionController } from '../controllers/seat-map.controller.js';
 import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
 import { authenticate, optionalAuth, requireMinRole } from '../middleware/auth.middleware.js';
+import { resolveEventIdParam } from '../middleware/resolve-event.middleware.js';
 import { eventValidations } from '../validations/event.validations.js';
 import { reserveSeatsSchema } from '../validations/venue.validations.js';
 import { guestRegistrationRateLimiter } from '../middleware/rateLimiter.middleware.js';
@@ -23,7 +24,7 @@ router.get('/', EventController.getEvents);
  * @desc    Get event by ID (public; auth optional — organizers/admins can view own pending events)
  * @access  Public
  */
-router.get('/:id', optionalAuth, EventController.getEventById);
+router.get('/:id', optionalAuth, resolveEventIdParam, EventController.getEventById);
 
 /**
  * @route   GET /api/v1/events/:id/related
@@ -32,7 +33,7 @@ router.get('/:id', optionalAuth, EventController.getEventById);
  */
 router.get(
   '/:id/related',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   EventController.getRelatedEvents,
 );
 
@@ -43,7 +44,7 @@ router.get(
  */
 router.post(
   '/:id/register-guest',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   guestRegistrationRateLimiter,
   validate(eventValidations.registerAsGuest),
   EventController.registerAsGuest,
@@ -56,7 +57,7 @@ router.post(
  */
 router.get(
   '/:id/seat-map',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   SeatSelectionController.getSeatMapAvailability,
 );
 
@@ -82,6 +83,7 @@ router.post(
  */
 router.put(
   '/:id',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   validate(eventValidations.updateEvent),
   EventController.updateEvent,
@@ -94,6 +96,7 @@ router.put(
  */
 router.delete(
   '/:id',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   EventController.deleteEvent,
 );
@@ -105,6 +108,7 @@ router.delete(
  */
 router.post(
   '/:id/duplicate',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   validate(eventValidations.duplicateEvent),
   EventController.duplicateEvent,
@@ -117,7 +121,7 @@ router.post(
  */
 router.post(
   '/:id/register',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   validate(eventValidations.registerForEvent),
   EventController.registerForEvent,
 );
@@ -129,6 +133,7 @@ router.post(
  */
 router.get(
   '/:id/registrations',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   EventController.getEventRegistrations,
 );
@@ -151,6 +156,7 @@ router.delete(
  */
 router.post(
   '/:id/approve',
+  resolveEventIdParam,
   requireMinRole(UserRole.ADMIN),
   EventController.approveEvent,
 );
@@ -162,6 +168,7 @@ router.post(
  */
 router.post(
   '/:id/reject',
+  resolveEventIdParam,
   requireMinRole(UserRole.ADMIN),
   validate(eventValidations.rejectEvent),
   EventController.rejectEvent,
@@ -174,6 +181,7 @@ router.post(
  */
 router.post(
   '/:id/cancel',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   EventController.cancelEvent,
 );
@@ -197,6 +205,7 @@ router.put(
  */
 router.put(
   '/:id/organizer-data-access',
+  resolveEventIdParam,
   requireMinRole(UserRole.ADMIN),
   EventController.updateOrganizerDataAccess,
 );
@@ -215,7 +224,7 @@ router.get('/user/registered', EventController.getUserRegisteredEvents);
  */
 router.post(
   '/:id/seats/reserve',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   validate(reserveSeatsSchema),
   SeatSelectionController.reserveSeats,
 );
@@ -260,7 +269,7 @@ router.get(
  */
 router.post(
   '/:id/seats/best-available',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   validate(Joi.object({
     quantity: Joi.number().integer().min(1).max(10).default(1),
     preferredSeatTypes: Joi.array().items(Joi.string().valid('STANDARD', 'VIP', 'PREMIUM', 'ACCESSIBLE', 'COMPANION')).optional(),
@@ -280,7 +289,7 @@ router.post(
  */
 router.get(
   '/:id/seats/recommendations',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   validateQuery(Joi.object({
     budget: Joi.number().positive().optional(),
     quantity: Joi.number().integer().min(1).max(10).default(1),

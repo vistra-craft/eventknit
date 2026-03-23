@@ -748,8 +748,8 @@ const OrganizerSettingsPage = () => {
           <Label className="mb-3 block">Social Media Links</Label>
           <div className="space-y-3">
             {SOCIAL_PLATFORMS.map(platform => (
-              <div key={platform.key} className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground w-24 shrink-0">{platform.label}</span>
+              <div key={platform.key} className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                <span className="text-sm text-muted-foreground sm:w-24 sm:shrink-0">{platform.label}</span>
                 <Input
                   value={settings.socialLinks[platform.key] || ''}
                   onChange={(e) => setSettings(prev => ({
@@ -1221,7 +1221,7 @@ const OrganizerSettingsPage = () => {
   return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-page-title">Settings</h1>
             <p className="text-page-subtitle">
@@ -1257,7 +1257,7 @@ const OrganizerSettingsPage = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {/* Content */}
           <div className="lg:col-span-3">
             <Card>

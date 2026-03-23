@@ -433,10 +433,10 @@ const EventTemplates = () => {
   return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-page-title">Event Templates</h1>
-            <p className="text-muted-foreground mt-1">Create and manage shareable forms for attendees, speakers, exhibitors, and sponsors</p>
+            <p className="text-muted-foreground mt-1 text-sm">Create and manage shareable forms for attendees, speakers, exhibitors, and sponsors</p>
           </div>
           <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -449,7 +449,7 @@ const EventTemplates = () => {
           setActiveTab(value);
           setSelectedTemplate(null);
         }}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="attendee" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Attendees

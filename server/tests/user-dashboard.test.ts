@@ -44,9 +44,7 @@ describe('User Dashboard Statistics', () => {
     if (!dbConnected) return;
 
     // Clear all tables in correct order to respect foreign keys
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test users
     const hashedPassword = await hashPassword('Test123!@$');

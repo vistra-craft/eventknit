@@ -34,9 +34,7 @@ describe('SubscriptionService', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    }, { timeout: 15000 });
+    await cleanupTestData();
 
     const password = await hashPassword('Organizer123!@$');
 

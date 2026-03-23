@@ -29,6 +29,7 @@ const StandaloneCreateEventPage = lazy(() => import('../pages/organizer/Standalo
 const EventManagementPage = lazy(() => import('../pages/organizer/EventManagementPage'));
 const EventTemplates = lazy(() => import('../pages/organizer/EventTemplates'));
 const EventCollaboration = lazy(() => import('../pages/organizer/EventCollaboration'));
+const EventSurveyManagement = lazy(() => import('../pages/organizer/EventSurveyManagement'));
 
 // Analytics
 const AnalyticsOverview = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.AnalyticsOverview })));
@@ -184,6 +185,11 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
   {
     path: 'event/:eventId/collaboration',
     element: createElement(EventCollaboration),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'event/:eventId/survey',
+    element: createElement(EventSurveyManagement),
     allowedRoles: NON_TELLER_ROLES,
   },
 

@@ -76,10 +76,8 @@ describe('Workstation Concurrency Tests', () => {
 
     // Clean up using comprehensive cleanup helper
     try {
-      await prisma.$transaction(async (tx) => {
-        await tx.ticketScan.deleteMany();
-        await cleanupTestData(tx);
-      });
+      await prisma.ticketScan.deleteMany();
+      await cleanupTestData();
     } catch (error) {
       // If cleanup fails, log but continue - might be due to missing tables
       logger.warn('Cleanup warning:', error);

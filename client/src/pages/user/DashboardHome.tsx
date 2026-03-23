@@ -5,18 +5,18 @@
  * - Personalized greeting with time-aware message
  * - Featured next event card (hero-style)
  * - Event cards in a responsive grid
- * - Tabs: Attending | Saved | Settings
+ * - Tabs: Attending | Saved | Tickets
  */
 
-import { lazy, Suspense, useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
 import {
   Calendar,
   MapPin,
   Download,
   Share2,
   Heart,
-  Settings as SettingsIcon,
+  Ticket,
   Sparkles,
   ArrowRight,
   Bookmark,
@@ -43,7 +43,7 @@ import {
   CTA_LABELS,
 } from '../../constants/navigationLabels';
 
-const SettingsPage = lazy(() => import('./UserSettingsPage'));
+import TicketsTabContent from './TicketsTabContent';
 
 interface User {
   name: string;
@@ -96,7 +96,6 @@ function getDaysUntil(dateString: string): number {
 
 const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user: authUser } = useAuth();
 
@@ -116,7 +115,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     savedLoading,
   } = useMyEvents();
 
-  const [currentTab, setCurrentTab] = useState<'attending' | 'my-events' | 'saved' | 'settings'>('attending');
+  const [currentTab, setCurrentTab] = useState<'attending' | 'my-events' | 'saved' | 'tickets'>('attending');
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
 
   useEffect(() => {
@@ -131,15 +130,6 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     loadVerification();
   }, []);
 
-  useEffect(() => {
-    if (searchParams.get('view') === 'settings') {
-      setCurrentTab('settings');
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('view');
-      setSearchParams(newParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
-
   if (authUser?.role === UserRole.ORGANIZER) {
     return <Navigate to="/organizer/dashboard" replace />;
   }
@@ -153,10 +143,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
   const upcomingEvents = attendingEvents.filter(e => !e.status || e.status === 'upcoming' || e.status === 'ongoing');
   const pastEvents = attendingEvents.filter(e => e.status === 'completed');
 
-  // The next event to attend (first upcoming)
-  const nextEvent = upcomingEvents[0];
-  // Remaining upcoming events (skip the featured one)
-  const remainingUpcoming = upcomingEvents.slice(1);
+  // All upcoming events sorted soonest first (already sorted by API)
 
   const handleShare = async (event: { title: string; id: string; slug?: string | null }) => {
     const shared = await shareEvent(event.title, event.slug ?? event.id);
@@ -190,13 +177,13 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
       { key: 'my-events' as const, label: 'My Events', badge: pendingEvents.length }
     ] : []),
     { key: 'saved' as const, label: TAB_LABELS.SAVED, icon: Bookmark },
-    { key: 'settings' as const, label: 'Settings', icon: SettingsIcon },
+    { key: 'tickets' as const, label: 'Tickets', icon: Ticket },
   ];
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 max-w-6xl">
       {/* KYC Banner */}
-      {currentTab !== 'settings' && (() => {
+      {(() => {
         const hasApprovedPaidEvents = organizingEvents.some(
           event => event.status.toLowerCase() !== 'pending' && !event.isFree
         );
@@ -213,8 +200,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
               isKYCIncomplete={isKYCIncomplete}
               variant="banner"
               onNavigateToKYC={() => {
-                setCurrentTab('settings');
-                setSearchParams({ tab: 'verification' }, { replace: true });
+                navigate('/user/dashboard?section=settings&tab=verification');
               }}
             />
           </div>
@@ -222,7 +208,6 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
       })()}
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      {currentTab !== 'settings' && (
         <div className="mb-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
             <div>
@@ -281,15 +266,6 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
             ))}
           </div>
         </div>
-      )}
-
-      {/* Settings header */}
-      {currentTab === 'settings' && (
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-          <p className="text-sm text-muted-foreground mt-1">Manage your account settings</p>
-        </div>
-      )}
 
       {/* ── Tab Content ────────────────────────────────────────────────── */}
       <div className="min-h-[400px]">
@@ -302,52 +278,54 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                 <Loader size="default" />
               </div>
             ) : attendingEvents.length > 0 ? (
-              <div className="space-y-8">
-                {/* Featured Next Event */}
-                {nextEvent && (
+              <div className="space-y-4">
+                {/* Upcoming Events */}
+                {upcomingEvents.map((event, index) => (
                   <div
-                    onClick={() => navigate(`/user/event/${nextEvent.id}`)}
-                    className="relative rounded-2xl overflow-hidden border border-border/40 bg-card cursor-pointer group transition-all duration-300 hover:shadow-lg hover:border-primary/20"
+                    key={event.id}
+                    onClick={() => navigate(`/user/event/${event.id}`)}
+                    className="relative rounded-2xl overflow-hidden border border-border/40 bg-card cursor-pointer group transition-all duration-300 hover:shadow-lg hover:border-primary/20 animate-in fade-in-0 slide-in-from-bottom-2"
+                    style={{ animationDelay: `${index * 60}ms` }}
                   >
                     <div className="flex flex-col sm:flex-row">
-                      {/* Image */}
                       <div className="sm:w-72 lg:w-96 flex-shrink-0">
                         <img
-                          src={nextEvent.image}
-                          alt={nextEvent.title}
-                          className="w-full h-48 sm:h-full object-cover"
+                          src={event.image}
+                          alt={event.title}
+                          className="w-full h-40 sm:h-full object-cover"
                         />
                       </div>
-                      {/* Content */}
                       <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between">
                         <div>
                           <div className="flex items-center gap-2 mb-2">
-                            <Badge className="bg-primary/10 text-primary border-0 text-xs font-semibold">
-                              Next Up
-                            </Badge>
-                            {getDaysUntil(nextEvent.date) <= 7 && (
+                            {index === 0 && (
+                              <Badge className="bg-primary/10 text-primary border-0 text-xs font-semibold">
+                                Next Up
+                              </Badge>
+                            )}
+                            {getDaysUntil(event.date) <= 7 && (
                               <Badge className="bg-success/10 text-success border-0 text-xs">
                                 <Timer className="w-3 h-3 mr-1" />
-                                {getDaysUntil(nextEvent.date) === 0
+                                {getDaysUntil(event.date) === 0
                                   ? 'Today'
-                                  : getDaysUntil(nextEvent.date) === 1
+                                  : getDaysUntil(event.date) === 1
                                     ? 'Tomorrow'
-                                    : `In ${getDaysUntil(nextEvent.date)} days`
+                                    : `In ${getDaysUntil(event.date)} days`
                                 }
                               </Badge>
                             )}
                           </div>
                           <h2 className="text-xl sm:text-2xl font-bold text-foreground group-hover:text-primary transition-colors mb-3">
-                            {nextEvent.title}
+                            {event.title}
                           </h2>
                           <div className="space-y-1.5">
                             <p className="text-sm text-muted-foreground flex items-center gap-2">
                               <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                              {formatEventDateLong(nextEvent.date)}
+                              {formatEventDateLong(event.date)}
                             </p>
                             <p className="text-sm text-muted-foreground flex items-center gap-2">
                               <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-                              {nextEvent.location}
+                              {event.location}
                             </p>
                           </div>
                         </div>
@@ -355,7 +333,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                           <Button
                             size="sm"
                             className="gap-1.5"
-                            onClick={(e) => { e.stopPropagation(); navigate(`/user/event/${nextEvent.id}`); }}
+                            onClick={(e) => { e.stopPropagation(); navigate(`/user/event/${event.id}`); }}
                           >
                             View Event
                             <ArrowRight className="w-3.5 h-3.5" />
@@ -363,7 +341,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleDownload(nextEvent); }}
+                            onClick={(e) => { e.stopPropagation(); handleDownload(event); }}
                           >
                             <Download className="w-3.5 h-3.5 mr-1.5" />
                             Ticket
@@ -372,7 +350,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={(e) => { e.stopPropagation(); handleShare(nextEvent); }}
+                            onClick={(e) => { e.stopPropagation(); handleShare(event); }}
                             title="Share event"
                           >
                             <Share2 className="w-3.5 h-3.5" />
@@ -381,49 +359,75 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                       </div>
                     </div>
                   </div>
-                )}
-
-                {/* Remaining Upcoming Events */}
-                {remainingUpcoming.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                      Upcoming ({remainingUpcoming.length})
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {remainingUpcoming.map((event, index) => (
-                        <EventCard
-                          key={event.id}
-                          event={event}
-                          index={index}
-                          onNavigate={() => navigate(`/user/event/${event.id}`)}
-                          onDownload={() => handleDownload(event)}
-                          onShare={() => handleShare(event)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                ))}
 
                 {/* Past Events */}
                 {pastEvents.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                  <>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-4">
                       Past ({pastEvents.length})
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {pastEvents.map((event, index) => (
-                        <EventCard
-                          key={event.id}
-                          event={event}
-                          index={index}
-                          isPast
-                          onNavigate={() => navigate(`/user/event/${event.id}`)}
-                          onDownload={() => handleDownload(event)}
-                          onShare={() => handleShare(event)}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                    {pastEvents.map((event, index) => (
+                      <div
+                        key={event.id}
+                        onClick={() => navigate(`/user/event/${event.id}`)}
+                        className="relative rounded-2xl overflow-hidden border border-border/40 bg-card cursor-pointer group transition-all duration-300 hover:shadow-lg hover:border-primary/20 opacity-75 animate-in fade-in-0 slide-in-from-bottom-2"
+                        style={{ animationDelay: `${index * 60}ms` }}
+                      >
+                        <div className="flex flex-col sm:flex-row">
+                          <div className="sm:w-72 lg:w-96 flex-shrink-0">
+                            <img
+                              src={event.image}
+                              alt={event.title}
+                              className="w-full h-40 sm:h-full object-cover grayscale-[30%]"
+                            />
+                          </div>
+                          <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge className="bg-muted text-muted-foreground border-0 text-xs">
+                                  Completed
+                                </Badge>
+                              </div>
+                              <h2 className="text-xl sm:text-2xl font-bold text-foreground group-hover:text-primary transition-colors mb-3">
+                                {event.title}
+                              </h2>
+                              <div className="space-y-1.5">
+                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                                  {formatEventDateLong(event.date)}
+                                </p>
+                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                  <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                                  {event.location}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 mt-4">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1.5"
+                                onClick={(e) => { e.stopPropagation(); navigate(`/user/event/${event.id}`); }}
+                              >
+                                View Event
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={(e) => { e.stopPropagation(); handleShare(event); }}
+                                title="Share event"
+                              >
+                                <Share2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
                 )}
               </div>
             ) : (
@@ -491,7 +495,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                   <div
                     key={event.id}
                     onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
-                    className="flex items-center gap-4 p-4 bg-card border border-border/40 rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
+                    className="flex items-center gap-4 p-4 bg-card border border-border rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
                     style={{ animationDelay: `${index * 40}ms` }}
                     role="article"
                   >
@@ -528,95 +532,15 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
           </div>
         )}
 
-        {/* ── Settings ───────────────────────────────────────────────── */}
-        {currentTab === 'settings' && (
-          <div role="tabpanel" id="settings-panel">
-            <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader size="default" /></div>}>
-              <SettingsPage />
-            </Suspense>
+        {/* ── Tickets ────────────────────────────────────────────────── */}
+        {currentTab === 'tickets' && (
+          <div role="tabpanel" id="tickets-panel">
+            <TicketsTabContent />
           </div>
         )}
       </div>
     </div>
   );
 };
-
-// ─── Event Card Component ───────────────────────────────────────────────────────
-
-interface EventCardProps {
-  event: {
-    id: string;
-    title: string;
-    date: string;
-    location: string;
-    type: string;
-    image: string;
-    status?: string;
-  };
-  index: number;
-  isPast?: boolean;
-  onNavigate: () => void;
-  onDownload: () => void;
-  onShare: () => void;
-}
-
-function EventCard({ event, index, isPast, onNavigate, onDownload, onShare }: EventCardProps) {
-  return (
-    <div
-      onClick={onNavigate}
-      className={`flex items-center gap-4 p-4 bg-card border border-border/40 rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2 ${
-        isPast ? 'opacity-75' : ''
-      }`}
-      style={{ animationDelay: `${index * 40}ms` }}
-      role="article"
-    >
-      <img
-        src={event.image}
-        alt={event.title}
-        className={`w-16 h-16 rounded-lg object-cover flex-shrink-0 ${isPast ? 'grayscale-[30%]' : ''}`}
-        loading="lazy"
-      />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-            {event.title}
-          </h3>
-          {!isPast && getDaysUntil(event.date) <= 3 && (
-            <Badge className="bg-success/10 text-success border-0 text-[10px] px-1.5 py-0 flex-shrink-0">
-              {getDaysUntil(event.date) === 0 ? 'Today' : getDaysUntil(event.date) === 1 ? 'Tomorrow' : `${getDaysUntil(event.date)}d`}
-            </Badge>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-          <Calendar className="w-3 h-3 flex-shrink-0" />
-          {formatEventDate(event.date)}
-          <span className="mx-0.5 opacity-30">·</span>
-          <MapPin className="w-3 h-3 flex-shrink-0" />
-          <span className="truncate">{event.location}</span>
-        </p>
-      </div>
-      <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={(e) => { e.stopPropagation(); onDownload(); }}
-          title="Download ticket"
-        >
-          <Download className="w-3.5 h-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={(e) => { e.stopPropagation(); onShare(); }}
-          title="Share event"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 export default DashboardHome;

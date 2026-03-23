@@ -51,9 +51,7 @@ describe('Bulk Message API', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test admin
     const admin = await prisma.user.create({

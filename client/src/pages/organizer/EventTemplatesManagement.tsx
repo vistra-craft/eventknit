@@ -233,7 +233,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
   return (
       <div className="space-y-6">
         {!embedded && (
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-page-title">Event Templates</h1>
               <p className="text-muted-foreground mt-1">
@@ -247,7 +247,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
                   Create Template
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Create Event Template</DialogTitle>
                 </DialogHeader>
@@ -269,7 +269,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
                   Create Template
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Create Event Template</DialogTitle>
                 </DialogHeader>
@@ -333,7 +333,7 @@ const EventTemplatesManagement = ({ embedded = false }: { embedded?: boolean }) 
 
         {selectedTemplate && (
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{selectedTemplate.name}</DialogTitle>
               </DialogHeader>

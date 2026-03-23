@@ -962,7 +962,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
             </div>
 
             {/* Summary */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <Card>
                 <CardContent className="p-4">
                   <p className="text-xs text-muted-foreground uppercase">Total Links</p>
@@ -1191,7 +1191,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                       <DialogDescription>Manually register an attendee for this event (walk-in registration).</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="att-first">First Name *</Label>
                           <Input id="att-first" className="mt-2" value={addAttendeeForm.firstName} onChange={(e) => setAddAttendeeForm(f => ({ ...f, firstName: e.target.value }))} placeholder="First name" />
@@ -1284,7 +1284,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 />
               </div>
               <Select value={attendeeStatusFilter} onValueChange={(v) => { setAttendeeStatusFilter(v); setAttendeesPage(1); }}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="All statuses" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1889,7 +1889,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
             ) : (
               <>
                 {/* Stats Overview */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                   <Card className="border-l-4 border-l-primary">
                     <CardContent className="p-4">
                       <p className="text-xs text-muted-foreground uppercase">Total Resale Listings</p>
@@ -2148,7 +2148,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
 
             {/* Summary Cards */}
             {refundSummary && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="p-4">
                     <p className="text-xs text-muted-foreground uppercase">Total Refunds</p>
@@ -2339,7 +2339,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
             ) : (
               <>
                 {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                   {[
                     { label: "Registered", value: scanStatistics?.totalAttendees || 0, icon: Users, gradient: "from-blue-500 to-blue-600" },
                     { label: "Checked In", value: scanStatistics?.checkedIn || 0, icon: LogIn, gradient: "from-emerald-500 to-emerald-600" },
@@ -3183,7 +3183,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
 
       {/* Event Preview Dialog */}
       <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Event Preview</DialogTitle>
             <DialogDescription>
@@ -3406,7 +3406,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
               {eventData.exhibitors && eventData.exhibitors.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Exhibitors</h3>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {(Array.isArray(eventData.exhibitors) ? eventData.exhibitors : []).map((exhibitor, i) => (
                       <div key={i} className="p-3 rounded-lg bg-muted/50">
                         <p className="text-sm font-medium">{exhibitor.name}</p>
@@ -3421,7 +3421,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
               {apiData.sponsors && apiData.sponsors.length > 0 && (
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Sponsors</h3>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {(apiData.sponsors as SponsorItem[]).map((sponsor, i) => (
                       <div key={i} className="p-3 rounded-lg bg-muted/50 text-center">
                         {sponsor.logo ? (
@@ -3535,7 +3535,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
               </div>
 
               {/* Type + Price */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Type</Label>
                   <Select
@@ -3656,7 +3656,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
               </div>
 
               {/* Per-person limits */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Max per person</Label>
                   <Input
@@ -3698,7 +3698,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
               </div>
 
               {/* Availability window */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">Available From</Label>
                   <Input

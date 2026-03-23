@@ -289,7 +289,7 @@ const KYCEntityManagement: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Entity Types List */}
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -309,7 +309,7 @@ const KYCEntityManagement: React.FC = () => {
             </div>
 
             {/* Entity List */}
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+            <div className="space-y-2 max-h-[50vh] md:max-h-[600px] overflow-y-auto">
               {filteredEntities.map((entity) => {
                 const Icon = entity.icon;
                 return (

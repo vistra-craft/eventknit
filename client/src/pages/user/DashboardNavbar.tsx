@@ -5,6 +5,7 @@ import { Button } from "../../components/ui/button";
 import Logo from '@/components/Logo';
 import { useAuth } from "../../hooks/useAuth";
 import { ThemeToggle } from "../../components/ThemeToggle";
+import NotificationBell from "../../components/NotificationBell";
 import { UserRole } from "@/types/auth";
 
 interface User {
@@ -51,7 +52,7 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
     {
       label: "Settings",
       icon: Settings,
-      onClick: () => navigate("/user/dashboard?view=settings"),
+      onClick: () => navigate("/user/dashboard?section=settings"),
     },
   ];
 
@@ -73,6 +74,9 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ user }) => {
             >
               <Home className="h-4 w-4" />
             </Button>
+
+            {/* Notifications */}
+            <NotificationBell />
 
             {/* Theme Toggle */}
             <ThemeToggle />

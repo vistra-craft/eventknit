@@ -164,7 +164,7 @@ const AttendeeInsights = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="demographics" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="demographics">Demographics</TabsTrigger>
             <TabsTrigger value="behavior">Behavior</TabsTrigger>
             <TabsTrigger value="segments">Segments</TabsTrigger>
@@ -205,7 +205,7 @@ const AttendeeInsights = () => {
                       height={300}
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                    <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-muted-foreground">
                       <p>Registration timing data requires backend API support</p>
                     </div>
                   )}
@@ -227,7 +227,7 @@ const AttendeeInsights = () => {
                       formatter={(value) => `${value}%`}
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                    <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-muted-foreground">
                       <p>Device usage data requires backend API support</p>
                     </div>
                   )}
@@ -238,7 +238,7 @@ const AttendeeInsights = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {insightsData.map((insight) => (
                 <Card key={insight.id} className={`border ${getInsightTypeColor(insight.type).split(' ')[2]}`}>
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-start space-x-3">
                       <div className={`w-8 h-8 rounded-full ${getInsightTypeColor(insight.type).split(' ')[1]} flex items-center justify-center`}>
                         <Clock className={`h-4 w-4 ${getInsightTypeColor(insight.type).split(' ')[0]}`} />
@@ -297,7 +297,7 @@ const AttendeeInsights = () => {
                       }}
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                    <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-muted-foreground">
                       <p>Engagement trends data requires backend API support</p>
                     </div>
                   )}
@@ -355,7 +355,7 @@ const AttendeeInsights = () => {
                       color={CHART_COLORS.info}
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                    <div className="flex items-center justify-center h-[220px] sm:h-[300px] text-muted-foreground">
                       <p>Time of day data requires backend API support</p>
                     </div>
                   )}

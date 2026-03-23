@@ -323,7 +323,7 @@ const SubscriptionManagement = () => {
         {/* Current Subscription Card */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 {React.createElement(currentTierIcon, { className: 'h-6 w-6' })}
                 <div>

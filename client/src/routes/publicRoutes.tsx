@@ -27,6 +27,8 @@ const FeedbackPage = lazy(() => import('../pages/FeedbackPage'));
 const ExhibitorDetails = lazy(() => import('../pages/user/ExhibitorDetails'));
 const Support = lazy(() => import('../pages/Support'));
 const TransferAccept = lazy(() => import('../pages/TransferAccept'));
+const TicketViewPage = lazy(() => import('../pages/user/TicketViewPage'));
+const EventSurveyPage = lazy(() => import('../pages/EventSurveyPage'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 
 /**
@@ -122,6 +124,18 @@ export const publicRoutes: RouteConfig[] = [
   {
     path: 'support',
     element: createElement(Support),
+  },
+
+  // Public ticket view (works with or without auth, uses email verification)
+  {
+    path: 'tickets/:registrationId/view',
+    element: createElement(TicketViewPage),
+  },
+
+  // Post-event survey (linked from email)
+  {
+    path: 'events/:eventId/survey',
+    element: createElement(EventSurveyPage),
   },
 
   // Ticket transfer acceptance (public, works with or without auth)

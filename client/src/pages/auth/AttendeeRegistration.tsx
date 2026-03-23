@@ -572,7 +572,7 @@ const AttendeeRegistration = () => {
 
         {/* Form Content */}
         <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-6 md:p-8">
             <Form {...form}>
               {multiStep.currentStep === 1 && renderStep1()}
               {multiStep.currentStep === 2 && renderStep2()}

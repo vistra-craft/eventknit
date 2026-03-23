@@ -9,6 +9,7 @@
  *   exhibitors, sponsors, FAQs, requirements, venue/map, announcements
  */
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Clock,
@@ -65,25 +66,14 @@ import { sendMessage } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
 import { showErrorToast } from "@/lib/utils/error";
 import { stripHtml } from "@/lib/utils";
-import type { EventData, Sponsor } from "./EventAttendeeView";
+import type { EventData } from "./EventAttendeeView";
 import { EventSurveyPrompt } from "./EventSurveyPrompt";
+import { SpeakersShowcase } from "@/components/event-details/SpeakersShowcase";
+import { SponsorsShowcase } from "@/components/event-details/SponsorsShowcase";
+import { ExhibitorsGrid } from "@/components/event-details/ExhibitorsGrid";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-const sponsorTierOrder: Sponsor["level"][] = [
-  "title", "presenting", "platinum", "gold", "silver", "bronze", "associate", "community",
-];
-
-const sponsorTierLabels: Record<Sponsor["level"], string> = {
-  title: "Title Sponsor",
-  presenting: "Presenting Sponsor",
-  platinum: "Platinum",
-  gold: "Gold",
-  silver: "Silver",
-  bronze: "Bronze",
-  associate: "Associate",
-  community: "Community Partner",
-};
 
 const socialPlatformConfig: Record<string, { icon: React.ElementType; label: string }> = {
   twitter: { icon: Twitter, label: "Twitter" },
@@ -214,6 +204,7 @@ interface EventOverviewProps {
 }
 
 export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const status = getEventStatus(event);
   const cd = useCountdown(event.date, event.endDate);
@@ -310,17 +301,6 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
 
   const unreadCount = announcements.filter(n => !n.isRead).length;
 
-  const sponsorsByTier = React.useMemo(() => {
-    if (!event.sponsors?.length) return {};
-    const grouped: Record<string, Sponsor[]> = {};
-    event.sponsors.forEach(s => {
-      const tier = s.level || "associate";
-      if (!grouped[tier]) grouped[tier] = [];
-      grouped[tier].push(s);
-    });
-    return grouped;
-  }, [event.sponsors]);
-
   const formatDateRange = (): string => {
     const opts: Intl.DateTimeFormatOptions = { weekday: "short", month: "short", day: "numeric", year: "numeric" };
     const start = new Date(event.date).toLocaleDateString("en-US", opts);
@@ -343,164 +323,162 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
       <div className="container mx-auto max-w-5xl px-4 sm:px-6 py-6">
 
         {/* ═══════════════════════════════════════════════════════════════════
-            1. EVENT HEADER — Image + Key Details side by side
+            1. EVENT HEADER — Image (3/4) + Details (1/4) side by side
             ═══════════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col md:flex-row gap-6 mb-6">
-          {/* Event Image */}
-          <div className="flex-shrink-0 w-full md:w-72 lg:w-80">
-            <div className="relative rounded-xl overflow-hidden aspect-[4/3] bg-muted">
-              {event.image ? (
-                <img
-                  src={event.image}
-                  alt={event.title}
-                  className="w-full h-full object-cover"
-                  style={{
-                    objectPosition: event.imageFocalX != null && event.imageFocalY != null
-                      ? `${event.imageFocalX}% ${event.imageFocalY}%`
-                      : "center",
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <Calendar className="w-12 h-12 text-primary/40" />
-                </div>
-              )}
-              {/* Status badge overlay */}
-              <Badge className={`absolute top-3 left-3 ${status.color} border text-xs font-semibold`}>
-                {status.label}
-              </Badge>
-            </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-5 mb-6">
+          {/* ── Image (3/4 width) ── */}
+          <div className="relative rounded-2xl overflow-hidden bg-muted min-h-[240px] sm:min-h-[320px] lg:min-h-[380px]">
+            {event.image ? (
+              <img
+                src={event.image}
+                alt={event.title}
+                className="w-full h-full object-cover absolute inset-0"
+                style={{
+                  objectPosition: event.imageFocalX != null && event.imageFocalY != null
+                    ? `${event.imageFocalX}% ${event.imageFocalY}%`
+                    : "center",
+                }}
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                <Calendar className="w-16 h-16 text-primary/30" />
+              </div>
+            )}
+            {/* Status badge */}
+            <Badge className={`absolute top-4 left-4 ${status.color} border text-xs font-semibold z-10`}>
+              {status.label}
+            </Badge>
           </div>
 
-          {/* Key Details */}
-          <div className="flex-1 min-w-0">
-            {/* Category & type badges */}
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              {event.category && (
-                <Badge variant="secondary" className="text-xs">{event.category}</Badge>
-              )}
-              {event.type && event.type !== "Event" && (
-                <Badge variant="outline" className="text-xs capitalize">{event.type.replace(/-/g, " ")}</Badge>
-              )}
-              {event.hashtag && (
-                <Badge variant="outline" className="text-xs text-primary border-primary/30">#{event.hashtag}</Badge>
-              )}
-            </div>
-
-            {/* Title */}
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-3 leading-tight">
-              {event.title}
-            </h1>
-
-            {/* Date, time, location */}
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-2.5 text-sm text-foreground">
-                <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                <span>{formatDateRange()}</span>
+          {/* ── Details (1/4 width) ── */}
+          <div className="flex flex-col justify-between gap-4 py-1">
+            {/* Top section — badges + title + meta */}
+            <div className="space-y-3">
+              {/* Category badges */}
+              <div className="flex flex-wrap items-center gap-2">
+                {event.category && (
+                  <Badge variant="secondary" className="text-xs">{event.category}</Badge>
+                )}
+                {event.type && event.type !== "Event" && (
+                  <Badge variant="outline" className="text-xs capitalize">{event.type.replace(/-/g, " ")}</Badge>
+                )}
+                {event.hashtag && (
+                  <Badge className="bg-primary/10 text-primary border-0 text-xs">#{event.hashtag}</Badge>
+                )}
               </div>
-              {event.time && (
-                <div className="flex items-center gap-2.5 text-sm text-foreground">
-                  <Clock className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span>{event.time}</span>
+
+              {/* Title */}
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">
+                {event.title}
+              </h1>
+
+              {/* Date + Time */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span>{formatDateRange()}</span>
                 </div>
-              )}
-              <div className="flex items-center gap-2.5 text-sm text-foreground">
-                {event.isOnline ? (
-                  <Globe className="w-4 h-4 text-primary flex-shrink-0" />
-                ) : (
-                  <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                {event.time && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Clock className="w-4 h-4 text-primary flex-shrink-0" />
+                    <span>{event.time}</span>
+                  </div>
                 )}
-                <span>{event.venue ?? event.location}</span>
-                {event.address && event.venue && event.address !== event.venue && (
-                  <span className="text-muted-foreground">· {event.address}</span>
-                )}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {event.isOnline ? (
+                    <Globe className="w-4 h-4 text-primary flex-shrink-0" />
+                  ) : (
+                    <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
+                  )}
+                  <span>
+                    {event.venue ?? event.location}
+                    {event.address && event.venue && event.address !== event.venue && (
+                      <span className="text-muted-foreground/60 ml-1">· {event.address}</span>
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Countdown or Live status */}
-            {!cd.isOver && (
-              <div className="mb-4">
-                {cd.isStarted ? (
-                  <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-success/10 border border-success/20">
-                    <span className="relative flex h-2.5 w-2.5">
+            {/* Bottom section — countdown + attendees */}
+            <div className="space-y-4">
+              {/* Countdown or Live status */}
+              {!cd.isOver && (
+                cd.isStarted ? (
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/10 border border-success/20">
+                    <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
                     </span>
                     <span className="text-success font-semibold text-sm">Happening Now</span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Timer className="w-4 h-4" />
-                      <span className="text-xs font-medium uppercase tracking-wide">Starts in</span>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <Timer className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-medium uppercase tracking-wide">Starts in</span>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       {cd.days > 0 && (
                         <>
                           <CountdownUnit value={cd.days} label="days" />
-                          <span className="text-muted-foreground font-bold text-sm mb-4">:</span>
+                          <span className="text-muted-foreground/50 font-bold text-sm mb-4">:</span>
                         </>
                       )}
                       <CountdownUnit value={cd.hours} label="hrs" />
-                      <span className="text-muted-foreground font-bold text-sm mb-4">:</span>
+                      <span className="text-muted-foreground/50 font-bold text-sm mb-4">:</span>
                       <CountdownUnit value={cd.minutes} label="min" />
-                      <span className="text-muted-foreground font-bold text-sm mb-4">:</span>
+                      <span className="text-muted-foreground/50 font-bold text-sm mb-4">:</span>
                       <CountdownUnit value={cd.seconds} label="sec" />
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+                )
+              )}
 
-            {/* Attendee tally — Lu.ma-style social proof with real avatars */}
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {/* Organizer avatar */}
-                {event.organizerAvatar ? (
-                  <img
-                    src={event.organizerAvatar}
-                    alt={event.organizer ?? "Organizer"}
-                    className="w-8 h-8 rounded-full border-2 border-background object-cover"
-                    title={event.organizer ?? "Organizer"}
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-xs font-bold text-primary" title={event.organizer ?? "Organizer"}>
-                    {event.organizer?.[0]?.toUpperCase() ?? "O"}
-                  </div>
-                )}
-                {/* Real attendee avatars */}
-                {event.attendeeAvatars?.slice(0, 4).map((attendee) => (
-                  attendee.avatar ? (
+              {/* Attendee tally */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex -space-x-2">
+                  {event.organizerAvatar ? (
                     <img
-                      key={attendee.id}
-                      src={attendee.avatar}
-                      alt={`${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
-                      className="w-8 h-8 rounded-full border-2 border-background object-cover"
+                      src={event.organizerAvatar}
+                      alt={event.organizer ?? "Organizer"}
+                      className="w-7 h-7 rounded-full border-2 border-background object-cover"
                     />
                   ) : (
-                    <div
-                      key={attendee.id}
-                      className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-bold text-muted-foreground"
-                    >
-                      {attendee.firstName?.[0]?.toUpperCase() ?? "?"}
+                    <div className="w-7 h-7 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center text-[10px] font-bold text-primary">
+                      {event.organizer?.[0]?.toUpperCase() ?? "O"}
                     </div>
-                  )
-                ))}
-                {/* Overflow indicator */}
-                {attendeeCount > 5 && (
-                  <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-bold text-muted-foreground">
-                    +{attendeeCount - 5}
-                  </div>
-                )}
-              </div>
-              <div className="text-sm">
-                <span className="font-semibold text-foreground">{attendeeCount}</span>
-                <span className="text-muted-foreground ml-1">
-                  {attendeeCount === 1 ? "person attending" : "people attending"}
-                </span>
-                {event.capacity && (
-                  <span className="text-muted-foreground"> · {event.availableSlots ?? event.capacity} spots left</span>
-                )}
+                  )}
+                  {event.attendeeAvatars?.slice(0, 4).map((attendee) => (
+                    attendee.avatar ? (
+                      <img
+                        key={attendee.id}
+                        src={attendee.avatar}
+                        alt={`${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
+                        className="w-7 h-7 rounded-full border-2 border-background object-cover"
+                      />
+                    ) : (
+                      <div
+                        key={attendee.id}
+                        className="w-7 h-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-bold text-muted-foreground"
+                      >
+                        {attendee.firstName?.[0]?.toUpperCase() ?? "?"}
+                      </div>
+                    )
+                  ))}
+                  {attendeeCount > 5 && (
+                    <div className="w-7 h-7 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                      +{attendeeCount - 5}
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">{attendeeCount}</span>
+                  <span className="ml-1">attending</span>
+                  {event.capacity && (
+                    <span> · {event.availableSlots ?? event.capacity} spots left</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -532,7 +510,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
                 Share
               </Button>
               {event.organizerId && (
-                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setIsContactOpen(true)}>
+                <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => navigate('/user/messages')}>
                   <MessageCircle className="w-3.5 h-3.5 mr-1.5" />
                   Contact
                 </Button>
@@ -547,7 +525,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
         {event.registrationId && (
           <Card className="border-border/40 bg-card mb-6">
             <CardContent className="p-5">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {event.ticketType && (
                   <div className="flex items-start gap-2.5">
                     <Ticket className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -594,7 +572,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
                     <span className="text-sm font-semibold text-foreground">Seat Allocation</span>
                     <Badge className="bg-primary/10 text-primary text-xs uppercase">{event.seat.seatType}</Badge>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                     <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-center">
                       <p className="text-[10px] text-muted-foreground mb-0.5">Seat</p>
                       <p className="text-base font-bold text-primary">{event.seat.seatIdentifier}</p>
@@ -757,41 +735,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
         {hasSpeakers && (
           <section className="mb-8">
             <SectionHeading icon={Mic2} title="Speakers" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(event.speakers ?? []).map((speaker, idx) => (
-                <Card key={speaker.id ?? idx} className="border-border/40 bg-card overflow-hidden">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      {speaker.image ? (
-                        <img
-                          src={speaker.image}
-                          alt={speaker.name}
-                          className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Mic2 className="w-6 h-6 text-primary/50" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-foreground">{speaker.name}</h4>
-                        {speaker.title && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{speaker.title}</p>
-                        )}
-                        {speaker.company && (
-                          <p className="text-xs text-primary/80 mt-0.5">{speaker.company}</p>
-                        )}
-                      </div>
-                    </div>
-                    {speaker.bio && stripHtml(speaker.bio).length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-3 line-clamp-3 leading-relaxed">
-                        {stripHtml(speaker.bio)}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <SpeakersShowcase speakers={event.speakers ?? []} />
           </section>
         )}
 
@@ -856,50 +800,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
         {hasExhibitors && (
           <section className="mb-8">
             <SectionHeading icon={Building2} title="Exhibitors" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(event.exhibitors ?? []).map((exhibitor, idx) => (
-                <Card key={exhibitor.id ?? idx} className="border-border/40 bg-card">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      {exhibitor.logo ? (
-                        <img
-                          src={exhibitor.logo}
-                          alt={exhibitor.name}
-                          className="w-12 h-12 rounded-lg object-contain bg-muted p-1 flex-shrink-0"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                          <Building2 className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-foreground">{exhibitor.name}</h4>
-                        {exhibitor.booth && (
-                          <p className="text-xs text-primary mt-0.5">Booth: {exhibitor.booth}</p>
-                        )}
-                        {exhibitor.category && (
-                          <Badge variant="secondary" className="text-[10px] mt-1">{exhibitor.category}</Badge>
-                        )}
-                      </div>
-                    </div>
-                    {exhibitor.description && stripHtml(exhibitor.description).length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{stripHtml(exhibitor.description)}</p>
-                    )}
-                    {exhibitor.website && (
-                      <a
-                        href={exhibitor.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 mt-2 transition-colors"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Visit website
-                      </a>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <ExhibitorsGrid exhibitors={event.exhibitors ?? []} />
           </section>
         )}
 
@@ -909,41 +810,7 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
         {hasSponsors && (
           <section className="mb-8">
             <SectionHeading icon={CheckCircle} title="Sponsors" />
-            <Card className="border-border/40 bg-card">
-              <CardContent className="p-5 space-y-5">
-                {sponsorTierOrder.map(tier => {
-                  const sponsors = sponsorsByTier[tier];
-                  if (!sponsors?.length) return null;
-                  return (
-                    <div key={tier}>
-                      <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-                        {sponsorTierLabels[tier]}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-5">
-                        {sponsors.map((s, idx) => (
-                          <a
-                            key={s.id ?? idx}
-                            href={s.website || '#'}
-                            target={s.website ? "_blank" : undefined}
-                            rel="noopener noreferrer"
-                            className="hover:opacity-75 transition-opacity"
-                            title={s.name}
-                          >
-                            {s.logo ? (
-                              <img src={s.logo} alt={s.name} className="h-10 w-auto object-contain" />
-                            ) : (
-                              <div className="h-10 px-4 bg-muted rounded-lg flex items-center">
-                                <span className="text-sm font-medium text-muted-foreground">{s.name}</span>
-                              </div>
-                            )}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
+            <SponsorsShowcase sponsors={event.sponsors ?? []} />
           </section>
         )}
 

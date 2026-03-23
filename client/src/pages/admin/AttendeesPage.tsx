@@ -215,14 +215,14 @@ const AttendeesPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Attendees</h2>
-          <p className="text-muted-foreground">Manage event attendees and view registration history</p>
+          <p className="text-muted-foreground text-sm">Manage event attendees and view registration history</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
           <div className="text-sm text-muted-foreground">
-            Showing {attendees.length} of {total || attendees.length} attendees
+            Showing {attendees.length} of {total || attendees.length}
           </div>
           <Select value={limit.toString()} onValueChange={(value) => {
             setLimit(parseInt(value, 10));
@@ -550,7 +550,7 @@ const AttendeesPage = () => {
           }
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Attendee Preview</DialogTitle>
             <DialogDescription>

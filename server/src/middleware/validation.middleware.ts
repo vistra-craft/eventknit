@@ -37,6 +37,7 @@ export const validateQuery = (schema: Joi.ObjectSchema) => {
       abortEarly: false,
       stripUnknown: false, // Don't strip - just validate
       allowUnknown: true, // Allow unknown fields to pass through
+      convert: true, // Coerce query string values to schema types (e.g., "2026" → 2026)
     });
 
     if (error) {

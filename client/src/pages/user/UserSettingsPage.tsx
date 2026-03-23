@@ -5,13 +5,14 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import {
   User,
   Bell,
   Palette,
   Key,
   Shield,
+  ChevronLeft,
   Save,
   Eye,
   EyeOff,
@@ -43,6 +44,7 @@ import { useMyEvents } from "@/hooks/useMyEvents";
 import { extractErrorMessage } from "@/lib/utils/error";
 
 const UserSettingsPage = () => {
+  const navigate = useNavigate();
   const { user, logout, refreshProfile } = useAuth();
   const { toast } = useToast();
   const location = useLocation();
@@ -390,7 +392,7 @@ const UserSettingsPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label className="text-muted-foreground text-sm">Role</Label>
                 <p className="text-foreground font-medium">{accountInfo.role && ROLE_LABELS[accountInfo.role as UserRole] ? ROLE_LABELS[accountInfo.role as UserRole] : accountInfo.role}</p>
@@ -947,8 +949,21 @@ const UserSettingsPage = () => {
 
   return (
     <div className="container mx-auto max-w-4xl py-8 px-4">
-      <h1 className="text-3xl font-bold mb-2">Settings</h1>
-      <p className="text-muted-foreground mb-8">Manage your account and preferences</p>
+      <div className="flex items-center gap-3 mb-8">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          className="rounded-full"
+          title="Go back"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+        <div>
+          <h1 className="text-3xl font-bold">Settings</h1>
+          <p className="text-muted-foreground">Manage your account and preferences</p>
+        </div>
+      </div>
 
       {/* KYC Required Banner */}
       {(hasApprovedPaidEvents || hasPendingPaidEvents) && isKYCIncomplete && (
@@ -1001,7 +1016,7 @@ const UserSettingsPage = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`grid w-full grid-cols-${tabs.length} mb-8`}>
+        <TabsList className={`flex w-full mb-8 overflow-x-auto sm:grid ${tabs.length === 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (

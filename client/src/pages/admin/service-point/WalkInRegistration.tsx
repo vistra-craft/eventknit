@@ -419,7 +419,7 @@ const WalkInRegistration: React.FC = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="firstName">First Name *</Label>
                   <Input
@@ -513,7 +513,7 @@ const WalkInRegistration: React.FC = () => {
                 </div>
 
                 {/* QR / backup code */}
-                <div className="grid grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div className="rounded-lg bg-muted p-3 space-y-1">
                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">QR Code</p>
                     <div className="flex items-center gap-2">
@@ -548,7 +548,7 @@ const WalkInRegistration: React.FC = () => {
               </div>
 
               {/* Actions */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button
                   variant="outline"
                   onClick={() =>

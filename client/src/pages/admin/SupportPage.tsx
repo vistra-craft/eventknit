@@ -724,7 +724,7 @@ const SupportPage = () => {
                       value={query.assignedTo || ""} 
                       onValueChange={(value) => handleAssignQuery(query.id, value)}
                     >
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-28 sm:w-32">
                         <SelectValue placeholder="Assign" />
                       </SelectTrigger>
                       <SelectContent>
@@ -739,7 +739,7 @@ const SupportPage = () => {
                       value={query.status} 
                       onValueChange={(value) => handleUpdateStatus(query.id, value as QueryStatus)}
                     >
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-28 sm:w-32">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -875,7 +875,7 @@ const SupportPage = () => {
                           value={message.assignedTo || ""}
                           onValueChange={(value) => handleAssignSocialMessage(message.id, value)}
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-28 sm:w-32">
                             <SelectValue placeholder="Assign" />
                           </SelectTrigger>
                           <SelectContent>
@@ -890,7 +890,7 @@ const SupportPage = () => {
                           value={message.status}
                           onValueChange={(value) => handleUpdateSocialMessageStatus(message.id, value)}
                         >
-                          <SelectTrigger className="w-32">
+                          <SelectTrigger className="w-28 sm:w-32">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -988,7 +988,7 @@ const SupportPage = () => {
                         value={query.assignedTo || ""} 
                         onValueChange={(value) => handleAssignWebsiteQuery(query.id, value)}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-28 sm:w-32">
                           <SelectValue placeholder="Assign" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1003,7 +1003,7 @@ const SupportPage = () => {
                         value={query.status} 
                         onValueChange={(value) => handleUpdateWebsiteQueryStatus(query.id, value as QueryStatus)}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-28 sm:w-32">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1025,7 +1025,7 @@ const SupportPage = () => {
         {/* Response Modal */}
         {showResponseModal && selectedQuery && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-card rounded-lg shadow-xl w-full max-w-4xl h-[600px] flex flex-col">
+            <div className="bg-card rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:max-w-4xl h-[80vh] sm:h-[600px] flex flex-col mx-4">
               {/* Modal Header */}
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <div className="flex items-center gap-3">

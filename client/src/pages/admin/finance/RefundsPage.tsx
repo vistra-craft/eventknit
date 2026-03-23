@@ -147,7 +147,7 @@ const RefundsPage = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground">Total Refunded</div>
@@ -181,11 +181,11 @@ const RefundsPage = () => {
         {/* Filters */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search by refund #, transaction #, event, or attendee..."
+                  placeholder="Search refunds..."
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10"

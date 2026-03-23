@@ -244,7 +244,7 @@ const OnboardingWizard = () => {
         </div>
 
         {/* Form Content */}
-        <div className="bg-card-surface rounded-2xl shadow-md p-8">
+        <div className="bg-card-surface rounded-2xl shadow-md p-4 sm:p-6 md:p-8">
             {/* Event Created Success Message */}
             {eventCreatedMessage && (
               <Alert className="mb-6 border-success/20 bg-success-light">

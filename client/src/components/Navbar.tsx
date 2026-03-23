@@ -232,8 +232,8 @@ const Navbar: React.FC<NavbarProps> = () => {
           isScrolled ? "shadow-md" : "shadow-none"
         }`}
       >
-        <div className="container mx-auto px-6">
-          <div className="flex items-center h-16 gap-6 justify-between">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="flex items-center h-16 gap-4 sm:gap-6 justify-between">
             
             {/* Logo */}
             <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate('/')}> 
@@ -303,7 +303,7 @@ const Navbar: React.FC<NavbarProps> = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-background border-t border-border shadow-lg">
-            <div className="container mx-auto px-6 py-4 space-y-1">
+            <div className="container mx-auto px-4 sm:px-6 py-4 space-y-1">
               {navItems.map((item) => (
                 <button
                   key={item.name}

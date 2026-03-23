@@ -65,9 +65,7 @@ describe('Event Listing Filters', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     const hashed = await hashPassword('Test123!@$');
 

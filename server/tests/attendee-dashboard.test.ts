@@ -60,9 +60,7 @@ describe('Attendee Dashboard — Ticket & Seat Data', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     const hashedPassword = await hashPassword('Test123!@$');
 

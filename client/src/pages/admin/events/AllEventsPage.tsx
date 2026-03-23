@@ -377,7 +377,7 @@ const AllEventsPage = () => {
   return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">
               {permissions.canAccessAllEvents ? 'All Events' : 'My Assigned Events'}
@@ -690,7 +690,7 @@ const AllEventsPage = () => {
                         </Link>
                       </div>
                     </div>
-                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                  <div className="flex items-center gap-2 ml-0 sm:ml-4 flex-shrink-0">
                     <Button 
                       variant="outline" 
                       size="sm"

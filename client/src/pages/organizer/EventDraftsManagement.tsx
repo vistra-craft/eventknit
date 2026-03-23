@@ -147,7 +147,7 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
   return (
       <div className="space-y-6">
         {!embedded && (
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-page-title">Event Drafts</h1>
               <p className="text-muted-foreground mt-1">
@@ -161,7 +161,7 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
                   Create Draft
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Create Event Draft</DialogTitle>
                 </DialogHeader>
@@ -183,7 +183,7 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
                   Create Draft
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Create Event Draft</DialogTitle>
                 </DialogHeader>
@@ -280,7 +280,7 @@ const EventDraftsManagement = ({ embedded = false }: { embedded?: boolean }) => 
 
         {selectedDraft && (
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Edit Draft</DialogTitle>
               </DialogHeader>

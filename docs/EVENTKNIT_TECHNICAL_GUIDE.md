@@ -1706,24 +1706,32 @@ app.use(morgan('combined', {
 | Service unit tests | `tests/unit/services/` | 23 files | Fast (ms) |
 | Controller unit tests | `tests/unit/controllers/` | 2 files | Fast |
 | Job tests | `tests/unit/jobs/` | 8 files | Fast |
-| Integration tests | `tests/*.test.ts` | 78 files | Slower |
+| Integration tests | `tests/*.test.ts` | 79 files | Slower |
 
 ### Running Tests
 
 ```bash
-npm test                                              # All tests
-npx jest tests/unit/services/ --no-coverage           # Service tests only
-npx jest tests/white-label.service.test.ts -t "should create" --no-coverage  # Single test
+npm test                                              # All tests (vitest)
+npx vitest run tests/guest-registration-payment.test.ts  # Single test file
 npm run test:coverage                                 # With coverage
 npm run test:watch                                    # Watch mode
 ```
 
-### Jest Configuration
+### Vitest Configuration
 
-- **ESM support**: `ts-jest` with ESM preset, `.js` extension mapping
+- **ESM support**: Native TypeScript support via vitest
 - **Sequential**: `maxWorkers: 1` (prevents database race conditions)
 - **Timeout**: 120 seconds per test
 - **Force exit**: Prevents hanging from open handles
+
+### Key Test Files
+
+| Test File | Coverage Area |
+|-----------|---------------|
+| `guest-registration-payment.test.ts` | Guest registration token issuance, public ticket download, guest payment initialization, payment status, user registered events payment fields |
+| `ticket.test.ts` | Ticket CRUD, access control, public view |
+| `platform-fee.service.test.ts` | Fee calculation, disbursement linking |
+| `auth.test.ts` | Login, registration, token refresh, password reset |
 
 ### Mocking Patterns
 
@@ -2062,6 +2070,23 @@ Attendee pays → Payment Gateway (Paystack/Stripe/M-Pesa) → Webhook confirms
 - **Audit trail** — All mismatch data logged with difference amount and timestamps for investigation
 - **Manual recovery** — Webhook event status persisted; operators can retry or adjust via Bull Board dashboard
 
+### Payment Data Visibility by Role
+
+| Data Field | Admin | Organizer (Standard+) | Attendee |
+|------------|-------|----------------------|----------|
+| Transaction # / Paystack reference | Yes | No | No |
+| Payment amount | Yes | Yes | Yes (ticket view + tickets tab) |
+| Payment status | Yes | Yes | Yes (ticket view + tickets tab) |
+| Payment method | Yes | Yes | Yes (ticket view) |
+| Platform fee breakdown | Yes | No | No |
+| Organizer payout amount | Yes | No | No |
+| Attendee email/name | Yes | Yes (with tier) | Own only |
+| Gateway metadata / risk score | Yes | No | No |
+
+**Attendee payment visibility** is surfaced in two places:
+1. **Ticket View Page** — fetches `GET /payments/status/:registrationId` and displays status badge, amount, and method
+2. **Tickets Tab (Dashboard)** — `getUserRegisteredEvents` now returns `totalAmount`, `paymentStatus`, `paymentMethod`, `isFree`, and `currency` per registration, shown inline on each ticket card
+
 ### Race Condition Prevention
 
 - **Database unique constraints** on `gatewayReference`, `transactionId`, `feeNumber`, `disbursementNumber`
@@ -2278,15 +2303,26 @@ This means:
 1. `POST /api/v1/events/:id/register` → Creates registration with QR
 2. Free → confirmation page; Paid → payment page
 
-**Path B: Guest Checkout (Invitation-Based Account Creation)**
+**Path B: Guest Checkout (Silent Auto-Login)**
 1. `POST /api/v1/events/:id/register-guest`
-2. Backend creates a **passwordless user record** for the email — no session is issued
+2. Backend creates a **passwordless user record** for the email (or finds existing user by email)
 3. An `accountInvitationToken` (32-byte hex, hashed in DB, 7-day expiry) is generated and embedded in Email 1
-4. Response returns only `{ registration, user }` — no `accessToken` or `refreshToken`
-5. Attendee lands on the confirmation page as a guest (unauthenticated)
-6. To activate their account, attendee clicks the link in their email → `GET /auth/create-account?token=...`
-7. `POST /api/v1/auth/create-account` verifies token, sets password, activates account, and issues a session
-8. Account creation is entirely optional — the registration and ticket are valid regardless
+4. Backend issues a JWT access token via `AuthService.generateTokens()` — returned in the response as `accessToken`
+5. Response returns `{ registration, user, accessToken }` — user includes `requiresPasswordSetup` flag
+6. Frontend calls `setAuthFromGuestResponse()` to silently authenticate the guest in-browser
+7. Guest is now a fully authenticated user — all subsequent API calls (payment, ticket view, download) work seamlessly
+8. **Existing users as guests:** If the email matches an existing account, the same flow applies — the user is found (not created), issued a token, and can proceed to payment. `isNewUser` is `false` in this case.
+9. **Fallback (Option B):** If silent auto-login fails for any reason, `PaymentStep` detects `!isAuthenticated` and falls back to the public endpoint `POST /api/v1/payments/initialize-guest` which verifies ownership via email match — no auth needed
+10. Account password setup is optional — attendee can set a password later via the link in their email (`GET /auth/create-account?token=...`)
+
+**Public Endpoints for Unauthenticated Access:**
+
+| Endpoint | Method | Purpose | Verification |
+|----------|--------|---------|-------------|
+| `/tickets/:id/view` | GET | View ticket without auth | Email query param |
+| `/tickets/:id/download-public` | GET | Download ticket PDF without auth | Email query param |
+| `/payments/initialize-guest` | POST | Initialize payment without auth | Email + registrationId in body |
+| `/payments/verify` | GET | Verify payment callback | Reference param (public) |
 
 ### Cart & Inventory Locking
 
@@ -4006,12 +4042,14 @@ const exportToCSV = (data: Attendee[], filename: string) => {
 
 | Workflow | Trigger | Services | Steps |
 |----------|---------|----------|-------|
-| `server-ci.yml` | Push/PR to main, development, staging | MongoDB 7.0, Redis 7 | Lint → Type-check → Test → Build |
-| `client-ci.yml` | Push/PR to main, development, staging | None | Lint → Type-check → Test → Build |
-| `server-deploy-staging.yml` | Push to `staging` | — | Build → Deploy to staging |
-| `client-deploy-staging.yml` | Push to `staging` | — | Build → Deploy to staging |
-| `server-deploy-production.yml` | Push to `main` | — | Build → Deploy to production |
-| `client-deploy-production.yml` | Push to `main` | — | Build → Deploy to production |
+| `server-ci.yml` | Push/PR to main, development, staging | Postgres 16, Redis 7 (commented out) | Lint → Type-check → Build (tests commented out for faster deploys) |
+| `client-ci.yml` | Push/PR to main, development, staging | None | Lint → Type-check → Build (tests commented out for faster deploys) |
+| `server-deploy-staging.yml` | Push to `staging` | — | Build → Deploy to staging (tests commented out) |
+| `client-deploy-staging.yml` | Push to `staging` | — | Build → Deploy to staging (tests commented out) |
+| `server-deploy-production.yml` | Push to `main` | — | Build → Deploy to production (tests commented out) |
+| `client-deploy-production.yml` | Push to `main` | — | Build → Deploy to production (tests commented out) |
+
+> **Note:** Test steps across all CI/CD workflows are currently commented out (not deleted) to speed up deployments. Linting, type-checking, and build steps remain active. Tests can be re-enabled by uncommenting the relevant steps in each workflow file.
 
 **CI Configuration Details:**
 - Node.js max-old-space-size: 4096 MB (for TypeScript compilation)
@@ -4224,22 +4262,35 @@ The survey is only available after an event's `endDate` has passed and the atten
 
 All endpoints are under `/api/v1/`:
 
+**Backend API Endpoints:**
+
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/organizer/events/:eventId/survey` | Organizer | Create survey for own event |
-| `PUT` | `/organizer/events/:eventId/survey` | Organizer | Update survey configuration |
-| `DELETE` | `/organizer/events/:eventId/survey` | Organizer | Delete survey (and all responses) |
-| `GET` | `/organizer/events/:eventId/survey` | Organizer | Get survey config and metadata |
-| `GET` | `/organizer/events/:eventId/survey/results` | Organizer | Get aggregated results and individual responses |
-| `GET` | `/events/:eventId/survey` | Attendee | Get survey form for a completed event |
-| `POST` | `/events/:eventId/survey/respond` | Attendee | Submit survey response |
-| `GET` | `/admin/surveys` | Admin | List all surveys across the platform |
+| `POST` | `/api/v1/surveys` | Authenticated | Create survey for an event |
+| `PUT` | `/api/v1/surveys/:surveyId` | Authenticated | Update survey configuration |
+| `DELETE` | `/api/v1/surveys/:surveyId` | Authenticated | Delete survey (only if zero responses) |
+| `GET` | `/api/v1/surveys/event/:eventId` | Authenticated | Get survey config for organizer view |
+| `GET` | `/api/v1/surveys/event/:eventId/results` | Authenticated | Get aggregated results with NPS breakdown |
+| `GET` | `/api/v1/surveys/event/:eventId/public` | Authenticated | Get survey form for attendee |
+| `POST` | `/api/v1/surveys/:surveyId/respond` | Authenticated | Submit survey response |
+| `GET` | `/api/v1/admin/surveys` | Admin | List all surveys platform-wide |
 
-**Authorization rules:**
-- Organizers can only manage surveys for events they own
-- Admins can access surveys for managed events (where `event.isManaged = true`)
+**Frontend Routes:**
+
+| Route | Role | Description |
+|-------|------|-------------|
+| `/events/:eventId/survey` | Public (attendee) | Standalone survey page linked from email |
+| `/organizer/event/:eventId/survey` | Organizer | Survey creation, configuration, and results |
+| `/admin/events/:eventId/survey` | Admin | Survey management for managed events (reuses organizer component) |
+
+**Authorization (enforced in service layer):**
+- `createSurvey`, `updateSurvey`, `deleteSurvey` verify the caller is the event organizer, managed event admin, or a platform admin (SUPERADMIN/ADMIN role)
 - Attendees can only view and respond to surveys for events they have a confirmed registration for
-- Duplicate submissions are rejected (unique constraint on `surveyId` + `userId`)
+- Duplicate submissions are rejected (unique constraint on `surveyId` + `attendeeId`)
+
+**Automatic Trigger:**
+- `PostEventSurveyJob` runs hourly, finds events that ended 23–25 hours ago, and sends in-app notifications + emails to all confirmed attendees with a link to `/events/{eventId}/survey`
+- Prevents duplicate sends with a 48-hour deduplication window
 
 ### 47.4 Survey Structure
 

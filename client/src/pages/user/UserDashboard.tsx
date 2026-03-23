@@ -1,6 +1,12 @@
+import { lazy, Suspense, useState, useEffect, useCallback } from "react";
 import { useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { Loader } from "@/components/ui/loader";
 import DashboardNavbar from "./DashboardNavbar";
+import { ChatPanel, ChatPanelTrigger } from "@/components/chat/ChatPanel";
+import { getInbox } from "@/lib/user-dashboard-api";
+
+const UserSettingsPage = lazy(() => import("./UserSettingsPage"));
 import DashboardHome from "./DashboardHome";
 import DashboardAgenda from "./DashboardAgenda";
 import DashboardMyEvent from "./DashboardMyEvent";
@@ -31,6 +37,27 @@ const UserDashboard = () => {
   const searchParams = new URLSearchParams(location.search);
   const activeSection = searchParams.get("section") ?? "home";
   const { user: authUser } = useAuth();
+
+  // Chat panel state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await getInbox({ page: 1, limit: 1 });
+      if (res.success && res.data) {
+        setChatUnread(res.data.unreadCount);
+      }
+    } catch {
+      // Silently ignore — non-critical
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   const user = authUser
     ? {
@@ -81,7 +108,7 @@ const UserDashboard = () => {
       case "networking":
         return <AttendeeDiscovery eventData={eventData} />;
       case "notifications":
-        return <NotificationsCenter eventData={eventData} />;
+        return <NotificationsCenter />;
       case "analytics":
         return <PersonalAnalytics eventData={eventData} user={user} />;
       case "recommendations":
@@ -112,6 +139,12 @@ const UserDashboard = () => {
         return <PaymentPlans />;
       case "invoices":
         return <Invoices />;
+      case "settings":
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader size="default" /></div>}>
+            <UserSettingsPage />
+          </Suspense>
+        );
       default:
         return (
           <DashboardHome
@@ -144,6 +177,10 @@ const UserDashboard = () => {
         )}
         {renderSection()}
       </main>
+
+      {/* Chat panel + floating trigger */}
+      <ChatPanel open={chatOpen} onOpenChange={setChatOpen} />
+      <ChatPanelTrigger unreadCount={chatUnread} onClick={() => setChatOpen(true)} />
     </div>
   );
 };

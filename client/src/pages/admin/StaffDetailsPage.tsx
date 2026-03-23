@@ -430,17 +430,17 @@ const StaffDetailsPage = () => {
   return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <BackButton to="/admin/users/staff" label="Back to Staff" />
-            <div>
-              <h1 className="text-base font-semibold text-foreground">
+            <div className="min-w-0">
+              <h1 className="text-base font-semibold text-foreground truncate">
                 {staffData.firstName} {staffData.lastName}
               </h1>
-              <p className="text-muted-foreground">{staffData.role.replace('_', ' ')} • {staffData.department.replace('_', ' ')}</p>
+              <p className="text-muted-foreground text-sm truncate">{staffData.role.replace('_', ' ')} • {staffData.department.replace('_', ' ')}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
               Export Data
@@ -465,7 +465,7 @@ const StaffDetailsPage = () => {
         </div>
 
         {/* Status and Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card className="border-border bg-card">
             <CardContent className="p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
@@ -527,7 +527,7 @@ const StaffDetailsPage = () => {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Staff Information */}
               <div className="lg:col-span-2 space-y-6">
                 <Card className="border-border bg-card">
@@ -563,7 +563,7 @@ const StaffDetailsPage = () => {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Email</label>
                         <p className="text-sm text-foreground">{staffData.email}</p>
@@ -598,7 +598,7 @@ const StaffDetailsPage = () => {
                     <CardTitle>Performance Metrics</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Events Completed</label>
                         <p className="text-sm text-foreground">{staffData.performance.eventsCompleted}</p>
@@ -637,7 +637,7 @@ const StaffDetailsPage = () => {
                       <CardTitle>Emergency Contact</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="text-sm font-medium text-muted-foreground">Name</label>
                           <p className="text-sm text-foreground">{staffData.emergencyContact.name}</p>

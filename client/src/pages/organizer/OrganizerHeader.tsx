@@ -73,7 +73,7 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
             
             {/* Profile Dropdown Menu */}
             {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
+              <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-card border border-border rounded-lg shadow-lg z-50">
                 <div className="p-4 border-b border-border">
                   <div className="flex items-center space-x-3">
                     {userAvatar ? (

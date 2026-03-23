@@ -239,7 +239,7 @@ const AttendeeDetailsPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <BackButton to="/admin/users/attendees" label="Back to Attendees" />
           <div className="flex items-center gap-3">
@@ -258,7 +258,7 @@ const AttendeeDetailsPage = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Badge className={`text-xs ${getStatusBadgeClass(status)}`}>
             {status === "PENDING_APPROVAL" ? "Pending" : status}
           </Badge>
@@ -328,7 +328,7 @@ const AttendeeDetailsPage = () => {
 
         {/* Overview */}
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               {/* Contact */}
               <Card className="border-border bg-card">

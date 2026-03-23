@@ -267,7 +267,7 @@ const FeedbackPage: React.FC = () => {
             {/* Improvement Areas */}
             <div className="space-y-3">
               <Label>What could we improve? (select all that apply)</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {IMPROVEMENT_AREAS.map((area) => (
                   <label
                     key={area.id}

@@ -130,7 +130,7 @@ const OrganizerLayout: React.FC = () => {
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="fixed inset-0 bg-black/50" onClick={handleSidebarToggle}></div>
-          <div className="fixed left-0 top-0 h-full w-64 z-50">
+          <div className="fixed left-0 top-0 h-full w-[80vw] max-w-64 z-50">
             <OrganizerSidebar isOpen={sidebarOpen} onToggle={handleSidebarToggle} isMobile={isMobile} />
           </div>
         </div>

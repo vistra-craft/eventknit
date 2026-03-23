@@ -235,7 +235,7 @@ const ServicePointEvents: React.FC = () => {
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent className="max-h-64">
@@ -269,7 +269,7 @@ const ServicePointEvents: React.FC = () => {
           </div>
 
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as EventStatusFilter)}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
               <TabsTrigger value="all">All ({statusCounts.all})</TabsTrigger>
               <TabsTrigger value="live" className="text-success">
                 Live ({statusCounts.live})

@@ -421,7 +421,7 @@ const PromoCodeManager = () => {
                           </Badge>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
                           <div>
                             <p className="text-muted-foreground">Discount</p>
                             <p className="font-semibold">
@@ -486,7 +486,7 @@ const PromoCodeManager = () => {
 
         {/* Create/Edit Modal */}
         <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingCode ? 'Edit Promo Code' : 'Create Promo Code'}
@@ -499,7 +499,7 @@ const PromoCodeManager = () => {
             </DialogHeader>
 
             <div className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Code *</Label>
                   <div className="space-y-2">
@@ -573,7 +573,7 @@ const PromoCodeManager = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>
                     Discount Value * ({formData.discountType === 'PERCENTAGE' ? '%' : '$'})
@@ -612,7 +612,7 @@ const PromoCodeManager = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Minimum Order ($)</Label>
                   <Input
@@ -645,7 +645,7 @@ const PromoCodeManager = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Max Uses Per User</Label>
                   <Input
@@ -661,7 +661,7 @@ const PromoCodeManager = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Valid From *</Label>
                   <Input

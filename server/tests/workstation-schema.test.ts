@@ -36,9 +36,7 @@ describe('Workstation Schema - Phase 1.1', () => {
     if (!dbConnected) return;
 
     // Clean up
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test user
     const user = await prisma.user.create({

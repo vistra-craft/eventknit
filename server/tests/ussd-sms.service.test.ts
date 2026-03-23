@@ -64,10 +64,8 @@ describe('USSDSMSService', () => {
 
     // Clean up test data
     try {
-      await prisma.$transaction(async (tx) => {
-        await tx.sMSSession.deleteMany({});
-        await cleanupTestData(tx);
-      });
+      await prisma.sMSSession.deleteMany({});
+      await cleanupTestData();
     } catch (error) {
       // If cleanup fails, log but continue - might be due to missing tables
       logger.warn('Cleanup warning:', error);

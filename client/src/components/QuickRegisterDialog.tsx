@@ -277,7 +277,7 @@ export function QuickRegisterDialog({
   const renderFormStep = () => (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Core Fields */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">
             First Name <span className="text-destructive">*</span>
@@ -364,7 +364,7 @@ export function QuickRegisterDialog({
       {registrationFields.length > 0 && (
         <div className="space-y-4 pt-2">
           <div className="text-sm font-medium text-muted-foreground">Additional Information</div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {registrationFields.map((field) => renderFormField(field))}
           </div>
         </div>

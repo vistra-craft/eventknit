@@ -263,9 +263,9 @@ const OrganizerBrandingPage = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Branding</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Branding</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Customize your event pages with your own brand identity
           </p>
@@ -330,12 +330,12 @@ const OrganizerBrandingPage = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Form */}
             <div className="lg:col-span-2 space-y-4">
               {activeSection === 'identity' && (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Brand Name</Label>
                       <Input
@@ -361,7 +361,7 @@ const OrganizerBrandingPage = () => {
                       placeholder="https://..."
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Logo (Light BG)</Label>
                       <Input
@@ -379,7 +379,7 @@ const OrganizerBrandingPage = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Favicon URL</Label>
                       <Input
@@ -401,7 +401,7 @@ const OrganizerBrandingPage = () => {
               )}
 
               {activeSection === 'colors' && (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <ColorField label="Primary" value={formData.primaryColor || ''} onChange={(v) => updateField('primaryColor', v)} />
                   <ColorField label="Secondary" value={formData.secondaryColor || ''} onChange={(v) => updateField('secondaryColor', v)} />
                   <ColorField label="Accent" value={formData.accentColor || ''} onChange={(v) => updateField('accentColor', v)} />
@@ -412,7 +412,7 @@ const OrganizerBrandingPage = () => {
               )}
 
               {activeSection === 'typography' && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Body Font</Label>
                     <Input
@@ -434,7 +434,7 @@ const OrganizerBrandingPage = () => {
 
               {activeSection === 'contact' && (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs">Support Email</Label>
                       <Input
@@ -550,7 +550,7 @@ const OrganizerBrandingPage = () => {
                 Point your domain to EventKnit to host your event pages on your own domain.
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
                 value={newDomain}
                 onChange={(e) => setNewDomain(e.target.value)}

@@ -136,6 +136,7 @@ const WalkInRegistration = lazy(() => import('../pages/admin/service-point/WalkI
 // Managed Events
 const AdminManagedEventsPage = lazy(() => import('../pages/admin/AdminManagedEventsPage'));
 const AdminManagedEventCreatePage = lazy(() => import('../pages/admin/AdminManagedEventCreatePage'));
+const EventSurveyManagement = lazy(() => import('../pages/organizer/EventSurveyManagement'));
 
 /**
  * Common role combinations
@@ -690,6 +691,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'managed-events/create',
     element: createElement(AdminManagedEventCreatePage),
+    allowedRoles: ADMIN_ROLES,
+  },
+  {
+    path: 'events/:eventId/survey',
+    element: createElement(EventSurveyManagement),
     allowedRoles: ADMIN_ROLES,
   },
 

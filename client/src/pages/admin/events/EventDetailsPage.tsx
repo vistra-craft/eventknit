@@ -1013,7 +1013,7 @@ const EventDetailsPage = () => {
                     <CardTitle>Event Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Event Title</label>
                         <p className="text-sm text-foreground">{eventData.title}</p>
@@ -1070,7 +1070,7 @@ const EventDetailsPage = () => {
                     <CardTitle>Organizer Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Organizer Name</label>
                         <p className="text-sm text-foreground">{eventData.organizer.name}</p>
@@ -2089,7 +2089,7 @@ const EventDetailsPage = () => {
                 {/* Ticket Summary */}
                 <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
                   <CardContent className="p-4">
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-sm text-muted-foreground">Total Types</p>
                         <p className="text-xl font-bold">{ticketTypeCount}</p>

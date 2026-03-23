@@ -329,7 +329,7 @@ export class FeaturedEventService {
           time: fe.event.startTime || '',
           venue: fe.event.venue || '',
           location: fe.event.location,
-          price: fe.event.isFree ? 'Free' : `From $${fe.event.price?.toString() || '0'}`,
+          price: (fe.event.isFree || !fe.event.price || Number(fe.event.price) === 0) ? 'Free' : `From $${Number(fe.event.price).toLocaleString()}`,
           displayOrder: fe.displayOrder,
           event: fe.event,
         };

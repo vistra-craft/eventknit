@@ -287,7 +287,7 @@ const AdminNotificationSettingsPage = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
             <TabsTrigger value="defaults">
               <Settings className="h-4 w-4 mr-2" />
               Default Preferences

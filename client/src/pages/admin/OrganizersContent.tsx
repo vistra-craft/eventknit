@@ -270,12 +270,12 @@ const OrganizersContent = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-foreground">Organizers</h2>
           <p className="text-sm text-muted-foreground">Manage external event organizers</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <Button variant="outline" size="sm">
             <Upload className="h-4 w-4 mr-2" />
             Import
@@ -588,7 +588,7 @@ const OrganizersContent = () => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {organizers.length} of {total} organizers
           </p>

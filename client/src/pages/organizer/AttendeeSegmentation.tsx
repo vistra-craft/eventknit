@@ -212,7 +212,7 @@ const AttendeeSegmentation = () => {
                 Create Segment
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create Attendee Segment</DialogTitle>
               </DialogHeader>
@@ -315,7 +315,7 @@ const AttendeeSegmentation = () => {
             open={!!selectedSegment}
             onOpenChange={(open) => !open && setSelectedSegment(null)}
           >
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-4xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{selectedSegment.name}</DialogTitle>
               </DialogHeader>

@@ -261,7 +261,7 @@ const EventDetails = () => {
           {isSoldOut ? (
             <div className="mt-6 mb-4">
               <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4 sm:p-6">
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-2 sm:gap-4">
                   <div className="flex-shrink-0 mt-0.5">
                     <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
                       <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
@@ -282,7 +282,7 @@ const EventDetails = () => {
           ) : ticketAvailability.hasPartialAvailability && (
             <div className="mt-6 mb-4">
               <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-6">
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-2 sm:gap-4">
                   <div className="flex-shrink-0 mt-0.5">
                     <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
                       <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
@@ -318,9 +318,9 @@ const EventDetails = () => {
                 </div>
 
                 {/* Location */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
                   <LocationIcon className="h-4 w-4 text-primary flex-shrink-0" />
-                  <span>{locationLabel}</span>
+                  <span className="truncate">{locationLabel}</span>
                 </div>
 
                 {/* Mobile-only price display */}

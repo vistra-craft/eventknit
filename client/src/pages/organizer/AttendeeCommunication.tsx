@@ -131,7 +131,7 @@ const AttendeeCommunication = () => {
 
   return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-page-title">Attendee Communication</h1>
             <p className="text-muted-foreground mt-1">
@@ -145,7 +145,7 @@ const AttendeeCommunication = () => {
                 Send Message
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Send Message</DialogTitle>
               </DialogHeader>

@@ -11,6 +11,7 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import { getTicket, getTicketPublic, downloadTicketPDF, checkRefundEligibility, requestRefund } from "@/lib/ticket-api";
+import { getPaymentStatus } from "@/lib/payment-api";
 import type { TicketData, RefundEligibility } from "@/lib/ticket-api";
 import { Textarea } from "@/components/ui/textarea";
 import { getEventById } from "@/lib/event-api";
@@ -44,6 +45,8 @@ const TicketViewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  // Payment status
+  const [paymentInfo, setPaymentInfo] = useState<{ paymentStatus: string; paymentMethod: string | null; totalAmount: number } | null>(null);
   // Refund state
   const [refundEligibility, setRefundEligibility] = useState<RefundEligibility | null>(null);
   const [refundLoading, setRefundLoading] = useState(false);
@@ -154,6 +157,18 @@ const TicketViewPage: React.FC = () => {
           })();
 
           setTicket(ticketData);
+
+          // Fetch payment status (only for authenticated users)
+          if (isAuthenticated) {
+            try {
+              const paymentRes = await getPaymentStatus(ticketData.registrationId);
+              if (paymentRes.success && paymentRes.data) {
+                setPaymentInfo(paymentRes.data);
+              }
+            } catch {
+              // Non-critical — payment info is supplementary
+            }
+          }
 
           const eventIdFromTicket = ticketData.eventId;
           if (eventIdFromTicket) {
@@ -424,6 +439,39 @@ const TicketViewPage: React.FC = () => {
                 <p className="text-sm text-muted-foreground">{ticket.ticketType}</p>
               </div>
             ) : null}
+
+            {/* Payment Info */}
+            {paymentInfo && paymentInfo.totalAmount > 0 && (
+              <div className="space-y-2 pt-3 border-t border-border">
+                <p className="text-sm font-medium">Payment</p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge
+                      className={
+                        paymentInfo.paymentStatus === 'COMPLETED'
+                          ? 'bg-success/10 text-success border-0'
+                          : paymentInfo.paymentStatus === 'PENDING'
+                            ? 'bg-amber-500/10 text-amber-600 border-0'
+                            : 'bg-destructive/10 text-destructive border-0'
+                      }
+                    >
+                      {paymentInfo.paymentStatus === 'COMPLETED' ? 'Paid' : paymentInfo.paymentStatus}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Amount</span>
+                    <span className="font-medium">{ticket.currency || 'KES'} {paymentInfo.totalAmount.toLocaleString()}</span>
+                  </div>
+                  {paymentInfo.paymentMethod && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Method</span>
+                      <span className="capitalize">{paymentInfo.paymentMethod.toLowerCase()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* QR Code */}
             {ticket.qrCode && (

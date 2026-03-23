@@ -614,7 +614,7 @@ const AdminMarketingOverview = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="grid grid-cols-3 gap-6 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 text-sm">
                         <div>
                           <p className="text-muted-foreground mb-1">Recipients</p>
                           <p className="font-semibold text-base">{campaign.recipients.toLocaleString()}</p>

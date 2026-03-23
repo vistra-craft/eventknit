@@ -634,6 +634,7 @@ export class EventController {
               : '0.00',
           },
           user: result.user,
+          accessToken: result.accessToken,
         },
       });
     } catch (error) {

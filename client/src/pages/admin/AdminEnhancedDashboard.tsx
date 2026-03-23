@@ -149,13 +149,13 @@ const AdminEnhancedDashboard = () => {
                       className="group relative overflow-hidden rounded-2xl border border-border/40 bg-card shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
                     >
                       {/* Content */}
-                      <div className="p-6">
+                      <div className="p-4 sm:p-6">
                         <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wide">
                               {stat.title}
                             </p>
-                            <p className="mt-2 text-3xl font-bold text-foreground">
+                            <p className="mt-2 text-2xl sm:text-3xl font-bold text-foreground">
                               {stat.value}
                             </p>
                             <div className="mt-2 flex items-center">
@@ -166,15 +166,15 @@ const AdminEnhancedDashboard = () => {
                               }`}>
                                 {stat.change}
                               </span>
-                              <span className="ml-2 text-sm text-muted-foreground">
+                              <span className="ml-2 text-xs sm:text-sm text-muted-foreground">
                                 vs last period
                               </span>
                             </div>
                           </div>
 
                           {/* Gradient Icon Badge */}
-                          <div className={`flex-shrink-0 w-16 h-16 bg-gradient-to-r ${gradientColors[index]} rounded-xl flex items-center justify-center shadow-lg`}>
-                            <stat.icon className="h-8 w-8 text-white" />
+                          <div className={`flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r ${gradientColors[index]} rounded-xl flex items-center justify-center shadow-lg`}>
+                            <stat.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                           </div>
                         </div>
                       </div>
@@ -201,7 +201,7 @@ const AdminEnhancedDashboard = () => {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 sm:items-end">
-                  <div className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-card p-1 text-xs shadow-sm">
+                  <div className="inline-flex flex-wrap items-center gap-1 rounded-full border border-border/40 bg-card p-1 text-xs shadow-sm">
                     {[
                       { id: "monthly", label: "Monthly" },
                       { id: "quarterly", label: "Quarterly" },
@@ -267,7 +267,7 @@ const AdminEnhancedDashboard = () => {
                 {growthLoading ? (
                   <ChartCardSkeleton title="Organizer Growth" />
                 ) : (
-                  <div className="group rounded-2xl border border-border/40 bg-card p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
+                  <div className="group rounded-2xl border border-border/40 bg-card p-4 sm:p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -281,7 +281,7 @@ const AdminEnhancedDashboard = () => {
                         Active
                       </div>
                     </div>
-                    <div className="h-56 flex items-center justify-center">
+                    <div className="h-44 sm:h-48 md:h-56 flex items-center justify-center">
                       {filteredGrowth.organizers.length === 0 ? (
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">No data available for this period</p>
@@ -304,7 +304,7 @@ const AdminEnhancedDashboard = () => {
                 {growthLoading ? (
                   <ChartCardSkeleton title="Events Created" />
                 ) : (
-                  <div className="group rounded-2xl border border-border/40 bg-card p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
+                  <div className="group rounded-2xl border border-border/40 bg-card p-4 sm:p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -318,7 +318,7 @@ const AdminEnhancedDashboard = () => {
                         Growing
                       </div>
                     </div>
-                    <div className="h-56 flex items-center justify-center">
+                    <div className="h-44 sm:h-48 md:h-56 flex items-center justify-center">
                       {filteredGrowth.events.length === 0 ? (
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">No data available for this period</p>
@@ -340,7 +340,7 @@ const AdminEnhancedDashboard = () => {
                 {growthLoading ? (
                   <ChartCardSkeleton title="Platform Revenue" />
                 ) : (
-                  <div className="group rounded-2xl border border-border/40 bg-card p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
+                  <div className="group rounded-2xl border border-border/40 bg-card p-4 sm:p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -360,7 +360,7 @@ const AdminEnhancedDashboard = () => {
                         </div>
                       )}
                     </div>
-                    <div className="h-56 flex items-center justify-center">
+                    <div className="h-44 sm:h-48 md:h-56 flex items-center justify-center">
                       {filteredGrowth.revenue.length === 0 ? (
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">No data available for this period</p>
@@ -382,7 +382,7 @@ const AdminEnhancedDashboard = () => {
                 {growthLoading ? (
                   <ChartCardSkeleton title="Attendees / Users" />
                 ) : (
-                  <div className="group rounded-2xl border border-border/40 bg-card p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
+                  <div className="group rounded-2xl border border-border/40 bg-card p-4 sm:p-6 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
                     <div className="flex items-center justify-between mb-4">
                       <div>
                         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -396,7 +396,7 @@ const AdminEnhancedDashboard = () => {
                         Engaged
                       </div>
                     </div>
-                    <div className="h-56 flex items-center justify-center">
+                    <div className="h-44 sm:h-48 md:h-56 flex items-center justify-center">
                       {filteredGrowth.attendees.length === 0 ? (
                         <div className="text-center">
                           <p className="text-sm text-muted-foreground">No data available for this period</p>

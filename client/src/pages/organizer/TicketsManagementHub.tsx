@@ -440,7 +440,7 @@ const TicketsManagementHub = () => {
 
   const renderDashboard = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-gray-600">Active Pricing Rules</CardTitle>
@@ -738,7 +738,7 @@ const TicketsManagementHub = () => {
               Select Event:
             </Label>
             <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-              <SelectTrigger className="w-64">
+              <SelectTrigger className="w-full sm:w-64">
                 <SelectValue placeholder="Choose an event" />
               </SelectTrigger>
               <SelectContent>
@@ -756,7 +756,7 @@ const TicketsManagementHub = () => {
       {/* Main Content */}
       <div className="px-6 py-8">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="dashboard" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               Dashboard
