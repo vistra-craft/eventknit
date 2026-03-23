@@ -311,12 +311,12 @@ const TicketViewPage: React.FC = () => {
         {/* Ticket Card */}
         <Card className="mb-6">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <TicketIcon className="w-5 h-5" />
-                {ticket.eventTitle}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 min-w-0">
+                <TicketIcon className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">{ticket.eventTitle}</span>
               </CardTitle>
-              <Badge variant="outline" className="bg-success/5 text-success border-success">
+              <Badge variant="outline" className="bg-success/5 text-success border-success flex-shrink-0 w-fit">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 Confirmed
               </Badge>

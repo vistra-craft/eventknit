@@ -148,9 +148,7 @@ const UserDashboard = () => {
       default:
         return (
           <DashboardHome
-            eventData={eventData}
             user={user}
-            registration={registration}
           />
         );
     }

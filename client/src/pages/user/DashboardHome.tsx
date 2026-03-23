@@ -3,8 +3,8 @@
  *
  * Modern layout inspired by Lu.ma / Eventbrite:
  * - Personalized greeting with time-aware message
- * - Featured next event card (hero-style)
- * - Event cards in a responsive grid
+ * - Shared EventCard component for Attending & Saved tabs
+ * - Filter tabs (All/Upcoming/Past) on all content sections
  * - Tabs: Attending | Saved | Tickets
  */
 
@@ -12,21 +12,18 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import {
   Calendar,
-  MapPin,
-  Download,
-  Share2,
   Heart,
   Ticket,
   Sparkles,
-  ArrowRight,
   Bookmark,
-  Timer,
   ExternalLink,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
 import EmptyState from '../../components/EmptyState';
+import EventCard from '../../components/dashboard/EventCard';
+import FilterTabs from '../../components/dashboard/FilterTabs';
 import { OrganizingEventCard } from '@/components/organizer-ui/OrganizingEventCard';
 import { KYCRequiredBanner } from '../../components/KYCRequiredBanner';
 import { useMyEvents } from '../../hooks/useMyEvents';
@@ -34,6 +31,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types/auth';
 import { shareEvent } from '../../lib/utils/share';
 import { downloadTicket } from '../../lib/utils/ticket';
+import { unsaveEvent } from '../../lib/saved-events-api';
 import { useToast } from '../../hooks/useToast';
 import { showErrorToast } from '../../lib/utils/error';
 import { getVerificationStatus, type VerificationStatus } from '../../lib/verification-api';
@@ -45,16 +43,12 @@ import {
 
 import TicketsTabContent from './TicketsTabContent';
 
-interface User {
-  name: string;
-  email: string;
-  initials: string;
-}
-
 export interface DashboardHomeProps {
-  user?: User;
-  eventData?: unknown;
-  registration?: unknown;
+  user?: {
+    name: string;
+    email: string;
+    initials: string;
+  };
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -70,27 +64,18 @@ function getFirstName(fullName: string): string {
   return fullName.split(' ')[0] || fullName;
 }
 
-function formatEventDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
+/** Derive upcoming/past status from a date string */
+function deriveStatus(dateString: string): 'upcoming' | 'completed' {
+  return new Date(dateString).getTime() > Date.now() ? 'upcoming' : 'completed';
 }
 
-function formatEventDateLong(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
+type EventFilter = 'all' | 'upcoming' | 'completed';
 
-function getDaysUntil(dateString: string): number {
-  const diff = new Date(dateString).getTime() - Date.now();
-  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-}
+const FILTER_TABS: { key: EventFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'upcoming', label: 'Upcoming' },
+  { key: 'completed', label: 'Past' },
+];
 
 // ─── Component ──────────────────────────────────────────────────────────────────
 
@@ -99,7 +84,6 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
   const { toast } = useToast();
   const { user: authUser } = useAuth();
 
-  // Derive user from prop or auth context (route may not pass the prop)
   const user = userProp ?? {
     name: authUser ? `${authUser.firstName ?? ''} ${authUser.lastName ?? ''}`.trim() || authUser.email || 'User' : 'User',
     email: authUser?.email ?? '',
@@ -113,9 +97,12 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     attendingLoading,
     organizingLoading,
     savedLoading,
+    refreshSaved,
   } = useMyEvents();
 
   const [currentTab, setCurrentTab] = useState<'attending' | 'my-events' | 'saved' | 'tickets'>('attending');
+  const [attendingFilter, setAttendingFilter] = useState<EventFilter>('all');
+  const [savedFilter, setSavedFilter] = useState<EventFilter>('all');
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
 
   useEffect(() => {
@@ -138,12 +125,24 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     event => event.status.toLowerCase() === 'pending'
   );
 
-  // Split attending events into upcoming and past
-  // Events without an explicit status default to 'upcoming' (not yet started)
+  // Split attending events
   const upcomingEvents = attendingEvents.filter(e => !e.status || e.status === 'upcoming' || e.status === 'ongoing');
-  const pastEvents = attendingEvents.filter(e => e.status === 'completed');
+  const pastAttendingEvents = attendingEvents.filter(e => e.status === 'completed');
 
-  // All upcoming events sorted soonest first (already sorted by API)
+  // Filter attending events
+  const filteredAttendingEvents = attendingFilter === 'all'
+    ? [...upcomingEvents, ...pastAttendingEvents]
+    : attendingFilter === 'upcoming'
+      ? upcomingEvents
+      : pastAttendingEvents;
+
+  // Filter saved events (derive status from date)
+  const filteredSavedEvents = savedFilter === 'all'
+    ? savedEvents
+    : savedEvents.filter(e => deriveStatus(e.date) === savedFilter);
+
+  const savedUpcomingCount = savedEvents.filter(e => deriveStatus(e.date) === 'upcoming').length;
+  const savedPastCount = savedEvents.filter(e => deriveStatus(e.date) === 'completed').length;
 
   const handleShare = async (event: { title: string; id: string; slug?: string | null }) => {
     const shared = await shareEvent(event.title, event.slug ?? event.id);
@@ -153,7 +152,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     });
   };
 
-  const handleDownload = (event: { id: string; title: string; date: string; location: string; type: string }) => {
+  const handleDownload = (event: { id: string; title: string; date: string; location: string }) => {
     try {
       downloadTicket({
         eventTitle: event.title,
@@ -161,12 +160,22 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
         eventLocation: event.location,
         attendeeName: user.name,
         attendeeEmail: user.email,
-        ticketType: event.type,
+        ticketType: 'Standard',
         ticketId: `${event.id}-${Date.now()}`,
       });
       toast({ title: 'Downloaded', description: 'Ticket downloaded' });
     } catch (err) {
       showErrorToast(toast, err, 'Download failed');
+    }
+  };
+
+  const handleUnsave = async (eventId: string) => {
+    try {
+      await unsaveEvent(eventId);
+      toast({ title: 'Removed', description: 'Event removed from saved' });
+      refreshSaved();
+    } catch (err) {
+      showErrorToast(toast, err, 'Failed to remove');
     }
   };
 
@@ -278,156 +287,47 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                 <Loader size="default" />
               </div>
             ) : attendingEvents.length > 0 ? (
-              <div className="space-y-4">
-                {/* Upcoming Events */}
-                {upcomingEvents.map((event, index) => (
-                  <div
-                    key={event.id}
-                    onClick={() => navigate(`/user/event/${event.id}`)}
-                    className="relative rounded-2xl overflow-hidden border border-border/40 bg-card cursor-pointer group transition-all duration-300 hover:shadow-lg hover:border-primary/20 animate-in fade-in-0 slide-in-from-bottom-2"
-                    style={{ animationDelay: `${index * 60}ms` }}
-                  >
-                    <div className="flex flex-col sm:flex-row">
-                      <div className="sm:w-72 lg:w-96 flex-shrink-0">
-                        <img
-                          src={event.image}
-                          alt={event.title}
-                          className="w-full h-40 sm:h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-2">
-                            {index === 0 && (
-                              <Badge className="bg-primary/10 text-primary border-0 text-xs font-semibold">
-                                Next Up
-                              </Badge>
-                            )}
-                            {getDaysUntil(event.date) <= 7 && (
-                              <Badge className="bg-success/10 text-success border-0 text-xs">
-                                <Timer className="w-3 h-3 mr-1" />
-                                {getDaysUntil(event.date) === 0
-                                  ? 'Today'
-                                  : getDaysUntil(event.date) === 1
-                                    ? 'Tomorrow'
-                                    : `In ${getDaysUntil(event.date)} days`
-                                }
-                              </Badge>
-                            )}
-                          </div>
-                          <h2 className="text-xl sm:text-2xl font-bold text-foreground group-hover:text-primary transition-colors mb-3">
-                            {event.title}
-                          </h2>
-                          <div className="space-y-1.5">
-                            <p className="text-sm text-muted-foreground flex items-center gap-2">
-                              <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                              {formatEventDateLong(event.date)}
-                            </p>
-                            <p className="text-sm text-muted-foreground flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-                              {event.location}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 mt-4">
-                          <Button
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={(e) => { e.stopPropagation(); navigate(`/user/event/${event.id}`); }}
-                          >
-                            View Event
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleDownload(event); }}
-                          >
-                            <Download className="w-3.5 h-3.5 mr-1.5" />
-                            Ticket
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => { e.stopPropagation(); handleShare(event); }}
-                            title="Share event"
-                          >
-                            <Share2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div>
+                <FilterTabs
+                  tabs={FILTER_TABS.map(t => ({
+                    ...t,
+                    count: t.key === 'all' ? attendingEvents.length
+                      : t.key === 'upcoming' ? upcomingEvents.length
+                      : pastAttendingEvents.length,
+                  }))}
+                  activeFilter={attendingFilter}
+                  onFilterChange={setAttendingFilter}
+                />
 
-                {/* Past Events */}
-                {pastEvents.length > 0 && (
-                  <>
-                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider pt-4">
-                      Past ({pastEvents.length})
-                    </h3>
-                    {pastEvents.map((event, index) => (
-                      <div
+                {filteredAttendingEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {filteredAttendingEvents.map((event, index) => (
+                      <EventCard
                         key={event.id}
-                        onClick={() => navigate(`/user/event/${event.id}`)}
-                        className="relative rounded-2xl overflow-hidden border border-border/40 bg-card cursor-pointer group transition-all duration-300 hover:shadow-lg hover:border-primary/20 opacity-75 animate-in fade-in-0 slide-in-from-bottom-2"
-                        style={{ animationDelay: `${index * 60}ms` }}
-                      >
-                        <div className="flex flex-col sm:flex-row">
-                          <div className="sm:w-72 lg:w-96 flex-shrink-0">
-                            <img
-                              src={event.image}
-                              alt={event.title}
-                              className="w-full h-40 sm:h-full object-cover grayscale-[30%]"
-                            />
-                          </div>
-                          <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between">
-                            <div>
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge className="bg-muted text-muted-foreground border-0 text-xs">
-                                  Completed
-                                </Badge>
-                              </div>
-                              <h2 className="text-xl sm:text-2xl font-bold text-foreground group-hover:text-primary transition-colors mb-3">
-                                {event.title}
-                              </h2>
-                              <div className="space-y-1.5">
-                                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                  <Calendar className="w-4 h-4 text-primary flex-shrink-0" />
-                                  {formatEventDateLong(event.date)}
-                                </p>
-                                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                  <MapPin className="w-4 h-4 text-primary flex-shrink-0" />
-                                  {event.location}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 mt-4">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="gap-1.5"
-                                onClick={(e) => { e.stopPropagation(); navigate(`/user/event/${event.id}`); }}
-                              >
-                                View Event
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={(e) => { e.stopPropagation(); handleShare(event); }}
-                                title="Share event"
-                              >
-                                <Share2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        id={event.id}
+                        slug={event.slug}
+                        title={event.title}
+                        date={event.date}
+                        location={event.location}
+                        image={event.image}
+                        status={event.status}
+                        context="attending"
+                        index={index}
+                        onViewEvent={(id) => navigate(`/user/event/${id}`)}
+                        onShare={handleShare}
+                        onDownload={handleDownload}
+                      />
                     ))}
-                  </>
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={Calendar}
+                    title={attendingFilter === 'upcoming' ? 'No Upcoming Events' : 'No Past Events'}
+                    description={attendingFilter === 'upcoming'
+                      ? 'You have no upcoming events. Browse and register for events.'
+                      : 'You have no past events yet.'}
+                    action={{ label: 'Browse Events', onClick: () => navigate('/') }}
+                  />
                 )}
               </div>
             ) : (
@@ -490,36 +390,46 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                 <Loader size="default" />
               </div>
             ) : savedEvents.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {savedEvents.map((event, index) => (
-                  <div
-                    key={event.id}
-                    onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
-                    className="flex items-center gap-4 p-4 bg-card border border-border rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
-                    style={{ animationDelay: `${index * 40}ms` }}
-                    role="article"
-                  >
-                    <img
-                      src={event.image}
-                      alt={event.title}
-                      className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-                      loading="lazy"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate mb-1">
-                        {event.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        {formatEventDate(event.date)}
-                        <span className="mx-0.5 opacity-30">·</span>
-                        <MapPin className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{event.location}</span>
-                      </p>
-                    </div>
-                    <Heart className="w-4 h-4 fill-current text-destructive flex-shrink-0 opacity-60" />
+              <div>
+                <FilterTabs
+                  tabs={FILTER_TABS.map(t => ({
+                    ...t,
+                    count: t.key === 'all' ? savedEvents.length
+                      : t.key === 'upcoming' ? savedUpcomingCount
+                      : savedPastCount,
+                  }))}
+                  activeFilter={savedFilter}
+                  onFilterChange={setSavedFilter}
+                />
+
+                {filteredSavedEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {filteredSavedEvents.map((event, index) => (
+                      <EventCard
+                        key={event.id}
+                        id={event.id}
+                        slug={event.slug}
+                        title={event.title}
+                        date={event.date}
+                        location={event.location}
+                        image={event.image}
+                        status={deriveStatus(event.date)}
+                        context="saved"
+                        index={index}
+                        onViewEvent={(id) => navigate(`/event/${event.slug ?? id}`)}
+                        onShare={handleShare}
+                        onUnsave={handleUnsave}
+                      />
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <EmptyState
+                    icon={Heart}
+                    title={savedFilter === 'upcoming' ? 'No Upcoming Saved Events' : 'No Past Saved Events'}
+                    description="Try a different filter or browse more events."
+                    action={{ label: 'Browse Events', onClick: () => navigate('/') }}
+                  />
+                )}
               </div>
             ) : (
               <EmptyState
