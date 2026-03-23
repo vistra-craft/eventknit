@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Upload } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useMultiStepForm, validateStepFields } from '@/hooks/useMultiStepForm';

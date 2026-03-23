@@ -1,6 +1,6 @@
 import { MapPin, Navigation, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EventMap } from "@/components/EventMap";
+import { EventMap } from '@/components/events/EventMap';
 import { getVenueType } from "@/types/event";
 
 interface VenueSectionProps {

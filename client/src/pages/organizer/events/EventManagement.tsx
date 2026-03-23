@@ -38,42 +38,42 @@ import {
   Pencil,
   Archive,
 } from "lucide-react";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Badge } from "../../components/ui/badge";
-import { Loader, ButtonLoader } from "../../components/ui/loader";
-import { Alert, AlertDescription } from "../../components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../../components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { Pagination } from "../../components/ui/pagination";
-import { getOrganizerEventById, getEventRegistrations, cancelEvent, getSubscription, getEventRefunds, getEventRefundSummary, type OrganizerSubscription, type OrganizerRefund, type OrganizerRefundSummary } from "../../lib/organizer-api";
-import { getEventInvitations, createInvitation, revokeInvitation, getRegistrationLinkUrl, type InvitationsListResponse, InviteType } from "../../lib/invitation-api";
-import { transformEventData } from "../../lib/event-utils";
-import type { EventData } from "../../types/event";
-import { shareEvent } from "../../lib/utils/share";
-import { exportEventData } from "../../lib/utils/export";
-import { useToast } from "../../hooks/useToast";
-import { EventStaffAssignment } from "../../components/EventStaffAssignment";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader, ButtonLoader } from "@/components/ui/loader";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination } from "@/components/ui/pagination";
+import { getOrganizerEventById, getEventRegistrations, cancelEvent, getSubscription, getEventRefunds, getEventRefundSummary, type OrganizerSubscription, type OrganizerRefund, type OrganizerRefundSummary } from "@/lib/organizer-api";
+import { getEventInvitations, createInvitation, revokeInvitation, getRegistrationLinkUrl, type InvitationsListResponse, InviteType } from "@/lib/invitation-api";
+import { transformEventData } from "@/lib/event-utils";
+import type { EventData } from "@/types/event";
+import { shareEvent } from "@/lib/utils/share";
+import { exportEventData } from "@/lib/utils/export";
+import { useToast } from "@/hooks/useToast";
+import { EventStaffAssignment } from '@/components/events/EventStaffAssignment';
 
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { Textarea } from "../../components/ui/textarea";
-import { Switch } from "../../components/ui/switch";
-import { EventOverviewTab } from "../../components/organizer/EventOverviewTab";
-import { SubscriptionTierBadge } from "../../components/organizer/SubscriptionTierBadge";
-import { UpgradePrompt } from "../../components/organizer/UpgradePrompt";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { EventOverviewTab } from "@/components/organizer/EventOverviewTab";
+import { SubscriptionTierBadge } from "@/components/organizer/SubscriptionTierBadge";
+import { UpgradePrompt } from "@/components/organizer/UpgradePrompt";
 import BackButton from "@/components/BackButton";
 import { EventSeatMapManager } from "@/components/organizer/EventSeatMapManager";
 import { SeatManagementDashboard } from "@/components/organizer/SeatManagementDashboard";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "../../components/ui/sheet";
-import { exportAttendees, quickRegisterAttendee } from "../../lib/attendee-import-api";
-import type { QuickRegisterRequest } from "../../lib/attendee-import-api";
-import { getEventResaleStats, getEventResaleListings, getEventTransferStats, getEventTransferHistory, type ResaleStats, type ResaleListing, type TransferStats, type TransferRecord, getEventScanOverview, getEventScanHistory, getEventScanAttendees, updateEventScanConfig, type OrganizerScanConfig, type OrganizerScanStatistics, type OrganizerScanRecord, type OrganizerScanAttendee } from "../../lib/organizer-dashboard-api";
-import { extractErrorMessage, showErrorToast } from "../../lib/utils/error";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { exportAttendees, quickRegisterAttendee } from "@/lib/attendee-import-api";
+import type { QuickRegisterRequest } from "@/lib/attendee-import-api";
+import { getEventResaleStats, getEventResaleListings, getEventTransferStats, getEventTransferHistory, type ResaleStats, type ResaleListing, type TransferStats, type TransferRecord, getEventScanOverview, getEventScanHistory, getEventScanAttendees, updateEventScanConfig, type OrganizerScanConfig, type OrganizerScanStatistics, type OrganizerScanRecord, type OrganizerScanAttendee } from "@/lib/organizer-dashboard-api";
+import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
 import { stripHtml } from "@/lib/utils";
-import { updateEvent } from "../../lib/event-api";
+import { updateEvent } from "@/lib/event-api";
 
 // Ticket type with all fields (including ones not in EventData type)
 interface FullTicketType {
@@ -141,7 +141,7 @@ interface OrganizerEventData extends EventData {
 }
 
 // Shared component - imported from shared location
-import EventCommunicationSection from "../../components/EventCommunicationSection";
+import EventCommunicationSection from '@/components/events/EventCommunicationSection';
 
 interface EventManagementProps {
   isAdminMode?: boolean;
@@ -1363,7 +1363,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                     <Pagination
                       currentPage={attendeesPage}
                       totalPages={attendeesTotalPages}
-                      onPageChange={(newPage) => {
+                      onPageChange={(newPage: number) => {
                         setAttendeesPage(newPage);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
@@ -2530,7 +2530,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                   <div className="space-y-4">
                     {/* Filters */}
                     <div className="flex items-center gap-3">
-                      <Select value={scanTypeFilter} onValueChange={(val) => { setScanTypeFilter(val); setScanHistoryPage(1); }}>
+                      <Select value={scanTypeFilter} onValueChange={(val: string) => { setScanTypeFilter(val); setScanHistoryPage(1); }}>
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="All scan types" />
                         </SelectTrigger>
@@ -2774,7 +2774,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                                 min={0}
                                 placeholder="∞"
                                 value={scanConfig.maxReEntries ?? ''}
-                                onChange={(e) => {
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                                   const val = e.target.value;
                                   handleUpdateScanConfig({
                                     maxReEntries: val === '' ? null : parseInt(val, 10),
@@ -3292,7 +3292,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                     <DollarSign className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs text-muted-foreground mb-1">Ticket Pricing</p>
-                      {eventData.ticketTypes.map((ticket, idx) => (
+                      {eventData.ticketTypes.map((ticket: { name: string; price?: number }, idx: number) => (
                         <p key={idx} className="text-sm">
                           <span className="font-medium">{ticket.name}:</span>{' '}
                           {ticket.price === 0 || !ticket.price ? 'Free' : `${eventData.currency || '$'}${ticket.price}`}
@@ -3344,7 +3344,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                         <span>Age Restriction: {eventData.ageRestriction}</span>
                       </div>
                     )}
-                    {eventData.requirements?.map((req, i) => (
+                    {eventData.requirements?.map((req: string, i: number) => (
                       <div key={i} className="flex items-center gap-2 text-sm">
                         <CheckCircle className="w-4 h-4 text-primary" />
                         <span>{req}</span>
@@ -3359,7 +3359,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Speakers</h3>
                   <div className="grid gap-2">
-                    {apiData.speakers.map((speaker, idx: number) => (
+                    {apiData.speakers.map((speaker: { name: string; title?: string; image?: string }, idx: number) => (
                       <div key={idx} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                         {speaker.image ? (
                           <img src={speaker.image} alt={speaker.name} className="w-10 h-10 rounded-full object-cover" />
@@ -3385,7 +3385,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Schedule</h3>
                   <div className="space-y-2">
-                    {(Array.isArray(eventData.agenda) ? eventData.agenda : []).map((item, i) => (
+                    {(Array.isArray(eventData.agenda) ? eventData.agenda : []).map((item: { title?: string; startTime?: string; endTime?: string; description?: string }, i: number) => (
                       <div key={i} className="p-3 rounded-lg bg-muted/50">
                         <div className="flex items-center gap-2">
                           {item.startTime && (
@@ -3407,7 +3407,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Exhibitors</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {(Array.isArray(eventData.exhibitors) ? eventData.exhibitors : []).map((exhibitor, i) => (
+                    {(Array.isArray(eventData.exhibitors) ? eventData.exhibitors : []).map((exhibitor: { name: string; booth?: string }, i: number) => (
                       <div key={i} className="p-3 rounded-lg bg-muted/50">
                         <p className="text-sm font-medium">{exhibitor.name}</p>
                         {exhibitor.booth && <p className="text-xs text-muted-foreground">Booth: {exhibitor.booth}</p>}
@@ -3441,7 +3441,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 <div>
                   <h3 className="text-sm font-semibold mb-3">Frequently Asked Questions</h3>
                   <div className="space-y-2">
-                    {(Array.isArray(eventData.faqs) ? eventData.faqs : []).map((faq, i) => (
+                    {(Array.isArray(eventData.faqs) ? eventData.faqs : []).map((faq: { question: string; answer: string }, i: number) => (
                       <div key={i} className="p-3 rounded-lg bg-muted/50">
                         <p className="text-sm font-medium">{faq.question}</p>
                         <p className="text-xs text-muted-foreground mt-1">{faq.answer}</p>
@@ -3456,7 +3456,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 <div>
                   <h3 className="text-sm font-semibold mb-2">Tags</h3>
                   <div className="flex flex-wrap gap-2">
-                    {eventData.tags.map((tag) => (
+                    {eventData.tags.map((tag: string) => (
                       <Badge key={tag} variant="outline">{tag}</Badge>
                     ))}
                   </div>
@@ -3530,7 +3530,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 <Input
                   placeholder="e.g., General Admission"
                   value={ticketForm.name}
-                  onChange={(e) => setTicketForm(f => f ? { ...f, name: e.target.value } : f)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTicketForm(f => f ? { ...f, name: e.target.value } : f)}
                 />
               </div>
 
@@ -3569,7 +3569,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                         placeholder="0.00"
                         value={ticketForm.price}
                         className="pl-8"
-                        onChange={(e) => setTicketForm(f => f ? { ...f, price: e.target.value } : f)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTicketForm(f => f ? { ...f, price: e.target.value } : f)}
                       />
                     </div>
                   ) : (
@@ -3598,7 +3598,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                       min={soldForType > 0 ? soldForType : 1}
                       placeholder="Unlimited"
                       value={ticketForm.quantity}
-                      onChange={(e) => setTicketForm(f => f ? { ...f, quantity: e.target.value } : f)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTicketForm(f => f ? { ...f, quantity: e.target.value } : f)}
                     />
                   </div>
                 );
@@ -3611,7 +3611,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                   placeholder="What's included with this ticket?"
                   value={ticketForm.description}
                   className="min-h-[70px] resize-none"
-                  onChange={(e) => setTicketForm(f => f ? { ...f, description: e.target.value } : f)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTicketForm(f => f ? { ...f, description: e.target.value } : f)}
                 />
               </div>
 
@@ -3624,7 +3624,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                   </div>
                   <Switch
                     checked={ticketForm.isComplementary}
-                    onCheckedChange={(c) =>
+                    onCheckedChange={(c: boolean) =>
                       setTicketForm(f => f ? { ...f, isComplementary: c, requiresInvitation: c, price: c ? '0' : f.price } : f)
                     }
                   />
@@ -3638,7 +3638,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                   </div>
                   <Switch
                     checked={ticketForm.requiresInvitation}
-                    onCheckedChange={(c) => setTicketForm(f => f ? { ...f, requiresInvitation: c } : f)}
+                    onCheckedChange={(c: boolean) => setTicketForm(f => f ? { ...f, requiresInvitation: c } : f)}
                   />
                 </div>
               )}
@@ -3651,7 +3651,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 </div>
                 <Switch
                   checked={ticketForm.isHidden}
-                  onCheckedChange={(c) => setTicketForm(f => f ? { ...f, isHidden: c } : f)}
+                  onCheckedChange={(c: boolean) => setTicketForm(f => f ? { ...f, isHidden: c } : f)}
                 />
               </div>
 
@@ -3664,7 +3664,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                     min="1"
                     placeholder="10"
                     value={ticketForm.maxPerPerson}
-                    onChange={(e) => setTicketForm(f => f ? { ...f, maxPerPerson: e.target.value } : f)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTicketForm(f => f ? { ...f, maxPerPerson: e.target.value } : f)}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -3674,7 +3674,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                     min="1"
                     placeholder="1"
                     value={ticketForm.minPerOrder}
-                    onChange={(e) => setTicketForm(f => f ? { ...f, minPerOrder: e.target.value } : f)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTicketForm(f => f ? { ...f, minPerOrder: e.target.value } : f)}
                   />
                 </div>
               </div>
@@ -3684,7 +3684,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                 <Label className="text-xs text-muted-foreground">Sales Channel</Label>
                 <Select
                   value={ticketForm.salesChannel}
-                  onValueChange={(v) => setTicketForm(f => f ? { ...f, salesChannel: v } : f)}
+                  onValueChange={(v: string) => setTicketForm(f => f ? { ...f, salesChannel: v } : f)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -3704,7 +3704,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                   <Input
                     type="datetime-local"
                     value={ticketForm.availableFrom}
-                    onChange={(e) => setTicketForm(f => f ? { ...f, availableFrom: e.target.value } : f)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTicketForm(f => f ? { ...f, availableFrom: e.target.value } : f)}
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -3712,7 +3712,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                   <Input
                     type="datetime-local"
                     value={ticketForm.availableUntil}
-                    onChange={(e) => setTicketForm(f => f ? { ...f, availableUntil: e.target.value } : f)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setTicketForm(f => f ? { ...f, availableUntil: e.target.value } : f)}
                   />
                 </div>
               </div>

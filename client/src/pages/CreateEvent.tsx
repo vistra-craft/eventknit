@@ -19,9 +19,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { CategorySelect } from "@/components/CategorySelect";
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import { CategorySelect } from '@/components/events/CategorySelect';
 import {
   createEventSchema,
   type CreateEventData,

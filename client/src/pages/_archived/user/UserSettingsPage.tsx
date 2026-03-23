@@ -36,7 +36,7 @@ import {
 } from "@/lib/user-preferences-api";
 import { SettingsSection, ThemeSelector } from "@/components/settings";
 import DashboardNavbar from "./DashboardNavbar";
-import Footer from "@/components/Footer";
+import Footer from '@/components/layout/Footer';
 
 interface UserSettingsData {
   // Profile Settings

@@ -23,7 +23,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
 import AdminStaffSidebar from "./AdminStaffSidebar";
-import Logo from "@/components/Logo";
+import Logo from '@/components/layout/Logo';
 
 interface AdminSidebarProps {
   isOpen: boolean;

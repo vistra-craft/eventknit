@@ -2,10 +2,10 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Home, LogOut, Settings, LayoutDashboard } from "lucide-react";
 import { Button } from "../../components/ui/button";
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 import { useAuth } from "../../hooks/useAuth";
-import { ThemeToggle } from "../../components/ThemeToggle";
-import NotificationBell from "../../components/NotificationBell";
+import { ThemeToggle } from "../../components/layout/ThemeToggle";
+import NotificationBell from "../../components/profile/NotificationBell";
 import { UserRole } from "@/types/auth";
 
 interface User {

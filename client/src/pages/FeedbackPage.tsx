@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Star, CheckCircle, AlertCircle } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { validateFeedbackToken, submitFeedbackViaToken } from "@/lib/feedback-api";
-import Logo from "@/components/Logo";
+import Logo from '@/components/layout/Logo';
 
 const IMPROVEMENT_AREAS = [
   { id: "registration", label: "Registration Process" },

@@ -6,11 +6,11 @@
 
 import { useNavigate } from 'react-router-dom';
 import { BarChart3, Calendar, Users, DollarSign, TrendingUp } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { useMyEvents } from '../hooks/useMyEvents';
-import { Skeleton } from './ui/Skeleton';
-import { NAV_LABELS } from '../constants/navigationLabels';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useMyEvents } from '@/hooks/useMyEvents';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { NAV_LABELS } from '@/constants/navigationLabels';
 
 export const OrganizerQuickActions = () => {
   const navigate = useNavigate();

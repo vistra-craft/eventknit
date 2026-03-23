@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { setAccessToken } from '@/lib/api';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 import { requestEmailOAuthCode, verifyEmailOAuthCode, googleAuth, appleAuth } from '@/lib/auth-api';
 import { extractErrorMessage } from '@/lib/utils/error';
 import loginImage from '@/assets/login.jpeg';

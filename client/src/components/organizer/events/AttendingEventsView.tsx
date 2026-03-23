@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Loader } from "@/components/ui/loader";
 import { Pagination } from "@/components/ui/pagination";
 import EmptyState from "@/components/EmptyState";
-import { EventImage } from "@/components/EventImage";
+import { EventImage } from '@/components/events/EventImage';
 import { getUserRegisteredEvents } from "@/lib/event-api";
 import { downloadTicketPDF } from "@/lib/ticket-api";
 import { shareEvent } from "@/lib/utils/share";

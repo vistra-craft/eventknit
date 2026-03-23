@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EventPreviewModal } from "@/components/EventPreviewModal";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 import { getEventById, type EventData } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
 import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";

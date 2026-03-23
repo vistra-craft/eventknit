@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getEvents, EventStatus, EventType } from "@/lib/event-api";
 import type { EventData } from "@/types/event";
 import { Loader } from "@/components/ui/loader";
-import { EventImage } from "@/components/EventImage";
+import { EventImage } from '@/components/events/EventImage';
 
 interface RelatedEventsSimpleProps {
   currentEventId?: string;

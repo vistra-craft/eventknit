@@ -1,4 +1,4 @@
-import { EventCard } from "@/components/EventCard";
+import { EventCard } from '@/components/events/EventCard';
 import { useEffect, useState } from "react";
 import { getEvents, EventStatus } from "@/lib/event-api";
 import type { EventData } from "@/types/event";

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import MinimalHeader from "@/components/MinimalHeader";
-import LegalFooter from "@/components/LegalFooter";
+import MinimalHeader from '@/components/layout/MinimalHeader';
+import LegalFooter from '@/components/layout/LegalFooter';
 
 const TermsOfService = () => {
   const location = useLocation();

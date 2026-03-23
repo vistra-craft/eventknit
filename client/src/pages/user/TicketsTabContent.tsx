@@ -2,7 +2,8 @@
  * Tickets Tab Content — inline tab for DashboardHome
  *
  * Shows all registered event tickets with filter tabs and quick actions.
- * Adapted from MyTickets.tsx but without standalone page wrapper.
+ * Clicking a ticket card navigates to the ticket detail view (TicketViewPage).
+ * Action icons are always visible for better discoverability.
  */
 
 import { useState, useEffect } from 'react';
@@ -12,6 +13,7 @@ import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Loader } from '../../components/ui/loader';
 import EmptyState from '../../components/EmptyState';
+import FilterTabs from '../../components/dashboard/FilterTabs';
 import { getUserRegisteredEvents } from '../../lib/event-api';
 import { downloadTicketPDF, resendTicketEmail } from '../../lib/ticket-api';
 import { shareEvent } from '../../lib/utils/share';
@@ -20,6 +22,7 @@ import { showErrorToast } from '../../lib/utils/error';
 
 interface Ticket {
   id: string;
+  slug?: string | null;
   title: string;
   date: string;
   location: string;
@@ -34,12 +37,14 @@ interface Ticket {
   isFree?: boolean;
 }
 
+type TicketFilter = 'all' | 'upcoming' | 'completed';
+
 const TicketsTabContent = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
+  const [filter, setFilter] = useState<TicketFilter>('all');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
 
@@ -49,8 +54,9 @@ const TicketsTabContent = () => {
         setLoading(true);
         const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
         if (response.success && response.data) {
-          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string; ticketEmailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null; totalAmount?: number; paymentStatus?: string | null; currency?: string; isFree?: boolean }) => ({
+          setTickets(response.data.events.map((event: { id: string; slug?: string | null; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string; ticketEmailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null; totalAmount?: number; paymentStatus?: string | null; currency?: string; isFree?: boolean }) => ({
             id: event.id,
+            slug: event.slug,
             title: event.title,
             date: event.date || '',
             location: event.venue ? `${event.venue}, ${event.location || ''}` : (event.location || ''),
@@ -99,7 +105,7 @@ const TicketsTabContent = () => {
   };
 
   const handleShare = async (ticket: Ticket) => {
-    const shared = await shareEvent(ticket.title, ticket.id);
+    const shared = await shareEvent(ticket.title, ticket.slug ?? ticket.id);
     toast({ title: shared ? 'Shared' : 'Link Copied', description: shared ? 'Event shared' : 'Link copied' });
   };
 
@@ -121,10 +127,20 @@ const TicketsTabContent = () => {
     }
   };
 
+  /** Navigate to the ticket detail view instead of event details */
+  const handleTicketClick = (ticket: Ticket) => {
+    if (ticket.registrationId) {
+      navigate(`/user/tickets/${ticket.registrationId}`);
+    } else {
+      // Fallback to event view if no registrationId
+      navigate(`/user/event/${ticket.id}`);
+    }
+  };
+
   const filterTabs = [
-    { key: 'all' as const, label: 'All' },
-    { key: 'upcoming' as const, label: 'Upcoming' },
-    { key: 'completed' as const, label: 'Past' },
+    { key: 'all' as TicketFilter, label: 'All', count: tickets.length },
+    { key: 'upcoming' as TicketFilter, label: 'Upcoming', count: tickets.filter(t => t.status === 'upcoming').length },
+    { key: 'completed' as TicketFilter, label: 'Past', count: tickets.filter(t => t.status === 'completed').length },
   ];
 
   if (loading) {
@@ -138,39 +154,28 @@ const TicketsTabContent = () => {
   return (
     <div>
       {/* Filter tabs */}
-      <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg w-fit mb-6 border border-border">
-        {filterTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setFilter(tab.key)}
-            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-              filter === tab.key
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-          >
-            {tab.label}
-            {tab.key === 'all' && tickets.length > 0 && (
-              <span className="ml-1.5 text-xs text-muted-foreground">({tickets.length})</span>
-            )}
-          </button>
-        ))}
-      </div>
+      {tickets.length > 0 && (
+        <FilterTabs
+          tabs={filterTabs}
+          activeFilter={filter}
+          onFilterChange={setFilter}
+        />
+      )}
 
       {filteredTickets.length > 0 ? (
         <div className="space-y-3">
           {filteredTickets.map((ticket, index) => (
             <div
               key={ticket.id}
-              onClick={() => navigate(`/user/event/${ticket.id}`)}
-              className="flex items-center gap-4 p-4 bg-card border border-border/40 rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
+              onClick={() => handleTicketClick(ticket)}
+              className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 bg-card border border-border/40 rounded-xl hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer group animate-in fade-in-0 slide-in-from-bottom-2"
               style={{ animationDelay: `${index * 40}ms` }}
             >
               {/* Thumbnail */}
               <img
                 src={ticket.image}
                 alt={ticket.title}
-                className={`w-16 h-16 rounded-lg object-cover flex-shrink-0 ${ticket.status === 'completed' ? 'grayscale-[30%]' : ''}`}
+                className={`w-full sm:w-16 h-32 sm:h-16 rounded-lg object-cover flex-shrink-0 ${ticket.status === 'completed' ? 'grayscale-[30%]' : ''}`}
                 loading="lazy"
               />
 
@@ -189,7 +194,7 @@ const TicketsTabContent = () => {
                     {ticket.status === 'upcoming' ? 'Upcoming' : 'Past'}
                   </Badge>
                 </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
                   <Calendar className="w-3 h-3" />
                   {formatDate(ticket.date)}
                   <span className="opacity-30">|</span>
@@ -238,12 +243,12 @@ const TicketsTabContent = () => {
                 </div>
               </div>
 
-              {/* Actions — always visible on mobile, hover-reveal on desktop */}
-              <div className="sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150 flex items-center gap-0.5 flex-shrink-0">
+              {/* Actions — always visible for better discoverability */}
+              <div className="flex items-center gap-0.5 flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 sm:h-7 sm:w-7"
+                  className="h-8 w-8"
                   disabled={downloadingId === ticket.id}
                   onClick={(e) => { e.stopPropagation(); handleDownload(ticket); }}
                   title="Download ticket"
@@ -253,7 +258,7 @@ const TicketsTabContent = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 sm:h-7 sm:w-7"
+                  className="h-8 w-8"
                   onClick={(e) => { e.stopPropagation(); handleShare(ticket); }}
                   title="Share event"
                 >
@@ -264,7 +269,7 @@ const TicketsTabContent = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 sm:h-7 sm:w-7"
+                      className="h-8 w-8"
                       onClick={(e) => { e.stopPropagation(); navigate('/user/dashboard?section=ticket-transfer', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
                       title="Transfer ticket"
                     >
@@ -273,7 +278,7 @@ const TicketsTabContent = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 sm:h-7 sm:w-7"
+                      className="h-8 w-8"
                       onClick={(e) => { e.stopPropagation(); navigate('/user/dashboard?section=ticket-resale', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
                       title="Resell ticket"
                     >

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Users, Mail } from 'lucide-react';
 import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 
 const UserTypeSelection = () => {
   const navigate = useNavigate();

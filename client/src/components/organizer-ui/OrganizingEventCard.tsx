@@ -7,16 +7,16 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, MapPin, Users, CheckCircle, DollarSign, BarChart3, MoreVertical, Edit, Trash2, Eye, ExternalLink, ArrowRight } from 'lucide-react';
-import { Card, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
-import { RichTextContent } from './ui/RichTextContent';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { RichTextContent } from '@/components/ui/RichTextContent';
 import { stripHtml } from '@/lib/utils';
-import { Loader } from './ui/loader';
-import { getOrganizerEventById } from '../lib/organizer-api';
-import type { OrganizingEvent } from '../hooks/useMyEvents';
-import type { EventData } from '../types/event';
+import { Loader } from '@/components/ui/loader';
+import { getOrganizerEventById } from '@/lib/organizer-api';
+import type { OrganizingEvent } from '@/hooks/useMyEvents';
+import type { EventData } from '@/types/event';
 
 
 interface OrganizingEventCardProps {

@@ -9,7 +9,7 @@ import { Globe, Calendar, X, MapPin, Clock, ChevronDown, ChevronUp } from 'lucid
 import type { StepComponentProps } from './types';
 import { TIMEZONES, getCurrentTimezone, getTimezoneLabel } from './types';
 import { MapPicker } from './MapPicker';
-import { EventMap } from '@/components/EventMap';
+import { EventMap } from '@/components/events/EventMap';
 
 interface DateLocationStepProps extends StepComponentProps {
   eventType: string;

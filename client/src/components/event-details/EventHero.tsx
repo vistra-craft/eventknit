@@ -1,4 +1,4 @@
-import { EventImage } from "@/components/EventImage";
+import { EventImage } from '@/components/events/EventImage';
 
 interface EventHeroProps {
   title: string;

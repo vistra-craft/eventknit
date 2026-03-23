@@ -13,7 +13,7 @@ import { setAccessToken } from '@/lib/api';
 import { requestRegistrationCode, verifyRegistrationCode } from '@/lib/auth-api';
 import { extractErrorMessage } from '@/lib/utils/error';
 import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 import signupImage from '@/assets/event-concert.jpg';
 
 type Step = 'email' | 'verify';

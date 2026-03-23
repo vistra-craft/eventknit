@@ -11,7 +11,7 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 
 interface OnboardingLayoutProps {
   children: ReactNode;

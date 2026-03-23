@@ -15,7 +15,7 @@ import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Loader } from "../../../components/ui/loader";
 import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
 import { recallEvent } from "../../../lib/admin-api";
-import { EventPreviewModal } from "../../../components/EventPreviewModal";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { useToast } from "../../../hooks/useToast";

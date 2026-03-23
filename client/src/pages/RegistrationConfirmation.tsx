@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
-import CheckoutHeader from "@/components/CheckoutHeader";
+import CheckoutHeader from '@/components/layout/CheckoutHeader';
 import { useAuth } from "@/hooks/useAuth";
 import { getEventById } from "@/lib/event-api";
 import type { EventData } from "@/types/event";

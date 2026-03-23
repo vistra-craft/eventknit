@@ -10,7 +10,7 @@ import { ActionChoiceStep } from '@/components/onboarding/ActionChoiceStep';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
 import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 
 type OnboardingStep = 1 | 2 | 3;
 

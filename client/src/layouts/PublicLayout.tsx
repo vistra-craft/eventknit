@@ -9,7 +9,7 @@ import { Suspense } from 'react';
 import { publicRoutes } from '../routes/publicRoutes';
 import { Skeleton } from '../components/ui/Skeleton';
 import { EventDetailsSkeleton } from '../components/event-details/EventDetailsSkeleton';
-import { RegisterEventSkeleton } from '../components/skeletons/RegisterEventSkeleton';
+import { RegisterEventSkeleton } from '../components/loaders/RegisterEventSkeleton';
 
 /**
  * Shared navbar skeleton used across public page fallbacks

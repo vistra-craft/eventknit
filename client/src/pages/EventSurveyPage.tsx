@@ -8,8 +8,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { EventSurveyPrompt } from "@/components/event-attendee/EventSurveyPrompt";
 
 const EventSurveyPage = () => {

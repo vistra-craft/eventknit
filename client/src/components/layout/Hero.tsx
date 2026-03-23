@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { getActiveFeaturedEvents, type ActiveFeaturedEvent } from "@/lib/featured-event-api";
 import { getFocalPointStyle } from "@/lib/image-utils";
 import { HeroSkeleton } from "./HeroSkeleton";
-import { EmptyFeaturedState } from "./EmptyFeaturedState";
+import { EmptyFeaturedState } from "@/components/EmptyFeaturedState";
 
 export const Hero = () => {
   const navigate = useNavigate();

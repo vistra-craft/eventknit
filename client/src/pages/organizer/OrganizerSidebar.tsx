@@ -17,7 +17,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
 import OrganizerStaffSidebar from "./OrganizerStaffSidebar";
-import Logo from "@/components/Logo";
+import Logo from '@/components/layout/Logo';
 
 interface OrganizerSidebarProps {
   isOpen: boolean;
