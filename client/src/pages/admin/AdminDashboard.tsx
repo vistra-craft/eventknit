@@ -1,6 +1,6 @@
 import AdminEnhancedDashboard from "./AdminEnhancedDashboard";
 import TellerDashboard from "./TellerDashboard";
-import SupportDashboard from "./SupportDashboard";
+import SupportDashboard from "./support/SupportDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
 

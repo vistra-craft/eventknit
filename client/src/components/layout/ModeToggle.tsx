@@ -5,9 +5,9 @@
  */
 
 import { Users, Calendar } from 'lucide-react';
-import { useDashboardMode } from '../hooks/useDashboardMode';
-import { MODE_LABELS } from '../constants/navigationLabels';
-import { cn } from '../lib/utils';
+import { useDashboardMode } from '@/hooks/useDashboardMode';
+import { MODE_LABELS } from '@/constants/navigationLabels';
+import { cn } from '@/lib/utils';
 
 interface ModeToggleProps {
   className?: string;

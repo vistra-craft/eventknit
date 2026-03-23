@@ -1,10 +1,15 @@
 {
   "permissions": {
+    "allow": [
+      "Read(//Users/mac/Documents/projects/events/eventknit_mobile/**)"
+    ],
     "additionalDirectories": [
       "/Users/mac/Documents/projects/events/eventknit_mobile/lib/domain/usecases",
       "/Users/mac/Documents/projects/events/eventknit_mobile/lib/core/bindings",
       "/Users/mac/Documents/projects/events/eventknit_mobile/lib/presentation/attendee/screens",
-      "/Users/mac/Documents/projects/events/eventknit_mobile/lib/presentation/attendee/widgets"
+      "/Users/mac/Documents/projects/events/eventknit_mobile/lib/presentation/attendee/widgets",
+      "/Users/mac/Documents/projects/events/eventknit_mobile/lib",
+      "/Users/mac/Documents/projects/events/eventknit_mobile"
     ]
   }
 }

@@ -23,7 +23,7 @@ import { usePermissionsEnhanced } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass } from "../../../lib/utils/event-badge-helpers";
-import { EventPreviewModal } from "../../../components/EventPreviewModal";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 
 interface Event {
   id: string;

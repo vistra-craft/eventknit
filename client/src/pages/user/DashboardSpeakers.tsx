@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Pagination } from "../../components/ui/pagination";
 import { Loader } from "../../components/ui/loader";
 import { getEventById } from "../../lib/event-api";
-import { SocialConnections } from "../../components/SocialConnections";
+import { SocialConnections } from '@/components/profile/SocialConnections';
 import type { EventData as DashboardEvent } from "../../types/event";
 
 interface Speaker {

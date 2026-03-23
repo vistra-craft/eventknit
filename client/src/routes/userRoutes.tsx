@@ -42,8 +42,8 @@ const NotificationPreferencesPage = lazy(() => import('../pages/user/Notificatio
 const EventManagementHub = lazy(() => import('../pages/user/EventManagementHub'));
 const CreateEventEntry = lazy(() => import('../pages/user/CreateEventEntry'));
 const CreateEventStepwise = lazy(() => import('../pages/CreateEventStepwise'));
-const VerificationPage = lazy(() => import('../pages/organizer/VerificationPage'));
-const KYCVerificationPage = lazy(() => import('../pages/organizer/KYCVerificationPage'));
+const VerificationPage = lazy(() => import('../pages/organizer/settings/VerificationPage'));
+const KYCVerificationPage = lazy(() => import('../pages/organizer/settings/KYCVerificationPage'));
 
 /**
  * User route definitions

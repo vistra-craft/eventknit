@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import CreateEventStepwise from "../CreateEventStepwise";
+import CreateEventStepwise from "@/pages/CreateEventStepwise";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
 import { getDashboardAccess } from "@/lib/organizer-api";

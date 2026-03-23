@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types/auth';
-import { BecomeOrganizerModal } from '../../components/BecomeOrganizerModal';
+import { BecomeOrganizerModal } from '@/components/organizer-ui/BecomeOrganizerModal';
 import { Loader } from '../../components/ui/loader';
 
 const CreateEventEntry = () => {

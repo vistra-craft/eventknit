@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 import { resetPassword } from '@/lib/auth-api';
 
 const ResetPassword = () => {

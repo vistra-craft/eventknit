@@ -50,8 +50,8 @@ import { getEventConfig, updateEventConfig, type EventScanConfig } from "@/lib/w
 import { getRefunds, getDisbursements, type Refund, type Disbursement } from "@/lib/financial-api";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { EventStaffAssignment } from "@/components/EventStaffAssignment";
-import EventCommunicationSection from "@/components/EventCommunicationSection";
+import { EventStaffAssignment } from '@/components/events/EventStaffAssignment';
+import EventCommunicationSection from '@/components/events/EventCommunicationSection';
 import { usePermissionsEnhanced } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "@/lib/utils/event-badge-helpers";

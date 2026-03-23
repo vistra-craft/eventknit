@@ -3,8 +3,8 @@ import { Menu, User, LogOut, Building2, Settings, LayoutDashboard } from "lucide
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import NotificationBell from "../../components/NotificationBell";
-import { ThemeToggle } from "../../components/ThemeToggle";
+import NotificationBell from "../../components/profile/NotificationBell";
+import { ThemeToggle } from "../../components/layout/ThemeToggle";
 
 interface OrganizerHeaderProps {
   onMenuToggle?: () => void;

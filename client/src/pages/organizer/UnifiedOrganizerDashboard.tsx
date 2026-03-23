@@ -22,12 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import OrganizerEventCard from "@/components/OrganizerEventCard";
+import OrganizerEventCard from '@/components/organizer-ui/OrganizerEventCard';
 import { SubscriptionTierBadge } from "@/components/organizer/SubscriptionTierBadge";
 import { UpgradePrompt } from "@/components/organizer/UpgradePrompt";
 import { DashboardSkeleton } from "@/components/loaders/DashboardSkeleton";
 import { Loader } from "@/components/ui/loader";
-import { OrganizerWelcomeScreen } from "@/components/OrganizerWelcomeScreen";
+import { OrganizerWelcomeScreen } from '@/components/organizer-ui/OrganizerWelcomeScreen';
 import { useAuth } from "@/hooks/useAuth";
 import {
   useOrganizerDashboardStats,

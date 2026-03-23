@@ -11,8 +11,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Menu, User, ChevronDown, LogOut, Settings, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { ThemeToggle } from "../../components/ThemeToggle";
-import NotificationBell from "../../components/NotificationBell";
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import NotificationBell from '@/components/profile/NotificationBell';
 
 interface AdminHeaderProps {
   onMenuToggle?: () => void;

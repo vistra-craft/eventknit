@@ -6,14 +6,14 @@
 
 import { useMemo } from 'react';
 import { Calendar, MapPin, Users, DollarSign, Globe, Clock, Lock, Link as LinkIcon } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
-import { Badge } from './ui/badge';
-import { RichTextContent } from './ui/RichTextContent';
-import { Loader } from './ui/loader';
-import { SpeakersShowcase } from './event-details/SpeakersShowcase';
-import { SponsorsShowcase } from './event-details/SponsorsShowcase';
-import { ExhibitorsGrid } from './event-details/ExhibitorsGrid';
-import type { EventData } from '../types/event';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { RichTextContent } from '@/components/ui/RichTextContent';
+import { Loader } from '@/components/ui/loader';
+import { SpeakersShowcase } from '../event-details/SpeakersShowcase';
+import { SponsorsShowcase } from '../event-details/SponsorsShowcase';
+import { ExhibitorsGrid } from '../event-details/ExhibitorsGrid';
+import type { EventData } from '@/types/event';
 import { stripHtml } from '@/lib/utils';
 
 interface EventPreviewModalProps {

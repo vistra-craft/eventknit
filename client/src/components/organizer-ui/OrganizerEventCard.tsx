@@ -11,22 +11,22 @@ import {
   Eye,
   Edit,
 } from "lucide-react";
-import { Card, CardContent } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
-import { Loader } from "./ui/loader";
-import { RichTextContent } from "./ui/RichTextContent";
+} from '@/components/ui/dialog';
+import { Loader } from '@/components/ui/loader';
+import { RichTextContent } from '@/components/ui/RichTextContent';
 import { stripHtml } from "@/lib/utils";
-import { EventImage } from "./EventImage";
-import { getEventById } from "../lib/event-api";
-import type { EventData } from "../types/event";
+import { EventImage } from "@/components/events/EventImage";
+import { getEventById } from '@/lib/event-api';
+import type { EventData } from '@/types/event';
 
 interface EventCardProps {
   event: {

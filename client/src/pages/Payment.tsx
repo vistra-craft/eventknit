@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // App Components
-import CheckoutHeader from "@/components/CheckoutHeader";
+import CheckoutHeader from '@/components/layout/CheckoutHeader';
 
 // API
 import { initializePayment, initializeGuestPayment, verifyPayment } from "@/lib/payment-api";

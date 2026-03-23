@@ -10,10 +10,10 @@ import { Suspense, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useOrganizerApproval } from '../hooks/useOrganizerApproval';
 import { userRoutes } from '../routes/userRoutes';
-import UnifiedNavbar from '../components/UnifiedNavbar';
+import UnifiedNavbar from '@/components/layout/UnifiedNavbar';
 import { DashboardModeProvider } from '../contexts/DashboardModeContext';
 import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
-import OrganizerOnboardingModal from '../components/OrganizerOnboardingModal';
+import OrganizerOnboardingModal from '@/components/organizer-ui/OrganizerOnboardingModal';
 import { Clock } from 'lucide-react';
 import { UserRole, UserStatus } from '../types/auth';
 

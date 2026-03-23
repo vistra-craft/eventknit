@@ -14,7 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Pagination } from "@/components/ui/pagination";
 import { Loader } from "@/components/ui/loader";
-import OrganizerEventCard from "@/components/OrganizerEventCard";
+import OrganizerEventCard from '@/components/organizer-ui/OrganizerEventCard';
 import type { OrganizerDashboardEvent } from "@/lib/organizer-api";
 import type { EventView } from "@/hooks/useOrganizerEvents";
 

@@ -21,15 +21,15 @@ const ServicePointHistory = lazy(() => import('../pages/admin/service-point/Serv
 const OrganizerDashboard = lazy(() => import('../pages/organizer/OrganizerDashboard'));
 const OnboardingWizard = lazy(() => import('../pages/organizer/OnboardingWizard'));
 
-// Event Management - Unified Page
-const UnifiedEventsPage = lazy(() => import('../pages/organizer/UnifiedEventsPage'));
-const AttendingEventsPage = lazy(() => import('../pages/organizer/AttendingEventsPage'));
-const CreateEventPage = lazy(() => import('../pages/organizer/CreateEventPage'));
-const StandaloneCreateEventPage = lazy(() => import('../pages/organizer/StandaloneCreateEventPage'));
-const EventManagementPage = lazy(() => import('../pages/organizer/EventManagementPage'));
-const EventTemplates = lazy(() => import('../pages/organizer/EventTemplates'));
-const EventCollaboration = lazy(() => import('../pages/organizer/EventCollaboration'));
-const EventSurveyManagement = lazy(() => import('../pages/organizer/EventSurveyManagement'));
+// Event Management
+const UnifiedEventsPage = lazy(() => import('../pages/organizer/events/UnifiedEventsPage'));
+const AttendingEventsPage = lazy(() => import('../pages/organizer/events/AttendingEventsPage'));
+const CreateEventPage = lazy(() => import('../pages/organizer/events/CreateEventPage'));
+const StandaloneCreateEventPage = lazy(() => import('../pages/organizer/events/StandaloneCreateEventPage'));
+const EventManagementPage = lazy(() => import('../pages/organizer/events/EventManagementPage'));
+const EventTemplates = lazy(() => import('../pages/organizer/events/EventTemplates'));
+const EventCollaboration = lazy(() => import('../pages/organizer/events/EventCollaboration'));
+const EventSurveyManagement = lazy(() => import('../pages/organizer/events/EventSurveyManagement'));
 
 // Analytics
 const AnalyticsOverview = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.AnalyticsOverview })));
@@ -43,35 +43,35 @@ const StaffManagementPage = lazy(() => import('../pages/organizer/team').then(m 
 // const TeamCalendarPage = lazy(() => import('../pages/organizer/team').then(m => ({ default: m.TeamCalendarPage })));
 
 // Settings & Profile
-const OrganizerSettingsPage = lazy(() => import('../pages/organizer/OrganizerSettingsPage'));
-const OrganizerProfileSetup = lazy(() => import('../pages/organizer/OrganizerProfileSetup'));
+const OrganizerSettingsPage = lazy(() => import('../pages/organizer/settings/OrganizerSettingsPage'));
+const OrganizerProfileSetup = lazy(() => import('../pages/organizer/settings/OrganizerProfileSetup'));
 
 // Verification & Subscription
-const VerificationPage = lazy(() => import('../pages/organizer/VerificationPage'));
-const KYCVerificationPage = lazy(() => import('../pages/organizer/KYCVerificationPage'));
-const SubscriptionManagement = lazy(() => import('../pages/organizer/SubscriptionManagement'));
+const VerificationPage = lazy(() => import('../pages/organizer/settings/VerificationPage'));
+const KYCVerificationPage = lazy(() => import('../pages/organizer/settings/KYCVerificationPage'));
+const SubscriptionManagement = lazy(() => import('../pages/organizer/finance/SubscriptionManagement'));
 
 // Venues
-const VenueManagement = lazy(() => import('../pages/organizer/VenueManagement'));
+const VenueManagement = lazy(() => import('../pages/organizer/events/VenueManagement'));
 
 // Attendees & Communication
-const AttendeeSegmentation = lazy(() => import('../pages/organizer/AttendeeSegmentation'));
-const AttendeeTagsManagement = lazy(() => import('../pages/organizer/AttendeeTagsManagement'));
-const AttendeeCommunication = lazy(() => import('../pages/organizer/AttendeeCommunication'));
+const AttendeeSegmentation = lazy(() => import('../pages/organizer/attendees/AttendeeSegmentation'));
+const AttendeeTagsManagement = lazy(() => import('../pages/organizer/attendees/AttendeeTagsManagement'));
+const AttendeeCommunication = lazy(() => import('../pages/organizer/attendees/AttendeeCommunication'));
 const OrganizerNotificationsCenter = lazy(() => import('../pages/organizer/OrganizerNotificationsCenter'));
 
 // Marketing
 const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'));
 
 // Financial
-const FinancialManagement = lazy(() => import('../pages/organizer/FinancialManagement'));
-const PayoutManagement = lazy(() => import('../pages/organizer/PayoutManagement'));
+const FinancialManagement = lazy(() => import('../pages/organizer/finance/FinancialManagement'));
+const PayoutManagement = lazy(() => import('../pages/organizer/finance/PayoutManagement'));
 
 // Tickets Management (consolidated hub)
-const TicketsManagementHub = lazy(() => import('../pages/organizer/TicketsManagementHub'));
+const TicketsManagementHub = lazy(() => import('../pages/organizer/finance/TicketsManagementHub'));
 
 // Branding
-const OrganizerBrandingPage = lazy(() => import('../pages/organizer/OrganizerBrandingPage'));
+const OrganizerBrandingPage = lazy(() => import('../pages/organizer/settings/OrganizerBrandingPage'));
 
 /**
  * Common role combinations

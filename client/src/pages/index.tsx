@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { EventSearchFilter } from "../components/EventSearchFilter";
-import type { SearchFilters } from "../components/EventSearchFilter";
-import { EventGrid } from "../components/EventGrid";
-import { Hero } from "../components/Hero";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import { EventSearchFilter } from '@/components/events/EventSearchFilter';
+import type { SearchFilters } from '@/components/events/EventSearchFilter';
+import { EventGrid } from '@/components/events/EventGrid';
+import { Hero } from '@/components/layout/Hero';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 const Index = () => {
   const [filters, setFilters] = useState<SearchFilters>({});

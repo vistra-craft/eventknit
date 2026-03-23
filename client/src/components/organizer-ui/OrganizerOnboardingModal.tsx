@@ -5,8 +5,8 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from './ui/dialog';
-import { Button } from './ui/button';
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { CalendarDays, DollarSign, BarChart2, PartyPopper } from 'lucide-react';
 
 interface OrganizerOnboardingModalProps {

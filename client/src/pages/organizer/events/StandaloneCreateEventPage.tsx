@@ -1,10 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import BackButton from "@/components/BackButton";
-import Logo from "@/components/Logo";
-import { ProfileDropdown } from "@/components/ProfileDropdown";
+import Logo from '@/components/layout/Logo';
+import { ProfileDropdown } from '@/components/profile/ProfileDropdown';
 import { useAuth } from "@/hooks/useAuth";
-import CreateEventStepwise from "../CreateEventStepwise";
+import CreateEventStepwise from "../../CreateEventStepwise";
 
 /**
  * Standalone Event Creation Page

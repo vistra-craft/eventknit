@@ -59,7 +59,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { EventMap } from "@/components/EventMap";
+import { EventMap } from '@/components/events/EventMap';
 import { downloadTicketPDF } from "@/lib/ticket-api";
 import { getNotifications, markAllAsRead, type Notification } from "@/lib/notification-api";
 import { sendMessage } from "@/lib/user-dashboard-api";
