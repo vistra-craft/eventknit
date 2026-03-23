@@ -183,6 +183,15 @@ export interface SavedSearch {
 
 // ========== Messaging ==========
 
+export interface MessageUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+  avatar?: string | null;
+  profileImage?: string;
+}
+
 export interface DirectMessage {
   id: string;
   senderId: string;
@@ -194,22 +203,20 @@ export interface DirectMessage {
   parentMessageId?: string;
   isRead: boolean;
   readAt?: string;
-  sender?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    profileImage?: string;
-  };
-  recipient?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    profileImage?: string;
-  };
+  sender?: MessageUser;
+  recipient?: MessageUser;
   event?: EventData;
   replies?: DirectMessage[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Conversation {
+  partnerId: string;
+  partner: MessageUser;
+  lastMessage: DirectMessage;
+  unreadCount: number;
+  totalMessages: number;
 }
 
 // ========== Social Networking ==========

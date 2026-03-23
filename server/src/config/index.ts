@@ -68,9 +68,9 @@ export const config = {
   
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10), // 100 requests
+    max: parseInt(process.env.RATE_LIMIT_MAX || '200', 10), // 200 requests per window
     authWindowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS || '900000', 10),
-    authMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '5', 10), // 5 requests for auth
+    authMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '10', 10), // 10 failed auth attempts per window
   },
   
   security: {

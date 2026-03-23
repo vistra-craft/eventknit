@@ -58,3 +58,9 @@ export class ServiceUnavailableError extends AppError {
   }
 }
 
+export class RateLimitError extends AppError {
+  constructor(message: string = 'You\'re sending requests too fast. Please wait a moment and try again.', code?: string) {
+    super(message, 429, code || 'RATE_LIMIT_EXCEEDED');
+  }
+}
+

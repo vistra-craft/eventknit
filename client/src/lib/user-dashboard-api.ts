@@ -15,6 +15,7 @@ import type {
   SavedSearch,
   SearchFilters,
   DirectMessage,
+  Conversation,
   UserProfile,
   UserFollow,
   EventShare,
@@ -30,7 +31,7 @@ import type {
   EventSubscription,
 } from "@/types/user-dashboard";
 
-export type { DirectMessage } from "@/types/user-dashboard";
+export type { DirectMessage, Conversation } from "@/types/user-dashboard";
 
 /**
  * Check if user is registered for an event
@@ -426,6 +427,39 @@ export const markMessageAsRead = async (messageId: string): Promise<ApiResponse<
 
 export const deleteMessage = async (messageId: string): Promise<ApiResponse<{ success: boolean }>> => {
   return apiDelete(`/user-dashboard/messages/${messageId}`);
+};
+
+/**
+ * Conversations — grouped by partner
+ */
+export const getConversations = async (): Promise<ApiResponse<{
+  conversations: Conversation[];
+  totalUnread: number;
+}>> => {
+  return apiGet('/user-dashboard/messages/conversations');
+};
+
+export const getConversationWithUser = async (
+  partnerId: string,
+  filters?: { page?: number; limit?: number },
+): Promise<ApiResponse<{
+  messages: DirectMessage[];
+  partner: { id: string; firstName: string; lastName: string; email: string; avatar?: string | null };
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
+}>> => {
+  const queryParams = new URLSearchParams();
+  if (filters?.page) queryParams.append('page', filters.page.toString());
+  if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+
+  const queryString = queryParams.toString();
+  const endpoint = queryString
+    ? `/user-dashboard/messages/conversations/${partnerId}?${queryString}`
+    : `/user-dashboard/messages/conversations/${partnerId}`;
+  return apiGet(endpoint);
 };
 
 /**

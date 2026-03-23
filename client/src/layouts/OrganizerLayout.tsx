@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense } from 'react';
 import OrganizerSidebar from "../pages/organizer/OrganizerSidebar";
@@ -7,6 +7,8 @@ import { organizerRoutes } from '../routes/organizerRoutes';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
 import { Loader } from '../components/ui/loader';
+import { ChatPanel, ChatPanelTrigger } from '@/components/chat/ChatPanel';
+import { getInbox } from '@/lib/user-dashboard-api';
 
 /**
  * Dashboard skeleton — page header + 4 metric cards
@@ -47,6 +49,25 @@ const LoadingFallback = () => {
 const OrganizerLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed, will be set by useEffect
   const [isMobile, setIsMobile] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await getInbox({ page: 1, limit: 1 });
+      if (res.success && res.data) {
+        setChatUnread(res.data.unreadCount);
+      }
+    } catch {
+      // Silently ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   // Check if screen is mobile on mount and resize, auto-manage sidebar
   useEffect(() => {
@@ -136,6 +157,9 @@ const OrganizerLayout: React.FC = () => {
         </div>
       )}
 
+      {/* Chat Panel — consistent messaging across all dashboards */}
+      <ChatPanel open={chatOpen} onOpenChange={setChatOpen} />
+      <ChatPanelTrigger unreadCount={chatUnread} onClick={() => setChatOpen(true)} />
     </div>
   );
 };

@@ -2,8 +2,24 @@ import { PrismaClient, NotificationType } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
 import { NotificationService } from './notification.service.js';
+import { websocketService } from './websocket.service.js';
 
 const prisma = new PrismaClient();
+
+/** Reusable user select with avatar */
+const userSelectWithAvatar = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  avatar: true,
+} as const;
+
+const eventSelect = {
+  id: true,
+  title: true,
+  image: true,
+} as const;
 
 export class DirectMessageService {
   /**
@@ -24,9 +40,7 @@ export class DirectMessageService {
       // Check if recipient allows messages
       const recipient = await prisma.user.findUnique({
         where: { id: data.recipientId },
-        include: {
-          preferences: true,
-        },
+        include: { preferences: true },
       });
 
       if (!recipient) {
@@ -48,31 +62,18 @@ export class DirectMessageService {
           parentMessageId: data.parentMessageId,
         },
         include: {
-          sender: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          recipient: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          event: {
-            select: {
-              id: true,
-              title: true,
-              image: true,
-            },
-          },
+          sender: { select: userSelectWithAvatar },
+          recipient: { select: userSelectWithAvatar },
+          event: { select: eventSelect },
         },
       });
+
+      // Real-time: notify recipient via WebSocket
+      websocketService.emitToRoom(
+        `user:${data.recipientId}:notifications`,
+        'message:new',
+        { message },
+      );
 
       // Notify recipient of new message (fire-and-forget — never block the send)
       NotificationService.sendNotification({
@@ -90,6 +91,157 @@ export class DirectMessageService {
       return message;
     } catch (error) {
       logger.error('Error sending message:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get conversations list — grouped by partner with last message and unread count
+   */
+  static async getConversations(userId: string) {
+    try {
+      // Get all messages involving this user (not deleted)
+      const allMessages = await prisma.directMessage.findMany({
+        where: {
+          isDeleted: false,
+          OR: [
+            { senderId: userId },
+            { recipientId: userId },
+          ],
+        },
+        include: {
+          sender: { select: userSelectWithAvatar },
+          recipient: { select: userSelectWithAvatar },
+          event: { select: eventSelect },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Group by conversation partner
+      const conversationMap = new Map<string, {
+        partnerId: string;
+        partner: { id: string; firstName: string | null; lastName: string | null; email: string; avatar: string | null };
+        lastMessage: typeof allMessages[0];
+        unreadCount: number;
+        totalMessages: number;
+      }>();
+
+      for (const msg of allMessages) {
+        const partnerId = msg.senderId === userId ? msg.recipientId : msg.senderId;
+        const partner = msg.senderId === userId ? msg.recipient : msg.sender;
+
+        if (!conversationMap.has(partnerId)) {
+          conversationMap.set(partnerId, {
+            partnerId,
+            partner,
+            lastMessage: msg,
+            unreadCount: 0,
+            totalMessages: 0,
+          });
+        }
+
+        const conv = conversationMap.get(partnerId)!;
+        conv.totalMessages++;
+
+        // Count unread messages FROM this partner
+        if (msg.recipientId === userId && !msg.isRead) {
+          conv.unreadCount++;
+        }
+      }
+
+      // Sort by last message timestamp (newest first)
+      const conversations = Array.from(conversationMap.values())
+        .sort((a, b) => b.lastMessage.createdAt.getTime() - a.lastMessage.createdAt.getTime());
+
+      // Total unread across all conversations
+      const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
+
+      return { conversations, totalUnread };
+    } catch (error) {
+      logger.error('Error getting conversations:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all messages in a conversation with a specific partner
+   */
+  static async getConversationWithUser(
+    userId: string,
+    partnerId: string,
+    filters?: { page?: number; limit?: number },
+  ) {
+    try {
+      const limit = filters?.limit || 50;
+      const page = filters?.page || 1;
+      const skip = (page - 1) * limit;
+
+      const where = {
+        isDeleted: false,
+        OR: [
+          { senderId: userId, recipientId: partnerId },
+          { senderId: partnerId, recipientId: userId },
+        ],
+      };
+
+      const [messages, total] = await Promise.all([
+        prisma.directMessage.findMany({
+          where,
+          include: {
+            sender: { select: userSelectWithAvatar },
+            recipient: { select: userSelectWithAvatar },
+            event: { select: eventSelect },
+          },
+          orderBy: { createdAt: 'asc' },
+          take: limit,
+          skip,
+        }),
+        prisma.directMessage.count({ where }),
+      ]);
+
+      // Auto-mark unread messages from partner as read
+      const unreadFromPartner = messages.filter(
+        (m) => m.recipientId === userId && !m.isRead,
+      );
+
+      if (unreadFromPartner.length > 0) {
+        await prisma.directMessage.updateMany({
+          where: {
+            id: { in: unreadFromPartner.map((m) => m.id) },
+          },
+          data: {
+            isRead: true,
+            readAt: new Date(),
+          },
+        });
+
+        // Notify partner that their messages were read
+        for (const msg of unreadFromPartner) {
+          websocketService.emitToRoom(
+            `user:${partnerId}:notifications`,
+            'message:read',
+            { messageId: msg.id, readAt: new Date().toISOString() },
+          );
+        }
+      }
+
+      // Get partner info
+      const partner = await prisma.user.findUnique({
+        where: { id: partnerId },
+        select: userSelectWithAvatar,
+      });
+
+      return {
+        messages,
+        partner,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasMore: skip + limit < total,
+      };
+    } catch (error) {
+      logger.error('Error getting conversation:', error);
       throw error;
     }
   }
@@ -127,26 +279,9 @@ export class DirectMessageService {
         prisma.directMessage.findMany({
           where,
           include: {
-            sender: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            event: {
-              select: {
-                id: true,
-                title: true,
-                image: true,
-              },
-            },
-            _count: {
-              select: {
-                replies: true,
-              },
-            },
+            sender: { select: userSelectWithAvatar },
+            event: { select: eventSelect },
+            _count: { select: { replies: true } },
           },
           orderBy: { createdAt: 'desc' },
           take: limit,
@@ -192,10 +327,7 @@ export class DirectMessageService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: {
-        senderId: string;
-        isDeleted: boolean;
-      } = {
+      const where = {
         senderId: userId,
         isDeleted: false,
       };
@@ -204,26 +336,9 @@ export class DirectMessageService {
         prisma.directMessage.findMany({
           where,
           include: {
-            recipient: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-            event: {
-              select: {
-                id: true,
-                title: true,
-                image: true,
-              },
-            },
-            _count: {
-              select: {
-                replies: true,
-              },
-            },
+            recipient: { select: userSelectWithAvatar },
+            event: { select: eventSelect },
+            _count: { select: { replies: true } },
           },
           orderBy: { createdAt: 'desc' },
           take: limit,
@@ -254,56 +369,18 @@ export class DirectMessageService {
       const message = await prisma.directMessage.findUnique({
         where: { id: messageId },
         include: {
-          sender: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          recipient: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            },
-          },
-          event: {
-            select: {
-              id: true,
-              title: true,
-              image: true,
-            },
-          },
+          sender: { select: userSelectWithAvatar },
+          recipient: { select: userSelectWithAvatar },
+          event: { select: eventSelect },
           parentMessage: {
             include: {
-              sender: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                },
-              },
+              sender: { select: userSelectWithAvatar },
             },
           },
           replies: {
             include: {
-              sender: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                },
-              },
-              recipient: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                },
-              },
+              sender: { select: userSelectWithAvatar },
+              recipient: { select: userSelectWithAvatar },
             },
             orderBy: { createdAt: 'asc' },
           },
@@ -314,7 +391,6 @@ export class DirectMessageService {
         throw new ValidationError('Message not found');
       }
 
-      // Verify user has access
       if (message.senderId !== userId && message.recipientId !== userId) {
         throw new ValidationError('You do not have access to this message');
       }
@@ -323,11 +399,15 @@ export class DirectMessageService {
       if (message.recipientId === userId && !message.isRead) {
         await prisma.directMessage.update({
           where: { id: messageId },
-          data: {
-            isRead: true,
-            readAt: new Date(),
-          },
+          data: { isRead: true, readAt: new Date() },
         });
+
+        // Notify sender their message was read
+        websocketService.emitToRoom(
+          `user:${message.senderId}:notifications`,
+          'message:read',
+          { messageId, readAt: new Date().toISOString() },
+        );
       }
 
       return message;
@@ -356,11 +436,15 @@ export class DirectMessageService {
 
       const updated = await prisma.directMessage.update({
         where: { id: messageId },
-        data: {
-          isRead: true,
-          readAt: new Date(),
-        },
+        data: { isRead: true, readAt: new Date() },
       });
+
+      // Notify sender their message was read
+      websocketService.emitToRoom(
+        `user:${message.senderId}:notifications`,
+        'message:read',
+        { messageId, readAt: updated.readAt?.toISOString() },
+      );
 
       return updated;
     } catch (error) {
@@ -388,10 +472,7 @@ export class DirectMessageService {
 
       await prisma.directMessage.update({
         where: { id: messageId },
-        data: {
-          isDeleted: true,
-          deletedAt: new Date(),
-        },
+        data: { isDeleted: true, deletedAt: new Date() },
       });
 
       return { success: true };

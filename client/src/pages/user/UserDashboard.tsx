@@ -20,7 +20,6 @@ import TicketTransfer from "./TicketTransfer";
 import EventCollections from "./EventCollections";
 import InterestManagement from "./InterestManagement";
 import AdvancedSearch from "./AdvancedSearch";
-import DirectMessaging from "./DirectMessaging";
 import SocialNetworking from "./SocialNetworking";
 import TicketResale from "./TicketResale";
 import DigitalWallet from "./DigitalWallet";
@@ -58,6 +57,13 @@ const UserDashboard = () => {
     const interval = setInterval(fetchUnreadCount, 60000);
     return () => clearInterval(interval);
   }, [fetchUnreadCount]);
+
+  // Open chat panel when navigating to section=messages
+  useEffect(() => {
+    if (activeSection === 'messages') {
+      setChatOpen(true);
+    }
+  }, [activeSection]);
 
   const user = authUser
     ? {
@@ -122,7 +128,9 @@ const UserDashboard = () => {
       case "search":
         return <AdvancedSearch />;
       case "messages":
-        return <DirectMessaging />;
+        // Messages are handled by the ChatPanel (sliding panel)
+        // Render home view underneath
+        return <DashboardHome user={user} />;
       case "social":
         return <SocialNetworking />;
       case "ticket-resale":
