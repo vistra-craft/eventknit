@@ -197,25 +197,37 @@ const StaffManagement = () => {
 
   // Get stats from assignments
   const [assignments, setAssignments] = useState<{ staffId: string; eventId: string }[]>([]);
+  // Staff scan metrics lookup (staffId → totalScans)
+  const [staffScanCounts, setStaffScanCounts] = useState<Record<string, number>>({});
+
   useEffect(() => {
-    const fetchAssignments = async () => {
+    const fetchAssignmentsAndScans = async () => {
       try {
-        const response = await getOrganizerStaffAssignments();
-        if (response.success && response.data) {
-          setAssignments(response.data.assignments);
+        const [assignmentsRes, performanceRes] = await Promise.all([
+          getOrganizerStaffAssignments(),
+          getOrganizerTeamPerformance('all', 200),
+        ]);
+        if (assignmentsRes.success && assignmentsRes.data) {
+          setAssignments(assignmentsRes.data.assignments);
+        }
+        if (performanceRes.success && performanceRes.data) {
+          const scanMap: Record<string, number> = {};
+          for (const perf of performanceRes.data.performances) {
+            scanMap[perf.staffId] = perf.totalScans;
+          }
+          setStaffScanCounts(scanMap);
         }
       } catch (error) {
-        console.error('Failed to fetch assignments:', error);
+        console.error('Failed to fetch assignments/scans:', error);
       }
     };
-    fetchAssignments();
+    fetchAssignmentsAndScans();
   }, []);
 
   const getStaffStats = (staffId: string) => {
     const staffAssignments = assignments.filter(a => a.staffId === staffId);
     const eventsAssigned = new Set(staffAssignments.map(a => a.eventId)).size;
-    // For tickets scanned, we'd need to query ticket scans - this would require additional API
-    const ticketsScanned = 0; // Placeholder - would need getStaffPerformance or similar
+    const ticketsScanned = staffScanCounts[staffId] || 0;
     return { eventsAssigned, ticketsScanned };
   };
 

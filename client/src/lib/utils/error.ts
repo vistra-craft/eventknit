@@ -84,6 +84,20 @@ export const isApiError = (
 };
 
 /**
+ * Type guard to check if an error is a rate limit (429) response
+ */
+export const isRateLimitError = (
+  error: unknown
+): error is { status: 429; message: string; retryAfter?: number } => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    (error as { status: number }).status === 429
+  );
+};
+
+/**
  * Shows a destructive toast with a context-specific title.
  *
  * Replaces the broken pattern: `toast({ title: "Error", description: err instanceof Error ? err.message : 'fallback' })`
@@ -104,6 +118,23 @@ export const showErrorToast = (
   title: string,
   fallback = 'An error occurred'
 ): void => {
+  // Rate limit errors get a specific, non-alarming title
+  if (isRateLimitError(error)) {
+    const retryMinutes = error.retryAfter
+      ? Math.ceil(error.retryAfter / 60)
+      : undefined;
+    const retryHint = retryMinutes
+      ? ` Please try again in ${retryMinutes} minute${retryMinutes > 1 ? 's' : ''}.`
+      : '';
+
+    toast({
+      title: 'Slow down',
+      description: (error.message || 'You\'re sending requests too fast.') + retryHint,
+      variant: 'destructive',
+    });
+    return;
+  }
+
   toast({
     title,
     description: extractErrorMessage(error, fallback),

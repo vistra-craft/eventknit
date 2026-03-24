@@ -1067,7 +1067,6 @@ export class TicketService {
     // Use stored QR code if available (generated at registration time, like Eventbrite/vf-ticket)
     // Otherwise generate on-the-fly (backward compatibility for existing registrations)
     let qrCodeDataUrl: string;
-    let ticketDataForResponse: ReturnType<typeof TicketService.generateTicketData> | undefined;
     if (registration.qrCodeDataUrl) {
       // Use stored QR code (faster, like Eventbrite/vf-ticket)
       qrCodeDataUrl = registration.qrCodeDataUrl;
@@ -1076,7 +1075,6 @@ export class TicketService {
       // Generate QR code on-the-fly (backward compatibility for old registrations)
       logger.debug(`Generating QR code on-the-fly for registration ${registrationId} (no stored QR code found)`);
       const ticketData = this.generateTicketData(registration.id, registration.eventId, registration.attendee.email);
-      ticketDataForResponse = ticketData;
       qrCodeDataUrl = await this.generateQRCode(ticketData);
 
       // Store generated QR code for future use
@@ -1129,8 +1127,6 @@ export class TicketService {
       checkedInAt: registration.checkedInAt?.toISOString() ?? null,
       checkedOutAt: registration.checkedOutAt?.toISOString() ?? null,
       isCurrentlyInside: registration.isCurrentlyInside,
-      registration,
-      ticketData: ticketDataForResponse,
     };
   }
 
@@ -1141,65 +1137,188 @@ export class TicketService {
    */
   static async generateTicketPDF(registrationId: string): Promise<Buffer> {
     try {
-      // Get ticket data
       const ticketData = await this.getTicketByRegistrationId(registrationId);
-      const { registration, qrCode } = ticketData;
+
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: registrationId },
+        include: {
+          ticketLineItems: true,
+          event: {
+            include: {
+              organizer: {
+                select: { id: true, firstName: true, lastName: true, organizationName: true },
+              },
+            },
+          },
+          attendee: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+        },
+      });
+
+      if (!registration) {
+        throw new NotFoundError('Registration not found');
+      }
+
       const { event, attendee } = registration;
-
-      // Format event date
       const eventDate = this.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime);
-
-      // Generate HTML content for PDF
-      // Note: For production, install puppeteer for server-side PDF generation:
-      // npm install puppeteer
-      // Otherwise, return HTML that frontend can convert to PDF
-      const registrationForHTML: TicketEmailData['registration'] = {
-        ...registration,
-        ticketLineItems: ticketData.ticketLineItems,
-        registrationData: registration.registrationData && typeof registration.registrationData === 'object' && !Array.isArray(registration.registrationData)
-          ? registration.registrationData as Record<string, unknown>
-          : null,
-      };
       const currency = ticketData.currency || 'USD';
-      const htmlContent = this.generateTicketHTML(registrationForHTML, event, attendee, eventDate, qrCode, currency);
+      const attendeeName = `${attendee.firstName || ''} ${attendee.lastName || ''}`.trim() || attendee.email;
+      const organizerName = event.organizer?.organizationName
+        || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim()
+        || 'EventKnit';
+      const location = event.venue
+        ? `${event.venue}${event.location ? `, ${event.location}` : ''}`
+        : event.location || 'TBA';
 
-      // Try to use puppeteer for PDF generation (if available)
-      // Check if puppeteer module exists using dynamic import
-      try {
-        // Use dynamic import to avoid TypeScript checking the import
-        // @ts-expect-error - puppeteer is optional dependency
-        const puppeteerModule = await import('puppeteer');
-        const puppeteer = puppeteerModule.default || puppeteerModule;
+      // PDFKit — direct PDF generation, no browser required
+      const PDFDocument = (await import('pdfkit')).default;
 
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        });
-
-        const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-        // Generate PDF
-        const pdfBuffer = await page.pdf({
-          format: 'A4',
-          printBackground: true,
-          margin: {
-            top: '20px',
-            right: '20px',
-            bottom: '20px',
-            left: '20px',
+      return new Promise<Buffer>((resolve, reject) => {
+        const doc = new PDFDocument({
+          size: 'A4',
+          margin: 50,
+          info: {
+            Title: `Ticket - ${event.title}`,
+            Author: 'EventKnit',
+            Subject: `Event ticket for ${attendeeName}`,
           },
         });
 
-        await browser.close();
-        return Buffer.from(pdfBuffer);
-      } catch {
-        // If puppeteer is not available, return HTML with a clear marker
-        // Frontend can use browser's print-to-PDF or a client-side library
-        logger.warn('Puppeteer not available, returning HTML for client-side PDF conversion');
-        const fallbackHtml = `<!-- FALLBACK_HTML -->\n${htmlContent}`;
-        return Buffer.from(fallbackHtml, 'utf-8');
-      }
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        const pageWidth = doc.page.width - 100;
+        const rightCol = 320;
+
+        // ── Header band ─────────────────────────────────────
+        doc.rect(0, 0, doc.page.width, 80).fill('#1D9BF0');
+        doc.fontSize(24).fill('#FFFFFF').text('EventKnit', 50, 28);
+        doc.fontSize(10).fill('#FFFFFF').text('EVENT TICKET', 50, 55);
+        doc.fontSize(10).fill('#FFFFFF').text(
+          `#${registration.backupCode || registration.id.slice(0, 8).toUpperCase()}`,
+          0, 35, { align: 'right', width: doc.page.width - 50 },
+        );
+
+        // ── Event Title ─────────────────────────────────────
+        let y = 110;
+        doc.fontSize(22).fill('#0F1419').text(event.title, 50, y, { width: pageWidth });
+        y = doc.y + 15;
+
+        // ── Date ────────────────────────────────────────────
+        doc.fontSize(9).fill('#9CA3AF').text('DATE & TIME', 50, y);
+        y += 14;
+        doc.fontSize(12).fill('#0F1419').text(eventDate, 50, y, { width: 250 });
+        y = doc.y + 12;
+
+        // ── Location ────────────────────────────────────────
+        doc.fontSize(9).fill('#9CA3AF').text('LOCATION', 50, y);
+        y += 14;
+        doc.fontSize(12).fill('#0F1419').text(location, 50, y, { width: 250 });
+        y = doc.y + 12;
+
+        // ── Organizer ───────────────────────────────────────
+        doc.fontSize(9).fill('#9CA3AF').text('ORGANIZER', 50, y);
+        y += 14;
+        doc.fontSize(12).fill('#0F1419').text(organizerName, 50, y, { width: 250 });
+        y = doc.y + 20;
+
+        // ── Divider ─────────────────────────────────────────
+        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).dash(3, { space: 3 }).stroke('#E5E7EB').undash();
+        y += 20;
+
+        // ── Attendee ────────────────────────────────────────
+        doc.fontSize(9).fill('#9CA3AF').text('ATTENDEE', 50, y);
+        y += 14;
+        doc.fontSize(13).fill('#0F1419').text(attendeeName, 50, y);
+        y += 18;
+        doc.fontSize(10).fill('#6B7280').text(attendee.email, 50, y);
+        y += 25;
+
+        // ── Tickets ─────────────────────────────────────────
+        if (ticketData.ticketLineItems && ticketData.ticketLineItems.length > 0) {
+          doc.fontSize(9).fill('#9CA3AF').text('TICKETS', 50, y);
+          y += 14;
+          for (const item of ticketData.ticketLineItems) {
+            doc.fontSize(11).fill('#0F1419').text(`${item.ticketType} x${item.quantity}`, 50, y);
+            if (item.totalPrice > 0) {
+              doc.text(`${currency} ${item.totalPrice.toFixed(2)}`, rightCol, y, {
+                align: 'right', width: doc.page.width - rightCol - 50,
+              });
+            }
+            y += 18;
+          }
+        } else if (registration.ticketType) {
+          doc.fontSize(9).fill('#9CA3AF').text('TICKET TYPE', 50, y);
+          y += 14;
+          doc.fontSize(11).fill('#0F1419').text(registration.ticketType, 50, y);
+          y += 18;
+        }
+
+        // ── Total ───────────────────────────────────────────
+        if (registration.totalAmount && Number(registration.totalAmount) > 0) {
+          y += 5;
+          doc.moveTo(50, y).lineTo(doc.page.width - 50, y).stroke('#E5E7EB');
+          y += 10;
+          doc.fontSize(12).fill('#0F1419').text('Total', 50, y);
+          doc.fontSize(12).fill('#0F1419').text(
+            `${currency} ${Number(registration.totalAmount).toFixed(2)}`,
+            rightCol, y, { align: 'right', width: doc.page.width - rightCol - 50 },
+          );
+          y += 25;
+        } else {
+          doc.fontSize(11).fill('#16A34A').text('FREE', 50, y);
+          y += 25;
+        }
+
+        // ── QR Code ─────────────────────────────────────────
+        y += 10;
+        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).dash(3, { space: 3 }).stroke('#E5E7EB').undash();
+        y += 25;
+
+        const qrSize = 140;
+        const qrX = (doc.page.width - qrSize) / 2;
+
+        if (ticketData.qrCode && ticketData.qrCode.startsWith('data:image')) {
+          try {
+            const base64Data = ticketData.qrCode.split(',')[1];
+            const qrBuffer = Buffer.from(base64Data, 'base64');
+            doc.image(qrBuffer, qrX, y, { width: qrSize, height: qrSize });
+          } catch (qrErr) {
+            logger.warn('Failed to embed QR code in PDF:', qrErr);
+            doc.rect(qrX, y, qrSize, qrSize).stroke('#E5E7EB');
+            doc.fontSize(10).fill('#9CA3AF').text('QR Code', qrX, y + 60, { width: qrSize, align: 'center' });
+          }
+        } else {
+          doc.rect(qrX, y, qrSize, qrSize).stroke('#E5E7EB');
+          doc.fontSize(10).fill('#9CA3AF').text('QR Code', qrX, y + 60, { width: qrSize, align: 'center' });
+        }
+        y += qrSize + 10;
+
+        // ── Backup Code ─────────────────────────────────────
+        if (registration.backupCode) {
+          doc.fontSize(9).fill('#9CA3AF').text('BACKUP CODE', 0, y, { align: 'center', width: doc.page.width });
+          y += 14;
+          doc.fontSize(16).fill('#0F1419').text(registration.backupCode, 0, y, {
+            align: 'center', width: doc.page.width, characterSpacing: 3,
+          });
+          y += 25;
+        }
+
+        // ── Footer ──────────────────────────────────────────
+        doc.fontSize(8).fill('#9CA3AF').text(
+          'Present this ticket at the event entrance.',
+          0, y + 10, { align: 'center', width: doc.page.width },
+        );
+        doc.fontSize(8).fill('#9CA3AF').text(
+          `Generated by EventKnit \u2022 ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+          0, y + 25, { align: 'center', width: doc.page.width },
+        );
+
+        doc.end();
+      });
     } catch (error) {
       logger.error('Failed to generate ticket PDF:', error);
       throw error;

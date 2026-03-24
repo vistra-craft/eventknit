@@ -83,14 +83,10 @@ export const downloadTicketPDF = async (registrationId: string): Promise<void> =
     const html = await response.text();
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ticket-${registrationId}.html`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Open in new tab so user can print-to-PDF from browser
     window.open(url, '_blank');
+    // Clean up after a delay to allow the new tab to load
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   } else {
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);

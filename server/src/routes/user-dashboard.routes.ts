@@ -236,6 +236,17 @@ router.get(
   UserDashboardController.getSentMessages,
 );
 router.get(
+  '/messages/conversations',
+  authenticate,
+  UserDashboardController.getConversations,
+);
+router.get(
+  '/messages/conversations/:partnerId',
+  authenticate,
+  validateParams(Joi.object({ partnerId: Joi.string().uuid().required() })),
+  UserDashboardController.getConversationWithUser,
+);
+router.get(
   '/messages/:messageId',
   authenticate,
   validateParams(Joi.object({ messageId: Joi.string().uuid().required() })),
