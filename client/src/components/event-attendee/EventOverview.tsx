@@ -64,6 +64,7 @@ import { getNotifications, markAllAsRead, type Notification } from "@/lib/notifi
 import { sendMessage } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
 import { showErrorToast } from "@/lib/utils/error";
+import { shareEvent } from "@/lib/utils/share";
 import { stripHtml } from "@/lib/utils";
 import type { EventData } from "./EventAttendeeView";
 import { EventSurveyPrompt } from "./EventSurveyPrompt";
@@ -264,10 +265,9 @@ export const EventOverview: React.FC<EventOverviewProps> = ({ event }) => {
     );
   };
 
-  const handleShare = () => {
-    if (navigator.share) void navigator.share({ title: event.title, url: window.location.href });
-    else {
-      void navigator.clipboard.writeText(window.location.href);
+  const handleShare = async () => {
+    const shared = await shareEvent(event.title, event.slug ?? event.id);
+    if (!shared) {
       toast({ title: "Link copied", description: "Event link copied to clipboard" });
     }
   };

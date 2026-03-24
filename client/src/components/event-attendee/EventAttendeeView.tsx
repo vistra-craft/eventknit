@@ -76,6 +76,7 @@ export interface FAQ {
 
 export interface EventData {
   id: string;
+  slug?: string;
   title: string;
   description?: string;
   fullDescription?: string;

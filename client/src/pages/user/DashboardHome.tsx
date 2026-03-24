@@ -126,14 +126,14 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
   );
 
   // Split attending events
-  const upcomingEvents = attendingEvents.filter(e => !e.status || e.status === 'upcoming' || e.status === 'ongoing');
+  const upcomingAttendingEvents = attendingEvents.filter(e => !e.status || e.status === 'upcoming' || e.status === 'ongoing');
   const pastAttendingEvents = attendingEvents.filter(e => e.status === 'completed');
 
   // Filter attending events
   const filteredAttendingEvents = attendingFilter === 'all'
-    ? [...upcomingEvents, ...pastAttendingEvents]
+    ? [...upcomingAttendingEvents, ...pastAttendingEvents]
     : attendingFilter === 'upcoming'
-      ? upcomingEvents
+      ? upcomingAttendingEvents
       : pastAttendingEvents;
 
   // Filter saved events (derive status from date)
@@ -224,8 +224,8 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                 {getGreeting()}, {getFirstName(user.name)}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                {upcomingEvents.length > 0
-                  ? `You have ${upcomingEvents.length} upcoming ${upcomingEvents.length === 1 ? 'event' : 'events'}`
+                {upcomingAttendingEvents.length > 0
+                  ? `You have ${upcomingAttendingEvents.length} upcoming ${upcomingAttendingEvents.length === 1 ? 'event' : 'events'}`
                   : "Discover events you'll love"
                 }
               </p>
@@ -292,7 +292,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
                   tabs={FILTER_TABS.map(t => ({
                     ...t,
                     count: t.key === 'all' ? attendingEvents.length
-                      : t.key === 'upcoming' ? upcomingEvents.length
+                      : t.key === 'upcoming' ? upcomingAttendingEvents.length
                       : pastAttendingEvents.length,
                   }))}
                   activeFilter={attendingFilter}

@@ -8,15 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
+import { Label } from "../../../components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Pagination } from "../../../components/ui/pagination";
 import { Loader } from "../../../components/ui/loader";
 import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
 import { getCategoriesByGroup } from "@/lib/event-categories";
-import { bulkUpdateOrganizerDataAccess, getAdminStaffEvents } from "../../../lib/admin-api";
+import { bulkUpdateOrganizerDataAccess, getAdminStaffEvents, recallEvent } from "../../../lib/admin-api";
 import { useToast } from "@/hooks/useToast";
-import { showErrorToast } from "../../../lib/utils/error";
+import { showErrorToast, extractErrorMessage } from "../../../lib/utils/error";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { usePermissionsEnhanced } from "@/hooks/usePermissions";
@@ -74,11 +76,49 @@ const AllEventsPage = () => {
   const [previewEventId, setPreviewEventId] = useState<string | null>(null);
   const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [showRecallDialog, setShowRecallDialog] = useState(false);
+  const [recallEventId, setRecallEventId] = useState<string | null>(null);
+  const [recallAction, setRecallAction] = useState<'PENDING' | 'CANCELLED'>('PENDING');
+  const [recallReason, setRecallReason] = useState("");
+  const [recalling, setRecalling] = useState(false);
   const { toast } = useToast();
 
   const handlePreviewEvent = (eventId: string) => {
     setPreviewEventId(eventId);
     setPreviewModalOpen(true);
+  };
+
+  const openRecallDialog = (eventId: string) => {
+    setRecallEventId(eventId);
+    setShowRecallDialog(true);
+  };
+
+  const handleRecallEvent = async () => {
+    if (!recallEventId) return;
+    try {
+      setRecalling(true);
+      const response = await recallEvent(recallEventId, recallAction, recallReason || undefined);
+      if (response.success) {
+        setShowRecallDialog(false);
+        setRecallEventId(null);
+        setRecallAction('PENDING');
+        setRecallReason("");
+        toast({
+          title: recallAction === 'PENDING' ? "Event recalled to pending" : "Event recalled and cancelled",
+          description: recallAction === 'PENDING'
+            ? "The event has been pulled down and is awaiting re-approval."
+            : "The event has been cancelled. You can find it in Recalled Events.",
+        });
+        // Remove recalled event from the list
+        setEvents(prev => prev.filter(e => e.id !== recallEventId));
+      } else {
+        throw new Error(response.message || 'Failed to recall event');
+      }
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, 'Failed to recall event. Please try again.'));
+    } finally {
+      setRecalling(false);
+    }
   };
 
   // Fetch event details for preview modal
@@ -704,11 +744,13 @@ const AllEventsPage = () => {
                       Preview
                     </Button>
                          {event.status === "active" && (
-                           <Button variant="destructive" size="sm" asChild onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-                             <Link to="/admin/events/upcoming" target="_blank" rel="noopener noreferrer">
-                               <X className="h-4 w-4 mr-1" />
-                               Recall
-                             </Link>
+                           <Button
+                             variant="destructive"
+                             size="sm"
+                             onClick={(e: React.MouseEvent) => { e.stopPropagation(); openRecallDialog(event.id); }}
+                           >
+                             <X className="h-4 w-4 mr-1" />
+                             Recall
                            </Button>
                          )}
                     <DropdownMenu>
@@ -894,6 +936,74 @@ const AllEventsPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+      {/* Recall Event Dialog */}
+      <Dialog open={showRecallDialog} onOpenChange={setShowRecallDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recall Event</DialogTitle>
+            <DialogDescription>
+              Pull down this approved event. Choose whether to set it back to pending for re-approval or permanently cancel it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <RadioGroup value={recallAction} onValueChange={(value) => setRecallAction(value as 'PENDING' | 'CANCELLED')}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="PENDING" id="all-recall-pending" />
+                <Label htmlFor="all-recall-pending" className="cursor-pointer">
+                  Set to Pending (Re-approval)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="CANCELLED" id="all-recall-cancelled" />
+                <Label htmlFor="all-recall-cancelled" className="cursor-pointer">
+                  Permanently Cancel
+                </Label>
+              </div>
+            </RadioGroup>
+            <div>
+              <label htmlFor="all-recall-reason" className="text-sm font-medium">
+                Reason for recall (optional)
+              </label>
+              <textarea
+                id="all-recall-reason"
+                className="mt-2 w-full min-h-[100px] px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
+                placeholder="Enter reason for recall..."
+                value={recallReason}
+                onChange={(e) => setRecallReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRecallDialog(false);
+                setRecallEventId(null);
+                setRecallAction('PENDING');
+                setRecallReason("");
+              }}
+              disabled={recalling}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRecallEvent}
+              disabled={recalling}
+            >
+              {recalling ? (
+                <>
+                  <Loader size="sm" className="w-4 h-4 mr-2" />
+                  Recalling...
+                </>
+              ) : (
+                recallAction === 'PENDING' ? 'Set to Pending' : 'Permanently Cancel'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       </div>
   );

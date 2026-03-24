@@ -36,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/useToast";
 import { showErrorToast } from "@/lib/utils/error";
+import { shareEvent } from "@/lib/utils/share";
 import { RichTextContent } from "@/components/ui/RichTextContent";
 import type { EventData, User } from "./EventAttendeeView";
 
@@ -142,15 +143,10 @@ export const EventMyEvent: React.FC<EventMyEventProps> = ({ event, user }) => {
     window.open(gcal, '_blank', 'noopener,noreferrer');
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      void navigator.share({
-        title: event.title,
-        text: `Check out ${event.title}`,
-        url: window.location.href,
-      });
-    } else {
-      void navigator.clipboard.writeText(window.location.href);
+  const handleShare = async () => {
+    const shared = await shareEvent(event.title, event.slug ?? event.id);
+    if (!shared) {
+      toast({ title: "Link copied", description: "Event link copied to clipboard" });
     }
   };
 
