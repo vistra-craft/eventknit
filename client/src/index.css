@@ -123,7 +123,7 @@
     --destructive-foreground: var(--color-white);
 
     /* Borders & Inputs */
-    --border: var(--color-gray-200);
+    --border: var(--color-gray-100);
     --input: var(--color-off-white);
     --ring: var(--color-blue);
 
@@ -205,7 +205,7 @@
     --destructive: var(--color-destructive);
     --destructive-foreground: var(--color-white);
 
-    --border: var(--color-gray-200);
+    --border: var(--color-gray-100);
     --input: var(--color-off-white);
     --ring: var(--primary);
 

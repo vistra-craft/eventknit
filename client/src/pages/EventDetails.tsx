@@ -7,8 +7,8 @@ import { useToast } from "@/hooks/useToast";
 import { Button } from "@/components/ui/button";
 import { isEventSaved as checkIfSaved, toggleSaveEvent } from "@/lib/saved-events-api";
 import { shareEvent } from "@/lib/utils/share";
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { EventHero } from "@/components/event-details/EventHero";
 import { EventSidebar } from "@/components/event-details/EventSidebar";
 import { MobileActionBar } from "@/components/event-details/MobileActionBar";
@@ -17,7 +17,7 @@ import { OrganizerInfo } from "@/components/event-details/OrganizerInfo";
 import { EventTags } from "@/components/event-details/EventTags";
 import { RelatedEvents } from "@/components/event-details/RelatedEvents";
 import { RichTextContent } from "@/components/ui/RichTextContent";
-import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Users, CheckCircle, Calendar, MapPin, Globe, Video, ArrowRight, AlertCircle } from "lucide-react";
 import { FAQsAccordion } from "@/components/event-details/FAQsAccordion";
 import { RefundPolicy } from "@/components/event-details/RefundPolicy";
 import ResaleListings from "@/components/event-details/ResaleListings";
@@ -65,7 +65,6 @@ const EventDetails = () => {
   const [userAlreadyRegistered, setUserAlreadyRegistered] = useState(false);
   const [existingRegistrationId, setExistingRegistrationId] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
-  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const { toast } = useToast();
 
   // Use event.id (real UUID) for API calls — id from URL may be a slug
@@ -261,7 +260,7 @@ const EventDetails = () => {
           {isSoldOut ? (
             <div className="mt-6 mb-4">
               <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-xl p-4 sm:p-6">
-                <div className="flex items-start gap-2 sm:gap-4">
+                <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 mt-0.5">
                     <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
                       <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
@@ -282,7 +281,7 @@ const EventDetails = () => {
           ) : ticketAvailability.hasPartialAvailability && (
             <div className="mt-6 mb-4">
               <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-xl p-4 sm:p-6">
-                <div className="flex items-start gap-2 sm:gap-4">
+                <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 mt-0.5">
                     <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
                       <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
@@ -318,9 +317,9 @@ const EventDetails = () => {
                 </div>
 
                 {/* Location */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <LocationIcon className="h-4 w-4 text-primary flex-shrink-0" />
-                  <span className="truncate">{locationLabel}</span>
+                  <span>{locationLabel}</span>
                 </div>
 
                 {/* Mobile-only price display */}
@@ -336,45 +335,13 @@ const EventDetails = () => {
               </div>
 
               {/* About Section */}
-              {(() => {
-                const descriptionContent = event.fullDescription || event.description || '';
-                const textLength = descriptionContent.replace(/<[^>]*>/g, '').trim().length;
-                if (textLength === 0) return null;
-                const shouldTruncate = textLength > 300;
-                return (
-                  <section className="pt-8 pb-8 border-b border-border/40">
-                    <h2 className="text-page-title mb-4">About This Event</h2>
-                    <div className="space-y-2">
-                      <div className={shouldTruncate && !isDescriptionExpanded ? "line-clamp-4" : ""}>
-                        <RichTextContent
-                          content={descriptionContent}
-                          className="prose-lg text-muted-foreground leading-relaxed"
-                        />
-                      </div>
-                      {shouldTruncate && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                          className="h-8 text-primary hover:text-primary/80 p-0"
-                        >
-                          {isDescriptionExpanded ? (
-                            <>
-                              Show Less
-                              <ChevronUp className="w-4 h-4 ml-1" />
-                            </>
-                          ) : (
-                            <>
-                              See More
-                              <ChevronDown className="w-4 h-4 ml-1" />
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </section>
-                );
-              })()}
+              <section className="pt-8 pb-8 border-b border-border/40">
+                <h2 className="text-page-title mb-4">About This Event</h2>
+                <RichTextContent
+                  content={event.fullDescription || event.description || '<p>No description available.</p>'}
+                  className="prose-lg text-muted-foreground leading-relaxed"
+                />
+              </section>
 
               {/* Event Schedule */}
               {(() => {

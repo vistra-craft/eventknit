@@ -57,9 +57,7 @@ A comprehensive engineering guide to the EventKnit platform — architecture, de
 44. [Batch Export & Data Operations](#44-batch-export--data-operations)
 45. [CI/CD Pipelines & DevOps](#45-cicd-pipelines--devops)
 46. [Port Configuration](#46-port-configuration)
-47. [Post-Event Survey System](#47-post-event-survey-system)
-48. [Financial Data Integrity Standards](#48-financial-data-integrity-standards)
-49. [Glossary](#49-glossary)
+47. [Glossary](#47-glossary)
 
 ---
 
@@ -460,29 +458,28 @@ className="bg-white dark:bg-gray-800 border-border/50"
 
 ## 5. Mobile Application Architecture
 
-### Clean Architecture (All Roles)
+### Hybrid Architecture
 
-The mobile app uses **Clean Architecture across all user roles** — attendee, organizer, and admin. All API calls go through the Dio interceptor chain for automatic auth token injection, 401 token refresh, and request logging.
+The mobile app uses **two architecture patterns** depending on the user role:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│              ALL FEATURES (Attendee, Organizer, Admin)           │
-│                   Clean Architecture                             │
+│                  ATTENDEE FEATURES                               │
+│          Clean Architecture (Full Layers)                        │
 │                                                                  │
-│  Screen (Get.find<Controller>())                                 │
-│    → Controller (injected use cases via constructor)             │
-│      → UseCase (single-responsibility operation)                 │
-│        → Repository interface (domain layer)                     │
-│          → RepositoryImpl (data layer)                           │
-│            → ApiClient → DioClient (4 interceptors)              │
-│                                   ├── API (Remote)               │
-│                                   └── Drift DB (Local/offline)   │
+│  Screen → Controller → UseCase → Repository → DataSource        │
+│                                           ├── API (Remote)       │
+│                                           └── Drift DB (Local)   │
+├─────────────────────────────────────────────────────────────────┤
+│             ADMIN / ORGANIZER FEATURES                           │
+│          Direct API Pattern (Simplified)                         │
+│                                                                  │
+│  Screen → Controller → API Client → Server                      │
+│  (No UseCases, no Repositories — faster to build)               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**9 Repositories:** Auth, Event, Ticket, Scan, Organizer, Admin, Notification, Attendee, ServicePoint
-**73 Use Cases:** Covering auth, events, tickets, organizer, attendee, and notification domains
-**DI:** `AppBindings` for app-lifetime singletons + `OrganizerBinding`/`AdminBinding` for route-level controllers
+**Why hybrid?** Attendee features need offline support (scanning, cached tickets), so Clean Architecture with repositories + local data sources justifies the complexity. Admin/organizer features are always online, so the extra layers add overhead without benefit.
 
 ### Technology Stack
 
@@ -507,78 +504,57 @@ The mobile app uses **Clean Architecture across all user roles** — attendee, o
 
 ```
 eventknit_mobile/lib/
-├── api/                          # Legacy API files (deprecated — kept for backward compat)
-│   ├── endpoints.dart            # Centralized URL management + base URL switching
-│   └── *.dart                    # Legacy raw HTTP functions (no external consumers)
+├── api/                          # API layer (all HTTP calls)
+│   ├── endpoints.dart            # Centralized URL management (21KB)
+│   ├── auth_api.dart             # Login, register, OAuth
+│   ├── events_api.dart           # Event discovery
+│   ├── organizer_api.dart        # Organizer features (59KB — largest)
+│   ├── admin_api.dart            # Admin operations (26KB)
+│   ├── user_dashboard_api.dart   # Attendee dashboard (21KB)
+│   ├── tickets_api.dart          # Ticket operations
+│   ├── payments_api.dart         # Payment processing
+│   ├── transfer_api.dart         # Ticket transfers
+│   ├── verification_api.dart     # KYC verification
+│   └── ...                       # 15+ API files
 ├── core/
-│   ├── bindings/                # GetX dependency injection
-│   │   ├── app_bindings.dart    # App-lifetime: repos, use cases, core controllers
-│   │   ├── organizer_binding.dart # Route-level: organizer controllers
-│   │   └── admin_binding.dart   # Route-level: admin controllers
 │   ├── network/
-│   │   ├── dio_client.dart      # Dio setup with 4-interceptor chain
-│   │   └── interceptors/       # auth, cookie, refresh, logging
+│   │   ├── dio_client.dart       # Dio setup with interceptor chain
+│   │   └── interceptors/        # 6 interceptors (auth, cookie, refresh, logging...)
 │   ├── services/                # Cross-cutting services
-│   │   ├── api_client.dart      # ApiClient wrapper (centralized Dio access)
-│   │   ├── device_service.dart  # Device identification (device_info_plus)
-│   │   ├── storage_service.dart # Secure + fast storage
-│   │   ├── database_service.dart # Drift initialization
-│   │   ├── push_notification_service.dart # Firebase Cloud Messaging
-│   │   └── ...
-│   ├── utils/
-│   │   └── error_utils.dart     # handleApiError() — classified exception handling
+│   │   ├── offline_ticket_service.dart    # Local ticket caching
+│   │   ├── ticket_crypto_service.dart     # Ed25519 verification (8.6KB)
+│   │   ├── storage_service.dart           # Secure + fast storage
+│   │   ├── database_service.dart          # Drift initialization
+│   │   ├── location_service.dart          # GPS + geocoding
+│   │   ├── notification_service.dart      # Local notifications
+│   │   └── push_notification_service.dart # FCM handling
 │   └── constants/               # Design tokens (colors, typography, spacing)
-├── controllers/                  # App-lifetime GetX controllers
-│   ├── auth_controller.dart     # Auth state (use case injection)
-│   ├── events_controller.dart   # Event discovery (use case injection)
-│   ├── tickets_controller.dart  # Ticket management (use case injection)
-│   ├── notifications_controller.dart # Notifications (use case injection)
-│   └── theme_controller.dart    # Dark/light mode
+├── controllers/                  # GetX controllers (state management)
+│   ├── auth_controller.dart      # Auth state (12.7KB)
+│   ├── events_controller.dart    # Event discovery (16.3KB)
+│   ├── tickets_controller.dart   # Ticket management (9.2KB)
+│   ├── theme_controller.dart     # Dark/light mode
+│   └── ...
 ├── data/
 │   ├── local/database/
 │   │   ├── tables/              # Drift table definitions (7 tables)
 │   │   └── daos/                # Data access objects
-│   └── repositories/            # 9 repository implementations (ApiClient + Dio)
-│       ├── auth_repository_impl.dart
-│       ├── event_repository_impl.dart
-│       ├── ticket_repository_impl.dart
-│       ├── scan_repository_impl.dart
-│       ├── organizer_repository_impl.dart
-│       ├── admin_repository_impl.dart
-│       ├── notification_repository_impl.dart
-│       ├── attendee_repository_impl.dart
-│       └── service_point_repository_impl.dart
+│   └── repositories/            # Repository implementations (offline + API)
 ├── domain/
-│   ├── entities/                # Freezed entity classes
-│   ├── repositories/            # 9 repository interfaces (contracts)
-│   ├── usecases/                # 73 use cases
-│   │   ├── auth/               # Login, register, OAuth, password
-│   │   ├── events/             # Discovery, categories, save/unsave
-│   │   ├── tickets/            # Purchase, transfer, cancel, wallet pass
-│   │   ├── organizer/          # Dashboard, analytics, attendees, refunds, invitations
-│   │   ├── attendee/           # Wallet, interests, invoices, reviews, payments, transfers
-│   │   └── notifications/      # Get, mark read, delete
+│   ├── entities/                # Business entities
+│   ├── repositories/            # Repository interfaces
+│   ├── usecases/                # Use case classes
 │   └── services/
 │       └── offline_sync_service.dart  # Core sync engine (595 lines)
-├── models/                       # Domain models by feature
-│   ├── admin/                   # Admin dashboard, events, users, analytics
-│   ├── organizer/               # Dashboard stats, events, attendees, refunds, promo codes
-│   ├── attendee/                # Payments, transfers, invoices, verification
-│   └── notification/            # Notification, preferences
-├── presentation/                 # UI layer by role
-│   ├── admin/                   # Admin dashboard, events, scanner, notifications, profile
-│   ├── organizer/               # Organizer dashboard, events, scanner, attendees, profile
-│   ├── attendee/                # Checkout, registration, tickets, search, event details
-│   ├── auth/                    # Login, signup, forgot password
-│   ├── public/                  # Discovery (not logged in)
+├── presentation/                 # Screens and widgets
+│   ├── attendee/                # Attendee-facing screens
+│   ├── auth/                    # Login/signup
 │   └── shared/                  # Reusable widgets
 └── workers/
     └── sync_worker.dart         # Background sync (WorkManager)
 ```
 
 ### Dio Interceptor Chain (order matters)
-
-All API calls go through this chain via `ApiClient` → `DioClient`:
 
 ```
 Request → CookieTokenInterceptor → AuthInterceptor → RefreshTokenInterceptor → LoggingInterceptor → Server
@@ -587,9 +563,7 @@ Request → CookieTokenInterceptor → AuthInterceptor → RefreshTokenIntercept
 1. **CookieTokenInterceptor** — Extracts `refreshToken` from `Set-Cookie` on auth responses (browsers handle this automatically; Dio does not)
 2. **AuthInterceptor** — Adds `Authorization: Bearer <accessToken>` to all requests
 3. **RefreshTokenInterceptor** — On 401, queues all pending requests, refreshes token via cookie, retries all queued. On refresh failure → clears storage, navigates to login
-4. **LoggingInterceptor** — Debug-mode request/response logging with sensitive data masking
-
-Error handling: All repository implementations catch `ApiException`, `SocketException`, `TimeoutException`, and `FormatException` — returning `Either<Failure, T>` to controllers.
+4. **LoggingInterceptor** — Debug-mode request/response logging
 
 ### Token Storage
 
@@ -829,33 +803,28 @@ void callbackDispatcher() {
 
 | Layer | Target | Priority |
 |-------|--------|----------|
-| Use Cases | 90% | Critical (business logic isolation) |
 | Controllers | 80% | Critical (auth, scanner, events) |
-| Repositories | 80% | High (API integration) |
 | Services | 90% | Critical (crypto, offline sync) |
+| API Clients | 70% | High |
 | Widgets | 60% | Medium |
 
-**Common Test Pattern (Clean Architecture):**
+**Common GetX Test Pattern:**
 ```dart
 void main() {
-  late MockLoginUseCase mockLoginUseCase;
+  late MockAuthApi mockApi;
   late AuthController controller;
 
   setUp(() {
-    mockLoginUseCase = MockLoginUseCase();
-    // Inject mocked use cases — repository layer is NOT tested here
-    controller = AuthController(
-      loginUseCase: mockLoginUseCase,
-      // ... other use cases
-    );
-    Get.put(controller);
+    mockApi = MockAuthApi();
+    Get.put<AuthApi>(mockApi);
+    controller = Get.put(AuthController());
   });
 
   tearDown(() => Get.reset());
 
   test('login success', () async {
-    when(() => mockLoginUseCase(email: any(), password: any()))
-      .thenAnswer((_) async => Right(LoginResult(...)));
+    when(() => mockApi.login(any(), any()))
+      .thenAnswer((_) async => AuthResponse(...));
     await controller.login('test@email.com', 'password');
     expect(controller.isLoggedIn.value, true);
   });
@@ -1735,32 +1704,24 @@ app.use(morgan('combined', {
 | Service unit tests | `tests/unit/services/` | 23 files | Fast (ms) |
 | Controller unit tests | `tests/unit/controllers/` | 2 files | Fast |
 | Job tests | `tests/unit/jobs/` | 8 files | Fast |
-| Integration tests | `tests/*.test.ts` | 79 files | Slower |
+| Integration tests | `tests/*.test.ts` | 78 files | Slower |
 
 ### Running Tests
 
 ```bash
-npm test                                              # All tests (vitest)
-npx vitest run tests/guest-registration-payment.test.ts  # Single test file
+npm test                                              # All tests
+npx jest tests/unit/services/ --no-coverage           # Service tests only
+npx jest tests/white-label.service.test.ts -t "should create" --no-coverage  # Single test
 npm run test:coverage                                 # With coverage
 npm run test:watch                                    # Watch mode
 ```
 
-### Vitest Configuration
+### Jest Configuration
 
-- **ESM support**: Native TypeScript support via vitest
+- **ESM support**: `ts-jest` with ESM preset, `.js` extension mapping
 - **Sequential**: `maxWorkers: 1` (prevents database race conditions)
 - **Timeout**: 120 seconds per test
 - **Force exit**: Prevents hanging from open handles
-
-### Key Test Files
-
-| Test File | Coverage Area |
-|-----------|---------------|
-| `guest-registration-payment.test.ts` | Guest registration token issuance, public ticket download, guest payment initialization, payment status, user registered events payment fields |
-| `ticket.test.ts` | Ticket CRUD, access control, public view |
-| `platform-fee.service.test.ts` | Fee calculation, disbursement linking |
-| `auth.test.ts` | Login, registration, token refresh, password reset |
 
 ### Mocking Patterns
 
@@ -2060,26 +2021,19 @@ Attendee pays → Payment Gateway (Paystack/Stripe/M-Pesa) → Webhook confirms
 
 **Endpoint:** `POST /api/v1/payments/webhook`
 
-**Distributed Processing with Optimistic Locking**
-- Multi-instance safe: Unique index on `PaymentWebhookEvent.gatewayEventId` ensures single processing across concurrent instances
-- Create-before-process pattern: Record webhook event with distributed constraint check before side effects
-- Race condition handling: Second concurrent instance attempting same `gatewayEventId` triggers automatic deduplication
-- Eliminates side-effect duplication (emails, notifications) even under high concurrency
-
-**Processing Pipeline:**
 1. **Signature verification** — HMAC comparison (reject immediately if invalid)
-2. **Distributed idempotency lock** — Record in `PaymentWebhookEvent` with constraint-based synchronization
+2. **Idempotency check** — Record in `PaymentWebhookEvent` table by `gatewayEventId` (unique index)
 3. **Re-verify with gateway** — Call `verifyPayment(reference)` to confirm amount
 4. **Reference routing** — Check reference prefix to determine payment type:
    - `SUB-*` → Route to `SubscriptionService.handleSubscriptionPaymentSuccess()` (subscription payment)
-   - Default → Continue with event payment flow
-5. **Amount validation with mismatch detection** — Tolerance of ±0.01 (1 cent/kobo); mismatches trigger alert flow
-6. **Status updates** — `CONFIRMED` for success; `AMOUNT_MISMATCH` for discrepancies (enables triage)
-7. **Transaction recording** — Full audit trail with all gateway verification data
-8. **Platform fee calculation** — Atomic `PlatformFeeService.createPlatformFee()` (also auto-records as `PlatformIncome`)
-9. **Invoice generation** — Async, non-blocking
-10. **Ticket email** — With QR code and calendar invite
-11. **Dual notification** — Real-time alerts to organizer and attendee
+   - Default → Continue with event payment flow (steps 5-10)
+5. **Amount validation** — Tolerance of ±0.01 (1 cent/kobo for rounding)
+6. **Create transaction record** — `EventPaymentTransaction`
+7. **Update registration** — Status → `CONFIRMED`
+8. **Calculate platform fee** — `PlatformFeeService.createPlatformFee()` (also auto-records as `PlatformIncome`)
+9. **Generate invoice** — Async, non-blocking
+10. **Send ticket email** — With QR code and calendar invite
+11. **Notify organizer** — Payment received notification
 
 ### Idempotency (Multi-Layer)
 
@@ -2090,31 +2044,6 @@ Attendee pays → Payment Gateway (Paystack/Stripe/M-Pesa) → Webhook confirms
 | Platform Fee | `PlatformFee.transactionId` (unique) | One fee per transaction |
 | Auto-Payout | Query-based dedup | Fees with `status='calculated'` AND `disbursementId=null` |
 | Fee Linking | `prisma.$transaction` | Atomic create-and-link prevents double-counting |
-
-**Amount Mismatch Detection & Dual-Notification Flow**
-- Webhook validates paid amount vs. expected amount with ±0.01 tolerance
-- Mismatch detected: Registration status set to `AMOUNT_MISMATCH` (distinct from `PENDING`, enabling visual triage)
-- **Attendee notification** — High-priority alert with amount details, reference, and support contact
-- **Organizer notification** — High-priority alert with attendee email, reference, and reconciliation action
-- **Audit trail** — All mismatch data logged with difference amount and timestamps for investigation
-- **Manual recovery** — Webhook event status persisted; operators can retry or adjust via Bull Board dashboard
-
-### Payment Data Visibility by Role
-
-| Data Field | Admin | Organizer (Standard+) | Attendee |
-|------------|-------|----------------------|----------|
-| Transaction # / Paystack reference | Yes | No | No |
-| Payment amount | Yes | Yes | Yes (ticket view + tickets tab) |
-| Payment status | Yes | Yes | Yes (ticket view + tickets tab) |
-| Payment method | Yes | Yes | Yes (ticket view) |
-| Platform fee breakdown | Yes | No | No |
-| Organizer payout amount | Yes | No | No |
-| Attendee email/name | Yes | Yes (with tier) | Own only |
-| Gateway metadata / risk score | Yes | No | No |
-
-**Attendee payment visibility** is surfaced in two places:
-1. **Ticket View Page** — fetches `GET /payments/status/:registrationId` and displays status badge, amount, and method
-2. **Tickets Tab (Dashboard)** — `getUserRegisteredEvents` now returns `totalAmount`, `paymentStatus`, `paymentMethod`, `isFree`, and `currency` per registration, shown inline on each ticket card
 
 ### Race Condition Prevention
 
@@ -2332,26 +2261,15 @@ This means:
 1. `POST /api/v1/events/:id/register` → Creates registration with QR
 2. Free → confirmation page; Paid → payment page
 
-**Path B: Guest Checkout (Silent Auto-Login)**
+**Path B: Guest Checkout (Invitation-Based Account Creation)**
 1. `POST /api/v1/events/:id/register-guest`
-2. Backend creates a **passwordless user record** for the email (or finds existing user by email)
+2. Backend creates a **passwordless user record** for the email — no session is issued
 3. An `accountInvitationToken` (32-byte hex, hashed in DB, 7-day expiry) is generated and embedded in Email 1
-4. Backend issues a JWT access token via `AuthService.generateTokens()` — returned in the response as `accessToken`
-5. Response returns `{ registration, user, accessToken }` — user includes `requiresPasswordSetup` flag
-6. Frontend calls `setAuthFromGuestResponse()` to silently authenticate the guest in-browser
-7. Guest is now a fully authenticated user — all subsequent API calls (payment, ticket view, download) work seamlessly
-8. **Existing users as guests:** If the email matches an existing account, the same flow applies — the user is found (not created), issued a token, and can proceed to payment. `isNewUser` is `false` in this case.
-9. **Fallback (Option B):** If silent auto-login fails for any reason, `PaymentStep` detects `!isAuthenticated` and falls back to the public endpoint `POST /api/v1/payments/initialize-guest` which verifies ownership via email match — no auth needed
-10. Account password setup is optional — attendee can set a password later via the link in their email (`GET /auth/create-account?token=...`)
-
-**Public Endpoints for Unauthenticated Access:**
-
-| Endpoint | Method | Purpose | Verification |
-|----------|--------|---------|-------------|
-| `/tickets/:id/view` | GET | View ticket without auth | Email query param |
-| `/tickets/:id/download-public` | GET | Download ticket PDF without auth | Email query param |
-| `/payments/initialize-guest` | POST | Initialize payment without auth | Email + registrationId in body |
-| `/payments/verify` | GET | Verify payment callback | Reference param (public) |
+4. Response returns only `{ registration, user }` — no `accessToken` or `refreshToken`
+5. Attendee lands on the confirmation page as a guest (unauthenticated)
+6. To activate their account, attendee clicks the link in their email → `GET /auth/create-account?token=...`
+7. `POST /api/v1/auth/create-account` verifies token, sets password, activates account, and issues a session
+8. Account creation is entirely optional — the registration and ticket are valid regardless
 
 ### Cart & Inventory Locking
 
@@ -2389,14 +2307,6 @@ EventKnit separates booking confirmation from ticket delivery using an async que
 - Retry with exponential backoff — 3 attempts, backoff on failure
 - Idempotency: guarded by `ticketEmailSentAt` — re-processing a BullMQ job never sends a duplicate email
 - Fails gracefully: queue not available → falls back to synchronous PDF generation
-- PDF generation protected with timeout; Puppeteer failures don't block ticket delivery
-
-**Robust Email & PDF Handling**
-- Email 1 (confirmation): Structured error handling with detailed logging; attendee can request resend if delivery fails
-- Email 2 (ticket): Async background processing with independent retry queue
-- BullMQ resilience: Jobs survive queue restarts; exponential backoff prevents gateway hammering
-- Queue unavailable fallback: Synchronous PDF generation ensures tickets always delivered
-- Audit trail: Both emails tracked independently for support troubleshooting and delivery verification
 
 **Why not one email?**
 Waiting for PDF generation before sending any email increases p99 latency by seconds, worsens failure rates, and blocks the server during high-traffic bursts. Splitting the flow returns instant trust to the user while heavy work continues in the background.
@@ -2587,16 +2497,11 @@ const qrPayload = {
   registrationId,
   eventId,
   email,
-  timestamp: registration.createdAt, // Deterministic: registration time, not current time
+  timestamp: Date.now(),
 };
 // Signed with Ed25519 private key → verifiable with public key
 // Public key available at GET /api/v1/auth/public-key
 ```
-
-**Deterministic QR Code Generation**
-- QR payload uses registration creation timestamp (not current time), ensuring identical signature across regenerations
-- Allows safe QR resend via email without invalidating previously issued codes
-- Backup code provides fallback if QR damaged during transmission (10-char alphanumeric)
 
 **Mode 2: HMAC-Signed String (Legacy)**
 ```
@@ -4071,14 +3976,12 @@ const exportToCSV = (data: Attendee[], filename: string) => {
 
 | Workflow | Trigger | Services | Steps |
 |----------|---------|----------|-------|
-| `server-ci.yml` | Push/PR to main, development, staging | Postgres 16, Redis 7 (commented out) | Lint → Type-check → Build (tests commented out for faster deploys) |
-| `client-ci.yml` | Push/PR to main, development, staging | None | Lint → Type-check → Build (tests commented out for faster deploys) |
-| `server-deploy-staging.yml` | Push to `staging` | — | Build → Deploy to staging (tests commented out) |
-| `client-deploy-staging.yml` | Push to `staging` | — | Build → Deploy to staging (tests commented out) |
-| `server-deploy-production.yml` | Push to `main` | — | Build → Deploy to production (tests commented out) |
-| `client-deploy-production.yml` | Push to `main` | — | Build → Deploy to production (tests commented out) |
-
-> **Note:** Test steps across all CI/CD workflows are currently commented out (not deleted) to speed up deployments. Linting, type-checking, and build steps remain active. Tests can be re-enabled by uncommenting the relevant steps in each workflow file.
+| `server-ci.yml` | Push/PR to main, development, staging | MongoDB 7.0, Redis 7 | Lint → Type-check → Test → Build |
+| `client-ci.yml` | Push/PR to main, development, staging | None | Lint → Type-check → Test → Build |
+| `server-deploy-staging.yml` | Push to `staging` | — | Build → Deploy to staging |
+| `client-deploy-staging.yml` | Push to `staging` | — | Build → Deploy to staging |
+| `server-deploy-production.yml` | Push to `main` | — | Build → Deploy to production |
+| `client-deploy-production.yml` | Push to `main` | — | Build → Deploy to production |
 
 **CI Configuration Details:**
 - Node.js max-old-space-size: 4096 MB (for TypeScript compilation)
@@ -4228,306 +4131,7 @@ server {
 
 ---
 
-## 47. Post-Event Survey System
-
-EventKnit provides a **Post-Event Survey System** that allows organizers to design custom surveys for their events, collect structured feedback from attendees, and analyze results. This system is distinct from the existing EventReview (public star ratings) and EventFeedback (platform-level NPS) systems — it gives organizers full control over what questions are asked.
-
-### 47.1 Architecture Overview
-
-The survey system introduces two new Prisma models:
-
-```
-EventSurvey ──────── belongs to ──────── Event
-     │                                      │
-     │ has many                             │ has many
-     ▼                                      ▼
-SurveyResponse ──── belongs to ──── User (attendee)
-     │
-     └──── validated against ──── EventRegistration
-```
-
-- **EventSurvey** — One survey per event, created by the event organizer or an admin (for managed events). Defines which sections are active and holds custom questions.
-- **SurveyResponse** — One response per attendee per survey. Stores all answers (ratings, NPS score, custom question responses, comment).
-
-The survey is only available after an event's `endDate` has passed and the attendee must have a confirmed `EventRegistration` for that event.
-
-### 47.2 Database Schema
-
-**EventSurvey**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `String` (cuid) | Primary key |
-| `eventId` | `String` (unique) | Foreign key to `Event` |
-| `overallRatingEnabled` | `Boolean` | Always `true` — overall star rating is mandatory |
-| `npsEnabled` | `Boolean` | Toggle for "How likely to recommend?" (0-10) |
-| `categoryRatingsEnabled` | `Boolean` | Toggle for 5 predefined category ratings |
-| `customQuestions` | `Json` | Array of up to 5 custom questions |
-| `isActive` | `Boolean` | Whether the survey is accepting responses |
-| `createdAt` | `DateTime` | Creation timestamp |
-| `updatedAt` | `DateTime` | Last update timestamp |
-
-**SurveyResponse**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `String` (cuid) | Primary key |
-| `surveyId` | `String` | Foreign key to `EventSurvey` |
-| `userId` | `String` | Foreign key to `User` (respondent) |
-| `overallRating` | `Int` | 1-5 star rating (required) |
-| `npsScore` | `Int?` | 0-10 NPS score (if NPS section enabled) |
-| `venueRating` | `Int?` | 1-5 (if category ratings enabled) |
-| `organizationRating` | `Int?` | 1-5 (if category ratings enabled) |
-| `contentRating` | `Int?` | 1-5 (if category ratings enabled) |
-| `valueRating` | `Int?` | 1-5 (if category ratings enabled) |
-| `communicationRating` | `Int?` | 1-5 (if category ratings enabled) |
-| `customAnswers` | `Json` | Answers to custom questions |
-| `comment` | `String?` | Free-form comment |
-| `createdAt` | `DateTime` | Submission timestamp |
-
-**Unique constraint:** `@@unique([surveyId, userId])` — one response per attendee per survey.
-
-### 47.3 API Endpoints
-
-All endpoints are under `/api/v1/`:
-
-**Backend API Endpoints:**
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/v1/surveys` | Authenticated | Create survey for an event |
-| `PUT` | `/api/v1/surveys/:surveyId` | Authenticated | Update survey configuration |
-| `DELETE` | `/api/v1/surveys/:surveyId` | Authenticated | Delete survey (only if zero responses) |
-| `GET` | `/api/v1/surveys/event/:eventId` | Authenticated | Get survey config for organizer view |
-| `GET` | `/api/v1/surveys/event/:eventId/results` | Authenticated | Get aggregated results with NPS breakdown |
-| `GET` | `/api/v1/surveys/event/:eventId/public` | Authenticated | Get survey form for attendee |
-| `POST` | `/api/v1/surveys/:surveyId/respond` | Authenticated | Submit survey response |
-| `GET` | `/api/v1/admin/surveys` | Admin | List all surveys platform-wide |
-
-**Frontend Routes:**
-
-| Route | Role | Description |
-|-------|------|-------------|
-| `/events/:eventId/survey` | Public (attendee) | Standalone survey page linked from email |
-| `/organizer/event/:eventId/survey` | Organizer | Survey creation, configuration, and results |
-| `/admin/events/:eventId/survey` | Admin | Survey management for managed events (reuses organizer component) |
-
-**Authorization (enforced in service layer):**
-- `createSurvey`, `updateSurvey`, `deleteSurvey` verify the caller is the event organizer, managed event admin, or a platform admin (SUPERADMIN/ADMIN role)
-- Attendees can only view and respond to surveys for events they have a confirmed registration for
-- Duplicate submissions are rejected (unique constraint on `surveyId` + `attendeeId`)
-
-**Automatic Trigger:**
-- `PostEventSurveyJob` runs hourly, finds events that ended 23–25 hours ago, and sends in-app notifications + emails to all confirmed attendees with a link to `/events/{eventId}/survey`
-- Prevents duplicate sends with a 48-hour deduplication window
-
-### 47.4 Survey Structure
-
-A survey has three fixed sections and a custom questions section:
-
-**Fixed Sections:**
-
-1. **Overall Rating** (always enabled)
-   - 1-5 star rating
-   - Cannot be toggled off
-
-2. **NPS Score** (toggleable via `npsEnabled`)
-   - "How likely are you to recommend this event?" (0-10 scale)
-   - Used for Net Promoter Score calculation
-
-3. **Category Ratings** (toggleable via `categoryRatingsEnabled`)
-   - Five predefined categories, each rated 1-5 stars:
-     - Venue & Location
-     - Organization & Logistics
-     - Content & Programming
-     - Value for Money
-     - Communication & Updates
-
-**Custom Questions (max 5):**
-
-Stored as JSON array in `customQuestions`. Each question object:
-
-```json
-{
-  "id": "q1",
-  "type": "multiple_choice | text | rating",
-  "question": "How did you hear about this event?",
-  "options": ["Social media", "Friend", "Email", "Other"],
-  "required": true
-}
-```
-
-| Question Type | Answer Format | Notes |
-|--------------|---------------|-------|
-| `multiple_choice` | Single selected option string | `options` array required (2-6 choices) |
-| `text` | Free-form string | Max 500 characters |
-| `rating` | Integer 1-5 | Star rating scale |
-
-### 47.5 NPS Calculation
-
-Net Promoter Score is calculated from all responses where `npsScore` is present:
-
-| Score Range | Category | Description |
-|-------------|----------|-------------|
-| 9-10 | Promoters | Enthusiastic supporters likely to recommend |
-| 7-8 | Passives | Satisfied but not enthusiastic |
-| 0-6 | Detractors | Unlikely to recommend, may discourage others |
-
-**Formula:**
-
-```
-NPS = ((promoterCount - detractorCount) / totalResponses) * 100
-```
-
-**Range:** -100 (all detractors) to +100 (all promoters)
-
-The `/survey/results` endpoint returns the NPS score along with a breakdown of promoter, passive, and detractor counts and percentages.
-
-### 47.6 Results Aggregation
-
-The results endpoint (`GET /organizer/events/:eventId/survey/results`) returns:
-
-- **Response count** — Total submissions and response rate (vs. total registrations)
-- **Overall rating** — Average and distribution (count per star)
-- **NPS** — Score, breakdown by category (promoters, passives, detractors)
-- **Category averages** — Average rating per category (venue, organization, content, value, communication)
-- **Custom question summaries** — For multiple choice: option counts; for text: all responses; for rating: average
-- **Individual responses** — Paginated list of full responses with respondent info
-
-### 47.7 Relationship to Existing Feedback Systems
-
-EventKnit has three distinct feedback mechanisms:
-
-| System | Purpose | Created By | Scope |
-|--------|---------|-----------|-------|
-| **EventReview** | Public star ratings and reviews visible on the event page | Attendees (self-initiated) | Public-facing event reputation |
-| **EventFeedback** | Platform-level NPS and satisfaction survey | Platform (automated post-event emails) | Platform improvement metrics |
-| **EventSurvey** | Custom organizer-designed surveys with structured questions | Organizers (manual creation) | Event-specific insights for organizers |
-
-Key differences:
-- **EventReview** is public and attendee-initiated — it appears on the event listing for future attendees to see
-- **EventFeedback** is platform-operated — it measures satisfaction with EventKnit itself, not the event
-- **EventSurvey** is organizer-controlled — the organizer decides which questions to ask and only they see the results
-
----
-
-## 48. Financial Data Integrity Standards
-
-This section codifies the standards that govern how EventKnit stores, processes, and protects financial data. Every engineer working on payment-related features must understand and follow these patterns.
-
-### 48.1 Currency Value Storage
-
-All monetary values in EventKnit use `Decimal @db.Decimal(10, 2)`, which maps to PostgreSQL's `NUMERIC(10, 2)` type. This applies to 20+ money fields across the schema, including ticket prices, payment amounts, refund amounts, disbursement totals, platform fees, and credit balances.
-
-**Rules:**
-- **Never use `Float` or `Int` for monetary values.** Floating-point arithmetic introduces rounding errors (e.g., `0.1 + 0.2 !== 0.3` in IEEE 754). Integer-cents representations add unnecessary conversion complexity.
-- Prisma's `Decimal` type maps to JavaScript `Decimal.js` objects at runtime. These are arbitrary-precision and safe for arithmetic.
-- When a monetary value needs to be sent to the frontend or serialized to JSON, convert with `Number()` for display. The two-decimal-place constraint at the database level ensures precision is preserved.
-- All arithmetic on monetary values (totals, fee calculations, splits) should be performed using `Decimal.js` methods or at the database level — never with native JavaScript `number` math.
-
-### 48.2 Currency Code Storage (ISO 4217)
-
-All currency code fields are constrained to `@db.VarChar(3)` at the database level, storing standard 3-letter ISO 4217 codes.
-
-**Supported currencies:** KES (default for payments), USD, NGN, EUR, GBP, UGX, TZS.
-
-**Rules:**
-- Currency conversion is delegated to the frontend — the backend stores amounts in their original transaction currency. A ticket priced in USD is stored as USD; a ticket priced in KES is stored as KES.
-- Joi validation on currency inputs must enforce `Joi.string().length(3).uppercase()` to reject malformed codes before they reach the database.
-- The `VarChar(3)` constraint acts as a secondary safety net at the database level, but validation should always catch invalid codes at the application layer first.
-
-### 48.3 ACID Transaction Patterns
-
-All critical financial operations are wrapped in `prisma.$transaction()` to guarantee atomicity. If any step fails, the entire operation rolls back — no partial state is ever persisted.
-
-**Operations that require transactions:**
-
-| Operation | Steps inside transaction |
-|-----------|------------------------|
-| **Payment success** | Registration status update + capacity adjustment + seat confirmation |
-| **Payment failure** | Registration cancellation + capacity restoration + seat release |
-| **Ticket transfer** | New registration creation + line item copy + seat transfer + old ticket void |
-| **Credit operations** | Balance update + transaction record (always atomic) |
-| **Seat reservation** | Row-level locking with `SELECT ... FOR UPDATE` to prevent double-booking |
-| **Payment initialization** | Idempotency check + registration lookup (prevents TOCTOU race conditions) |
-
-**Concurrency control strategy:**
-- **Low-contention paths** (webhooks, refunds, idempotency checks): Optimistic Concurrency Control — no upfront locks, detect conflicts at write time via unique constraints or precondition checks (see Glossary: *Optimistic Locking*, *Optimistic Concurrency Control*)
-- **High-contention paths** (seat reservation during peak sales): Pessimistic locking — `SELECT ... FOR UPDATE` acquires row-level locks before modification (see Glossary: *Pessimistic Locking*)
-
-**Timeout policy:**
-- Complex operations (multi-step payment flows, transfers): 30-second timeout
-- Simple operations (single-record updates): Prisma default timeout
-
-### 48.4 Double-Charge & Duplicate Payment Protection
-
-EventKnit implements multiple layers of protection against duplicate financial operations:
-
-**Deterministic idempotency keys:**
-- Generated as `${registrationId}-${amount}` — no timestamp component, so the same logical request always produces the same key.
-- Clients can provide explicit keys for custom deduplication scenarios.
-- The `EventPaymentTransaction` model has a `idempotencyKey @unique` constraint, so duplicate payment initializations are caught at the database level with a unique violation error.
-
-**Webhook deduplication:**
-- The `PaymentWebhookEvent` model stores a unique `gatewayEventId` for every webhook received.
-- Uses optimistic insert: the handler attempts to insert the webhook event, and if a `P2002` unique constraint violation is thrown, the webhook is recognized as a duplicate and skipped.
-- This pattern handles concurrent webhook deliveries from payment gateways that retry aggressively.
-
-**Refund double-processing prevention:**
-- Refund processing uses `updateMany` with a status precondition (`WHERE status = 'pending'`) as an optimistic lock.
-- Only the first request gets `count === 1` and proceeds; the second request gets `count === 0` and fails gracefully without processing the refund again.
-- If the refund gateway call fails after the status update, the transaction rolls back, restoring the `pending` status for retry.
-
-**Amount validation:**
-- The webhook handler validates that the received payment amount matches the expected amount with a tolerance of ±0.01 (to account for minor gateway rounding).
-- Mismatched amounts trigger an alert and the payment is flagged for manual review rather than automatically confirmed.
-
-### 48.5 Audit Trail — Gaps Found & Resolved (March 2026)
-
-This subsection documents the financial integrity gaps discovered during the March 2026 audit and how each was resolved. It serves as a reference for future audits.
-
-#### Currency Value Storage
-
-| Field | Before | After |
-|-------|--------|-------|
-| `SubscriptionPlan.price` | `Decimal @default(0)` (no precision) | `Decimal @default(0) @db.Decimal(10, 2)` |
-| `SubscriptionPayment.amount` | `Decimal` (no precision) | `Decimal @db.Decimal(10, 2)` |
-
-The remaining 20 money fields already had `@db.Decimal(10, 2)`. No fields used `Float` for money.
-
-#### Currency Code Storage
-
-**Gap:** All 20 currency fields were `String` with no length constraint — a value like `"BITCOIN"` would be accepted by the database.
-
-**Fix:** Added `@db.VarChar(3)` to all 20 currency fields, enforcing 3-character ISO 4217 codes at the database level.
-
-#### ACID Transactions
-
-| Operation | Gap | Fix |
-|-----------|-----|-----|
-| `initializePayment` | Idempotency key lookup and registration fetch were separate queries — two concurrent "Pay" clicks could both pass the check | Wrapped both queries in a single `prisma.$transaction()` |
-| `processRefund` | Status check (`status === 'pending'`) and Paystack call were separate — two admins could both trigger duplicate refunds | Replaced with `updateMany WHERE status = 'pending'` (optimistic lock) — only first request gets `count === 1`. Added rollback to `pending` if gateway call fails |
-
-34 other critical operations already used `$transaction` correctly.
-
-#### Double-Charge Protection
-
-**Gap:** The auto-generated idempotency key included `Date.now()`, making every request unique and defeating the purpose of idempotency entirely.
-
-| Before | After |
-|--------|-------|
-| `${registrationId}-${amount}-${Date.now()}` | `${registrationId}-${amount}` |
-
-Now the same registration + amount always produces the same key, so rapid duplicate clicks return the existing pending/completed payment.
-
-**Already working correctly (no changes needed):**
-- Webhook deduplication via `PaymentWebhookEvent.gatewayEventId` unique constraint with optimistic insert
-- Amount mismatch detection (±0.01 tolerance)
-- `paymentStatus === 'COMPLETED'` early return in webhook handler
-
----
-
-## 49. Glossary
+## 47. Glossary
 
 | Term | Definition |
 |------|-----------|
@@ -4557,14 +4161,6 @@ Now the same registration + amount always produces the same key, so rapid duplic
 | **White Label** | Customizable branding that replaces EventKnit's identity with the organizer's |
 | **Cart Reservation** | 8-minute inventory lock during checkout to prevent overselling |
 | **Backup Code** | 10-character alphanumeric fallback for QR code scanning |
-| **Deterministic Idempotency Key** | An idempotency key derived from stable business identifiers (e.g., `${registrationId}-${amount}`) rather than transient values like timestamps. Because the same logical request always produces the same key, duplicate requests (e.g., user double-clicking "Pay") are automatically caught by the database unique constraint — the second request finds the existing record and returns it instead of creating a new payment. Contrast with timestamp-based keys (`${id}-${Date.now()}`) which generate a unique key per request and defeat idempotency entirely. |
-| **Deterministic QR Code** | QR code payload using fixed registration timestamp (not current time), ensuring identical signatures across regenerations. Prevents invalidation when QR is resent or refreshed post-delivery |
-| **Optimistic Locking** | Concurrency control strategy that assumes conflicts are rare and checks for them at write time rather than acquiring locks upfront. EventKnit uses two variants: **(1) Insert-based** — attempt INSERT with unique constraint; catch P2002 violation to detect duplicate (used for webhook dedup via `PaymentWebhookEvent.gatewayEventId`). **(2) Precondition-based** — use `updateMany` with a WHERE condition on the current state; if `count === 0`, another process already changed the state (used for refund processing: `WHERE status = 'pending'`). Both patterns are lock-free and scale across multiple server instances. |
-| **Optimistic Concurrency Control (OCC)** | The broader design principle behind optimistic locking. Instead of pessimistic locking (acquire lock → read → write → release), OCC follows: read → compute → write-with-precondition → retry-on-conflict. EventKnit applies OCC throughout its financial operations: payment initialization (deterministic idempotency key), webhook processing (unique gateway event ID), refund processing (status precondition), and seat reservation (row-level `FOR UPDATE` for the pessimistic fallback where contention is high). The choice between optimistic and pessimistic depends on contention: low contention (webhooks, refunds) → optimistic; high contention (seat selection during popular event sales) → pessimistic with `FOR UPDATE`. |
-| **Pessimistic Locking** | Concurrency control that acquires exclusive locks before reading/writing. Used in EventKnit for seat reservation (`SELECT ... FOR UPDATE` in `SeatAllocationService.reserveSeats`) where contention is high during popular event ticket sales. Trades throughput for correctness in hot-path scenarios. |
-| **Amount Mismatch Detection** | Webhook validation flow that detects payment amount discrepancies vs. expected amount with configurable tolerance (±0.01). Triggers dual-notification (attendee + organizer) and sets registration status to `AMOUNT_MISMATCH` for triage |
-| **Webhook Race Condition Prevention** | Multi-instance safe webhook processing via distributed constraint on `PaymentWebhookEvent.gatewayEventId`. Concurrent instances attempting same webhook triggers atomic constraint violation, ensuring single processing and preventing side-effect duplication |
-| **Email Resilience** | Dual-email model with independent queue fallback: If BullMQ unavailable, PDF generation handles synchronous fallback; Puppeteer timeouts prevent job hanging; structured error logging enables manual resend |
 | **Thundering Herd** | When many concurrent requests overwhelm a resource simultaneously |
 | **CQRS** | Command Query Responsibility Segregation — separate read/write data paths |
 | **Circuit Breaker** | Pattern that fails fast when a dependency is down, preventing cascade failures |
