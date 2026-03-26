@@ -186,10 +186,7 @@ export interface RegisterForEventData {
   seatIds?: string[];
   // Consent data
   consent?: {
-    operationalConsent?: boolean; // Default: true (required)
     marketingConsent?: boolean;
-    demographicsConsent?: boolean;
-    analyticsConsent?: boolean;
   };
 }
 
@@ -526,10 +523,7 @@ export interface RegisterAsGuestData {
   registrationData?: Record<string, unknown>;
   // Consent data
   consent?: {
-    operationalConsent?: boolean; // Default: true (required)
     marketingConsent?: boolean;
-    demographicsConsent?: boolean;
-    analyticsConsent?: boolean;
   };
 }
 

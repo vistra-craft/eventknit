@@ -1,7 +1,6 @@
 import { prisma } from '../src/config/database.js';
 import { DataAccessService } from '../src/services/data-access.service.js';
 import { SubscriptionService } from '../src/services/subscription.service.js';
-import { ConsentService } from '../src/services/consent.service.js';
 import { UserRole, UserStatus, EventStatus, RegistrationStatus, SubscriptionTier } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { cleanupTestData } from './test-helpers.js';
@@ -17,8 +16,8 @@ describe('DataAccessService', () => {
   let attendee2Id: string;
   let attendee3Id: string;
   let eventId: string;
-  let registration1Id: string;
-  let registration2Id: string;
+  let _registration1Id: string;
+  let _registration2Id: string;
   let _registration3Id: string;
 
   beforeAll(async () => {
@@ -119,7 +118,7 @@ describe('DataAccessService', () => {
         totalAmount: 0,
       },
     });
-    registration1Id = registration1.id;
+    _registration1Id = registration1.id;
 
     const registration2 = await prisma.eventRegistration.create({
       data: {
@@ -129,7 +128,7 @@ describe('DataAccessService', () => {
         totalAmount: 0,
       },
     });
-    registration2Id = registration2.id;
+    _registration2Id = registration2.id;
 
     const registration3 = await prisma.eventRegistration.create({
       data: {
@@ -148,14 +147,6 @@ describe('DataAccessService', () => {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
-
-      // Create consents for some attendees
-      await ConsentService.createConsent(registration1Id, attendee1Id, eventId, {
-        operationalConsent: true,
-      });
-      await ConsentService.createConsent(registration2Id, attendee2Id, eventId, {
-        operationalConsent: true,
-      });
 
       const registrations = await prisma.eventRegistration.findMany({
         where: { eventId },
@@ -192,20 +183,11 @@ describe('DataAccessService', () => {
       await SubscriptionService.upgradeSubscription(organizerId, SubscriptionTier.STANDARD);
     });
 
-    it('should return attendee data for consented attendees only', async () => {
+    it('should return all registrations with attendee data', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
-
-      // Create consents for 2 out of 3 attendees
-      await ConsentService.createConsent(registration1Id, attendee1Id, eventId, {
-        operationalConsent: true,
-      });
-      await ConsentService.createConsent(registration2Id, attendee2Id, eventId, {
-        operationalConsent: true,
-      });
-      // registration3 has no consent
 
       const registrations = await prisma.eventRegistration.findMany({
         where: { eventId },
@@ -228,56 +210,19 @@ describe('DataAccessService', () => {
         eventId,
       );
 
-      // Should only return 2 (consented attendees)
-      expect(filtered.length).toBe(2);
+      // All 3 returned regardless of consent
+      expect(filtered.length).toBe(3);
       expect(filtered[0]).toHaveProperty('attendee');
       expect(filtered[0].attendee).toHaveProperty('firstName');
       expect(filtered[0].attendee).toHaveProperty('email');
       expect(filtered[0]).toHaveProperty('totalAmount');
       expect(filtered[0]).toHaveProperty('paymentStatus');
     });
-
-    it('should not include demographics or engagement data', async () => {
-      if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
-        return;
-      }
-
-      await ConsentService.createConsent(registration1Id, attendee1Id, eventId, {
-        operationalConsent: true,
-        demographicsConsent: true, // Even if granted, STANDARD tier doesn't show it
-      });
-
-      const registrations = await prisma.eventRegistration.findMany({
-        where: { eventId },
-        include: {
-          attendee: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phoneNumber: true,
-            },
-          },
-        },
-      });
-
-      const filtered = await DataAccessService.filterAttendeeData(
-        registrations,
-        organizerId,
-        eventId,
-      );
-
-      expect(filtered[0]).not.toHaveProperty('engagement');
-      // Demographics would be in attendee object if available, but STANDARD doesn't include them
-    });
   });
 
   describe('filterAttendeeData - PREMIUM tier', () => {
     beforeEach(async () => {
       if (!dbConnected) return;
-      // Create PREMIUM subscription
       await prisma.organizerSubscription.create({
         data: {
           organizerId,
@@ -288,67 +233,11 @@ describe('DataAccessService', () => {
       });
     });
 
-    it('should return demographics for attendees with demographics consent', async () => {
+    it('should return all registrations with attendee data', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
-
-      await ConsentService.createConsent(registration1Id, attendee1Id, eventId, {
-        operationalConsent: true,
-        demographicsConsent: true,
-      });
-
-      // Update attendee with location data
-      await prisma.user.update({
-        where: { id: attendee1Id },
-        data: {
-          city: 'Nairobi',
-          state: 'Nairobi',
-          country: 'Kenya',
-        },
-      });
-
-      const registrations = await prisma.eventRegistration.findMany({
-        where: { eventId },
-        include: {
-          attendee: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phoneNumber: true,
-              city: true,
-              state: true,
-              country: true,
-            },
-          },
-        },
-      });
-
-      const filtered = await DataAccessService.filterAttendeeData(
-        registrations,
-        organizerId,
-        eventId,
-      );
-
-      const consented = filtered.find((r: any) => r.attendee?.email === 'attendee1@dataaccess.test') as any;
-      expect(consented).toBeDefined();
-      expect(consented?.attendee).toHaveProperty('city');
-      expect(consented?.attendee?.city).toBe('Nairobi');
-    });
-
-    it('should return engagement data for attendees with analytics consent', async () => {
-      if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
-        return;
-      }
-
-      await ConsentService.createConsent(registration1Id, attendee1Id, eventId, {
-        operationalConsent: true,
-        analyticsConsent: true,
-      });
 
       const registrations = await prisma.eventRegistration.findMany({
         where: { eventId },
@@ -371,9 +260,8 @@ describe('DataAccessService', () => {
         eventId,
       );
 
-      const consented = filtered.find((r: any) => r.attendee?.email === 'attendee1@dataaccess.test');
-      expect(consented).toBeDefined();
-      expect(consented).toHaveProperty('engagement');
+      expect(filtered.length).toBe(3);
+      expect(filtered[0]).toHaveProperty('attendee');
     });
   });
 
@@ -466,7 +354,7 @@ describe('DataAccessService', () => {
       expect(count).toBe(3); // All 3 registrations
     });
 
-    it('should return only consented count for STANDARD tier', async () => {
+    it('should return total count for STANDARD tier', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
@@ -474,16 +362,8 @@ describe('DataAccessService', () => {
 
       await SubscriptionService.upgradeSubscription(organizerId, SubscriptionTier.STANDARD);
 
-      // Create consents for 2 attendees
-      await ConsentService.createConsent(registration1Id, attendee1Id, eventId, {
-        operationalConsent: true,
-      });
-      await ConsentService.createConsent(registration2Id, attendee2Id, eventId, {
-        operationalConsent: true,
-      });
-
       const count = await DataAccessService.getAccessibleAttendeeCount(eventId, organizerId);
-      expect(count).toBe(2); // Only consented attendees
+      expect(count).toBe(3); // All registrations
     });
   });
 });

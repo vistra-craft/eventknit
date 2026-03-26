@@ -1,7 +1,6 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { SubscriptionService } from './subscription.service.js';
-import { ConsentService } from './consent.service.js';
 import { SubscriptionTier, Prisma } from '@prisma/client';
 
 export interface AuditLogData {
@@ -69,7 +68,7 @@ export class DataAccessService {
       userAgent,
     });
 
-    // RESTRICTED / BASIC tier: Return aggregated data only
+    // RESTRICTED / BASIC tier: Return aggregated data only (no PII)
     if (effectiveLevel === 'RESTRICTED') {
       return registrations.map(reg => ({
         id: reg.id,
@@ -79,95 +78,28 @@ export class DataAccessService {
         ticketType: reg.ticketType,
         quantity: reg.quantity,
         createdAt: reg.createdAt,
-        // No PII data
       }));
     }
 
-    // STANDARD and FULL levels: Filter by consent (unless event-level override)
-    const filtered = [];
-    const skipConsentCheck = !!dataAccessLevel; // Event-level override skips consent
+    // STANDARD and FULL: organizer paid for access — return all registrations with attendee data
+    const att = (reg: Record<string, unknown>) => {
+      const a = reg.attendee as { id: string; firstName: string; lastName: string; email: string; phoneNumber?: string | null } | null | undefined;
+      return a ? { id: a.id, firstName: a.firstName, lastName: a.lastName, email: a.email, phoneNumber: a.phoneNumber } : null;
+    };
 
-    for (const reg of registrations) {
-      // Check consent only when using subscription-tier-based filtering
-      if (!skipConsentCheck) {
-        const hasOperationalConsent = await ConsentService.hasConsent(reg.id as string, 'operational');
-        if (!hasOperationalConsent) {
-          continue;
-        }
-      }
-
-      // For STANDARD level, include basic data
-      if (effectiveLevel === 'STANDARD') {
-        filtered.push({
-          id: reg.id,
-          eventId: reg.eventId,
-          attendeeId: reg.attendeeId,
-          status: reg.status,
-          ticketType: reg.ticketType,
-          quantity: reg.quantity,
-          createdAt: reg.createdAt,
-          totalAmount: reg.totalAmount,
-          paymentStatus: reg.paymentStatus,
-          paymentMethod: reg.paymentMethod,
-          attendee: (() => {
-            const att = reg.attendee as { id: string; firstName: string; lastName: string; email: string; phoneNumber?: string | null } | null | undefined;
-            return att ? { id: att.id, firstName: att.firstName, lastName: att.lastName, email: att.email, phoneNumber: att.phoneNumber } : null;
-          })(),
-          // No demographics or engagement data
-        });
-      }
-
-      if (effectiveLevel === 'FULL') {
-        const _hasMarketingConsent = await ConsentService.hasConsent(reg.id as string, 'marketing');
-        const hasDemographicsConsent = await ConsentService.hasConsent(reg.id as string, 'demographics');
-        const hasAnalyticsConsent = await ConsentService.hasConsent(reg.id as string, 'analytics');
-
-        const filteredReg: Record<string, unknown> = {
-          id: reg.id,
-          eventId: reg.eventId,
-          attendeeId: reg.attendeeId,
-          status: reg.status,
-          ticketType: reg.ticketType,
-          quantity: reg.quantity,
-          createdAt: reg.createdAt,
-          totalAmount: reg.totalAmount,
-          paymentStatus: reg.paymentStatus,
-          paymentMethod: reg.paymentMethod,
-          attendee: (() => {
-            const att = reg.attendee as { id: string; firstName: string; lastName: string; email: string; phoneNumber?: string | null } | null | undefined;
-            return att ? { id: att.id, firstName: att.firstName, lastName: att.lastName, email: att.email, phoneNumber: att.phoneNumber } : null;
-          })(),
-        };
-
-        // Add demographics if consent exists
-        if (hasDemographicsConsent && reg.attendee) {
-          const attendee = reg.attendee as { city?: string; state?: string; country?: string };
-          filteredReg.attendee = {
-            ...(filteredReg.attendee as Record<string, unknown>),
-            // Add demographic fields if available (would need to be added to User model or registrationData)
-            // For now, we'll include basic location data if available
-            city: attendee.city,
-            state: attendee.state,
-            country: attendee.country,
-          };
-        }
-
-        // Add engagement data if consent exists (would need to be calculated/stored separately)
-        // This is a placeholder for future implementation
-        if (hasAnalyticsConsent) {
-          filteredReg.engagement = {
-            // Placeholder for engagement metrics
-            emailOpens: 0,
-            emailClicks: 0,
-            sessionViews: 0,
-          };
-        }
-
-        filtered.push(filteredReg);
-      }
-    }
-
-    return filtered;
+    return registrations.map(reg => ({
+      id: reg.id,
+      eventId: reg.eventId,
+      attendeeId: reg.attendeeId,
+      status: reg.status,
+      ticketType: reg.ticketType,
+      quantity: reg.quantity,
+      createdAt: reg.createdAt,
+      totalAmount: reg.totalAmount,
+      paymentStatus: reg.paymentStatus,
+      paymentMethod: reg.paymentMethod,
+      attendee: att(reg),
+    }));
   }
 
   /**
@@ -185,32 +117,9 @@ export class DataAccessService {
    */
   static async getAccessibleAttendeeCount(
     eventId: string,
-    organizerId: string,
+    _organizerId: string,
   ): Promise<number> {
-    const tier = await SubscriptionService.getTier(organizerId);
-
-    if (tier === SubscriptionTier.BASIC) {
-      // Return total count only
-      return prisma.eventRegistration.count({
-        where: { eventId },
-      });
-    }
-
-    // For STANDARD and PREMIUM, count only consented attendees
-    const registrations = await prisma.eventRegistration.findMany({
-      where: { eventId },
-      select: { id: true },
-    });
-
-    let count = 0;
-    for (const reg of registrations) {
-      const hasConsent = await ConsentService.hasConsent(reg.id, 'operational');
-      if (hasConsent) {
-        count++;
-      }
-    }
-
-    return count;
+    return prisma.eventRegistration.count({ where: { eventId } });
   }
 
   /**

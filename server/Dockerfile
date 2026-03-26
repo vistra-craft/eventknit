@@ -46,6 +46,54 @@ RUN npm prune --production && \
   rm -rf /tmp/* && \
   rm -rf /var/cache/apk/*
 
+# ---------- Development Stage ----------
+FROM node:20-alpine AS development
+
+# Metadata labels
+LABEL maintainer="VistraCraft <dev@vistracraft.com>"
+LABEL org.opencontainers.image.title="EventKnit Server"
+LABEL org.opencontainers.image.description="EventKnit Backend API Server - Development"
+
+WORKDIR /app
+
+# Install development dependencies
+RUN apk add --no-cache \
+  python3 \
+  make \
+  g++ \
+  curl
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies) but ignore scripts until after files are copied
+RUN npm ci --ignore-scripts --no-audit
+
+# Copy Prisma schema and scripts BEFORE generating (required for postinstall)
+COPY prisma ./prisma
+COPY scripts ./scripts
+
+# Copy the rest of the application
+COPY . .
+
+# Generate Prisma Client
+RUN npm run prisma:generate
+
+# No need to build for development - tsx will compile on the fly
+
+# Expose the application's port
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s \
+  --timeout=10s \
+  --start-period=40s \
+  --retries=3 \
+  CMD curl -f http://localhost:3001/health || exit 1
+
+# Start development server with watch mode
+CMD ["npm", "run", "dev:watch"]
+
 # ---------- Production Stage ----------
 FROM node:20-alpine AS production
 

@@ -2278,7 +2278,7 @@ export default function CreateEventStepwise() {
 
   return (
     <div className="bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-5xl">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         {/* Breadcrumb Navigation */}
         <div className="mb-4">
           <BackButton

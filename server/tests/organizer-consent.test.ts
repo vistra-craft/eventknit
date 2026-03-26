@@ -116,14 +116,12 @@ describe('Organizer Dashboard - Consent Management API', () => {
   describe('GET /api/v1/organizer-dashboard/events/:eventId/consent-stats', () => {
     beforeEach(async () => {
       if (!dbConnected) return;
-      // Create some consents
       const { ConsentService } = await import('../src/services/consent.service.js');
 
       await ConsentService.createConsent(registrationId, (await prisma.user.findUnique({
         where: { email: 'attendee@consent-test.com' },
       }))!.id, eventId, {
         marketingConsent: true,
-        demographicsConsent: true,
       });
     });
 
@@ -141,10 +139,7 @@ describe('Organizer Dashboard - Consent Management API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.totalRegistrations).toBeGreaterThanOrEqual(1);
       expect(response.body.data.totalConsents).toBeGreaterThanOrEqual(1);
-      expect(response.body.data.operational).toBeDefined();
       expect(response.body.data.marketing).toBeDefined();
-      expect(response.body.data.demographics).toBeDefined();
-      expect(response.body.data.analytics).toBeDefined();
     });
 
     it('should require authentication', async () => {

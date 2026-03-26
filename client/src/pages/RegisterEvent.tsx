@@ -51,10 +51,7 @@ const EventRegistration = () => {
   const [applyingCode, setApplyingCode] = useState(false);
   // Track if URL promo code has been processed
   const urlPromoApplied = useRef(false);
-  // Consent state (operational consent is always true, so we don't need state for it)
   const [marketingConsent, setMarketingConsent] = useState(false);
-  const [demographicsConsent, setDemographicsConsent] = useState(false);
-  const [analyticsConsent, setAnalyticsConsent] = useState(false);
 
   // Fetch event data
   useEffect(() => {
@@ -366,10 +363,7 @@ const EventRegistration = () => {
           quantity, // Backward compatibility
           registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
           consent: {
-            operationalConsent: true, // Always true - required for ticket delivery
             marketingConsent: marketingConsent,
-            demographicsConsent: demographicsConsent,
-            analyticsConsent: analyticsConsent,
           },
         });
 
@@ -443,10 +437,7 @@ const EventRegistration = () => {
         registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
         promoCode: appliedDiscount ? promoCode : undefined,
         consent: {
-          operationalConsent: true, // Always true - required for ticket delivery
           marketingConsent: marketingConsent,
-          demographicsConsent: demographicsConsent,
-          analyticsConsent: analyticsConsent,
         },
       });
 
@@ -1276,33 +1267,6 @@ const EventRegistration = () => {
                           </label>
                         </div>
 
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            id="demographicsConsent"
-                            checked={demographicsConsent}
-                            onCheckedChange={(checked) => setDemographicsConsent(!!checked)}
-                          />
-                          <label htmlFor="demographicsConsent" className="text-sm text-foreground cursor-pointer flex-1">
-                            <span className="font-medium">Demographic data</span>
-                            <span className="block text-xs text-muted-foreground mt-0.5">
-                              Share location, age, etc. to help improve future events
-                            </span>
-                          </label>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            id="analyticsConsent"
-                            checked={analyticsConsent}
-                            onCheckedChange={(checked) => setAnalyticsConsent(!!checked)}
-                          />
-                          <label htmlFor="analyticsConsent" className="text-sm text-foreground cursor-pointer flex-1">
-                            <span className="font-medium">Engagement analytics</span>
-                            <span className="block text-xs text-muted-foreground mt-0.5">
-                              Allow tracking of email opens and session views
-                            </span>
-                          </label>
-                        </div>
                       </div>
 
                       <p className="text-xs text-muted-foreground">

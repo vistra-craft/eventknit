@@ -78,6 +78,7 @@ interface ApiFaq {
 
 interface ApiEvent {
   id?: unknown;
+  slug?: unknown;
   title?: unknown;
   description?: unknown;
   fullDescription?: unknown;
@@ -252,6 +253,7 @@ const transformEventData = (
 
   return {
     id: String(apiEvent.id ?? ''),
+    slug: typeof apiEvent.slug === 'string' ? apiEvent.slug : undefined,
     title: String(apiEvent.title ?? ''),
     description: typeof apiEvent.description === 'string' ? apiEvent.description : undefined,
     fullDescription: typeof apiEvent.fullDescription === 'string' ? apiEvent.fullDescription : undefined,

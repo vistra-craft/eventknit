@@ -270,7 +270,7 @@ const TicketsTabContent = () => {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={(e) => { e.stopPropagation(); navigate('/user/dashboard?section=ticket-transfer', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
+                      onClick={(e) => { e.stopPropagation(); navigate('/user/ticket-transfer', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
                       title="Transfer ticket"
                     >
                       <Send className="w-3.5 h-3.5" />
@@ -279,7 +279,7 @@ const TicketsTabContent = () => {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={(e) => { e.stopPropagation(); navigate('/user/dashboard?section=ticket-resale', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
+                      onClick={(e) => { e.stopPropagation(); navigate('/user/ticket-resale', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
                       title="Resell ticket"
                     >
                       <DollarSign className="w-3.5 h-3.5" />

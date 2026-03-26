@@ -1979,10 +1979,7 @@ export class EventService {
         attendeeId,
         eventId,
         {
-          operationalConsent: data.consent?.operationalConsent ?? true, // Default: true (required)
           marketingConsent: data.consent?.marketingConsent ?? false,
-          demographicsConsent: data.consent?.demographicsConsent ?? false,
-          analyticsConsent: data.consent?.analyticsConsent ?? false,
         },
       );
       logger.debug(`[registerForEvent] Consent created for registration ${registration.id}`);
