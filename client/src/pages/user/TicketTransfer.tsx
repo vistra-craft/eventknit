@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
+import BackButton from "@/components/BackButton";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -151,6 +152,7 @@ const TicketTransfer: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <BackButton to="/user/dashboard" label="Back to Dashboard" className="mb-6" />
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground mb-2">Ticket Transfer</h1>
         <p className="text-muted-foreground">

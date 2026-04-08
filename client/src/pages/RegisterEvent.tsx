@@ -1248,55 +1248,62 @@ const EventRegistration = () => {
                       })}
                     </div>
 
-                    {/* Data Sharing Consent */}
-                    <div className="pt-6 border-t space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Data Sharing Preferences</h3>
+                    {/* Consent & Data Sharing */}
+                    <div className="pt-6 border-t space-y-4">
+                      <h3 className="text-sm font-semibold text-foreground">Consent & Data Sharing</h3>
 
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            id="marketingConsent"
-                            checked={marketingConsent}
-                            onCheckedChange={(checked) => setMarketingConsent(!!checked)}
-                          />
-                          <label htmlFor="marketingConsent" className="text-sm text-foreground cursor-pointer flex-1">
-                            <span className="font-medium">Marketing emails</span>
-                            <span className="block text-xs text-muted-foreground mt-0.5">
-                              Receive updates about future events from this organizer
-                            </span>
-                          </label>
-                        </div>
-
-                      </div>
-
-                      <p className="text-xs text-muted-foreground">
-                        You can update these anytime.{" "}
-                        <a href="/privacy-policy" target="_blank" className="text-primary hover:underline">
-                          Privacy Policy
-                        </a>
-                        .
-                      </p>
-                    </div>
-                    
-                    {/* Terms & Conditions */}
-                    <div className="pt-6 border-t bg-primary/5 -mx-6 px-6">
-                      <div className="flex items-start gap-3 mb-4">
+                      {/* Terms & Privacy (required) */}
+                      <div className="flex items-start gap-3">
                         <Checkbox
                           id="termsConsent"
                           required
+                          className="mt-0.5"
                         />
-                        <label htmlFor="termsConsent" className="text-sm text-muted-foreground">
-                          I agree to the{" "}
-                          <a href="#" className="text-primary hover:underline font-medium">
-                            Terms and Conditions
+                        <label htmlFor="termsConsent" className="text-sm text-muted-foreground cursor-pointer flex-1">
+                          I agree to EventKnit's{" "}
+                          <a href="/terms-of-service" target="_blank" className="text-primary hover:underline font-medium">
+                            Terms of Service
                           </a>{" "}
-                          and{" "}
-                          <a href="#" className="text-primary hover:underline font-medium">
+                          and have read the{" "}
+                          <a href="/privacy-policy" target="_blank" className="text-primary hover:underline font-medium">
                             Privacy Policy
                           </a>
-                          . I understand that my information will be used for event management purposes.
+                          . <span className="text-destructive">*</span>
                         </label>
                       </div>
+
+                      {/* Data sharing with organizer (required, but explicit) */}
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="dataShareConsent"
+                          required
+                          className="mt-0.5"
+                        />
+                        <label htmlFor="dataShareConsent" className="text-sm text-muted-foreground cursor-pointer flex-1">
+                          I understand that my name, email, and registration details will be shared with the event organizer to facilitate my attendance. <span className="text-destructive">*</span>
+                        </label>
+                      </div>
+
+                      {/* Organizer marketing (optional) */}
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="marketingConsent"
+                          checked={marketingConsent}
+                          onCheckedChange={(checked) => setMarketingConsent(!!checked)}
+                          className="mt-0.5"
+                        />
+                        <label htmlFor="marketingConsent" className="text-sm text-muted-foreground cursor-pointer flex-1">
+                          I agree to receive marketing communications from this event organizer about future events and updates.
+                        </label>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        You can update your preferences anytime.{" "}
+                        <a href="/privacy-policy" target="_blank" className="text-primary hover:underline">
+                          Privacy Policy
+                        </a>
+                      </p>
+                    </div>
                     </div>
                     
                     {submitError && (

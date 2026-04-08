@@ -13,7 +13,7 @@ interface MinimalHeaderProps {
 const MinimalHeader = ({ backTo = '/', backLabel = 'Back to home' }: MinimalHeaderProps) => {
   return (
     <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
-      <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 h-14 flex items-center justify-between">
         {/* Left: Back link */}
         <Link
           to={backTo}

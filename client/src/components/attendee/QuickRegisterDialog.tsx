@@ -370,6 +370,21 @@ export function QuickRegisterDialog({
         </div>
       )}
 
+      {/* Consent */}
+      <div className="space-y-3 pt-2 border-t">
+        <div className="text-sm font-medium text-muted-foreground">Consent</div>
+        <div className="flex items-start space-x-2">
+          <Checkbox id="qr-terms" required />
+          <Label htmlFor="qr-terms" className="font-normal text-sm text-muted-foreground leading-snug">
+            Attendee agrees to the{' '}
+            <a href="/terms-of-service" target="_blank" className="text-primary hover:underline">Terms of Service</a>
+            {' '}and{' '}
+            <a href="/privacy-policy" target="_blank" className="text-primary hover:underline">Privacy Policy</a>.
+            Their information will be shared with the event organizer.
+          </Label>
+        </div>
+      </div>
+
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
