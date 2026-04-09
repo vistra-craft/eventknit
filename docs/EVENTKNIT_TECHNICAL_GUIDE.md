@@ -3380,6 +3380,34 @@ Each role has a dedicated full-page Notification Center:
 1. **Immediate confirmation** — payment received, ticket being prepared
 2. **Ticket delivery** — PDF attachment (Content-ID inline) + QR code + calendar invite (.ics)
 
+**Email Audit Log (`EmailLog` model):**
+
+Every email sent through the email service is persisted to the `EmailLog` table for auditing, debugging, and delivery tracking. The log is written fire-and-forget — a database failure never blocks or delays email delivery.
+
+```typescript
+// server/src/services/email.service.ts — saveEmailLog()
+// Called after every send attempt (success or failure):
+//   - On success: logged immediately after transporter.sendMail()
+//   - On failure: logged after all retries are exhausted (final attempt only)
+//
+// Recorded fields:
+//   from, to, cc, bcc    — actual recipients (after MailTrap redirect if active)
+//   subject, body, text  — email content (HTML body + optional plaintext)
+//   attachments          — metadata only: [{ filename, contentType }], never raw content
+//   success              — whether the email was delivered
+//   attempts             — total send attempts (1 = first try, >1 = retried)
+//   errorMessage         — SMTP error on failure, null on success
+//   mailTrapped          — true if MailTrap intercepted and redirected the email
+//   originalTo           — if mailTrapped, the intended recipient before redirect
+
+// Database indexes: to (recipient lookup), createdAt (time-range queries), success (failure filtering)
+```
+
+Key design decisions:
+- **Fire-and-forget:** Wrapped in try/catch — `logger.error` only, never throws (email delivery is the priority)
+- **MailTrap awareness:** When MailTrap is active, `to` records the test address while `originalTo` preserves the intended recipient, so dev/staging logs remain traceable
+- **No raw attachments stored:** Only filename and content type are persisted to keep the table lean; actual attachment content is transient
+
 ### Push Notifications
 
 ```typescript

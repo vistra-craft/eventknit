@@ -133,10 +133,14 @@ class EmailService {
     let lastError: Error | undefined;
     let attempts = 0;
 
+    // Hoist outside try so catch block can reference them for logging
+    let mailOptions: nodemailer.SendMailOptions = {};
+    let mailTrapConfig: MailTrapConfig | null = null;
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       attempts++;
       try {
-        let mailOptions: nodemailer.SendMailOptions = {
+        mailOptions = {
           from: config.email.from,
           to: options.to,
           subject: options.subject,
@@ -145,7 +149,7 @@ class EmailService {
         };
 
         // Check if mailTrap is enabled
-        const mailTrapConfig = await this.getMailTrapConfig();
+        mailTrapConfig = await this.getMailTrapConfig();
         if (mailTrapConfig && mailTrapConfig.trap === true) {
           const originalTo = mailOptions.to;
           const originalCc = mailOptions.cc;
@@ -196,13 +200,16 @@ class EmailService {
         }
 
         await this.transporter.sendMail(mailOptions);
-        
+
         // Success - log if it was a retry
         if (attempt > 0) {
           logger.info(`Email sent successfully after ${attempts} attempts to: ${options.to}`);
         } else {
           logger.info(`Email sent successfully to: ${options.to}`);
         }
+
+        // Persist email log
+        await this.saveEmailLog(mailOptions, options, mailTrapConfig, true, attempts, undefined);
 
         return { success: true, attempts };
       } catch (error) {
@@ -222,6 +229,9 @@ class EmailService {
           if (options.isCritical) {
             logger.warn(`CRITICAL EMAIL FAILURE: ${options.subject} to ${options.to} failed after ${attempts} attempts`);
           }
+
+          // Persist failed email log
+          await this.saveEmailLog(mailOptions, options, mailTrapConfig, false, attempts, lastError.message);
         } else {
           // Calculate delay for next retry
           const delay = this.calculateRetryDelay(attempt);
@@ -243,6 +253,47 @@ class EmailService {
       attempts,
       error: lastError,
     };
+  }
+
+  /**
+   * Persist an email log entry to the database (fire-and-forget — never blocks sending)
+   */
+  private async saveEmailLog(
+    mailOptions: nodemailer.SendMailOptions,
+    originalOptions: EmailOptions,
+    mailTrapConfig: MailTrapConfig | null,
+    success: boolean,
+    attempts: number,
+    errorMessage: string | undefined,
+  ): Promise<void> {
+    try {
+      const isTrapped = !!(mailTrapConfig && mailTrapConfig.trap === true);
+      const toStr = (val: string | string[] | undefined | nodemailer.SendMailOptions['to']) =>
+        val ? (Array.isArray(val) ? val.join(', ') : String(val)) : null;
+
+      await prisma.emailLog.create({
+        data: {
+          from: toStr(mailOptions.from) || config.email.from,
+          to: toStr(mailOptions.to) || '',
+          cc: toStr(mailOptions.cc) || null,
+          bcc: toStr(mailOptions.bcc) || null,
+          subject: String(mailOptions.subject || ''),
+          body: String(mailOptions.html || ''),
+          text: mailOptions.text ? String(mailOptions.text) : null,
+          attachments: originalOptions.attachments
+            ? originalOptions.attachments.map(a => ({ filename: a.filename, contentType: a.contentType }))
+            : undefined,
+          success,
+          attempts,
+          errorMessage: errorMessage || null,
+          mailTrapped: isTrapped,
+          originalTo: isTrapped ? originalOptions.to : null,
+        },
+      });
+    } catch (logError) {
+      // Never let logging failures affect email delivery
+      logger.error('Failed to save email log', logError);
+    }
   }
 
   async sendVerificationEmail(email: string, token: string): Promise<void> {

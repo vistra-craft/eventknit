@@ -2611,6 +2611,34 @@ model EmailDigestQueue {
   @@index([createdAt])
 }
 
+// Email Log - records every email sent through the email service
+model EmailLog {
+  id      String @id @default(cuid())
+  from    String
+  to      String // Comma-separated if multiple recipients
+  cc      String? // Comma-separated if multiple
+  bcc     String? // Comma-separated if multiple
+  subject String
+  body    String  @db.Text // HTML body
+  text    String? @db.Text // Plain text body
+
+  // Attachments metadata (filenames + content types, not the raw content)
+  attachments Json? // Array of { filename, contentType }
+
+  // Delivery info
+  success       Boolean
+  attempts      Int      @default(1)
+  errorMessage  String?  @db.Text
+  mailTrapped   Boolean  @default(false) // Was this intercepted by mailTrap?
+  originalTo    String? // If mailTrapped, who was the intended recipient?
+
+  createdAt DateTime @default(now())
+
+  @@index([to])
+  @@index([createdAt])
+  @@index([success])
+}
+
 model NotificationPreference {
   id     String @id @default(cuid())
   userId String @unique
