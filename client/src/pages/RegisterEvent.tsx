@@ -1304,8 +1304,7 @@ const EventRegistration = () => {
                         </a>
                       </p>
                     </div>
-                    </div>
-                    
+
                     {submitError && (
                       <Alert variant="destructive" className="mt-4">
                         <AlertCircle className="h-4 w-4" />
