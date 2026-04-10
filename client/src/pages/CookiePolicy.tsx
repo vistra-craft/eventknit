@@ -86,7 +86,9 @@ To opt out of analytics tracking specifically, you can install the Google Analyt
 
 We respect Do Not Track (DNT) signals sent by your browser. When we detect a DNT signal, we limit cookie usage to essential cookies only and do not set analytics or marketing cookies.
 
-All marketing emails from EventKnit include an unsubscribe link that allows you to opt out of future marketing communications with a single click. This does not affect transactional emails related to your account or registrations.`
+All marketing emails from EventKnit include an unsubscribe link that allows you to opt out of future marketing communications with a single click. This does not affect transactional emails related to your account or registrations.
+
+If you delete your EventKnit account, all cookie-associated data linked to your account will also be deleted or anonymized in accordance with our Privacy Policy. For full details on your data rights, including the right to access, export, and delete your personal data, please refer to our Privacy Policy.`
   },
   {
     id: "consent",

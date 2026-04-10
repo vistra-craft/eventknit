@@ -163,20 +163,32 @@ Notwithstanding the above, either party may seek injunctive or equitable relief 
 If you are accessing the Services from outside Nigeria, you are responsible for compliance with any applicable local laws. The Services are not intended for use in any jurisdiction where such use would be contrary to local law or regulation.`
   },
   {
-    id: "termination",
+    id: "your-rights",
     number: "16",
+    title: "Your Rights and Data",
+    content: `EventKnit is committed to protecting your personal data in accordance with applicable privacy regulations, including the General Data Protection Regulation (GDPR), the California Consumer Privacy Act (CCPA), and the Nigeria Data Protection Act (NDPA) 2023. You have the following rights with respect to your personal data:
+
+Right of Access: You may request a copy of the personal data we hold about you. Right to Rectification: You may request that we correct any inaccurate or incomplete personal data. Right to Erasure: You may request the deletion of your account and personal data, subject to certain legal retention requirements. Right to Data Portability: You may request your personal data in a structured, commonly used, machine-readable format. Right to Restriction: You may request that we restrict the processing of your personal data in certain circumstances. Right to Object: You may object to the processing of your personal data for certain purposes, including direct marketing. Right to Withdraw Consent: Where processing is based on your consent, you may withdraw that consent at any time.
+
+To exercise any of these rights, contact our Privacy Team at privacy@eventknit.com. You may also exercise your rights through your account settings, where you can export your data and request account deletion. We will verify your identity before processing your request and will respond within thirty (30) days, or within the timeframe required by applicable law.
+
+You also have the right to lodge a complaint with a data protection supervisory authority in your jurisdiction if you believe that our processing of your personal data violates applicable law. For full details on how we collect, use, and protect your data, please refer to our Privacy Policy.`
+  },
+  {
+    id: "termination",
+    number: "17",
     title: "Termination",
-    content: `Either you or EventKnit may terminate your account and these Terms at any time. You may close your account by contacting us at support@eventknit.com or through your account settings. Upon termination, your right to use the Services will cease immediately.
+    content: `Either you or EventKnit may terminate your account and these Terms at any time. You may close your account through your account settings or by contacting us at privacy@eventknit.com. Upon termination, your right to use the Services will cease immediately.
 
 EventKnit may suspend or terminate your account if we reasonably believe you have violated these Terms, engaged in fraudulent activity, or pose a risk to other users or the platform. We will make reasonable efforts to notify you of the reason for suspension or termination, except where doing so would compromise the safety or security of the platform or other users.
 
-Following account termination, we will retain your data for thirty (30) days to allow you to request a copy or to restore your account. After this period, your personal data will be deleted or anonymized in accordance with our Privacy Policy. Certain data, such as transaction records, may be retained for longer periods as required by applicable law.
+Following account termination, we will retain your data for thirty (30) days to allow you to request a copy or to restore your account. After this period, your personal data will be deleted or anonymized in accordance with our Privacy Policy. Certain data, such as transaction records, may be retained for up to seven (7) years as required by applicable law for tax, accounting, and legal compliance purposes.
 
 Termination does not release either party from obligations accrued prior to termination, including payment obligations, indemnification duties, and any claims arising from events that occurred before the account was closed.`
   },
   {
     id: "force-majeure",
-    number: "17",
+    number: "18",
     title: "Force Majeure",
     content: `EventKnit shall not be liable for any failure or delay in performing its obligations under these Terms where such failure or delay arises from causes beyond our reasonable control. These causes include, but are not limited to, natural disasters, pandemics, epidemics, acts of war or terrorism, government actions or regulations, power failures, internet or telecommunications outages, cyberattacks, labor disputes, and infrastructure failures.
 
@@ -184,7 +196,7 @@ In the event of a force majeure occurrence, EventKnit will make reasonable effor
   },
   {
     id: "changes",
-    number: "18",
+    number: "19",
     title: "Changes to These Terms",
     content: `We may update these Terms from time to time to reflect changes in our Services, legal requirements, or business practices. When we make material changes, we will notify you by posting the updated Terms on this page with a revised "Last updated" date, and where appropriate, by sending you an email notification or displaying a notice within the platform.
 
@@ -194,7 +206,7 @@ We encourage you to review these Terms periodically to stay informed of your rig
   },
   {
     id: "severability",
-    number: "19",
+    number: "20",
     title: "Severability and General Provisions",
     content: `If any provision of these Terms is found to be invalid, illegal, or unenforceable by a court of competent jurisdiction, that provision shall be modified to the minimum extent necessary to make it enforceable, or if modification is not possible, it shall be severed from these Terms. The remaining provisions shall continue in full force and effect.
 
@@ -204,7 +216,7 @@ You may not assign or transfer your rights or obligations under these Terms with
   },
   {
     id: "contact",
-    number: "20",
+    number: "21",
     title: "Contact Information",
     content: `If you have questions, concerns, or feedback about these Terms of Service, please contact us through any of the following channels:
 
