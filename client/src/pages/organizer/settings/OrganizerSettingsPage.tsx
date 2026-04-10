@@ -14,6 +14,7 @@ import {
   Key,
   Mail,
   Globe,
+  FileText,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ import {
   resetPreferences,
   type UserPreferences as UserPreferencesType,
 } from "@/lib/user-preferences-api";
-import { SettingsSection, ThemeSelector } from "@/components/settings";
+import { SettingsSection, ThemeSelector, PrivacyDataSettings } from "@/components/settings";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { getMyOrganizerProfile, updateMyOrganizerProfile } from "@/lib/organizer-profile-api";
@@ -301,6 +302,7 @@ const OrganizerSettingsPage = () => {
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "appearance", label: "Appearance", icon: Palette },
     { id: "security", label: "Security", icon: Key },
+    { id: "privacy", label: "Privacy & Data", icon: FileText },
   ];
 
   const userHasPassword = user?.hasPassword !== false;
@@ -1214,6 +1216,7 @@ const OrganizerSettingsPage = () => {
       case "notifications": return renderNotificationSettings();
       case "appearance": return renderAppearanceSettings();
       case "security": return renderSecuritySettings();
+      case "privacy": return <PrivacyDataSettings />;
       default: return renderProfileSettings();
     }
   };

@@ -7,6 +7,7 @@ import { RoleViewProvider } from "./contexts/RoleViewContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { useAuth } from "./hooks/useAuth";
 import { Toaster } from "./components/ui/toaster";
+import CookieConsentBanner from "./components/CookieConsentBanner";
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { GuestRoute } from '@/components/auth/GuestRoute';
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -140,6 +141,7 @@ const App = () => (
           </Routes>
         </RoleViewWrapper>
         <Toaster />
+        <CookieConsentBanner />
       </BrowserRouter>
     </AuthProvider>
     </ThemeProvider>

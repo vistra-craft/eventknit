@@ -78,7 +78,7 @@ const LegalPage = ({ title, subtitle, lastUpdated, contactEmail, sections }: Leg
 
       {/* Hero */}
       <section className="border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -117,7 +117,7 @@ const LegalPage = ({ title, subtitle, lastUpdated, contactEmail, sections }: Leg
 
       {/* Content */}
       <section className="flex-1 py-10 lg:py-14">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row gap-10">
 
             {/* TOC — Mobile Dropdown */}
@@ -165,7 +165,7 @@ const LegalPage = ({ title, subtitle, lastUpdated, contactEmail, sections }: Leg
             </div>
 
             {/* TOC — Desktop Sidebar */}
-            <nav className="hidden lg:block lg:w-52 shrink-0">
+            <nav className="hidden lg:block lg:w-64 shrink-0">
               <div className="sticky top-20 space-y-0.5">
                 <p className="text-sm font-medium text-foreground mb-3">Contents</p>
                 {enriched.map((s) => (
@@ -201,11 +201,19 @@ const LegalPage = ({ title, subtitle, lastUpdated, contactEmail, sections }: Leg
                     {section.title}
                   </h2>
 
-                  {section.content && (
+                  {section.content && section.content.includes('\n\n') ? (
+                    <div className="space-y-3">
+                      {section.content.split('\n\n').map((paragraph, i) => (
+                        <p key={i} className="text-sm text-muted-foreground leading-relaxed">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
+                  ) : section.content ? (
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {section.content}
                     </p>
-                  )}
+                  ) : null}
 
                   {section.subsections && (
                     <div className="space-y-4 mt-1">

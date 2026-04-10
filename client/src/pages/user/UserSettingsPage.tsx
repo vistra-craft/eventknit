@@ -20,6 +20,7 @@ import {
   CheckCircle,
   RefreshCw,
   XCircle,
+  FileText,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ import { UserStatus, UserRole } from "@/types/auth";
 import { ROLE_LABELS } from "@/constants/roleLabels";
 import { useMyEvents } from "@/hooks/useMyEvents";
 import { extractErrorMessage } from "@/lib/utils/error";
+import { PrivacyDataSettings } from "@/components/settings";
 
 const UserSettingsPage = () => {
   const navigate = useNavigate();
@@ -123,6 +125,7 @@ const UserSettingsPage = () => {
     if (path.includes('/notifications')) return 'notifications';
     if (path.includes('/appearance')) return 'appearance';
     if (path.includes('/security')) return 'security';
+    if (path.includes('/privacy')) return 'privacy';
 
     return 'profile';
   }, [searchParams, location.pathname]);
@@ -910,6 +913,8 @@ const UserSettingsPage = () => {
         return renderAppearanceSettings();
       case "security":
         return renderSecuritySettings();
+      case "privacy":
+        return <PrivacyDataSettings />;
       default:
         return renderProfileSettings();
     }
@@ -937,6 +942,7 @@ const UserSettingsPage = () => {
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "appearance", label: "Appearance", icon: Palette },
     { id: "security", label: "Security", icon: Key },
+    { id: "privacy", label: "Privacy & Data", icon: FileText },
   ];
 
   if (isLoading) {
@@ -1016,7 +1022,7 @@ const UserSettingsPage = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`flex w-full mb-8 overflow-x-auto sm:grid ${tabs.length === 5 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'}`}>
+        <TabsList className={`flex w-full mb-8 overflow-x-auto sm:grid ${tabs.length === 6 ? 'sm:grid-cols-6' : 'sm:grid-cols-5'}`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
