@@ -258,6 +258,13 @@ const Navbar: React.FC<NavbarProps> = () => {
 
               {/* Desktop Actions */}
               <div className="flex items-center gap-3">
+                <button
+                  onClick={handleCreateEvent}
+                  className="text-sm font-medium px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  Create Event
+                </button>
+
                 {!isAuthenticated && (
                   <>
                     <button
@@ -273,15 +280,6 @@ const Navbar: React.FC<NavbarProps> = () => {
                       Sign Up
                     </button>
                   </>
-                )}
-
-                {isAuthenticated && (
-                  <button
-                    onClick={handleCreateEvent}
-                    className="text-sm font-medium px-3 py-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                  >
-                    Create Event
-                  </button>
                 )}
 
                 {/* Profile Dropdown - Only show when authenticated and user exists */}
