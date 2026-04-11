@@ -107,6 +107,126 @@ const HomeSkeleton = () => (
 );
 
 /**
+ * About page skeleton — mirrors the actual About page structure:
+ * Hero (full-bleed) → Stats bar → Platform overview (2-col) →
+ * Feature timeline (zigzag) → Partners (2-col) → CTA (full-bleed)
+ */
+const AboutSkeleton = () => (
+  <div className="min-h-screen flex flex-col bg-background">
+    {/* Hero — full bleed dark block */}
+    <div className="relative min-h-[520px] sm:min-h-[580px] lg:min-h-[650px] bg-muted/40">
+      <NavbarSkeleton />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center space-y-4 px-6">
+          <Skeleton className="h-10 sm:h-12 w-72 sm:w-96 mx-auto" animation="shimmer" />
+          <Skeleton className="h-4 w-80 sm:w-[28rem] mx-auto" animation="shimmer" style={{ animationDelay: '50ms' }} />
+          <Skeleton className="h-4 w-64 sm:w-80 mx-auto" animation="shimmer" style={{ animationDelay: '100ms' }} />
+          <div className="flex gap-3 justify-center pt-4">
+            <Skeleton className="h-11 w-32" animation="shimmer" variant="rounded" />
+            <Skeleton className="h-11 w-32" animation="shimmer" variant="rounded" style={{ animationDelay: '50ms' }} />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Stats bar */}
+    <div className="border-y border-border bg-muted/30">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-border">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="text-center py-6 sm:py-8 space-y-2">
+              <Skeleton className="h-8 w-20 mx-auto" animation="pulse" style={{ animationDelay: `${i * 80}ms` }} />
+              <Skeleton className="h-3 w-16 mx-auto" animation="pulse" style={{ animationDelay: `${i * 80 + 40}ms` }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Platform overview — 2 columns */}
+    <div className="py-20 sm:py-28 px-6">
+      <div className="container mx-auto max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-64" animation="shimmer" />
+            <Skeleton className="h-4 w-full" animation="pulse" style={{ animationDelay: '50ms' }} />
+            <Skeleton className="h-4 w-full" animation="pulse" style={{ animationDelay: '100ms' }} />
+            <Skeleton className="h-4 w-3/4" animation="pulse" style={{ animationDelay: '150ms' }} />
+            <Skeleton className="h-4 w-full" animation="pulse" style={{ animationDelay: '200ms' }} />
+            <Skeleton className="h-4 w-2/3" animation="pulse" style={{ animationDelay: '250ms' }} />
+          </div>
+          <Skeleton className="aspect-[4/3] w-full rounded-xl" animation="shimmer" />
+        </div>
+      </div>
+    </div>
+
+    {/* Features timeline — zigzag */}
+    <div className="py-20 sm:py-28 px-6 bg-muted/20">
+      <div className="container mx-auto max-w-2xl lg:max-w-5xl">
+        <div className="text-center mb-14 space-y-3">
+          <Skeleton className="h-8 w-56 mx-auto" animation="shimmer" />
+          <Skeleton className="h-4 w-80 mx-auto" animation="shimmer" style={{ animationDelay: '50ms' }} />
+        </div>
+        {/* Timeline nodes */}
+        <div className="space-y-6">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="grid grid-cols-[40px_1fr] lg:grid-cols-[1fr_48px_1fr] gap-4 lg:gap-6">
+              {/* Desktop: left card on even */}
+              <div className="hidden lg:block">
+                {i % 2 === 0 && <Skeleton className="h-48 w-full rounded-2xl" animation="pulse" style={{ animationDelay: `${i * 100}ms` }} />}
+              </div>
+              {/* Spine dot */}
+              <div className="flex flex-col items-center">
+                <Skeleton className="w-10 h-10 lg:w-11 lg:h-11 shrink-0" animation="shimmer" variant="circular" style={{ animationDelay: `${i * 100}ms` }} />
+                {i < 3 && <Skeleton className="w-px flex-1 min-h-[24px] lg:min-h-[40px]" animation="pulse" />}
+              </div>
+              {/* Mobile: always right. Desktop: right card on odd */}
+              <div className="lg:hidden">
+                <Skeleton className="h-48 w-full rounded-2xl" animation="pulse" style={{ animationDelay: `${i * 100}ms` }} />
+              </div>
+              <div className="hidden lg:block">
+                {i % 2 !== 0 && <Skeleton className="h-48 w-full rounded-2xl" animation="pulse" style={{ animationDelay: `${i * 100}ms` }} />}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Partners — 2 columns */}
+    <div className="py-20 sm:py-28 px-6">
+      <div className="container mx-auto max-w-6xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-72" animation="shimmer" />
+            <Skeleton className="h-4 w-full" animation="pulse" style={{ animationDelay: '50ms' }} />
+            <Skeleton className="h-4 w-3/4" animation="pulse" style={{ animationDelay: '100ms' }} />
+            {/* Marquee rows */}
+            <div className="mt-6 space-y-3">
+              <div className="flex gap-3">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-xl" animation="shimmer" style={{ animationDelay: `${i * 60}ms` }} />
+                ))}
+              </div>
+              <div className="flex gap-3">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-xl" animation="shimmer" style={{ animationDelay: `${i * 60 + 30}ms` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+          {/* Africa map placeholder */}
+          <Skeleton className="aspect-[3/4] max-w-[400px] mx-auto w-full rounded-xl" animation="shimmer" />
+        </div>
+      </div>
+    </div>
+
+    {/* CTA — full bleed dark block */}
+    <Skeleton className="min-h-[360px] sm:min-h-[420px] w-full" animation="shimmer" />
+  </div>
+);
+
+/**
  * Generic page skeleton — for info pages, support, etc.
  */
 const GenericPageSkeleton = () => (
@@ -146,6 +266,11 @@ const LoadingFallback = () => {
   // Event registration: /event/:id/register
   if (/^\/event\/[^/]+\/register$/.test(path)) {
     return <RegisterEventSkeleton />;
+  }
+
+  // About page
+  if (path === '/about') {
+    return <AboutSkeleton />;
   }
 
   // All other public pages
