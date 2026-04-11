@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import MinimalHeader from '@/components/layout/MinimalHeader';
-import LegalFooter from '@/components/layout/LegalFooter';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -74,11 +74,11 @@ const LegalPage = ({ title, subtitle, lastUpdated, contactEmail, sections }: Leg
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <MinimalHeader />
+      <Navbar />
 
       {/* Hero */}
       <section className="border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-10 sm:pb-14">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -272,7 +272,7 @@ const LegalPage = ({ title, subtitle, lastUpdated, contactEmail, sections }: Leg
         </div>
       </section>
 
-      <LegalFooter />
+      <Footer />
     </div>
   );
 };
