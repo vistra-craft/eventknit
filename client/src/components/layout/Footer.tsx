@@ -1,5 +1,9 @@
 import { Link } from "react-router-dom";
 
+// ---------------------------------------------------------------------------
+// Social icons
+// ---------------------------------------------------------------------------
+
 const XIcon = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -30,69 +34,114 @@ const LinkedinIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
+// ---------------------------------------------------------------------------
+// Link groups
+// ---------------------------------------------------------------------------
+
+const PRODUCT_LINKS = [
+  { label: "Browse Events", to: "/" },
+  { label: "Create Event", to: "/auth/register/organizer" },
+];
+
+const COMPANY_LINKS = [
+  { label: "About", to: "/about" },
+  { label: "Careers", to: "/careers" },
+  { label: "Support", to: "/support" },
+];
+
+const LEGAL_LINKS = [
+  { label: "Terms of Service", to: "/terms-of-service" },
+  { label: "Privacy Policy", to: "/privacy-policy" },
+  { label: "Cookie Policy", to: "/cookie-policy" },
+];
+
+const YouTubeIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+  </svg>
+);
+
+const SOCIALS = [
+  { icon: XIcon, label: "X", href: "#" },
+  { icon: FacebookIcon, label: "Facebook", href: "#" },
+  { icon: InstagramIcon, label: "Instagram", href: "#" },
+  { icon: YouTubeIcon, label: "YouTube", href: "#" },
+  { icon: TiktokIcon, label: "TikTok", href: "#" },
+  { icon: LinkedinIcon, label: "LinkedIn", href: "#" },
+];
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+function FooterLinkGroup({ title, links }: { title: string; links: { label: string; to: string }[] }) {
+  return (
+    <div>
+      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground mb-3">
+        {title}
+      </h3>
+      <ul className="space-y-1.5">
+        {links.map((link) => (
+          <li key={link.to}>
+            <Link
+              to={link.to}
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              {link.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
-  const links = [
-    { label: "About", to: "/about" },
-    { label: "Careers", to: "/careers" },
-    { label: "Support", to: "/support" },
-    { label: "Terms", to: "/terms-of-service" },
-    { label: "Privacy", to: "/privacy-policy" },
-    { label: "Cookies", to: "/cookie-policy" },
-  ];
-
-  const socials = [
-    { icon: XIcon, label: "X", href: "#" },
-    { icon: FacebookIcon, label: "Facebook", href: "#" },
-    { icon: InstagramIcon, label: "Instagram", href: "#" },
-    { icon: TiktokIcon, label: "TikTok", href: "#" },
-    { icon: LinkedinIcon, label: "LinkedIn", href: "#" },
-  ];
-
   return (
-    <footer className="border-t border-border">
-      <div className="container mx-auto px-6 py-6">
-        {/* Row 1: Logo + Links */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs">E</span>
-            </div>
-            <span className="text-sm font-semibold text-foreground">EventKnit</span>
-          </Link>
+    <footer className="border-t border-border bg-muted/30">
+      <div className="container mx-auto px-6 py-8">
+        <div className="grid grid-cols-2 gap-6 lg:grid-cols-5 lg:gap-8">
 
-          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            {links.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          {/* Brand column */}
+          <div className="col-span-2">
+            <Link to="/" className="inline-flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-xs">E</span>
+              </div>
+              <span className="text-sm font-semibold text-foreground">EventKnit</span>
+            </Link>
+            <p className="text-xs text-muted-foreground max-w-xs mb-4">
+              Create, manage, and sell tickets for unforgettable events. Built for organizers who care about their attendees.
+            </p>
+            <div className="flex items-center gap-1.5">
+              {SOCIALS.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
+                  aria-label={social.label}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <social.icon size={13} />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <FooterLinkGroup title="Product" links={PRODUCT_LINKS} />
+          <FooterLinkGroup title="Company" links={COMPANY_LINKS} />
+          <FooterLinkGroup title="Legal" links={LEGAL_LINKS} />
+
         </div>
 
-        {/* Row 2: Copyright + Socials */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-border">
-          <p className="text-xs text-muted-foreground">
-            &copy; {currentYear} EventKnit
+        {/* Bottom */}
+        <div className="mt-6 pt-4 border-t border-border">
+          <p className="text-[11px] text-muted-foreground text-center sm:text-left">
+            &copy; {currentYear} EventKnit. All rights reserved.
           </p>
-
-          <div className="flex items-center gap-3">
-            {socials.map((social) => (
-              <a
-                key={social.label}
-                href={social.href}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label={social.label}
-              >
-                <social.icon />
-              </a>
-            ))}
-          </div>
         </div>
       </div>
     </footer>
