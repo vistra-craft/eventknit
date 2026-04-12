@@ -4,7 +4,7 @@ A comprehensive engineering guide to the EventKnit platform — architecture, de
 
 **Target Audience:** Software Engineers, System Architects, DevOps Engineers, Technical Leads, New Developers
 
-**Last Updated:** March 2026
+**Last Updated:** April 2026
 
 ---
 
@@ -60,6 +60,45 @@ A comprehensive engineering guide to the EventKnit platform — architecture, de
 47. [Post-Event Survey System](#47-post-event-survey-system)
 48. [Financial Data Integrity Standards](#48-financial-data-integrity-standards)
 49. [Glossary](#49-glossary)
+
+---
+
+## Quick Start for New Developers
+
+**Prerequisites:** Node.js 20+, PostgreSQL 16+, Redis 7+, Git
+
+```bash
+# 1. Clone and install
+git clone <repo-url> && cd eventknit
+cd server && npm install && cd ../client && npm install
+
+# 2. Environment
+cp server/.env.example server/.env    # Edit with your credentials
+
+# 3. Database
+cd server
+npx prisma generate                   # Generate type-safe client
+npx prisma migrate dev                # Apply migrations
+
+# 4. Run (two terminals)
+cd server && npm run dev              # Backend → http://localhost:3010
+cd client && npm run dev              # Frontend → http://localhost:5173 (proxies API to 3010)
+```
+
+**Key directories to know:**
+- `server/src/services/` — All business logic (121 files). Start here to understand any feature.
+- `server/src/controllers/` — Thin HTTP handlers (68 files). Call services, format responses.
+- `server/prisma/schema.prisma` — Database schema (152 models, 27 enums). The source of truth.
+- `client/src/pages/` — Route-level components (250+ pages). Organized by role.
+- `client/src/lib/` — API clients (api.ts, auth-api.ts, event-api.ts, etc.).
+- `eventknit_mobile/lib/domain/usecases/` — Mobile business logic (73 use cases).
+
+**Architecture in one sentence:** React 19 frontend → Express 5 REST API → Prisma ORM → PostgreSQL, with Redis for caching/queues, Socket.IO for real-time, and a Flutter mobile app using Clean Architecture.
+
+**Related systems in this repo:**
+- `eventknit/` — **Primary system** (TypeScript, PostgreSQL, active development)
+- `eventknit_mobile/` — **Mobile app** (Flutter/Dart, active development)
+- `vf-ticket/` — **Legacy system** (JavaScript, MongoDB, maintenance only — not EventKnit)
 
 ---
 
@@ -158,7 +197,7 @@ A comprehensive engineering guide to the EventKnit platform — architecture, de
 | **Framework** | Express.js | 5.1+ | Web framework |
 | **ORM** | Prisma | 6.18+ | Database toolkit with type-safe queries |
 | **Database** | PostgreSQL | 16+ (Alpine) | Primary relational database |
-| **Database** | MongoDB (Mongoose) | 8.19+ | Secondary database (analytics, logs) |
+| **Database** | MongoDB (Mongoose) | 8.19+ | Secondary database (analytics, logs) — *legacy from vf-ticket; EventKnit primary uses PostgreSQL only. `mongodb-memory-server` exists in devDependencies for legacy test compat.* |
 | **Cache/Queue** | Redis (ioredis) | 5.9+ | Caching, sessions, distributed locking, BullMQ backing store |
 | **Real-Time** | Socket.IO | 4.8+ | WebSocket server for live updates |
 | **Job Queue** | BullMQ | 5.67+ | Background job processing |
@@ -169,7 +208,7 @@ A comprehensive engineering guide to the EventKnit platform — architecture, de
 | **Validation** | express-validator | 7.3+ | Additional request validation |
 | **Logging** | Winston | 3.18+ | Structured logging with daily rotation |
 | **HTTP Logging** | Morgan | 1.10+ | HTTP request/response logging |
-| **Testing** | Jest | 30.2+ | Unit and integration testing |
+| **Testing** | Vitest | 4.1+ | Unit and integration testing (Vite-native, ESM support) |
 | **Testing** | Supertest | 7.1+ | HTTP endpoint testing |
 | **Testing** | mongodb-memory-server | 10.2+ | In-memory MongoDB for tests |
 | **Payment** | Stripe SDK | 17.7+ | Global payment gateway |
@@ -1850,9 +1889,11 @@ npm run test:watch                                    # Watch mode
 
 ### Mocking Patterns
 
-**Prisma (jest-mock-extended):**
+> **Note:** EventKnit uses **Vitest** (not Jest). The mocking API is `vi.mock()` / `vi.fn()` / `vi.clearAllMocks()`. Some legacy test files may still reference `jest.*` — these work because Vitest provides a Jest-compatible API, but new tests should use the `vi.*` namespace.
+
+**Prisma (vitest-mock-extended):**
 ```typescript
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   default: mockDeep<PrismaClient>(),
 }));
@@ -1860,8 +1901,8 @@ jest.mock('../../../src/config/database.js', () => ({
 
 **Services (for controller tests):**
 ```typescript
-jest.mock('../../../src/services/white-label.service.js', () => ({
-  WhiteLabelService: { getAllBrandings: jest.fn(), ... },
+vi.mock('../../../src/services/white-label.service.js', () => ({
+  WhiteLabelService: { getAllBrandings: vi.fn(), ... },
 }));
 ```
 
@@ -1903,7 +1944,7 @@ if (!dbConnected) { console.log('⏭️  Skipping'); return; }
 
 ### Common Pitfalls
 
-- **Forgetting `jest.clearAllMocks()`** in `beforeEach` → state leaks between tests
+- **Forgetting `vi.clearAllMocks()`** (or `jest.clearAllMocks()` in legacy files) in `beforeEach` → state leaks between tests
 - **Hardcoding dates** → use `expect.any(Date)` in object matchers
 - **Testing implementation details** → verify outcomes, not Prisma call counts
 - **Missing `.js` extension** in mock paths → mock silently fails

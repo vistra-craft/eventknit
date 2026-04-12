@@ -1,7 +1,7 @@
 # EventKnit Platform Guide
 
-**Version:** 2.0
-**Last Updated:** March 2026
+**Version:** 2.1
+**Last Updated:** April 2026
 **Audience:** Stakeholders, Business Teams, Product Managers, Partners
 
 ---
@@ -56,11 +56,32 @@ EventKnit is available as a **web application** (desktop and mobile browsers) an
 - Advanced ticketing with dynamic pricing, packages, and seat maps
 - Secure multi-gateway payment processing (Paystack, Stripe, M-Pesa)
 - Real-time check-in with QR scanning, checkpoints, and facility tracking
+- Offline QR scanning with cryptographic ticket verification (mobile app)
 - Custom badge design and on-demand printing
 - KYC-based organizer verification for regulatory compliance
 - Multi-channel communications (email, SMS, push notifications)
 - White-label branding with custom domains
 - Platform-wide analytics and financial reporting
+- Native mobile app for iOS and Android with offline-first capabilities
+
+### Competitive Positioning
+
+EventKnit is positioned as the most cost-effective, feature-complete event management platform in the African market, with global reach via Stripe.
+
+| Platform | Fee Model | Offline Scanning | Mobile App | White-Label | MICE/Managed Events |
+|----------|-----------|-----------------|------------|-------------|-------------------|
+| **EventKnit** | **7.5% all-in** | **Yes (Ed25519)** | **Native (iOS + Android)** | **Yes** | **Yes** |
+| Mookh | 8% all-in | No | Web only | No | No |
+| TicketSasa | 10% all-in | No | Web only | Limited | No |
+| Eventbrite | 8-12% effective | Limited | Yes | Yes (premium) | No |
+| Ticket Tailor | Fixed monthly + fees | No | No | Yes | No |
+
+**Key differentiators:**
+- **Lowest fees in Africa** — 7.5% all-in vs 8-12% for competitors
+- **Offline-first scanning** — Cryptographic ticket verification without internet (critical for African venue infrastructure)
+- **Managed Events (MICE)** — White-glove service for corporate clients, NGOs, and government agencies
+- **Multi-role mobile app** — Attendee, organizer, and admin features in one app
+- **Comprehensive financial management** — Full P&L reporting, staff wages, income statements (beyond basic revenue tracking)
 
 ---
 
@@ -403,7 +424,7 @@ Organizers can subscribe to different tiers for access to premium features:
 |------|-------|----------|
 | Basic | Free | Standard event creation, basic analytics |
 | Standard | Free | Advanced ticketing, segmentation, branding |
-| Premium | Paid | Full white-label, priority support, advanced analytics, unlimited staff |
+| Premium | Configurable (admin-set pricing) | Full white-label, priority support, advanced analytics, unlimited staff |
 
 **Upgrade Flow:**
 - Free-to-free upgrades (e.g., Basic → Standard) are instant — no payment required
@@ -570,12 +591,14 @@ The admin sidebar is organized into four purpose-driven groups:
 ### Event Lifecycle
 
 ```
-DRAFT --> PENDING --> APPROVED --> LIVE --> COMPLETED
-                 |
-                 +--> REJECTED
+DRAFT --> PENDING --> APPROVED --> LIVE --> COMPLETED --> POST-EVENT
+                 |                                        (surveys, payouts,
+                 +--> REJECTED                             analytics)
                  |
                  +--> CANCELLED
 ```
+
+After an event is completed, the platform automatically triggers post-event operations: feedback survey emails are sent to attendees (tokenized, no login required), organizer payouts are queued after the 5-business-day grace period, and final analytics are compiled.
 
 ### Event Types
 
@@ -1447,7 +1470,9 @@ EventKnit offers tiered subscription plans for organizers, unlocking progressive
 |------|-------|--------|-------------|
 | **Basic** | Free | New organizers | Standard event creation, basic analytics, limited staff |
 | **Standard** | Free | Growing organizers | Advanced ticketing, attendee segmentation, branding options |
-| **Premium** | Paid | Enterprise organizers | Full white-label, custom domains, priority support, unlimited staff, advanced analytics |
+| **Premium** | Configurable (admin-set pricing per currency) | Enterprise organizers | Full white-label, custom domains, priority support, unlimited staff, advanced analytics |
+
+Premium tier pricing is set by platform admins via the Subscription Plan management interface and can vary by currency. This price-aware design means tier pricing can change without code modifications — the system checks the plan's `price` field to determine whether to route through the payment gateway or upgrade instantly.
 
 ### Plan Management
 
@@ -1659,23 +1684,27 @@ The EventKnit mobile app (iOS and Android) provides a native attendee experience
 | Event Registration and Checkout | Yes | Yes |
 | Ticket Management | Yes | Yes |
 | QR Code Display | Yes | Yes (native, optimized) |
-| Push Notifications | Browser-based | Native |
+| Push Notifications | Browser-based | Native (FCM) |
 | Biometric Login | No | Yes (Fingerprint, Face ID) |
-| Offline Ticket Access | No | Yes |
+| Offline Ticket Access | No | Yes (cached locally with Ed25519 verification) |
 | Camera QR Scanning | Limited | Native camera integration |
 | Apple Wallet / Google Pay | Via browser | Native integration |
-| Organizer Dashboard | Yes (full) | No |
-| Admin Dashboard | Yes (full) | No |
-| Service Point / Check-In | Yes | No |
+| Offline QR Scanning | No | Yes (Ed25519 signature verification, queued sync) |
+| Organizer Dashboard | Yes (full) | In Development (dashboard, events, attendees, scanner) |
+| Admin Dashboard | Yes (full) | In Development (dashboard, events, scanner) |
+| Service Point / Check-In | Yes | In Development (organizer and admin scanning) |
 
 ### Mobile-Specific Features
 
 - **Offline Access** — Cached tickets available without internet connection
+- **Offline QR Scanning** — Scan and validate tickets without internet using Ed25519 cryptographic signature verification. Scans are queued locally and synced automatically when connectivity is restored (every 15 minutes via background worker)
 - **Biometric Security** — Fingerprint and Face ID for quick, secure login
-- **Native Notifications** — Push notifications for event reminders, ticket confirmations, updates
+- **Native Notifications** — Push notifications via Firebase Cloud Messaging for event reminders, ticket confirmations, updates
 - **Deep Linking** — Tap a shared event link to open directly in the app
 - **Native Sharing** — Share events using the device's native share sheet
-- **Dark Mode** — Full dark mode support matching system preferences
+- **Dark Mode** — Full OLED-ready dark mode support matching system preferences
+- **Organizer Features (In Development)** — Mobile dashboard, event management, real-time stats, and QR scanning for organizers
+- **Admin Features (In Development)** — Mobile admin dashboard, event oversight, and scanning capabilities
 
 ### Mobile App Screens
 
@@ -1973,4 +2002,33 @@ The platform runs several automated background jobs that operate without manual 
 
 ---
 
-*This document consolidates and verifies all platform capabilities against the EventKnit codebase (152 database models, 121 services, 68 controllers, 250+ pages). Last verified: March 2026.*
+## Platform Roadmap
+
+### Current Status (April 2026)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Web Application (Attendee) | Live | Full feature set |
+| Web Application (Organizer) | Live | Full feature set |
+| Web Application (Admin) | Live | Full feature set |
+| Mobile App — Attendee Features | Live | Event discovery, tickets, QR display, offline access |
+| Mobile App — QR Scanning (Online + Offline) | Live | Ed25519 verification, background sync |
+| Mobile App — Organizer Dashboard | In Development | Dashboard, event management, real-time stats, scanning |
+| Mobile App — Admin Features | In Development | Dashboard, event oversight, scanning |
+| Mobile App — Walk-In Sales | Planned | On-site registration via mobile |
+| Mobile App — Badge Printing | Planned | Mobile-initiated badge printing |
+
+### Upcoming Enhancements
+
+| Enhancement | Priority | Target |
+|-------------|----------|--------|
+| Personalized event recommendations (ML-powered) | High | Q3 2026 |
+| Elasticsearch for advanced search and discovery | High | Q3 2026 |
+| Progressive Web App (PWA) for web | Medium | Q3 2026 |
+| GraphQL API for optimized mobile data fetching | Medium | Q4 2026 |
+| Server-Side Rendering for SEO (public event pages) | Medium | Q4 2026 |
+| Predictive analytics for organizers (attendance forecasting, optimal pricing) | Low | Q1 2027 |
+
+---
+
+*This document consolidates and verifies all platform capabilities against the EventKnit codebase (152 database models, 121 services, 68 controllers, 250+ pages). Last verified: April 2026.*
