@@ -43,7 +43,7 @@ export const useEvents = (): UseEventsReturn => {
   });
 
   const isMountedRef = useRef(true);
-  const lastFiltersRef = useRef<EventFilters | undefined>();
+  const lastFiltersRef = useRef<EventFilters | undefined>(undefined);
   const isLoadingRef = useRef(false);
 
   // Prevent unmounted state updates

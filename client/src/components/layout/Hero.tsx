@@ -35,8 +35,6 @@ function eventToFeatured(event: {
   price?: number | null;
   currency?: string | null;
 }): ActiveFeaturedEvent {
-  const date = new Date(event.startDate);
-  const formatted = date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
   const priceStr = event.isFree ? "Free" : event.price ? `${event.currency || "KES"} ${event.price}` : "";
 
   return {
@@ -54,7 +52,7 @@ function eventToFeatured(event: {
     location: event.location,
     price: priceStr,
     displayOrder: 0,
-    event: { id: event.id, slug: null },
+    event: { id: event.id, title: event.title, image: event.image, category: event.category, startDate: event.startDate, startTime: event.startTime, venue: event.venue, location: event.location, price: event.price, isFree: event.isFree ?? false },
   };
 }
 
@@ -185,8 +183,7 @@ export const Hero = () => {
 
   const handleViewEvent = () => {
     if (currentEvent.type === "EVENT" && currentEvent.eventId) {
-      const slug = currentEvent.event?.slug;
-      navigate(`/event/${slug ?? currentEvent.eventId}`);
+      navigate(`/event/${currentEvent.eventId}`);
     } else if (currentEvent.type === "IMAGE" && currentEvent.linkUrl) {
       if (currentEvent.linkUrl.startsWith("http")) {
         window.open(currentEvent.linkUrl, "_blank");
