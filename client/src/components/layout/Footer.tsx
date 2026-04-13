@@ -34,19 +34,26 @@ const LinkedinIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
+const YouTubeIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+  </svg>
+);
+
 // ---------------------------------------------------------------------------
-// Link groups
+// Link groups — only real routes, no dead links
 // ---------------------------------------------------------------------------
 
-const PRODUCT_LINKS = [
+const EXPLORE_LINKS = [
   { label: "Browse Events", to: "/" },
-  { label: "Create Event", to: "/auth/register/organizer" },
-];
-
-const COMPANY_LINKS = [
   { label: "About", to: "/about" },
   { label: "Careers", to: "/careers" },
   { label: "Support", to: "/support" },
+];
+
+const ORGANIZERS_LINKS = [
+  { label: "Create Event", to: "/create-event" },
+  { label: "Become an Organizer", to: "/auth/register/organizer" },
 ];
 
 const LEGAL_LINKS = [
@@ -54,12 +61,6 @@ const LEGAL_LINKS = [
   { label: "Privacy Policy", to: "/privacy-policy" },
   { label: "Cookie Policy", to: "/cookie-policy" },
 ];
-
-const YouTubeIcon = ({ size = 16 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-  </svg>
-);
 
 const SOCIALS = [
   { icon: XIcon, label: "X", href: "#" },
@@ -74,18 +75,24 @@ const SOCIALS = [
 // Component
 // ---------------------------------------------------------------------------
 
-function FooterLinkGroup({ title, links }: { title: string; links: { label: string; to: string }[] }) {
+function FooterLinkGroup({
+  title,
+  links,
+}: {
+  title: string;
+  links: { label: string; to: string }[];
+}) {
   return (
     <div>
-      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-foreground mb-3">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-orange-400 mb-4">
         {title}
       </h3>
-      <ul className="space-y-1.5">
+      <ul className="space-y-3">
         {links.map((link) => (
           <li key={link.to}>
             <Link
               to={link.to}
-              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="text-sm text-neutral-400 dark:text-muted-foreground hover:text-white dark:hover:text-foreground transition-colors duration-200"
             >
               {link.label}
             </Link>
@@ -100,48 +107,90 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border bg-muted/30">
-      <div className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-2 gap-6 lg:grid-cols-5 lg:gap-8">
+    <footer className="bg-neutral-950 dark:bg-background border-t border-orange-500/20 dark:border-border">
+      {/* Orange accent line at top */}
+      <div className="h-0.5 bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 dark:from-orange-500/40 dark:via-orange-500/60 dark:to-orange-500/40" />
 
-          {/* Brand column */}
-          <div className="col-span-2">
-            <Link to="/" className="inline-flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xs">E</span>
-              </div>
-              <span className="text-sm font-semibold text-foreground">EventKnit</span>
-            </Link>
-            <p className="text-xs text-muted-foreground max-w-xs mb-4">
-              Create, manage, and sell tickets for unforgettable events. Built for organizers who care about their attendees.
-            </p>
-            <div className="flex items-center gap-1.5">
-              {SOCIALS.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/5 transition-colors"
-                  aria-label={social.label}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <social.icon size={13} />
-                </a>
-              ))}
-            </div>
-          </div>
-
-          <FooterLinkGroup title="Product" links={PRODUCT_LINKS} />
-          <FooterLinkGroup title="Company" links={COMPANY_LINKS} />
+      <div className="container mx-auto px-6 lg:px-8">
+        {/* Link columns */}
+        <div className="py-12 sm:py-14 grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-4 lg:gap-12">
+          <FooterLinkGroup title="Explore" links={EXPLORE_LINKS} />
+          <FooterLinkGroup title="Organizers" links={ORGANIZERS_LINKS} />
           <FooterLinkGroup title="Legal" links={LEGAL_LINKS} />
 
+          {/* Get the app column */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-orange-400 mb-4">
+              Get the App
+            </h3>
+            <div className="flex gap-3">
+              <a
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-700/60 dark:border-border bg-neutral-900 dark:bg-card hover:border-orange-500/40 hover:bg-neutral-800 dark:hover:bg-muted transition-colors"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none">
+                  <path d="M3.609 1.814 13.792 12 3.61 22.186a2.372 2.372 0 0 1-.109-.712V2.526c0-.249.037-.489.109-.712z" fill="#4285F4" />
+                  <path d="m14.737 12.945-2.836 2.836L3.609 22.186A2.405 2.405 0 0 0 5.264 23c.46 0 .919-.132 1.313-.396l.015-.009 9.024-5.21-2.879-2.879z" fill="#34A853" />
+                  <path d="M20.494 10.678 17.3 8.833l-3.508 3.167 3.508 3.508 3.191-1.843c.574-.33.934-.92.934-1.588 0-.668-.36-1.259-.93-1.592v.193z" fill="#FBBC04" />
+                  <path d="M3.609 1.814A2.405 2.405 0 0 1 5.264 1c.46 0 .919.132 1.313.396l.015.009 9.024 5.21-2.879 2.879-9.128-7.68z" fill="#EA4335" />
+                </svg>
+                <div>
+                  <div className="text-[10px] text-neutral-500 dark:text-muted-foreground leading-none">Download on</div>
+                  <div className="text-sm font-semibold text-white dark:text-foreground leading-tight">Google Play</div>
+                </div>
+              </a>
+              <a
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-700/60 dark:border-border bg-neutral-900 dark:bg-card hover:border-orange-500/40 hover:bg-neutral-800 dark:hover:bg-muted transition-colors"
+              >
+                <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 text-white" fill="currentColor">
+                  <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+                </svg>
+                <div>
+                  <div className="text-[10px] text-neutral-500 dark:text-muted-foreground leading-none">Download on</div>
+                  <div className="text-sm font-semibold text-white dark:text-foreground leading-tight">App Store</div>
+                </div>
+              </a>
+            </div>
+          </div>
         </div>
 
-        {/* Bottom */}
-        <div className="mt-6 pt-4 border-t border-border">
-          <p className="text-[11px] text-muted-foreground text-center sm:text-left">
-            &copy; {currentYear} EventKnit. All rights reserved.
-          </p>
+        {/* Bottom bar — brand left, social right */}
+        <div className="border-t border-neutral-800 dark:border-border py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          {/* Brand + copyright */}
+          <div className="flex items-center gap-3">
+            <Link to="/" className="inline-flex items-center gap-2">
+              <span className="text-xl font-bold tracking-tight">
+                <span className="text-white dark:text-foreground">Event</span>
+                <span className="text-orange-500">Knit</span>
+              </span>
+            </Link>
+            <span className="hidden sm:inline text-neutral-700 dark:text-border">|</span>
+            <p className="text-xs text-neutral-500 dark:text-muted-foreground">
+              &copy; {currentYear} EventKnit. All rights reserved.
+            </p>
+          </div>
+
+          {/* Social row */}
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-neutral-500 dark:text-muted-foreground mr-2 hidden sm:inline">Follow us on:</span>
+            {SOCIALS.map((social) => (
+              <a
+                key={social.label}
+                href={social.href}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-neutral-500 dark:text-muted-foreground hover:text-orange-400 hover:bg-orange-500/10 transition-colors duration-200"
+                aria-label={social.label}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <social.icon size={16} />
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

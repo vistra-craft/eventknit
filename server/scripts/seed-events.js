@@ -5,9 +5,9 @@
  * Usage: node seed-events.js
  */
 
-const API_URL = 'http://178.18.249.49/api/v1';
-const ORGANIZER_EMAIL = 'bkelvin138@gmail.com';
-const ORGANIZER_PASSWORD = 'Somesuperhardpassword2guess!'; // REPLACE WITH ACTUAL PASSWORD
+const API_URL = process.env.SEED_API_URL || 'http://localhost:3010/api/v1';
+const ORGANIZER_EMAIL = process.env.SEED_ORGANIZER_EMAIL || 'organizer@test.com';
+const ORGANIZER_PASSWORD = process.env.SEED_ORGANIZER_PASSWORD || 'password123';
 
 // Unsplash images for different event types
 const eventImages = {
@@ -499,19 +499,68 @@ async function createEvent(token, eventData) {
   return data.data.event;
 }
 
+// Generate N events by cycling templates with variations
+function generateEvents(count) {
+  const cities = [
+    'Nairobi, Kenya', 'Lagos, Nigeria', 'Cape Town, South Africa', 'Accra, Ghana',
+    'Kigali, Rwanda', 'Dar es Salaam, Tanzania', 'Kampala, Uganda', 'Addis Ababa, Ethiopia',
+    'Johannesburg, South Africa', 'Mombasa, Kenya', 'Abuja, Nigeria', 'Lusaka, Zambia',
+  ];
+  const venues = [
+    'KICC Convention Center', 'Sarit Centre', 'The Hub Karen', 'Radisson Blu',
+    'Kenyatta University Auditorium', 'Strathmore Business School', 'iHub',
+    'Sankara Hotel', 'Villa Rosa Kempinski', 'Crowne Plaza', 'Safari Park Hotel',
+    'Movenpick Hotel', 'Eka Hotel', 'PrideInn Paradise', 'Ibis Styles',
+  ];
+  const prefixes = [
+    '', 'Annual ', 'International ', 'Pan-African ', 'East African ',
+    'Community ', 'Premier ', 'Virtual ', 'Hybrid ',
+  ];
+  const suffixes = ['', ' 2026', ' Edition', ' Meetup', ' Summit'];
+  const imageKeys = Object.keys(eventImages);
+
+  const generated = [];
+  for (let i = 0; i < count; i++) {
+    const template = events[i % events.length];
+    const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+    const city = cities[Math.floor(Math.random() * cities.length)];
+    const venue = venues[Math.floor(Math.random() * venues.length)];
+    const daysOut = 5 + Math.floor(Math.random() * 90); // 5-95 days from now
+    const imgKey = imageKeys[Math.floor(Math.random() * imageKeys.length)];
+
+    generated.push({
+      ...template,
+      title: i < events.length ? template.title : `${prefix}${template.title.replace(/ 2026$/, '')}${suffix}`,
+      startDate: getFutureDate(daysOut),
+      endDate: template.endDate ? getFutureDate(daysOut + 2) : undefined,
+      location: city,
+      venue: venue,
+      image: eventImages[imgKey],
+      // Ensure unique-ish content
+      description: template.description + (i >= events.length ? ` (${city} edition)` : ''),
+    });
+  }
+  return generated;
+}
+
+const SEED_COUNT = parseInt(process.env.SEED_COUNT || '50', 10);
+
 async function main() {
-  console.log('🚀 Starting event seeding process...\n');
-  
+  console.log(`🚀 Starting event seeding process (${SEED_COUNT} events)...\n`);
+
   try {
     // Login
     const token = await loginOrganizer();
     console.log('');
 
+    const allEvents = SEED_COUNT <= events.length ? events : generateEvents(SEED_COUNT);
+
     // Create events
     let successCount = 0;
     let failCount = 0;
 
-    for (const event of events) {
+    for (const event of allEvents) {
       const created = await createEvent(token, event);
       if (created) {
         successCount++;
@@ -519,7 +568,7 @@ async function main() {
         failCount++;
       }
       // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
 
     console.log('\n' + '='.repeat(50));

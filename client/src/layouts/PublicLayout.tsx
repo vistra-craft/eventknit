@@ -32,57 +32,96 @@ const NavbarSkeleton = () => (
 );
 
 /**
- * Homepage skeleton — Hero → Search/Filter → Event Grid → Footer
+ * Homepage skeleton — Full-bleed Hero → Floating Search → Popular → Event Grid → Dark Footer
  */
 const HomeSkeleton = () => (
   <div className="min-h-screen flex flex-col bg-background">
     <NavbarSkeleton />
-    <main className="flex-1 pt-16">
-      {/* Hero skeleton */}
-      <div className="container mx-auto px-6 py-6">
-        <div className="relative rounded-2xl overflow-hidden h-[400px] lg:h-[450px]">
-          <Skeleton className="absolute inset-0 rounded-2xl" animation="shimmer" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8 space-y-4">
-            <Skeleton className="h-5 w-24" animation="pulse" variant="rounded" />
-            <Skeleton className="h-9 w-80 max-w-full" animation="pulse" />
-            <div className="flex items-center gap-6">
-              <Skeleton className="h-4 w-36" animation="pulse" />
-              <Skeleton className="h-4 w-44" animation="pulse" />
-              <Skeleton className="h-4 w-16" animation="pulse" />
-            </div>
-            <div className="flex gap-2 pt-2">
-              <Skeleton className="h-1.5 w-8" variant="rounded" animation="pulse" />
-              <Skeleton className="h-1.5 w-1.5" variant="circular" animation="pulse" />
-              <Skeleton className="h-1.5 w-1.5" variant="circular" animation="pulse" />
+    <main className="flex-1">
+      {/* Hero — full-bleed, matches h-[480px] sm:h-[500px] lg:h-[560px] */}
+      <div className="relative h-[480px] sm:h-[500px] lg:h-[560px] bg-muted/40 overflow-hidden">
+        <Skeleton className="absolute inset-0" animation="shimmer" />
+        {/* Gradient overlay mimic */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        {/* Content at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8 space-y-4">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-20 bg-white/15" animation="pulse" variant="rounded" />
+            <Skeleton className="h-4 w-24 bg-white/10" animation="pulse" />
+          </div>
+          <Skeleton className="h-9 w-80 max-w-full bg-white/15" animation="pulse" />
+          <div className="flex flex-wrap items-center gap-5">
+            <Skeleton className="h-4 w-36 bg-white/10" animation="pulse" />
+            <Skeleton className="h-4 w-44 bg-white/10" animation="pulse" />
+            <Skeleton className="h-4 w-16 bg-white/10" animation="pulse" />
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <div className="flex gap-2">
+              <Skeleton className="h-1.5 w-8 bg-white/20" variant="rounded" animation="pulse" />
+              <Skeleton className="h-1.5 w-1.5 bg-white/15" variant="circular" animation="pulse" />
+              <Skeleton className="h-1.5 w-1.5 bg-white/15" variant="circular" animation="pulse" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Search filter skeleton */}
-      <section className="pb-4 pt-6 bg-background">
+      {/* Search filter — floating glassmorphic card overlapping hero */}
+      <section className="relative z-20 -mt-6 pb-6">
         <div className="container mx-auto px-4 sm:px-6">
-          <Skeleton className="h-6 w-52 mb-3" animation="shimmer" />
-          <div className="flex items-center gap-2">
-            <Skeleton className="flex-1 h-10 rounded-full" animation="shimmer" />
-            <Skeleton className="h-10 w-10 rounded-full" animation="shimmer" />
+          <div className="bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg p-4 sm:p-5">
+            <div className="flex items-center gap-2">
+              <Skeleton className="flex-1 h-11 rounded-xl" animation="shimmer" />
+              <Skeleton className="h-11 w-11 rounded-xl" animation="shimmer" />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Event grid skeleton */}
-      <section className="pt-4 pb-16 bg-background">
-        <div className="container mx-auto px-6">
+      {/* Popular this week skeleton */}
+      <section className="py-10 px-6">
+        <div className="container mx-auto">
+          <div className="flex items-center gap-2 mb-6">
+            <Skeleton className="h-5 w-5 rounded" animation="shimmer" />
+            <Skeleton className="h-6 w-44" animation="shimmer" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex gap-3 p-3 rounded-xl border border-border/40 bg-card" style={{ animationDelay: `${(i - 1) * 80}ms` }}>
+                <Skeleton className="w-20 h-20 rounded-lg shrink-0" animation="shimmer" />
+                <div className="flex-1 space-y-2 py-1">
+                  <Skeleton className="h-4 w-3/4" animation="pulse" />
+                  <Skeleton className="h-3 w-1/2" animation="pulse" />
+                  <Skeleton className="h-3 w-1/3" animation="pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Event grid skeleton — matches real EventCard structure */}
+      <section className="pb-16 px-6">
+        <div className="container mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="rounded-2xl overflow-hidden bg-card border border-border/40 skeleton-fade-in" style={{ animationDelay: `${(i - 1) * 60}ms` }}>
-                <div>
-                  <Skeleton className="h-64 w-full" animation="shimmer" />
-                  <div className="pt-4 pb-2 pl-4 space-y-2">
-                    <Skeleton className="h-5 w-3/4" animation="pulse" />
-                    <Skeleton className="h-4 w-1/2" animation="pulse" />
-                    <Skeleton className="h-4 w-2/5" animation="pulse" />
-                    <Skeleton className="h-4 w-3/5 mb-1" animation="pulse" />
+              <div key={i} className="rounded-2xl overflow-hidden bg-card border border-border/40" style={{ animationDelay: `${(i - 1) * 60}ms` }}>
+                {/* Accent strip */}
+                <div className="h-[2px] bg-gradient-to-r from-muted-foreground/10 via-muted-foreground/5 to-transparent" />
+                {/* Image */}
+                <div className="relative h-56 sm:h-64 bg-muted overflow-hidden">
+                  <Skeleton className="absolute inset-0" animation="shimmer" style={{ animationDelay: `${i * 100}ms` }} />
+                </div>
+                {/* Date block + content row */}
+                <div className="flex gap-3 p-4">
+                  <div className="shrink-0 w-12 space-y-1.5 text-center">
+                    <Skeleton className="h-2.5 w-8 mx-auto" animation="pulse" />
+                    <Skeleton className="h-6 w-8 mx-auto" animation="pulse" />
+                    <Skeleton className="h-2.5 w-8 mx-auto" animation="pulse" />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-full" animation="pulse" style={{ animationDelay: `${i * 60}ms` }} />
+                    <Skeleton className="h-3 w-3/4" animation="pulse" style={{ animationDelay: `${i * 60 + 40}ms` }} />
+                    <Skeleton className="h-3.5 w-1/3" animation="pulse" style={{ animationDelay: `${i * 60 + 80}ms` }} />
                   </div>
                 </div>
               </div>
@@ -92,14 +131,29 @@ const HomeSkeleton = () => (
       </section>
     </main>
 
-    {/* Footer skeleton */}
-    <div className="border-t border-border/40 bg-card py-8">
-      <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between gap-6">
-        <Skeleton className="h-6 w-28" animation="shimmer" />
-        <div className="flex gap-6">
-          <Skeleton className="h-4 w-16" animation="shimmer" />
-          <Skeleton className="h-4 w-16" animation="shimmer" />
-          <Skeleton className="h-4 w-16" animation="shimmer" />
+    {/* Footer skeleton — dark in light mode, blends in dark mode */}
+    <div className="bg-neutral-950 dark:bg-background border-t border-orange-500/20 dark:border-border">
+      <div className="h-0.5 bg-gradient-to-r from-orange-600/30 via-orange-500/20 to-orange-600/30 dark:from-orange-500/40 dark:via-orange-500/60 dark:to-orange-500/40" />
+      <div className="container mx-auto px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 lg:gap-12">
+          {[1, 2, 3, 4].map((col) => (
+            <div key={col} className="space-y-4">
+              <Skeleton className="h-4 w-20 bg-neutral-800 dark:bg-muted" animation="shimmer" />
+              <div className="space-y-3">
+                <Skeleton className="h-3 w-24 bg-neutral-800/60 dark:bg-muted/60" animation="pulse" />
+                <Skeleton className="h-3 w-28 bg-neutral-800/60 dark:bg-muted/60" animation="pulse" />
+                <Skeleton className="h-3 w-20 bg-neutral-800/60 dark:bg-muted/60" animation="pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-neutral-800 dark:border-border mt-10 pt-6 flex items-center justify-between">
+          <Skeleton className="h-5 w-32 bg-neutral-800 dark:bg-muted" animation="shimmer" />
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-8 w-8 bg-neutral-800/60 dark:bg-muted/60" animation="pulse" variant="circular" />
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -129,8 +183,8 @@ const AboutSkeleton = () => (
       </div>
     </div>
 
-    {/* Stats bar */}
-    <div className="border-y border-border bg-muted/30">
+    {/* Stats bar — hidden until real data is wired up */}
+    <div className="hidden border-y border-border bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-border">
           {[0, 1, 2, 3].map((i) => (

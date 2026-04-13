@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback, type MouseEvent as ReactMouseEvent } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import {
   Calendar, Ticket, QrCode, BarChart3, ArrowRight, CheckCircle2,
@@ -6,6 +6,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
+import { TiltCard } from "@/components/ui/TiltCard";
+import { AmbientGlow } from "@/components/ui/AmbientGlow";
+import { EASE } from "@/lib/animation-constants";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +45,6 @@ const PARTNERS = [
 // Constants
 // ---------------------------------------------------------------------------
 
-const EASE = [0.23, 1, 0.32, 1] as const;
 
 const HERO_WORDS = ["Event", "management", "that", "connects", "people"];
 
@@ -155,40 +157,9 @@ function useCountUp(end: number, duration = 2000, decimals = 0) {
   return { count, ref };
 }
 
-/** Returns mouse position relative to element center, normalized to -1..1 */
-function useMouseTilt() {
-  const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
-  const ref = useRef<HTMLDivElement>(null);
-
-  const handleMove = useCallback((e: ReactMouseEvent) => {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width - 0.5;  // -0.5 to 0.5
-    const y = (e.clientY - rect.top) / rect.height - 0.5;
-    setTilt({ rotateX: -y * 12, rotateY: x * 12 }); // max ±6deg
-  }, []);
-
-  const handleLeave = useCallback(() => {
-    setTilt({ rotateX: 0, rotateY: 0 });
-  }, []);
-
-  return { ref, tilt, handleMove, handleLeave };
-}
-
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
-
-function AmbientGlow({ className, duration = 30, delay = 0 }: { className: string; duration?: number; delay?: number }) {
-  return (
-    <motion.div
-      className={`absolute rounded-full blur-3xl pointer-events-none ${className}`}
-      animate={{ x: [0, 40, -20, 0], y: [0, -30, 20, 0], scale: [1, 1.1, 0.95, 1] }}
-      transition={{ duration, repeat: Infinity, ease: "easeInOut", delay }}
-    />
-  );
-}
 
 function StatItem({ value, suffix, label, decimals = 0, index }: { value: number; suffix: string; label: string; decimals?: number; index: number; icon: typeof Calendar }) {
   const { count, ref } = useCountUp(value, 2000, decimals);
@@ -209,43 +180,6 @@ function StatItem({ value, suffix, label, decimals = 0, index }: { value: number
   );
 }
 
-/** Card with 3D tilt on hover + cursor spotlight */
-function TiltCard({ children, className }: { children: React.ReactNode; className?: string }) {
-  const { ref, tilt, handleMove, handleLeave } = useMouseTilt();
-  const [spotlight, setSpotlight] = useState({ x: 50, y: 50 });
-
-  const onMove = useCallback((e: ReactMouseEvent) => {
-    handleMove(e);
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setSpotlight({
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
-    });
-  }, [handleMove, ref]);
-
-  return (
-    <motion.div
-      ref={ref}
-      onMouseMove={onMove}
-      onMouseLeave={handleLeave}
-      animate={{ rotateX: tilt.rotateX, rotateY: tilt.rotateY }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      style={{ perspective: 800, transformStyle: "preserve-3d" }}
-      className={`relative overflow-hidden ${className}`}
-    >
-      {/* Cursor spotlight overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{
-          background: `radial-gradient(circle 180px at ${spotlight.x}% ${spotlight.y}%, hsl(var(--primary) / 0.08), transparent)`,
-        }}
-      />
-      {children}
-    </motion.div>
-  );
-}
 
 /** Feature card content (reused across layouts) */
 function FeatureCard({ feature, isInView }: { feature: typeof FEATURES[number]; isInView: boolean }) {
@@ -644,7 +578,7 @@ const About = () => {
             <Button
               size="lg"
               variant="outline"
-              className="border-white/30 text-white hover:bg-white/10 hover:text-white"
+              className="border-white/40 text-white bg-white/10 hover:bg-white/20 hover:text-white"
               onClick={() => navigate("/")}
             >
               Browse Events
@@ -654,7 +588,7 @@ const About = () => {
       </section>
 
       {/* ── Stats Bar ──────────────────────────────────────────── */}
-      <section className="border-y border-border bg-muted/30">
+      <section className="hidden border-y border-border bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-border">
             {STATS.map((stat, i) => (
