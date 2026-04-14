@@ -190,8 +190,10 @@ const OrganizerRegistration = () => {
   const handleBack = () => {
     if (!multiStep.isFirstStep) {
       multiStep.goToPreviousStep();
+    } else if (window.history.length > 1) {
+      navigate(-1);
     } else {
-      navigate('/auth/user-type');
+      navigate('/');
     }
   };
 
@@ -636,7 +638,7 @@ const OrganizerRegistration = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between gap-4 mb-4">
-            <BackButton to="/auth/user-type" label="Back" />
+            <BackButton label="Back" />
             <Logo />
           </div>
 
