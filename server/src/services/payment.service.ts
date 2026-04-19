@@ -79,6 +79,10 @@ export class PaymentService {
    * Supports idempotency keys to prevent duplicate payments
    */
   async initializePayment(data: InitializePaymentData) {
+    if (!Number.isFinite(data.amount) || data.amount <= 0) {
+      throw new ValidationError('Invalid payment amount. Please restart checkout and try again.', 'PAYMENT_INIT_FAILED_INVALID_REQUEST');
+    }
+
     // Deterministic idempotency key — same registration + amount always produces the same key.
     // This prevents double-charges when users click "Pay" twice rapidly.
     // Client-provided keys take priority for explicit dedup control.
@@ -112,6 +116,7 @@ export class PaymentService {
               email: true,
               firstName: true,
               lastName: true,
+              phoneNumber: true,
             },
           },
         },
@@ -162,23 +167,45 @@ export class PaymentService {
       throw new ValidationError('This registration is no longer pending. Please start a new registration.');
     }
 
-    // Select gateway (use specified or default)
-    const gatewayType = data.gateway || this.gatewayManager.getDefaultGateway().getName() as GatewayType;
+    const normalizedCurrency = (data.currency || registration.event?.currency || 'KES').toUpperCase();
+
+    // Currency-aware gateway selection.
+    // For web checkout, exclude MPESA auto-selection until a dedicated STK flow is used in UI.
+    // MPESA can still be used when explicitly requested.
+    let gatewayType: GatewayType;
+    try {
+      gatewayType = this.gatewayManager.resolveGatewayForCurrency(normalizedCurrency, {
+        preferredGateway: data.gateway,
+        excludeGateways: data.gateway ? [] : ['MPESA'],
+      });
+    } catch (resolutionError) {
+      if (data.gateway) {
+        // If caller explicitly requested an unsupported gateway for this currency, try automatic fallback.
+        gatewayType = this.gatewayManager.resolveGatewayForCurrency(normalizedCurrency, {
+          excludeGateways: ['MPESA'],
+        });
+        logger.warn(`Preferred gateway ${data.gateway} is not available for ${normalizedCurrency}. Falling back to ${gatewayType}.`);
+      } else {
+        throw resolutionError;
+      }
+    }
+
     const gatewayInstance = this.gatewayManager.getGateway(gatewayType);
 
-    // Generate unique reference
-    const reference = `EVT-${registration.id}-${Date.now()}`;
+    // Generate unique reference (collision-resistant across rapid retries)
+    const reference = `EVT-${registration.id.slice(0, 8)}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 
     try {
       const response = await gatewayInstance.initializePayment({
         amount: data.amount,
-        currency: data.currency || registration.event?.currency || 'KES',
+        currency: normalizedCurrency,
         email: data.email,
         reference,
         metadata: {
           registrationId: data.registrationId,
           eventId: registration.eventId,
           eventTitle: registration.event.title,
+          phoneNumber: registration.attendee.phoneNumber || data.metadata?.phoneNumber,
           idempotencyKey, // Include idempotency key for tracking
           ...data.metadata,
         },
@@ -207,6 +234,9 @@ export class PaymentService {
       const errObj = error as Record<string, unknown> | null;
       const errorCode = (typeof errObj?.code === 'string' ? errObj.code : 'UNKNOWN_ERROR');
       const isTransient = (errObj?.isTransient === true);
+      const gatewayMessage = typeof errObj?.gatewayMessage === 'string'
+        ? errObj.gatewayMessage
+        : (typeof errObj?.message === 'string' ? errObj.message : undefined);
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       logger.error('Failed to initialize payment:', {
@@ -239,7 +269,7 @@ export class PaymentService {
       } else if (errorCode === 'PAYSTACK_AUTH_ERROR') {
         userMessage = 'Payment gateway configuration error. Please contact support.';
       } else if (errorCode === 'INVALID_REQUEST') {
-        userMessage = 'Invalid payment request. Please check your information and try again.';
+        userMessage = gatewayMessage || 'Invalid payment request. Please check your information and try again.';
       }
 
       throw new ValidationError(userMessage, `PAYMENT_INIT_FAILED_${errorCode}`);
@@ -360,8 +390,19 @@ export class PaymentService {
   /**
    * Handle payment webhook from payment gateway
    * Implements idempotency by tracking processed webhook events
+   * @param event Webhook event type (e.g., 'charge.success' for Paystack)
+   * @param data Webhook payload data
+   * @param gatewayType Detected or specified gateway type (PAYSTACK, STRIPE, etc.)
+   * @param signature Optional signature header for verification (passed to gateway)
+   * @param rawPayload Optional raw payload string for signature verification (especially for Paystack)
    */
-  async handleWebhook(event: string, data: Record<string, unknown>, gatewayType?: GatewayType): Promise<{ status: string; message?: string } | void> {
+  async handleWebhook(
+    event: string,
+    data: Record<string, unknown>,
+    gatewayType?: GatewayType,
+    signature?: string,
+    rawPayload?: string,
+  ): Promise<{ status: string; message?: string } | void> {
     // Extract webhook event ID for idempotency (defined outside try for catch block access)
     // Paystack: data.id, Stripe: id at top level or data.object.id
     const webhookEventId = (data.id as string) || (data.data as Record<string, unknown>)?.id as string;
@@ -427,12 +468,14 @@ export class PaymentService {
         }
       }
 
-      // Process webhook through gateway
-      // For Paystack (and similar gateways), the handler expects the raw webhook payload
-      // including both the event name and data. Our tests call PaymentService.handleWebhook
-      // with (event, data), so we reconstruct the original payload shape here.
+      // Process webhook through gateway with signature verification
+      // For Paystack: pass raw payload and signature for HMAC-SHA512 verification
+      // For Stripe: pass signature for timestamp + HMAC-SHA256 verification
       const webhookPayload = { event, data };
-      const webhookResult = await gateway.handleWebhook(webhookPayload, event);
+      const webhookResult = await gateway.handleWebhook(
+        detectedGatewayType === 'PAYSTACK' ? (rawPayload || webhookPayload) : webhookPayload,
+        signature,
+      );
       const reference = webhookResult.reference;
 
       if (!reference) {

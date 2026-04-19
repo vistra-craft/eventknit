@@ -112,6 +112,7 @@ export interface RegisterViaInvitationResponse {
   success: boolean;
   message: string;
   data: {
+    resumedPendingPayment?: boolean;
     registration: {
       id: string;
       eventId: string;

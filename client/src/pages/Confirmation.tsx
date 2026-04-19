@@ -28,6 +28,26 @@ const Confirmation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const state = location.state as ConfirmationData | null;
+
+  // Guard: if no state (e.g. direct navigation / refresh), redirect home
+  if (!state || !state.paymentId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <CheckCircle2 className="w-12 h-12 text-success" />
+          <h1 className="text-2xl font-bold">Payment Confirmed</h1>
+          <p className="text-muted-foreground text-sm text-center max-w-sm">
+            Your registration is confirmed. Check your email for your ticket and QR code.
+          </p>
+          <Button onClick={() => navigate('/')}>Back to Home</Button>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   const {
     eventTitle,
     tickets,
@@ -36,7 +56,7 @@ const Confirmation = () => {
     paymentId,
     date,
     isNewUser
-  } = location.state as ConfirmationData;
+  } = state;
 
   const handleDownloadTickets = () => {
     // In a real app, this would generate and download tickets
@@ -82,7 +102,7 @@ const Confirmation = () => {
           <CardContent>
             <h3 className="font-medium mb-4">{eventTitle}</h3>
             <div className="space-y-4">
-              {tickets.map((ticket, index) => (
+              {tickets && tickets.length > 0 ? tickets.map((ticket, index) => (
                 <div key={index} className="flex justify-between items-center border-b pb-3">
                   <div className="flex items-center gap-3">
                     <Ticket className="w-5 h-5 text-primary" />
@@ -97,7 +117,11 @@ const Confirmation = () => {
                     ${(ticket.price * ticket.quantity).toFixed(2)}
                   </p>
                 </div>
-              ))}
+              )) : (
+                <p className="text-sm text-muted-foreground">
+                  Full ticket details have been sent to your email.
+                </p>
+              )}
 
               <div className="pt-2 space-y-2">
                 <div className="flex justify-between">

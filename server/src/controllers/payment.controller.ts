@@ -18,7 +18,7 @@ export class PaymentController {
         return;
       }
 
-      const { registrationId } = req.body;
+      const { registrationId, gateway } = req.body;
 
       if (!registrationId) {
         res.status(400).json({
@@ -93,6 +93,7 @@ export class PaymentController {
         email: registration.attendee.email,
         amount: Number(registration.totalAmount),
         currency: eventWithCurrency?.currency || 'KES',
+        gateway,
         metadata: {
           userId: req.user.id,
           eventId: registration.eventId,
@@ -174,17 +175,11 @@ export class PaymentController {
           data: { object: Record<string, unknown> };
         };
         const stripeData = { ...stripeBody.data.object, id: stripeBody.id };
-        await paymentService.handleWebhook(stripeBody.type, stripeData, 'STRIPE');
+        await paymentService.handleWebhook(stripeBody.type, stripeData, 'STRIPE', stripeSig);
       } else {
-        const isValid = paymentService.verifyWebhookSignature(payload, paystackSig!);
-        if (!isValid) {
-          logger.warn('Invalid Paystack webhook signature');
-          res.status(401).json({ success: false, message: 'Invalid signature' });
-          return;
-        }
-
-        // Paystack event structure: { event, data: {...} }
-        await paymentService.handleWebhook(req.body.event, req.body.data);
+        // For Paystack, pass raw payload and signature to service for gateway-level verification
+        // The gateway will perform its own HMAC-SHA512 validation per Paystack documentation
+        await paymentService.handleWebhook(req.body.event, req.body.data, 'PAYSTACK', paystackSig, payload);
       }
 
       // Always return 200 so the payment provider stops retrying
@@ -200,7 +195,7 @@ export class PaymentController {
    */
   static async initializeGuestPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { registrationId, email } = req.body;
+      const { registrationId, email, gateway } = req.body;
 
       if (!registrationId) {
         res.status(400).json({
@@ -278,6 +273,7 @@ export class PaymentController {
         email: registration.attendee.email || email,
         amount: Number(registration.totalAmount),
         currency: eventWithCurrency?.currency || 'KES',
+        gateway,
         metadata: {
           eventId: registration.eventId,
           isGuest: true,

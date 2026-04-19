@@ -224,6 +224,7 @@ export interface RegisterEventResponse {
   success: boolean;
   message: string;
   data: {
+    resumedPendingPayment?: boolean;
     registration: {
       id: string;
       eventId: string;
@@ -531,6 +532,7 @@ export interface RegisterAsGuestResponse {
   success: boolean;
   message: string;
   data: {
+    resumedPendingPayment?: boolean;
     registration: {
       id: string;
       eventId: string;
