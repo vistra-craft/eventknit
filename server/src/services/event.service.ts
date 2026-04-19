@@ -3289,12 +3289,12 @@ export class EventService {
       throw new AuthorizationError('You do not have permission to view registrations for this event');
     }
 
-    // Get registrations
+    // Get registrations with full payment + form data
     const registrations = await prisma.eventRegistration.findMany({
       where: {
         eventId,
         status: {
-          in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING, RegistrationStatus.CANCELLED],
         },
       },
       include: {
@@ -3307,7 +3307,28 @@ export class EventService {
             phoneNumber: true,
           },
         },
+        ticketLineItems: {
+          select: {
+            ticketType: true,
+            quantity: true,
+            unitPrice: true,
+            totalPrice: true,
+          },
+        },
+        paymentTransaction: {
+          select: {
+            id: true,
+            transactionNumber: true,
+            gatewayReference: true,
+            gateway: true,
+            amount: true,
+            currency: true,
+            paymentStatus: true,
+            paymentDate: true,
+          },
+        },
       },
+      // registrationData is a direct field on the model, auto-included
       orderBy: { createdAt: 'desc' },
     });
 

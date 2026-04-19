@@ -98,6 +98,13 @@ export class DataAccessService {
       totalAmount: reg.totalAmount,
       paymentStatus: reg.paymentStatus,
       paymentMethod: reg.paymentMethod,
+      paymentTransactionId: reg.paymentTransactionId,
+      // Ticket line items for multi-ticket registrations
+      ticketLineItems: reg.ticketLineItems,
+      // Latest payment transaction (gateway ref, IDs) — FULL tier only
+      paymentTransaction: effectiveLevel === 'FULL' ? reg.paymentTransaction : undefined,
+      // Custom form data — STANDARD/FULL tiers see this
+      registrationData: reg.registrationData,
       attendee: att(reg),
     }));
   }
