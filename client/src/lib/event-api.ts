@@ -224,6 +224,7 @@ export interface RegisterEventResponse {
   success: boolean;
   message: string;
   data: {
+    resumedPendingPayment?: boolean;
     registration: {
       id: string;
       eventId: string;
@@ -255,6 +256,26 @@ export interface EventRegistrationsResponse {
       paymentMethod?: string | null;
       paymentTransactionId?: string | null;
       createdAt: string;
+      /** Custom form fields submitted by the attendee */
+      registrationData?: Record<string, unknown> | null;
+      /** Per-ticket-type breakdown */
+      ticketLineItems?: Array<{
+        ticketType: string;
+        quantity: number;
+        unitPrice?: number;
+        totalPrice?: number;
+      }>;
+      /** Latest payment transaction details (FULL tier only) */
+      paymentTransaction?: {
+        id: string;
+        transactionNumber: string;
+        gatewayReference: string;
+        gateway: string;
+        amount: number;
+        currency: string;
+        paymentStatus: string;
+        paymentDate: string;
+      } | null;
       user?: {
         id: string;
         email: string;
@@ -531,6 +552,7 @@ export interface RegisterAsGuestResponse {
   success: boolean;
   message: string;
   data: {
+    resumedPendingPayment?: boolean;
     registration: {
       id: string;
       eventId: string;

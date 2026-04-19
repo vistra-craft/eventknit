@@ -134,6 +134,21 @@ export interface RegisterForEventData {
 }
 
 export class EventService {
+  private static isRetryablePendingRegistration(registration: {
+    status: RegistrationStatus;
+    paymentStatus: string | null;
+  }): boolean {
+    return registration.status === RegistrationStatus.PENDING
+      && registration.paymentStatus !== 'COMPLETED';
+  }
+
+  private static markRegistrationAsResumed<T extends object>(registration: T): T & { resumedPendingPayment: true } {
+    return {
+      ...registration,
+      resumedPendingPayment: true,
+    };
+  }
+
   /**
    * Validate and sync registration status with payment status
    * Ensures status consistency across the application
@@ -1519,10 +1534,35 @@ export class EventService {
           attendeeId,
         },
       },
+      include: {
+        ticketLineItems: {
+          select: {
+            quantity: true,
+          },
+        },
+      },
     });
 
+    const isPendingRetryRegistration = Boolean(
+      existingRegistration && this.isRetryablePendingRegistration(existingRegistration),
+    );
+    const existingReservedQuantity = isPendingRetryRegistration
+      ? (
+        existingRegistration!.ticketLineItems.length > 0
+          ? existingRegistration!.ticketLineItems.reduce((sum, item) => sum + item.quantity, 0)
+          : (existingRegistration!.quantity || 0)
+      )
+      : 0;
+
     if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
-      throw new ConflictError('You are already registered for this event');
+      if (isPendingRetryRegistration) {
+        logger.info(
+          `[registerForEvent] Updating pending registration ${existingRegistration.id} for attendee ${attendeeId} on event ${eventId}`,
+        );
+      }
+      if (!isPendingRetryRegistration) {
+        throw new ConflictError('You are already registered for this event');
+      }
     }
 
     // Calculate requested ticket quantity for purchase limit validation
@@ -1537,6 +1577,9 @@ export class EventService {
         registration: {
           eventId,
           attendeeId,
+          ...(isPendingRetryRegistration && existingRegistration
+            ? { id: { not: existingRegistration.id } }
+            : {}),
           status: {
             in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
           },
@@ -1552,6 +1595,9 @@ export class EventService {
       where: {
         eventId,
         attendeeId,
+        ...(isPendingRetryRegistration && existingRegistration
+          ? { id: { not: existingRegistration.id } }
+          : {}),
         status: {
           in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
         },
@@ -1673,6 +1719,9 @@ export class EventService {
             where: {
               registration: {
                 eventId,
+                ...(isPendingRetryRegistration && existingRegistration
+                  ? { id: { not: existingRegistration.id } }
+                  : {}),
                 status: {
                   in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
                 },
@@ -1784,6 +1833,9 @@ export class EventService {
           where: {
             registration: {
               eventId,
+              ...(isPendingRetryRegistration && existingRegistration
+                ? { id: { not: existingRegistration.id } }
+                : {}),
               status: {
                 in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
               },
@@ -1798,6 +1850,9 @@ export class EventService {
         const legacyRegistrations = await tx.eventRegistration.count({
           where: {
             eventId,
+            ...(isPendingRetryRegistration && existingRegistration
+              ? { id: { not: existingRegistration.id } }
+              : {}),
             status: {
               in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
             },
@@ -1819,87 +1874,144 @@ export class EventService {
         }
       }
 
-      // Create registration atomically within the transaction
-      const newRegistration = await tx.eventRegistration.create({
-        data: {
-          eventId,
-          attendeeId,
-          ticketType: legacyTicketType, // Backward compatibility
-          quantity: legacyQuantity, // Backward compatibility
-          // Store as Decimal(10,2)
-          totalAmount: finalAmount,
-          registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
-          backupCode,
-          status: registrationStatus,
-          paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
-          invitationId: data.invitationId || null,
-          // Fraud detection fields (captured at registration time)
-          ipAddress: ipAddress || null,
-          userAgent: userAgent || null,
-          // Create ticket line items for multiple ticket types
-          ticketLineItems: ticketLineItems.length > 0 ? {
+      const registrationPayload = {
+        ticketType: legacyTicketType, // Backward compatibility
+        quantity: legacyQuantity, // Backward compatibility
+        // Store as Decimal(10,2)
+        totalAmount: finalAmount,
+        registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
+        backupCode,
+        status: registrationStatus,
+        paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
+        invitationId: data.invitationId || null,
+        // Fraud detection fields (captured at registration time)
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        // Replace ticket line items for multiple ticket types
+        ticketLineItems: {
+          deleteMany: {},
+          ...(ticketLineItems.length > 0 ? {
             create: ticketLineItems.map(item => ({
               ticketType: item.ticketType,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               totalPrice: item.totalPrice,
             })),
-          } : undefined,
+          } : {}),
         },
-        include: {
-          ticketLineItems: true, // Include ticket line items for multiple ticket types
-          event: {
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              startDate: true,
-              endDate: true,
-              startTime: true,
-              endTime: true,
-              venue: true,
-              location: true,
-              address: true,
-              isOnline: true,
-              onlineLink: true,
-              image: true,
-              currency: true,
-              organizer: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  organizationName: true,
-                  email: true,
+      };
+
+      // Create or update registration atomically within the transaction
+      const newRegistration = isPendingRetryRegistration && existingRegistration
+        ? await tx.eventRegistration.update({
+          where: { id: existingRegistration.id },
+          data: registrationPayload,
+          include: {
+            ticketLineItems: true, // Include ticket line items for multiple ticket types
+            event: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                startTime: true,
+                endTime: true,
+                venue: true,
+                location: true,
+                address: true,
+                isOnline: true,
+                onlineLink: true,
+                image: true,
+                currency: true,
+                organizer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    organizationName: true,
+                    email: true,
+                  },
                 },
               },
             },
-          },
-          attendee: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              companyAffiliation: true,
+            attendee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                companyAffiliation: true,
+              },
             },
           },
-        },
-      });
-
-      // Update available slots atomically within the same transaction
-      if (eventData.capacity !== null && totalQuantity > 0) {
-        const currentSlots = eventData.availableSlots ?? eventData.capacity;
-        const newAvailableSlots = Math.max(0, currentSlots - totalQuantity);
-
-        await tx.event.update({
-          where: { id: eventId },
+        })
+        : await tx.eventRegistration.create({
           data: {
-            availableSlots: newAvailableSlots,
+            eventId,
+            attendeeId,
+            ...registrationPayload,
+          },
+          include: {
+            ticketLineItems: true, // Include ticket line items for multiple ticket types
+            event: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                startTime: true,
+                endTime: true,
+                venue: true,
+                location: true,
+                address: true,
+                isOnline: true,
+                onlineLink: true,
+                image: true,
+                currency: true,
+                organizer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    organizationName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            attendee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                companyAffiliation: true,
+              },
+            },
           },
         });
 
-        logger.debug(`[registerForEvent] Updated availableSlots from ${currentSlots} to ${newAvailableSlots} for event ${eventId}`);
+      // Update available slots atomically within the same transaction
+      if (eventData.capacity !== null) {
+        const currentSlots = eventData.availableSlots ?? eventData.capacity;
+        const slotDelta = isPendingRetryRegistration
+          ? (totalQuantity - existingReservedQuantity)
+          : totalQuantity;
+
+        if (slotDelta !== 0) {
+          const newAvailableSlots = Math.max(0, Math.min(eventData.capacity, currentSlots - slotDelta));
+
+          await tx.event.update({
+            where: { id: eventId },
+            data: {
+              availableSlots: newAvailableSlots,
+            },
+          });
+
+          logger.debug(`[registerForEvent] Updated availableSlots from ${currentSlots} to ${newAvailableSlots} for event ${eventId} (delta: ${slotDelta})`);
+        }
       }
 
       return newRegistration;
@@ -2267,7 +2379,9 @@ export class EventService {
 
     logger.info(`Registration created: ${registration.id} for event: ${eventId} by attendee: ${attendeeId}`);
 
-    return registration;
+    return isPendingRetryRegistration
+      ? this.markRegistrationAsResumed(registration)
+      : registration;
   }
 
   /**
@@ -3175,12 +3289,12 @@ export class EventService {
       throw new AuthorizationError('You do not have permission to view registrations for this event');
     }
 
-    // Get registrations
+    // Get registrations with full payment + form data
     const registrations = await prisma.eventRegistration.findMany({
       where: {
         eventId,
         status: {
-          in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING, RegistrationStatus.CANCELLED],
         },
       },
       include: {
@@ -3193,7 +3307,28 @@ export class EventService {
             phoneNumber: true,
           },
         },
+        ticketLineItems: {
+          select: {
+            ticketType: true,
+            quantity: true,
+            unitPrice: true,
+            totalPrice: true,
+          },
+        },
+        paymentTransaction: {
+          select: {
+            id: true,
+            transactionNumber: true,
+            gatewayReference: true,
+            gateway: true,
+            amount: true,
+            currency: true,
+            paymentStatus: true,
+            paymentDate: true,
+          },
+        },
       },
+      // registrationData is a direct field on the model, auto-included
       orderBy: { createdAt: 'desc' },
     });
 
@@ -3523,6 +3658,24 @@ export class EventService {
     });
 
     if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
+      if (this.isRetryablePendingRegistration(existingRegistration)) {
+        logger.info(
+          `[registerViaInvitation] Reusing pending registration ${existingRegistration.id} for attendee ${user.id} on event ${eventId}`,
+        );
+
+        return {
+          registration: this.markRegistrationAsResumed(existingRegistration),
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isNewUser: !user.isEmailVerified,
+          },
+          resumedPendingPayment: true,
+        };
+      }
+
       throw new ConflictError('You are already registered for this event');
     }
 
@@ -3927,10 +4080,35 @@ export class EventService {
           attendeeId: user.id,
         },
       },
+      include: {
+        ticketLineItems: {
+          select: {
+            quantity: true,
+          },
+        },
+      },
     });
 
+    const isPendingRetryRegistration = Boolean(
+      existingRegistration && this.isRetryablePendingRegistration(existingRegistration),
+    );
+    const isCancelledReRegistration = existingRegistration?.status === RegistrationStatus.CANCELLED;
+    const existingReservedQuantity = isPendingRetryRegistration
+      ? (
+        existingRegistration!.ticketLineItems.length > 0
+          ? existingRegistration!.ticketLineItems.reduce((sum, item) => sum + item.quantity, 0)
+          : (existingRegistration!.quantity || 0)
+      )
+      : 0;
+
     if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
-      throw new ConflictError('You are already registered for this event');
+      if (!isPendingRetryRegistration) {
+        throw new ConflictError('You are already registered for this event');
+      }
+
+      logger.info(
+        `[registerAsGuest] Updating pending registration ${existingRegistration.id} for attendee ${user.id} on event ${eventId}`,
+      );
     }
 
     // Process tickets: Support both new tickets array and legacy ticketType/quantity
@@ -4012,6 +4190,9 @@ export class EventService {
             where: {
               registration: {
                 eventId,
+                ...(isPendingRetryRegistration && existingRegistration
+                  ? { id: { not: existingRegistration.id } }
+                  : {}),
                 status: {
                   in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
                 },
@@ -4061,7 +4242,8 @@ export class EventService {
 
     // Use transaction with Serializable isolation level to prevent capacity race condition
     // This ensures atomic capacity check and registration creation
-    const isReRegistration = existingRegistration && existingRegistration.status === RegistrationStatus.CANCELLED;
+    const shouldUpdateExistingRegistration = Boolean(existingRegistration) &&
+      (isCancelledReRegistration || isPendingRetryRegistration);
     const registration = await prisma.$transaction(async (tx) => {
       // Fetch event within transaction (will be serialized with other concurrent transactions)
       const lockedEvent = await tx.event.findUnique({
@@ -4084,6 +4266,9 @@ export class EventService {
           where: {
             registration: {
               eventId,
+              ...(isPendingRetryRegistration && existingRegistration
+                ? { id: { not: existingRegistration.id } }
+                : {}),
               status: {
                 in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
               },
@@ -4098,6 +4283,9 @@ export class EventService {
         const legacyRegistrations = await tx.eventRegistration.count({
           where: {
             eventId,
+            ...(isPendingRetryRegistration && existingRegistration
+              ? { id: { not: existingRegistration.id } }
+              : {}),
             status: {
               in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
             },
@@ -4123,7 +4311,7 @@ export class EventService {
       const legacyQuantity = totalQuantity || (guestData.quantity || 1);
 
       // Create or update registration
-      const reg = isReRegistration
+      const reg = shouldUpdateExistingRegistration
         ? await tx.eventRegistration.update({
           where: {
             eventId_attendeeId: {
@@ -4139,8 +4327,12 @@ export class EventService {
             backupCode,
             status: registrationStatus,
             paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
-            cancelledAt: null, // Clear cancellation timestamp
-            cancelledBy: null, // Clear cancellation user
+            ...(isCancelledReRegistration
+              ? {
+                cancelledAt: null, // Clear cancellation timestamp
+                cancelledBy: null, // Clear cancellation user
+              }
+              : {}),
             // Delete old ticket line items and create new ones
             ticketLineItems: {
               deleteMany: {},
@@ -4254,15 +4446,23 @@ export class EventService {
           },
         });
 
-      // Update available slots if capacity exists (only for new registrations)
-      if (lockedEvent.capacity !== null && !isReRegistration) {
-        const newAvailableSlots = (lockedEvent.availableSlots || lockedEvent.capacity) - totalQuantity;
-        await tx.event.update({
-          where: { id: eventId },
-          data: {
-            availableSlots: Math.max(0, newAvailableSlots),
-          },
-        });
+      // Update available slots if capacity exists
+      if (lockedEvent.capacity !== null) {
+        const currentSlots = lockedEvent.availableSlots || lockedEvent.capacity;
+        const previousReservedQuantity = isPendingRetryRegistration ? existingReservedQuantity : 0;
+        const slotDelta = shouldUpdateExistingRegistration
+          ? (totalQuantity - previousReservedQuantity)
+          : totalQuantity;
+
+        if (slotDelta !== 0) {
+          const newAvailableSlots = Math.max(0, Math.min(lockedEvent.capacity, currentSlots - slotDelta));
+          await tx.event.update({
+            where: { id: eventId },
+            data: {
+              availableSlots: newAvailableSlots,
+            },
+          });
+        }
       }
 
       return reg;
@@ -4271,8 +4471,10 @@ export class EventService {
       timeout: 10000, // 10 second timeout
     });
 
-    if (isReRegistration) {
+    if (isCancelledReRegistration) {
       logger.info(`Re-registration created: ${registration.id} for event: ${eventId} by user: ${user.id} (previously cancelled)`);
+    } else if (isPendingRetryRegistration) {
+      logger.info(`Pending registration updated: ${registration.id} for event: ${eventId} by user: ${user.id}`);
     }
 
     // Generate QR code immediately at registration time (like Eventbrite/vf-ticket)
@@ -4503,7 +4705,9 @@ export class EventService {
     });
 
     return {
-      registration,
+      registration: isPendingRetryRegistration
+        ? this.markRegistrationAsResumed(registration)
+        : registration,
       user: {
         id: user.id,
         email: user.email,
@@ -4513,6 +4717,7 @@ export class EventService {
         requiresPasswordSetup: !user.password,
       },
       accessToken: tokens.accessToken,
+      ...(isPendingRetryRegistration ? { resumedPendingPayment: true } : {}),
     };
   }
 

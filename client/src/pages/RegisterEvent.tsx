@@ -404,10 +404,11 @@ const EventRegistration = () => {
             });
           } else {
             // Calculate total price from all selected tickets
-            const totalPrice = event.ticketTypes?.reduce((sum, ticket) => {
+            const calculatedTotalPrice = event.ticketTypes?.reduce((sum, ticket) => {
               const qty = selectedTickets[ticket.name] || 0;
               return sum + (ticket.price * qty);
             }, 0) || 0;
+            const totalPrice = Number(registration.totalAmount ?? calculatedTotalPrice);
 
             // Paid event - navigate to payment page with registration ID
             navigate(`/event/${eventId}/payment`, {
@@ -422,6 +423,7 @@ const EventRegistration = () => {
                 })).filter(t => t.quantity > 0) || [],
                 totalPrice: totalPrice,
                 isNewUser: response.data.user.isNewUser,
+                userEmail: email || authUser?.email,
               }
             });
           }
@@ -481,7 +483,8 @@ const EventRegistration = () => {
             return sum + (ticket.price * qty);
           }, 0) || 0;
           const discount = appliedDiscount?.amount || 0;
-          const totalPrice = subtotal - discount;
+          const calculatedTotalPrice = subtotal - discount;
+          const totalPrice = Number(registration.totalAmount ?? calculatedTotalPrice);
 
           // Paid event - navigate to payment page with registration ID
           navigate(`/event/${eventId}/payment`, {
@@ -497,6 +500,7 @@ const EventRegistration = () => {
               totalPrice: totalPrice,
               discount: discount,
               promoCode: appliedDiscount ? promoCode : undefined,
+              userEmail: authUser?.email,
             }
           });
         }

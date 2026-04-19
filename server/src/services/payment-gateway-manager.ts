@@ -130,6 +130,74 @@ export class PaymentGatewayManager {
     return gateway ? (gateway as MpesaGateway) : null;
   }
 
+  private getConfiguredSupportedCurrencies(type: GatewayType): string[] {
+    const defaults: Record<GatewayType, string[]> = {
+      PAYSTACK: ['NGN', 'GHS', 'USD', 'ZAR'],
+      STRIPE: ['*'],
+      MPESA: ['KES'],
+      PAYPAL: [],
+    };
+
+    const envMap: Record<GatewayType, string | undefined> = {
+      PAYSTACK: process.env.PAYSTACK_SUPPORTED_CURRENCIES,
+      STRIPE: process.env.STRIPE_SUPPORTED_CURRENCIES,
+      MPESA: process.env.MPESA_SUPPORTED_CURRENCIES,
+      PAYPAL: process.env.PAYPAL_SUPPORTED_CURRENCIES,
+    };
+
+    const configured = envMap[type];
+    if (!configured || configured.trim().length === 0) {
+      return defaults[type];
+    }
+
+    return configured
+      .split(',')
+      .map(c => c.trim().toUpperCase())
+      .filter(Boolean);
+  }
+
+  supportsCurrency(type: GatewayType, currency: string): boolean {
+    const normalizedCurrency = currency.toUpperCase();
+    const supported = this.getConfiguredSupportedCurrencies(type);
+    return supported.includes('*') || supported.includes(normalizedCurrency);
+  }
+
+  resolveGatewayForCurrency(
+    currency: string,
+    options?: {
+      preferredGateway?: GatewayType;
+      excludeGateways?: GatewayType[];
+    },
+  ): GatewayType {
+    const normalizedCurrency = currency.toUpperCase();
+    const excluded = new Set(options?.excludeGateways || []);
+
+    const canUse = (type: GatewayType) =>
+      !excluded.has(type) && this.isGatewayAvailable(type) && this.supportsCurrency(type, normalizedCurrency);
+
+    if (options?.preferredGateway && canUse(options.preferredGateway)) {
+      return options.preferredGateway;
+    }
+
+    const configuredPriority = (process.env.PAYMENT_GATEWAY_PRIORITY || 'PAYSTACK,STRIPE,MPESA')
+      .split(',')
+      .map(g => g.trim().toUpperCase() as GatewayType)
+      .filter((g): g is GatewayType => ['PAYSTACK', 'STRIPE', 'MPESA', 'PAYPAL'].includes(g));
+
+    const priority: GatewayType[] = configuredPriority.length > 0 ? configuredPriority : ['PAYSTACK', 'STRIPE', 'MPESA'];
+
+    for (const gatewayType of priority) {
+      if (canUse(gatewayType)) {
+        return gatewayType;
+      }
+    }
+
+    throw new Error(
+      `No configured payment gateway supports currency ${normalizedCurrency}. ` +
+      'Configure PAYSTACK_SUPPORTED_CURRENCIES/STRIPE_SUPPORTED_CURRENCIES/MPESA_SUPPORTED_CURRENCIES or enable a compatible gateway.',
+    );
+  }
+
   /**
    * Get mobile money gateway for a specific country/currency
    */

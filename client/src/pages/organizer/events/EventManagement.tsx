@@ -123,13 +123,30 @@ interface Attendee {
   firstName?: string;
   lastName?: string;
   email?: string;
+  phoneNumber?: string | null;
   name?: string;
   paymentStatus?: string;
   paymentMethod?: string;
+  paymentTransactionId?: string | null;
   ticketType?: string;
   createdAt?: string;
   registeredDate?: string;
   quantity?: number;
+  /** Dynamic custom form fields submitted by attendee */
+  registrationData?: Record<string, unknown> | null;
+  /** Per-ticket-type breakdown */
+  ticketLineItems?: Array<{ ticketType: string; quantity: number; unitPrice?: number; totalPrice?: number }>;
+  /** Gateway payment details — FULL tier only */
+  paymentTransaction?: {
+    id: string;
+    transactionNumber: string;
+    gatewayReference: string;
+    gateway: string;
+    amount: number;
+    currency: string;
+    paymentStatus: string;
+    paymentDate: string;
+  } | null;
 }
 
 type SpeakerItem = NonNullable<EventData['speakers']>[number];
@@ -262,10 +279,20 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
             unitPrice?: number;
             totalPrice?: number;
           }
+          interface PaymentTransactionData {
+            id: string;
+            transactionNumber: string;
+            gatewayReference: string;
+            gateway: string;
+            amount: number;
+            currency: string;
+            paymentStatus: string;
+            paymentDate: string;
+          }
           interface Registration {
             id: string;
-            attendee?: { firstName?: string; lastName?: string; email?: string };
-            user?: { firstName?: string; lastName?: string; email?: string };
+            attendee?: { id?: string; firstName?: string; lastName?: string; email?: string; phoneNumber?: string | null };
+            user?: { firstName?: string; lastName?: string; email?: string; phoneNumber?: string | null };
             ticketType?: string | null;
             ticketLineItems?: TicketLineItemData[];
             status?: string;
@@ -274,6 +301,9 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
             totalAmount?: number | string;
             paymentStatus?: string | null;
             paymentMethod?: string | null;
+            paymentTransactionId?: string | null;
+            registrationData?: Record<string, unknown> | null;
+            paymentTransaction?: PaymentTransactionData | null;
           }
           const transformedAttendees = registrationsResponse.data.registrations.map((reg: Registration) => {
             // Build ticket type display from line items (preferred) or legacy ticketType field
@@ -283,14 +313,22 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
             return {
               id: reg.id,
               name: `${reg.attendee?.firstName || reg.user?.firstName || ''} ${reg.attendee?.lastName || reg.user?.lastName || ''}`.trim() || 'Guest',
+              firstName: reg.attendee?.firstName || reg.user?.firstName || '',
+              lastName: reg.attendee?.lastName || reg.user?.lastName || '',
               email: reg.attendee?.email || reg.user?.email || 'N/A',
+              phoneNumber: reg.attendee?.phoneNumber || reg.user?.phoneNumber || null,
               ticketType: ticketDisplay,
               status: reg.status?.toLowerCase() || 'pending',
               registeredDate: reg.createdAt ? new Date(reg.createdAt).toLocaleDateString() : 'N/A',
+              createdAt: reg.createdAt,
               quantity: reg.quantity || 1,
               totalAmount: reg.totalAmount || 0,
               paymentStatus: reg.paymentStatus || undefined,
               paymentMethod: reg.paymentMethod || undefined,
+              paymentTransactionId: reg.paymentTransactionId || null,
+              registrationData: reg.registrationData || null,
+              ticketLineItems: reg.ticketLineItems || [],
+              paymentTransaction: reg.paymentTransaction || null,
             };
           });
           setAttendees(transformedAttendees);
@@ -1316,6 +1354,15 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
 
             <Card>
               <CardContent className="p-0">
+                {/* Table header */}
+                <div className="hidden sm:grid grid-cols-[2fr_2fr_1.5fr_1fr_1fr_40px] gap-3 px-4 py-2 border-b bg-muted/40 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  <span>Attendee</span>
+                  <span>Ticket(s)</span>
+                  <span>Amount</span>
+                  <span>Payment</span>
+                  <span>Status</span>
+                  <span />
+                </div>
                 <div className="divide-y">
                   {filteredAttendees.length === 0 ? (
                     <div className="p-8 text-center">
@@ -1328,30 +1375,49 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                     paginatedAttendees.map((attendee) => (
                       <div
                         key={attendee.id}
-                        className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                        className="grid grid-cols-1 sm:grid-cols-[2fr_2fr_1.5fr_1fr_1fr_40px] gap-2 sm:gap-3 items-center px-4 py-3 hover:bg-muted/50 transition-colors cursor-pointer"
                         onClick={() => { setSelectedAttendee(attendee); setAttendeeSheetOpen(true); }}
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                            <span className="text-sm font-bold text-primary">
-                              {(attendee.name || attendee.email || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                            </span>
+                        {/* Attendee */}
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-primary">
+                            {(attendee.name || attendee.email || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                           </div>
-                          <div>
-                            <p className="font-medium">{attendee.name || '—'}</p>
-                            <p className="text-sm text-muted-foreground">{attendee.email}</p>
-                            {hasPaymentDetailsAccess && attendee.totalAmount && Number(attendee.totalAmount) > 0 && (
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {currency} {Number(attendee.totalAmount).toFixed(2)} · {attendee.paymentStatus || '—'}
-                              </p>
-                            )}
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">{attendee.name || '—'}</p>
+                            <p className="text-xs text-muted-foreground truncate">{attendee.email}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Badge variant="secondary" className="hidden sm:flex">{attendee.ticketType}</Badge>
+                        {/* Ticket */}
+                        <div className="text-sm truncate text-muted-foreground sm:text-foreground">
+                          {attendee.ticketType}
+                        </div>
+                        {/* Amount */}
+                        <div className="text-sm font-medium">
+                          {hasPaymentDetailsAccess && attendee.totalAmount && Number(attendee.totalAmount) > 0
+                            ? `${currency} ${Number(attendee.totalAmount).toFixed(2)}`
+                            : <span className="text-muted-foreground">—</span>}
+                        </div>
+                        {/* Payment status */}
+                        <div>
+                          {hasPaymentDetailsAccess && attendee.paymentStatus ? (
+                            <Badge className={
+                              attendee.paymentStatus === 'COMPLETED' ? 'bg-green-100 text-green-800 border-green-200' :
+                              attendee.paymentStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                              'bg-red-100 text-red-800 border-red-200'
+                            }>
+                              {attendee.paymentStatus}
+                            </Badge>
+                          ) : <span className="text-muted-foreground text-sm">—</span>}
+                        </div>
+                        {/* Registration status */}
+                        <div>
                           <Badge className={getStatusColor(attendee.status || 'pending')}>
                             {attendee.status || 'pending'}
                           </Badge>
+                        </div>
+                        {/* Chevron */}
+                        <div className="hidden sm:flex justify-end">
                           <Eye className="w-4 h-4 text-muted-foreground/60" />
                         </div>
                       </div>
@@ -1375,10 +1441,10 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
 
             {/* Attendee Detail Sheet */}
             <Sheet open={attendeeSheetOpen} onOpenChange={setAttendeeSheetOpen}>
-              <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+              <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
                 <SheetHeader className="mb-6">
                   <SheetTitle>Attendee Details</SheetTitle>
-                  <SheetDescription>Registration information and ticket summary</SheetDescription>
+                  <SheetDescription>Full registration and payment information</SheetDescription>
                 </SheetHeader>
                 {selectedAttendee && (
                   <div className="space-y-6">
@@ -1386,33 +1452,126 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
                         <span className="text-lg font-bold text-primary">
-                          {(selectedAttendee.name || selectedAttendee.email || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                          {(selectedAttendee.name || selectedAttendee.email || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                         </span>
                       </div>
                       <div>
                         <p className="text-base font-semibold">{selectedAttendee.name || '—'}</p>
                         <p className="text-sm text-muted-foreground">{selectedAttendee.email}</p>
+                        {selectedAttendee.phoneNumber && (
+                          <p className="text-sm text-muted-foreground">{selectedAttendee.phoneNumber}</p>
+                        )}
                       </div>
                     </div>
 
-                    {/* Details grid */}
-                    <div className="space-y-3">
-                      {[
-                        { label: 'Ticket Type', value: selectedAttendee.ticketType },
-                        { label: 'Registration Status', value: selectedAttendee.status || 'pending' },
-                        ...(hasPaymentDetailsAccess ? [
-                          { label: 'Amount Paid', value: selectedAttendee.totalAmount ? `${currency} ${Number(selectedAttendee.totalAmount).toFixed(2)}` : '—' },
-                          { label: 'Payment Status', value: selectedAttendee.paymentStatus || '—' },
-                          { label: 'Payment Method', value: selectedAttendee.paymentMethod || '—' },
-                        ] : []),
-                        { label: 'Registered', value: selectedAttendee.createdAt ? new Date(selectedAttendee.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—' },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex items-start justify-between py-2 border-b border-border/50 last:border-0">
-                          <span className="text-sm text-muted-foreground">{label}</span>
-                          <span className="text-sm font-medium text-right max-w-[55%] capitalize">{value}</span>
-                        </div>
-                      ))}
+                    {/* Registration info */}
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Registration</p>
+                      <div className="rounded-lg border divide-y">
+                        {[
+                          { label: 'Registration ID', value: selectedAttendee.id, mono: true },
+                          { label: 'Status', value: selectedAttendee.status || 'pending' },
+                          { label: 'Registered On', value: selectedAttendee.createdAt ? new Date(selectedAttendee.createdAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : '—' },
+                        ].map(({ label, value, mono }) => (
+                          <div key={label} className="flex items-start justify-between px-3 py-2">
+                            <span className="text-sm text-muted-foreground">{label}</span>
+                            <span className={`text-sm font-medium text-right max-w-[55%] break-all capitalize ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
+
+                    {/* Ticket breakdown */}
+                    {selectedAttendee.ticketLineItems && selectedAttendee.ticketLineItems.length > 0 ? (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Tickets</p>
+                        <div className="rounded-lg border divide-y">
+                          {selectedAttendee.ticketLineItems.map((li, i) => (
+                            <div key={i} className="flex items-center justify-between px-3 py-2">
+                              <div>
+                                <p className="text-sm font-medium">{li.ticketType}</p>
+                                <p className="text-xs text-muted-foreground">Qty: {li.quantity}</p>
+                              </div>
+                              {li.totalPrice != null && (
+                                <p className="text-sm font-medium">{currency} {Number(li.totalPrice).toFixed(2)}</p>
+                              )}
+                            </div>
+                          ))}
+                          {hasPaymentDetailsAccess && selectedAttendee.totalAmount && Number(selectedAttendee.totalAmount) > 0 && (
+                            <div className="flex items-center justify-between px-3 py-2 bg-muted/40">
+                              <p className="text-sm font-semibold">Total</p>
+                              <p className="text-sm font-semibold">{currency} {Number(selectedAttendee.totalAmount).toFixed(2)}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Ticket</p>
+                        <div className="rounded-lg border px-3 py-2 flex justify-between">
+                          <span className="text-sm">{selectedAttendee.ticketType}</span>
+                          {hasPaymentDetailsAccess && selectedAttendee.totalAmount && Number(selectedAttendee.totalAmount) > 0 && (
+                            <span className="text-sm font-medium">{currency} {Number(selectedAttendee.totalAmount).toFixed(2)}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payment info — only for orgs with access */}
+                    {hasPaymentDetailsAccess && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Payment</p>
+                        <div className="rounded-lg border divide-y">
+                          {[
+                            { label: 'Payment Status', value: selectedAttendee.paymentStatus || '—' },
+                            { label: 'Payment Method', value: selectedAttendee.paymentMethod || '—' },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="flex items-start justify-between px-3 py-2">
+                              <span className="text-sm text-muted-foreground">{label}</span>
+                              <span className="text-sm font-medium capitalize">{value}</span>
+                            </div>
+                          ))}
+                          {/* Gateway reference IDs — sensitive, shown at bottom */}
+                          {selectedAttendee.paymentTransaction && (
+                            <>
+                              <div className="flex items-start justify-between px-3 py-2">
+                                <span className="text-sm text-muted-foreground">Transaction #</span>
+                                <span className="text-xs font-mono font-medium text-right break-all max-w-[55%]">{selectedAttendee.paymentTransaction.transactionNumber}</span>
+                              </div>
+                              <div className="flex items-start justify-between px-3 py-2">
+                                <span className="text-sm text-muted-foreground">Gateway Ref</span>
+                                <span className="text-xs font-mono font-medium text-right break-all max-w-[55%]">{selectedAttendee.paymentTransaction.gatewayReference}</span>
+                              </div>
+                              <div className="flex items-start justify-between px-3 py-2">
+                                <span className="text-sm text-muted-foreground">Gateway</span>
+                                <span className="text-sm font-medium">{selectedAttendee.paymentTransaction.gateway}</span>
+                              </div>
+                              <div className="flex items-start justify-between px-3 py-2">
+                                <span className="text-sm text-muted-foreground">Paid At</span>
+                                <span className="text-sm font-medium">{new Date(selectedAttendee.paymentTransaction.paymentDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Custom form fields */}
+                    {selectedAttendee.registrationData && Object.keys(selectedAttendee.registrationData).length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Form Responses</p>
+                        <div className="rounded-lg border divide-y">
+                          {Object.entries(selectedAttendee.registrationData).map(([key, value]) => (
+                            <div key={key} className="flex items-start justify-between px-3 py-2 gap-2">
+                              <span className="text-sm text-muted-foreground capitalize shrink-0">{key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}</span>
+                              <span className="text-sm font-medium text-right break-words max-w-[55%]">
+                                {Array.isArray(value) ? value.join(', ') : String(value ?? '—')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex flex-col gap-2 pt-2">

@@ -39,6 +39,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "@/components/ui/loader";
 import { RichTextContent } from "@/components/ui/RichTextContent";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getEventById } from "@/lib/event-api";
 import { getEventRegistrations } from "@/lib/organizer-api";
 import { updateOrganizerDataAccess } from "@/lib/admin-api";
@@ -47,7 +48,8 @@ import { useToast } from "@/hooks/useToast";
 import { extractErrorMessage } from "@/lib/utils/error";
 import { exportEventData } from "@/lib/utils/export";
 import { getEventConfig, updateEventConfig, type EventScanConfig } from "@/lib/workstation-api";
-import { getRefunds, getDisbursements, type Refund, type Disbursement } from "@/lib/financial-api";
+import { getRefunds, getDisbursements, getPlatformFeeSummary, type Refund, type Disbursement } from "@/lib/financial-api";
+import { getSetting } from "@/lib/system-settings-api";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { EventStaffAssignment } from '@/components/events/EventStaffAssignment';
@@ -146,17 +148,42 @@ interface EventMetrics {
   averageTicketPrice: number;
 }
 
+interface PlatformFeeSummary {
+  totalFees: number;
+  totalOrganizerAmount: number;
+  totalTransactions: number;
+  disbursedCount: number;
+  pendingCount: number;
+}
+
 interface Registration {
   id: string;
   eventId: string;
   attendeeId: string;
   status: string;
   ticketType?: string | null;
+  ticketLineItems?: Array<{
+    ticketType: string;
+    quantity: number;
+    unitPrice?: number | string;
+    totalPrice?: number | string;
+  }>;
   quantity: number;
   totalAmount: number | string;
   paymentStatus?: string | null;
   paymentMethod?: string | null;
   paymentTransactionId?: string | null;
+  registrationData?: Record<string, unknown> | null;
+  paymentTransaction?: {
+    id: string;
+    transactionNumber: string;
+    gatewayReference: string;
+    gateway: string;
+    amount: number;
+    currency: string;
+    paymentStatus: string;
+    paymentDate: string;
+  } | null;
   createdAt: string;
   attendee: {
     id: string;
@@ -182,12 +209,18 @@ const EventDetailsPage = () => {
   const [scanConfigLoading, setScanConfigLoading] = useState(false);
   const [scanConfigSaving, setScanConfigSaving] = useState(false);
   const [paymentSearch, setPaymentSearch] = useState("");
+  const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
+  const [registrationSheetOpen, setRegistrationSheetOpen] = useState(false);
   const [updatingAccess, setUpdatingAccess] = useState(false);
   const [canAccessEvent, setCanAccessEvent] = useState(true);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [refundsLoading, setRefundsLoading] = useState(false);
   const [disbursements, setDisbursements] = useState<Disbursement[]>([]);
   const [disbursementsLoading, setDisbursementsLoading] = useState(false);
+  const [platformFeeSummary, setPlatformFeeSummary] = useState<PlatformFeeSummary | null>(null);
+  const [platformFeePercentage, setPlatformFeePercentage] = useState(7.5);
+  const [platformFeeMinimum, setPlatformFeeMinimum] = useState(0);
+  const [platformFeeMaximum, setPlatformFeeMaximum] = useState(0);
   const [invitations, setInvitations] = useState<InvitationItem[]>([]);
   const [invitationsLoading, setInvitationsLoading] = useState(false);
   const [createInviteDialogOpen, setCreateInviteDialogOpen] = useState(false);
@@ -207,8 +240,56 @@ const EventDetailsPage = () => {
   const ticketTypeCount = eventData?.ticketTypes?.length ?? 0;
   const hasMultipleTicketTypes = ticketTypeCount > 1;
   const hasComplementaryType = eventData?.ticketTypes?.some((ticket) => ticket.price === 0) ?? false;
-  const totalTicketCapacity = eventData?.ticketTypes?.reduce((sum, t) => sum + t.capacity, 0) ?? 0;
-  const totalTicketsSold = eventData?.ticketTypes?.reduce((sum, t) => sum + t.sold, 0) ?? 0;
+  const normalizeStatus = (status?: string | null): string => (status || '').toUpperCase();
+
+  const toAmount = (value: unknown): number => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
+  const normalizePaymentStatus = (status?: string | null): string =>
+    normalizeStatus(status);
+
+  const getRegistrationPaymentStatus = (registration: Registration): string => {
+    const directStatus = normalizePaymentStatus(registration.paymentStatus);
+    if (directStatus) return directStatus;
+
+    const transactionStatus = normalizePaymentStatus(registration.paymentTransaction?.paymentStatus || null);
+    if (transactionStatus === 'SUCCESS' || transactionStatus === 'COMPLETED') return 'COMPLETED';
+    if (transactionStatus === 'FAILED' || transactionStatus === 'CANCELLED') return 'FAILED';
+    if (transactionStatus === 'PENDING' || transactionStatus === 'INITIATED' || transactionStatus === 'PROCESSING') return 'PENDING';
+
+    return 'PENDING';
+  };
+
+  const parsedTicketTypes = (eventData?.ticketTypes || []).map((ticket) => {
+    const soldFromRegistrations = registrations.reduce((sum, reg) => {
+      const lineItems = Array.isArray(reg.ticketLineItems) ? reg.ticketLineItems : [];
+      const lineItemMatchQty = lineItems
+        .filter((item) => (item.ticketType || '').trim().toLowerCase() === (ticket.name || '').trim().toLowerCase())
+        .reduce((lineSum, item) => lineSum + (item.quantity || 0), 0);
+
+      if (lineItemMatchQty > 0) return sum + lineItemMatchQty;
+
+      const regTicketType = (reg.ticketType || '').trim().toLowerCase();
+      const ticketName = (ticket.name || '').trim().toLowerCase();
+      return regTicketType === ticketName ? sum + (reg.quantity || 1) : sum;
+    }, 0);
+
+    const sold = Number.isFinite(soldFromRegistrations) ? soldFromRegistrations : 0;
+
+    return {
+      ...ticket,
+      sold,
+    };
+  });
+
+  const totalTicketCapacity = parsedTicketTypes.reduce((sum, t) => sum + (t.capacity || 0), 0);
+  const totalTicketsSold = parsedTicketTypes.reduce((sum, t) => sum + (t.sold || 0), 0);
 
   const { toast } = useToast();
 
@@ -247,7 +328,12 @@ const EventDetailsPage = () => {
         setRefundsLoading(true);
         const response = await getRefunds({ eventId });
         if (response.success && response.data) {
-          setRefunds(Array.isArray(response.data) ? response.data : []);
+          const payload = response.data as Refund[] | { refunds?: Refund[] };
+          if (Array.isArray(payload)) {
+            setRefunds(payload);
+          } else {
+            setRefunds(Array.isArray(payload.refunds) ? payload.refunds : []);
+          }
         }
       } catch (error) {
         console.error('Error loading refunds:', error);
@@ -273,7 +359,12 @@ const EventDetailsPage = () => {
         setDisbursementsLoading(true);
         const response = await getDisbursements({ eventId });
         if (response.success && response.data) {
-          setDisbursements(Array.isArray(response.data) ? response.data : []);
+          const payload = response.data as Disbursement[] | { disbursements?: Disbursement[] };
+          if (Array.isArray(payload)) {
+            setDisbursements(payload);
+          } else {
+            setDisbursements(Array.isArray(payload.disbursements) ? payload.disbursements : []);
+          }
         }
       } catch (error) {
         console.error('Error loading disbursements:', error);
@@ -348,9 +439,24 @@ const EventDetailsPage = () => {
         setLoading(true);
         setError(null);
 
-        const [eventResponse, registrationsResponse] = await Promise.all([
+        const [
+          eventResponse,
+          registrationsResponse,
+          platformFeeSummaryResponse,
+          platformFeeSettingResponse,
+          minimumFeeSettingResponse,
+          maximumFeeSettingResponse,
+          refundsResponse,
+          disbursementsResponse,
+        ] = await Promise.all([
           getEventById(eventId),
           getEventRegistrations(eventId),
+          getPlatformFeeSummary(eventId).catch(() => null),
+          getSetting('finance.platformFeePercentage').catch(() => null),
+          getSetting('finance.minimumFee').catch(() => null),
+          getSetting('finance.maximumFee').catch(() => null),
+          getRefunds({ eventId, limit: 500 }).catch(() => null),
+          getDisbursements({ eventId, limit: 500 }).catch(() => null),
         ]);
 
         if (eventResponse.success && eventResponse.data?.event) {
@@ -394,7 +500,7 @@ const EventDetailsPage = () => {
             price: event.isFree ? 'free' : 'paid',
             ticketPrice: event.price ? Number(event.price) : undefined,
             capacity: event.capacity || 0,
-            attendees: event.attendees || 0,
+            attendees: (event as { _count?: { registrations?: number } })._count?.registrations || 0,
             views: 0, // TODO: Add views tracking
             conversion: 0, // TODO: Calculate conversion rate
             rating: 0, // TODO: Add rating system
@@ -434,6 +540,49 @@ const EventDetailsPage = () => {
           }));
           setRegistrations(mappedRegistrations as Registration[]);
         }
+
+        if (platformFeeSummaryResponse?.success && platformFeeSummaryResponse.data) {
+          setPlatformFeeSummary(platformFeeSummaryResponse.data);
+        }
+
+        if (platformFeeSettingResponse?.success && platformFeeSettingResponse.data?.setting?.value !== undefined) {
+          const configuredFee = Number(platformFeeSettingResponse.data.setting.value);
+          if (Number.isFinite(configuredFee) && configuredFee >= 0) {
+            setPlatformFeePercentage(configuredFee);
+          }
+        }
+
+        if (minimumFeeSettingResponse?.success && minimumFeeSettingResponse.data?.setting?.value !== undefined) {
+          const configuredMinimum = Number(minimumFeeSettingResponse.data.setting.value);
+          if (Number.isFinite(configuredMinimum) && configuredMinimum >= 0) {
+            setPlatformFeeMinimum(configuredMinimum);
+          }
+        }
+
+        if (maximumFeeSettingResponse?.success && maximumFeeSettingResponse.data?.setting?.value !== undefined) {
+          const configuredMaximum = Number(maximumFeeSettingResponse.data.setting.value);
+          if (Number.isFinite(configuredMaximum) && configuredMaximum >= 0) {
+            setPlatformFeeMaximum(configuredMaximum);
+          }
+        }
+
+        if (refundsResponse?.success && refundsResponse.data) {
+          const refundsPayload = refundsResponse.data as Refund[] | { refunds?: Refund[] };
+          if (Array.isArray(refundsPayload)) {
+            setRefunds(refundsPayload);
+          } else if (Array.isArray(refundsPayload.refunds)) {
+            setRefunds(refundsPayload.refunds);
+          }
+        }
+
+        if (disbursementsResponse?.success && disbursementsResponse.data) {
+          const disbursementsPayload = disbursementsResponse.data as Disbursement[] | { disbursements?: Disbursement[] };
+          if (Array.isArray(disbursementsPayload)) {
+            setDisbursements(disbursementsPayload);
+          } else if (Array.isArray(disbursementsPayload.disbursements)) {
+            setDisbursements(disbursementsPayload.disbursements);
+          }
+        }
       } catch (err) {
         console.error('Error fetching event data:', err);
         setError('Failed to load event data');
@@ -447,26 +596,48 @@ const EventDetailsPage = () => {
 
   // Calculate payment metrics from registrations
   const metrics: EventMetrics = (() => {
-    const paidRegistrations = registrations.filter(r => r.paymentStatus === 'COMPLETED');
-    const pendingRegistrations = registrations.filter(r => r.paymentStatus === 'PENDING');
-    const failedRegistrations = registrations.filter(r => r.paymentStatus === 'FAILED');
+    const paidRegistrations = registrations.filter(r => getRegistrationPaymentStatus(r) === 'COMPLETED');
+    const pendingRegistrations = registrations.filter(r => getRegistrationPaymentStatus(r) === 'PENDING');
+    const failedRegistrations = registrations.filter(r => getRegistrationPaymentStatus(r) === 'FAILED');
     
     const totalRevenue = paidRegistrations.reduce((sum, r) => {
-      const amount = typeof r.totalAmount === 'string' ? parseFloat(r.totalAmount) : r.totalAmount;
-      return sum + (amount || 0);
+      return sum + toAmount(r.totalAmount);
     }, 0);
     
-    const platformFees = totalRevenue * 0.1; // 10% platform fee
-    const organizerAmount = totalRevenue - platformFees;
+    const calculatedPlatformFees = paidRegistrations.reduce((sum, registration) => {
+      const amount = toAmount(registration.totalAmount);
+      let fee = (amount * platformFeePercentage) / 100;
+      if (platformFeeMinimum > 0) {
+        fee = Math.max(fee, platformFeeMinimum);
+      }
+      if (platformFeeMaximum > 0) {
+        fee = Math.min(fee, platformFeeMaximum);
+      }
+      return sum + fee;
+    }, 0);
+
+    const platformFees = platformFeeSummary?.totalTransactions
+      ? platformFeeSummary.totalFees
+      : Number(calculatedPlatformFees.toFixed(2));
+
+    const organizerAmount = platformFeeSummary?.totalTransactions
+      ? platformFeeSummary.totalOrganizerAmount
+      : Math.max(0, totalRevenue - platformFees);
 
     // Calculate refund metrics from actual data
-    const refundAmount = refunds.reduce((sum, r) => sum + (r.amount || 0), 0);
-    const pendingRefundsCount = refunds.filter(r => r.status === 'PENDING').length;
-    const processedRefundsCount = refunds.filter(r => r.status === 'COMPLETED' || r.status === 'PROCESSED').length;
+    const refundAmount = refunds.reduce((sum, r) => sum + toAmount(r.amount ?? r.refundAmount), 0);
+    const pendingRefundsCount = refunds.filter(r => normalizeStatus(r.status) === 'PENDING').length;
+    const processedRefundsCount = refunds.filter(r => {
+      const status = normalizeStatus(r.status);
+      return status === 'COMPLETED' || status === 'PROCESSED';
+    }).length;
 
     // Calculate disbursement metrics from actual data
-    const sentDisbursements = disbursements.filter(d => d.status === 'COMPLETED' || d.status === 'PROCESSED');
-    const pendingDisbursements = disbursements.filter(d => d.status === 'PENDING');
+    const sentDisbursements = disbursements.filter(d => {
+      const status = normalizeStatus(d.status);
+      return status === 'COMPLETED' || status === 'PROCESSED';
+    });
+    const pendingDisbursements = disbursements.filter(d => normalizeStatus(d.status) === 'PENDING');
 
     return {
       totalRevenue,
@@ -481,7 +652,9 @@ const EventDetailsPage = () => {
       processedRefunds: processedRefundsCount,
       remittancesSent: sentDisbursements.length,
       remittancesPending: pendingDisbursements.length,
-      attendanceRate: eventData ? (eventData.attendees / eventData.capacity) * 100 : 0,
+      attendanceRate: eventData && eventData.capacity > 0
+        ? (Math.max(eventData.attendees, registrations.filter(r => normalizeStatus(r.status) === 'CONFIRMED').length) / eventData.capacity) * 100
+        : 0,
       conversionRate: 0, // Would need views tracking to calculate
       averageTicketPrice: paidRegistrations.length > 0
         ? totalRevenue / paidRegistrations.length
@@ -491,10 +664,11 @@ const EventDetailsPage = () => {
 
   // Filter payments
   const filteredPayments = registrations.filter(reg => {
+    const normalizedPaymentStatus = getRegistrationPaymentStatus(reg);
     const matchesFilter = paymentFilter === "all" || 
-      (paymentFilter === "successful" && reg.paymentStatus === 'COMPLETED') ||
-      (paymentFilter === "pending" && reg.paymentStatus === 'PENDING') ||
-      (paymentFilter === "failed" && reg.paymentStatus === 'FAILED');
+      (paymentFilter === "successful" && normalizedPaymentStatus === 'COMPLETED') ||
+      (paymentFilter === "pending" && normalizedPaymentStatus === 'PENDING') ||
+      (paymentFilter === "failed" && normalizedPaymentStatus === 'FAILED');
     
     const matchesSearch = !paymentSearch || 
       `${reg.attendee.firstName} ${reg.attendee.lastName}`.toLowerCase().includes(paymentSearch.toLowerCase()) ||
@@ -506,14 +680,13 @@ const EventDetailsPage = () => {
 
   // Group payments by method
   const paymentsByMethod = registrations.reduce((acc, reg) => {
-    if (reg.paymentStatus === 'COMPLETED' && reg.paymentMethod) {
+    if (getRegistrationPaymentStatus(reg) === 'COMPLETED' && reg.paymentMethod) {
       const method = reg.paymentMethod;
       if (!acc[method]) {
         acc[method] = { count: 0, total: 0 };
       }
       acc[method].count++;
-      const amount = typeof reg.totalAmount === 'string' ? parseFloat(reg.totalAmount) : reg.totalAmount;
-      acc[method].total += amount || 0;
+      acc[method].total += toAmount(reg.totalAmount);
     }
     return acc;
   }, {} as Record<string, { count: number; total: number }>);
@@ -589,8 +762,8 @@ const EventDetailsPage = () => {
         title: eventData.title,
         date: eventData.date,
         location: eventData.location || eventData.venue,
-        attendees: eventData.attendees,
-        revenue: 0, // Calculate from registrations if needed
+        attendees: Math.max(eventData.attendees, registrations.length),
+        revenue: metrics.totalRevenue,
         views: eventData.views,
         status: eventData.status,
         category: eventData.category,
@@ -911,7 +1084,7 @@ const EventDetailsPage = () => {
                     <Users className="h-5 w-5 text-primary" />
                     <span className="text-sm font-medium text-muted-foreground">Total Attendees</span>
                   </div>
-                  <p className="text-2xl font-bold">{eventData.attendees}</p>
+                  <p className="text-2xl font-bold">{Math.max(eventData.attendees, registrations.length)}</p>
                   <p className="text-xs text-muted-foreground mt-1">of {eventData.capacity} capacity</p>
                 </CardContent>
               </Card>
@@ -931,7 +1104,7 @@ const EventDetailsPage = () => {
                     <CheckCircle className="h-5 w-5 text-success" />
                     <span className="text-sm font-medium text-muted-foreground">Confirmed</span>
                   </div>
-                  <p className="text-2xl font-bold">{registrations.filter(r => r.status === 'CONFIRMED').length}</p>
+                  <p className="text-2xl font-bold">{registrations.filter(r => normalizeStatus(r.status) === 'CONFIRMED').length}</p>
                   <p className="text-xs text-muted-foreground mt-1">confirmed registrations</p>
                 </CardContent>
               </Card>
@@ -943,11 +1116,11 @@ const EventDetailsPage = () => {
                   </div>
                   <p className="text-2xl font-bold">
                     {eventData.capacity > 0
-                      ? Math.round((eventData.attendees / eventData.capacity) * 100)
+                      ? Math.round((Math.max(eventData.attendees, registrations.length) / eventData.capacity) * 100)
                       : 0}%
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {eventData.capacity - eventData.attendees} spots remaining
+                    {Math.max(0, eventData.capacity - Math.max(eventData.attendees, registrations.length))} spots remaining
                   </p>
                 </CardContent>
               </Card>
@@ -1333,7 +1506,7 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">
-                    {registrations.filter(r => r.status === 'CONFIRMED').length}
+                    {registrations.filter(r => normalizeStatus(r.status) === 'CONFIRMED').length}
                   </div>
                   <p className="text-sm text-muted-foreground">Confirmed</p>
                 </CardContent>
@@ -1341,7 +1514,7 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-warning mb-2">
-                    {registrations.filter(r => r.status === 'PENDING').length}
+                    {registrations.filter(r => normalizeStatus(r.status) === 'PENDING').length}
                   </div>
                   <p className="text-sm text-muted-foreground">Pending</p>
                 </CardContent>
@@ -1349,7 +1522,7 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">
-                    {registrations.filter(r => r.paymentStatus === 'COMPLETED').length}
+                    {registrations.filter(r => getRegistrationPaymentStatus(r) === 'COMPLETED').length}
                   </div>
                   <p className="text-sm text-muted-foreground">Paid</p>
                 </CardContent>
@@ -1406,53 +1579,69 @@ const EventDetailsPage = () => {
               </CardHeader>
               <CardContent>
                 {registrations.length > 0 ? (
-                  <div className="space-y-3">
-                    {registrations.map((reg) => {
-                      const attendeeName = `${reg.attendee.firstName} ${reg.attendee.lastName}`;
-                      const isConfirmed = reg.status === 'CONFIRMED';
-                      const isPending = reg.status === 'PENDING';
-                      const hasPaid = reg.paymentStatus === 'COMPLETED';
+                  <div className="rounded-lg border overflow-hidden">
+                    <div className="hidden md:grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_40px] gap-3 px-4 py-3 bg-muted/40 border-b text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                      <span>Attendee</span>
+                      <span>Ticket</span>
+                      <span>Amount</span>
+                      <span>Payment</span>
+                      <span>Status</span>
+                      <span />
+                    </div>
+                    <div className="divide-y">
+                      {registrations.map((reg) => {
+                        const attendeeName = `${reg.attendee.firstName} ${reg.attendee.lastName}`.trim() || 'Guest';
+                        const normalizedRegistrationStatus = normalizeStatus(reg.status);
+                        const isConfirmed = normalizedRegistrationStatus === 'CONFIRMED';
+                        const isPending = normalizedRegistrationStatus === 'PENDING';
+                        const normalizedPaymentStatus = getRegistrationPaymentStatus(reg);
+                        const ticketDisplay = reg.ticketLineItems && reg.ticketLineItems.length > 0
+                          ? reg.ticketLineItems.map(item => `${item.ticketType}${item.quantity > 1 ? ` x${item.quantity}` : ''}`).join(', ')
+                          : (reg.ticketType || 'Standard');
+                        const amount = toAmount(reg.totalAmount);
 
-                      return (
-                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                              <User className="h-5 w-5 text-primary" />
+                        return (
+                          <div
+                            key={reg.id}
+                            className="grid grid-cols-1 md:grid-cols-[2fr_1.5fr_1fr_1fr_1fr_40px] gap-2 md:gap-3 items-center px-4 py-3 hover:bg-muted/30 cursor-pointer"
+                            onClick={() => { setSelectedRegistration(reg); setRegistrationSheetOpen(true); }}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                                <User className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{attendeeName}</p>
+                                <p className="text-xs text-muted-foreground truncate">{reg.attendee.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-sm truncate text-muted-foreground md:text-foreground">{ticketDisplay}</div>
+                            <div className="text-sm font-medium">{formatCurrency(amount || 0)}</div>
+                            <div>
+                              <Badge className={`text-xs ${
+                                normalizedPaymentStatus === 'COMPLETED' ? 'bg-success/10 text-success border-success/20' :
+                                normalizedPaymentStatus === 'PENDING' ? 'bg-warning/10 text-warning border-warning/20' :
+                                'bg-muted text-muted-foreground border-border'
+                              }`}>
+                                {normalizedPaymentStatus || 'N/A'}
+                              </Badge>
                             </div>
                             <div>
-                              <h4 className="font-medium text-foreground">{attendeeName}</h4>
-                              <p className="text-sm text-muted-foreground">{reg.attendee.email}</p>
-                              {reg.attendee.phoneNumber && (
-                                <p className="text-xs text-muted-foreground">{reg.attendee.phoneNumber}</p>
-                              )}
+                              <Badge className={`text-xs ${
+                                isConfirmed ? 'bg-success/10 text-success border-success/20' :
+                                isPending ? 'bg-warning/10 text-warning border-warning/20' :
+                                'bg-destructive/10 text-destructive border-destructive/20'
+                              }`}>
+                                {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : normalizedRegistrationStatus || 'N/A'}
+                              </Badge>
+                            </div>
+                            <div className="hidden md:flex justify-end">
+                              <Eye className="h-4 w-4 text-muted-foreground" />
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <Badge className={`text-xs ${
-                              isConfirmed ? 'bg-success/10 text-success border-success/20' :
-                              isPending ? 'bg-warning/10 text-warning border-warning/20' :
-                              'bg-destructive/10 text-destructive border-destructive/20'
-                            }`}>
-                              {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : reg.status}
-                            </Badge>
-                            {reg.ticketType && (
-                              <Badge className="text-xs bg-primary/10 text-primary border-primary/20">
-                                {reg.ticketType}
-                              </Badge>
-                            )}
-                            {hasPaid && (
-                              <Badge className="text-xs bg-success/10 text-success border-success/20">
-                                Paid
-                              </Badge>
-                            )}
-                            <span className="text-sm text-muted-foreground">{formatDate(reg.createdAt)}</span>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-12">
@@ -1553,15 +1742,19 @@ const EventDetailsPage = () => {
                 {filteredPayments.length > 0 ? (
                   <div className="space-y-3">
                     {filteredPayments.map((reg) => {
-                      const amount = typeof reg.totalAmount === 'string' ? parseFloat(reg.totalAmount) : reg.totalAmount;
+                      const amount = toAmount(reg.totalAmount);
                       const attendeeName = `${reg.attendee.firstName} ${reg.attendee.lastName}`;
-                      const paymentStatus = reg.paymentStatus || 'PENDING';
+                      const paymentStatus = getRegistrationPaymentStatus(reg) || 'PENDING';
                       const isSuccessful = paymentStatus === 'COMPLETED';
                       const isPending = paymentStatus === 'PENDING';
                       const isFailed = paymentStatus === 'FAILED';
 
                       return (
-                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
+                        <div
+                          key={reg.id}
+                          className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                          onClick={() => { setSelectedRegistration(reg); setRegistrationSheetOpen(true); }}
+                        >
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                               <CreditCard className="h-5 w-5 text-primary" />
@@ -1590,7 +1783,15 @@ const EventDetailsPage = () => {
                             }`}>
                               {isSuccessful ? 'Completed' : isPending ? 'Pending' : isFailed ? 'Failed' : paymentStatus}
                             </Badge>
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRegistration(reg);
+                                setRegistrationSheetOpen(true);
+                              }}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </div>
@@ -1612,6 +1813,130 @@ const EventDetailsPage = () => {
               </CardContent>
             </Card>
         </div>}
+
+          {/* Registration / Payment Detail Sheet (Admin full-access) */}
+        <Sheet open={registrationSheetOpen} onOpenChange={setRegistrationSheetOpen}>
+          <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader className="mb-6">
+              <SheetTitle>Attendee & Payment Details</SheetTitle>
+              <SheetDescription>Complete registration and transaction information</SheetDescription>
+            </SheetHeader>
+
+            {selectedRegistration && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                    <User className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold">
+                      {`${selectedRegistration.attendee.firstName} ${selectedRegistration.attendee.lastName}`.trim() || 'Guest'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{selectedRegistration.attendee.email}</p>
+                    {selectedRegistration.attendee.phoneNumber && (
+                      <p className="text-sm text-muted-foreground">{selectedRegistration.attendee.phoneNumber}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Registration</p>
+                  <div className="rounded-lg border divide-y">
+                    {[
+                      { label: 'Registration ID', value: selectedRegistration.id, mono: true },
+                      { label: 'Status', value: selectedRegistration.status },
+                      { label: 'Created', value: formatDateTime(selectedRegistration.createdAt) },
+                      { label: 'Ticket Type', value: selectedRegistration.ticketType || 'Standard' },
+                      { label: 'Quantity', value: String(selectedRegistration.quantity || 1) },
+                    ].map(({ label, value, mono }) => (
+                      <div key={label} className="flex items-start justify-between px-3 py-2 gap-3">
+                        <span className="text-sm text-muted-foreground">{label}</span>
+                        <span className={`text-sm font-medium text-right break-all max-w-[60%] ${mono ? 'font-mono text-xs' : 'capitalize'}`}>{value || '—'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {(selectedRegistration.ticketLineItems?.length ?? 0) > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Ticket Breakdown</p>
+                    <div className="rounded-lg border divide-y">
+                      {selectedRegistration.ticketLineItems?.map((item, idx) => (
+                        <div key={`${item.ticketType}-${idx}`} className="flex items-center justify-between px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium">{item.ticketType}</p>
+                            <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                          </div>
+                          <p className="text-sm font-medium">{formatCurrency(Number(item.totalPrice || 0))}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Payment</p>
+                  <div className="rounded-lg border divide-y">
+                    {[
+                      { label: 'Amount', value: formatCurrency(typeof selectedRegistration.totalAmount === 'string' ? parseFloat(selectedRegistration.totalAmount) : selectedRegistration.totalAmount || 0) },
+                      { label: 'Payment Status', value: selectedRegistration.paymentStatus || 'N/A' },
+                      { label: 'Payment Method', value: selectedRegistration.paymentMethod || 'N/A' },
+                      { label: 'Payment Txn ID', value: selectedRegistration.paymentTransactionId || 'N/A', mono: true },
+                    ].map(({ label, value, mono }) => (
+                      <div key={label} className="flex items-start justify-between px-3 py-2 gap-3">
+                        <span className="text-sm text-muted-foreground">{label}</span>
+                        <span className={`text-sm font-medium text-right break-all max-w-[60%] ${mono ? 'font-mono text-xs' : 'capitalize'}`}>{value}</span>
+                      </div>
+                    ))}
+
+                    {selectedRegistration.paymentTransaction && (
+                      <>
+                        <div className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground">Transaction #</span>
+                          <span className="text-xs font-mono font-medium text-right break-all max-w-[60%]">{selectedRegistration.paymentTransaction.transactionNumber}</span>
+                        </div>
+                        <div className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground">Gateway Reference</span>
+                          <span className="text-xs font-mono font-medium text-right break-all max-w-[60%]">{selectedRegistration.paymentTransaction.gatewayReference}</span>
+                        </div>
+                        <div className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground">Gateway</span>
+                          <span className="text-sm font-medium">{selectedRegistration.paymentTransaction.gateway}</span>
+                        </div>
+                        <div className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground">Paid At</span>
+                          <span className="text-sm font-medium">{formatDateTime(selectedRegistration.paymentTransaction.paymentDate)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {selectedRegistration.registrationData && Object.keys(selectedRegistration.registrationData).length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Registration Form Responses</p>
+                    <div className="rounded-lg border divide-y">
+                      {Object.entries(selectedRegistration.registrationData).map(([key, value]) => (
+                        <div key={key} className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground capitalize shrink-0">
+                            {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-sm font-medium text-right break-words max-w-[60%]">
+                            {Array.isArray(value)
+                              ? value.join(', ')
+                              : (typeof value === 'object' && value !== null)
+                                ? JSON.stringify(value)
+                                : String(value ?? '—')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
 
           {/* Refunds Tab - Only for ADMIN and SUPERADMIN */}
         {permissions.canAccessAllEvents && activeSection === "refunds" && <div className="space-y-6">
@@ -2045,9 +2370,9 @@ const EventDetailsPage = () => {
               </Card>
             </div>
 
-            {eventData.ticketTypes && eventData.ticketTypes.length > 0 ? (
+            {parsedTicketTypes.length > 0 ? (
               <div className="space-y-4">
-                {eventData.ticketTypes.map((ticket) => {
+                {parsedTicketTypes.map((ticket) => {
                   const soldPercent = ticket.capacity > 0 ? Math.round((ticket.sold / ticket.capacity) * 100) : 0;
                   const revenue = ticket.sold * ticket.price;
                   return (

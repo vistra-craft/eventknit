@@ -265,6 +265,11 @@ export class EventController {
         userAgent,
       );
 
+      const registrationWithResumeMeta = registration as typeof registration & {
+        resumedPendingPayment?: boolean;
+      };
+      const resumedPendingPayment = registrationWithResumeMeta.resumedPendingPayment === true;
+
       logger.debug(`[EventController.registerForEvent] Registration completed successfully: ${registration.id}, status: ${registration.status}`);
 
       // Normalize totalAmount for API consumers as a fixed-precision string
@@ -275,12 +280,17 @@ export class EventController {
           : '0.00',
       };
 
-      res.status(201).json({
+      res.status(resumedPendingPayment ? 200 : 201).json({
         success: true,
-        message: registration.status === 'CONFIRMED'
-          ? 'Registration successful'
-          : 'Registration pending. Payment will be processed when payment system is implemented.',
-        data: { registration: normalizedRegistration },
+        message: resumedPendingPayment
+          ? 'Existing pending registration found. Continue payment to complete your registration.'
+          : registration.status === 'CONFIRMED'
+            ? 'Registration successful'
+            : 'Registration pending. Payment will be processed when payment system is implemented.',
+        data: {
+          registration: normalizedRegistration,
+          resumedPendingPayment,
+        },
       });
     } catch (error) {
       logger.error('[EventController.registerForEvent] Error in registration controller:', {
@@ -623,9 +633,14 @@ export class EventController {
         userAgent,
       );
 
-      res.status(201).json({
+      const resumedPendingPayment =
+        (result as typeof result & { resumedPendingPayment?: boolean }).resumedPendingPayment === true;
+
+      res.status(resumedPendingPayment ? 200 : 201).json({
         success: true,
-        message: 'Registration successful. Check your email for your ticket and account setup link.',
+        message: resumedPendingPayment
+          ? 'Existing pending registration found. Continue payment to complete your registration.'
+          : 'Registration successful. Check your email for your ticket and account setup link.',
         data: {
           registration: {
             ...result.registration,
@@ -635,6 +650,7 @@ export class EventController {
           },
           user: result.user,
           accessToken: result.accessToken,
+          resumedPendingPayment,
         },
       });
     } catch (error) {
@@ -657,12 +673,20 @@ export class EventController {
         userAgent,
       );
 
-      res.status(201).json({
+      const resumedPendingPayment =
+        (result as typeof result & { resumedPendingPayment?: boolean }).resumedPendingPayment === true;
+
+      res.status(resumedPendingPayment ? 200 : 201).json({
         success: true,
-        message: result.registration.status === 'CONFIRMED'
-          ? 'Registration successful'
-          : 'Registration pending. Payment will be processed when payment system is implemented.',
-        data: result,
+        message: resumedPendingPayment
+          ? 'Existing pending registration found. Continue payment to complete your registration.'
+          : result.registration.status === 'CONFIRMED'
+            ? 'Registration successful'
+            : 'Registration pending. Payment will be processed when payment system is implemented.',
+        data: {
+          ...result,
+          resumedPendingPayment,
+        },
       });
     } catch (error) {
       next(error);
