@@ -7,7 +7,7 @@ const sections: LegalSection[] = [
   {
     id: 'introduction',
     title: '1. Introduction',
-    content: `This Privacy Policy explains how EventKnit ("we," "us," or "our") collects, uses, stores, shares, and protects your personal information when you use our platform, website, mobile application, and related services (the "Services"). We are committed to safeguarding your privacy and ensuring that your personal data is handled responsibly and in compliance with applicable data protection laws, including the Nigeria Data Protection Act (NDPA) 2023, the General Data Protection Regulation (GDPR), the California Consumer Privacy Act (CCPA), and other relevant legislation.
+    content: `This Privacy Policy explains how EventKnit ("we," "us," or "our") collects, uses, stores, shares, and protects your personal information when you use our platform, website, mobile application, and related services (the "Services"). We are committed to safeguarding your privacy and ensuring that your personal data is handled responsibly and in compliance with applicable data protection laws, including the Nigeria Data Protection Act (NDPA) 2023 and, where applicable, other international laws such as the General Data Protection Regulation (GDPR) and the California Consumer Privacy Act (CCPA).
 
 By using the Services, you acknowledge that you have read and understood this Privacy Policy. If you do not agree with our data practices, please discontinue use of the Services.`,
   },
@@ -16,7 +16,7 @@ By using the Services, you acknowledge that you have read and understood this Pr
     title: '2. Who We Are',
     content: `EventKnit is an event technology platform that enables Organizers to create, manage, and promote events, and allows Attendees to discover, register for, and attend events. For the purposes of data protection law, EventKnit is the data controller for personal information collected through the platform.
 
-Our Data Protection Officer can be reached at privacy@eventknit.com for any questions or concerns regarding your personal data. We are committed to responding to all privacy inquiries within two (2) business days.`,
+Our Privacy Team can be reached at privacy@eventknit.com for any questions or concerns regarding your personal data. We are committed to responding to all privacy inquiries within two (2) business days.`,
   },
   {
     id: 'data-collection',
@@ -25,6 +25,8 @@ Our Data Protection Officer can be reached at privacy@eventknit.com for any ques
 
 When you create an account, we collect your name, email address, and authentication credentials. If you sign up using a social login provider such as Google or Apple, we receive basic profile information from that provider, including your name and email address. During event registration, we may collect additional information as specified by the event Organizer, such as your phone number, dietary preferences, company name, job title, or other details relevant to the event.
 
+Some registration fields (for example, dietary requirements) may reveal sensitive or special-category personal data (such as religious beliefs or health-related information). Where required by applicable law, we process such data only with your explicit consent and with additional safeguards.
+
 When you make a purchase, our payment processor (currently Stripe) handles your payment card details directly. EventKnit does not store full credit card numbers on our servers. We do retain transaction records, including the amount paid, the payment method type, and the date of the transaction, for accounting and legal compliance purposes.
 
 We also collect information automatically when you use the Services. This includes your IP address, device type and operating system, browser type and version, pages you visit and features you use, the dates and times of your visits, referring URLs, and general geographic location derived from your IP address. This information is collected through cookies, log files, and similar technologies as described in our Cookie Policy.`,
@@ -32,17 +34,41 @@ We also collect information automatically when you use the Services. This includ
   {
     id: 'lawful-basis',
     title: '4. Lawful Basis for Processing',
-    content: `We process your personal data only when we have a valid legal basis to do so. Depending on the specific processing activity, we rely on one or more of the following grounds:
-
-Contractual necessity: We process data that is necessary to perform our contract with you, such as creating your account, processing your event registrations, facilitating ticket purchases, and providing customer support. Without this processing, we would be unable to deliver the Services to you.
-
-Consent: Where required by law, we obtain your explicit consent before processing your data for specific purposes, such as sending you marketing communications, sharing your data with event sponsors, or setting non-essential cookies. You may withdraw your consent at any time, and we will cease the relevant processing promptly. Withdrawing consent does not affect the lawfulness of processing that occurred before the withdrawal.
-
-Legitimate interests: We may process your data where it is necessary for our legitimate business interests, provided those interests are not overridden by your rights and freedoms. Examples include fraud prevention, platform security, product improvement, and analytics. We conduct balancing tests to ensure our legitimate interests do not disproportionately impact your privacy.
-
-Legal obligation: We process certain data to comply with legal and regulatory requirements, such as tax reporting, anti-money laundering regulations, and responding to lawful requests from public authorities.
-
-Vital interests: In rare circumstances, we may process data to protect someone's life or physical safety, such as sharing emergency contact information with event safety personnel during a medical emergency.`,
+    content: `We process your personal data only when we have a valid legal basis to do so. Depending on the specific processing activity, we rely on one or more of the following grounds:`,
+    subsections: [
+      {
+        subtitle: 'Contractual Necessity',
+        items: [
+          'Data necessary to perform our contract with you — creating your account, processing event registrations, facilitating ticket purchases, and providing customer support. Without this processing, we would be unable to deliver the Services.',
+        ],
+      },
+      {
+        subtitle: 'Consent',
+        items: [
+          'Where required by law, we obtain your explicit consent before processing your data for specific purposes, such as marketing communications, sharing data with event sponsors, or setting non-essential cookies.',
+          'You may withdraw your consent at any time; this does not affect the lawfulness of processing that occurred before the withdrawal.',
+        ],
+      },
+      {
+        subtitle: 'Legitimate Interests',
+        items: [
+          'We may process your data for our legitimate business interests — fraud prevention, platform security, product improvement, and analytics — provided those interests are not overridden by your rights and freedoms.',
+          'We conduct balancing tests to ensure our legitimate interests do not disproportionately impact your privacy.',
+        ],
+      },
+      {
+        subtitle: 'Legal Obligation',
+        items: [
+          'We process certain data to comply with legal and regulatory requirements, such as tax reporting, anti-money laundering regulations, and responding to lawful requests from public authorities.',
+        ],
+      },
+      {
+        subtitle: 'Vital Interests',
+        items: [
+          "In rare circumstances, we may process data to protect someone's life or physical safety, such as sharing emergency contact information with event safety personnel during a medical emergency.",
+        ],
+      },
+    ],
   },
   {
     id: 'data-usage',
@@ -70,6 +96,8 @@ With your consent: If you opt in, we may share your information with event spons
 
 For legal reasons: We may disclose your information if we believe in good faith that disclosure is necessary to comply with applicable law, regulation, or legal process; to respond to lawful requests from public authorities, including law enforcement; to protect the rights, property, or safety of EventKnit, our users, or the public; or to enforce our Terms of Service.
 
+Corporate transactions: If EventKnit is involved in a merger, acquisition, financing, reorganization, sale of assets, bankruptcy, or similar transaction, your information may be transferred as part of that transaction, subject to appropriate confidentiality and legal safeguards.
+
 We never sell your personal information to third parties for their marketing purposes.`,
   },
   {
@@ -81,7 +109,7 @@ Active account data is retained for as long as you maintain an account with Even
 
 Financial and transaction records are retained for seven (7) years following the transaction, as required for tax, accounting, and legal compliance purposes. During this period, transaction data is maintained in a restricted-access environment and is not used for marketing or other unrelated purposes.
 
-Transactional email records are retained for two (2) years to support customer service inquiries and dispute resolution. Event registration data is retained for the duration of the event and for a reasonable period afterward to support follow-up communications, feedback collection, and dispute resolution.
+Transactional email records are retained for two (2) years to support customer service inquiries and dispute resolution. Event registration data is retained for the duration of the event and for up to twelve (12) months afterward to support follow-up communications, feedback collection, compliance checks, and dispute resolution.
 
 You may request permanent deletion of your data at any time by contacting us at privacy@eventknit.com or by using the data deletion feature in your account settings.`,
   },
@@ -106,25 +134,42 @@ We regularly review and update our transfer mechanisms to ensure they remain com
   {
     id: 'your-rights',
     title: '10. Your Rights',
-    content: `Depending on your location and applicable law, you may have some or all of the following rights regarding your personal data. We are committed to honoring these rights and will respond to your requests within the timeframes required by law.
-
-Right of Access: You have the right to request a copy of the personal data we hold about you, along with information about how we process it. You can exercise this right through your account settings or by contacting us directly.
-
-Right to Rectification: If any of your personal data is inaccurate or incomplete, you have the right to request that we correct or update it. You can update most information directly through your account settings.
-
-Right to Erasure: You have the right to request that we delete your personal data, subject to certain exceptions such as legal retention requirements. When you exercise this right, we will delete or anonymize your data within thirty (30) days, except where we are legally required to retain it.
-
-Right to Data Portability: You have the right to receive your personal data in a structured, commonly used, machine-readable format, and to transmit that data to another service provider. You can export your data through your account settings or by contacting us.
-
-Right to Restrict Processing: You have the right to request that we restrict the processing of your personal data in certain circumstances, such as when you contest the accuracy of the data or when you object to processing based on legitimate interests.
-
-Right to Object: You have the right to object to the processing of your personal data for direct marketing purposes at any time. You also have the right to object to processing based on legitimate interests, in which case we will cease processing unless we demonstrate compelling legitimate grounds.
-
-Right to Withdraw Consent: Where we rely on your consent to process your data, you may withdraw that consent at any time. This will not affect the lawfulness of processing carried out before the withdrawal.
-
-Right to Lodge a Complaint: If you believe that our processing of your personal data violates applicable law, you have the right to lodge a complaint with the Nigeria Data Protection Commission (NDPC) or the relevant supervisory authority in your jurisdiction.
-
-To exercise any of these rights, contact our Privacy Team at privacy@eventknit.com. We will verify your identity before processing your request and will respond within thirty (30) days, or within the timeframe required by applicable law.`,
+    content: `Depending on your location and applicable law, you may have some or all of the following rights regarding your personal data. We are committed to honoring these rights within the timeframes required by law.`,
+    subsections: [
+      {
+        subtitle: 'Right of Access',
+        items: ['Request a copy of the personal data we hold about you, along with information about how we process it. Exercisable through your account settings or by contacting us directly.'],
+      },
+      {
+        subtitle: 'Right to Rectification',
+        items: ['If any personal data is inaccurate or incomplete, request that we correct or update it. Most information can be updated directly through your account settings.'],
+      },
+      {
+        subtitle: 'Right to Erasure',
+        items: ['Request deletion of your personal data, subject to legal retention requirements. We will delete or anonymize your data within thirty (30) days, except where legally required to retain it.'],
+      },
+      {
+        subtitle: 'Right to Data Portability',
+        items: ['Receive your personal data in a structured, machine-readable format and transmit it to another provider. Export your data through your account settings or by contacting us.'],
+      },
+      {
+        subtitle: 'Right to Restrict Processing',
+        items: ['Request that we restrict processing of your data in certain circumstances, such as when you contest its accuracy or object to processing based on legitimate interests.'],
+      },
+      {
+        subtitle: 'Right to Object',
+        items: ['Object to processing of your data for direct marketing at any time. You may also object to processing based on legitimate interests; we will cease unless we demonstrate compelling legitimate grounds.'],
+      },
+      {
+        subtitle: 'Right to Withdraw Consent',
+        items: ['Where we rely on consent to process your data, you may withdraw it at any time. This does not affect the lawfulness of processing carried out before the withdrawal.'],
+      },
+      {
+        subtitle: 'Right to Lodge a Complaint',
+        items: ['If you believe our processing violates applicable law, you may lodge a complaint with the Nigeria Data Protection Commission (NDPC) or the relevant supervisory authority in your jurisdiction.'],
+      },
+    ],
+    note: 'To exercise any of these rights, contact our Privacy Team at privacy@eventknit.com. We will verify your identity before processing your request and respond within thirty (30) days.',
   },
   {
     id: 'children',
@@ -145,17 +190,26 @@ You have the right to know about automated decisions that affect you and to requ
   {
     id: 'processors',
     title: '13. Data Processors and Partners',
-    content: `We work with a number of third-party service providers who process personal data on our behalf. These providers are contractually bound to protect your data and to use it only for the specific purposes we authorize. Our key data processors include:
-
-Stripe for payment processing, which handles payment card information and transaction processing in accordance with PCI-DSS standards. You can review Stripe's privacy practices at privacy.stripe.com.
-
-Cloud infrastructure providers, including Amazon Web Services (AWS), for hosting, data storage, and computing services. AWS processes data in accordance with their data processing addendum and maintains compliance with major security and privacy frameworks.
-
-Email delivery services for sending transactional communications such as registration confirmations, ticket deliveries, and event updates, as well as marketing communications where you have opted in.
-
-Analytics services, including Google Analytics, for understanding how users interact with the platform. These services collect anonymized and aggregated data to help us improve the user experience. You can review Google's privacy practices at policies.google.com/privacy.
-
-We maintain an up-to-date list of our sub-processors and conduct regular assessments to ensure they meet our data protection standards. We ensure that all service providers comply with applicable data protection laws and provide adequate safeguards for your personal data.`,
+    content: `We work with trusted third-party service providers who process personal data on our behalf. All providers are contractually bound to protect your data and use it only for the purposes we authorize. Our key data processors include:`,
+    subsections: [
+      {
+        subtitle: 'Stripe (Payment Processing)',
+        items: ["Handles payment card information and transaction processing in accordance with PCI-DSS standards. Review Stripe's privacy practices at privacy.stripe.com."],
+      },
+      {
+        subtitle: 'Amazon Web Services (Cloud Infrastructure)',
+        items: ['Provides hosting, data storage, and computing services. AWS processes data in accordance with their data processing addendum and maintains compliance with major security and privacy frameworks.'],
+      },
+      {
+        subtitle: 'Email Delivery Services',
+        items: ['Used for transactional communications (registration confirmations, ticket deliveries, event updates) and marketing communications where you have opted in.'],
+      },
+      {
+        subtitle: 'Google Analytics',
+        items: ["Collects anonymized and aggregated usage data to help us improve the user experience. Review Google's privacy practices at policies.google.com/privacy."],
+      },
+    ],
+    note: 'We maintain an up-to-date list of sub-processors and conduct regular assessments to ensure they meet our data protection standards.',
   },
   {
     id: 'organizer-data',
@@ -165,6 +219,8 @@ We maintain an up-to-date list of our sub-processors and conduct regular assessm
 The data shared with Organizers typically includes your name, email address, phone number (if provided during registration), ticket type and registration status, responses to custom registration questions set by the Organizer, check-in status and attendance data, and any information you voluntarily provide through event-specific forms or communications.
 
 Once your data is shared with an Organizer, the Organizer becomes an independent data controller for that data. This means the Organizer is responsible for determining how they use your data beyond the scope of the event, maintaining their own privacy policy that governs their use of attendee data, complying with applicable data protection laws in their jurisdiction, and responding to data subject rights requests related to data in their possession.
+
+As a condition of using EventKnit, Organizers are required to agree to contractual terms that require lawful handling of attendee data, implementation of appropriate security controls, and cooperation with applicable data protection requirements.
 
 EventKnit is not responsible for the privacy practices of Organizers. We encourage you to review the Organizer's privacy policy before registering for their event. If you have concerns about how an Organizer is handling your data, you should contact them directly and, if necessary, exercise your rights under applicable data protection law.`,
   },
@@ -187,13 +243,14 @@ We encourage you to review this Privacy Policy periodically to stay informed abo
   {
     id: 'contact',
     title: '17. Contact Us',
-    content: `If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, you can reach us through the following channels:
-
-For privacy inquiries and data subject requests: privacy@eventknit.com. For general support: support@eventknit.com. For legal matters: legal@eventknit.com.
-
-You may also reach us through the support section of our platform at eventknit.com/support. Our Privacy Team aims to respond to all inquiries within two (2) business days and to resolve data subject requests within thirty (30) days.
-
-If you are not satisfied with our response, you have the right to lodge a complaint with the Nigeria Data Protection Commission (NDPC) or the relevant supervisory authority in your jurisdiction.`,
+    content: `If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, reach us through any of the following channels:`,
+    items: [
+      'Privacy inquiries & data subject requests: privacy@eventknit.com',
+      'General support: support@eventknit.com',
+      'Legal matters: legal@eventknit.com',
+      'Support section: eventknit.com/support',
+    ],
+    note: 'Our Privacy Team aims to respond within two (2) business days and to resolve data subject requests within thirty (30) days. If you are not satisfied with our response, you have the right to lodge a complaint with the Nigeria Data Protection Commission (NDPC) or the relevant supervisory authority in your jurisdiction.',
   },
 ];
 
