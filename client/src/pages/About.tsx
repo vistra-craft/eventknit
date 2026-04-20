@@ -637,15 +637,15 @@ const About = () => {
                 { icon: Globe, label: "Global", color: "bg-emerald-500/10 text-emerald-500" },
                 { icon: Users, label: "Collaborative", color: "bg-violet-500/10 text-violet-500" },
               ].map((item) => (
-                <TiltCard
+                <div
                   key={item.label}
-                  className="group flex flex-col items-center gap-3 p-6 rounded-2xl border border-border bg-card hover:border-primary/30 hover:shadow-md transition-colors cursor-default"
+                  className="flex flex-col items-center gap-3 p-6 rounded-xl border border-border bg-background hover:border-primary/30 transition-colors cursor-default"
                 >
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.color}`}>
                     <item.icon className="w-5 h-5" />
                   </div>
                   <span className="text-sm font-medium text-foreground">{item.label}</span>
-                </TiltCard>
+                </div>
               ))}
             </motion.div>
           </div>

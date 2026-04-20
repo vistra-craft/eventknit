@@ -146,7 +146,7 @@ function PopularCard({ event, index }: { event: PopularEvent; index: number }) {
       animate={isInView ? { opacity: 1, x: 0 } : {}}
       transition={{ duration: 0.5, ease: EASE, delay: index * 0.06 }}
       onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
-      className="group shrink-0 cursor-pointer snap-start w-[calc((100%-3rem)/3)] md:w-[calc((100%-4.5rem)/4)] lg:w-[calc((100%-4.5rem)/4)]"
+      className="group shrink-0 cursor-pointer snap-start w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-3rem)/4)]"
     >
       <div className="rounded-2xl overflow-hidden border border-border/40 hover:border-border/60 bg-card transition-all duration-300 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.12),0_4px_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.15),0_4px_12px_-2px_rgba(0,0,0,0.4)]">
         {/* Accent strip */}
