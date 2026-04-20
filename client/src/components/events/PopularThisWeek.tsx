@@ -146,7 +146,7 @@ function PopularCard({ event, index }: { event: PopularEvent; index: number }) {
       animate={isInView ? { opacity: 1, x: 0 } : {}}
       transition={{ duration: 0.5, ease: EASE, delay: index * 0.06 }}
       onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
-      className="group shrink-0 cursor-pointer snap-start w-[calc((100%-3rem)/3.05)] md:w-[calc((100%-4.5rem)/4.05)] lg:w-[calc((100%-4.5rem)/4.03)]"
+      className="group shrink-0 cursor-pointer snap-start w-[calc((100%-3rem)/3)] md:w-[calc((100%-4.5rem)/4)] lg:w-[calc((100%-4.5rem)/4)]"
     >
       <div className="rounded-2xl overflow-hidden border border-border/40 hover:border-border/60 bg-card transition-all duration-300 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.12),0_4px_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.15),0_4px_12px_-2px_rgba(0,0,0,0.4)]">
         {/* Accent strip */}
@@ -210,7 +210,11 @@ function PopularCard({ event, index }: { event: PopularEvent; index: number }) {
   );
 }
 
-export function PopularThisWeek() {
+interface PopularThisWeekProps {
+  onSeeAll?: () => void;
+}
+
+export function PopularThisWeek({ onSeeAll }: PopularThisWeekProps) {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -245,7 +249,7 @@ export function PopularThisWeek() {
               <h2 className="text-lg sm:text-xl font-bold text-foreground">Popular this week</h2>
             </div>
             <button
-              onClick={() => navigate('/events')}
+              onClick={onSeeAll ?? (() => navigate('/events'))}
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               See all <ArrowRight className="w-3.5 h-3.5" />

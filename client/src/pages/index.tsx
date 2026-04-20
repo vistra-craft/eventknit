@@ -14,13 +14,20 @@ const Index = () => {
     setFilters(newFilters);
   }, []);
 
+  const handleSeeAllPopular = useCallback(() => {
+    setFilters((prev) => ({ ...prev, dateRange: 'this-week' }));
+    document.getElementById('search-section')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
       <Navbar transparent />
       <main className="flex-1">
         <Hero />
-        <EventSearchFilter filters={filters} onFiltersChange={handleFiltersChange} />
-        <PopularThisWeek />
+        <div id="search-section">
+          <EventSearchFilter filters={filters} onFiltersChange={handleFiltersChange} />
+        </div>
+        <PopularThisWeek onSeeAll={handleSeeAllPopular} />
         <EventGrid filters={filters} />
       </main>
       <Footer />
