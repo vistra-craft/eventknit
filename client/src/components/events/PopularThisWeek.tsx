@@ -1,6 +1,6 @@
-import { useRef } from "react";
+import { useRef, useState, useCallback } from "react";
 import { motion, useInView } from "framer-motion";
-import { TrendingUp, CalendarPlus } from "lucide-react";
+import { TrendingUp, CalendarPlus, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EventImage } from "./EventImage";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
@@ -146,14 +146,14 @@ function PopularCard({ event, index }: { event: PopularEvent; index: number }) {
       animate={isInView ? { opacity: 1, x: 0 } : {}}
       transition={{ duration: 0.5, ease: EASE, delay: index * 0.06 }}
       onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
-      className="group shrink-0 cursor-pointer snap-start w-[calc((100%-3rem)/3.05)] sm:w-[calc((100%-3rem)/3.05)] md:w-[calc((100%-4.5rem)/4.05)] lg:w-[calc((100%-4.5rem)/4.03)]"
+      className="group shrink-0 cursor-pointer snap-start w-[calc((100%-3rem)/3.05)] md:w-[calc((100%-4.5rem)/4.05)] lg:w-[calc((100%-4.5rem)/4.03)]"
     >
       <div className="rounded-2xl overflow-hidden border border-border/40 hover:border-border/60 bg-card transition-all duration-300 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.12),0_4px_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.15),0_4px_12px_-2px_rgba(0,0,0,0.4)]">
         {/* Accent strip */}
         <div className="h-[2px] bg-gradient-to-r from-primary via-orange-500/80 to-orange-500/20" />
 
         {/* Image */}
-        <div className="relative h-40 overflow-hidden">
+        <div className="relative h-48 overflow-hidden">
           <EventImage
             src={event.image}
             alt={event.title}
@@ -211,27 +211,77 @@ function PopularCard({ event, index }: { event: PopularEvent; index: number }) {
 }
 
 export function PopularThisWeek() {
+  const navigate = useNavigate();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  const scrollBy = useCallback((dir: 'left' | 'right') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const cardWidth = (el.firstElementChild as HTMLElement)?.offsetWidth ?? 280;
+    el.scrollBy({ left: dir === 'left' ? -(cardWidth + 16) : (cardWidth + 16), behavior: 'smooth' });
+  }, []);
+
   // Replace with real API data when ready
   const events = DUMMY_POPULAR;
 
-  // Don't render if no popular events
   if (events.length === 0) return null;
 
   return (
-    <section className="py-6 bg-background">
+    <section className="py-6 bg-background group/popular">
       <div className="container mx-auto px-6">
         <AnimatedSection className="mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-orange-500 dark:text-orange-400" />
-            <h2 className="text-lg sm:text-xl font-bold text-foreground">Popular this week</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-orange-500 dark:text-orange-400" />
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">Popular this week</h2>
+            </div>
+            <button
+              onClick={() => navigate('/events')}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              See all <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </AnimatedSection>
 
-        {/* Horizontal scroll with snap */}
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-          {events.map((event, i) => (
-            <PopularCard key={event.id} event={event} index={i} />
-          ))}
+        {/* Carousel with arrow navigation */}
+        <div className="relative">
+          {/* Left arrow */}
+          <button
+            onClick={() => scrollBy('left')}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-9 h-9 rounded-full bg-background border border-border shadow-md flex items-center justify-center transition-all duration-200 opacity-0 group-hover/popular:opacity-100 hover:bg-muted ${canScrollLeft ? 'pointer-events-auto' : 'pointer-events-none opacity-0!'}`}
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-4 h-4 text-foreground" />
+          </button>
+
+          {/* Right arrow */}
+          <button
+            onClick={() => scrollBy('right')}
+            className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-9 h-9 rounded-full bg-background border border-border shadow-md flex items-center justify-center transition-all duration-200 opacity-0 group-hover/popular:opacity-100 hover:bg-muted ${canScrollRight ? 'pointer-events-auto' : 'pointer-events-none opacity-0!'}`}
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-4 h-4 text-foreground" />
+          </button>
+
+          <div
+            ref={scrollRef}
+            onScroll={updateScrollState}
+            className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory"
+          >
+            {events.map((event, i) => (
+              <PopularCard key={event.id} event={event} index={i} />
+            ))}
+          </div>
         </div>
       </div>
     </section>

@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 
 /** Skeleton that mirrors EventCard structure exactly */
 function EventCardSkeleton({ index = 0 }: { index?: number }) {
-  const imgHeight = "h-56 sm:h-64";
+  const imgHeight = "h-48 sm:h-56";
 
   return (
     <div
