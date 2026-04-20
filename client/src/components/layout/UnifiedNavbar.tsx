@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ThemeToggle } from './ThemeToggle';
 import NotificationBell from '../profile/NotificationBell';
 import { Badge } from '@/components/ui/badge';
-import { UserRole } from '@/types/auth';
+import { UserRole, UserStatus } from '@/types/auth';
 
 interface MenuItem {
   label: string;
@@ -37,24 +37,23 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const isOrganizer = authUser?.role === UserRole.ORGANIZER;
+  // Only show organizer-specific routes when the account is fully active
+  const isActiveOrganizer = isOrganizer && authUser?.status === UserStatus.ACTIVE;
+
   const RoleIcon = isOrganizer ? Megaphone : UserCircle;
   const roleLabel = isOrganizer ? 'Organizer' : 'Attendee';
   const roleBadgeVariant = isOrganizer ? 'default' : 'secondary';
 
   // Role-based menu items
   const getMenuItems = (): MenuItem[] => {
-    const baseItems: MenuItem[] = [
-      {
-        label: 'Dashboard',
-        icon: Home,
-        onClick: () => navigate(isOrganizer ? '/organizer/dashboard' : '/user/dashboard'),
-      },
-    ];
-
-    if (isOrganizer) {
-      // Organizer menu items
+    if (isActiveOrganizer) {
+      // Active organizer — full organizer menu
       return [
-        ...baseItems,
+        {
+          label: 'Dashboard',
+          icon: Home,
+          onClick: () => navigate('/organizer/dashboard'),
+        },
         {
           label: 'My Events',
           icon: Calendar,
@@ -81,39 +80,43 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
           onClick: () => navigate('/organizer/settings'),
         },
       ];
-    } else {
-      // Attendee menu items
-      return [
-        ...baseItems,
-        {
-          label: 'My Tickets',
-          icon: Calendar,
-          onClick: () => navigate('/user/dashboard?view=attending'),
-        },
-        {
-          label: 'Saved Events',
-          icon: Heart,
-          onClick: () => navigate('/user/dashboard?view=saved'),
-        },
-        {
-          label: 'Messages',
-          icon: MessageSquare,
-          onClick: () => navigate('/user/messages'),
-        },
-        {
-          label: 'Settings',
-          icon: Settings,
-          onClick: () => navigate('/user/dashboard?view=settings'),
-        },
-      ];
     }
+
+    // Attendee OR pending organizer — user-dashboard menu only
+    return [
+      {
+        label: 'Dashboard',
+        icon: Home,
+        onClick: () => navigate('/user/dashboard'),
+      },
+      {
+        label: 'My Tickets',
+        icon: Calendar,
+        onClick: () => navigate('/user/dashboard?view=attending'),
+      },
+      {
+        label: 'Saved Events',
+        icon: Heart,
+        onClick: () => navigate('/user/dashboard?view=saved'),
+      },
+      {
+        label: 'Messages',
+        icon: MessageSquare,
+        onClick: () => navigate('/user/messages'),
+      },
+      {
+        label: 'Settings',
+        icon: Settings,
+        onClick: () => navigate('/user/settings'),
+      },
+    ];
   };
 
   const menuItems = getMenuItems();
 
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border h-14">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-neutral-50 dark:bg-background border-b border-border h-14">
       <div className="container mx-auto px-4 sm:px-6 h-full">
         <div className="flex items-center justify-between h-full">
           {/* Logo */}

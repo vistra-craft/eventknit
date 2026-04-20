@@ -53,6 +53,7 @@ enum OrganizerEntityType {
   DENOMINATIONAL_CHURCH
   PARTNERSHIP_PROFESSIONAL
   TRUST
+  OTHER
 }
 
 enum KYCDocumentType {
@@ -266,6 +267,10 @@ model User {
   profileCompleted      Boolean   @default(false)
   profileCompletedAt    DateTime?
   eventPreferences      Json? // Store event types, organization type, events per year, etc.
+
+  // Suspension / manual review fields
+  suspensionReason String?   // Reason stored when admin manually sets PENDING_APPROVAL or SUSPENDED
+  suspendedAt      DateTime? // When the account was suspended
 
   // Audit fields
   createdAt DateTime  @default(now())

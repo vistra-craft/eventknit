@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import {
   Calendar,
   Heart,
@@ -17,7 +17,11 @@ import {
   Sparkles,
   Bookmark,
   ExternalLink,
+  Building2,
+  X,
+  ArrowRight,
 } from 'lucide-react';
+import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Button } from '../../components/ui/button';
 import { Loader } from '../../components/ui/loader';
 import { Badge } from '../../components/ui/badge';
@@ -28,7 +32,7 @@ import { OrganizingEventCard } from '@/components/organizer-ui/OrganizingEventCa
 import { KYCRequiredBanner } from '../../components/KYCRequiredBanner';
 import { useMyEvents } from '../../hooks/useMyEvents';
 import { useAuth } from '../../hooks/useAuth';
-import { UserRole } from '../../types/auth';
+import { UserRole, UserStatus } from '../../types/auth';
 import { shareEvent } from '../../lib/utils/share';
 import { downloadTicket } from '../../lib/utils/ticket';
 import { unsaveEvent } from '../../lib/saved-events-api';
@@ -79,8 +83,12 @@ const FILTER_TABS: { key: EventFilter; label: string }[] = [
 
 // ─── Component ──────────────────────────────────────────────────────────────────
 
+const VALID_VIEWS = ['attending', 'my-events', 'saved', 'tickets'] as const;
+type TabKey = typeof VALID_VIEWS[number];
+
 const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user: authUser } = useAuth();
 
@@ -100,10 +108,19 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     refreshSaved,
   } = useMyEvents();
 
-  const [currentTab, setCurrentTab] = useState<'attending' | 'my-events' | 'saved' | 'tickets'>('attending');
+  const viewParam = searchParams.get('view') as TabKey | null;
+  const currentTab: TabKey = viewParam && VALID_VIEWS.includes(viewParam) ? viewParam : 'attending';
+  const setCurrentTab = (tab: TabKey) => setSearchParams({ view: tab }, { replace: true });
   const [attendingFilter, setAttendingFilter] = useState<EventFilter>('all');
   const [savedFilter, setSavedFilter] = useState<EventFilter>('all');
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
+  const [profilePromptDismissed, setProfilePromptDismissed] = useState(
+    () => sessionStorage.getItem('org_profile_prompt_dismissed') === 'true'
+  );
+
+  const isPendingOrganizer =
+    authUser?.role === UserRole.ORGANIZER &&
+    authUser?.status === UserStatus.PENDING_APPROVAL;
 
   useEffect(() => {
     const loadVerification = async () => {
@@ -117,7 +134,8 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     loadVerification();
   }, []);
 
-  if (authUser?.role === UserRole.ORGANIZER) {
+  // Only redirect active organizers — PENDING_APPROVAL stays here to see the pending banner
+  if (authUser?.role === UserRole.ORGANIZER && authUser.status === UserStatus.ACTIVE) {
     return <Navigate to="/organizer/dashboard" replace />;
   }
 
@@ -215,6 +233,42 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
           </div>
         ) : null;
       })()}
+
+      {/* ── Pending Organizer Profile Prompt ──────────────────────────── */}
+      {isPendingOrganizer && !profilePromptDismissed && (
+        <Alert className="mb-6 border-primary/20 bg-primary/5">
+          <Building2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex-1 space-y-0.5">
+              <p className="font-semibold text-foreground text-sm">Complete your organizer profile</p>
+              <p className="text-xs text-muted-foreground">
+                While your account is under review, add your organization description, logo, website, and social links — so you&apos;re ready the moment you&apos;re approved.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
+                onClick={() => navigate('/user/organizer-profile')}
+              >
+                Complete Profile
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  sessionStorage.setItem('org_profile_prompt_dismissed', 'true');
+                  setProfilePromptDismissed(true);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="mb-6">

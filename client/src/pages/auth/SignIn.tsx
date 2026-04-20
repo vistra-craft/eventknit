@@ -41,26 +41,6 @@ const AppleIcon = () => (
   </svg>
 );
 
-// Ambient Glow — gentle drift, blue only
-const AmbientGlow = ({
-  className,
-  delay = 0,
-  duration = 30,
-}: {
-  className?: string;
-  delay?: number;
-  duration?: number;
-}) => (
-  <motion.div
-    className={cn('absolute rounded-full blur-3xl', className)}
-    animate={{
-      x: [0, 40, -20, 0],
-      y: [0, -30, 20, 0],
-    }}
-    transition={{ duration, delay, repeat: Infinity, ease: 'easeInOut' }}
-  />
-);
-
 // Feature pill config with individual colors
 const FEATURES = [
   { label: 'Event Analytics', icon: BarChart3, color: 'text-sky-500' },
@@ -386,27 +366,48 @@ const SignIn = () => {
     <div className="min-h-screen w-full flex overflow-hidden bg-background">
       {/* Left Side — clean ambient background */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-background">
-        {/* Two soft blue glows */}
-        <AmbientGlow className="w-[700px] h-[700px] bg-primary/15 -top-60 -left-40" delay={0} duration={30} />
-        <AmbientGlow className="w-[500px] h-[500px] bg-primary/10 bottom-0 right-0" delay={4} duration={35} />
+        {/* Top-left diagonal strips */}
+        <svg className="absolute top-0 left-0 w-72 h-72 pointer-events-none" viewBox="0 0 288 288" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="signin-tl-grad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.1" />
+              <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <line x1="0" y1="0" x2="288" y2="288" stroke="url(#signin-tl-grad)" strokeWidth="1.5" />
+          <line x1="0" y1="40" x2="248" y2="288" stroke="url(#signin-tl-grad)" strokeWidth="1" />
+          <line x1="0" y1="80" x2="208" y2="288" stroke="url(#signin-tl-grad)" strokeWidth="0.6" />
+          <line x1="40" y1="0" x2="288" y2="248" stroke="url(#signin-tl-grad)" strokeWidth="0.6" />
+        </svg>
+        {/* Bottom-right diagonal strips */}
+        <svg className="absolute bottom-0 right-0 w-72 h-72 pointer-events-none" viewBox="0 0 288 288" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="signin-br-grad" x1="1" y1="1" x2="0" y2="0">
+              <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.1" />
+              <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <line x1="288" y1="288" x2="0" y2="0" stroke="url(#signin-br-grad)" strokeWidth="1.5" />
+          <line x1="288" y1="248" x2="40" y2="0" stroke="url(#signin-br-grad)" strokeWidth="1" />
+          <line x1="288" y1="208" x2="80" y2="0" stroke="url(#signin-br-grad)" strokeWidth="0.6" />
+          <line x1="248" y1="288" x2="0" y2="40" stroke="url(#signin-br-grad)" strokeWidth="0.6" />
+        </svg>
 
         {/* Content */}
         <motion.div
-          className="relative z-10 flex flex-col justify-center px-12 xl:px-20"
+          className="relative z-10 flex flex-col justify-center px-8 xl:px-10 mx-auto w-full max-w-lg"
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.7, delay: 0.2 }}
         >
-          <Link to="/">
-            <motion.div
-              className="mb-12"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <Logo />
-            </motion.div>
-          </Link>
+          <motion.div
+            className="mb-12"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Logo />
+          </motion.div>
 
           <motion.h1
             className="text-4xl xl:text-5xl font-bold text-foreground leading-tight mb-6"
@@ -464,7 +465,7 @@ const SignIn = () => {
 
             <div className="relative p-8 sm:p-10">
               {/* Mobile Logo */}
-              <Link to="/" className="flex justify-center lg:hidden">
+              <div className="flex justify-center lg:hidden">
                 <motion.div
                   className="mb-8"
                   initial={{ opacity: 0, y: -20 }}
@@ -473,7 +474,7 @@ const SignIn = () => {
                 >
                   <Logo />
                 </motion.div>
-              </Link>
+              </div>
 
               {/* Header */}
               <motion.div

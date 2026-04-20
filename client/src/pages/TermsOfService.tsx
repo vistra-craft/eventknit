@@ -188,7 +188,7 @@ You may not assign or transfer your rights or obligations under these Terms with
     title: '20. Contact Information',
     content: `If you have questions, concerns, or feedback about these Terms of Service, please contact us through any of the following channels:
 
-For general inquiries and support: support@eventknit.com. For legal matters: legal@eventknit.com. For privacy-related concerns: privacy@eventknit.com.
+For general inquiries and support: support@eventknit.com. For legal matters: hello@festhub.events. For privacy-related concerns: privacy@eventknit.com.
 
 You may also reach us through the support section of our platform at eventknit.com/support. We aim to respond to all inquiries within two (2) business days.`,
   },
@@ -213,7 +213,7 @@ const TermsOfService = () => {
       title="Terms of Service"
       subtitle="These Terms of Service govern your use of the EventKnit platform. Please read them carefully before creating an account or using our services."
       lastUpdated="April 2026"
-      contactEmail="legal@eventknit.com"
+      contactEmail="hello@festhub.events"
       sections={sections}
     />
   );

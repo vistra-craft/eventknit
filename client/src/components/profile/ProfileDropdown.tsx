@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings, LayoutDashboard, MessageSquare } from 'lucide-react';
+import { User, LogOut, Settings, LayoutDashboard, MessageSquare, Building2 } from 'lucide-react';
 import { Avatar } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole, UserStatus } from '@/types/auth';
@@ -87,6 +87,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
     
     // Active organizers use OrganizerLayout; pending/attendee stay in UserLayout
     if (isOrganizerRole && user?.status === UserStatus.ACTIVE) return '/organizer/settings/profile';
+    if (isOrganizerRole && user?.status === UserStatus.PENDING_APPROVAL) return '/user/organizer-profile';
     if (isAdminRole) return '/admin/profile';
     return '/user/settings/profile';
   };
@@ -160,6 +161,14 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
           <User className="w-4 h-4 mr-2" />
           <span>View Profile</span>
         </DropdownMenuItem>
+
+        {/* Organizer profile setup — pending organizers only */}
+        {user.role === UserRole.ORGANIZER && user.status === UserStatus.PENDING_APPROVAL && (
+          <DropdownMenuItem onClick={() => handleNavigate('/user/organizer-profile')}>
+            <Building2 className="w-4 h-4 mr-2 text-primary" />
+            <span className="text-primary font-medium">Complete Org Profile</span>
+          </DropdownMenuItem>
+        )}
 
         {/* Messages */}
         <DropdownMenuItem onClick={() => handleNavigate('/user/messages')}>

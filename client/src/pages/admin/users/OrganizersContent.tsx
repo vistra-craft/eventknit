@@ -14,10 +14,13 @@ import {
   Shield,
   ShieldCheck,
   ShieldAlert,
+  AlertTriangle,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -184,6 +187,10 @@ const OrganizersContent = () => {
   // Sheet
   const [selectedOrganizer, setSelectedOrganizer] = useState<OrganizerUser | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // Suspend dialog
+  const [suspendTarget, setSuspendTarget] = useState<OrganizerUser | null>(null);
+  const [suspendReason, setSuspendReason] = useState('');
 
   // Permissions
   const { canModifyUser, canCreateRole } = usePermissions();
@@ -492,7 +499,7 @@ const OrganizersContent = () => {
                               variant="ghost"
                               size="sm"
                               className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => suspendMutation.mutate({ userId: org.id })}
+                              onClick={() => { setSuspendTarget(org); setSuspendReason(''); }}
                               disabled={suspendMutation.isPending}
                               title="Suspend"
                             >
@@ -536,7 +543,7 @@ const OrganizersContent = () => {
                               )}
                               {org.status === 'ACTIVE' && canModifyOrganizer && (
                                 <>
-                                  <DropdownMenuItem onClick={() => suspendMutation.mutate({ userId: org.id })}>
+                                  <DropdownMenuItem onClick={() => { setSuspendTarget(org); setSuspendReason(''); }}>
                                     <XCircle className="h-4 w-4 mr-2" />
                                     Suspend
                                   </DropdownMenuItem>
@@ -610,6 +617,65 @@ const OrganizersContent = () => {
         onOpenChange={setSheetOpen}
         canModify={canModifyOrganizer}
       />
+
+      {/* Suspension dialog */}
+      <Dialog open={!!suspendTarget} onOpenChange={(open) => { if (!open) setSuspendTarget(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Suspend Organizer
+            </DialogTitle>
+            <DialogDescription>
+              {suspendTarget && (
+                <>
+                  You are about to suspend <strong>{suspendTarget.firstName} {suspendTarget.lastName}</strong>
+                  {suspendTarget.organizationName ? ` (${suspendTarget.organizationName})` : ''}. They will lose access to organizer features immediately. Provide a reason so they know what to address.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                Reason for suspension <span className="text-destructive">*</span>
+              </label>
+              <Textarea
+                placeholder="Describe the reason (e.g. policy violation, fraudulent activity, pending review...)"
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                This reason will be emailed to the organizer.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                variant="outline"
+                onClick={() => setSuspendTarget(null)}
+                disabled={suspendMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={suspendReason.trim().length < 10 || suspendMutation.isPending}
+                onClick={() => {
+                  if (!suspendTarget) return;
+                  suspendMutation.mutate(
+                    { userId: suspendTarget.id, reason: suspendReason.trim() },
+                    { onSuccess: () => setSuspendTarget(null) }
+                  );
+                }}
+              >
+                {suspendMutation.isPending ? 'Suspending...' : 'Suspend Account'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -309,7 +309,8 @@ export const useAuth = () => {
 
       const token = localStorage.getItem('accessToken');
       if (token) {
-        // Try to fetch profile to verify token
+        // Signal that we're verifying — GuestRoute will hold the page blank until done
+        dispatch({ type: 'AUTH_START' });
         try {
           await refreshProfile();
         } catch {

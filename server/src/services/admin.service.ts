@@ -1029,6 +1029,71 @@ export class AdminService {
   }
 
   /**
+   * Suspend an organizer with a reason (manual review gate).
+   * Sets status to PENDING_APPROVAL and stores the reason so the organizer
+   * knows exactly why they cannot access their dashboard.
+   */
+  static async suspendOrganizerWithReason(
+    userId: string,
+    adminId: string,
+    adminRole: UserRole,
+    reason: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const targetUser = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!targetUser) throw new NotFoundError('User not found');
+    if (targetUser.role !== UserRole.ORGANIZER) {
+      throw new ValidationError('Only organizer accounts can be suspended via this action');
+    }
+    if (targetUser.status === UserStatus.DEACTIVATED) {
+      throw new ValidationError('Cannot suspend a deactivated account');
+    }
+
+    validateUserModification(adminRole, targetUser.role);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: UserStatus.PENDING_APPROVAL,
+        suspensionReason: reason,
+        suspendedAt: new Date(),
+        updatedBy: adminId,
+      },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true, status: true, suspensionReason: true },
+    });
+
+    await createAuditLog({
+      userId: adminId,
+      action: AuditActions.USER_STATUS_CHANGED,
+      entity: 'User',
+      entityId: userId,
+      metadata: {
+        organizerEmail: targetUser.email,
+        reason,
+        oldStatus: targetUser.status,
+        newStatus: UserStatus.PENDING_APPROVAL,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    emailService.sendOrganizerSuspendedEmail(targetUser.email, targetUser.firstName || '', reason).catch((err) => {
+      logger.error('Failed to send organizer suspended email:', err);
+    });
+
+    websocketService.emitToRoom(`user:${userId}:notifications`, 'organizer:suspended', {
+      userId,
+      status: 'PENDING_APPROVAL',
+      message: 'Your organizer account has been suspended. Please check your email for details.',
+    });
+
+    logger.info(`Organizer suspended by admin (${adminId}): ${targetUser.email} — reason: ${reason}`);
+    return updatedUser;
+  }
+
+  /**
    * Get attendees with event filtering and registration history
    */
   static async getAttendees(filters: {

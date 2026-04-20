@@ -13,25 +13,6 @@ import { cn } from '@/lib/utils';
 import Logo from '@/components/layout/Logo';
 import { forgotPassword } from '@/lib/auth-api';
 
-// Ambient Glow — gentle drift, blue only
-const AmbientGlow = ({
-  className,
-  delay = 0,
-  duration = 30,
-}: {
-  className?: string;
-  delay?: number;
-  duration?: number;
-}) => (
-  <motion.div
-    className={cn('absolute rounded-full blur-3xl', className)}
-    animate={{
-      x: [0, 40, -20, 0],
-      y: [0, -30, 20, 0],
-    }}
-    transition={{ duration, delay, repeat: Infinity, ease: 'easeInOut' }}
-  />
-);
 
 // Animated Input Component with floating label and icon
 const AnimatedInput = ({
@@ -129,11 +110,51 @@ const ForgotPassword = () => {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden">
-      {/* Ambient background */}
-      <div className="absolute inset-0">
-        <AmbientGlow className="w-[600px] h-[600px] bg-primary/10 -top-40 -left-40" delay={0} duration={30} />
-        <AmbientGlow className="w-[500px] h-[500px] bg-primary/8 bottom-0 right-0" delay={4} duration={35} />
-      </div>
+      {/* Corner diagonal strips */}
+      <svg className="absolute top-0 left-0 w-72 h-72 pointer-events-none" viewBox="0 0 288 288" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="fp-tl-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.09" />
+            <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="0" x2="288" y2="288" stroke="url(#fp-tl-grad)" strokeWidth="1.5" />
+        <line x1="0" y1="48" x2="240" y2="288" stroke="url(#fp-tl-grad)" strokeWidth="1" />
+        <line x1="48" y1="0" x2="288" y2="240" stroke="url(#fp-tl-grad)" strokeWidth="0.6" />
+      </svg>
+      <svg className="absolute top-0 right-0 w-72 h-72 pointer-events-none" viewBox="0 0 288 288" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="fp-tr-grad" x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.09" />
+            <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <line x1="288" y1="0" x2="0" y2="288" stroke="url(#fp-tr-grad)" strokeWidth="1.5" />
+        <line x1="288" y1="48" x2="48" y2="288" stroke="url(#fp-tr-grad)" strokeWidth="1" />
+        <line x1="240" y1="0" x2="0" y2="240" stroke="url(#fp-tr-grad)" strokeWidth="0.6" />
+      </svg>
+      <svg className="absolute bottom-0 left-0 w-72 h-72 pointer-events-none" viewBox="0 0 288 288" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="fp-bl-grad" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.09" />
+            <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="288" x2="288" y2="0" stroke="url(#fp-bl-grad)" strokeWidth="1.5" />
+        <line x1="0" y1="240" x2="240" y2="0" stroke="url(#fp-bl-grad)" strokeWidth="1" />
+        <line x1="48" y1="288" x2="288" y2="48" stroke="url(#fp-bl-grad)" strokeWidth="0.6" />
+      </svg>
+      <svg className="absolute bottom-0 right-0 w-72 h-72 pointer-events-none" viewBox="0 0 288 288" fill="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="fp-br-grad" x1="1" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor="hsl(var(--foreground))" stopOpacity="0.09" />
+            <stop offset="100%" stopColor="hsl(var(--foreground))" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <line x1="288" y1="288" x2="0" y2="0" stroke="url(#fp-br-grad)" strokeWidth="1.5" />
+        <line x1="288" y1="240" x2="48" y2="0" stroke="url(#fp-br-grad)" strokeWidth="1" />
+        <line x1="240" y1="288" x2="0" y2="48" stroke="url(#fp-br-grad)" strokeWidth="0.6" />
+      </svg>
 
       {/* Card */}
       <motion.div
@@ -146,7 +167,7 @@ const ForgotPassword = () => {
 
           <div className="relative p-8 sm:p-10">
             {/* Logo */}
-            <Link to="/" className="flex justify-center">
+            <div className="flex justify-center">
               <motion.div
                 className="mb-8"
                 initial={{ opacity: 0, y: -20 }}
@@ -155,7 +176,7 @@ const ForgotPassword = () => {
               >
                 <Logo />
               </motion.div>
-            </Link>
+            </div>
 
             <AnimatePresence mode="wait">
               {!isSubmitted ? (

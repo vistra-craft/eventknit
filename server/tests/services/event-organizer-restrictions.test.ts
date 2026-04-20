@@ -106,7 +106,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         price: 100,
       };
 
-      const event = await EventService.createEvent(
+      const { event } = await EventService.createEvent(
         eventData,
         pendingOrgId,
         UserRole.ORGANIZER,
@@ -130,7 +130,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         isFree: true,
       };
 
-      const event = await EventService.createEvent(
+      const { event } = await EventService.createEvent(
         eventData,
         pendingOrgId,
         UserRole.ORGANIZER,
@@ -156,7 +156,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         price: 75,
       };
 
-      const event = await EventService.createEvent(
+      const { event } = await EventService.createEvent(
         eventData,
         activeOrgId,
         UserRole.ORGANIZER,
@@ -171,7 +171,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
 
     it('should allow ACTIVE organizer to create multiple events', async () => {
       if (!dbConnected) { logger.info('⏭️  Skipping test - database not connected'); return; }
-      const event1 = await EventService.createEvent(
+      const { event: event1 } = await EventService.createEvent(
         {
           title: 'Active Org Event 1',
           description: 'First event',
@@ -183,7 +183,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         UserRole.ORGANIZER,
       );
 
-      const event2 = await EventService.createEvent(
+      const { event: event2 } = await EventService.createEvent(
         {
           title: 'Active Org Event 2',
           description: 'Second event',
@@ -298,7 +298,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         },
       });
 
-      const event = await EventService.createEvent(
+      const { event: indivEvent } = await EventService.createEvent(
         {
           title: 'Individual Event',
           description: 'Event by individual',
@@ -310,10 +310,10 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         UserRole.ORGANIZER,
       );
 
-      expect(event.organizerId).toBe(individual.id);
+      expect(indivEvent.organizerId).toBe(individual.id);
 
       // Cleanup
-      await prisma.event.delete({ where: { id: event.id } });
+      await prisma.event.delete({ where: { id: indivEvent.id } });
       await prisma.user.delete({ where: { id: individual.id } });
     });
 
@@ -332,7 +332,7 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         },
       });
 
-      const event = await EventService.createEvent(
+      const { event: companyEvent } = await EventService.createEvent(
         {
           title: 'Company Event',
           description: 'Event by company',
@@ -345,10 +345,10 @@ describe('Event Creation & Organizer Status Restrictions', () => {
         UserRole.ORGANIZER,
       );
 
-      expect(event.organizerId).toBe(company.id);
+      expect(companyEvent.organizerId).toBe(company.id);
 
       // Cleanup
-      await prisma.event.delete({ where: { id: event.id } });
+      await prisma.event.delete({ where: { id: companyEvent.id } });
       await prisma.user.delete({ where: { id: company.id } });
     });
   });

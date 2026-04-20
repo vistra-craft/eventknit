@@ -189,7 +189,7 @@ We encourage you to review this Privacy Policy periodically to stay informed abo
     title: '17. Contact Us',
     content: `If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, you can reach us through the following channels:
 
-For privacy inquiries and data subject requests: privacy@eventknit.com. For general support: support@eventknit.com. For legal matters: legal@eventknit.com.
+For privacy inquiries and data subject requests: privacy@eventknit.com. For general support: support@eventknit.com. For legal matters: hello@festhub.events.
 
 You may also reach us through the support section of our platform at eventknit.com/support. Our Privacy Team aims to respond to all inquiries within two (2) business days and to resolve data subject requests within thirty (30) days.
 

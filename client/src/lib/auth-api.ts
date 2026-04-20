@@ -156,6 +156,28 @@ export const login = async (credentials: LoginCredentials): Promise<LoginRespons
 };
 
 /**
+ * Request email verification code (for existing unverified user)
+ */
+export const requestEmailVerification = async (email: string): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/verify-email/request', { email });
+};
+
+/**
+ * Check-only: validate OTP without marking it used or requiring user to exist.
+ * Use this during registration to give immediate feedback at the OTP step.
+ */
+export const checkEmailVerificationCode = async (email: string, code: string): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/verify-email/check', { email, code });
+};
+
+/**
+ * Confirm email verification with OTP code (marks code as used, requires user to exist)
+ */
+export const confirmEmailVerification = async (email: string, code: string): Promise<ApiResponse<void>> => {
+  return apiPost<ApiResponse<void>>('/auth/verify-email/confirm', { email, code });
+};
+
+/**
  * Register new user
  */
 export const register = async (data: RegisterData): Promise<RegisterResponse> => {

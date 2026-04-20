@@ -577,7 +577,7 @@ All legal pages (Terms, Privacy, Cookies) use a shared `LegalPage` component:
 - Uses `MinimalHeader` + `LegalFooter` layout components
 
 **Content Pages (data-only, delegate rendering to LegalPage):**
-- `pages/TermsOfService.tsx` — 16 sections, contact: legal@eventknit.com
+- `pages/TermsOfService.tsx` — 16 sections, contact: hello@festhub.events
 - `pages/PrivacyPolicy.tsx` — 12 sections, contact: privacy@eventknit.com
 - `pages/CookiePolicy.tsx` — 9 sections, contact: privacy@eventknit.com
 

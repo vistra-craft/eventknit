@@ -114,6 +114,7 @@ export interface TicketType {
   earlyBirdQuantity?: string; // Max tickets at early bird price
   salesChannel?: 'online' | 'door' | 'both'; // Where ticket can be sold
   isHidden?: boolean; // Hidden ticket (only via promo code or direct link)
+  features?: string[]; // Bullet-point perks shown on the ticket card
 }
 
 export interface PromoCode {
@@ -176,6 +177,8 @@ export interface EventFormData {
   refundPolicy?: 'no_refunds' | 'full_refund' | 'partial_refund' | 'custom';
   refundDeadlineDays?: number; // Days before event for refund eligibility
   refundPolicyText?: string; // Custom refund policy text
+  duration?: string; // e.g. "2 hours", "3 days"
+  bannerImage?: string; // Banner/header image (distinct from cover image)
   // Seating configuration
   hasSeatingMap?: boolean;
   seatingType?: 'CUSTOMER_SELECTS' | 'ORGANIZER_ASSIGNS' | 'HYBRID' | '';

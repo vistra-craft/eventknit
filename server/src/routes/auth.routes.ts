@@ -152,6 +152,18 @@ router.post(
 );
 
 /**
+ * @route   POST /api/v1/auth/verify-email/check
+ * @desc    Validate OTP code without marking it used (used during registration before account creation)
+ * @access  Public
+ */
+router.post(
+  '/verify-email/check',
+  authRateLimiter,
+  validate(authValidations.confirmEmailVerification),
+  AuthController.checkEmailVerification,
+);
+
+/**
  * @route   POST /api/v1/auth/verify-email/confirm
  * @desc    Confirm email verification with code
  * @access  Public

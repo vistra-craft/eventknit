@@ -32,6 +32,8 @@ interface Event {
   organizerId?: string;
   organizerVerified?: boolean;
   organizerVerificationLevel?: number;
+  organizerKycStatus?: string | null;
+  organizerEntityType?: string | null;
   date: string;
   startDate?: string;
   startTime?: string;
@@ -146,6 +148,8 @@ const PendingApprovalPage = () => {
             organizerId: event.organizer?.id,
             organizerVerified: Boolean(event.organizer?.isIdentityVerified),
             organizerVerificationLevel: event.organizer?.verificationLevel ?? 1,
+            organizerKycStatus: (event.organizer as { kycStatus?: string | null } | null)?.kycStatus ?? null,
+            organizerEntityType: (event.organizer as { organizerEntityType?: string | null } | null)?.organizerEntityType ?? null,
             date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
             startDate: event.startDate,
             startTime: event.startTime || '',
@@ -437,20 +441,46 @@ const PendingApprovalPage = () => {
                         <span>Submitted {getDaysSinceSubmission(event.submittedDate)} days ago</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center flex-wrap gap-2 mb-2">
                       <p className="text-sm text-muted-foreground">by {event.organizer}</p>
-                      {!event.isFree && !event.organizerVerified && (
-                        <Badge className="bg-warning/10 text-warning border-warning/20 text-xs flex items-center gap-1">
-                          <Shield className="h-3 w-3" />
-                          Unverified Organizer
+                      {event.organizerEntityType && (
+                        <Badge className="bg-muted text-muted-foreground border-border text-xs">
+                          {event.organizerEntityType}
                         </Badge>
                       )}
-                      {!event.isFree && event.organizerVerified && (
-                        <Badge className="bg-success-light text-success border-success/20 text-xs flex items-center gap-1">
-                          <Shield className="h-3 w-3" />
-                          Verified
-                        </Badge>
-                      )}
+                      {!event.isFree && (() => {
+                        const kyc = event.organizerKycStatus;
+                        if (kyc === 'APPROVED') {
+                          return (
+                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs flex items-center gap-1">
+                              <Shield className="h-3 w-3" />
+                              KYC Approved
+                            </Badge>
+                          );
+                        }
+                        if (kyc === 'PENDING') {
+                          return (
+                            <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs flex items-center gap-1">
+                              <Shield className="h-3 w-3" />
+                              KYC Pending
+                            </Badge>
+                          );
+                        }
+                        if (kyc === 'REJECTED') {
+                          return (
+                            <Badge className="bg-red-500/10 text-red-600 border-red-500/20 text-xs flex items-center gap-1">
+                              <Shield className="h-3 w-3" />
+                              KYC Rejected
+                            </Badge>
+                          );
+                        }
+                        return (
+                          <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-xs flex items-center gap-1">
+                            <Shield className="h-3 w-3" />
+                            KYC Required
+                          </Badge>
+                        );
+                      })()}
                     </div>
                     {event.isRecalled && event.recallReason && (
                       <Alert className="mb-2 border-orange-500/20 bg-orange-500/5">
@@ -622,9 +652,23 @@ const PendingApprovalPage = () => {
                 </AlertDescription>
               </Alert>
               {eventToApprove && (
-                <div className="text-sm space-y-2 rounded-lg border border-border p-3 bg-muted/30">
+                <div className="text-sm space-y-1.5 rounded-lg border border-border p-3 bg-muted/30">
                   <p><strong>Event:</strong> {eventToApprove.title}</p>
                   <p><strong>Organizer:</strong> {eventToApprove.organizerName || eventToApprove.organizer}</p>
+                  {eventToApprove.organizerEntityType && (
+                    <p><strong>Entity type:</strong> {eventToApprove.organizerEntityType}</p>
+                  )}
+                  <p>
+                    <strong>KYC status:</strong>{' '}
+                    <span className={
+                      eventToApprove.organizerKycStatus === 'APPROVED' ? 'text-emerald-600' :
+                      eventToApprove.organizerKycStatus === 'PENDING' ? 'text-amber-600' :
+                      eventToApprove.organizerKycStatus === 'REJECTED' ? 'text-red-600' :
+                      'text-orange-600'
+                    }>
+                      {eventToApprove.organizerKycStatus ?? 'Not started'}
+                    </span>
+                  </p>
                 </div>
               )}
             </div>

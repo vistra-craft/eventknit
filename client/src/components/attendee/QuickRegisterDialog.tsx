@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -377,9 +378,9 @@ export function QuickRegisterDialog({
           <Checkbox id="qr-terms" required />
           <Label htmlFor="qr-terms" className="font-normal text-sm text-muted-foreground leading-snug">
             Attendee agrees to the{' '}
-            <a href="/terms-of-service" target="_blank" className="text-primary hover:underline">Terms of Service</a>
+            <Link to="/terms-of-service" target="_blank" className="text-primary hover:underline">Terms of Service</Link>
             {' '}and{' '}
-            <a href="/privacy-policy" target="_blank" className="text-primary hover:underline">Privacy Policy</a>.
+            <Link to="/privacy-policy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>.
             Their information will be shared with the event organizer.
           </Label>
         </div>

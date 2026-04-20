@@ -84,7 +84,7 @@ function FooterLinkGroup({
 }) {
   return (
     <div>
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-orange-400 mb-4">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-4">
         {title}
       </h3>
       <ul className="space-y-3">
@@ -92,7 +92,7 @@ function FooterLinkGroup({
           <li key={link.to}>
             <Link
               to={link.to}
-              className="text-sm text-neutral-400 dark:text-muted-foreground hover:text-white dark:hover:text-foreground transition-colors duration-200"
+              className="text-sm text-neutral-600 dark:text-muted-foreground hover:text-neutral-900 dark:hover:text-foreground transition-colors duration-200"
             >
               {link.label}
             </Link>
@@ -107,9 +107,9 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-neutral-950 dark:bg-background border-t border-orange-500/20 dark:border-border">
+    <footer className="bg-neutral-100 dark:bg-background border-t border-orange-500/20 dark:border-border">
       {/* Orange accent line at top */}
-      <div className="h-0.5 bg-gradient-to-r from-orange-600 via-orange-500 to-orange-600 dark:from-orange-500/40 dark:via-orange-500/60 dark:to-orange-500/40" />
+      <div className="h-0.5 bg-gradient-to-r from-orange-500/50 via-orange-500 to-orange-500/50 dark:from-orange-500/40 dark:via-orange-500/60 dark:to-orange-500/40" />
 
       <div className="container mx-auto px-6 lg:px-8">
         {/* Link columns */}
@@ -120,7 +120,7 @@ const Footer = () => {
 
           {/* Get the app column */}
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-orange-400 mb-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400 mb-4">
               Get the App
             </h3>
             <div className="flex gap-3">
@@ -128,7 +128,7 @@ const Footer = () => {
                 href="#"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-700/60 dark:border-border bg-neutral-900 dark:bg-card hover:border-orange-500/40 hover:bg-neutral-800 dark:hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-border bg-white dark:bg-card hover:border-orange-500/40 hover:bg-neutral-50 dark:hover:bg-muted transition-colors"
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none">
                   <path d="M3.609 1.814 13.792 12 3.61 22.186a2.372 2.372 0 0 1-.109-.712V2.526c0-.249.037-.489.109-.712z" fill="#4285F4" />
@@ -137,22 +137,22 @@ const Footer = () => {
                   <path d="M3.609 1.814A2.405 2.405 0 0 1 5.264 1c.46 0 .919.132 1.313.396l.015.009 9.024 5.21-2.879 2.879-9.128-7.68z" fill="#EA4335" />
                 </svg>
                 <div>
-                  <div className="text-[10px] text-neutral-500 dark:text-muted-foreground leading-none">Download on</div>
-                  <div className="text-sm font-semibold text-white dark:text-foreground leading-tight">Google Play</div>
+                  <div className="text-[10px] text-neutral-500 leading-none">Download on</div>
+                  <div className="text-sm font-semibold text-neutral-900 dark:text-foreground leading-tight">Google Play</div>
                 </div>
               </a>
               <a
                 href="#"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-700/60 dark:border-border bg-neutral-900 dark:bg-card hover:border-orange-500/40 hover:bg-neutral-800 dark:hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-border bg-white dark:bg-card hover:border-orange-500/40 hover:bg-neutral-50 dark:hover:bg-muted transition-colors"
               >
-                <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 text-white" fill="currentColor">
+                <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 text-neutral-900 dark:text-white" fill="currentColor">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
                 </svg>
                 <div>
-                  <div className="text-[10px] text-neutral-500 dark:text-muted-foreground leading-none">Download on</div>
-                  <div className="text-sm font-semibold text-white dark:text-foreground leading-tight">App Store</div>
+                  <div className="text-[10px] text-neutral-500 leading-none">Download on</div>
+                  <div className="text-sm font-semibold text-neutral-900 dark:text-foreground leading-tight">App Store</div>
                 </div>
               </a>
             </div>
@@ -160,29 +160,29 @@ const Footer = () => {
         </div>
 
         {/* Bottom bar — brand left, social right */}
-        <div className="border-t border-neutral-800 dark:border-border py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="border-t border-neutral-200 dark:border-border py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           {/* Brand + copyright */}
           <div className="flex items-center gap-3">
             <Link to="/" className="inline-flex items-center gap-2">
               <span className="text-xl font-bold tracking-tight">
-                <span className="text-white dark:text-foreground">Event</span>
+                <span className="text-neutral-900 dark:text-foreground">Event</span>
                 <span className="text-orange-500">Knit</span>
               </span>
             </Link>
-            <span className="hidden sm:inline text-neutral-700 dark:text-border">|</span>
-            <p className="text-xs text-neutral-500 dark:text-muted-foreground">
+            <span className="hidden sm:inline text-neutral-300 dark:text-border">|</span>
+            <p className="text-xs text-neutral-500">
               &copy; {currentYear} EventKnit. All rights reserved.
             </p>
           </div>
 
           {/* Social row */}
           <div className="flex items-center gap-1">
-            <span className="text-xs text-neutral-500 dark:text-muted-foreground mr-2 hidden sm:inline">Follow us on:</span>
+            <span className="text-xs text-neutral-500 mr-2 hidden sm:inline">Follow us on:</span>
             {SOCIALS.map((social) => (
               <a
                 key={social.label}
                 href={social.href}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-neutral-500 dark:text-muted-foreground hover:text-orange-400 hover:bg-orange-500/10 transition-colors duration-200"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-neutral-400 dark:text-muted-foreground hover:text-orange-500 dark:hover:text-orange-400 hover:bg-orange-500/10 transition-colors duration-200"
                 aria-label={social.label}
                 target="_blank"
                 rel="noopener noreferrer"

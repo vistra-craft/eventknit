@@ -3,7 +3,8 @@
     "allow": [
       "Read(//Users/mac/Documents/projects/events/eventknit_mobile/**)",
       "Bash(cat /Users/mac/Documents/projects/events/eventknit/client/.env*)",
-      "Bash(/Users/mac/Flutter/flutter/bin/flutter test:*)"
+      "Bash(/Users/mac/Flutter/flutter/bin/flutter test:*)",
+      "Read(//Users/mac/Documents/projects/Other/smart-purchase/ecommerce-frontend/**)"
     ],
     "additionalDirectories": [
       "/Users/mac/Documents/projects/events/eventknit_mobile/lib/domain/usecases",

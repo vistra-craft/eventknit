@@ -217,6 +217,13 @@ router.post('/users/:id/activate', AdminController.activateUser);
 router.post('/users/:id/approve', AdminController.approveOrganizer);
 
 /**
+ * @route   POST /api/v1/admin/users/:id/suspend
+ * @desc    Suspend an organizer with a reason (ACTIVE -> PENDING_APPROVAL + reason stored)
+ * @access  Private (ADMIN+)
+ */
+router.post('/users/:id/suspend', AdminController.suspendOrganizerWithReason);
+
+/**
  * @route   GET /api/v1/admin/events/:id
  * @desc    Get event details (admin can view any event regardless of status)
  * @access  Private (ADMIN+)

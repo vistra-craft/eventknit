@@ -85,17 +85,20 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={dashboardRoute} replace />;
   }
 
-  // Gate: PENDING_APPROVAL organizers cannot access organizer routes
-  // Exception: Allow access to settings and profile-setup so they can manage their own profile
-  const isPendingAllowedPath =
-    location.pathname.startsWith('/organizer/settings') ||
-    location.pathname.startsWith('/organizer/profile');
+  // Gate: PENDING_APPROVAL organizers cannot access any organizer routes.
+  // Profile setup is handled at /user/organizer-profile inside the user layout.
   if (
     user.role === UserRole.ORGANIZER &&
     user.status === UserStatus.PENDING_APPROVAL &&
-    location.pathname.startsWith('/organizer') &&
-    !isPendingAllowedPath
+    location.pathname.startsWith('/organizer')
   ) {
+    // If they try to reach settings or profile, send them to the user-layout equivalent
+    if (
+      location.pathname.startsWith('/organizer/settings') ||
+      location.pathname.startsWith('/organizer/profile')
+    ) {
+      return <Navigate to="/user/organizer-profile" replace />;
+    }
     return <Navigate to="/user/dashboard" replace />;
   }
 
@@ -122,7 +125,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     user.role === UserRole.ORGANIZER &&
     user.status === UserStatus.ACTIVE &&
     location.pathname.startsWith('/user') &&
-    !hasPendingApprovalModal
+    !hasPendingApprovalModal &&
+    user.onboardingCompleted
   ) {
     return <Navigate to="/organizer/dashboard" replace />;
   }
@@ -139,8 +143,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const isPendingApproval = user.status === UserStatus.PENDING_APPROVAL;
 
   if (isOrganizer && !isOnboardingPage && !isPendingApproval && user.role === UserRole.ORGANIZER && !user.onboardingCompleted && !hasPendingApprovalModal) {
-    // Redirect to onboarding if organizer hasn't completed onboarding
-    return <Navigate to="/organizer/onboarding" replace />;
+    // Incomplete organizers stay on the user (attendee) dashboard — no organizer sidebar visible
+    return <Navigate to="/user/dashboard" replace />;
   }
 
   return <>{children}</>;

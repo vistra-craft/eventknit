@@ -149,10 +149,16 @@ const ENTITY_TYPES = [
     description: 'Professional partnerships (accountants, advocates)',
     icon: Building2
   },
-  { 
-    value: 'TRUST', 
-    label: 'Trust', 
+  {
+    value: 'TRUST',
+    label: 'Trust',
     description: 'Registered or unregistered trusts',
+    icon: Building2
+  },
+  {
+    value: 'OTHER',
+    label: 'Other',
+    description: 'Other entity types not listed above',
     icon: Building2
   },
 ];

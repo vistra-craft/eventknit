@@ -62,60 +62,30 @@ export type AttendeeStep2Data = z.infer<typeof attendeeStep2Schema>;
 export type AttendeeStep3Data = z.infer<typeof attendeeStep3Schema>;
 
 /**
- * Organizer Registration - Step 1 (Event Preferences)
+ * Organizer Registration — email-first, 2-screen flow
+ *
+ * Screen 1 (email gate): just email — stored in local state, no schema needed
+ * Screen 2 (details):    name, password, phone, organization
+ *
+ * Only fields the backend actually accepts are collected.
  */
-export const organizerStep1Schema = z.object({
-  eventTypes: z.array(z.string()).min(1, 'Select at least one event type'),
-  organizationType: requiredString('Organization type'),
-  eventsPerYear: requiredString('Events per year'),
-  isRecurringSeries: z.boolean(),
+const organizerDetailsFields = z.object({
+  email: emailSchema,
+  firstName: requiredString('First name'),
+  lastName: requiredString('Last name'),
+  password: passwordSchema,
+  confirmPassword: z.string(),
+  phoneNumber: phoneSchema,
+  organizationName: requiredString('Organization name'),
+  businessEmail: emailSchema.optional().or(z.literal('')),
 });
 
-/**
- * Organizer Registration - Step 2 (Basic Info)
- */
-export const organizerStep2Schema = z
-  .object({
-    firstName: requiredString('First name'),
-    lastName: requiredString('Last name'),
-    email: emailSchema,
-    password: passwordSchema,
-    confirmPassword: z.string(),
-    phoneNumber: phoneSchema,
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
-
-/**
- * Organizer Registration - Step 3 (Business Info & KYC)
- */
-export const organizerStep3Schema = z.object({
-  businessName: requiredString('Business name'),
-  businessType: requiredString('Business type'),
-  taxId: requiredString('Tax ID / EIN'),
-  address: requiredString('Business address'),
-  city: requiredString('City'),
-  state: requiredString('State'),
-  zipCode: requiredString('ZIP code'),
-  country: z.string().optional(),
-  idDocument: z.instanceof(File).optional().nullable(),
-  businessLicense: z.instanceof(File).optional().nullable(),
-  taxDocument: z.instanceof(File).optional().nullable(),
-});
-
-/**
- * Complete Organizer Registration Schema
- */
-export const organizerRegistrationSchema = organizerStep1Schema
-  .merge(organizerStep2Schema)
-  .merge(organizerStep3Schema);
+export const organizerRegistrationSchema = organizerDetailsFields.refine(
+  (data) => data.password === data.confirmPassword,
+  { message: 'Passwords do not match', path: ['confirmPassword'] },
+);
 
 export type OrganizerRegistrationData = z.infer<typeof organizerRegistrationSchema>;
-export type OrganizerStep1Data = z.infer<typeof organizerStep1Schema>;
-export type OrganizerStep2Data = z.infer<typeof organizerStep2Schema>;
-export type OrganizerStep3Data = z.infer<typeof organizerStep3Schema>;
 
 /**
  * Simple Registration (Email + Password only)

@@ -113,38 +113,18 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
 
   // ── Style computation ──────────────────────────────────────
 
-  const isTransparentMode = transparent && !isScrolled;
-
-  const navBg = isTransparentMode
-    ? "bg-transparent border-transparent"
-    : "bg-background/95 backdrop-blur-xl border-border shadow-sm";
-
-  const textColor = isTransparentMode
-    ? "text-white/90 hover:text-white"
-    : "text-muted-foreground hover:text-foreground";
-
-  const textColorHover = isTransparentMode
-    ? "hover:bg-white/10"
-    : "hover:bg-muted";
+  const navBg = "bg-neutral-50/95 dark:bg-background/95 backdrop-blur-xl border-border shadow-sm";
+  const textColor = "text-neutral-700 dark:text-muted-foreground hover:text-foreground";
+  const textColorHover = "hover:bg-muted";
 
   // ── Mobile menu items ──────────────────────────────────────
 
-  const mobileItems = [
-    { label: "Create Event", onClick: () => { handleCreateEvent(); setIsMobileMenuOpen(false); } },
-  ];
-
-  if (!isAuthenticated) {
-    mobileItems.push(
-      { label: "Login", onClick: () => { navigate("/auth/signin"); setIsMobileMenuOpen(false); } },
-    );
-  }
+  const mobileItems = isAuthenticated
+    ? [{ label: "Create Event", onClick: () => { handleCreateEvent(); setIsMobileMenuOpen(false); } }]
+    : [{ label: "Sign in", onClick: () => { navigate("/auth/signin"); setIsMobileMenuOpen(false); } }];
 
   return (
     <nav className={`fixed left-0 right-0 top-0 z-[9999] border-b transition-all duration-500 ${navBg}`}>
-      {/* Dark gradient scrim — ensures text reads on any hero image, including white */}
-      {isTransparentMode && (
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-transparent pointer-events-none" />
-      )}
       <div className={`relative mx-auto px-6 lg:px-8 transition-all duration-500 ${isScrolled ? "container" : ""}`}>
         <div className="flex items-center h-[72px] justify-between">
 
@@ -155,12 +135,14 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
 
           {/* Desktop actions */}
           <div className="hidden md:flex items-center gap-2">
-            <button
-              onClick={handleCreateEvent}
-              className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${textColor} ${textColorHover} hover:text-orange-500 dark:hover:text-orange-400`}
-            >
-              Create Event
-            </button>
+            {isAuthenticated && (
+              <button
+                onClick={handleCreateEvent}
+                className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${textColor} ${textColorHover} hover:text-orange-500 dark:hover:text-orange-400`}
+              >
+                Create Event
+              </button>
+            )}
 
             {!isAuthenticated && (
               <>
@@ -168,17 +150,13 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                   onClick={() => navigate("/auth/signin")}
                   className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${textColor} ${textColorHover}`}
                 >
-                  Login
+                  Sign in
                 </button>
                 <button
-                  onClick={() => navigate("/auth/signup")}
-                  className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
-                    isTransparentMode
-                      ? "border border-white/30 text-white hover:bg-white/10"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90"
-                  }`}
+                  onClick={() => navigate("/get-started")}
+                  className="text-sm font-medium px-4 py-2 rounded-lg transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  Sign Up
+                  Get Started
                 </button>
               </>
             )}
@@ -194,7 +172,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
               variant="ghost"
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={isTransparentMode ? "text-white hover:bg-white/10" : ""}
+              className=""
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
@@ -218,7 +196,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: EASE }}
-            className="md:hidden bg-background border-t border-border overflow-hidden"
+            className="md:hidden bg-neutral-50 dark:bg-background border-t border-border overflow-hidden"
           >
             <div className="container mx-auto px-6 lg:px-8 py-3 space-y-1">
               {mobileItems.map((item, i) => (
@@ -228,7 +206,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, ease: EASE, delay: i * 0.04 }}
                   onClick={item.onClick}
-                  className="block w-full text-left px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-medium transition-colors"
+                  className="block w-full text-left px-3 py-2.5 rounded-lg text-neutral-700 dark:text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-medium transition-colors"
                 >
                   {item.label}
                 </motion.button>
@@ -239,10 +217,10 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, ease: EASE, delay: mobileItems.length * 0.04 }}
-                  onClick={() => { navigate("/auth/signup"); setIsMobileMenuOpen(false); }}
+                  onClick={() => { navigate("/get-started"); setIsMobileMenuOpen(false); }}
                   className="block w-full text-center px-3 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors mt-2"
                 >
-                  Sign Up
+                  Get Started
                 </motion.button>
               )}
 
@@ -258,7 +236,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, ease: EASE, delay: (mobileItems.length + i + 1) * 0.04 }}
                       onClick={item.onClick}
-                      className="block w-full text-left px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-medium transition-colors"
+                      className="block w-full text-left px-3 py-2.5 rounded-lg text-neutral-700 dark:text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-medium transition-colors"
                     >
                       {item.label}
                     </motion.button>

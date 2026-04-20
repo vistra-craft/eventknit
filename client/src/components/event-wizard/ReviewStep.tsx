@@ -370,7 +370,26 @@ export function ReviewStep({
             <p className="text-sm font-medium">{eventData.ageRestriction}</p>
           </div>
         )}
+
+        {eventData.duration && (
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-0.5">Duration</p>
+            <p className="text-sm font-medium">{eventData.duration}</p>
+          </div>
+        )}
       </div>
+
+      {/* ── Banner Image ── */}
+      {eventData.bannerImage && (
+        <div>
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">Banner Image</p>
+          <img
+            src={eventData.bannerImage}
+            alt="Event banner"
+            className="w-full h-24 object-cover rounded-lg"
+          />
+        </div>
+      )}
 
       {/* ── Description ── */}
       {eventData.description && (
@@ -400,6 +419,13 @@ export function ReviewStep({
                   </span>
                   {ticket.description && (
                     <span className="text-xs text-muted-foreground line-clamp-1">{stripHtml(ticket.description)}</span>
+                  )}
+                  {ticket.features && ticket.features.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {ticket.features.map((f, fi) => (
+                        <span key={fi} className="inline-block text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{f}</span>
+                      ))}
+                    </div>
                   )}
                 </div>
                 {ticket.isComplementary && (

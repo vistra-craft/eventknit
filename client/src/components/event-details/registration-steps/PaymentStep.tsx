@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
@@ -395,9 +396,9 @@ export const PaymentStep = ({
       <Alert>
         <AlertDescription className="text-xs">
           By completing this purchase, you agree to our{' '}
-          <a href="/terms-of-service#refund-policy" className="text-primary hover:underline">
+          <Link to="/terms-of-service#refund-policy" className="text-primary hover:underline">
             refund policy
-          </a>
+          </Link>
           . Refunds are available up to 48 hours before the event.
         </AlertDescription>
       </Alert>

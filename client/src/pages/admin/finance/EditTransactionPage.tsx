@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Save, X, Info } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,7 +88,7 @@ const EditTransactionPage = () => {
           <Info className="h-4 w-4" />
           <AlertDescription>
             Payment transactions are automatically recorded from the payment system.
-            For manual entries, use the <a href="/admin/finance/income" className="underline font-medium">Income</a> or <a href="/admin/finance/expenses" className="underline font-medium">Expenses</a> pages.
+            For manual entries, use the <Link to="/admin/finance/income" className="underline font-medium">Income</Link> or <Link to="/admin/finance/expenses" className="underline font-medium">Expenses</Link> pages.
           </AlertDescription>
         </Alert>
 

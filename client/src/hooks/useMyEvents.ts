@@ -4,7 +4,7 @@
  * Fetches attending, organizing, and saved events
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getUserRegisteredEvents } from '../lib/event-api';
 import { getOrganizerEvents } from '../lib/organizer-api';
 import { getSavedEvents } from '../lib/saved-events-api';
@@ -98,6 +98,10 @@ export const useMyEvents = (): UseMyEventsReturn => {
                      user?.role === UserRole.ORGANIZER_ADMIN ||
                      user?.role === UserRole.ORGANIZER_TELLER;
 
+  // Keep a ref so fetchOrganizing can read the latest value without being in its dep array
+  const canOrganizeRef = useRef(canOrganize);
+  canOrganizeRef.current = canOrganize;
+
   // State
   const [attendingEvents, setAttendingEvents] = useState<AttendingEvent[]>([]);
   const [organizingEvents, setOrganizingEvents] = useState<OrganizingEvent[]>([]);
@@ -140,9 +144,9 @@ export const useMyEvents = (): UseMyEventsReturn => {
     }
   }, []);
 
-  // Fetch organizing events
+  // Fetch organizing events — reads canOrganize from ref so this callback is stable ([] deps)
   const fetchOrganizing = useCallback(async () => {
-    if (!canOrganize) {
+    if (!canOrganizeRef.current) {
       setOrganizingEvents([]);
       setOrganizingLoading(false);
       return;
@@ -183,7 +187,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
     } finally {
       setOrganizingLoading(false);
     }
-  }, [canOrganize]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch saved events
   const fetchSaved = useCallback(async () => {
@@ -235,14 +239,12 @@ export const useMyEvents = (): UseMyEventsReturn => {
     await Promise.all([fetchAttending(), fetchOrganizing(), fetchSaved()]);
   }, [fetchAttending, fetchOrganizing, fetchSaved]);
 
-  // Initial fetch
+  // Initial fetch — runs once on mount (all callbacks are stable [] refs)
   useEffect(() => {
     fetchAttending();
-    if (canOrganize) {
-      fetchOrganizing();
-    }
+    fetchOrganizing(); // internally checks canOrganizeRef, no-ops if user can't organize
     fetchSaved();
-  }, [fetchAttending, fetchOrganizing, fetchSaved, canOrganize]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loading = attendingLoading || organizingLoading || savedLoading;
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import {
   CheckCircle2,
   Ticket,
@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
-import CheckoutHeader from '@/components/layout/CheckoutHeader';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { useAuth } from "@/hooks/useAuth";
 import { getEventById } from "@/lib/event-api";
 import type { EventData } from "@/types/event";
-import { shareEvent } from "@/lib/utils/share";
 import { useToast } from "@/hooks/useToast";
 import { downloadTicketPDF, downloadTicketPDFPublic, resendTicketEmail } from "@/lib/ticket-api";
 
@@ -201,30 +201,55 @@ const RegistrationConfirmation: React.FC = () => {
   };
 
   const handleShareEvent = async () => {
-    const shared = await shareEvent(getTitle(), eventId || confirmationData?.eventId || "");
-    if (shared) {
+    const url = `${window.location.origin}/event/${eventId || confirmationData?.eventId || ""}`;
+    const title = getTitle();
+
+    // Try native share sheet first (works well on mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text: `Check out this event: ${title}`, url });
+        return; // native share handled it
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return; // user dismissed — do nothing
+        // any other error: fall through to clipboard
+      }
+    }
+
+    // Clipboard fallback
+    try {
+      await navigator.clipboard.writeText(url);
       toast({ title: "Link copied!", description: "Event link has been copied to your clipboard." });
-    } else {
-      toast({ title: "Couldn't share", description: "Please copy the URL from the address bar manually.", variant: "destructive" });
+    } catch {
+      toast({
+        title: "Couldn't copy link",
+        description: "Please copy the URL from the address bar manually.",
+        variant: "destructive",
+      });
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader size="lg" />
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center" style={{ paddingTop: 72 }}>
+          <Loader size="lg" />
+        </main>
       </div>
     );
   }
 
   if (!confirmationData && !eventData) {
     return (
-      <div className="min-h-screen bg-background">
-        <CheckoutHeader />
-        <div className="max-w-lg mx-auto px-4 py-16 text-center">
-          <p className="text-muted-foreground mb-4">Confirmation data not found.</p>
-          <Button onClick={() => navigate("/")}>Go Home</Button>
-        </div>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center px-4" style={{ paddingTop: 72 }}>
+          <div className="text-center space-y-4">
+            <p className="text-muted-foreground">Confirmation data not found.</p>
+            <Button onClick={() => navigate("/")}>Go Home</Button>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -233,10 +258,16 @@ const RegistrationConfirmation: React.FC = () => {
   const ticketSummary = confirmationData?.tickets?.filter(t => t.quantity > 0) || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-background">
-      <CheckoutHeader backLink="/" backLabel="Back to Events" />
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Soft success atmosphere — reinforces the confirmed state */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute top-[12%] left-1/2 -translate-x-1/2 w-[560px] h-[560px] rounded-full bg-success/[0.06] dark:bg-success/[0.04] blur-3xl" />
+      </div>
 
-      <main className="max-w-lg mx-auto px-4 py-8 space-y-6">
+      <Navbar />
+
+      <main className="flex-1 pt-[88px] pb-10">
+      <div className="max-w-lg mx-auto px-4 py-8 space-y-6">
         {/* Success Header */}
         <div className="text-center space-y-3">
           <div className="mx-auto w-14 h-14 rounded-full bg-success/10 flex items-center justify-center">
@@ -246,11 +277,6 @@ const RegistrationConfirmation: React.FC = () => {
           <p className="text-muted-foreground">
             Your spot for <span className="font-medium text-foreground">{getTitle()}</span> is confirmed.
           </p>
-          {confirmationData?.registrationId && (
-            <p className="text-xs text-muted-foreground font-mono">
-              ID: {confirmationData.registrationId.slice(0, 8)}...
-            </p>
-          )}
         </div>
 
         {/* Email Notice */}
@@ -388,7 +414,7 @@ const RegistrationConfirmation: React.FC = () => {
         {/* Help */}
         <p className="text-center text-xs text-muted-foreground pt-4">
           Need help?{" "}
-          <a href="/support" className="text-primary hover:underline">Contact support</a>
+          <Link to="/support" className="text-primary hover:underline">Contact support</Link>
           {eventId && (
             <>
               {" "}or{" "}
@@ -401,7 +427,9 @@ const RegistrationConfirmation: React.FC = () => {
             </>
           )}
         </p>
+      </div>
       </main>
+      <Footer />
     </div>
   );
 };

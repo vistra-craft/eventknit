@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { MoreHorizontal, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -181,10 +182,10 @@ export default function EventReportsTab() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <a href={`/event/${report.eventId}`} target="_blank" rel="noopener noreferrer">
+                            <Link to={`/event/${report.eventId}`} target="_blank" rel="noopener noreferrer">
                               <ExternalLink className="h-4 w-4 mr-2" />
                               View Event
-                            </a>
+                            </Link>
                           </DropdownMenuItem>
                           {report.status !== 'INVESTIGATING' && (
                             <DropdownMenuItem

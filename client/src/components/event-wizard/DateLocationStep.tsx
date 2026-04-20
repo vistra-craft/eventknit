@@ -291,6 +291,22 @@ export function DateLocationStep({
         </div>
       </div>
 
+      {/* Duration */}
+      <div className="space-y-2">
+        <Label htmlFor="duration">Duration <span className="text-muted-foreground font-normal">(optional)</span></Label>
+        <div className="relative">
+          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            id="duration"
+            placeholder='e.g. "2 hours", "3 days", "Half day"'
+            value={eventData.duration || ''}
+            onChange={(e) => handleInputChange('duration', e.target.value)}
+            className="h-12 pl-9"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">Displayed on the event page to help attendees plan their time.</p>
+      </div>
+
       {/* Registration Deadline - Toggle Section */}
       <div className="rounded-xl border border-border bg-card p-4 space-y-4">
         <div className="flex items-center justify-between">

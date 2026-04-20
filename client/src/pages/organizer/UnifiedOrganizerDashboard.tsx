@@ -50,6 +50,8 @@ const UnifiedOrganizerDashboard = () => {
   const [kycBannerDismissed, setKycBannerDismissed] = useState(
     () => sessionStorage.getItem('kyc_banner_dismissed') === 'true'
   );
+  const [showKYCPrompt, setShowKYCPrompt] = useState(false);
+  const [kycPromptEventTitle, setKycPromptEventTitle] = useState<string | null>(null);
 
   // Infinite scroll state
   const [page, setPage] = useState(1);
@@ -84,6 +86,8 @@ const UnifiedOrganizerDashboard = () => {
       verificationReminder?: string;
       eventCreated?: boolean;
       needsVerification?: boolean;
+      showKYCPrompt?: boolean;
+      eventTitle?: string;
     } | null;
 
     if (state?.message) {
@@ -95,23 +99,32 @@ const UnifiedOrganizerDashboard = () => {
       setVerificationReminder(state.verificationReminder);
       setShowVerificationReminder(true);
     }
+
+    if (state?.showKYCPrompt) {
+      setShowKYCPrompt(true);
+      setKycPromptEventTitle(state.eventTitle ?? null);
+      window.history.replaceState({}, document.title);
+    }
   }, [location.state]);
 
-  // Load verification status on mount and whenever the user navigates back to this page
+  // Load verification status once on mount
   useEffect(() => {
     getVerificationStatus()
       .then((res) => {
         if (res.success && res.data) setVerificationStatus(res.data);
       })
       .catch(() => { /* non-critical — banner simply won't show */ });
-  }, [location.key]);
+  }, []);
 
-  // Intersection Observer for infinite scroll
+  // Intersection Observer for infinite scroll — ref pattern prevents useEffect loop
   const handleLoadMore = useCallback(() => {
     if (eventsData?.hasMore && !eventsLoading) {
       setPage((prev) => prev + 1);
     }
   }, [eventsData?.hasMore, eventsLoading]);
+
+  const handleLoadMoreRef = useRef(handleLoadMore);
+  handleLoadMoreRef.current = handleLoadMore;
 
   useEffect(() => {
     const currentRef = loadMoreRef.current;
@@ -120,7 +133,7 @@ const UnifiedOrganizerDashboard = () => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          handleLoadMore();
+          handleLoadMoreRef.current();
         }
       },
       { threshold: 0.1 }
@@ -128,7 +141,7 @@ const UnifiedOrganizerDashboard = () => {
 
     observer.observe(currentRef);
     return () => observer.disconnect();
-  }, [handleLoadMore]);
+  }, []); // stable — observer reads latest handleLoadMore via ref
 
   // Stats card definitions
   const statCards = [
@@ -198,6 +211,39 @@ const UnifiedOrganizerDashboard = () => {
           </Alert>
         )}
 
+        {/* KYC Required Prompt — shown after paid event creation for unverified organizers */}
+        {showKYCPrompt && (
+          <Alert className="mb-6 border-amber-500/30 bg-amber-500/8">
+            <Shield className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+            <AlertDescription className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="flex-1 space-y-1">
+                <p className="font-semibold text-foreground">Account verification required</p>
+                <p className="text-sm text-muted-foreground">
+                  {kycPromptEventTitle
+                    ? <>Your event <span className="font-medium text-foreground">&ldquo;{kycPromptEventTitle}&rdquo;</span> is pending review. </>
+                    : 'Your event is pending review. '}
+                  To make it visible to our review team, please complete your KYC verification. It only takes a few minutes.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  onClick={() => navigate('/organizer/settings/kyc')}
+                >
+                  Complete KYC
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowKYCPrompt(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Verification Reminder */}
         {showVerificationReminder && verificationReminder && (
           <Alert className="mb-6 border-primary/20 bg-primary/5">
@@ -232,8 +278,8 @@ const UnifiedOrganizerDashboard = () => {
           </Alert>
         )}
 
-        {/* KYC Pending Badge — visible once submitted, until approved */}
-        {!kycBannerDismissed && verificationStatus?.identityVerified && verificationStatus?.kycStatus && verificationStatus.kycStatus !== 'APPROVED' && (
+        {/* KYC Pending Badge — visible once submitted, while under review (not yet approved or rejected) */}
+        {!kycBannerDismissed && verificationStatus?.identityVerified && verificationStatus?.kycStatus === 'PENDING' && (
           <Alert className="mb-6 border-amber-500/20 bg-amber-500/5">
             <Clock className="h-4 w-4 text-amber-600" />
             <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
@@ -385,36 +431,25 @@ const UnifiedOrganizerDashboard = () => {
             </Alert>
           )}
 
-          {/* KYC / Identity Verification Nudge */}
-          {!kycBannerDismissed && verificationStatus && !verificationStatus.identityVerified && (
-            <Alert className="border-primary/20 bg-primary/5">
-              <Shield className="h-4 w-4 text-primary" />
+          {/* KYC Rejected — shown only when admin has rejected KYC documents */}
+          {verificationStatus?.kycStatus === 'REJECTED' && (
+            <Alert className="border-destructive/20 bg-destructive/5">
+              <AlertCircle className="h-4 w-4 text-destructive" />
               <AlertDescription className="flex items-start justify-between flex-wrap gap-2">
                 <div className="flex-1">
-                  <strong>Verify your identity to receive payments</strong>
+                  <strong className="text-destructive">KYC verification rejected</strong>
                   <p className="text-sm text-muted-foreground mt-0.5">
-                    Identity verification (KYC) is required before payouts are enabled for paid events. Free events are not affected.
+                    Your KYC documents were reviewed and rejected. Please update your documents and resubmit to enable payouts on paid events.
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate("/organizer/verification")}
-                  >
-                    Verify Identity
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      sessionStorage.setItem('kyc_banner_dismissed', 'true');
-                      setKycBannerDismissed(true);
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
+                  onClick={() => navigate("/organizer/settings/kyc")}
+                >
+                  Update Documents
+                </Button>
               </AlertDescription>
             </Alert>
           )}
