@@ -2,7 +2,7 @@ import { useRef, useState, useEffect } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import {
   Calendar, Ticket, QrCode, BarChart3, ArrowRight, CheckCircle2,
-  Users, Globe, Star, Shield, Zap,
+  Users, Globe, Star, Shield, Zap, Monitor, Smartphone, Sparkles, ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
@@ -46,7 +46,7 @@ const PARTNERS = [
 // ---------------------------------------------------------------------------
 
 
-const HERO_WORDS = ["Event", "management", "that", "connects", "people"];
+const HERO_WORDS = ["Event", "operations", "for", "web", "and", "mobile"];
 
 const STATS = [
   { value: 10000, suffix: "+", label: "Events Created", icon: Calendar },
@@ -505,10 +505,9 @@ function PartnersShowcase() {
 const About = () => {
   const navigate = useNavigate();
 
-  // Hero parallax
+  // Hero scroll effects
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroImgY = useTransform(scrollYProgress, [0, 1], ["0%", "25%"]);
   const heroContentY = useTransform(scrollYProgress, [0, 1], ["0%", "15%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
@@ -516,74 +515,126 @@ const About = () => {
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       <Navbar />
 
-      {/* ── Hero — parallax image + word-by-word reveal ─────────── */}
+      {/* ── Hero — fixed background + bottom-anchored content ────── */}
       <section
         ref={heroRef}
-        className="relative min-h-[520px] sm:min-h-[580px] lg:min-h-[650px] flex items-center justify-center overflow-hidden"
+        className="relative h-[480px] sm:h-[520px] lg:h-[580px]"
+        style={{ clipPath: "inset(0)" }}
       >
-        {/* Parallax background image */}
-        <motion.img
-          src={heroImg}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-[130%] object-cover -top-[15%]"
-          style={{ y: heroImgY }}
-        />
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/55 to-black/80" />
+        {/* Fixed background — clipped by parent, same treatment as Home hero */}
+        <div className="fixed top-0 left-0 right-0 h-[480px] sm:h-[520px] lg:h-[580px] z-0">
+          <img
+            src={heroImg}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent z-[1]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent z-[1]" />
+          <AmbientGlow className="w-[400px] h-[400px] bg-primary/15 -top-32 -left-24 z-[2]" duration={30} />
+          <AmbientGlow className="w-[300px] h-[300px] bg-orange-500/10 -bottom-20 -right-16 z-[2]" duration={35} delay={5} />
+        </div>
 
-        {/* Ambient glows */}
-        <AmbientGlow className="w-[400px] h-[400px] sm:w-[600px] sm:h-[600px] bg-primary/20 -top-32 -left-24 sm:-top-48 sm:-left-32 z-[1]" duration={30} />
-        <AmbientGlow className="w-[350px] h-[350px] sm:w-[500px] sm:h-[500px] bg-orange-500/15 -bottom-24 -right-16 sm:-bottom-32 sm:-right-24 z-[1]" duration={35} delay={5} />
-
-        {/* Content with parallax + fade */}
+        {/* Content — bottom-anchored, lifts + fades on scroll */}
         <motion.div
-          className="relative z-10 max-w-3xl mx-auto text-center px-6 py-24 sm:py-32"
-          style={{ y: heroContentY, opacity: heroOpacity }}
+          className="absolute bottom-0 left-0 right-0 p-6 lg:p-8 z-10"
+          style={{ opacity: heroOpacity, y: heroContentY }}
         >
-          {/* Word-by-word headline */}
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white tracking-tight flex flex-wrap justify-center gap-x-[0.3em]">
-            {HERO_WORDS.map((word, i) => (
-              <motion.span
-                key={i}
-                initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{ duration: 0.6, ease: EASE, delay: 0.15 + i * 0.08 }}
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            {/* Left: label + headline + description + chips */}
+            <div className="flex-1 max-w-2xl space-y-4">
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: EASE }}
+                className="flex items-center gap-2 text-white/70 text-sm"
               >
-                {word}
-              </motion.span>
-            ))}
-          </h1>
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span>About EventKnit</span>
+              </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: EASE, delay: 0.6 }}
-            className="mt-5 text-base sm:text-lg text-white/80 max-w-2xl mx-auto"
-          >
-            EventKnit helps organizers create, sell, and manage unforgettable events, and helps
-            attendees discover what's happening around them. Fast, secure, and built for everyone.
-          </motion.p>
+              <h1 className="text-2xl lg:text-4xl font-bold text-white tracking-tight flex flex-wrap gap-x-[0.3em]">
+                {HERO_WORDS.map((word, i) => (
+                  <motion.span
+                    key={i}
+                    initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    transition={{ duration: 0.5, ease: EASE, delay: 0.1 + i * 0.07 }}
+                  >
+                    {word}
+                  </motion.span>
+                ))}
+              </h1>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: EASE, delay: 0.75 }}
-            className="mt-8 flex flex-col sm:flex-row gap-3 justify-center"
-          >
-            <Button size="lg" onClick={() => navigate("/auth/register/organizer")}>
-              Get Started
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-white/40 text-white bg-white/10 hover:bg-white/20 hover:text-white"
-              onClick={() => navigate("/")}
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: EASE, delay: 0.55 }}
+                className="text-white/75 text-sm lg:text-base max-w-xl"
+              >
+                EventKnit powers the full event journey — create, sell, scan, and analyse, all in one place.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: EASE, delay: 0.65 }}
+                className="flex flex-wrap gap-2"
+              >
+                {[
+                  { icon: Monitor, label: "Web ticketing & management" },
+                  { icon: Smartphone, label: "Mobile scanning & check-ins" },
+                  { icon: BarChart3, label: "Real-time operations insight" },
+                ].map((chip) => (
+                  <span
+                    key={chip.label}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/80 backdrop-blur-sm"
+                  >
+                    <chip.icon className="w-3 h-3" />
+                    {chip.label}
+                  </span>
+                ))}
+              </motion.div>
+            </div>
+
+            {/* Right: CTAs */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: EASE, delay: 0.75 }}
+              className="flex items-center gap-2.5"
             >
-              Browse Events
-            </Button>
-          </motion.div>
+              <Button
+                size="default"
+                onClick={() => navigate("/auth/register/organizer")}
+                className="shadow-md"
+              >
+                Get Started
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <Button
+                size="default"
+                variant="outline"
+                onClick={() => navigate("/")}
+                className="border-white/20 text-white bg-black/50 backdrop-blur-sm hover:bg-black/70 hover:border-white/40 shadow-md"
+              >
+                Browse Events
+              </Button>
+            </motion.div>
+          </div>
+
+          {/* Scroll hint */}
+          <div className="flex justify-end mt-6">
+            <motion.button
+              onClick={() => heroRef.current?.nextElementSibling?.scrollIntoView({ behavior: "smooth" })}
+              animate={{ y: [0, 6, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="text-white/50 hover:text-white/80 transition-colors"
+              aria-label="Scroll down"
+            >
+              <ChevronDown className="w-5 h-5" />
+            </motion.button>
+          </div>
         </motion.div>
       </section>
 
@@ -610,17 +661,45 @@ const About = () => {
               transition={{ duration: 0.6, ease: EASE }}
             >
               <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-                What is <span className="text-primary">EventKnit</span>?
+                Who we are & what we do at <span className="text-primary">EventKnit</span>
               </h2>
               <p className="mt-4 text-muted-foreground">
-                EventKnit is a full-stack event management platform that connects organizers
-                with attendees. From intimate workshops to large-scale conferences, we provide
-                the tools to plan, promote, and execute events seamlessly.
+                EventKnit is an event operations platform for organizers, teams, and attendees.
+                From intimate workshops to large conferences, we provide the tools to launch,
+                sell, and run events with confidence.
               </p>
               <p className="mt-3 text-muted-foreground">
-                Our platform handles ticketing, check-ins, real-time analytics, staff coordination,
-                and attendee communication so organizers can focus on creating great experiences.
+                EventKnit Web handles event creation, ticket sales, attendee communication, and
+                analytics, while EventKnit Mobile supports on-ground scanning and check-in flows
+                for smooth entry operations.
               </p>
+
+              {/* Web + Mobile positioning block */}
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-border bg-background p-4 hover:border-primary/30 transition-colors cursor-default">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                      <Monitor className="w-4 h-4" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">EventKnit Web</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Organizer control center for event setup, ticket sales, communication, and analytics.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-border bg-background p-4 hover:border-primary/30 transition-colors cursor-default">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">EventKnit Mobile</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Gate operations companion for scanning, check-ins, and real-time on-ground workflows.
+                  </p>
+                </div>
+              </div>
             </motion.div>
 
             {/* Interactive icon composition with tilt */}
@@ -667,7 +746,7 @@ const About = () => {
                 Built for everyone
               </h2>
               <p className="mt-3 text-muted-foreground max-w-lg mx-auto">
-                Whether you're running the show or attending one, EventKnit has you covered.
+                Whether you're organizing, scanning at the gate, or attending, EventKnit has you covered.
               </p>
             </div>
           </AnimatedSection>
@@ -743,7 +822,7 @@ const About = () => {
             ?
           </h2>
           <p className="mt-3 text-white/75">
-            Join thousands of organizers already using EventKnit to bring events to life.
+            Join teams already using EventKnit Web for ticketing and EventKnit Mobile for seamless check-in.
           </p>
           <motion.div
             className="mt-8 inline-block"
