@@ -405,10 +405,11 @@ export const Hero = () => {
   );
 };
 
-const BRAND_STATS = [
-  { value: "10K+", label: "Events Created" },
-  { value: "500K+", label: "Tickets Sold" },
-  { value: "50+", label: "Cities" },
+const BRAND_CHIPS = [
+  "Offline QR Scanning",
+  "Instant QR Tickets",
+  "Free to Browse",
+  "Secure Checkout",
 ];
 
 /** Static brand hero — shown when no events exist at all */
@@ -502,19 +503,18 @@ function BrandHero() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: EASE, delay: 0.5 }}
-            className="flex items-center gap-6"
+            className="flex items-center flex-wrap gap-2"
           >
-            {BRAND_STATS.map((stat, i) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: EASE, delay: 0.55 + i * 0.08 }}
-                className="text-center"
+            {BRAND_CHIPS.map((chip, i) => (
+              <motion.span
+                key={chip}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.35, ease: EASE, delay: 0.55 + i * 0.07 }}
+                className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 backdrop-blur-sm text-white/80 border border-white/15"
               >
-                <div className="text-lg font-bold text-white">{stat.value}</div>
-                <div className="text-[10px] text-white/55 uppercase tracking-wider">{stat.label}</div>
-              </motion.div>
+                {chip}
+              </motion.span>
             ))}
           </motion.div>
 
