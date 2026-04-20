@@ -1,12 +1,10 @@
 import multer from 'multer';
 import { Request } from 'express';
 
-// Configure storage
-const storage = multer.memoryStorage(); // Store files in memory for Cloudinary upload
+const storage = multer.memoryStorage();
 
-// File filter for images only
-const fileFilter = (_req: Request, file: any, cb: any) => {
-  // Check if file is an image
+// Image-only filter
+const imageFilter = (_req: Request, file: any, cb: any) => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
   } else {
@@ -14,15 +12,45 @@ const fileFilter = (_req: Request, file: any, cb: any) => {
   }
 };
 
-// Multer configuration
+// Document filter: images + PDFs + Word + Excel + PowerPoint + text
+const ALLOWED_DOCUMENT_MIMETYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'text/plain',
+  'text/csv',
+]);
+
+const documentFilter = (_req: Request, file: any, cb: any) => {
+  if (ALLOWED_DOCUMENT_MIMETYPES.has(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Unsupported file type. Allowed: images, PDF, Word, Excel, PowerPoint, CSV, TXT'));
+  }
+};
+
+// Image upload (5 MB)
 export const upload: any = multer({
   storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB max file size
-    files: 1, // Only one file at a time
-  },
+  fileFilter: imageFilter,
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
 });
 
-// Single image upload middleware
+// Document upload (25 MB)
+export const documentUpload: any = multer({
+  storage,
+  fileFilter: documentFilter,
+  limits: { fileSize: 25 * 1024 * 1024, files: 1 },
+});
+
 export const uploadSingleImage = upload.single('image');
+export const uploadSingleDocument = documentUpload.single('file');

@@ -104,6 +104,9 @@ const EditIncomePage = lazy(() => import('../pages/admin/finance').then(m => ({ 
 const EditWagePage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.EditWagePage })));
 const PlatformFeeConfigPage = lazy(() => import('../pages/admin/finance/PlatformFeeConfigPage'));
 
+// Company Documents
+const AdminCompanyDocumentsPage = lazy(() => import('../pages/admin/documents/AdminCompanyDocumentsPage'));
+
 // Service Point
 const ServicePointEvents = lazy(() => import('../pages/admin/service-point/ServicePointEvents'));
 const ServicePointEventDashboard = lazy(() => import('../pages/admin/service-point/ServicePointEventDashboard'));
@@ -545,6 +548,13 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'financial/payouts',
     element: createElement(FinancialManagement),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+
+  // Company Documents
+  {
+    path: 'documents',
+    element: createElement(AdminCompanyDocumentsPage),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
 

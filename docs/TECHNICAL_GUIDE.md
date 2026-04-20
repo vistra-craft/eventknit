@@ -37,6 +37,7 @@ This technical documentation provides an in-depth look at the EventKnit ticketin
 18. [Deployment Architecture](#deployment-architecture)
 19. [Performance Optimization](#performance-optimization)
 20. [Security Best Practices](#security-best-practices)
+21. [Company Documents](#company-documents)
 
 ---
 
@@ -2585,6 +2586,163 @@ const EventCard = memo(({ event }) => {
 - Use `npm audit` to check for vulnerabilities
 - Use lock files (package-lock.json)
 - Review dependencies before installation
+
+---
+
+## Company Documents
+
+### Overview
+
+The Company Documents module provides admin staff with a centralised internal document repository. It supports two storage strategies: direct file uploads to Cloudinary and saved links to external services (Google Docs, Google Sheets, Google Slides, or arbitrary URLs).
+
+### Database Schema
+
+```prisma
+enum CompanyDocCategory {
+  LEGAL
+  FINANCIAL
+  HR
+  OPERATIONS
+  MARKETING
+  COMPLIANCE
+  CONTRACTS
+  POLICIES
+  OTHER
+}
+
+enum CompanyDocType {
+  FILE
+  GOOGLE_DOC
+  GOOGLE_SHEET
+  GOOGLE_SLIDES
+  EXTERNAL_LINK
+}
+
+model CompanyDocument {
+  id                 String              @id @default(cuid())
+  name               String
+  description        String?
+  category           CompanyDocCategory
+  type               CompanyDocType
+  fileUrl            String?
+  cloudinaryPublicId String?
+  externalUrl        String?
+  fileName           String?
+  fileSize           Int?
+  mimeType           String?
+  uploadedById       String
+  uploadedBy         User                @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([category])
+  @@index([type])
+  @@index([uploadedById])
+}
+```
+
+### Architecture
+
+Follows the standard Route -> Controller -> Service pattern with auth enforced in middleware:
+
+```
+POST /api/v1/admin/company-documents/upload
+  authenticate middleware (JWT verification)
+  requireMinRole(ADMIN_STAFF) middleware
+  uploadSingleDocument middleware (Multer, 25 MB limit)
+  CompanyDocumentsController.uploadFile
+    CompanyDocumentsService.uploadFile
+      cloudinaryService.uploadBuffer (resource_type: 'raw' for non-image, 'image' for images)
+      prisma.companyDocument.create
+```
+
+### File Upload Implementation
+
+Multer is configured with `memoryStorage()` so files are held in memory as `Buffer` objects and piped directly to Cloudinary without touching disk:
+
+```typescript
+// server/src/utils/upload.ts
+const documentFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
+  const allowed = [
+    'image/', 'application/pdf',
+    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml',
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml',
+    'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml',
+    'text/plain', 'text/csv',
+  ];
+  const ok = allowed.some(prefix => file.mimetype.startsWith(prefix));
+  cb(null, ok);
+};
+
+export const documentUpload = multer({ storage: multer.memoryStorage(), fileFilter: documentFilter, limits: { fileSize: 25 * 1024 * 1024 } });
+export const uploadSingleDocument = documentUpload.single('file');
+```
+
+Cloudinary upload uses `resource_type: 'raw'` for non-image files so they are preserved without transcoding:
+
+```typescript
+const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
+const result = await cloudinaryService.uploadBuffer(file.buffer, {
+  folder: 'eventknit/company-documents',
+  resource_type: resourceType,
+  public_id: `${Date.now()}-${path.parse(file.originalname).name}`,
+});
+```
+
+### Service Layer
+
+`CompanyDocumentsService` contains all business logic. Auth is intentionally absent from the service — roles are enforced at the route level via `requireMinRole`.
+
+Key behaviours:
+
+- **`list`**: Builds a Prisma `where` clause from `category`, `type`, and `search` filters. Returns paginated results with `totalPages`.
+- **`getById`**: Throws `NotFoundError` if the document does not exist.
+- **`createLink`**: Creates a record with `externalUrl` set and no file fields.
+- **`uploadFile`**: Uploads to Cloudinary first, then creates the DB record. If Cloudinary fails, no record is created (implicit rollback).
+- **`update`**: Throws `ValidationError` if `externalUrl` is being set on a `FILE` type document.
+- **`delete`**: Attempts Cloudinary deletion of the stored asset (failure is logged but non-fatal), then deletes the DB record.
+
+### Frontend API Client
+
+```typescript
+// client/src/lib/company-documents-api.ts
+getCompanyDocuments(params?)        // GET /admin/company-documents with query params
+getCompanyDocumentById(id)          // GET /admin/company-documents/:id
+createDocumentLink(data)            // POST /admin/company-documents/link
+uploadDocumentFile(data)            // POST /admin/company-documents/upload via FormData
+updateCompanyDocument(id, data)     // PATCH /admin/company-documents/:id
+deleteCompanyDocument(id)           // DELETE /admin/company-documents/:id
+```
+
+### Route Registration
+
+```typescript
+// server/src/app.ts
+app.use('/api/v1/admin/company-documents', companyDocumentsRoutes);
+
+// server/src/routes/company-documents.routes.ts
+router.use(authenticate);
+router.use(requireMinRole(UserRole.ADMIN_STAFF));
+router.get('/',        CompanyDocumentsController.list);
+router.get('/:id',     CompanyDocumentsController.getById);
+router.post('/link',   CompanyDocumentsController.createLink);
+router.post('/upload', uploadSingleDocument, CompanyDocumentsController.uploadFile);
+router.patch('/:id',   CompanyDocumentsController.update);
+router.delete('/:id',  CompanyDocumentsController.delete);
+```
+
+### Testing
+
+Service tests are in `server/tests/company-documents.service.test.ts` (18 tests). All Prisma and Cloudinary calls are mocked. Coverage:
+
+| Suite | Tests |
+|-------|-------|
+| `list` | Pagination, category filter, type filter, search filter, totalPages calculation |
+| `getById` | Returns document, throws NotFoundError |
+| `createLink` | Google Doc link, External link |
+| `uploadFile` | PDF uses `raw` resource_type, image uses `image` resource_type |
+| `update` | Updates metadata, throws NotFoundError, throws ValidationError for FILE + externalUrl |
+| `delete` | Cloudinary cleanup called, still deletes DB if Cloudinary fails, throws NotFoundError |
 
 ---
 

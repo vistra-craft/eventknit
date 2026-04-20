@@ -621,19 +621,21 @@ const EventDetailsPage = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className={`grid w-full ${permissions.canAccessAllEvents ? 'grid-cols-7' : 'grid-cols-5'}`}>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="attendees">Attendees</TabsTrigger>
-            <TabsTrigger value="payments">Payments</TabsTrigger>
-            {permissions.canAccessAllEvents && (
-              <>
-                <TabsTrigger value="refunds">Refunds</TabsTrigger>
-                <TabsTrigger value="remittance">Remittance</TabsTrigger>
-                <TabsTrigger value="staff">Assigned Staff</TabsTrigger>
-              </>
-            )}
-            <TabsTrigger value="scan-settings">Scan Settings</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="inline-flex w-max min-w-full h-auto flex-wrap gap-1 rounded-lg bg-muted p-1">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="attendees">Attendees</TabsTrigger>
+              <TabsTrigger value="payments">Payments</TabsTrigger>
+              {permissions.canAccessAllEvents && (
+                <>
+                  <TabsTrigger value="refunds">Refunds</TabsTrigger>
+                  <TabsTrigger value="remittance">Remittance</TabsTrigger>
+                  <TabsTrigger value="staff">Assigned Staff</TabsTrigger>
+                </>
+              )}
+              <TabsTrigger value="scan-settings">Scan Settings</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Details Tab */}
           <TabsContent value="details" className="space-y-6">
@@ -1060,7 +1062,7 @@ const EventDetailsPage = () => {
                               <User className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-foreground">{attendeeName}</h4>
+                              <h4 className="text-sm font-medium text-foreground">{attendeeName}</h4>
                               <p className="text-sm text-muted-foreground">{reg.attendee.email}</p>
                               {reg.attendee.phoneNumber && (
                                 <p className="text-xs text-muted-foreground">{reg.attendee.phoneNumber}</p>
@@ -1207,7 +1209,7 @@ const EventDetailsPage = () => {
                               <CreditCard className="h-5 w-5 text-primary" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-foreground">{attendeeName}</h4>
+                              <h4 className="text-sm font-medium text-foreground">{attendeeName}</h4>
                               <p className="text-sm text-muted-foreground">
                                 {reg.attendee.email}
                                 {reg.paymentTransactionId && ` • ${reg.paymentTransactionId}`}
@@ -1323,7 +1325,7 @@ const EventDetailsPage = () => {
                             <RefreshCw className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-foreground">{refund.registration?.attendee?.firstName} {refund.registration?.attendee?.lastName}</h4>
+                            <h4 className="text-sm font-medium text-foreground">{refund.registration?.attendee?.firstName} {refund.registration?.attendee?.lastName}</h4>
                             <p className="text-sm text-muted-foreground">{refund.reason || 'No reason provided'}</p>
                           </div>
                         </div>
@@ -1418,7 +1420,7 @@ const EventDetailsPage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div>
-                      <h4 className="font-medium text-foreground">Total Event Revenue</h4>
+                      <h4 className="text-sm font-medium text-foreground">Total Event Revenue</h4>
                       <p className="text-sm text-muted-foreground">From all ticket sales</p>
                     </div>
                     <div className="text-right">
@@ -1428,7 +1430,7 @@ const EventDetailsPage = () => {
                   </div>
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-success/10">
                     <div>
-                      <h4 className="font-medium text-foreground">Organizer Share</h4>
+                      <h4 className="text-sm font-medium text-foreground">Organizer Share</h4>
                       <p className="text-sm text-muted-foreground">Amount to be paid to organizer</p>
                     </div>
                     <div className="text-right">
@@ -1438,7 +1440,7 @@ const EventDetailsPage = () => {
                   </div>
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-primary/5">
                     <div>
-                      <h4 className="font-medium text-foreground">Platform Fees</h4>
+                      <h4 className="text-sm font-medium text-foreground">Platform Fees</h4>
                       <p className="text-sm text-muted-foreground"><span className="text-primary">EventKnit</span> commission</p>
                     </div>
                     <div className="text-right">
@@ -1482,7 +1484,7 @@ const EventDetailsPage = () => {
                             <DollarSign className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <h4 className="font-medium text-foreground">Disbursement #{disbursement.id.slice(-8)}</h4>
+                            <h4 className="text-sm font-medium text-foreground">Disbursement #{disbursement.id.slice(-8)}</h4>
                             <p className="text-sm text-muted-foreground">
                               {disbursement.paymentMethod || 'Bank Transfer'} • {disbursement.transactionReference || 'Pending'}
                             </p>
@@ -1526,7 +1528,7 @@ const EventDetailsPage = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-medium text-foreground mb-3">Bank Details</h4>
+                    <h4 className="text-sm font-medium text-foreground mb-3">Bank Details</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Account Name:</span>
@@ -1547,7 +1549,7 @@ const EventDetailsPage = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-medium text-foreground mb-3">Payment Schedule</h4>
+                    <h4 className="text-sm font-medium text-foreground mb-3">Payment Schedule</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Frequency:</span>

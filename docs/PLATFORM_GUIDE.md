@@ -51,8 +51,9 @@ This guide is designed to be read sequentially for a complete understanding, or 
 18. [Notifications & Communications](#notifications--communications)
 19. [Platform Feedback](#platform-feedback)
 20. [Analytics & Reporting](#analytics--reporting)
-21. [API Reference](#api-reference)
-22. [Platform TODOs](#platform-todos)
+21. [Company Documents](#company-documents)
+22. [API Reference](#api-reference)
+23. [Platform TODOs](#platform-todos)
 
 ---
 
@@ -1980,6 +1981,70 @@ Range: -100 to +100
 - CSV export for spreadsheets
 - PDF reports
 - API access for integration
+
+---
+
+## Company Documents
+
+The Company Documents section gives admin staff a centralised repository for all internal organisational files, whether stored as uploaded files or external links to cloud services.
+
+### Document Types
+
+| Type | Description |
+|------|-------------|
+| `FILE` | Uploaded binary file (PDF, Word, Excel, PowerPoint, image, CSV) stored on Cloudinary |
+| `GOOGLE_DOC` | Link to a Google Docs document |
+| `GOOGLE_SHEET` | Link to a Google Sheets spreadsheet |
+| `GOOGLE_SLIDES` | Link to a Google Slides presentation |
+| `EXTERNAL_LINK` | Any other external URL (e.g. Notion page, SharePoint, Confluence) |
+
+### Document Categories
+
+| Category | Use Case |
+|----------|----------|
+| Legal | Contracts, NDAs, incorporation documents |
+| Financial | Budgets, invoices, financial statements |
+| HR | Job descriptions, employment policies, handbooks |
+| Operations | SOPs, runbooks, process guides |
+| Marketing | Brand assets, campaign briefs, style guides |
+| Compliance | Regulatory filings, audit reports, certifications |
+| Contracts | Vendor and client agreements |
+| Policies | Internal policies, codes of conduct |
+| Other | Miscellaneous documents |
+
+### Access Control
+
+Only admin-level users (`ADMIN_STAFF` and above) can access, upload, edit, or delete company documents. All operations are authenticated and authorised via JWT with role enforcement in the API middleware.
+
+### Capabilities
+
+- **Upload files** up to 25 MB. Accepted formats: PDF, Word (.doc/.docx), Excel (.xls/.xlsx), PowerPoint (.ppt/.pptx), images (JPEG/PNG/GIF/WebP), and CSV.
+- **Save external links** to Google Docs, Google Sheets, Google Slides, or any URL without uploading a file.
+- **Search** documents by name or description.
+- **Filter** by category and document type.
+- **Edit** document name, description, category, or external URL.
+- **Delete** documents. Uploaded files are also removed from Cloudinary storage.
+- **Open / Download** documents directly from the dashboard.
+
+### Admin Workflow
+
+1. Navigate to **Company Documents** in the admin sidebar.
+2. To upload a file: click **Upload File**, drag-and-drop or select a file, fill in name, category, and optional description, then click **Upload**.
+3. To save a link: click **Add Link**, select the link type (Google Doc, Google Sheet, Google Slides, or External Link), paste the URL, fill in name, category, and optional description, then click **Save Link**.
+4. Use the search bar and category/type filters to find documents.
+5. Click **Open** to open a document in a new tab, or **Download** to download an uploaded file.
+6. Click the trash icon and confirm the deletion dialog to remove a document.
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/v1/admin/company-documents | List documents (paginated, filterable) |
+| GET | /api/v1/admin/company-documents/:id | Get a single document |
+| POST | /api/v1/admin/company-documents/link | Save an external link document |
+| POST | /api/v1/admin/company-documents/upload | Upload a file document |
+| PATCH | /api/v1/admin/company-documents/:id | Update document metadata |
+| DELETE | /api/v1/admin/company-documents/:id | Delete document (and Cloudinary asset) |
 
 ---
 

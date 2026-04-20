@@ -16,6 +16,7 @@ import {
   LogOut,
   Palette,
   Ticket,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -130,6 +131,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Advanced Ticket Types", href: "/admin/tickets/advanced" },
         { name: "Dynamic Pricing", href: "/admin/tickets/pricing" },
       ]
+    },
+    {
+      id: "documents",
+      label: "Company Documents",
+      href: "/admin/documents",
+      icon: FileText,
+      group: "main",
     },
     {
       id: "marketing",

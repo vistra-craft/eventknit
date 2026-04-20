@@ -376,6 +376,7 @@ model User {
   organizerVouchers  Voucher[]           @relation("OrganizerVouchers")
   voucherRedemptions VoucherRedemption[] @relation("VoucherRedemptions")
   emailDigestQueue   EmailDigestQueue[]  @relation("UserDigestQueue")
+  uploadedDocuments  CompanyDocument[]   @relation("UploadedDocuments")
 
   @@index([email])
   @@index([role])
@@ -5304,5 +5305,54 @@ model CareerInquiry {
 
   @@index([email])
   @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// Company Documents - Internal document management for EventKnit admins
+// ============================================================================
+
+enum CompanyDocCategory {
+  LEGAL
+  FINANCIAL
+  HR
+  OPERATIONS
+  MARKETING
+  COMPLIANCE
+  CONTRACTS
+  POLICIES
+  OTHER
+}
+
+enum CompanyDocType {
+  FILE
+  GOOGLE_DOC
+  GOOGLE_SHEET
+  GOOGLE_SLIDES
+  EXTERNAL_LINK
+}
+
+model CompanyDocument {
+  id                 String             @id @default(uuid())
+  name               String
+  description        String?            @db.Text
+  category           CompanyDocCategory
+  type               CompanyDocType
+  fileUrl            String?            // Cloudinary secure URL (for uploaded files)
+  cloudinaryPublicId String?            // For cleanup on delete
+  externalUrl        String?            // Google Docs / external link URL
+  fileName           String?            // Original filename
+  fileSize           Int?               // Size in bytes
+  mimeType           String?            // MIME type of uploaded file
+
+  uploadedById String
+  uploadedBy   User   @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([type])
+  @@index([uploadedById])
   @@index([createdAt])
 }
