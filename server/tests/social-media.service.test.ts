@@ -2,29 +2,29 @@ import { SocialMediaService } from '../src/services/social-media.service';
 import { NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
-    event: { findFirst: jest.fn() },
+    event: { findFirst: vi.fn() },
     socialMediaPost: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
-  event: { findFirst: jest.Mock };
+  event: { findFirst: vi.Mock };
   socialMediaPost: {
-    create: jest.Mock;
-    findMany: jest.Mock;
-    update: jest.Mock;
+    create: vi.Mock;
+    findMany: vi.Mock;
+    update: vi.Mock;
   };
 };
 
 describe('SocialMediaService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   const baseData = {

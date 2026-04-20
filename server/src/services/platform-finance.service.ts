@@ -1,7 +1,7 @@
 import { prisma } from '../config/database.js';
 import { NotFoundError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
-import { Prisma, FinancialEntryStatus, PaymentMethodType } from '@prisma/client';
+import { Prisma, FinancialEntryStatus, PaymentMethodType, StaffPayType } from '@prisma/client';
 
 // Platform Expenses
 export class PlatformExpenseService {
@@ -78,7 +78,24 @@ export class PlatformExpenseService {
     notes?: string;
     createdBy?: string;
   }) {
-    const expenseData: any = {
+    const expenseData: {
+      category: string;
+      description: string;
+      amount: Prisma.Decimal;
+      currency: string;
+      status?: string;
+      expenseDate?: Date;
+      vendorName?: string;
+      taxRate?: Prisma.Decimal;
+      taxAmount?: Prisma.Decimal;
+      notes?: string;
+      recordedBy?: string;
+      paymentMethod?: string;
+      recipient?: string;
+      reference?: string;
+      receiptUrl?: string;
+      receiptDate?: Date;
+    } = {
       category: data.category,
       description: data.description,
       amount: new Prisma.Decimal(data.amount),
@@ -88,10 +105,10 @@ export class PlatformExpenseService {
       reference: data.reference,
       receiptUrl: data.receiptUrl,
       receiptDate: data.receiptDate,
-      taxAmount: data.taxAmount ? new Prisma.Decimal(data.taxAmount) : null,
-      taxRate: data.taxRate ? new Prisma.Decimal(data.taxRate) : null,
+      taxAmount: data.taxAmount ? new Prisma.Decimal(data.taxAmount) : undefined,
+      taxRate: data.taxRate ? new Prisma.Decimal(data.taxRate) : undefined,
       notes: data.notes,
-      recordedBy: data.createdBy, // Mapping createdBy to recordedBy in schema
+      recordedBy: data.createdBy,
       status: 'COMPLETED',
     };
 
@@ -123,7 +140,23 @@ export class PlatformExpenseService {
       throw new NotFoundError('Expense not found');
     }
 
-    const updateData: any = {};
+    const updateData: Partial<{
+      category: string;
+      description: string;
+      amount: Prisma.Decimal;
+      currency: string;
+      status: string;
+      expenseDate: Date;
+      vendorName: string;
+      taxRate: Prisma.Decimal;
+      taxAmount: Prisma.Decimal;
+      notes: string;
+      paymentMethod: string;
+      recipient: string;
+      reference: string;
+      receiptUrl: string;
+      receiptDate: Date;
+    }> = {};
 
     if (data.category !== undefined) updateData.category = data.category;
     if (data.description !== undefined) updateData.description = data.description;
@@ -248,7 +281,21 @@ export class PlatformIncomeService {
     notes?: string;
     createdBy?: string;
   }) {
-    const incomeData: any = {
+    const incomeData: {
+      category: string;
+      description: string;
+      amount: Prisma.Decimal;
+      currency: string;
+      status?: string;
+      incomeDate?: Date;
+      source?: string;
+      transactionId?: string;
+      notes?: string;
+      recordedBy?: string;
+      reference?: string;
+      paymentMethod?: string;
+      eventId?: string;
+    } = {
       category: data.category,
       description: data.description,
       amount: new Prisma.Decimal(data.amount),
@@ -259,7 +306,7 @@ export class PlatformIncomeService {
       eventId: data.eventId,
       transactionId: data.transactionId,
       notes: data.notes,
-      recordedBy: data.createdBy, // Mapping createdBy to recordedBy in schema
+      recordedBy: data.createdBy,
       status: 'COMPLETED',
     };
 
@@ -288,7 +335,20 @@ export class PlatformIncomeService {
       throw new NotFoundError('Income not found');
     }
 
-    const updateData: any = {};
+    const updateData: Partial<{
+      category: string;
+      description: string;
+      amount: Prisma.Decimal;
+      currency: string;
+      status: string;
+      incomeDate: Date;
+      source: string;
+      transactionId: string;
+      notes: string;
+      reference: string;
+      paymentMethod: string;
+      eventId: string;
+    }> = {};
 
     if (data.category !== undefined) updateData.category = data.category;
     if (data.description !== undefined) updateData.description = data.description;
@@ -328,6 +388,8 @@ export class WageService {
     limit?: number;
     department?: string;
     status?: string;
+    staffType?: string;
+    eventId?: string;
     payPeriod?: string;
     startDate?: Date;
     endDate?: Date;
@@ -346,6 +408,14 @@ export class WageService {
       where.status = options.status as FinancialEntryStatus;
     }
 
+    if (options?.staffType) {
+      where.staffType = options.staffType as StaffPayType;
+    }
+
+    if (options?.eventId) {
+      where.eventId = options.eventId;
+    }
+
     if (options?.payPeriod) {
       where.payPeriod = options.payPeriod;
     }
@@ -356,14 +426,21 @@ export class WageService {
       if (options.endDate) where.payDate.lte = options.endDate;
     }
 
-    const [wages, total] = await Promise.all([
+    const [wages, total, aggregate] = await Promise.all([
       prisma.wage.findMany({
         where,
         skip,
         take: limit,
         orderBy: { payDate: 'desc' },
+        include: {
+          event: { select: { id: true, title: true } },
+        },
       }),
       prisma.wage.count({ where }),
+      prisma.wage.aggregate({
+        where,
+        _sum: { amount: true, grossAmount: true },
+      }),
     ]);
 
     return {
@@ -371,12 +448,17 @@ export class WageService {
       total,
       page,
       totalPages: Math.ceil(total / limit),
+      totalAmount: Number(aggregate._sum.amount || 0),
+      totalGrossAmount: Number(aggregate._sum.grossAmount || 0),
     };
   }
 
   static async getWageById(id: string) {
     const wage = await prisma.wage.findUnique({
       where: { id },
+      include: {
+        event: { select: { id: true, title: true } },
+      },
     });
 
     if (!wage) {
@@ -391,30 +473,56 @@ export class WageService {
     employeeName: string;
     department?: string;
     position?: string;
+    staffType?: StaffPayType;
+    grossAmount?: number;
     amount: number;
     currency?: string;
+    hoursWorked?: number;
+    hourlyRate?: number;
+    overtimeHours?: number;
+    overtimeRate?: number;
+    dailyRate?: number;
+    eventDays?: number;
+    bonuses?: number;
+    deductions?: number;
     payPeriod: string;
     payDate: Date;
     paymentMethod?: PaymentMethodType;
     reference?: string;
     notes?: string;
+    eventId?: string;
     createdBy?: string;
   }) {
+    const grossAmount = data.grossAmount ?? data.amount;
     const wage = await prisma.wage.create({
       data: {
         employeeId: data.employeeId,
         employeeName: data.employeeName,
         department: data.department,
         position: data.position,
+        staffType: data.staffType || 'PERMANENT',
+        grossAmount: new Prisma.Decimal(grossAmount),
         amount: new Prisma.Decimal(data.amount),
         currency: data.currency || 'KES',
+        hoursWorked: data.hoursWorked !== undefined && data.hoursWorked !== null ? new Prisma.Decimal(data.hoursWorked) : null,
+        hourlyRate: data.hourlyRate !== undefined && data.hourlyRate !== null ? new Prisma.Decimal(data.hourlyRate) : null,
+        overtimeHours: data.overtimeHours !== undefined && data.overtimeHours !== null ? new Prisma.Decimal(data.overtimeHours) : null,
+        overtimeRate: data.overtimeRate !== undefined && data.overtimeRate !== null ? new Prisma.Decimal(data.overtimeRate) : null,
+        dailyRate: data.dailyRate !== undefined && data.dailyRate !== null ? new Prisma.Decimal(data.dailyRate) : null,
+        eventDays: data.eventDays ?? null,
+        bonuses: data.bonuses !== undefined && data.bonuses !== null ? new Prisma.Decimal(data.bonuses) : null,
+        deductions: data.deductions !== undefined && data.deductions !== null ? new Prisma.Decimal(data.deductions) : null,
         payPeriod: data.payPeriod,
         payDate: data.payDate,
         paymentMethod: data.paymentMethod || 'BANK_TRANSFER',
         reference: data.reference,
         notes: data.notes,
+        eventId: data.eventId || null,
         createdBy: data.createdBy,
         status: 'COMPLETED' as FinancialEntryStatus,
+      },
+      include: {
+        event: { select: { id: true, title: true } },
       },
     });
 
@@ -427,13 +535,24 @@ export class WageService {
     employeeName?: string;
     department?: string;
     position?: string;
+    staffType?: StaffPayType;
+    grossAmount?: number;
     amount?: number;
     currency?: string;
+    hoursWorked?: number | null;
+    hourlyRate?: number | null;
+    overtimeHours?: number | null;
+    overtimeRate?: number | null;
+    dailyRate?: number | null;
+    eventDays?: number | null;
+    bonuses?: number | null;
+    deductions?: number | null;
     payPeriod?: string;
     payDate?: Date;
     paymentMethod?: PaymentMethodType;
     reference?: string;
     notes?: string;
+    eventId?: string | null;
     status?: FinancialEntryStatus;
   }) {
     const existing = await prisma.wage.findUnique({ where: { id } });
@@ -447,18 +566,34 @@ export class WageService {
     if (data.employeeName !== undefined) updateData.employeeName = data.employeeName;
     if (data.department !== undefined) updateData.department = data.department;
     if (data.position !== undefined) updateData.position = data.position;
+    if (data.staffType !== undefined) updateData.staffType = data.staffType;
+    if (data.grossAmount !== undefined) updateData.grossAmount = new Prisma.Decimal(data.grossAmount);
     if (data.amount !== undefined) updateData.amount = new Prisma.Decimal(data.amount);
     if (data.currency !== undefined) updateData.currency = data.currency;
+    if (data.hoursWorked !== undefined) updateData.hoursWorked = data.hoursWorked !== null ? new Prisma.Decimal(data.hoursWorked) : null;
+    if (data.hourlyRate !== undefined) updateData.hourlyRate = data.hourlyRate !== null ? new Prisma.Decimal(data.hourlyRate) : null;
+    if (data.overtimeHours !== undefined) updateData.overtimeHours = data.overtimeHours !== null ? new Prisma.Decimal(data.overtimeHours) : null;
+    if (data.overtimeRate !== undefined) updateData.overtimeRate = data.overtimeRate !== null ? new Prisma.Decimal(data.overtimeRate) : null;
+    if (data.dailyRate !== undefined) updateData.dailyRate = data.dailyRate !== null ? new Prisma.Decimal(data.dailyRate) : null;
+    if (data.eventDays !== undefined) updateData.eventDays = data.eventDays;
+    if (data.bonuses !== undefined) updateData.bonuses = data.bonuses !== null ? new Prisma.Decimal(data.bonuses) : null;
+    if (data.deductions !== undefined) updateData.deductions = data.deductions !== null ? new Prisma.Decimal(data.deductions) : null;
     if (data.payPeriod !== undefined) updateData.payPeriod = data.payPeriod;
     if (data.payDate !== undefined) updateData.payDate = data.payDate;
     if (data.paymentMethod !== undefined) updateData.paymentMethod = data.paymentMethod;
     if (data.reference !== undefined) updateData.reference = data.reference;
     if (data.notes !== undefined) updateData.notes = data.notes;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.eventId !== undefined) {
+      updateData.event = data.eventId ? { connect: { id: data.eventId } } : { disconnect: true };
+    }
 
     const wage = await prisma.wage.update({
       where: { id },
       data: updateData,
+      include: {
+        event: { select: { id: true, title: true } },
+      },
     });
 
     logger.info(`Updated wage record: ${wage.id}`);
@@ -494,6 +629,7 @@ export class PlatformFinanceSummaryService {
       expensesAggregate,
       incomesAggregate,
       wagesAggregate,
+      platformFeesAggregate,
     ] = await Promise.all([
       prisma.platformExpense.aggregate({
         where: { ...where, status: 'COMPLETED' },
@@ -507,23 +643,38 @@ export class PlatformFinanceSummaryService {
       }),
       prisma.wage.aggregate({
         where: { ...where, status: 'COMPLETED' },
-        _sum: { amount: true },
+        _sum: { amount: true, grossAmount: true },
+        _count: true,
+      }),
+      // Platform fees = automatic revenue from ticket sales
+      prisma.platformFee.aggregate({
+        where: { ...where },
+        _sum: { feeAmount: true, grossAmount: true, organizerAmount: true },
         _count: true,
       }),
     ]);
 
-    const totalExpenses = Number(expensesAggregate._sum.amount || 0) + Number(wagesAggregate._sum.amount || 0);
-    const totalIncome = Number(incomesAggregate._sum.amount || 0);
+    const manualIncome = Number(incomesAggregate._sum.amount || 0);
+    const platformFeeIncome = Number(platformFeesAggregate._sum.feeAmount || 0);
+    const totalIncome = manualIncome + platformFeeIncome;
+    const totalWages = Number(wagesAggregate._sum.amount || 0);
+    const totalExpenses = Number(expensesAggregate._sum.amount || 0) + totalWages;
     const netProfit = totalIncome - totalExpenses;
 
     return {
       totalIncome,
       totalExpenses,
-      totalWages: Number(wagesAggregate._sum.amount || 0),
+      totalWages,
       netProfit,
       expenseCount: expensesAggregate._count,
       incomeCount: incomesAggregate._count,
       wageCount: wagesAggregate._count,
+      // Revenue breakdown
+      platformFeeRevenue: platformFeeIncome,
+      manualIncome,
+      totalGrossRevenue: Number(platformFeesAggregate._sum.grossAmount || 0),
+      totalOrganizerPayouts: Number(platformFeesAggregate._sum.organizerAmount || 0),
+      platformFeeCount: platformFeesAggregate._count,
     };
   }
 }

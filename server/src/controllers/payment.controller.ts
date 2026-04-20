@@ -18,7 +18,7 @@ export class PaymentController {
         return;
       }
 
-      const { registrationId } = req.body;
+      const { registrationId, gateway } = req.body;
 
       if (!registrationId) {
         res.status(400).json({
@@ -93,6 +93,7 @@ export class PaymentController {
         email: registration.attendee.email,
         amount: Number(registration.totalAmount),
         currency: eventWithCurrency?.currency || 'KES',
+        gateway,
         metadata: {
           userId: req.user.id,
           eventId: registration.eventId,
@@ -141,49 +142,51 @@ export class PaymentController {
   /**
    * Handle Paystack webhook
    */
-  static async handleWebhook(req: Request, res: Response, _next: NextFunction): Promise<void> {
+  static async handleWebhook(req: Request & { rawBody?: string }, res: Response, _next: NextFunction): Promise<void> {
     try {
-      const signature = req.headers['x-paystack-signature'] as string;
+      const paystackSig = req.headers['x-paystack-signature'] as string | undefined;
+      const stripeSig = req.headers['stripe-signature'] as string | undefined;
 
-      if (!signature) {
-        res.status(400).json({
-          success: false,
-          message: 'Missing signature',
-        });
+      // Detect which gateway sent this webhook from its signature header
+      const isStripe = !!stripeSig;
+      const isPaystack = !!paystackSig;
+
+      if (!isStripe && !isPaystack) {
+        res.status(400).json({ success: false, message: 'Missing webhook signature' });
         return;
       }
 
-      // Verify webhook signature
-      const payload = JSON.stringify(req.body);
-      const isValid = paymentService.verifyWebhookSignature(payload, signature);
+      // Use the raw body for HMAC verification (Stripe requires exact bytes sent).
+      // Fall back to JSON.stringify if rawBody wasn't captured (e.g. in tests).
+      const payload = req.rawBody ?? JSON.stringify(req.body);
 
-      if (!isValid) {
-        logger.warn('Invalid webhook signature');
-        res.status(401).json({
-          success: false,
-          message: 'Invalid signature',
-        });
-        return;
+      if (isStripe) {
+        const isValid = paymentService.verifyWebhookSignature(payload, stripeSig!, 'STRIPE');
+        if (!isValid) {
+          logger.warn('Invalid Stripe webhook signature');
+          res.status(401).json({ success: false, message: 'Invalid signature' });
+          return;
+        }
+
+        // Stripe event structure: { id, type, data: { object: {...} } }
+        const stripeBody = req.body as {
+          id: string;
+          type: string;
+          data: { object: Record<string, unknown> };
+        };
+        const stripeData = { ...stripeBody.data.object, id: stripeBody.id };
+        await paymentService.handleWebhook(stripeBody.type, stripeData, 'STRIPE', stripeSig);
+      } else {
+        // For Paystack, pass raw payload and signature to service for gateway-level verification
+        // The gateway will perform its own HMAC-SHA512 validation per Paystack documentation
+        await paymentService.handleWebhook(req.body.event, req.body.data, 'PAYSTACK', paystackSig, payload);
       }
 
-      const event = req.body.event;
-      const data = req.body.data;
-
-      // Handle webhook
-      await paymentService.handleWebhook(event, data);
-
-      // Always return 200 to acknowledge receipt
-      res.status(200).json({
-        success: true,
-        message: 'Webhook received',
-      });
+      // Always return 200 so the payment provider stops retrying
+      res.status(200).json({ success: true, message: 'Webhook received' });
     } catch (error) {
       logger.error('Webhook error:', error);
-      // Still return 200 to prevent Paystack from retrying
-      res.status(200).json({
-        success: false,
-        message: 'Webhook processed with errors',
-      });
+      res.status(200).json({ success: false, message: 'Webhook processed with errors' });
     }
   }
 
@@ -192,7 +195,7 @@ export class PaymentController {
    */
   static async initializeGuestPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { registrationId, email } = req.body;
+      const { registrationId, email, gateway } = req.body;
 
       if (!registrationId) {
         res.status(400).json({
@@ -270,6 +273,7 @@ export class PaymentController {
         email: registration.attendee.email || email,
         amount: Number(registration.totalAmount),
         currency: eventWithCurrency?.currency || 'KES',
+        gateway,
         metadata: {
           eventId: registration.eventId,
           isGuest: true,

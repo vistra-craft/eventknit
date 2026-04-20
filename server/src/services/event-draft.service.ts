@@ -1,13 +1,14 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { Prisma } from '@prisma/client';
 
 export class EventDraftService {
   /**
    * Create a new event draft
    */
   static async createDraft(organizerId: string, data: {
-    draftData: any;
+    draftData: Prisma.InputJsonValue;
     collaborators?: string[];
   }) {
     try {
@@ -142,7 +143,7 @@ export class EventDraftService {
    * Update draft
    */
   static async updateDraft(draftId: string, organizerId: string, data: {
-    draftData?: any;
+    draftData?: Prisma.JsonValue;
     collaborators?: string[];
   }) {
     try {
@@ -177,7 +178,7 @@ export class EventDraftService {
    * Create draft version
    */
   static async createDraftVersion(draftId: string, organizerId: string, data: {
-    draftData?: any;
+    draftData?: Prisma.JsonValue;
   }) {
     try {
       const parent = await prisma.eventDraft.findFirst({
@@ -207,9 +208,9 @@ export class EventDraftService {
         data: {
           organizerId,
           parentId: draftId,
-          draftData: data.draftData || parent.draftData,
+          draftData: (data.draftData || parent.draftData) as unknown as Prisma.InputJsonValue,
           version: newVersion,
-          collaborators: parent.collaborators as any,
+          collaborators: parent.collaborators ?? Prisma.JsonNull,
         },
       });
 

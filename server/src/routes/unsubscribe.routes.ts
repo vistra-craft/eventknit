@@ -229,7 +229,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
             increment: 1,
           },
         },
-      }).catch(() => {});
+      }).catch((err) => { logger.error('Failed to increment unsubscribe count', { campaignId, error: err }); });
     }
 
     logger.info(`API unsubscribe: User ${userId} (${email}) from ${type}. Campaign: ${campaignId || 'N/A'}`);

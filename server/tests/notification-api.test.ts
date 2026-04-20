@@ -51,9 +51,7 @@ describe('Notification API', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test attendee
     const attendee = await prisma.user.create({
@@ -102,7 +100,7 @@ describe('Notification API', () => {
         password: await hashPassword('password123'),
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
@@ -596,7 +594,7 @@ describe('Notification API', () => {
       // Mock SMS service as disabled
       const { smsService } = await import('../src/services/sms.service.js');
       const originalIsEnabled = smsService.isEnabled;
-      (smsService.isEnabled as any) = jest.fn().mockReturnValue(false);
+      (smsService.isEnabled as any) = vi.fn().mockReturnValue(false);
 
       const response = await request(app)
         .put('/api/v1/user/me/notification-preferences')

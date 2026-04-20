@@ -173,6 +173,23 @@ export class AuthService {
     firstName: string,
     lastName: string,
   ): Promise<AuthResponse> {
+    // Debug: log what we're looking up
+    logger.debug('[verifyRegistrationCode] Lookup params:', {
+      email,
+      code,
+      emailLength: email.length,
+      codeLength: code.length,
+      emailCharCodes: [...email].map(c => c.charCodeAt(0)),
+      codeCharCodes: [...code].map(c => c.charCodeAt(0)),
+    });
+
+    // Debug: check what's in the DB for this email
+    const allForEmail = await prisma.emailVerification.findMany({
+      where: { email, verified: false },
+      select: { id: true, email: true, code: true, verified: true, expiresAt: true },
+    });
+    logger.debug('[verifyRegistrationCode] DB records for email:', JSON.stringify(allForEmail));
+
     // Find verification record
     const verification = await prisma.emailVerification.findFirst({
       where: {
@@ -186,11 +203,11 @@ export class AuthService {
     });
 
     if (!verification) {
-      throw new ValidationError('Invalid verification code');
+      throw new ValidationError('The verification code you entered is incorrect. Please check and try again.');
     }
 
     if (verification.expiresAt < new Date()) {
-      throw new ValidationError('Verification code has expired');
+      throw new ValidationError('This verification code has expired. Please request a new one.');
     }
 
     // Check if user already exists (race condition check)
@@ -219,7 +236,7 @@ export class AuthService {
     const breachCount = await checkPasswordBreach(password);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -364,7 +381,7 @@ export class AuthService {
   }
 
   /**
-   * Notify all active admins (SUPERADMIN + ADMIN_STAFF) about a new organizer registration
+   * Notify all active admins (SUPERADMIN + ADMIN) about a new organizer registration
    */
   private static async notifyAdminsOfNewOrganizer(organizer: {
     firstName: string | null;
@@ -374,7 +391,7 @@ export class AuthService {
   }): Promise<void> {
     const admins = await prisma.user.findMany({
       where: {
-        role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF] },
+        role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN] },
         status: UserStatus.ACTIVE,
         deletedAt: null,
       },
@@ -457,7 +474,7 @@ export class AuthService {
 
   /**
    * Verify Email OAuth code and authenticate user (passwordless login/registration)
-   * Creates account if new, logs in if existing (like Facebook OAuth)
+   * Creates account if new, logs in if existing (like OAuth flows)
    */
   static async verifyEmailOAuthCode(
     email: string,
@@ -478,11 +495,11 @@ export class AuthService {
     });
 
     if (!verification) {
-      throw new ValidationError('Invalid verification code');
+      throw new ValidationError('The verification code you entered is incorrect. Please check and try again.');
     }
 
     if (verification.expiresAt < new Date()) {
-      throw new ValidationError('Verification code has expired');
+      throw new ValidationError('This verification code has expired. Please request a new one.');
     }
 
     // Check if user exists
@@ -531,7 +548,7 @@ export class AuthService {
 
       logger.info(`User logged in via Email OAuth: ${user.email}`);
     } else {
-      // New user - create account (like Facebook OAuth)
+      // New user - create account (like other OAuth flows)
       const userRole = verification.role || UserRole.ATTENDEE;
 
       // Create new user account
@@ -603,7 +620,7 @@ export class AuthService {
         userAgent,
       });
 
-      throw new AuthenticationError('Invalid email or password');
+      throw new AuthenticationError('Incorrect email or password. Please try again.');
     }
 
     // Check if account is locked
@@ -651,7 +668,7 @@ export class AuthService {
 
     // Verify password - password is now required
     if (!user.password) {
-      throw new AuthenticationError('Invalid email or password');
+      throw new AuthenticationError('Incorrect email or password. Please try again.');
     }
 
     const isPasswordValid = await comparePassword(data.password, user.password);
@@ -662,7 +679,7 @@ export class AuthService {
         ? new Date(Date.now() + config.security.lockoutDuration * 60 * 1000)
         : null;
 
-      await prisma.user.update({
+      await prisma.user.updateMany({
         where: { id: user.id },
         data: {
           failedLoginAttempts: failedAttempts,
@@ -685,33 +702,56 @@ export class AuthService {
         userAgent,
       });
 
-      throw new AuthenticationError('Invalid email or password');
+      // If we just locked the account, tell the user immediately
+      if (lockUntil) {
+        const minutesLeft = Math.ceil(config.security.lockoutDuration);
+        throw new AuthenticationError(
+          `Account is locked due to too many failed attempts. Try again in ${minutesLeft} minute(s).`,
+        );
+      }
+
+      throw new AuthenticationError('Incorrect email or password. Please try again.');
     }
 
-    // Reset failed login attempts on successful login
-    if (user.failedLoginAttempts > 0) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failedLoginAttempts: 0,
-          lockedUntil: null,
-          lastLoginAt: new Date(),
-        },
-      });
-    } else {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          lastLoginAt: new Date(),
-        },
-      });
-    }
-
-    // Generate tokens
+    // Generate tokens before the transaction (JWT signing is CPU-only, no DB)
     const tokens = await this.generateTokens(user);
 
-    // Save refresh token (match DB expiry to cookie duration)
-    await this.saveRefreshToken(user.id, tokens.refreshToken, ipAddress, userAgent, rememberMe);
+    // Use a transaction to atomically update login stats and save the refresh token.
+    // The SELECT FOR UPDATE locks the user row, preventing concurrent TRUNCATE/DELETE
+    // from removing it before the refresh token is saved.
+    await prisma.$transaction(async (tx) => {
+      // Lock the user row to prevent concurrent deletion
+      const lockedUser = await tx.$queryRawUnsafe(
+        'SELECT id FROM "User" WHERE id = $1 FOR UPDATE',
+        user.id,
+      ) as Array<{ id: string }>;
+
+      if (!lockedUser || lockedUser.length === 0) {
+        throw new AuthenticationError('Login failed due to a temporary issue. Please try again.');
+      }
+
+      // Reset failed login attempts on successful login
+      if (user.failedLoginAttempts > 0) {
+        await tx.user.updateMany({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+            lastLoginAt: new Date(),
+          },
+        });
+      } else {
+        await tx.user.updateMany({
+          where: { id: user.id },
+          data: {
+            lastLoginAt: new Date(),
+          },
+        });
+      }
+
+      // Save refresh token within the same transaction
+      await this.saveRefreshTokenTx(tx, user.id, tokens.refreshToken, ipAddress, userAgent, rememberMe);
+    });
 
     return {
       user: {
@@ -736,12 +776,15 @@ export class AuthService {
    * Refresh access token
    */
   static async refreshToken(refreshToken: string, ipAddress?: string, userAgent?: string): Promise<Omit<AuthResponse, 'user'>> {
-    // Verify refresh token (throws if invalid)
+    // Verify refresh token JWT signature (throws if invalid/expired)
     verifyRefreshToken(refreshToken);
+
+    // Hash the incoming token to match the stored hash in the database
+    const tokenHash = hashToken(refreshToken);
 
     // Check if token exists in database
     const tokenDoc = await prisma.refreshToken.findUnique({
-      where: { token: refreshToken },
+      where: { token: tokenHash },
       include: { user: true },
     });
 
@@ -810,9 +853,11 @@ export class AuthService {
    * Logout user (revoke refresh token)
    */
   static async logout(refreshToken: string): Promise<void> {
+    const tokenHash = hashToken(refreshToken);
+
     await prisma.refreshToken.updateMany({
       where: {
-        token: refreshToken,
+        token: tokenHash,
         revoked: false,
       },
       data: {
@@ -843,7 +888,7 @@ export class AuthService {
     }
 
     if (verification.expiresAt < new Date()) {
-      throw new ValidationError('Verification token has expired');
+      throw new ValidationError('This verification link has expired. Please request a new one.');
     }
 
     // Verify email
@@ -882,6 +927,19 @@ export class AuthService {
     if (!user) {
       return;
     }
+
+    // Invalidate any existing unused reset tokens for this user
+    // so only the latest link works (prevents token accumulation)
+    await prisma.passwordReset.updateMany({
+      where: {
+        userId: user.id,
+        used: false,
+      },
+      data: {
+        used: true,
+        usedAt: new Date(),
+      },
+    });
 
     // Generate reset token — store SHA-256 hash in DB, send raw token to user
     const token = crypto.randomBytes(32).toString('hex');
@@ -922,11 +980,16 @@ export class AuthService {
     }
 
     if (reset.used) {
-      throw new ValidationError('Reset token has already been used');
+      throw new ValidationError('This password reset link has already been used. Please request a new one if needed.');
     }
 
     if (reset.expiresAt < new Date()) {
-      throw new ValidationError('Reset token has expired');
+      throw new ValidationError('This password reset link has expired. Please request a new one.');
+    }
+
+    // Prevent suspended users from resetting password to regain access
+    if (reset.user.status === UserStatus.SUSPENDED) {
+      throw new AuthenticationError('Your account has been suspended. Please contact support for assistance.');
     }
 
     // Log if reset is being used from a different IP than the one that requested it
@@ -950,7 +1013,7 @@ export class AuthService {
     const breachCount = await checkPasswordBreach(newPassword);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -1060,7 +1123,10 @@ export class AuthService {
   }
 
   /**
-   * Save refresh token to database
+   * Save refresh token to database.
+   * Tokens are stored as SHA-256 hashes so that a database compromise
+   * does not expose usable tokens. The raw JWT is only ever held by the
+   * client (in an httpOnly cookie).
    */
   static async saveRefreshToken(
     userId: string,
@@ -1069,13 +1135,16 @@ export class AuthService {
     userAgent?: string,
     rememberMe: boolean = false,
   ): Promise<void> {
+    const tokenHash = hashToken(token);
+
     const expiresAt = new Date();
-    const daysToExpire = rememberMe ? 30 : 7;
-    expiresAt.setDate(expiresAt.getDate() + daysToExpire);
+    const baseSeconds = parseExpiresIn(config.jwt.refreshExpiresIn);
+    const expiryMs = rememberMe ? Math.min(baseSeconds * 2 * 1000, 90 * 24 * 60 * 60 * 1000) : baseSeconds * 1000;
+    expiresAt.setTime(expiresAt.getTime() + expiryMs);
 
     // Use upsert to handle potential duplicate tokens (shouldn't happen but safety measure)
     await prisma.refreshToken.upsert({
-      where: { token },
+      where: { token: tokenHash },
       update: {
         userId,
         expiresAt,
@@ -1087,7 +1156,47 @@ export class AuthService {
       },
       create: {
         userId,
-        token,
+        token: tokenHash,
+        expiresAt,
+        ipAddress,
+        userAgent,
+      },
+    });
+  }
+
+  /**
+   * Save refresh token within a Prisma interactive transaction.
+   * Used by login() to ensure the token save is atomic with user row locking.
+   */
+  private static async saveRefreshTokenTx(
+    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    userId: string,
+    token: string,
+    ipAddress?: string,
+    userAgent?: string,
+    rememberMe: boolean = false,
+  ): Promise<void> {
+    const tokenHash = hashToken(token);
+
+    const expiresAt = new Date();
+    const baseSeconds = parseExpiresIn(config.jwt.refreshExpiresIn);
+    const expiryMs = rememberMe ? Math.min(baseSeconds * 2 * 1000, 90 * 24 * 60 * 60 * 1000) : baseSeconds * 1000;
+    expiresAt.setTime(expiresAt.getTime() + expiryMs);
+
+    await tx.refreshToken.upsert({
+      where: { token: tokenHash },
+      update: {
+        userId,
+        expiresAt,
+        ipAddress,
+        userAgent,
+        revoked: false,
+        revokedAt: null,
+        revokedReason: null,
+      },
+      create: {
+        userId,
+        token: tokenHash,
         expiresAt,
         ipAddress,
         userAgent,
@@ -1112,7 +1221,7 @@ export class AuthService {
     const breachCount = await checkPasswordBreach(newPassword);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -1137,7 +1246,7 @@ export class AuthService {
     // User has existing password - verify current password
     const isCurrentPasswordValid = await comparePassword(currentPassword, user.password);
     if (!isCurrentPasswordValid) {
-      throw new ValidationError('Current password is incorrect');
+      throw new ValidationError('The current password you entered is incorrect. Please try again.');
     }
 
     // Hash new password
@@ -1171,14 +1280,14 @@ export class AuthService {
 
     // Check if password already exists
     if (user.password) {
-      throw new ValidationError('Password already set. Use change password to update it.');
+      throw new ValidationError('You already have a password. To update it, use the "Change Password" option in your settings.');
     }
 
     // Check password against known breaches
     const breachCount = await checkPasswordBreach(newPassword);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -1197,6 +1306,37 @@ export class AuthService {
     await this.revokeAllUserTokens(userId, 'password_change');
 
     logger.info(`Password set for user: ${user.email}`);
+  }
+
+  /**
+   * Verify invitation token and return associated email (for pre-filling the create-account form)
+   */
+  static async verifyInvitationToken(token: string): Promise<{ email: string; name: string | null }> {
+    const tokenHash = hashToken(token);
+
+    const emailVerification = await prisma.emailVerification.findUnique({
+      where: { token: tokenHash },
+      include: { user: true },
+    });
+
+    if (!emailVerification) {
+      throw new NotFoundError('Invalid or expired invitation link');
+    }
+
+    if (emailVerification.expiresAt && new Date(emailVerification.expiresAt) < new Date()) {
+      throw new ValidationError('Invitation link has expired');
+    }
+
+    if (emailVerification.verified) {
+      throw new ValidationError('This invitation link has already been used');
+    }
+
+    return {
+      email: emailVerification.email,
+      name: emailVerification.user
+        ? [emailVerification.user.firstName, emailVerification.user.lastName].filter(Boolean).join(' ') || null
+        : null,
+    };
   }
 
   /**
@@ -1246,7 +1386,7 @@ export class AuthService {
 
     // Check if password already exists
     if (user.password) {
-      throw new ValidationError('Account already has a password. Use login or password reset instead.');
+      throw new ValidationError('This account already has a password. Please sign in or use "Forgot Password" to reset it.');
     }
 
     // Validate password
@@ -1258,7 +1398,7 @@ export class AuthService {
     const breachCount = await checkPasswordBreach(password);
     if (breachCount > 0) {
       throw new ValidationError(
-        `This password has appeared in ${breachCount.toLocaleString()} data breaches. Please choose a different password.`,
+        'This password isn\'t safe to use — it\'s been found in known data breaches. Please choose a stronger, unique password.',
       );
     }
 
@@ -1325,7 +1465,7 @@ export class AuthService {
 
     // Check if user already has a password
     if (user.password) {
-      throw new ValidationError('Account already has a password. Use login or password reset instead.');
+      throw new ValidationError('This account already has a password. Please sign in or use "Forgot Password" to reset it.');
     }
 
     // Check user status
@@ -1514,11 +1654,11 @@ export class AuthService {
     });
 
     if (!verification) {
-      throw new ValidationError('Invalid verification code');
+      throw new ValidationError('The verification code you entered is incorrect. Please check and try again.');
     }
 
     if (verification.expiresAt < new Date()) {
-      throw new ValidationError('Verification code has expired');
+      throw new ValidationError('This verification code has expired. Please request a new one.');
     }
 
     // Mark verification as complete and update user
@@ -1600,17 +1740,17 @@ export class AuthService {
     });
 
     if (!magicLink) {
-      throw new AuthenticationError('Invalid magic link');
+      throw new AuthenticationError('This sign-in link is invalid. Please request a new one.');
     }
 
     // Check if already used
     if (magicLink.used) {
-      throw new AuthenticationError('This magic link has already been used');
+      throw new AuthenticationError('This sign-in link has already been used. Please request a new one.');
     }
 
     // Check if expired
     if (magicLink.expiresAt < new Date()) {
-      throw new AuthenticationError('Magic link has expired. Please request a new one.');
+      throw new AuthenticationError('This sign-in link has expired. Please request a new one.');
     }
 
     const user = magicLink.user;
@@ -1618,6 +1758,15 @@ export class AuthService {
     // Check user status
     if (user.status === UserStatus.SUSPENDED) {
       throw new AuthenticationError('This account has been suspended. Please contact support.');
+    }
+
+    // Check if account is temporarily locked due to too many failed login attempts.
+    // Magic links should not bypass lockout — the lockout exists to protect the account.
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      throw new AuthenticationError(
+        `This account is temporarily locked due to too many failed login attempts. Please try again in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}.`,
+      );
     }
 
     // Mark token as used
@@ -1695,7 +1844,7 @@ export class AuthService {
     }
     const isPasswordValid = await comparePassword(currentPassword, user.password);
     if (!isPasswordValid) {
-      throw new ValidationError('Current password is incorrect');
+      throw new ValidationError('The current password you entered is incorrect. Please try again.');
     }
 
     // Check if new email is already taken
@@ -1768,7 +1917,7 @@ export class AuthService {
     });
 
     if (!pending) {
-      throw new ValidationError('Invalid verification code');
+      throw new ValidationError('The verification code you entered is incorrect. Please check and try again.');
     }
 
     if (pending.expiresAt < new Date()) {

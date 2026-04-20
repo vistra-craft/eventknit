@@ -3,61 +3,61 @@ import { NotFoundError, ValidationError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
 // Mock database
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     event: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
     facilityZone: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
     },
     eventRegistration: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
     attendeeZoneAccess: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
-    $transaction: jest.fn(),
+    $transaction: vi.fn(),
   },
 }));
 
 // Mock logger
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    error: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn(),
-    warn: jest.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
 const prismaMock = prisma as unknown as {
   event: {
-    findUnique: jest.Mock;
-    update: jest.Mock;
+    findUnique: vi.Mock;
+    update: vi.Mock;
   };
   facilityZone: {
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    update: jest.Mock;
-    updateMany: jest.Mock;
+    findUnique: vi.Mock;
+    findMany: vi.Mock;
+    update: vi.Mock;
+    updateMany: vi.Mock;
   };
   eventRegistration: {
-    count: jest.Mock;
+    count: vi.Mock;
   };
   attendeeZoneAccess: {
-    count: jest.Mock;
+    count: vi.Mock;
   };
-  $transaction: jest.Mock;
+  $transaction: vi.Mock;
 };
 
 describe('VenueCapacityService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('setVenueCapacity', () => {

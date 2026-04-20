@@ -2,32 +2,32 @@ import { OrganizerFinancialService } from '../src/services/organizer-financial.s
 import { NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
-    event: { findFirst: jest.fn() },
+    event: { findFirst: vi.fn() },
     eventExpense: {
-      create: jest.fn(),
-      findMany: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
     },
     eventPaymentTransaction: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
     refund: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
-  event: { findFirst: jest.Mock };
-  eventExpense: { create: jest.Mock; findMany: jest.Mock };
-  eventPaymentTransaction: { findMany: jest.Mock };
-  refund: { findMany: jest.Mock };
+  event: { findFirst: vi.Mock };
+  eventExpense: { create: vi.Mock; findMany: vi.Mock };
+  eventPaymentTransaction: { findMany: vi.Mock };
+  refund: { findMany: vi.Mock };
 };
 
 describe('OrganizerFinancialService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it('throws when creating expense for missing event', async () => {
@@ -65,7 +65,7 @@ describe('OrganizerFinancialService', () => {
     prismaMock.eventPaymentTransaction.findMany.mockResolvedValue([
       { amount: 200, platformFee: { feeAmount: 20 } },
     ]);
-    prismaMock.eventExpense.findMany = jest.fn().mockResolvedValue([
+    prismaMock.eventExpense.findMany = vi.fn().mockResolvedValue([
       { amount: 50, isTaxDeductible: true },
     ]);
 

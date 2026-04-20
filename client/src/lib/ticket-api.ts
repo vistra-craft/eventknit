@@ -12,6 +12,15 @@ export interface TicketLineItem {
   totalPrice: number;
 }
 
+export interface TicketSeatInfo {
+  seatIdentifier: string;
+  sectionId?: string;
+  rowLabel?: string;
+  seatLabel?: string;
+  seatType: string;
+  reservationStatus: string;
+}
+
 export interface TicketData {
   id: string;
   registrationId: string;
@@ -24,7 +33,11 @@ export interface TicketData {
   currency?: string;
   qrCode?: string;
   backupCode?: string;
+  seat?: TicketSeatInfo;
   createdAt: string;
+  checkedInAt?: string | null;
+  checkedOutAt?: string | null;
+  isCurrentlyInside?: boolean;
 }
 
 /**
@@ -70,6 +83,46 @@ export const downloadTicketPDF = async (registrationId: string): Promise<void> =
     const html = await response.text();
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
+    // Open in new tab so user can print-to-PDF from browser
+    window.open(url, '_blank');
+    // Clean up after a delay to allow the new tab to load
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } else {
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ticket-${registrationId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+};
+
+/**
+ * Download ticket as PDF (public - with email verification, no auth required)
+ */
+export const downloadTicketPDFPublic = async (registrationId: string, email: string): Promise<void> => {
+  const response = await fetch(
+    `${API_BASE_URL}/tickets/${registrationId}/download-public?email=${encodeURIComponent(email)}`,
+    {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to download ticket' }));
+    throw new Error(error.message || 'Failed to download ticket');
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('text/html')) {
+    const html = await response.text();
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `ticket-${registrationId}.html`;
@@ -77,7 +130,6 @@ export const downloadTicketPDF = async (registrationId: string): Promise<void> =
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    window.open(url, '_blank');
   } else {
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);

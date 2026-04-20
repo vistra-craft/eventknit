@@ -80,7 +80,7 @@ export class OrganizerFinancialService {
     status?: string;
   }) {
     try {
-      const limit = filters?.limit || 20;
+      const limit = Math.min(filters?.limit || 20, 100);
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 

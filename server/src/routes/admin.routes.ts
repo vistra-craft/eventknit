@@ -1,5 +1,7 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { AdminController } from '../controllers/admin.controller.js';
+import { EventService } from '../services/event.service.js';
+import type { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { EventStaffController } from '../controllers/event-staff.controller.js';
 import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
 import { AdminNotificationSettingsController } from '../controllers/admin-notification-settings.controller.js';
@@ -46,6 +48,9 @@ import {
 } from '../validations/white-label.validations.js';
 import { extendedProfileValidations } from '../validations/extended-profile.validations.js';
 import { AdminSecurityController } from '../controllers/admin-security.controller.js';
+import { ManagedEventController } from '../controllers/managed-event.controller.js';
+import { StaffInvitationController } from '../controllers/staff-invitation.controller.js';
+import { staffInvitationValidations } from '../validations/staff-invitation.validations.js';
 import { AdminPlatformAnalyticsController } from '../controllers/admin-platform-analytics.controller.js';
 import { AdminKYCController } from '../controllers/admin-kyc.controller.js';
 import { adminKYCValidations } from '../validations/admin-kyc.validations.js';
@@ -63,27 +68,27 @@ router.use(adminSecurityCheck);
 // All admin routes require authentication
 router.use(authenticate);
 
-// All admin routes require ADMIN_STAFF or higher (SUPERADMIN, ADMIN_STAFF)
-router.use(requireMinRole(UserRole.ADMIN_STAFF));
+// All admin routes require ADMIN or higher (SUPERADMIN, ADMIN)
+router.use(requireMinRole(UserRole.ADMIN));
 
 /**
  * @route   POST /api/v1/admin/users
  * @desc    Create a new user (admin function)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/users', AdminController.createUser);
 
 /**
  * @route   GET /api/v1/admin/users
  * @desc    Get all users with filters
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/users', AdminController.getUsers);
 
 /**
  * @route   GET /api/v1/admin/users/stats
  * @desc    Get user statistics (staff, organizers, attendees, active users)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  * @note    Must be defined before /users/:id to avoid route conflict
  */
 router.get('/users/stats', AdminController.getUsersStats);
@@ -91,7 +96,7 @@ router.get('/users/stats', AdminController.getUsersStats);
 /**
  * @route   GET /api/v1/admin/users/attendees
  * @desc    Get attendees with event filtering and registration history
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  * @note    Must be defined before /users/:id to avoid route conflict
  */
 router.get('/users/attendees', AdminController.getAttendees);
@@ -99,7 +104,7 @@ router.get('/users/attendees', AdminController.getAttendees);
 /**
  * @route   GET /api/v1/admin/users/:id/organizer-details
  * @desc    Get enriched organizer details for admin slide-over panel
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  * @note    Must be defined before /users/:id to avoid route conflict
  */
 router.get('/users/:id/organizer-details', AdminController.getOrganizerDetails);
@@ -107,28 +112,35 @@ router.get('/users/:id/organizer-details', AdminController.getOrganizerDetails);
 /**
  * @route   GET /api/v1/admin/users/:id
  * @desc    Get user by ID
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/users/:id', AdminController.getUserById);
 
 /**
  * @route   PUT /api/v1/admin/users/:id
  * @desc    Update user
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put('/users/:id', AdminController.updateUser);
 
 /**
+ * @route   PATCH /api/v1/admin/users/:id/role
+ * @desc    Change user role (with session revocation, email notification, and audit trail)
+ * @access  Private (ADMIN+)
+ */
+router.patch('/users/:id/role', AdminController.changeUserRole);
+
+/**
  * @route   DELETE /api/v1/admin/users/:id
  * @desc    Delete user (soft delete)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete('/users/:id', AdminController.deleteUser);
 
 /**
  * @route   POST /api/v1/admin/seed-test-users
  * @desc    Seed test users (development only)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 if (process.env.NODE_ENV !== 'production') {
   router.post('/seed-test-users', AdminController.seedTestUsers);
@@ -137,112 +149,134 @@ if (process.env.NODE_ENV !== 'production') {
 /**
  * @route   POST /api/v1/admin/users/:id/password
  * @desc    Force password reset
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/users/:id/password', AdminController.forcePasswordReset);
 
 /**
  * @route   GET /api/v1/admin/dashboard/stats
  * @desc    Get admin dashboard stats
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/dashboard/stats', AdminController.getDashboardStats);
 
 /**
  * @route   GET /api/v1/admin/dashboard/growth
  * @desc    Get admin dashboard growth series for charts
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/dashboard/growth', AdminController.getDashboardGrowth);
 
 /**
  * @route   GET /api/v1/admin/dashboard/events
  * @desc    Get recent events for admin dashboard
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/dashboard/events', AdminController.getRecentEvents);
 
 /**
  * @route   GET /api/v1/admin/dashboard/activity
  * @desc    Get recent activity for admin dashboard
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/dashboard/activity', AdminController.getRecentActivity);
 
 /**
  * @route   GET /api/v1/admin/dashboard/alerts
  * @desc    Get system alerts for admin dashboard
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/dashboard/alerts', AdminController.getSystemAlerts);
 
 /**
  * @route   POST /api/v1/admin/users/:id/suspend
  * @desc    Suspend user (punitive action)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/users/:id/suspend', AdminController.suspendUser);
 
 /**
  * @route   POST /api/v1/admin/users/:id/deactivate
  * @desc    Deactivate user (non-punitive action)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/users/:id/deactivate', AdminController.deactivateUser);
 
 /**
  * @route   POST /api/v1/admin/users/:id/activate
  * @desc    Activate user (reactivate suspended/deactivated user)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/users/:id/activate', AdminController.activateUser);
 
 /**
  * @route   POST /api/v1/admin/users/:id/approve
  * @desc    Approve a pending organizer (PENDING_APPROVAL → ACTIVE)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/users/:id/approve', AdminController.approveOrganizer);
 
 /**
+ * @route   GET /api/v1/admin/events/:id
+ * @desc    Get event details (admin can view any event regardless of status)
+ * @access  Private (ADMIN+)
+ */
+router.get('/events/:id', async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const event = await EventService.getEventById(id, req.user!.id, true);
+    res.json({ success: true, data: { event } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * @route   POST /api/v1/admin/events/:id/recall
  * @desc    Recall event (pull down approved event)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/events/:id/recall', AdminController.recallEvent);
 
 /**
  * @route   GET /api/v1/admin/roles
  * @desc    Get all roles with permissions information
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/roles', AdminController.getRoles);
 
 /**
+ * @route   GET /api/v1/admin/events/:eventId/analytics
+ * @desc    Get event analytics (for admin mobile app)
+ * @access  Private (ADMIN+)
+ */
+router.get('/events/:eventId/analytics', AdminController.getEventAnalytics);
+
+/**
  * @route   POST /api/v1/admin/events/:eventId/staff
  * @desc    Assign admin staff to event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/events/:eventId/staff', EventStaffController.assignStaffToEvent);
 
 /**
  * @route   GET /api/v1/admin/events/:eventId/staff
  * @desc    Get staff assigned to event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/events/:eventId/staff', EventStaffController.getEventStaff);
 
 /**
  * @route   GET /api/v1/admin/staff/:staffId/events
  * @desc    Get events assigned to staff member
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/staff/:staffId/events', EventStaffController.getStaffEvents);
 
 /**
  * @route   PUT /api/v1/admin/events/:eventId/staff/:staffId
  * @desc    Update staff assignment
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/events/:eventId/staff/:staffId',
@@ -252,7 +286,7 @@ router.put(
 /**
  * @route   DELETE /api/v1/admin/events/:eventId/staff/:staffId
  * @desc    Remove staff from event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete(
   '/events/:eventId/staff/:staffId',
@@ -262,7 +296,7 @@ router.delete(
 /**
  * @route   POST /api/v1/admin/events/:eventId/staff/bulk
  * @desc    Bulk assign staff to event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/events/:eventId/staff/bulk',
@@ -272,7 +306,7 @@ router.post(
 /**
  * @route   GET /api/v1/admin/staff-performance/team
  * @desc    Get team performance metrics
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/staff-performance/team',
@@ -282,7 +316,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/staff-performance/:staffId
  * @desc    Get performance metrics for a specific staff member
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/staff-performance/:staffId',
@@ -292,7 +326,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/staff-performance/team/summary
  * @desc    Get team performance summary
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/staff-performance/team/summary',
@@ -302,7 +336,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/staff-performance/:staffId/trends
  * @desc    Get performance trends for a staff member
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/staff-performance/:staffId/trends',
@@ -312,7 +346,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/notification-settings/defaults
  * @desc    Get default notification preferences
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/notification-settings/defaults',
@@ -322,7 +356,7 @@ router.get(
 /**
  * @route   PUT /api/v1/admin/notification-settings/defaults
  * @desc    Update default notification preferences
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/notification-settings/defaults',
@@ -332,7 +366,7 @@ router.put(
 /**
  * @route   GET /api/v1/admin/notification-settings/system
  * @desc    Get system-wide notification configuration
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/notification-settings/system',
@@ -342,7 +376,7 @@ router.get(
 /**
  * @route   PUT /api/v1/admin/notification-settings/system
  * @desc    Update system-wide notification configuration
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/notification-settings/system',
@@ -352,7 +386,7 @@ router.put(
 /**
  * @route   GET /api/v1/admin/notification-settings/templates
  * @desc    Get all notification templates
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/notification-settings/templates',
@@ -362,7 +396,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/notification-settings/templates/:type
  * @desc    Get a specific notification template
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/notification-settings/templates/:type',
@@ -372,7 +406,7 @@ router.get(
 /**
  * @route   PUT /api/v1/admin/notification-settings/templates/:type
  * @desc    Create or update a notification template
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/notification-settings/templates/:type',
@@ -382,7 +416,7 @@ router.put(
 /**
  * @route   DELETE /api/v1/admin/notification-settings/templates/:type
  * @desc    Delete a notification template
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete(
   '/notification-settings/templates/:type',
@@ -392,7 +426,7 @@ router.delete(
 /**
  * @route   GET /api/v1/admin/notification-settings/analytics
  * @desc    Get notification analytics summary
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/notification-settings/analytics',
@@ -402,42 +436,42 @@ router.get(
 /**
  * @route   GET /api/v1/admin/settings
  * @desc    Get all system settings (with optional category filter)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/settings', SystemSettingsController.getSettings);
 
 /**
  * @route   GET /api/v1/admin/settings/:key
  * @desc    Get a single system setting by key
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/settings/:key', SystemSettingsController.getSetting);
 
 /**
  * @route   PUT /api/v1/admin/settings/:key
  * @desc    Create or update a system setting
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put('/settings/:key', SystemSettingsController.setSetting);
 
 /**
  * @route   PUT /api/v1/admin/settings
  * @desc    Bulk update system settings
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put('/settings', SystemSettingsController.setSettings);
 
 /**
  * @route   DELETE /api/v1/admin/settings/:key
  * @desc    Delete a system setting
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete('/settings/:key', SystemSettingsController.deleteSetting);
 
 /**
  * @route   GET /api/v1/admin/settings/:key/history
  * @desc    Get setting change history
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/settings/:key/history',
@@ -449,7 +483,7 @@ router.get(
 /**
  * @route   POST /api/v1/admin/financial/expenses
  * @desc    Create a platform expense
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/financial/expenses',
@@ -460,21 +494,21 @@ router.post(
 /**
  * @route   GET /api/v1/admin/financial/expenses
  * @desc    Get all platform expenses with filters
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/financial/expenses', AdminFinancialController.getExpenses);
 
 /**
  * @route   GET /api/v1/admin/financial/expenses/:id
  * @desc    Get expense by ID
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/financial/expenses/:id', AdminFinancialController.getExpenseById);
 
 /**
  * @route   PUT /api/v1/admin/financial/expenses/:id
  * @desc    Update expense
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/financial/expenses/:id',
@@ -485,14 +519,14 @@ router.put(
 /**
  * @route   DELETE /api/v1/admin/financial/expenses/:id
  * @desc    Delete expense
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete('/financial/expenses/:id', AdminFinancialController.deleteExpense);
 
 /**
  * @route   POST /api/v1/admin/financial/incomes
  * @desc    Create a platform income
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/financial/incomes',
@@ -503,21 +537,21 @@ router.post(
 /**
  * @route   GET /api/v1/admin/financial/incomes
  * @desc    Get all platform incomes with filters
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/financial/incomes', AdminFinancialController.getIncomes);
 
 /**
  * @route   GET /api/v1/admin/financial/incomes/:id
  * @desc    Get income by ID
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/financial/incomes/:id', AdminFinancialController.getIncomeById);
 
 /**
  * @route   PUT /api/v1/admin/financial/incomes/:id
  * @desc    Update income
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/financial/incomes/:id',
@@ -528,14 +562,14 @@ router.put(
 /**
  * @route   DELETE /api/v1/admin/financial/incomes/:id
  * @desc    Delete income
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete('/financial/incomes/:id', AdminFinancialController.deleteIncome);
 
 /**
  * @route   GET /api/v1/admin/financial/monthly-summary
  * @desc    Get monthly financial summary
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/financial/monthly-summary',
@@ -546,7 +580,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/financial/overview
  * @desc    Get financial overview
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/financial/overview',
@@ -741,7 +775,7 @@ router.post(
 /**
  * @route   GET /api/v1/admin/white-label/brandings
  * @desc    Get all brandings (with filters)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/white-label/brandings',
@@ -756,7 +790,7 @@ router.get(
 /**
  * @route   PUT /api/v1/admin/white-label/brandings/:brandingId/status
  * @desc    Update branding status (approve/reject)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/white-label/brandings/:brandingId/status',
@@ -768,7 +802,7 @@ router.put(
 /**
  * @route   PUT /api/v1/admin/white-label/custom-domains/:domainId/verify
  * @desc    Verify custom domain
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/white-label/custom-domains/:domainId/verify',
@@ -780,7 +814,7 @@ router.put(
 /**
  * @route   GET /api/v1/admin/white-label/brandings/:organizerId
  * @desc    Get branding for a specific organizer
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/white-label/brandings/:organizerId',
@@ -791,7 +825,7 @@ router.get(
 /**
  * @route   PUT /api/v1/admin/white-label/brandings/:organizerId
  * @desc    Admin create/update branding for organizer (auto-approved)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/white-label/brandings/:organizerId',
@@ -803,7 +837,7 @@ router.put(
 /**
  * @route   GET /api/v1/admin/white-label/custom-domains
  * @desc    Get all custom domains across all organizers
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/white-label/custom-domains',
@@ -819,7 +853,7 @@ router.get(
 /**
  * @route   POST /api/v1/admin/white-label/custom-domains/:organizerId
  * @desc    Admin add custom domain for organizer
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/white-label/custom-domains/:organizerId',
@@ -831,7 +865,7 @@ router.post(
 /**
  * @route   DELETE /api/v1/admin/white-label/custom-domains/:domainId
  * @desc    Admin delete any custom domain
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete(
   '/white-label/custom-domains/:domainId',
@@ -844,7 +878,7 @@ router.delete(
 /**
  * @route   GET /api/v1/admin/users/:userId/profile/full
  * @desc    Get full user profile with all extended data
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/users/:userId/profile/full',
@@ -855,7 +889,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/users/:userId/staff-profile
  * @desc    Get staff profile for user
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/users/:userId/staff-profile',
@@ -866,7 +900,7 @@ router.get(
 /**
  * @route   PUT /api/v1/admin/users/:userId/staff-profile
  * @desc    Update staff profile for user
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/users/:userId/staff-profile',
@@ -878,7 +912,7 @@ router.put(
 /**
  * @route   GET /api/v1/admin/users/:userId/organizer-profile
  * @desc    Get organizer profile for user
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/users/:userId/organizer-profile',
@@ -889,7 +923,7 @@ router.get(
 /**
  * @route   PUT /api/v1/admin/users/:userId/organizer-profile
  * @desc    Update organizer profile for user
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/users/:userId/organizer-profile',
@@ -901,7 +935,7 @@ router.put(
 /**
  * @route   GET /api/v1/admin/users/:userId/emergency-contact
  * @desc    Get emergency contact for user
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/users/:userId/emergency-contact',
@@ -912,7 +946,7 @@ router.get(
 /**
  * @route   PUT /api/v1/admin/users/:userId/emergency-contact
  * @desc    Update emergency contact for user
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/users/:userId/emergency-contact',
@@ -924,7 +958,7 @@ router.put(
 /**
  * @route   DELETE /api/v1/admin/users/:userId/emergency-contact
  * @desc    Delete emergency contact for user
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete(
   '/users/:userId/emergency-contact',
@@ -1050,7 +1084,7 @@ router.delete(
 /**
  * @route   GET /api/v1/admin/platform-analytics/gmv
  * @desc    Get platform GMV (Gross Merchandise Value) analytics
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/platform-analytics/gmv',
@@ -1065,7 +1099,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/platform-analytics/fees
  * @desc    Get platform fees collected analytics
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/platform-analytics/fees',
@@ -1080,7 +1114,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/platform-analytics/gateway-health
  * @desc    Get payment gateway health metrics
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/platform-analytics/gateway-health',
@@ -1095,7 +1129,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/platform-analytics/refund-trends
  * @desc    Get refund trends analytics
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/platform-analytics/refund-trends',
@@ -1110,7 +1144,7 @@ router.get(
 /**
  * @route   GET /api/v1/admin/platform-analytics/dashboard
  * @desc    Get complete platform dashboard analytics
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/platform-analytics/dashboard',
@@ -1122,19 +1156,55 @@ router.get(
   AdminPlatformAnalyticsController.getDashboardAnalytics,
 );
 
+// Resale & Transfer Analytics
+router.get(
+  '/platform-analytics/resale/stats',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+  })),
+  AdminPlatformAnalyticsController.getResaleStats,
+);
+router.get(
+  '/platform-analytics/transfers/stats',
+  validateQuery(Joi.object({
+    startDate: Joi.date().optional(),
+    endDate: Joi.date().optional(),
+  })),
+  AdminPlatformAnalyticsController.getTransferStats,
+);
+router.get(
+  '/platform-analytics/resale/activity',
+  validateQuery(Joi.object({
+    status: Joi.string().valid('LISTED', 'RESERVED', 'SOLD', 'CANCELLED', 'EXPIRED').optional(),
+    eventId: Joi.string().uuid().optional(),
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+  })),
+  AdminPlatformAnalyticsController.getResaleActivity,
+);
+router.get(
+  '/platform-analytics/resale/pending-payouts',
+  validateQuery(Joi.object({
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(100).optional(),
+  })),
+  AdminPlatformAnalyticsController.getResalePendingPayouts,
+);
+
 // ─── KYC Review & Approval ──────────────────────────────────────────────
 
 /**
  * @route   GET /api/v1/admin/kyc/stats
  * @desc    Get KYC stats (pending, approved, rejected counts)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/kyc/stats', AdminKYCController.getKYCStats);
 
 /**
  * @route   GET /api/v1/admin/kyc/submissions
  * @desc    List KYC submissions with pagination and filters
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/kyc/submissions',
@@ -1145,21 +1215,21 @@ router.get(
 /**
  * @route   GET /api/v1/admin/kyc/users/:userId
  * @desc    Get full KYC details for a specific organizer
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get('/kyc/users/:userId', AdminKYCController.getOrganizerKYCDetails);
 
 /**
  * @route   POST /api/v1/admin/kyc/documents/:documentId/approve
  * @desc    Approve a single KYC document
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/kyc/documents/:documentId/approve', AdminKYCController.approveDocument);
 
 /**
  * @route   POST /api/v1/admin/kyc/documents/:documentId/reject
  * @desc    Reject a single KYC document with reason
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/kyc/documents/:documentId/reject',
@@ -1170,20 +1240,27 @@ router.post(
 /**
  * @route   POST /api/v1/admin/kyc/users/:userId/approve
  * @desc    Approve an organizer's entire KYC (all required docs must be approved)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post('/kyc/users/:userId/approve', AdminKYCController.approveOrganizerKYC);
 
 /**
  * @route   POST /api/v1/admin/kyc/users/:userId/reject
  * @desc    Reject an organizer's entire KYC with reason
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/kyc/users/:userId/reject',
   validate(adminKYCValidations.rejectOrganizer),
   AdminKYCController.rejectOrganizerKYC,
 );
+
+/**
+ * @route   POST /api/v1/admin/kyc/users/:userId/remind
+ * @desc    Send KYC verification reminder email to organizer
+ * @access  Private (ADMIN+)
+ */
+router.post('/kyc/users/:userId/remind', AdminKYCController.sendKYCReminder);
 
 // ─── KYC Entity Management Routes ──────────────────────────────────────
 
@@ -1227,5 +1304,144 @@ router.delete(
   '/kyc/entity-types/:entityType/requirements/:requirementId',
   AdminKYCController.deleteEntityRequirement,
 );
+
+// ═══════════════════════════════════════════════════════════════════════
+// Subscription Plan Management
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * @route   GET /api/v1/admin/subscription-plans
+ * @desc    Get all subscription plans
+ * @access  Private (ADMIN+)
+ */
+router.get('/subscription-plans', AdminController.getSubscriptionPlans);
+
+/**
+ * @route   PUT /api/v1/admin/subscription-plans/:tier
+ * @desc    Update a subscription plan (pricing, description, features)
+ * @access  Private (ADMIN+)
+ */
+router.put(
+  '/subscription-plans/:tier',
+  requireMinRole(UserRole.ADMIN),
+  validate(Joi.object({
+    price: Joi.number().min(0).optional(),
+    description: Joi.string().allow('').optional(),
+    features: Joi.array().items(Joi.string()).optional(),
+  })),
+  AdminController.updateSubscriptionPlan,
+);
+
+/**
+ * @route   GET /api/v1/admin/organizers/:id/subscription
+ * @desc    Get organizer subscription summary (subscription + overrides + effective tier)
+ * @access  Private (ADMIN+)
+ */
+router.get(
+  '/organizers/:id/subscription',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  AdminController.getOrganizerSubscription,
+);
+
+/**
+ * @route   POST /api/v1/admin/organizers/:id/subscription/override
+ * @desc    Set a subscription override for an organizer
+ * @access  Private (ADMIN+)
+ */
+router.post(
+  '/organizers/:id/subscription/override',
+  requireMinRole(UserRole.ADMIN),
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  validate(Joi.object({
+    tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
+    reason: Joi.string().allow('').optional(),
+    expiresAt: Joi.date().iso().optional(),
+  })),
+  AdminController.setOrganizerSubscriptionOverride,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/organizers/:id/subscription/override/:overrideId
+ * @desc    Remove a subscription override
+ * @access  Private (ADMIN+)
+ */
+router.delete(
+  '/organizers/:id/subscription/override/:overrideId',
+  requireMinRole(UserRole.ADMIN),
+  validateParams(Joi.object({
+    id: Joi.string().uuid().required(),
+    overrideId: Joi.string().uuid().required(),
+  })),
+  AdminController.removeOrganizerSubscriptionOverride,
+);
+
+/**
+ * @route   GET /api/v1/admin/ticket-issuances
+ * @desc    List all complementary ticket issuances across all events
+ * @access  Private (ADMIN+)
+ */
+router.get(
+  '/ticket-issuances',
+  validateQuery(Joi.object({
+    status: Joi.string().valid('PENDING', 'CLAIMED', 'CANCELLED', 'EXPIRED').optional(),
+    eventId: Joi.string().uuid().optional(),
+    page: Joi.number().integer().min(1).optional(),
+    limit: Joi.number().integer().min(1).max(200).optional(),
+  })),
+  AdminController.getTicketIssuances,
+);
+
+/**
+ * @route   PATCH /api/v1/admin/ticket-issuances/:id/cancel
+ * @desc    Cancel a ticket issuance
+ * @access  Private (ADMIN+)
+ */
+router.patch(
+  '/ticket-issuances/:id/cancel',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  AdminController.cancelTicketIssuance,
+);
+
+// ========== Managed Events ==========
+router.get('/managed-events/stats', requireMinRole(UserRole.ADMIN), ManagedEventController.getManagedEventStats);
+router.get('/managed-events', requireMinRole(UserRole.ADMIN), ManagedEventController.getManagedEvents);
+router.get('/managed-events/:eventId', requireMinRole(UserRole.ADMIN), ManagedEventController.getManagedEventById);
+router.post('/managed-events', requireMinRole(UserRole.ADMIN), ManagedEventController.createManagedEvent);
+router.put('/managed-events/:eventId', requireMinRole(UserRole.ADMIN), ManagedEventController.updateManagedEvent);
+router.post('/managed-events/:eventId/cancel', requireMinRole(UserRole.ADMIN), ManagedEventController.cancelManagedEvent);
+
+// ─── Staff Invitations ────────────────────────────────────────────────────────
+
+/**
+ * @route   POST /api/v1/admin/staff-invitations
+ * @desc    Invite a staff member
+ * @access  Private (ADMIN+)
+ */
+router.post(
+  '/staff-invitations',
+  validate(staffInvitationValidations.inviteStaff),
+  StaffInvitationController.inviteStaff,
+);
+
+/**
+ * @route   GET /api/v1/admin/staff-invitations
+ * @desc    Get platform staff invitations
+ * @access  Private (ADMIN+)
+ */
+router.get('/staff-invitations', StaffInvitationController.getInvitations);
+
+/**
+ * @route   POST /api/v1/admin/staff-invitations/:id/resend
+ * @desc    Resend a staff invitation
+ * @access  Private (ADMIN+)
+ */
+router.post('/staff-invitations/:id/resend', StaffInvitationController.resendInvitation);
+
+/**
+ * @route   POST /api/v1/admin/staff-invitations/:id/revoke
+ * @desc    Revoke a staff invitation
+ * @access  Private (ADMIN+)
+ */
+router.post('/staff-invitations/:id/revoke', StaffInvitationController.revokeInvitation);
 
 export default router;

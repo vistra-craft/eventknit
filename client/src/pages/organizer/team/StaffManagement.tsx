@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Pagination } from "@/components/ui/pagination";
-import { 
-  UserPlus, 
-  QrCode, 
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  UserPlus,
+  QrCode,
   User,
   Search,
   Clock,
@@ -25,14 +27,16 @@ import {
   Award,
   Target,
   RefreshCw,
+  Send,
+  XCircle,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { ButtonLoader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   getOrganizerStaff,
-  createOrganizerStaff,
   updateOrganizerStaff,
   deleteOrganizerStaff,
   getOrganizerStaffAssignments,
@@ -42,8 +46,12 @@ import {
   getEventCoverageAnalysis,
   getStaffAvailability,
   getRoleTemplates,
+  inviteOrganizerStaff,
+  getOrganizerStaffInvitations,
+  resendOrganizerStaffInvitation,
+  revokeOrganizerStaffInvitation,
   type OrganizerStaff,
-  type CreateOrganizerStaffData,
+  type OrgStaffInvitation,
   type UpdateOrganizerStaffData,
   type PerformancePeriod,
   type StaffPerformanceMetrics,
@@ -53,12 +61,14 @@ import {
   type StaffAvailability,
   type TeamRoleTemplate,
 } from "@/lib/organizer-api";
+import { ROLE_LABELS } from "@/constants/roleLabels";
 
 const StaffManagement = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<"staff" | "performance">("staff");
-  
+  const [staffSubTab, setStaffSubTab] = useState<"members" | "invitations">("members");
+
   // Staff List Tab State
   const [staff, setStaff] = useState<OrganizerStaff[]>([]);
   const [customRoles, setCustomRoles] = useState<TeamRoleTemplate[]>([]);
@@ -68,23 +78,26 @@ const StaffManagement = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
-  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingStaff, setEditingStaff] = useState<OrganizerStaff | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingStaffId, setDeletingStaffId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  
-  // Add/Edit Form State
-  const [formData, setFormData] = useState<CreateOrganizerStaffData>({
-    email: "",
-    password: "",
-    firstName: "",
-    lastName: "",
-    phoneNumber: "",
-    role: "ORGANIZER_STAFF",
-  });
-  
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Invite form state
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<string>("ORGANIZER_ADMIN");
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  // Invitations tab state
+  const [invitations, setInvitations] = useState<OrgStaffInvitation[]>([]);
+  const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [invitationStatusFilter, setInvitationStatusFilter] = useState<string>("all");
+  const [pendingInvitationCount, setPendingInvitationCount] = useState(0);
+
   // Edit form state (includes customRoleId)
   const [editFormData, setEditFormData] = useState<UpdateOrganizerStaffData & { customRoleId?: string | null }>({
     firstName: "",
@@ -111,7 +124,7 @@ const StaffManagement = () => {
         setCustomRoles(response.data.templates);
       }
     } catch (error) {
-      console.error("Error fetching custom roles:", error);
+      console.error('Failed to fetch custom roles:', error);
     }
   }, []);
 
@@ -124,12 +137,7 @@ const StaffManagement = () => {
         setStaff(response.data.staff);
       }
     } catch (error) {
-      console.error("Error fetching staff:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load staff members",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load staff members');
     } finally {
       setLoading(false);
     }
@@ -153,12 +161,7 @@ const StaffManagement = () => {
       if (coverageRes.success) setCoverage(coverageRes.data);
       if (availabilityRes.success) setAvailability(availabilityRes.data);
     } catch (error) {
-      console.error("Error fetching performance data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load performance data",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load performance data');
     } finally {
       setPerformanceLoading(false);
     }
@@ -194,81 +197,148 @@ const StaffManagement = () => {
 
   // Get stats from assignments
   const [assignments, setAssignments] = useState<{ staffId: string; eventId: string }[]>([]);
+  // Staff scan metrics lookup (staffId → totalScans)
+  const [staffScanCounts, setStaffScanCounts] = useState<Record<string, number>>({});
+
   useEffect(() => {
-    const fetchAssignments = async () => {
+    const fetchAssignmentsAndScans = async () => {
       try {
-        const response = await getOrganizerStaffAssignments();
-        if (response.success && response.data) {
-          setAssignments(response.data.assignments);
+        const [assignmentsRes, performanceRes] = await Promise.all([
+          getOrganizerStaffAssignments(),
+          getOrganizerTeamPerformance('all', 200),
+        ]);
+        if (assignmentsRes.success && assignmentsRes.data) {
+          setAssignments(assignmentsRes.data.assignments);
+        }
+        if (performanceRes.success && performanceRes.data) {
+          const scanMap: Record<string, number> = {};
+          for (const perf of performanceRes.data.performances) {
+            scanMap[perf.staffId] = perf.totalScans;
+          }
+          setStaffScanCounts(scanMap);
         }
       } catch (error) {
-        console.error("Error fetching assignments:", error);
+        console.error('Failed to fetch assignments/scans:', error);
       }
     };
-    fetchAssignments();
+    fetchAssignmentsAndScans();
   }, []);
 
   const getStaffStats = (staffId: string) => {
     const staffAssignments = assignments.filter(a => a.staffId === staffId);
     const eventsAssigned = new Set(staffAssignments.map(a => a.eventId)).size;
-    // For tickets scanned, we'd need to query ticket scans - this would require additional API
-    const ticketsScanned = 0; // Placeholder - would need getStaffPerformance or similar
+    const ticketsScanned = staffScanCounts[staffId] || 0;
     return { eventsAssigned, ticketsScanned };
   };
 
-  // Handle add staff
-  const handleAddStaff = async () => {
-    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  // Fetch invitations
+  const fetchInvitations = useCallback(async () => {
+    setInvitationsLoading(true);
     try {
-      setSubmitting(true);
-      const response = await createOrganizerStaff(formData);
-      if (response.success) {
-        toast({
-          title: "Success",
-          description: "Staff member created successfully",
-        });
-        setShowAddDialog(false);
-        setFormData({
-          email: "",
-          password: "",
-          firstName: "",
-          lastName: "",
-          phoneNumber: "",
-          role: "ORGANIZER_STAFF",
-        });
-        fetchStaff();
+      const response = await getOrganizerStaffInvitations({
+        status: invitationStatusFilter !== "all" ? invitationStatusFilter : undefined,
+        limit: 50,
+      });
+      if (response.success && response.data) {
+        setInvitations(response.data.invitations);
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create staff member",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load invitations');
     } finally {
-      setSubmitting(false);
+      setInvitationsLoading(false);
+    }
+  }, [invitationStatusFilter, toast]);
+
+  // Fetch pending invitation count
+  const fetchPendingInvitationCount = useCallback(async () => {
+    try {
+      const response = await getOrganizerStaffInvitations({ status: 'PENDING', limit: 1 });
+      if (response.success && response.data) {
+        setPendingInvitationCount(response.data.pagination.total);
+      }
+    } catch {
+      // Non-critical
+    }
+  }, []);
+
+  // Load invitations when sub-tab switches
+  useEffect(() => {
+    if (staffSubTab === "invitations" && activeTab === "staff") {
+      fetchInvitations();
+    }
+  }, [staffSubTab, activeTab, fetchInvitations]);
+
+  // Load pending count on mount
+  useEffect(() => {
+    fetchPendingInvitationCount();
+  }, [fetchPendingInvitationCount]);
+
+  // Handle invite staff
+  const handleInviteStaff = async () => {
+    if (!inviteEmail.trim()) return;
+    setInviteLoading(true);
+    try {
+      const response = await inviteOrganizerStaff({
+        email: inviteEmail.trim(),
+        role: inviteRole,
+        message: inviteMessage.trim() || undefined,
+      });
+      if (response.success) {
+        toast({ title: "Invitation Sent", description: `Invitation sent to ${inviteEmail}` });
+        setShowInviteDialog(false);
+        setInviteEmail("");
+        setInviteRole("ORGANIZER_ADMIN");
+        setInviteMessage("");
+        if (staffSubTab === "invitations") fetchInvitations();
+        fetchPendingInvitationCount();
+      }
+    } catch (error: unknown) {
+      showErrorToast(toast, error, 'Failed to send invitation');
+    } finally {
+      setInviteLoading(false);
+    }
+  };
+
+  const handleResendInvitation = async (id: string) => {
+    try {
+      setActionLoading(id);
+      await resendOrganizerStaffInvitation(id);
+      toast({ title: "Resent", description: "Invitation resent successfully" });
+      fetchInvitations();
+      fetchPendingInvitationCount();
+    } catch (error: unknown) {
+      showErrorToast(toast, error, 'Failed to resend invitation');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRevokeInvitation = async (id: string) => {
+    try {
+      setActionLoading(id);
+      await revokeOrganizerStaffInvitation(id);
+      toast({ title: "Revoked", description: "Invitation revoked" });
+      fetchInvitations();
+      fetchPendingInvitationCount();
+    } catch (error: unknown) {
+      showErrorToast(toast, error, 'Failed to revoke invitation');
+    } finally {
+      setActionLoading(null);
     }
   };
 
   // Handle edit staff
   const handleEditStaff = async () => {
-    if (!editingStaff || !formData.firstName || !formData.lastName) {
+    if (!editingStaff || !editFormData.firstName || !editFormData.lastName) {
       return;
     }
 
     try {
       setSubmitting(true);
       const updateData: UpdateOrganizerStaffData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber || undefined,
+        firstName: editFormData.firstName,
+        lastName: editFormData.lastName,
+        phoneNumber: editFormData.phoneNumber || undefined,
       };
       const response = await updateOrganizerStaff(editingStaff.id, updateData);
       if (response.success) {
@@ -281,11 +351,7 @@ const StaffManagement = () => {
         fetchStaff();
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update staff member",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to update staff member');
     } finally {
       setSubmitting(false);
     }
@@ -308,11 +374,7 @@ const StaffManagement = () => {
         fetchStaff();
       }
     } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete staff member",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to delete staff member');
     } finally {
       setSubmitting(false);
     }
@@ -337,7 +399,7 @@ const StaffManagement = () => {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'ORGANIZER_STAFF': return 'Staff';
+      case 'ORGANIZER_ADMIN': return 'Staff';
       case 'ORGANIZER_TELLER': return 'Teller';
       default: return role;
     }
@@ -385,12 +447,12 @@ const StaffManagement = () => {
           </p>
         </div>
         {activeTab === "staff" && (
-        <Button 
-            onClick={() => setShowAddDialog(true)}
+          <Button
+            onClick={() => setShowInviteDialog(true)}
             className="w-full sm:w-auto"
-        >
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add Staff
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            Invite Staff
           </Button>
         )}
       </div>
@@ -418,228 +480,351 @@ const StaffManagement = () => {
       {/* Staff List Tab */}
       {activeTab === "staff" && (
         <>
-      {/* Stats Cards */}
+          {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Staff</p>
                     <p className="text-2xl font-bold text-foreground">{totalStaffCount}</p>
-              </div>
-              <User className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+                  </div>
+                  <User className="h-8 w-8 text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
                     <p className="text-sm font-medium text-muted-foreground">Active Staff</p>
                     <p className="text-2xl font-bold text-foreground">{activeStaffCount}</p>
-              </div>
+                  </div>
                   <CheckCircle className="h-8 w-8 text-success" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
                     <p className="text-sm font-medium text-muted-foreground">Events Assigned</p>
                     <p className="text-2xl font-bold text-foreground">{assignments.length}</p>
-              </div>
+                  </div>
                   <Calendar className="h-8 w-8 text-primary" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                    <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold text-foreground">
-                      {staff.filter(m => m.status === 'SUSPENDED').length}
-                </p>
-              </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Pending Invitations</p>
+                    <p className="text-2xl font-bold text-foreground">{pendingInvitationCount}</p>
+                  </div>
                   <Clock className="h-8 w-8 text-warning" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                  type="text"
-                  placeholder="Search staff members..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                />
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2">
-                  <Select value={filterRole} onValueChange={setFilterRole}>
-                    <SelectTrigger className="w-full sm:w-[150px]">
-                      <SelectValue placeholder="All Roles" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Roles</SelectItem>
-                      <SelectItem value="ORGANIZER_STAFF">Staff</SelectItem>
-                      <SelectItem value="ORGANIZER_TELLER">Teller</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-full sm:w-[150px]">
-                      <SelectValue placeholder="All Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="ACTIVE">Active</SelectItem>
-                      <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                      <SelectItem value="DEACTIVATED">Deactivated</SelectItem>
-                    </SelectContent>
-                  </Select>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-          {/* Staff List */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Staff Members</CardTitle>
-            <Select value={limit.toString()} onValueChange={(value) => {
-              setLimit(parseInt(value, 10));
-              setPage(1);
-            }}>
-              <SelectTrigger className="w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
-              {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader size="md" />
-                </div>
-              ) : paginatedStaff.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No staff members found
-                </div>
-              ) : (
-                <>
-          <div className="space-y-4">
-                    {paginatedStaff.map((member) => {
-                      const stats = getStaffStats(member.id);
-                      return (
-              <div key={member.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-primary-foreground" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                                <h3 className="font-medium text-foreground">
-                                  {member.firstName} {member.lastName}
-                                </h3>
-                                {member.isEmailVerified && (
-                        <Badge className="bg-success-light text-success text-xs">
-                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                    Verified
-                        </Badge>
-                      )}
+          {/* Sub-tabs: Members | Invitations */}
+          <Tabs value={staffSubTab} onValueChange={(v) => setStaffSubTab(v as "members" | "invitations")}>
+            <TabsList>
+              <TabsTrigger value="members">Staff Members</TabsTrigger>
+              <TabsTrigger value="invitations" className="gap-2">
+                Invitations
+                {pendingInvitationCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1.5 text-[10px] font-semibold">
+                    {pendingInvitationCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Members Sub-Tab */}
+            <TabsContent value="members" className="space-y-4 mt-4">
+              {/* Search and Filters */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="text"
+                          placeholder="Search staff members..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
-                              <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1">
-                      <span className="flex items-center">
-                        <Mail className="h-3 w-3 mr-1" />
-                        {member.email}
-                      </span>
-                                {member.phoneNumber && (
-                        <span className="flex items-center">
-                          <Phone className="h-3 w-3 mr-1" />
-                                    {member.phoneNumber}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2 mt-2 flex-wrap gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {getRoleLabel(member.role)}
-                      </Badge>
-                      {member.customRole && (
-                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary">
-                          {member.customRole.name}
-                        </Badge>
-                      )}
-                      <Badge className={`text-xs ${getStatusColor(member.status)}`}>
-                        {member.status}
-                      </Badge>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Select value={filterRole} onValueChange={setFilterRole}>
+                        <SelectTrigger className="w-full sm:w-[150px]">
+                          <SelectValue placeholder="All Roles" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Roles</SelectItem>
+                          <SelectItem value="ORGANIZER_ADMIN">Organizer Admin</SelectItem>
+                          <SelectItem value="ORGANIZER_TELLER">Teller</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={filterStatus} onValueChange={setFilterStatus}>
+                        <SelectTrigger className="w-full sm:w-[150px]">
+                          <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          <SelectItem value="ACTIVE">Active</SelectItem>
+                          <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                          <SelectItem value="DEACTIVATED">Deactivated</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                </div>
-                          <div className="flex items-center space-x-4">
-                  <div className="text-right text-sm">
-                    <div className="text-muted-foreground">
-                                Events: <span className="font-medium text-foreground">{stats.eventsAssigned}</span>
-                    </div>
+                </CardContent>
+              </Card>
+
+              {/* Staff List */}
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Staff Members</CardTitle>
+                    <Select value={limit.toString()} onValueChange={(value) => {
+                      setLimit(parseInt(value, 10));
+                      setPage(1);
+                    }}>
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                            <div className="flex items-center space-x-2">
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader size="md" />
+                    </div>
+                  ) : paginatedStaff.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No staff members found
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        {paginatedStaff.map((member) => {
+                          const stats = getStaffStats(member.id);
+                          return (
+                            <div key={member.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                              <div className="flex items-center space-x-4">
+                                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                                  <User className="h-5 w-5 text-primary-foreground" />
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <h3 className="font-medium text-foreground">
+                                      {member.firstName} {member.lastName}
+                                    </h3>
+                                    {member.isEmailVerified && (
+                                      <Badge className="bg-success-light text-success text-xs">
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Verified
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1">
+                                    <span className="flex items-center">
+                                      <Mail className="h-3 w-3 mr-1" />
+                                      {member.email}
+                                    </span>
+                                    {member.phoneNumber && (
+                                      <span className="flex items-center">
+                                        <Phone className="h-3 w-3 mr-1" />
+                                        {member.phoneNumber}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center space-x-2 mt-2 flex-wrap gap-2">
+                                    <Badge variant="outline" className="text-xs">
+                                      {getRoleLabel(member.role)}
+                                    </Badge>
+                                    {member.customRole && (
+                                      <Badge variant="outline" className="text-xs bg-primary/10 text-primary">
+                                        {member.customRole.name}
+                                      </Badge>
+                                    )}
+                                    <Badge className={`text-xs ${getStatusColor(member.status)}`}>
+                                      {member.status}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-4">
+                                <div className="text-right text-sm">
+                                  <div className="text-muted-foreground">
+                                    Events: <span className="font-medium text-foreground">{stats.eventsAssigned}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Button variant="ghost" size="sm" onClick={() => openEditDialog(member)}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setDeletingStaffId(member.id);
+                                      setShowDeleteDialog(true);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {totalPages > 1 && (
+                        <div className="mt-6">
+                          <Pagination
+                            currentPage={page}
+                            totalPages={totalPages}
+                            onPageChange={(newPage) => {
+                              setPage(newPage);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Invitations Sub-Tab */}
+            <TabsContent value="invitations" className="space-y-4 mt-4">
+              {/* Filter */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <Select value={invitationStatusFilter} onValueChange={setInvitationStatusFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="PENDING">Pending</SelectItem>
+                        <SelectItem value="ACCEPTED">Accepted</SelectItem>
+                        <SelectItem value="REVOKED">Revoked</SelectItem>
+                        <SelectItem value="EXPIRED">Expired</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground ml-auto">
+                      {invitations.length} invitation{invitations.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Invitations List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invitations</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {invitationsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader size="md" />
+                    </div>
+                  ) : invitations.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Mail className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-muted-foreground">No invitations found</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-4"
+                        onClick={() => setShowInviteDialog(true)}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Send First Invitation
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {invitations.map((inv) => (
+                        <div
+                          key={inv.id}
+                          className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">{inv.email}</p>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <Badge variant="outline" className="text-xs">
+                                  {ROLE_LABELS[inv.role as keyof typeof ROLE_LABELS] || inv.role}
+                                </Badge>
+                                <Badge className={`text-xs ${
+                                  inv.status === 'PENDING'
+                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+                                    : inv.status === 'ACCEPTED'
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
+                                      : inv.status === 'REVOKED'
+                                        ? 'bg-destructive/10 text-destructive'
+                                        : 'bg-muted text-muted-foreground'
+                                }`}>
+                                  {inv.status}
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Sent on {new Date(inv.createdAt).toLocaleDateString()}
+                                {inv.status === 'PENDING' && ` · Expires ${new Date(inv.expiresAt).toLocaleDateString()}`}
+                              </p>
+                            </div>
+                          </div>
+                          {inv.status === 'PENDING' && (
+                            <div className="flex items-center gap-1 ml-4">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => openEditDialog(member)}
+                                onClick={() => handleResendInvitation(inv.id)}
+                                disabled={actionLoading === inv.id}
+                                title="Resend invitation"
                               >
-                                <Edit className="h-4 w-4" />
+                                <RefreshCw className={`h-4 w-4 ${actionLoading === inv.id ? 'animate-spin' : ''}`} />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => {
-                                  setDeletingStaffId(member.id);
-                                  setShowDeleteDialog(true);
-                                }}
+                                onClick={() => handleRevokeInvitation(inv.id)}
+                                disabled={actionLoading === inv.id}
+                                title="Revoke invitation"
                               >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
-              </div>
+                                <XCircle className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
-          </div>
-          {totalPages > 1 && (
-            <div className="mt-6">
-              <Pagination
-                currentPage={page}
-                totalPages={totalPages}
-                onPageChange={(newPage) => {
-                  setPage(newPage);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              />
-            </div>
-          )}
-                </>
-              )}
-            </CardContent>
-          </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </>
       )}
 
@@ -1092,86 +1277,68 @@ const StaffManagement = () => {
         </div>
       )}
 
-      {/* Add Staff Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent>
+      {/* Invite Staff Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Staff Member</DialogTitle>
+            <DialogTitle>Invite Staff Member</DialogTitle>
             <DialogDescription>
-              Create a new staff member account. They will receive login credentials.
+              Send an invitation email. The invitee will create their own password when they accept.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName">First Name *</Label>
-                <Input
-                  id="firstName"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  placeholder="John"
-                />
-              </div>
-              <div>
-                <Label htmlFor="lastName">Last Name *</Label>
-                <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  placeholder="Doe"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="email">Email *</Label>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="invite-email">Email Address</Label>
               <Input
-                id="email"
+                id="invite-email"
                 type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="john@example.com"
+                placeholder="staff@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
               />
             </div>
-            <div>
-              <Label htmlFor="phoneNumber">Phone Number</Label>
-              <Input
-                id="phoneNumber"
-                type="tel"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                placeholder="+1 (555) 123-4567"
-              />
-            </div>
-            <div>
-              <Label htmlFor="role">Role *</Label>
-              <Select value={formData.role} onValueChange={(value: "ORGANIZER_STAFF" | "ORGANIZER_TELLER") => setFormData({ ...formData, role: value })}>
+            <div className="space-y-2">
+              <Label htmlFor="invite-role">Role</Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ORGANIZER_STAFF">Staff</SelectItem>
-                  <SelectItem value="ORGANIZER_TELLER">Teller</SelectItem>
+                  <SelectItem value="ORGANIZER_ADMIN">Organizer Admin</SelectItem>
+                  <SelectItem value="ORGANIZER_TELLER">Organizer Teller</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="password">Password *</Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Minimum 8 characters"
+            <div className="space-y-2">
+              <Label htmlFor="invite-message">
+                Personal Message <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Textarea
+                id="invite-message"
+                placeholder="Welcome to the team! Looking forward to working with you."
+                value={inviteMessage}
+                onChange={(e) => setInviteMessage(e.target.value)}
+                rows={3}
+                maxLength={500}
               />
+              <p className="text-xs text-muted-foreground text-right">
+                {inviteMessage.length}/500
+              </p>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddStaff} disabled={submitting}>
-              {submitting && <ButtonLoader />}
-              {submitting ? "Creating..." : "Create Staff"}
+            <Button onClick={handleInviteStaff} disabled={inviteLoading || !inviteEmail.trim()}>
+              {inviteLoading ? (
+                "Sending..."
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Invitation
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1187,7 +1354,7 @@ const StaffManagement = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-firstName">First Name *</Label>
                 <Input
@@ -1227,12 +1394,12 @@ const StaffManagement = () => {
             </div>
             <div>
               <Label htmlFor="edit-system-role">System Role</Label>
-              <Select value={editingStaff?.role || 'ORGANIZER_STAFF'} disabled>
+              <Select value={editingStaff?.role || 'ORGANIZER_ADMIN'} disabled>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ORGANIZER_STAFF">Staff</SelectItem>
+                  <SelectItem value="ORGANIZER_ADMIN">Staff</SelectItem>
                   <SelectItem value="ORGANIZER_TELLER">Teller</SelectItem>
                 </SelectContent>
               </Select>

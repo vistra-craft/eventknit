@@ -117,13 +117,13 @@ export function useGoogleAuth(options: UseGoogleAuthOptions): UseGoogleAuthRetur
 
               // Navigate based on role
               const userRole = result.data.user.role;
-              if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_STAFF' || userRole === 'ORGANIZER_TELLER') {
+              if (userRole === 'ORGANIZER' || userRole === 'ORGANIZER_ADMIN' || userRole === 'ORGANIZER_TELLER') {
                 const needsOnboarding = result.data.user &&
                   typeof (result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted === "boolean"
                     ? !(result.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
                     : true;
                 navigate(needsOnboarding ? '/organizer/onboarding' : '/organizer/dashboard');
-              } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN_STAFF' || userRole === 'MARKETER' || userRole === 'SUPPORT' || userRole === 'TELLER') {
+              } else if (userRole === 'SUPERADMIN' || userRole === 'ADMIN' || userRole === 'SUPPORT' || userRole === 'TELLER') {
                 navigate('/admin/dashboard');
               } else {
                 navigate('/user/dashboard');

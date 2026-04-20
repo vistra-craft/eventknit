@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +24,7 @@ import {
   type OrganizerInfo,
   type CreateCustomDomainData,
 } from '@/lib/white-label-api';
-import { getUsers } from '@/lib/admin-api';
+import { getUsers, type User } from '@/lib/admin-api';
 import {
   Search,
   Plus,
@@ -36,6 +37,7 @@ import {
   Shield,
 } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 type DomainWithOrg = CustomDomain & { organizer?: OrganizerInfo };
 
@@ -83,14 +85,12 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
             ? 'VERIFIED'
             : undefined;
       const res = await adminGetAllCustomDomains({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        status: statusFilter as any,
+        status: statusFilter,
         search: searchTerm || undefined,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setDomains((res as any)?.data || res || []);
-    } catch {
-      toast({ title: 'Error', description: 'Failed to load domains', variant: 'destructive' });
+      setDomains(res.data ?? []);
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to load domains');
     } finally {
       setIsLoading(false);
     }
@@ -108,12 +108,10 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
     }
     setIsSearchingOrg(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const res = await getUsers({ role: 'ORGANIZER' as any, search: term, limit: 15 });
-      const users = res?.data?.users || [];
+      const res = await getUsers({ role: 'ORGANIZER', search: term, limit: 15 });
+      const users = res?.data?.users ?? [];
       setOrgResults(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        users.map((u: any) => ({
+        users.map((u: User) => ({
           id: u.id,
           label: u.organizationName || `${u.firstName} ${u.lastName}`,
           email: u.email,
@@ -135,11 +133,11 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
 
   const handleAddDomain = async () => {
     if (!addOrgId) {
-      toast({ title: 'Error', description: 'Please select an organizer', variant: 'destructive' });
+      toast({ title: 'Please select an organizer', variant: 'destructive' });
       return;
     }
     if (!domainForm.domain) {
-      toast({ title: 'Error', description: 'Domain is required', variant: 'destructive' });
+      toast({ title: 'Domain is required', variant: 'destructive' });
       return;
     }
     setIsSaving(true);
@@ -152,10 +150,8 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
       setShowAddDialog(false);
       resetAddForm();
       loadDomains();
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string } }; message?: string };
-      const msg = err?.response?.data?.error || err?.message;
-      toast({ title: 'Error', description: msg || 'Failed to add domain', variant: 'destructive' });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to add domain');
     } finally {
       setIsSaving(false);
     }
@@ -168,14 +164,15 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
     setDomainForm({ domain: '', subdomain: '', isPrimary: false, cnameTarget: '', ipAddress: '' });
   };
 
+  const [deleteDomainConfirm, setDeleteDomainConfirm] = useState<string | null>(null);
+
   const handleDeleteDomain = async (domainId: string) => {
-    if (!confirm('Are you sure you want to delete this domain?')) return;
     try {
       await adminDeleteCustomDomain(domainId);
       toast({ title: 'Success', description: 'Domain deleted' });
       loadDomains();
-    } catch {
-      toast({ title: 'Error', description: 'Failed to delete domain', variant: 'destructive' });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to delete domain');
     }
   };
 
@@ -199,8 +196,8 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
       setVerifyDomain(null);
       setFailureReason('');
       loadDomains();
-    } catch {
-      toast({ title: 'Error', description: 'Failed to update domain', variant: 'destructive' });
+    } catch (error) {
+      showErrorToast(toast, error, 'Failed to update domain');
     } finally {
       setIsSaving(false);
     }
@@ -386,7 +383,7 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleDeleteDomain(domain.id)}
+                      onClick={() => setDeleteDomainConfirm(domain.id)}
                     >
                       <Trash2 className="h-3.5 w-3.5 mr-1" />
                       Delete
@@ -555,6 +552,19 @@ const CustomDomainsTab = ({ refreshKey }: CustomDomainsTabProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteDomainConfirm} onOpenChange={() => setDeleteDomainConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete domain?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteDomainConfirm) handleDeleteDomain(deleteDomainConfirm); setDeleteDomainConfirm(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -119,7 +119,7 @@ export async function logApiRequest(
 
   // Override res.json to capture response
   const originalJson = res.json.bind(res);
-  res.json = function (body: any) {
+  res.json = function (body: unknown) {
     const responseTime = Date.now() - startTime;
 
     // Log API request asynchronously (don't block response)

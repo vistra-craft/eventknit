@@ -40,6 +40,8 @@ import emailTemplateRoutes from './routes/email-template.routes.js';
 import unifiedMessagingRoutes from './routes/unified-messaging.routes.js';
 import feedbackRoutes from './routes/feedback.routes.js';
 import adminFeedbackRoutes from './routes/admin-feedback.routes.js';
+import surveyRoutes from './routes/survey.routes.js';
+import adminSurveyRoutes from './routes/admin-survey.routes.js';
 import adminPromoCodeRoutes from './routes/admin-promo-code.routes.js';
 import { organizerRouter as promoCodeRequestOrganizerRoutes, adminRouter as promoCodeRequestAdminRoutes } from './routes/promo-code-request.routes.js';
 import { smsRouter, ussdRouter, mpesaRouter } from './routes/ussd-sms.routes.js';
@@ -64,6 +66,9 @@ import extendedProfileRoutes from './routes/extended-profile.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
+import { authenticate, authorize } from './middleware/auth.middleware.js';
+import { UserRole } from '@prisma/client';
+import { serverAdapter as queueServerAdapter } from './services/queue-monitor.js';
 
 const app = express();
 
@@ -111,6 +116,12 @@ app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        'connect-src': ['\'self\'', 'http:', 'https:', 'ws:', 'wss:'],
+      },
+    },
   }),
 );
 
@@ -130,7 +141,14 @@ if (config.env === 'development') {
 }
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+// The verify callback saves the raw body buffer so the Stripe webhook controller
+// can compute HMAC over the exact bytes Stripe sent (required by Stripe's SDK).
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: express.Request & { rawBody?: string }, _res, buf) => {
+    req.rawBody = buf.toString('utf8');
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Global rate limiter
@@ -196,8 +214,6 @@ app.use('/api/v1/workstation', workstationRoutes);
 app.use('/api/v1/checkpoints', checkpointRoutes);
 app.use('/api/v1/badge-templates', badgeTemplateRoutes);
 app.use('/api/v1/facilities', facilityRoutes);
-app.use('/api/v1', facilityZoneRoutes);
-app.use('/api/v1', printerRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/offline', offlineSyncRoutes);
 app.use('/api/v1/capacity', venueCapacityRoutes);
@@ -217,6 +233,8 @@ app.use('/api/v1/ussd', ussdRouter);
 app.use('/api/v1/mpesa', mpesaRouter);
 app.use('/api/v1/feedback', feedbackRoutes);
 app.use('/api/v1/admin/feedback', adminFeedbackRoutes);
+app.use('/api/v1/surveys', surveyRoutes);
+app.use('/api/v1/admin/surveys', adminSurveyRoutes);
 app.use('/api/v1/admin/promo-codes/requests', promoCodeRequestAdminRoutes);
 app.use('/api/v1/admin/promo-codes', adminPromoCodeRoutes);
 app.use('/api/v1/promo-codes/requests', promoCodeRequestOrganizerRoutes);
@@ -233,6 +251,13 @@ app.use('/api/v1/configuration', configurationRoutes); // System configuration (
 app.use('/api/v1/admin/company-documents', companyDocumentsRoutes); // Company document management
 app.use('/api/v1/profile', extendedProfileRoutes); // Extended profile (organizer profile, staff profile)
 app.use('/api/v1/uploads', uploadRoutes); // Generic image upload (Cloudinary)
+
+// Mount catch-all /:id routes LAST to avoid shadowing specific routes above
+app.use('/api/v1', facilityZoneRoutes);
+app.use('/api/v1', printerRoutes);
+
+// Queue monitoring dashboard — superadmin only
+app.use('/admin/queues', authenticate, authorize(UserRole.SUPERADMIN), queueServerAdapter.getRouter());
 
 // Error handler middleware (must be last)
 app.use(errorHandler);

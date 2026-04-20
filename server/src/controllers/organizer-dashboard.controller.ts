@@ -10,6 +10,7 @@ import { OrganizerFinancialService } from '../services/organizer-financial.servi
 import { PayoutManagementService } from '../services/payout-management.service.js';
 import { EventCollaborationService } from '../services/event-collaboration.service.js';
 import { AdvancedTicketTypesService } from '../services/advanced-ticket-types.service.js';
+import { TicketIssuanceService } from '../services/ticket-issuance.service.js';
 import { DynamicPricingService } from '../services/dynamic-pricing.service.js';
 import { AffiliateProgramService } from '../services/affiliate-program.service.js';
 import { EmailMarketingService } from '../services/email-marketing.service.js';
@@ -19,7 +20,14 @@ import { PermissionService } from '../services/permission.service.js';
 import { KYCService } from '../services/kyc.service.js';
 import { SubscriptionService } from '../services/subscription.service.js';
 import { ConsentService } from '../services/consent.service.js';
+import { EventSessionService } from '../services/event-session.service.js';
+import { ResaleTransferAnalyticsService } from '../services/resale-transfer-analytics.service.js';
+import { WorkstationService } from '../services/workstation.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+import { UserRole } from '@prisma/client';
+
+const isAdminRole = (role: UserRole): boolean =>
+  role === UserRole.SUPERADMIN || role === UserRole.ADMIN;
 
 export class OrganizerDashboardController {
   // Event Templates
@@ -279,6 +287,99 @@ export class OrganizerDashboardController {
       const draftId = (req.params.draftId as string) as string;
       const result = await EventDraftService.publishDraft(draftId, req.user.id);
       res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Event Sessions
+  static async createSession(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      const session = await EventSessionService.createSession(req.user.id, eventId, req.body);
+      res.status(201).json({ success: true, data: { session } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventSessions(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      const dayOfEvent = req.query.dayOfEvent ? parseInt(req.query.dayOfEvent as string, 10) : undefined;
+      const sessions = await EventSessionService.getEventSessions(req.user.id, eventId, { dayOfEvent });
+      res.status(200).json({ success: true, data: { sessions } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSessionById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const sessionId = req.params.sessionId as string;
+      const session = await EventSessionService.getSessionById(req.user.id, sessionId);
+      res.status(200).json({ success: true, data: { session } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateSession(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const sessionId = req.params.sessionId as string;
+      const session = await EventSessionService.updateSession(req.user.id, sessionId, req.body);
+      res.status(200).json({ success: true, data: { session } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteSession(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const sessionId = req.params.sessionId as string;
+      const result = await EventSessionService.deleteSession(req.user.id, sessionId);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventSessionStats(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      const dayOfEvent = req.query.dayOfEvent ? parseInt(req.query.dayOfEvent as string, 10) : undefined;
+      const stats = await EventSessionService.getEventSessionStats(req.user.id, eventId, { dayOfEvent });
+      res.status(200).json({ success: true, data: { sessions: stats } });
     } catch (error) {
       next(error);
     }
@@ -594,7 +695,7 @@ export class OrganizerDashboardController {
       }
 
       const eventId = (req.params.eventId as string) as string;
-      const result = await AttendeeCommunicationService.sendToEventRegistrations(req.user.id, eventId, req.body);
+      const result = await AttendeeCommunicationService.sendToEventRegistrations(req.user.id, eventId, req.body, req.user.role);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -616,7 +717,7 @@ export class OrganizerDashboardController {
         tagId: req.query.tagId as string | undefined,
       };
 
-      const result = await AttendeeCommunicationService.getCommunicationHistory(req.user.id, filters);
+      const result = await AttendeeCommunicationService.getCommunicationHistory(req.user.id, filters, req.user.role);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -970,6 +1071,154 @@ export class OrganizerDashboardController {
     }
   }
 
+  // Resale & Transfer Analytics
+  static async getEventResaleStats(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const admin = isAdminRole(req.user.role);
+      const stats = await ResaleTransferAnalyticsService.getEventResaleStats(eventId, req.user.id, admin);
+      res.status(200).json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventResaleListings(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { status, page, limit } = req.query;
+      const filters = {
+        status: typeof status === 'string' ? status : undefined,
+        page: typeof page === 'string' ? parseInt(page, 10) : undefined,
+        limit: typeof limit === 'string' ? parseInt(limit, 10) : undefined,
+      };
+      const admin = isAdminRole(req.user.role);
+      const result = await ResaleTransferAnalyticsService.getEventResaleListings(eventId, req.user.id, filters, admin);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventTransferStats(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const admin = isAdminRole(req.user.role);
+      const stats = await ResaleTransferAnalyticsService.getEventTransferStats(eventId, req.user.id, admin);
+      res.status(200).json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventTransferHistory(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { status, page, limit } = req.query;
+      const filters = {
+        status: typeof status === 'string' ? status : undefined,
+        page: typeof page === 'string' ? parseInt(page, 10) : undefined,
+        limit: typeof limit === 'string' ? parseInt(limit, 10) : undefined,
+      };
+      const admin = isAdminRole(req.user.role);
+      const result = await ResaleTransferAnalyticsService.getEventTransferHistory(eventId, req.user.id, filters, admin);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Scan & Check-In Analytics
+  static async getEventScanOverview(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const admin = isAdminRole(req.user.role);
+      const data = await WorkstationService.getOrganizerEventScanOverview(eventId, req.user.id, admin);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventScanHistory(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { scanType, page, limit } = req.query;
+      const admin = isAdminRole(req.user.role);
+      const data = await WorkstationService.getOrganizerEventScans(eventId, req.user.id, {
+        scanType: typeof scanType === 'string' ? scanType : undefined,
+        page: typeof page === 'string' ? parseInt(page, 10) : undefined,
+        limit: typeof limit === 'string' ? parseInt(limit, 10) : undefined,
+      }, admin);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventScanAttendees(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { page, limit } = req.query;
+      const admin = isAdminRole(req.user.role);
+      const data = await WorkstationService.getOrganizerEventAttendees(eventId, req.user.id, {
+        page: typeof page === 'string' ? parseInt(page, 10) : undefined,
+        limit: typeof limit === 'string' ? parseInt(limit, 10) : undefined,
+      }, admin);
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateEventScanConfig(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { eventId } = req.params;
+      const { allowReEntry, requireCheckOut, maxReEntries } = req.body;
+      const admin = isAdminRole(req.user.role);
+      const config = await WorkstationService.updateOrganizerEventScanConfig(eventId, req.user.id, {
+        allowReEntry,
+        requireCheckOut,
+        maxReEntries,
+      }, admin);
+      res.status(200).json({ success: true, data: { config } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Event Collaboration
   static async inviteCollaborator(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -1147,6 +1396,53 @@ export class OrganizerDashboardController {
       const packageId = (req.params.packageId as string) as string;
       const result = await AdvancedTicketTypesService.deleteTicketPackage(packageId, req.user.id);
       res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Complementary ticket issuances
+  static async issueComplementaryTickets(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) { res.status(401).json({ success: false, message: 'Authentication required' }); return; }
+      const { packageId } = req.params as { packageId: string };
+      const { emails, quantity, note, expiresAt } = req.body as {
+        emails: string[];
+        quantity?: number;
+        note?: string;
+        expiresAt?: string;
+      };
+      const issuances = await TicketIssuanceService.issue(
+        packageId,
+        req.user.id,
+        emails,
+        quantity ?? 1,
+        note,
+        expiresAt ? new Date(expiresAt) : undefined,
+      );
+      res.status(201).json({ success: true, data: { issuances } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getPackageIssuances(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) { res.status(401).json({ success: false, message: 'Authentication required' }); return; }
+      const { packageId } = req.params as { packageId: string };
+      const issuances = await TicketIssuanceService.listForPackage(packageId, req.user.id);
+      res.status(200).json({ success: true, data: { issuances } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async cancelIssuance(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) { res.status(401).json({ success: false, message: 'Authentication required' }); return; }
+      const { issuanceId } = req.params as { issuanceId: string };
+      const issuance = await TicketIssuanceService.cancel(issuanceId, req.user.id);
+      res.status(200).json({ success: true, data: { issuance } });
     } catch (error) {
       next(error);
     }
@@ -1821,6 +2117,18 @@ export class OrganizerDashboardController {
   // ========== Subscription Management ==========
 
   /**
+   * Get subscription plans (for organizer pricing/upgrade page)
+   */
+  static async getSubscriptionPlans(_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const plans = await SubscriptionService.getActivePlans();
+      res.status(200).json({ success: true, data: { plans } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get organizer subscription
    */
   static async getSubscription(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
@@ -1871,6 +2179,70 @@ export class OrganizerDashboardController {
 
       const subscription = await SubscriptionService.cancelSubscription(req.user.id);
       res.status(200).json({ success: true, message: 'Subscription canceled successfully', data: { subscription } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Initialize subscription payment (Paystack)
+   */
+  static async initializeSubscriptionPayment(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { tier, billingEmail } = req.body;
+      const result = await SubscriptionService.initializeSubscriptionPayment(
+        req.user.id,
+        tier,
+        billingEmail,
+      );
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify subscription payment (frontend callback)
+   */
+  static async verifySubscriptionPayment(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { reference } = req.query;
+      if (!reference || typeof reference !== 'string') {
+        res.status(400).json({ success: false, message: 'Payment reference is required' });
+        return;
+      }
+
+      const result = await SubscriptionService.verifySubscriptionPayment(reference);
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ========== My Permissions ==========
+
+  /**
+   * Get the current user's effective permissions
+   */
+  static async getMyPermissions(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const permissions = await PermissionService.getUserEffectivePermissions(req.user.id);
+      res.status(200).json({ success: true, data: { permissions } });
     } catch (error) {
       next(error);
     }

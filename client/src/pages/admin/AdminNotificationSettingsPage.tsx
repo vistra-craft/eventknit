@@ -44,6 +44,8 @@ import {
   type NotificationTemplate,
   type NotificationAnalytics,
 } from "@/lib/admin-notification-settings-api";
+import { showErrorToast } from "@/lib/utils/error";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const AdminNotificationSettingsPage = () => {
   const { toast } = useToast();
@@ -51,6 +53,7 @@ const AdminNotificationSettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
+  const [deleteTemplateType, setDeleteTemplateType] = useState<string | null>(null);
 
   // Default Preferences State
   const [defaultPreferences, setDefaultPreferences] = useState<DefaultNotificationPreferences | null>(null);
@@ -114,11 +117,7 @@ const AdminNotificationSettingsPage = () => {
       }
     } catch (error) {
       console.error("Failed to load data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load notification settings. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load notification settings. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -138,19 +137,11 @@ const AdminNotificationSettingsPage = () => {
         });
       } else {
         setSaveStatus("error");
-        toast({
-          title: "Error",
-          description: response.message || "Failed to update preferences.",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error(response.message || "Failed to update preferences."), "Failed to update preferences.");
       }
              } catch (error: unknown) {
       setSaveStatus("error");
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update preferences. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Preferences update failed", "Failed to update preferences. Please try again.");
     } finally {
       setSaving(false);
       setTimeout(() => setSaveStatus("idle"), 3000);
@@ -171,19 +162,11 @@ const AdminNotificationSettingsPage = () => {
         });
       } else {
         setSaveStatus("error");
-        toast({
-          title: "Error",
-          description: response.message || "Failed to update configuration.",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error(response.message || "Failed to update configuration."), "Failed to update configuration.");
       }
              } catch (error: unknown) {
       setSaveStatus("error");
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update configuration. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Config update failed", "Failed to update configuration. Please try again.");
     } finally {
       setSaving(false);
       setTimeout(() => setSaveStatus("idle"), 3000);
@@ -192,11 +175,7 @@ const AdminNotificationSettingsPage = () => {
 
   const handleSaveTemplate = async () => {
     if (!templateForm.type || !templateForm.subject || !templateForm.body) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please fill in all required fields."), "Please fill in all required fields.");
       return;
     }
 
@@ -215,27 +194,23 @@ const AdminNotificationSettingsPage = () => {
         setShowTemplateDialog(false);
         loadData();
       } else {
-        toast({
-          title: "Error",
-          description: response.message || "Failed to save template.",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error(response.message || "Failed to save template."), "Failed to save template.");
       }
              } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save template. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Template save failed", "Failed to save template. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteTemplate = async (type: string) => {
-    if (!window.confirm(`Are you sure you want to delete the template "${type}"?`)) {
-      return;
-    }
+    setDeleteTemplateType(type);
+  };
+
+  const confirmDeleteTemplate = async () => {
+    if (!deleteTemplateType) return;
+    const type = deleteTemplateType;
+    setDeleteTemplateType(null);
 
     try {
       const response = await deleteTemplate(type);
@@ -246,18 +221,10 @@ const AdminNotificationSettingsPage = () => {
         });
         loadData();
       } else {
-        toast({
-          title: "Error",
-          description: response.message || "Failed to delete template.",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error(response.message || "Failed to delete template."), "Failed to delete template.");
       }
              } catch (error: unknown) {
-      toast({
-        title: "Error",
-                 description: error instanceof Error ? error.message : "Failed to delete template. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Delete failed", "Failed to delete template. Please try again.");
     }
   };
 
@@ -275,11 +242,7 @@ const AdminNotificationSettingsPage = () => {
         setShowTemplateDialog(true);
       }
              } catch (error: unknown) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to load template.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Load failed", "Failed to load template.");
     }
   };
 
@@ -324,7 +287,7 @@ const AdminNotificationSettingsPage = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
             <TabsTrigger value="defaults">
               <Settings className="h-4 w-4 mr-2" />
               Default Preferences
@@ -1055,6 +1018,22 @@ const AdminNotificationSettingsPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Template Confirmation */}
+        <AlertDialog open={!!deleteTemplateType} onOpenChange={(open) => { if (!open) setDeleteTemplateType(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Template</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete the template &quot;{deleteTemplateType}&quot;? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteTemplate}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

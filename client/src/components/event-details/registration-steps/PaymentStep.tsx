@@ -9,7 +9,9 @@ import { Label } from '@/components/ui/label';
 import type { EventData } from '@/types/event';
 import type { TicketSelection, PromoDiscount } from '../UnifiedRegistrationModal';
 import { registerForEvent } from '@/lib/event-api';
-import { initializePayment, verifyPayment } from '@/lib/payment-api';
+import { initializePayment, initializeGuestPayment, verifyPayment } from '@/lib/payment-api';
+import { useAuth } from '@/hooks/useAuth';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 interface RegistrationData {
   userId?: string;
@@ -69,10 +71,14 @@ export const PaymentStep = ({
   promoDiscount,
   selectedSeatIds,
 }: PaymentStepProps) => {
+  const { isAuthenticated } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'mpesa'>('card');
-  const [registrationId, setRegistrationId] = useState<string | null>(null);
+  // Pre-populate if guest checkout already created the registration
+  const [registrationId, setRegistrationId] = useState<string | null>(
+    (registrationData.registrationId as string) || null
+  );
   const [paystackLoaded, setPaystackLoaded] = useState(false);
 
   const currency = event.currency || 'NGN';
@@ -89,7 +95,7 @@ export const PaymentStep = ({
     script.src = 'https://js.paystack.co/v1/inline.js';
     script.async = true;
     script.onload = () => setPaystackLoaded(true);
-    script.onerror = () => setError('Failed to load payment processor');
+    script.onerror = () => setError('Unable to load the payment processor. Please refresh the page and try again.');
     document.body.appendChild(script);
 
     return () => {
@@ -131,26 +137,32 @@ export const PaymentStep = ({
       if (response.success && response.data?.registration?.id) {
         return response.data.registration.id;
       }
-      throw new Error(response.message || 'Failed to create registration');
+      throw new Error(response.message || 'We couldn\'t complete your registration. Please try again.');
     } catch (err) {
-      throw err instanceof Error ? err : new Error('Registration failed');
+      throw new Error(extractErrorMessage(err, 'Registration failed. Please try again.'));
     }
   }, [event.id, selectedTickets, registrationData, promoDiscount?.code, selectedSeatIds]);
 
   // Handle Paystack popup payment
   const handlePaystackPayment = useCallback(async (regId: string) => {
     if (!window.PaystackPop) {
-      setError('Payment processor not ready. Please try again.');
+      setError('Payment processor is still loading. Please wait a moment and try again.');
       setIsProcessing(false);
       return;
     }
 
     try {
-      // Initialize payment on backend
-      const initResponse = await initializePayment(regId);
+      // Initialize payment on backend — try authenticated endpoint, fall back to guest
+      let initResponse;
+      if (isAuthenticated) {
+        initResponse = await initializePayment(regId);
+      } else {
+        const email = registrationData.email as string;
+        initResponse = await initializeGuestPayment(regId, email);
+      }
 
       if (!initResponse.success) {
-        throw new Error(initResponse.message || 'Failed to initialize payment');
+        throw new Error(initResponse.message || 'Unable to start the payment process. Please try again.');
       }
 
       const { authorizationUrl, reference } = initResponse.data;
@@ -180,7 +192,7 @@ export const PaymentStep = ({
                   registrationId: regId,
                 });
               } else {
-                setError('Payment verification failed. Please contact support.');
+                setError('We couldn\'t verify your payment. If you were charged, please contact support with your transaction reference.');
                 setIsProcessing(false);
               }
             } catch {
@@ -196,7 +208,7 @@ export const PaymentStep = ({
             }
           },
           onClose: () => {
-            setError('Payment was cancelled. Your registration is saved - click Pay to try again.');
+            setError('Payment was cancelled. Don\'t worry — your registration is saved. Click "Pay" when you\'re ready to try again.');
             setIsProcessing(false);
           },
         });
@@ -209,16 +221,23 @@ export const PaymentStep = ({
         throw new Error('No payment method available');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment initialization failed');
+      setError(extractErrorMessage(err, 'Unable to start the payment process. Please check your connection and try again.'));
       setIsProcessing(false);
     }
-  }, [registrationData.email, totalPrice, currency, onContinue]);
+  }, [registrationData.email, totalPrice, currency, onContinue, isAuthenticated]);
 
   const handlePayment = async () => {
     setIsProcessing(true);
     setError(null);
 
     try {
+      // Guard: Prevent payment for free events
+      if (event.isFree || totalPrice === 0) {
+        setError('This is a free event — no payment needed! If you\'re seeing this by mistake, please contact support.');
+        setIsProcessing(false);
+        return;
+      }
+
       // Step 1: Create registration if not already created
       let regId = registrationId;
       if (!regId) {
@@ -229,18 +248,18 @@ export const PaymentStep = ({
       if (paymentMethod === 'card') {
         // Step 2: Initialize and process Paystack payment
         if (!regId) {
-          setError('Registration ID is required for card payment.');
+          setError('Something went wrong setting up your registration. Please go back and try again.');
           setIsProcessing(false);
           return;
         }
         await handlePaystackPayment(regId);
       } else if (paymentMethod === 'mpesa') {
         // M-Pesa is handled via SMS/USSD flow
-        setError('M-Pesa payment is available via SMS registration. Please use card payment here or check your event confirmation for M-Pesa payment instructions.');
+        setError('M-Pesa payment is currently only available via SMS registration. Please use card payment instead.');
         setIsProcessing(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+      setError(extractErrorMessage(err, 'Payment failed. Please check your connection and try again.'));
       setIsProcessing(false);
     }
   };

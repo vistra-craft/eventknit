@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUpRight, X, Crown, Zap, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -20,13 +19,20 @@ interface UpgradePromptProps {
 const TIER_CONFIG = {
   STANDARD: {
     icon: Zap,
-    color: 'blue',
     buttonText: 'Upgrade to Standard (Free)',
+    // Banner: left accent border + card-surface bg (dark in dark mode, off-white in light)
+    bannerClass: 'border border-border border-l-4 border-l-primary bg-card-surface',
+    iconClass: 'text-primary',
+    buttonClass: 'border-primary text-primary hover:bg-primary hover:text-primary-foreground',
+    dismissClass: 'text-muted-foreground hover:text-foreground',
   },
   PREMIUM: {
     icon: Crown,
-    color: 'purple',
     buttonText: 'Upgrade to Premium',
+    bannerClass: 'border border-border border-l-4 border-l-violet-500 bg-card-surface',
+    iconClass: 'text-violet-500',
+    buttonClass: 'border-violet-500 text-violet-500 hover:bg-violet-500 hover:text-white',
+    dismissClass: 'text-muted-foreground hover:text-foreground',
   },
 };
 
@@ -43,7 +49,6 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
   const config = TIER_CONFIG[targetTier];
   const Icon = config.icon;
 
-  // Check localStorage for dismissal state
   const storageKey = `upgrade-prompt-dismissed-${targetTier.toLowerCase()}`;
 
   useEffect(() => {
@@ -73,16 +78,18 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
 
   if (variant === 'banner') {
     return (
-      <Alert
+      <div
+        role="alert"
         className={cn(
-          `border-${config.color}-200 bg-${config.color}-50 dark:border-${config.color}-800 dark:bg-${config.color}-950`,
-          className
+          'relative w-full rounded-lg px-4 py-3 text-sm flex items-start gap-3',
+          config.bannerClass,
+          className,
         )}
       >
-        <Icon className={`h-4 w-4 text-${config.color}-600 dark:text-${config.color}-400`} />
-        <AlertDescription className="flex items-center justify-between flex-wrap gap-2">
-          <span className={`text-${config.color}-900 dark:text-${config.color}-100 flex-1`}>
-            <Sparkles className="h-4 w-4 inline mr-1" />
+        <Icon className={cn('h-4 w-4 mt-0.5 shrink-0', config.iconClass)} />
+        <div className="flex flex-1 items-center justify-between flex-wrap gap-2">
+          <span className="flex-1 text-foreground">
+            <Sparkles className="h-3.5 w-3.5 inline mr-1 text-muted-foreground" />
             {message}
           </span>
           <div className="flex items-center gap-2">
@@ -90,10 +97,7 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
               variant="outline"
               size="sm"
               onClick={handleUpgrade}
-              className={cn(
-                `border-${config.color}-300 text-${config.color}-700 hover:bg-${config.color}-100`,
-                `dark:border-${config.color}-700 dark:text-${config.color}-300 dark:hover:bg-${config.color}-900`
-              )}
+              className={config.buttonClass}
             >
               {config.buttonText}
               <ArrowUpRight className="h-3 w-3 ml-1" />
@@ -103,14 +107,14 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleDismiss}
-                className={`text-${config.color}-700 hover:bg-${config.color}-100 dark:text-${config.color}-300 dark:hover:bg-${config.color}-900`}
+                className={config.dismissClass}
               >
                 <X className="h-4 w-4" />
               </Button>
             )}
           </div>
-        </AlertDescription>
-      </Alert>
+        </div>
+      </div>
     );
   }
 
@@ -118,7 +122,7 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
     return (
       <Card className={cn('border-2 border-dashed', className)}>
         <CardContent className="p-6 text-center">
-          <Icon className={`h-12 w-12 mx-auto mb-4 text-${config.color}-600`} />
+          <Icon className={cn('h-12 w-12 mx-auto mb-4', config.iconClass)} />
           <p className="text-muted-foreground mb-4">{message}</p>
           <Button onClick={handleUpgrade} className="mx-auto">
             {config.buttonText}
@@ -132,9 +136,9 @@ export const UpgradePrompt: React.FC<UpgradePromptProps> = ({
   // inline variant
   return (
     <div className={cn('flex items-center gap-2 text-sm', className)}>
-      <Icon className={`h-4 w-4 text-${config.color}-600`} />
+      <Icon className={cn('h-4 w-4', config.iconClass)} />
       <span className="text-muted-foreground">{message}</span>
-      <Button variant="link" size="sm" onClick={handleUpgrade} className="h-auto p-0">
+      <Button variant="link" size="sm" onClick={handleUpgrade} className="h-auto p-0 text-primary">
         {config.buttonText}
         <ArrowUpRight className="h-3 w-3 ml-1" />
       </Button>

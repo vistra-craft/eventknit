@@ -7,7 +7,7 @@ import { useAuthContext } from './useAuthContext';
 import * as authApi from '../lib/auth-api';
 import { setAccessToken, removeAccessToken, getAccessToken, setLogoutCallback } from '../lib/api';
 import { queryClient } from '../lib/queryClient';
-import { UserRole } from '../types/auth';
+import { UserRole, UserStatus } from '../types/auth';
 import { useNavigate } from 'react-router-dom';
 
 export const useAuth = () => {
@@ -22,14 +22,13 @@ export const useAuth = () => {
     switch (role) {
       // Admin roles - redirect to admin dashboard
       case UserRole.SUPERADMIN:
-      case UserRole.ADMIN_STAFF:
-      case UserRole.MARKETER:
+      case UserRole.ADMIN:
       case UserRole.SUPPORT:
       case UserRole.TELLER:
         return '/admin/dashboard';
       // Organizer roles - redirect to organizer dashboard
       case UserRole.ORGANIZER:
-      case UserRole.ORGANIZER_STAFF:
+      case UserRole.ORGANIZER_ADMIN:
       case UserRole.ORGANIZER_TELLER:
         return '/organizer/dashboard';
       // Attendees and default - unified dashboard
@@ -53,12 +52,14 @@ export const useAuth = () => {
           setAccessToken(response.data.accessToken);
           dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user });
 
+          // Invalidate profile cache to force fresh fetch of user profile with updated avatar
+          queryClient.invalidateQueries({ queryKey: ['profile'] });
+
           // NEW: Check if user needs personalized onboarding (all new users, not just organizers)
           const role = response.data.user.role;
           const isAdminRole =
             role === 'SUPERADMIN' ||
-            role === 'ADMIN_STAFF' ||
-            role === 'MARKETER' ||
+            role === 'ADMIN' ||
             role === 'SUPPORT' ||
             role === 'TELLER';
 
@@ -69,7 +70,7 @@ export const useAuth = () => {
 
           const isOrganizerRole =
             role === 'ORGANIZER' ||
-            role === 'ORGANIZER_STAFF' ||
+            role === 'ORGANIZER_ADMIN' ||
             role === 'ORGANIZER_TELLER';
 
           // Check for returnTo query param (e.g., from transfer accept page)
@@ -126,8 +127,7 @@ export const useAuth = () => {
           const role = response.data.user.role;
           const isAdminRole =
             role === 'SUPERADMIN' ||
-            role === 'ADMIN_STAFF' ||
-            role === 'MARKETER' ||
+            role === 'ADMIN' ||
             role === 'SUPPORT' ||
             role === 'TELLER';
 
@@ -204,6 +204,62 @@ export const useAuth = () => {
       });
     }
   }, [dispatch, navigate]);
+
+  /**
+   * Login without navigation — for use inside modals/embedded flows.
+   */
+  const loginForModal = useCallback(
+    async (email: string, password: string) => {
+      dispatch({ type: 'AUTH_START' });
+      const response = await authApi.login({ email, password });
+      if (response.success && response.data) {
+        setAccessToken(response.data.accessToken);
+        dispatch({ type: 'AUTH_SUCCESS', payload: response.data.user });
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+      } else {
+        dispatch({ type: 'AUTH_FAILURE', payload: response.message || 'Login failed' });
+        throw new Error(response.message || 'Login failed');
+      }
+    },
+    [dispatch]
+  );
+
+  /**
+   * Set auth state from a guest registration/checkout response without navigation.
+   * Stores the access token, hydrates auth context with partial user data, then
+   * fetches the full profile to fill in role and any missing fields.
+   */
+  const setAuthFromGuestResponse = useCallback(
+    async (
+      partialUser: { id: string; email: string; firstName: string; lastName: string },
+      accessToken: string
+    ) => {
+      setAccessToken(accessToken);
+      // Dispatch with placeholder role/status — the profile fetch below overwrites with real values
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: {
+          ...partialUser,
+          role: UserRole.ATTENDEE,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      // Fetch full profile asynchronously so role and all fields are populated
+      try {
+        const profileResponse = await authApi.getProfile();
+        if (profileResponse.success && profileResponse.data) {
+          dispatch({ type: 'UPDATE_USER', payload: profileResponse.data.user });
+        }
+      } catch {
+        // Non-fatal — partial user data is sufficient for the modal flow
+      }
+    },
+    [dispatch]
+  );
 
   /**
    * Refresh user profile
@@ -290,8 +346,10 @@ export const useAuth = () => {
   return {
     ...state,
     login,
+    loginForModal,
     logout,
     register,
+    setAuthFromGuestResponse,
     refreshProfile,
     clearError,
   };

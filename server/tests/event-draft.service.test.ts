@@ -2,31 +2,31 @@ import { EventDraftService } from '../src/services/event-draft.service';
 import { NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     eventDraft: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
   eventDraft: {
-    create: jest.Mock;
-    findMany: jest.Mock;
-    findFirst: jest.Mock;
-    update: jest.Mock;
-    delete: jest.Mock;
+    create: vi.Mock;
+    findMany: vi.Mock;
+    findFirst: vi.Mock;
+    update: vi.Mock;
+    delete: vi.Mock;
   };
 };
 
 describe('EventDraftService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it('creates draft', async () => {

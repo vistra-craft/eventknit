@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/useToast";
 import { createUser, type CreateUserData, type UserRole } from "@/lib/admin-api";
+import { showErrorToast } from "@/lib/utils/error";
 
 const CreateOrganizerPage = () => {
   const navigate = useNavigate();
@@ -76,12 +77,7 @@ const CreateOrganizerPage = () => {
       }
     } catch (error: unknown) {
       console.error("Error creating organizer:", error);
-      const message = error instanceof Error ? error.message : "Failed to create organizer";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Create failed", "Failed to create organizer");
     } finally {
       setLoading(false);
     }

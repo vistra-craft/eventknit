@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Download, Calendar, MapPin, Globe, Ticket as TicketIcon, CheckCircle2, RotateCcw, AlertTriangle, Clock, ShieldCheck } from "lucide-react";
+import { Download, Calendar, MapPin, Globe, Ticket as TicketIcon, CheckCircle2, RotateCcw, AlertTriangle, Clock, ShieldCheck, LogIn, LogOut, DoorOpen } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import { getTicket, getTicketPublic, downloadTicketPDF, checkRefundEligibility, requestRefund } from "@/lib/ticket-api";
+import { getPaymentStatus } from "@/lib/payment-api";
 import type { TicketData, RefundEligibility } from "@/lib/ticket-api";
 import { Textarea } from "@/components/ui/textarea";
 import { getEventById } from "@/lib/event-api";
+import { extractErrorMessage } from "@/lib/utils/error";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 type TicketEventDetails = {
@@ -43,6 +45,8 @@ const TicketViewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  // Payment status
+  const [paymentInfo, setPaymentInfo] = useState<{ paymentStatus: string; paymentMethod: string | null; totalAmount: number } | null>(null);
   // Refund state
   const [refundEligibility, setRefundEligibility] = useState<RefundEligibility | null>(null);
   const [refundLoading, setRefundLoading] = useState(false);
@@ -71,7 +75,7 @@ const TicketViewPage: React.FC = () => {
           try {
             ticketResponse = await getTicket(registrationId);
           } catch (authError) {
-            authErrorMessage = authError instanceof Error ? authError.message : null;
+            authErrorMessage = extractErrorMessage(authError, '');
             // If auth fails, try public endpoint with email from location state or user
             const email = (location.state as TicketLocationState)?.userEmail || user?.email;
             if (email) {
@@ -104,6 +108,9 @@ const TicketViewPage: React.FC = () => {
             ticketType?: string | null;
             backupCode?: string | null;
             createdAt?: string | null;
+            checkedInAt?: string | null;
+            checkedOutAt?: string | null;
+            isCurrentlyInside?: boolean;
           };
 
           type TicketResponseWithRegistration = {
@@ -111,6 +118,9 @@ const TicketViewPage: React.FC = () => {
             ticketLineItems?: Array<{ ticketType: string; quantity: number; unitPrice: number; totalPrice: number }>;
             currency?: string;
             qrCode?: string | null;
+            checkedInAt?: string | null;
+            checkedOutAt?: string | null;
+            isCurrentlyInside?: boolean;
           };
 
           const ticketData: TicketData = (() => {
@@ -138,12 +148,27 @@ const TicketViewPage: React.FC = () => {
                 qrCode: resp.qrCode || undefined,
                 backupCode: reg.backupCode || undefined,
                 createdAt: reg.createdAt || new Date().toISOString(),
+                checkedInAt: resp.checkedInAt,
+                checkedOutAt: resp.checkedOutAt,
+                isCurrentlyInside: resp.isCurrentlyInside,
               };
             }
             return data as TicketData;
           })();
 
           setTicket(ticketData);
+
+          // Fetch payment status (only for authenticated users)
+          if (isAuthenticated) {
+            try {
+              const paymentRes = await getPaymentStatus(ticketData.registrationId);
+              if (paymentRes.success && paymentRes.data) {
+                setPaymentInfo(paymentRes.data);
+              }
+            } catch {
+              // Non-critical — payment info is supplementary
+            }
+          }
 
           const eventIdFromTicket = ticketData.eventId;
           if (eventIdFromTicket) {
@@ -156,10 +181,10 @@ const TicketViewPage: React.FC = () => {
           setError(ticketResponse?.message || authErrorMessage || "Ticket not found");
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to load ticket";
-        setError(errorMessage || "Ticket not found");
+        const errorMessage = extractErrorMessage(err, "We couldn't load your ticket. Please check your connection and try again.");
+        setError(errorMessage);
         toast({
-          title: "Error",
+          title: "Couldn't load ticket",
           description: errorMessage,
           variant: "destructive",
         });
@@ -212,10 +237,9 @@ const TicketViewPage: React.FC = () => {
         });
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to request refund";
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Refund request failed",
+        description: extractErrorMessage(err, "We couldn't process your refund request. Please try again or contact support."),
         variant: "destructive",
       });
     } finally {
@@ -234,10 +258,9 @@ const TicketViewPage: React.FC = () => {
         description: "Your ticket has been downloaded successfully.",
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to download ticket";
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Download failed",
+        description: extractErrorMessage(err, "We couldn't download your ticket. Please try again or check your email for a copy."),
         variant: "destructive",
       });
     } finally {
@@ -288,12 +311,12 @@ const TicketViewPage: React.FC = () => {
         {/* Ticket Card */}
         <Card className="mb-6">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <TicketIcon className="w-5 h-5" />
-                {ticket.eventTitle}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-2 min-w-0">
+                <TicketIcon className="w-5 h-5 flex-shrink-0" />
+                <span className="truncate">{ticket.eventTitle}</span>
               </CardTitle>
-              <Badge variant="outline" className="bg-success/5 text-success border-success">
+              <Badge variant="outline" className="bg-success/5 text-success border-success flex-shrink-0 w-fit">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 Confirmed
               </Badge>
@@ -364,6 +387,37 @@ const TicketViewPage: React.FC = () => {
               <p className="text-sm text-muted-foreground">{ticket.attendeeEmail}</p>
             </div>
 
+            {/* Check-in Status */}
+            {ticket.checkedInAt && (
+              <div className="space-y-2 pb-4 border-b">
+                <p className="text-sm font-medium">Check-in Status</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  {ticket.isCurrentlyInside ? (
+                    <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
+                      <DoorOpen className="w-3 h-3 mr-1" />
+                      Currently Inside
+                    </Badge>
+                  ) : ticket.checkedOutAt ? (
+                    <Badge variant="secondary">
+                      <LogOut className="w-3 h-3 mr-1" />
+                      Checked Out
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-primary/10 text-primary border-primary/20">
+                      <LogIn className="w-3 h-3 mr-1" />
+                      Checked In
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Checked in {new Date(ticket.checkedInAt).toLocaleString("en-US", {
+                    month: "short", day: "numeric", year: "numeric",
+                    hour: "numeric", minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            )}
+
             {/* Ticket Details */}
             {ticket.ticketLineItems && ticket.ticketLineItems.length > 0 ? (
               <div className="space-y-2">
@@ -385,6 +439,39 @@ const TicketViewPage: React.FC = () => {
                 <p className="text-sm text-muted-foreground">{ticket.ticketType}</p>
               </div>
             ) : null}
+
+            {/* Payment Info */}
+            {paymentInfo && paymentInfo.totalAmount > 0 && (
+              <div className="space-y-2 pt-3 border-t border-border">
+                <p className="text-sm font-medium">Payment</p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge
+                      className={
+                        paymentInfo.paymentStatus === 'COMPLETED'
+                          ? 'bg-success/10 text-success border-0'
+                          : paymentInfo.paymentStatus === 'PENDING'
+                            ? 'bg-amber-500/10 text-amber-600 border-0'
+                            : 'bg-destructive/10 text-destructive border-0'
+                      }
+                    >
+                      {paymentInfo.paymentStatus === 'COMPLETED' ? 'Paid' : paymentInfo.paymentStatus}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Amount</span>
+                    <span className="font-medium">{ticket.currency || 'KES'} {paymentInfo.totalAmount.toLocaleString()}</span>
+                  </div>
+                  {paymentInfo.paymentMethod && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Method</span>
+                      <span className="capitalize">{paymentInfo.paymentMethod.toLowerCase()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* QR Code */}
             {ticket.qrCode && (

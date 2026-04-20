@@ -1,9 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { AuthController } from '../controllers/auth.controller.js';
+import { StaffInvitationController } from '../controllers/staff-invitation.controller.js';
 import { validate } from '../middleware/validation.middleware.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { authValidations } from '../validations/auth.validations.js';
+import { staffInvitationValidations } from '../validations/staff-invitation.validations.js';
 import { authRateLimiter, ipAuthRateLimiter } from '../middleware/rateLimiter.middleware.js';
 import cookieParser from 'cookie-parser';
 
@@ -202,6 +204,17 @@ router.post(
 );
 
 /**
+ * @route   GET /api/v1/auth/verify-invitation
+ * @desc    Verify invitation token and return associated email (for pre-filling the form)
+ * @access  Public
+ */
+router.get(
+  '/verify-invitation',
+  authRateLimiter,
+  AuthController.verifyInvitationToken,
+);
+
+/**
  * @route   POST /api/v1/auth/create-account
  * @desc    Create account from invitation token (for guest users)
  * @access  Public
@@ -256,6 +269,30 @@ router.get(
  */
 router.get('/public-key', AuthController.getPublicKey);
 
+/**
+ * @route   POST /api/v1/auth/staff-invitation/validate
+ * @desc    Validate a staff invitation token (for accept page)
+ * @access  Public
+ */
+router.post(
+  '/staff-invitation/validate',
+  authRateLimiter,
+  validate(staffInvitationValidations.validateToken),
+  StaffInvitationController.validateToken,
+);
+
+/**
+ * @route   POST /api/v1/auth/staff-invitation/accept
+ * @desc    Accept a staff invitation and create account
+ * @access  Public
+ */
+router.post(
+  '/staff-invitation/accept',
+  authRateLimiter,
+  validate(staffInvitationValidations.acceptInvitation),
+  StaffInvitationController.acceptInvitation,
+);
+
 // Protected routes
 router.use(authenticate);
 
@@ -281,6 +318,17 @@ router.get('/profile', AuthController.getProfile);
  * Only runs multer if the request is multipart/form-data
  */
 const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
+  const isErrorWithCode = (value: unknown): value is { code: string; message?: string } => {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+    if (!('code' in value)) {
+      return false;
+    }
+    const codeValue = value.code;
+    return typeof codeValue === 'string';
+  };
+
   // Skip multer if not a multipart request
   const contentType = req.get('content-type') || '';
   if (!contentType.includes('multipart/form-data')) {
@@ -297,16 +345,15 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
       }
 
       // Handle multer-specific errors
-      if (err instanceof (multer as any).MulterError) {
-        const multerErr = err as any;
-        if (multerErr.code === 'LIMIT_FILE_SIZE') {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
           res.status(413).json({
             success: false,
             message: 'File too large. Maximum file size is 5MB.',
           });
           return;
         }
-        if (multerErr.code === 'LIMIT_FILE_COUNT') {
+        if (err.code === 'LIMIT_FILE_COUNT') {
           res.status(400).json({
             success: false,
             message: 'Too many files. Only one file is allowed.',
@@ -315,21 +362,18 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
         }
         res.status(400).json({
           success: false,
-          message: multerErr.message || 'File upload error',
+          message: err.message || 'File upload error',
         });
         return;
       }
 
       // Handle other errors with code property
-      if (err && typeof err === 'object' && 'code' in err) {
-        const errWithCode = err as any;
-        if (errWithCode.code?.startsWith?.('LIMIT_')) {
-          res.status(400).json({
-            success: false,
-            message: errWithCode.message || 'File upload limit exceeded',
-          });
-          return;
-        }
+      if (isErrorWithCode(err) && err.code.startsWith('LIMIT_')) {
+        res.status(400).json({
+          success: false,
+          message: err.message || 'File upload limit exceeded',
+        });
+        return;
       }
 
       // Handle file filter errors (e.g., "Only image files are allowed")
@@ -354,8 +398,8 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
  */
 router.put(
   '/profile',
-  validate(authValidations.updateProfile),
   handleMulterUpload,
+  validate(authValidations.updateProfile),
   AuthController.updateProfile,
 );
 

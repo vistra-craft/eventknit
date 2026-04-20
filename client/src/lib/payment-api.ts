@@ -2,7 +2,7 @@
  * Payment API Functions
  */
 
-import { apiPost, apiGet } from './api';
+import { apiPost, apiGet, API_BASE_URL } from './api';
 
 /**
  * Initialize payment response
@@ -53,6 +53,27 @@ export interface PaymentStatusResponse {
  */
 export const initializePayment = async (registrationId: string): Promise<InitializePaymentResponse> => {
   return apiPost<InitializePaymentResponse>('/payments/initialize', { registrationId });
+};
+
+/**
+ * Initialize payment for a guest registration (no auth required, uses email verification)
+ */
+export const initializeGuestPayment = async (registrationId: string, email: string): Promise<InitializePaymentResponse> => {
+  const response = await fetch(
+    `${API_BASE_URL}/payments/initialize-guest`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registrationId, email }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Payment initialization failed' }));
+    throw new Error(error.message || 'Payment initialization failed');
+  }
+
+  return response.json();
 };
 
 /**

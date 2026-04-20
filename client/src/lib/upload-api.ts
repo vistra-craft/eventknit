@@ -1,6 +1,26 @@
-import { API_BASE_URL } from './api';
+import { apiPost } from './api';
 
-export type UploadFolder = 'avatars' | 'speakers' | 'exhibitors' | 'sponsors' | 'events';
+export type UploadFolder = 'avatars' | 'speakers' | 'exhibitors' | 'sponsors' | 'events' | 'general';
+
+interface UploadResponse {
+  success: boolean;
+  data: { url: string };
+  message?: string;
+}
+
+/**
+ * Upload a document (image or PDF) for verification/KYC.
+ * Returns the secure Cloudinary URL.
+ */
+export async function uploadDocument(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiPost<UploadResponse>('/uploads/document', formData);
+  if (!response.success || !response.data?.url) {
+    throw new Error(response.message || 'Document upload failed');
+  }
+  return response.data.url;
+}
 
 /**
  * Upload an image to Cloudinary via the generic upload endpoint.
@@ -11,25 +31,11 @@ export async function uploadImage(file: File, folder?: UploadFolder): Promise<st
   formData.append('image', file);
   if (folder) formData.append('folder', folder);
 
-  const res = await fetch(`${API_BASE_URL}/uploads/image`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: formData,
-  });
+  const response = await apiPost<UploadResponse>('/uploads/image', formData);
 
-  if (res.status === 401) {
-    localStorage.removeItem('accessToken');
-    window.location.href = '/auth/signin?reason=session_expired';
-    throw new Error('Your session has expired. Please sign in again.');
+  if (!response.success || !response.data?.url) {
+    throw new Error(response.message || 'Image upload failed');
   }
 
-  const json = await res.json();
-
-  if (!res.ok || !json.success) {
-    throw new Error(json.message || 'Image upload failed');
-  }
-
-  return json.data.url;
+  return response.data.url;
 }

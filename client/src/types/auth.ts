@@ -4,12 +4,11 @@
 
 export enum UserRole {
   SUPERADMIN = 'SUPERADMIN',
-  ADMIN_STAFF = 'ADMIN_STAFF',
-  MARKETER = 'MARKETER',
+  ADMIN = 'ADMIN',
   SUPPORT = 'SUPPORT',
   TELLER = 'TELLER',
   ORGANIZER = 'ORGANIZER',
-  ORGANIZER_STAFF = 'ORGANIZER_STAFF',
+  ORGANIZER_ADMIN = 'ORGANIZER_ADMIN',
   ORGANIZER_TELLER = 'ORGANIZER_TELLER',
   ATTENDEE = 'ATTENDEE',
 }
@@ -30,6 +29,8 @@ export interface User {
   otherName?: string | null;
   phoneNumber?: string | null;
   companyAffiliation?: string | null;
+  organizerEntityType?: string | null;
+  organizerIndustry?: string | null;
   role: UserRole;
   status: UserStatus;
   isEmailVerified: boolean;

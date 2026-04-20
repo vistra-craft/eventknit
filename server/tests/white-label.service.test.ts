@@ -2,57 +2,57 @@ import { WhiteLabelService } from '../src/services/white-label.service';
 import { ValidationError, NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     whiteLabelBranding: {
-      create: jest.fn(),
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      upsert: jest.fn(),
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      upsert: vi.fn(),
     },
     customDomain: {
-      create: jest.fn(),
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-      delete: jest.fn(),
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      delete: vi.fn(),
     },
     user: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
   whiteLabelBranding: {
-    create: jest.Mock;
-    findFirst: jest.Mock;
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    update: jest.Mock;
-    upsert: jest.Mock;
+    create: vi.Mock;
+    findFirst: vi.Mock;
+    findUnique: vi.Mock;
+    findMany: vi.Mock;
+    update: vi.Mock;
+    upsert: vi.Mock;
   };
   customDomain: {
-    create: jest.Mock;
-    findFirst: jest.Mock;
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    update: jest.Mock;
-    updateMany: jest.Mock;
-    delete: jest.Mock;
+    create: vi.Mock;
+    findFirst: vi.Mock;
+    findUnique: vi.Mock;
+    findMany: vi.Mock;
+    update: vi.Mock;
+    updateMany: vi.Mock;
+    delete: vi.Mock;
   };
   user: {
-    findUnique: jest.Mock;
+    findUnique: vi.Mock;
   };
 };
 
 describe('WhiteLabelService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   // ========== createBranding ==========

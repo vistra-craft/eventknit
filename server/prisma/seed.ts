@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { PrismaClient, UserRole, UserStatus, EventStatus, EventType } from '@prisma/client';
+import { PrismaClient, UserRole, UserStatus, EventStatus, EventType, SubscriptionTier, RegistrationStatus, TicketStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { Decimal } from '@prisma/client/runtime/library';
 import { logger } from '../src/utils/logger';
@@ -498,6 +498,152 @@ const createEvents = async (organizerIds: string[], _superuserId: string): Promi
         approvedBy: superuser.id,
         approvedAt: new Date(),
       },
+      // ── LIVE EVENTS (started, not ended, APPROVED) ──
+      {
+        title: 'DevOps & Cloud Summit 2026',
+        description: 'A 3-day deep-dive into DevOps practices, cloud architecture, and site reliability engineering.',
+        fullDescription: 'Industry practitioners share battle-tested strategies for CI/CD, Kubernetes, observability, and platform engineering. Includes hands-on labs and live demos.',
+        category: 'Technology',
+        tags: ['devops', 'cloud', 'kubernetes', 'SRE'],
+        startDate: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000), // started yesterday
+        endDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),   // ends in 2 days
+        startTime: '08:00 AM',
+        endTime: '06:00 PM',
+        registrationDeadline: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+        venue: 'Moscone Center',
+        location: 'San Francisco, CA',
+        address: '747 Howard Street, San Francisco, CA 94103',
+        isOnline: false,
+        coordinates: { lat: 37.7844, lng: -122.4006 },
+        isFree: false,
+        price: new Decimal('349.99'),
+        ticketTypes: [
+          { name: 'General', price: 349.99, quantity: 400, features: ['All sessions', 'Lunch included'] },
+          { name: 'Workshop Pass', price: 549.99, quantity: 150, features: ['All sessions', 'Hands-on labs', 'Lunch included'] },
+          { name: 'VIP', price: 799.99, quantity: 50, features: ['All sessions', 'Hands-on labs', 'Speaker dinner', 'Priority seating'] },
+        ],
+        capacity: 600,
+        availableSlots: 127,
+        image: 'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=800',
+        images: [
+          'https://images.unsplash.com/photo-1591115765373-5207764f72e7?w=800',
+        ],
+        type: EventType.PUBLIC,
+        status: EventStatus.APPROVED,
+        requirements: ['Laptop required for labs'],
+        ageRestriction: '18+',
+        duration: '3 days',
+        speakers: [
+          { name: 'Kelsey Hightower', title: 'Platform Advocate', company: 'Cloud Native Foundation' },
+          { name: 'Charity Majors', title: 'CTO', company: 'Observability Inc' },
+        ],
+        sponsors: [
+          { name: 'AWS', logo: 'https://example.com/aws-logo.png' },
+          { name: 'Google Cloud', logo: 'https://example.com/gcp-logo.png' },
+        ],
+        faqs: [
+          { question: 'Are lab environments provided?', answer: 'Yes, cloud sandboxes are provisioned for all workshop attendees.' },
+        ],
+        organizerId: organizerIds[0],
+        approvedBy: superuser.id,
+        approvedAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: 'Afrobeats Live — The Experience',
+        description: 'An electrifying night of live Afrobeats performances from chart-topping artists.',
+        fullDescription: 'Feel the rhythm at the biggest Afrobeats concert of the season. Multiple stages, food stalls, and an unforgettable atmosphere. Come dance!',
+        category: 'Music',
+        tags: ['afrobeats', 'live music', 'concert', 'dance'],
+        startDate: new Date(now.getTime() - 3 * 60 * 60 * 1000), // started 3 hours ago
+        endDate: new Date(now.getTime() + 5 * 60 * 60 * 1000),   // ends in 5 hours
+        startTime: '05:00 PM',
+        endTime: '11:59 PM',
+        registrationDeadline: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+        venue: 'O2 Arena',
+        location: 'Lagos, Nigeria',
+        address: 'Lekki Phase 1, Lagos',
+        isOnline: false,
+        coordinates: { lat: 6.4474, lng: 3.4734 },
+        isFree: false,
+        price: new Decimal('75.00'),
+        ticketTypes: [
+          { name: 'Regular', price: 75.00, quantity: 2000, features: ['General admission'] },
+          { name: 'VIP', price: 250.00, quantity: 300, features: ['VIP lounge', 'Complimentary drinks', 'Priority entry'] },
+          { name: 'VVIP Table', price: 1000.00, quantity: 30, features: ['Private table', 'Bottle service', 'Meet & greet'] },
+        ],
+        capacity: 2330,
+        availableSlots: 412,
+        image: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
+        images: [
+          'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800',
+          'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800',
+        ],
+        type: EventType.PUBLIC,
+        status: EventStatus.APPROVED,
+        requirements: ['Valid ID required'],
+        ageRestriction: '18+',
+        duration: '7 hours',
+        speakers: [],
+        sponsors: [
+          { name: 'Beats Audio', logo: 'https://example.com/beats-logo.png' },
+        ],
+        faqs: [
+          { question: 'Is there parking?', answer: 'Yes, free parking is available on a first-come basis.' },
+        ],
+        organizerId: organizerIds[1],
+        approvedBy: superuser.id,
+        approvedAt: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+      },
+      {
+        title: 'Global Startup Founders Forum',
+        description: 'A 2-day forum connecting startup founders with investors, mentors, and industry leaders.',
+        fullDescription: 'Fireside chats, pitch sessions, and 1-on-1 mentorship rounds. Whether you are pre-seed or Series B, this forum accelerates your journey.',
+        category: 'Business',
+        tags: ['startup', 'founders', 'investors', 'networking'],
+        startDate: new Date(now.getTime() - 12 * 60 * 60 * 1000), // started 12 hours ago
+        endDate: new Date(now.getTime() + 36 * 60 * 60 * 1000),   // ends in 36 hours
+        startTime: '09:00 AM',
+        endTime: '07:00 PM',
+        registrationDeadline: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+        venue: 'Marina Bay Sands Convention Centre',
+        location: 'Singapore',
+        address: '10 Bayfront Avenue, Singapore 018956',
+        isOnline: true,
+        onlineLink: 'https://hopin.com/events/global-founders-forum',
+        coordinates: { lat: 1.2838, lng: 103.8591 },
+        isFree: false,
+        price: new Decimal('199.00'),
+        ticketTypes: [
+          { name: 'Virtual Pass', price: 99.00, quantity: 500, features: ['Livestream access', 'Recorded sessions'] },
+          { name: 'In-Person', price: 199.00, quantity: 300, features: ['Full venue access', 'Networking lunch'] },
+          { name: 'Founder VIP', price: 499.00, quantity: 50, features: ['All access', '1-on-1 investor meetings', 'Private dinner'] },
+        ],
+        capacity: 850,
+        availableSlots: 203,
+        image: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800',
+        images: [
+          'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800',
+        ],
+        type: EventType.PUBLIC,
+        status: EventStatus.APPROVED,
+        requirements: ['Business formal attire for in-person'],
+        ageRestriction: '18+',
+        duration: '2 days',
+        speakers: [
+          { name: 'Pieter Levels', title: 'Indie Hacker', company: 'Nomad List' },
+          { name: 'Lisa Su', title: 'CEO', company: 'AMD' },
+        ],
+        sponsors: [
+          { name: 'Y Combinator', logo: 'https://example.com/yc-logo.png' },
+          { name: 'Sequoia Capital', logo: 'https://example.com/sequoia-logo.png' },
+        ],
+        faqs: [
+          { question: 'Can virtual attendees ask questions?', answer: 'Yes, there is a live Q&A feature during all sessions.' },
+        ],
+        organizerId: organizerIds[2],
+        approvedBy: superuser.id,
+        approvedAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+      },
       {
         title: 'Business Networking Mixer',
         description: 'Connect with entrepreneurs, investors, and business leaders in an informal setting.',
@@ -811,6 +957,209 @@ const seedPlatformFeeSettings = async (userId: string): Promise<void> => {
 };
 
 /**
+ * Seed subscription plans for BASIC, STANDARD, PREMIUM tiers
+ */
+const seedSubscriptionPlans = async (): Promise<void> => {
+  const plans = [
+    {
+      tier: SubscriptionTier.BASIC,
+      name: 'Basic',
+      description: 'Free tier with aggregated data only. Perfect for getting started.',
+      price: new Decimal(0),
+      currency: 'USD',
+      features: [] as string[],
+    },
+    {
+      tier: SubscriptionTier.STANDARD,
+      name: 'Standard',
+      description: 'Free tier with basic attendee data and consent-based access.',
+      price: new Decimal(0),
+      currency: 'USD',
+      features: ['attendee_list', 'export'],
+    },
+    {
+      tier: SubscriptionTier.PREMIUM,
+      name: 'Premium',
+      description: 'Full access to advanced analytics, demographics, and data export.',
+      price: new Decimal(10),
+      currency: 'USD',
+      features: ['attendee_list', 'export', 'demographics', 'analytics', 'advanced_export'],
+    },
+  ];
+
+  for (const plan of plans) {
+    await prisma.subscriptionPlan.upsert({
+      where: { tier: plan.tier },
+      create: plan,
+      update: {
+        name: plan.name,
+        description: plan.description,
+        price: plan.price,
+        currency: plan.currency,
+        features: plan.features,
+      },
+    });
+  }
+
+  logger.info('Subscription plans seeded (BASIC, STANDARD, PREMIUM)');
+};
+
+/**
+ * Create mock attendees + registrations for live events
+ * Gives the admin event detail screen real data to display
+ */
+const createRegistrations = async (eventIds: string[]): Promise<void> => {
+  try {
+    logger.info('Creating mock registrations for live events...');
+
+    // Find our 3 live events (the ones with startDate in the past)
+    const now = new Date();
+    const liveEvents = await prisma.event.findMany({
+      where: {
+        id: { in: eventIds },
+        status: EventStatus.APPROVED,
+        startDate: { lt: now },
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        title: true,
+        ticketTypes: true,
+      },
+    });
+
+    if (liveEvents.length === 0) {
+      logger.info('No live events found, skipping registrations');
+      return;
+    }
+
+    // Create 20 attendee users for registrations
+    const attendeeNames = [
+      { firstName: 'Amara', lastName: 'Osei' },
+      { firstName: 'Chen', lastName: 'Wei' },
+      { firstName: 'Sofia', lastName: 'Martinez' },
+      { firstName: 'James', lastName: 'Okafor' },
+      { firstName: 'Yuki', lastName: 'Tanaka' },
+      { firstName: 'Priya', lastName: 'Sharma' },
+      { firstName: 'Lucas', lastName: 'Bernard' },
+      { firstName: 'Fatima', lastName: 'Al-Hassan' },
+      { firstName: 'Kwame', lastName: 'Mensah' },
+      { firstName: 'Elena', lastName: 'Petrov' },
+      { firstName: 'David', lastName: 'Kim' },
+      { firstName: 'Aisha', lastName: 'Mohammed' },
+      { firstName: 'Oscar', lastName: 'Johansson' },
+      { firstName: 'Nia', lastName: 'Williams' },
+      { firstName: 'Raj', lastName: 'Patel' },
+      { firstName: 'Chloe', lastName: 'Dubois' },
+      { firstName: 'Tunde', lastName: 'Adeyemi' },
+      { firstName: 'Maria', lastName: 'Garcia' },
+      { firstName: 'Alex', lastName: 'Thompson' },
+      { firstName: 'Zara', lastName: 'Hassan' },
+    ];
+
+    const hashedPw = await hashPassword('Attendee123!');
+    const attendeeIds: string[] = [];
+
+    for (let i = 0; i < attendeeNames.length; i++) {
+      const email = `attendee${i + 1}@eventknit-demo.com`;
+      const existing = await prisma.user.findUnique({ where: { email } });
+
+      if (existing) {
+        attendeeIds.push(existing.id);
+      } else {
+        const user = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPw,
+            firstName: attendeeNames[i].firstName,
+            lastName: attendeeNames[i].lastName,
+            role: UserRole.ATTENDEE,
+            status: UserStatus.ACTIVE,
+            isEmailVerified: true,
+            emailVerifiedAt: new Date(),
+          },
+        });
+        attendeeIds.push(user.id);
+      }
+    }
+
+    logger.info(`Created/found ${attendeeIds.length} attendee users`);
+
+    let totalRegs = 0;
+
+    for (const event of liveEvents) {
+      // Parse ticket types from JSON
+      const ticketTypes = (event.ticketTypes as Array<{
+        name: string;
+        price: number;
+        quantity: number;
+      }>) || [];
+
+      // Skip if already has registrations
+      const existingCount = await prisma.eventRegistration.count({
+        where: { eventId: event.id },
+      });
+      if (existingCount > 0) {
+        logger.info(`Event "${event.title}" already has ${existingCount} registrations, skipping`);
+        continue;
+      }
+
+      // Register 12-18 random attendees per live event
+      const regCount = 12 + Math.floor(Math.random() * 7);
+      const shuffled = [...attendeeIds].sort(() => Math.random() - 0.5);
+      const selectedAttendees = shuffled.slice(0, regCount);
+
+      const facilities = ['Main Gate', 'VIP Entrance', 'Side Gate', 'Staff Gate'];
+
+      for (let j = 0; j < selectedAttendees.length; j++) {
+        // Pick a random ticket type
+        const tt = ticketTypes.length > 0
+          ? ticketTypes[Math.floor(Math.random() * ticketTypes.length)]
+          : { name: 'General', price: 0, quantity: 100 };
+
+        // Vary statuses: ~60% CONFIRMED, ~25% CONFIRMED+checked-in, ~15% PENDING
+        const roll = Math.random();
+        const isConfirmed = roll < 0.85;
+        const isCheckedIn = roll < 0.25;
+
+        const checkedInAt = isCheckedIn
+          ? new Date(now.getTime() - Math.floor(Math.random() * 4 * 60 * 60 * 1000))
+          : null;
+
+        const facility = isCheckedIn
+          ? facilities[Math.floor(Math.random() * facilities.length)]
+          : null;
+
+        await prisma.eventRegistration.create({
+          data: {
+            eventId: event.id,
+            attendeeId: selectedAttendees[j],
+            ticketType: tt.name,
+            quantity: 1,
+            totalAmount: new Decimal(tt.price),
+            status: isConfirmed ? RegistrationStatus.CONFIRMED : RegistrationStatus.PENDING,
+            ticketStatus: isCheckedIn ? TicketStatus.DEACTIVATED : TicketStatus.ACTIVE,
+            checkedInAt,
+            lastScanFacility: facility,
+            isCurrentlyInside: isCheckedIn,
+            backupCode: `BK-${event.id.slice(0, 4).toUpperCase()}-${(j + 1).toString().padStart(3, '0')}`,
+            createdAt: new Date(now.getTime() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)),
+          },
+        });
+        totalRegs++;
+      }
+
+      logger.info(`Created ${selectedAttendees.length} registrations for "${event.title}"`);
+    }
+
+    logger.info(`✅ Created ${totalRegs} total registrations`);
+  } catch (error) {
+    logger.error('Failed to create registrations:', error);
+    // Non-fatal — don't throw
+  }
+};
+
+/**
  * Main function
  */
 async function main(): Promise<void> {
@@ -855,8 +1204,14 @@ async function main(): Promise<void> {
     // Create featured events
     await createFeaturedEvents(eventIds, superuser.id);
 
+    // Create registrations for live events
+    await createRegistrations(eventIds);
+
     // Seed default platform fee settings
     await seedPlatformFeeSettings(superuser.id);
+
+    // Seed subscription plans
+    await seedSubscriptionPlans();
 
     logger.info('✅ Script completed successfully');
     logger.info('📊 Summary:');

@@ -1,3 +1,4 @@
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { CompanyDocumentsService } from '../src/services/company-documents.service';
 import { NotFoundError, ValidationError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
@@ -5,48 +6,48 @@ import * as cloudinaryService from '../src/services/cloudinary.service';
 import { CompanyDocCategory, CompanyDocType } from '@prisma/client';
 
 // Mock database
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     companyDocument: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
 
 // Mock cloudinary service
-jest.mock('../src/services/cloudinary.service', () => ({
-  uploadBuffer: jest.fn(),
-  deleteImageFromCloudinary: jest.fn(),
-  extractPublicIdFromUrl: jest.fn(),
+vi.mock('../src/services/cloudinary.service', () => ({
+  uploadBuffer: vi.fn(),
+  deleteImageFromCloudinary: vi.fn(),
+  extractPublicIdFromUrl: vi.fn(),
 }));
 
 // Mock logger
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    error: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
 const prismaMock = prisma as unknown as {
   companyDocument: {
-    create: jest.Mock;
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    update: jest.Mock;
-    delete: jest.Mock;
-    count: jest.Mock;
+    create: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+    findMany: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
+    count: ReturnType<typeof vi.fn>;
   };
 };
 
-const cloudinaryMock = cloudinaryService as jest.Mocked<typeof cloudinaryService>;
+const cloudinaryMock = cloudinaryService as unknown as { [K in keyof typeof cloudinaryService]: ReturnType<typeof vi.fn> };
 
 const UPLOADER = { id: 'user-1', firstName: 'Admin', lastName: 'User', email: 'admin@test.com' };
 
@@ -71,7 +72,7 @@ const makeDoc = (overrides = {}) => ({
 
 describe('CompanyDocumentsService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ─────────────────────────────────────────────────────────

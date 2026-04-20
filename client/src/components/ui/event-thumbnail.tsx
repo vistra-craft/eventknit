@@ -58,7 +58,7 @@ const EventThumbnail = React.forwardRef<HTMLDivElement, EventThumbnailProps>(
               src={src || undefined}
               alt={alt || "Event thumbnail"}
               className={cn(
-                "w-full h-full object-cover transition-opacity duration-200",
+                "absolute inset-0 w-full h-full object-cover transition-opacity duration-200",
                 imageLoaded ? "opacity-100" : "opacity-0"
               )}
               onLoad={() => setImageLoaded(true)}

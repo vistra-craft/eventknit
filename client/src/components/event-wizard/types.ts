@@ -149,6 +149,7 @@ export interface EventFormData {
   location: string;
   venue: string;
   address: string;
+  coordinates?: { lat: number; lng: number } | null;
   onlineLink: string;
   price: string;
   totalSlots: number;
@@ -175,12 +176,16 @@ export interface EventFormData {
   refundPolicy?: 'no_refunds' | 'full_refund' | 'partial_refund' | 'custom';
   refundDeadlineDays?: number; // Days before event for refund eligibility
   refundPolicyText?: string; // Custom refund policy text
+  // Seating configuration
+  hasSeatingMap?: boolean;
+  seatingType?: 'CUSTOMER_SELECTS' | 'ORGANIZER_ASSIGNS' | 'HYBRID' | '';
+  seatMapRequired?: boolean;
 }
 
 /** Common props shared by all step components */
 export interface StepComponentProps {
   eventData: EventFormData;
-  onInputChange: (field: string, value: string | boolean | number) => void;
+  onInputChange: (field: string, value: string | boolean | number | { lat: number; lng: number } | null) => void;
   validationErrors: Record<string, string>;
   setValidationErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 }

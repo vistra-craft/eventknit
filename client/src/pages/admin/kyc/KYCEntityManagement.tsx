@@ -16,6 +16,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 import type { EntityRequirement } from '@/lib/entity-management-api';
 import {
   getEntityRequirements,
@@ -24,6 +25,7 @@ import {
   deleteEntityRequirement,
 } from '@/lib/entity-management-api';
 import { Checkbox } from '@/components/ui/checkbox';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 // Entity types based on kyc_document.md
 const ENTITY_TYPES = [
@@ -184,11 +186,7 @@ const KYCEntityManagement: React.FC = () => {
       setRequirements(data);
     } catch (error) {
       console.error('Failed to load requirements:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load document requirements',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, error, 'Failed to load document requirements');
       setRequirements([]);
     } finally {
       setLoading(false);
@@ -214,8 +212,7 @@ const KYCEntityManagement: React.FC = () => {
   const handleSaveDocument = async () => {
     if (!documentForm.documentType.trim()) {
       toast({
-        title: 'Error',
-        description: 'Document type is required',
+        title: 'Document type is required',
         variant: 'destructive',
       });
       return;
@@ -259,20 +256,16 @@ const KYCEntityManagement: React.FC = () => {
       setShowDocumentDialog(false);
       setDocumentForm({ documentType: '', description: '', isRequired: true });
     } catch (err) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to save requirement',
-        variant: 'destructive',
-      });
+      showErrorToast(toast, err, 'Failed to save requirement');
     } finally {
       setSaving(false);
     }
   };
 
+  const [deleteDocConfirm, setDeleteDocConfirm] = useState<string | null>(null);
+
   const handleDeleteDocument = async (requirementId: string) => {
     if (!selectedEntity) return;
-    if (!confirm('Are you sure you want to delete this requirement?')) return;
 
     try {
       await deleteEntityRequirement(selectedEntity, requirementId);
@@ -282,12 +275,7 @@ const KYCEntityManagement: React.FC = () => {
         description: 'Document requirement removed',
       });
     } catch (err) {
-      const error = err instanceof Error ? err.message : 'Failed to delete requirement';
-      toast({
-        title: 'Error',
-        description: error,
-        variant: 'destructive',
-      });
+      showErrorToast(toast, err, "Failed to delete requirement");
     }
   };
 
@@ -301,7 +289,7 @@ const KYCEntityManagement: React.FC = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Entity Types List */}
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -321,7 +309,7 @@ const KYCEntityManagement: React.FC = () => {
             </div>
 
             {/* Entity List */}
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+            <div className="space-y-2 max-h-[50vh] md:max-h-[600px] overflow-y-auto">
               {filteredEntities.map((entity) => {
                 const Icon = entity.icon;
                 return (
@@ -426,7 +414,7 @@ const KYCEntityManagement: React.FC = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleDeleteDocument(req.id)}
+                        onClick={() => setDeleteDocConfirm(req.id)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -508,6 +496,19 @@ const KYCEntityManagement: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteDocConfirm} onOpenChange={() => setDeleteDocConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete requirement?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteDocConfirm) handleDeleteDocument(deleteDocConfirm); setDeleteDocConfirm(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

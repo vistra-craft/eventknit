@@ -46,9 +46,7 @@ describe('DisbursementService', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test organizer with identity verification and KYC approval (required for payouts)
     const organizer = await prisma.user.create({
@@ -78,7 +76,7 @@ describe('DisbursementService', () => {
         password: await hashPassword('password123'),
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
@@ -164,7 +162,7 @@ describe('DisbursementService', () => {
 
       expect(disbursement.id).toBeDefined();
       expect(disbursement.disbursementNumber).toMatch(/^DISB-\d{4}-\d{6}$/);
-      expect(Number(disbursement.totalAmount)).toBe(9000); // Organizer amount from platform fee
+      expect(Number(disbursement.totalAmount)).toBe(9250); // Organizer amount from platform fee (7.5%)
       expect(disbursement.status).toBe('pending');
       expect(disbursement.platformFees.length).toBe(1);
 
@@ -836,7 +834,7 @@ describe('DisbursementService', () => {
 
       const summary = await DisbursementService.getOrganizerDisbursementSummary(organizerId);
 
-      expect(summary.totalDisbursed).toBe(9000);
+      expect(summary.totalDisbursed).toBe(9250);
       expect(summary.totalPending).toBe(0);
       expect(summary.completedCount).toBe(1);
       expect(summary.pendingCount).toBe(0);

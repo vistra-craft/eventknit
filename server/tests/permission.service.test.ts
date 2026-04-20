@@ -33,9 +33,7 @@ describe('PermissionService', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create organizer
     const organizerPassword = await hashPassword('Organizer123!@$');
@@ -61,7 +59,7 @@ describe('PermissionService', () => {
         password: staffPassword,
         firstName: 'Test',
         lastName: 'Staff',
-        role: UserRole.ORGANIZER_STAFF,
+        role: UserRole.ORGANIZER_ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         organizationName: 'Test Org',

@@ -21,6 +21,7 @@ import {
   generateInvoiceHTML,
 } from "@/lib/invoice-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Invoice {
@@ -59,11 +60,7 @@ const Invoices = () => {
       }
     } catch {
       console.error("Error loading invoices");
-      toast({
-        title: "Error",
-        description: "Failed to load invoices",
-        variant: "destructive",
-      });
+      showErrorToast(toast, null, "Failed to load invoices");
     } finally {
       setLoading(false);
     }
@@ -75,11 +72,7 @@ const Invoices = () => {
       setInvoiceHTML(html);
       setSelectedInvoice(invoiceId);
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load invoice",
-        variant: "destructive",
-      });
+      showErrorToast(toast, null, "Failed to load invoice");
     }
   };
 
@@ -91,11 +84,7 @@ const Invoices = () => {
         description: "Invoice downloaded successfully",
       });
     } catch {
-      toast({
-        title: "Error",
-        description: "Failed to download invoice",
-        variant: "destructive",
-      });
+      showErrorToast(toast, null, "Failed to download invoice");
     }
   };
 

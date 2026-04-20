@@ -58,19 +58,19 @@ const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user }) 
           <Card className="w-full max-w-md mx-auto mb-8 shadow-2xl border-2 border-primary/20">
             <CardContent className="p-0">
               {/* Badge Header */}
-              <div className="bg-white border-b border-gray-200 p-4 rounded-t-xl">
-                <h2 className="text-lg font-bold text-center text-gray-900">{badgeData.eventName}</h2>
+              <div className="bg-card border-b border-border p-4 rounded-t-xl">
+                <h2 className="text-lg font-bold text-center text-foreground">{badgeData.eventName}</h2>
                 <p className="text-sm text-center text-muted-foreground mt-1">{eventData?.date || 'Date TBD'}</p>
               </div>
               
               {/* Badge Content */}
-              <div className="p-8 bg-white">
+              <div className="p-8 bg-card">
                 {/* Attendee Info */}
                 <div className="text-center mb-8">
                   <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl font-bold text-gray-700">{user.initials}</span>
+                    <span className="text-2xl font-bold text-muted-foreground">{user.initials}</span>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{badgeData.attendeeName}</h3>
+                  <h3 className="text-2xl font-bold text-foreground mb-2">{badgeData.attendeeName}</h3>
                   <p className="text-base text-muted-foreground">{badgeData.company}</p>
                 </div>
 
@@ -82,9 +82,9 @@ const DashboardMyBadge: React.FC<DashboardMyBadgeProps> = ({ eventData, user }) 
                 </div>
 
                 {/* Alternative Code Section */}
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <div className="bg-muted rounded-lg p-4 text-center">
                   <p className="text-xs text-muted-foreground mb-2">Alternative Code</p>
-                  <p className="text-lg font-mono font-bold text-gray-900">{badgeData.alternativeCode}</p>
+                  <p className="text-lg font-mono font-bold text-foreground">{badgeData.alternativeCode}</p>
                 </div>
               </div>
             </CardContent>

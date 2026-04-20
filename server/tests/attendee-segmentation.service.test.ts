@@ -2,31 +2,31 @@ import { AttendeeSegmentationService } from '../src/services/attendee-segmentati
 import { NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     attendeeSegment: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
   attendeeSegment: {
-    create: jest.Mock;
-    findMany: jest.Mock;
-    findFirst: jest.Mock;
-    update: jest.Mock;
-    delete: jest.Mock;
+    create: vi.Mock;
+    findMany: vi.Mock;
+    findFirst: vi.Mock;
+    update: vi.Mock;
+    delete: vi.Mock;
   };
 };
 
 describe('AttendeeSegmentationService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   const criteria = [{ field: 'city', operator: 'eq', value: 'NYC' }];

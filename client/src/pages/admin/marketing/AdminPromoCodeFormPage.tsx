@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -19,10 +20,12 @@ import {
   X,
   RefreshCw,
   AlertCircle,
-  User,
+  User as UserIcon,
   Mail,
   Calendar,
   MessageSquare,
+  Search,
+  Loader2,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
@@ -37,6 +40,8 @@ import {
   type CreateAdminPromoCodeData,
 } from "@/lib/admin-promo-code-api";
 import { getEvents, EventStatus } from "@/lib/event-api";
+import { getUsers, type User } from "@/lib/admin-api";
+import { showErrorToast } from "@/lib/utils/error";
 import {
   approvePromoCodeRequest,
   getPromoCodeRequestById,
@@ -64,6 +69,20 @@ const AdminPromoCodeFormPage = () => {
 
   // Request context data (fetched when requestId is present)
   const [requestData, setRequestData] = useState<PromoCodeRequest | null>(null);
+
+  // Organizer search (for ORGANIZER scope)
+  const [organizerSearch, setOrganizerSearch] = useState("");
+  const [organizerResults, setOrganizerResults] = useState<User[]>([]);
+  const [organizerLoading, setOrganizerLoading] = useState(false);
+  const [selectedOrganizer, setSelectedOrganizer] = useState<User | null>(null);
+  const organizerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Referrer user search
+  const [referrerSearch, setReferrerSearch] = useState("");
+  const [referrerResults, setReferrerResults] = useState<User[]>([]);
+  const [referrerLoading, setReferrerLoading] = useState(false);
+  const [selectedReferrer, setSelectedReferrer] = useState<User | null>(null);
+  const referrerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Code validation state
   const [codeStatus, setCodeStatus] = useState<CodeStatus>("idle");
@@ -146,11 +165,47 @@ const AdminPromoCodeFormPage = () => {
       lastCheckedCodeRef.current = code;
       setCodeStatus("available");
     } else {
-      toast({ title: "Error", description: "Failed to generate code", variant: "destructive" });
+      showErrorToast(toast, new Error("Failed to generate code"), "Failed to generate code");
     }
 
     setGeneratingCode(false);
   }, [toast]);
+
+  // Debounced organizer search
+  const handleOrganizerSearch = useCallback((query: string) => {
+    setOrganizerSearch(query);
+    if (organizerDebounceRef.current) clearTimeout(organizerDebounceRef.current);
+    if (!query.trim()) { setOrganizerResults([]); return; }
+    organizerDebounceRef.current = setTimeout(async () => {
+      setOrganizerLoading(true);
+      try {
+        const res = await getUsers({ search: query, limit: 8 });
+        if (res.success && res.data?.users) {
+          setOrganizerResults(res.data.users.filter(u => u.role === 'ORGANIZER'));
+        }
+      } finally {
+        setOrganizerLoading(false);
+      }
+    }, 400);
+  }, []);
+
+  // Debounced referrer user search
+  const handleReferrerSearch = useCallback((query: string) => {
+    setReferrerSearch(query);
+    if (referrerDebounceRef.current) clearTimeout(referrerDebounceRef.current);
+    if (!query.trim()) { setReferrerResults([]); return; }
+    referrerDebounceRef.current = setTimeout(async () => {
+      setReferrerLoading(true);
+      try {
+        const res = await getUsers({ search: query, limit: 8 });
+        if (res.success && res.data?.users) {
+          setReferrerResults(res.data.users);
+        }
+      } finally {
+        setReferrerLoading(false);
+      }
+    }, 400);
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -190,8 +245,8 @@ const AdminPromoCodeFormPage = () => {
           lastCheckedCodeRef.current = code.code;
           setCodeStatus("available");
         } else {
-          toast({ title: "Error", description: "Promo code not found", variant: "destructive" });
-          navigate("/admin/marketing/promo-codes");
+          showErrorToast(toast, new Error("Promo code not found"), "Promo code not found");
+          navigate("/admin/tickets/promo-codes");
         }
       } else if (requestId) {
         // Fetch full request data for context card
@@ -226,7 +281,7 @@ const AdminPromoCodeFormPage = () => {
       }
     } catch (err: unknown) {
       console.error("Error loading data:", err);
-      toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
+      showErrorToast(toast, err, "Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -236,10 +291,12 @@ const AdminPromoCodeFormPage = () => {
     loadData();
   }, [loadData]);
 
-  // Cleanup debounce timer
+  // Cleanup debounce timers
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (organizerDebounceRef.current) clearTimeout(organizerDebounceRef.current);
+      if (referrerDebounceRef.current) clearTimeout(referrerDebounceRef.current);
     };
   }, []);
 
@@ -247,32 +304,37 @@ const AdminPromoCodeFormPage = () => {
     e.preventDefault();
 
     if (!formData.code) {
-      toast({ title: "Error", description: "Code is required", variant: "destructive" });
+      showErrorToast(toast, new Error("Code is required"), "Code is required");
       return;
     }
 
     if (codeStatus === "taken") {
-      toast({ title: "Error", description: "This code is already taken. Please choose a different one.", variant: "destructive" });
+      showErrorToast(toast, new Error("This code is already taken. Please choose a different one."), "This code is already taken. Please choose a different one.");
       return;
     }
 
     if (!formData.discountValue || formData.discountValue <= 0) {
-      toast({ title: "Error", description: "Discount value must be greater than 0", variant: "destructive" });
+      showErrorToast(toast, new Error("Discount value must be greater than 0"), "Discount value must be greater than 0");
       return;
     }
 
     if (formData.discountType === "PERCENTAGE" && formData.discountValue > 100) {
-      toast({ title: "Error", description: "Percentage discount cannot exceed 100%", variant: "destructive" });
+      showErrorToast(toast, new Error("Percentage discount cannot exceed 100%"), "Percentage discount cannot exceed 100%");
+      return;
+    }
+
+    if (formData.scope === "ORGANIZER" && !formData.organizerId) {
+      showErrorToast(toast, new Error("Please select an organizer for organizer-scoped codes"), "Please select an organizer for organizer-scoped codes");
       return;
     }
 
     if (formData.scope === "EVENT" && !formData.eventId) {
-      toast({ title: "Error", description: "Please select an event for single-event scope", variant: "destructive" });
+      showErrorToast(toast, new Error("Please select an event for single-event scope"), "Please select an event for single-event scope");
       return;
     }
 
     if (formData.scope === "MULTI_EVENT" && (!formData.eventIds || formData.eventIds.length === 0)) {
-      toast({ title: "Error", description: "Please select at least one event for multi-event scope", variant: "destructive" });
+      showErrorToast(toast, new Error("Please select at least one event for multi-event scope"), "Please select at least one event for multi-event scope");
       return;
     }
 
@@ -291,16 +353,16 @@ const AdminPromoCodeFormPage = () => {
           } else {
             toast({ title: "Partial Success", description: "Promo code created but failed to approve request. Please approve manually.", variant: "destructive" });
           }
-          navigate("/admin/marketing/promo-codes?tab=requests");
+          navigate("/admin/tickets/promo-codes?tab=requests");
         } else {
           toast({ title: "Success", description: isEditing ? "Promo code updated" : "Promo code created" });
-          navigate("/admin/marketing/promo-codes");
+          navigate("/admin/tickets/promo-codes");
         }
       } else {
-        toast({ title: "Error", description: response.message || "Failed to save", variant: "destructive" });
+        showErrorToast(toast, new Error(response.message || "Failed to save"), "Failed to save");
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to save promo code", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to save promo code");
     } finally {
       setSaving(false);
     }
@@ -344,7 +406,7 @@ const AdminPromoCodeFormPage = () => {
                   <div className="space-y-1.5 text-sm">
                     {requestData.organizer && (
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <User className="h-3.5 w-3.5 shrink-0" />
+                        <UserIcon className="h-3.5 w-3.5 shrink-0" />
                         <span>
                           <span className="text-foreground font-medium">
                             {requestData.organizer.firstName} {requestData.organizer.lastName}
@@ -383,13 +445,13 @@ const AdminPromoCodeFormPage = () => {
         )}
 
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => requestId ? navigate("/admin/marketing/promo-codes?tab=requests") : navigate("/admin/marketing/promo-codes")}
+              onClick={() => requestId ? navigate("/admin/tickets/promo-codes?tab=requests") : navigate("/admin/tickets/promo-codes")}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
@@ -404,7 +466,7 @@ const AdminPromoCodeFormPage = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => navigate("/admin/marketing/promo-codes")}>
+            <Button type="button" variant="outline" onClick={() => navigate("/admin/tickets/promo-codes")}>
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={saving || codeStatus === "taken" || codeStatus === "checking"}>
@@ -535,19 +597,103 @@ const AdminPromoCodeFormPage = () => {
                 <Label>Scope *</Label>
                 <Select
                   value={formData.scope}
-                  onValueChange={(v) => setFormData({ ...formData, scope: v as PromoCodeScope, eventId: undefined, eventIds: [] })}
+                  onValueChange={(v) => {
+                    setFormData({ ...formData, scope: v as PromoCodeScope, eventId: undefined, eventIds: [], organizerId: undefined });
+                    setSelectedOrganizer(null);
+                    setOrganizerSearch("");
+                    setOrganizerResults([]);
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="PLATFORM">Platform-wide</SelectItem>
+                    <SelectItem value="ORGANIZER">Organizer-specific</SelectItem>
                     <SelectItem value="EVENT">Single Event</SelectItem>
                     <SelectItem value="MULTI_EVENT">Multiple Events</SelectItem>
                   </SelectContent>
                 </Select>
+                {formData.scope === "ORGANIZER" && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Code applies to all events created by the selected organizer.
+                  </p>
+                )}
               </div>
             </div>
+
+            {formData.scope === "ORGANIZER" && (
+              <div className="mt-4 space-y-2">
+                <Label>Organizer *</Label>
+                {selectedOrganizer ? (
+                  <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <UserIcon className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-none">
+                        {selectedOrganizer.firstName} {selectedOrganizer.lastName}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{selectedOrganizer.email}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 shrink-0"
+                      onClick={() => {
+                        setSelectedOrganizer(null);
+                        setFormData(prev => ({ ...prev, organizerId: undefined }));
+                        setOrganizerSearch("");
+                        setOrganizerResults([]);
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={organizerSearch}
+                      onChange={e => handleOrganizerSearch(e.target.value)}
+                      placeholder="Search organizer by name or email…"
+                      className="pl-9"
+                    />
+                    {organizerLoading && (
+                      <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                    {organizerResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg border border-border/60 bg-popover shadow-lg overflow-hidden">
+                        {organizerResults.map(u => (
+                          <button
+                            key={u.id}
+                            type="button"
+                            className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                            onClick={() => {
+                              setSelectedOrganizer(u);
+                              setFormData(prev => ({ ...prev, organizerId: u.id }));
+                              setOrganizerSearch("");
+                              setOrganizerResults([]);
+                            }}
+                          >
+                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <UserIcon className="h-3.5 w-3.5 text-primary" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {u.firstName} {u.lastName}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {formData.scope === "EVENT" && (
               <div className="mt-4 space-y-2">
@@ -697,7 +843,20 @@ const AdminPromoCodeFormPage = () => {
                   checked={formData.firstTimeOnly}
                   onCheckedChange={(v) => setFormData({ ...formData, firstTimeOnly: v })}
                 />
-                <span className="text-sm">First-time only</span>
+                <div>
+                  <span className="text-sm">First-time only</span>
+                  <p className="text-xs text-muted-foreground">Only usable by attendees with no prior orders</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                  checked={formData.isStackable ?? false}
+                  onCheckedChange={(v) => setFormData({ ...formData, isStackable: v })}
+                />
+                <div>
+                  <span className="text-sm">Stackable</span>
+                  <p className="text-xs text-muted-foreground">Can be combined with other promo codes at checkout</p>
+                </div>
               </label>
             </div>
           </CardContent>
@@ -748,13 +907,80 @@ const AdminPromoCodeFormPage = () => {
               </label>
               {formData.isReferral && (
                 <div className="mt-3 space-y-2">
-                  <Label>Influencer User ID</Label>
-                  <Input
-                    value={formData.referrerUserId || ""}
-                    onChange={(e) => setFormData({ ...formData, referrerUserId: e.target.value || undefined })}
-                    placeholder="Enter user ID"
-                    className="max-w-md"
-                  />
+                  <Label>Influencer / Referrer</Label>
+                  {selectedReferrer ? (
+                    <div className="flex items-center gap-3 max-w-md rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <UserIcon className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium leading-none">
+                          {selectedReferrer.firstName} {selectedReferrer.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{selectedReferrer.email}</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs shrink-0">
+                        {selectedReferrer.role}
+                      </Badge>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 shrink-0"
+                        onClick={() => {
+                          setSelectedReferrer(null);
+                          setFormData(prev => ({ ...prev, referrerUserId: undefined }));
+                          setReferrerSearch("");
+                          setReferrerResults([]);
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="relative max-w-md">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={referrerSearch}
+                        onChange={e => handleReferrerSearch(e.target.value)}
+                        placeholder="Search by name or email…"
+                        className="pl-9"
+                      />
+                      {referrerLoading && (
+                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                      )}
+                      {referrerResults.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 z-20 mt-1 rounded-lg border border-border/60 bg-popover shadow-lg overflow-hidden">
+                          {referrerResults.map(u => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/60 transition-colors"
+                              onClick={() => {
+                                setSelectedReferrer(u);
+                                setFormData(prev => ({ ...prev, referrerUserId: u.id }));
+                                setReferrerSearch("");
+                                setReferrerResults([]);
+                              }}
+                            >
+                              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                <UserIcon className="h-3.5 w-3.5 text-primary" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-medium truncate">
+                                  {u.firstName} {u.lastName}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                              </div>
+                              <Badge variant="outline" className="text-xs shrink-0">
+                                {u.role}
+                              </Badge>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

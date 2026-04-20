@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Plus, Trash2, Clock, Chrome, Apple, Mail } from "lucide-react";
 import {
@@ -14,6 +15,7 @@ import {
   removeCalendarSync,
 } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface CalendarSync {
   id: string;
@@ -39,6 +41,7 @@ const EventCalendarIntegration = () => {
   const [syncs, setSyncs] = useState<CalendarSync[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSyncDialogOpen, setIsSyncDialogOpen] = useState(false);
+  const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
   const { toast } = useToast();
 
   const loadSyncs = useCallback(async () => {
@@ -50,11 +53,7 @@ const EventCalendarIntegration = () => {
       }
     } catch (error) {
       console.error("Error loading calendar syncs:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load calendar syncs",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load calendar syncs");
     } finally {
       setLoading(false);
     }
@@ -94,17 +93,11 @@ const EventCalendarIntegration = () => {
         }
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sync to calendar",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to sync to calendar");
     }
   };
 
   const handleRemove = async (syncId: string) => {
-    if (!confirm("Are you sure you want to remove this calendar sync?")) return;
-
     try {
       const response = await removeCalendarSync(syncId);
       if (response.success) {
@@ -115,11 +108,7 @@ const EventCalendarIntegration = () => {
         loadSyncs();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to remove sync",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to remove sync");
     }
   };
 
@@ -219,7 +208,7 @@ const EventCalendarIntegration = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleRemove(sync.id)}
+                      onClick={() => setRemoveConfirm(sync.id)}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
                       Remove
@@ -230,6 +219,19 @@ const EventCalendarIntegration = () => {
             ))}
           </div>
         )}
+
+      <AlertDialog open={!!removeConfirm} onOpenChange={() => setRemoveConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove calendar sync?</AlertDialogTitle>
+            <AlertDialogDescription>This will stop syncing event updates to your calendar.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (removeConfirm) { handleRemove(removeConfirm); } setRemoveConfirm(null); }}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

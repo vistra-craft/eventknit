@@ -15,28 +15,47 @@ import {
   RefreshCw,
   Search,
   AlertCircle,
+  Ticket,
+  Link2,
+  Copy,
+  Plus,
+  MoreHorizontal,
+  ChevronDown,
+  ChevronRight,
+  ArrowLeft,
+  ShieldAlert,
+  LogOut,
+  Lock,
 } from "lucide-react";
-import BackButton from "@/components/BackButton";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { cn, stripHtml } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader } from "@/components/ui/loader";
 import { RichTextContent } from "@/components/ui/RichTextContent";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getEventById } from "@/lib/event-api";
 import { getEventRegistrations } from "@/lib/organizer-api";
 import { updateOrganizerDataAccess } from "@/lib/admin-api";
+import { getEventInvitations, createInvitation, revokeInvitation, getRegistrationLinkUrl, InviteType } from "@/lib/invitation-api";
 import { useToast } from "@/hooks/useToast";
+import { extractErrorMessage } from "@/lib/utils/error";
 import { exportEventData } from "@/lib/utils/export";
 import { getEventConfig, updateEventConfig, type EventScanConfig } from "@/lib/workstation-api";
-import { getRefunds, getDisbursements, type Refund, type Disbursement } from "@/lib/financial-api";
+import { getRefunds, getDisbursements, getPlatformFeeSummary, type Refund, type Disbursement } from "@/lib/financial-api";
+import { getSetting } from "@/lib/system-settings-api";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { EventStaffAssignment } from "@/components/EventStaffAssignment";
+import { EventStaffAssignment } from '@/components/events/EventStaffAssignment';
+import EventCommunicationSection from '@/components/events/EventCommunicationSection';
 import { usePermissionsEnhanced } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "@/lib/utils/event-badge-helpers";
 
 interface EventDetails {
@@ -83,7 +102,32 @@ interface EventDetails {
     level: "gold" | "silver" | "bronze";
     logo: string;
   }>;
+  ticketTypes?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    capacity: number;
+    sold: number;
+    description?: string;
+  }>;
   organizerDataAccess?: 'RESTRICTED' | 'STANDARD' | 'FULL';
+  isManaged?: boolean;
+}
+
+interface InvitationItem {
+  id: string;
+  eventId: string;
+  inviteType: string;
+  token: string;
+  title: string | null;
+  description: string | null;
+  expiresAt: string | null;
+  maxUses: number | null;
+  usedCount: number;
+  usageCount: number;
+  isActive: boolean;
+  createdAt: string;
+  creator: { id: string; firstName: string; lastName: string; email: string };
 }
 
 interface EventMetrics {
@@ -104,17 +148,42 @@ interface EventMetrics {
   averageTicketPrice: number;
 }
 
+interface PlatformFeeSummary {
+  totalFees: number;
+  totalOrganizerAmount: number;
+  totalTransactions: number;
+  disbursedCount: number;
+  pendingCount: number;
+}
+
 interface Registration {
   id: string;
   eventId: string;
   attendeeId: string;
   status: string;
   ticketType?: string | null;
+  ticketLineItems?: Array<{
+    ticketType: string;
+    quantity: number;
+    unitPrice?: number | string;
+    totalPrice?: number | string;
+  }>;
   quantity: number;
   totalAmount: number | string;
   paymentStatus?: string | null;
   paymentMethod?: string | null;
   paymentTransactionId?: string | null;
+  registrationData?: Record<string, unknown> | null;
+  paymentTransaction?: {
+    id: string;
+    transactionNumber: string;
+    gatewayReference: string;
+    gateway: string;
+    amount: number;
+    currency: string;
+    paymentStatus: string;
+    paymentDate: string;
+  } | null;
   createdAt: string;
   attendee: {
     id: string;
@@ -129,7 +198,8 @@ const EventDetailsPage = () => {
   const { eventId } = useParams();
   const navigate = useNavigate();
   const permissions = usePermissionsEnhanced();
-  const [activeTab, setActiveTab] = useState("details");
+  const { user: adminUser } = useAuth();
+  const [activeSection, setActiveSection] = useState("overview");
   const [eventData, setEventData] = useState<EventDetails | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,19 +209,94 @@ const EventDetailsPage = () => {
   const [scanConfigLoading, setScanConfigLoading] = useState(false);
   const [scanConfigSaving, setScanConfigSaving] = useState(false);
   const [paymentSearch, setPaymentSearch] = useState("");
+  const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
+  const [registrationSheetOpen, setRegistrationSheetOpen] = useState(false);
   const [updatingAccess, setUpdatingAccess] = useState(false);
   const [canAccessEvent, setCanAccessEvent] = useState(true);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [refundsLoading, setRefundsLoading] = useState(false);
   const [disbursements, setDisbursements] = useState<Disbursement[]>([]);
   const [disbursementsLoading, setDisbursementsLoading] = useState(false);
+  const [platformFeeSummary, setPlatformFeeSummary] = useState<PlatformFeeSummary | null>(null);
+  const [platformFeePercentage, setPlatformFeePercentage] = useState(7.5);
+  const [platformFeeMinimum, setPlatformFeeMinimum] = useState(0);
+  const [platformFeeMaximum, setPlatformFeeMaximum] = useState(0);
+  const [invitations, setInvitations] = useState<InvitationItem[]>([]);
+  const [invitationsLoading, setInvitationsLoading] = useState(false);
+  const [createInviteDialogOpen, setCreateInviteDialogOpen] = useState(false);
+  const [newInviteType, setNewInviteType] = useState<InviteType>(InviteType.ATTENDEE);
+  const [newInviteTitle, setNewInviteTitle] = useState("");
+  const [creatingInvite, setCreatingInvite] = useState(false);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Support Mode — logged admin edit session
+  const [supportModeActive, setSupportModeActive] = useState(false);
+  const [supportModeDialogOpen, setSupportModeDialogOpen] = useState(false);
+  const [supportModeTriggeredByEdit, setSupportModeTriggeredByEdit] = useState(false);
+  const [supportReason, setSupportReason] = useState("");
+  const [supportModeStartedAt, setSupportModeStartedAt] = useState<Date | null>(null);
+
+  const ticketTypeCount = eventData?.ticketTypes?.length ?? 0;
+  const hasMultipleTicketTypes = ticketTypeCount > 1;
+  const hasComplementaryType = eventData?.ticketTypes?.some((ticket) => ticket.price === 0) ?? false;
+  const normalizeStatus = (status?: string | null): string => (status || '').toUpperCase();
+
+  const toAmount = (value: unknown): number => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
+  const normalizePaymentStatus = (status?: string | null): string =>
+    normalizeStatus(status);
+
+  const getRegistrationPaymentStatus = (registration: Registration): string => {
+    const directStatus = normalizePaymentStatus(registration.paymentStatus);
+    if (directStatus) return directStatus;
+
+    const transactionStatus = normalizePaymentStatus(registration.paymentTransaction?.paymentStatus || null);
+    if (transactionStatus === 'SUCCESS' || transactionStatus === 'COMPLETED') return 'COMPLETED';
+    if (transactionStatus === 'FAILED' || transactionStatus === 'CANCELLED') return 'FAILED';
+    if (transactionStatus === 'PENDING' || transactionStatus === 'INITIATED' || transactionStatus === 'PROCESSING') return 'PENDING';
+
+    return 'PENDING';
+  };
+
+  const parsedTicketTypes = (eventData?.ticketTypes || []).map((ticket) => {
+    const soldFromRegistrations = registrations.reduce((sum, reg) => {
+      const lineItems = Array.isArray(reg.ticketLineItems) ? reg.ticketLineItems : [];
+      const lineItemMatchQty = lineItems
+        .filter((item) => (item.ticketType || '').trim().toLowerCase() === (ticket.name || '').trim().toLowerCase())
+        .reduce((lineSum, item) => lineSum + (item.quantity || 0), 0);
+
+      if (lineItemMatchQty > 0) return sum + lineItemMatchQty;
+
+      const regTicketType = (reg.ticketType || '').trim().toLowerCase();
+      const ticketName = (ticket.name || '').trim().toLowerCase();
+      return regTicketType === ticketName ? sum + (reg.quantity || 1) : sum;
+    }, 0);
+
+    const sold = Number.isFinite(soldFromRegistrations) ? soldFromRegistrations : 0;
+
+    return {
+      ...ticket,
+      sold,
+    };
+  });
+
+  const totalTicketCapacity = parsedTicketTypes.reduce((sum, t) => sum + (t.capacity || 0), 0);
+  const totalTicketsSold = parsedTicketTypes.reduce((sum, t) => sum + (t.sold || 0), 0);
 
   const { toast } = useToast();
 
   // Load scan config when scan-settings tab is active
   useEffect(() => {
     const loadScanConfig = async () => {
-      if (!eventId || activeTab !== 'scan-settings') return;
+      if (!eventId || activeSection !== 'scan-settings') return;
 
       try {
         setScanConfigLoading(true);
@@ -162,8 +307,8 @@ const EventDetailsPage = () => {
       } catch (error) {
         console.error('Error loading scan config:', error);
         toast({
-          title: "Error",
-          description: "Failed to load scan settings",
+          title: "Load failed",
+          description: extractErrorMessage(error, "Failed to load scan settings"),
           variant: "destructive",
         });
       } finally {
@@ -172,24 +317,29 @@ const EventDetailsPage = () => {
     };
 
     loadScanConfig();
-  }, [eventId, activeTab, toast]);
+  }, [eventId, activeSection, toast]);
 
   // Load refunds when refunds tab is active
   useEffect(() => {
     const loadRefunds = async () => {
-      if (!eventId || activeTab !== 'refunds') return;
+      if (!eventId || activeSection !== 'refunds') return;
 
       try {
         setRefundsLoading(true);
         const response = await getRefunds({ eventId });
         if (response.success && response.data) {
-          setRefunds(Array.isArray(response.data) ? response.data : []);
+          const payload = response.data as Refund[] | { refunds?: Refund[] };
+          if (Array.isArray(payload)) {
+            setRefunds(payload);
+          } else {
+            setRefunds(Array.isArray(payload.refunds) ? payload.refunds : []);
+          }
         }
       } catch (error) {
         console.error('Error loading refunds:', error);
         toast({
-          title: "Error",
-          description: "Failed to load refunds",
+          title: "Load failed",
+          description: extractErrorMessage(error, "Failed to load refunds"),
           variant: "destructive",
         });
       } finally {
@@ -198,24 +348,29 @@ const EventDetailsPage = () => {
     };
 
     loadRefunds();
-  }, [eventId, activeTab, toast]);
+  }, [eventId, activeSection, toast]);
 
   // Load disbursements when remittance tab is active
   useEffect(() => {
     const loadDisbursements = async () => {
-      if (!eventId || activeTab !== 'remittance') return;
+      if (!eventId || activeSection !== 'remittance') return;
 
       try {
         setDisbursementsLoading(true);
         const response = await getDisbursements({ eventId });
         if (response.success && response.data) {
-          setDisbursements(Array.isArray(response.data) ? response.data : []);
+          const payload = response.data as Disbursement[] | { disbursements?: Disbursement[] };
+          if (Array.isArray(payload)) {
+            setDisbursements(payload);
+          } else {
+            setDisbursements(Array.isArray(payload.disbursements) ? payload.disbursements : []);
+          }
         }
       } catch (error) {
         console.error('Error loading disbursements:', error);
         toast({
-          title: "Error",
-          description: "Failed to load disbursements",
+          title: "Load failed",
+          description: extractErrorMessage(error, "Failed to load disbursements"),
           variant: "destructive",
         });
       } finally {
@@ -224,7 +379,33 @@ const EventDetailsPage = () => {
     };
 
     loadDisbursements();
-  }, [eventId, activeTab, toast]);
+  }, [eventId, activeSection, toast]);
+
+  // Load invitations when invitations tab is active
+  useEffect(() => {
+    const loadInvitations = async () => {
+      if (!eventId || activeSection !== 'invitations') return;
+
+      try {
+        setInvitationsLoading(true);
+        const response = await getEventInvitations(eventId);
+        if (response.success && response.data?.invitations) {
+          setInvitations(response.data.invitations);
+        }
+      } catch (error) {
+        console.error('Error loading invitations:', error);
+        toast({
+          title: "Load failed",
+          description: extractErrorMessage(error, "Failed to load invitations"),
+          variant: "destructive",
+        });
+      } finally {
+        setInvitationsLoading(false);
+      }
+    };
+
+    loadInvitations();
+  }, [eventId, activeSection, toast]);
 
   // Check event access permission
   useEffect(() => {
@@ -258,9 +439,24 @@ const EventDetailsPage = () => {
         setLoading(true);
         setError(null);
 
-        const [eventResponse, registrationsResponse] = await Promise.all([
+        const [
+          eventResponse,
+          registrationsResponse,
+          platformFeeSummaryResponse,
+          platformFeeSettingResponse,
+          minimumFeeSettingResponse,
+          maximumFeeSettingResponse,
+          refundsResponse,
+          disbursementsResponse,
+        ] = await Promise.all([
           getEventById(eventId),
           getEventRegistrations(eventId),
+          getPlatformFeeSummary(eventId).catch(() => null),
+          getSetting('finance.platformFeePercentage').catch(() => null),
+          getSetting('finance.minimumFee').catch(() => null),
+          getSetting('finance.maximumFee').catch(() => null),
+          getRefunds({ eventId, limit: 500 }).catch(() => null),
+          getDisbursements({ eventId, limit: 500 }).catch(() => null),
         ]);
 
         if (eventResponse.success && eventResponse.data?.event) {
@@ -304,7 +500,7 @@ const EventDetailsPage = () => {
             price: event.isFree ? 'free' : 'paid',
             ticketPrice: event.price ? Number(event.price) : undefined,
             capacity: event.capacity || 0,
-            attendees: event.attendees || 0,
+            attendees: (event as { _count?: { registrations?: number } })._count?.registrations || 0,
             views: 0, // TODO: Add views tracking
             conversion: 0, // TODO: Calculate conversion rate
             rating: 0, // TODO: Add rating system
@@ -319,11 +515,15 @@ const EventDetailsPage = () => {
             sponsors: Array.isArray((event as { sponsors?: unknown }).sponsors)
               ? (event as { sponsors?: Array<{ id: string; name: string; level: "gold" | "silver" | "bronze"; logo: string }> }).sponsors
               : undefined,
-            organizerDataAccess: ((event as { organizerDataAccess?: string }).organizerDataAccess === 'RESTRICTED' || 
-              (event as { organizerDataAccess?: string }).organizerDataAccess === 'STANDARD' || 
+            ticketTypes: Array.isArray((event as { ticketTypes?: unknown }).ticketTypes)
+              ? (event as { ticketTypes?: Array<{ id: string; name: string; price: number; capacity: number; sold: number; description?: string }> }).ticketTypes
+              : undefined,
+            organizerDataAccess: ((event as { organizerDataAccess?: string }).organizerDataAccess === 'RESTRICTED' ||
+              (event as { organizerDataAccess?: string }).organizerDataAccess === 'STANDARD' ||
               (event as { organizerDataAccess?: string }).organizerDataAccess === 'FULL')
               ? (event as { organizerDataAccess?: 'RESTRICTED' | 'STANDARD' | 'FULL' }).organizerDataAccess
               : 'RESTRICTED' as 'RESTRICTED' | 'STANDARD' | 'FULL',
+            isManaged: (event as { isManaged?: boolean }).isManaged ?? false,
           });
         }
 
@@ -340,6 +540,49 @@ const EventDetailsPage = () => {
           }));
           setRegistrations(mappedRegistrations as Registration[]);
         }
+
+        if (platformFeeSummaryResponse?.success && platformFeeSummaryResponse.data) {
+          setPlatformFeeSummary(platformFeeSummaryResponse.data);
+        }
+
+        if (platformFeeSettingResponse?.success && platformFeeSettingResponse.data?.setting?.value !== undefined) {
+          const configuredFee = Number(platformFeeSettingResponse.data.setting.value);
+          if (Number.isFinite(configuredFee) && configuredFee >= 0) {
+            setPlatformFeePercentage(configuredFee);
+          }
+        }
+
+        if (minimumFeeSettingResponse?.success && minimumFeeSettingResponse.data?.setting?.value !== undefined) {
+          const configuredMinimum = Number(minimumFeeSettingResponse.data.setting.value);
+          if (Number.isFinite(configuredMinimum) && configuredMinimum >= 0) {
+            setPlatformFeeMinimum(configuredMinimum);
+          }
+        }
+
+        if (maximumFeeSettingResponse?.success && maximumFeeSettingResponse.data?.setting?.value !== undefined) {
+          const configuredMaximum = Number(maximumFeeSettingResponse.data.setting.value);
+          if (Number.isFinite(configuredMaximum) && configuredMaximum >= 0) {
+            setPlatformFeeMaximum(configuredMaximum);
+          }
+        }
+
+        if (refundsResponse?.success && refundsResponse.data) {
+          const refundsPayload = refundsResponse.data as Refund[] | { refunds?: Refund[] };
+          if (Array.isArray(refundsPayload)) {
+            setRefunds(refundsPayload);
+          } else if (Array.isArray(refundsPayload.refunds)) {
+            setRefunds(refundsPayload.refunds);
+          }
+        }
+
+        if (disbursementsResponse?.success && disbursementsResponse.data) {
+          const disbursementsPayload = disbursementsResponse.data as Disbursement[] | { disbursements?: Disbursement[] };
+          if (Array.isArray(disbursementsPayload)) {
+            setDisbursements(disbursementsPayload);
+          } else if (Array.isArray(disbursementsPayload.disbursements)) {
+            setDisbursements(disbursementsPayload.disbursements);
+          }
+        }
       } catch (err) {
         console.error('Error fetching event data:', err);
         setError('Failed to load event data');
@@ -349,30 +592,52 @@ const EventDetailsPage = () => {
     };
 
     fetchData();
-  }, [eventId, canAccessEvent]);
+  }, [eventId, canAccessEvent, refreshKey]);
 
   // Calculate payment metrics from registrations
   const metrics: EventMetrics = (() => {
-    const paidRegistrations = registrations.filter(r => r.paymentStatus === 'COMPLETED');
-    const pendingRegistrations = registrations.filter(r => r.paymentStatus === 'PENDING');
-    const failedRegistrations = registrations.filter(r => r.paymentStatus === 'FAILED');
+    const paidRegistrations = registrations.filter(r => getRegistrationPaymentStatus(r) === 'COMPLETED');
+    const pendingRegistrations = registrations.filter(r => getRegistrationPaymentStatus(r) === 'PENDING');
+    const failedRegistrations = registrations.filter(r => getRegistrationPaymentStatus(r) === 'FAILED');
     
     const totalRevenue = paidRegistrations.reduce((sum, r) => {
-      const amount = typeof r.totalAmount === 'string' ? parseFloat(r.totalAmount) : r.totalAmount;
-      return sum + (amount || 0);
+      return sum + toAmount(r.totalAmount);
     }, 0);
     
-    const platformFees = totalRevenue * 0.1; // 10% platform fee
-    const organizerAmount = totalRevenue - platformFees;
+    const calculatedPlatformFees = paidRegistrations.reduce((sum, registration) => {
+      const amount = toAmount(registration.totalAmount);
+      let fee = (amount * platformFeePercentage) / 100;
+      if (platformFeeMinimum > 0) {
+        fee = Math.max(fee, platformFeeMinimum);
+      }
+      if (platformFeeMaximum > 0) {
+        fee = Math.min(fee, platformFeeMaximum);
+      }
+      return sum + fee;
+    }, 0);
+
+    const platformFees = platformFeeSummary?.totalTransactions
+      ? platformFeeSummary.totalFees
+      : Number(calculatedPlatformFees.toFixed(2));
+
+    const organizerAmount = platformFeeSummary?.totalTransactions
+      ? platformFeeSummary.totalOrganizerAmount
+      : Math.max(0, totalRevenue - platformFees);
 
     // Calculate refund metrics from actual data
-    const refundAmount = refunds.reduce((sum, r) => sum + (r.amount || 0), 0);
-    const pendingRefundsCount = refunds.filter(r => r.status === 'PENDING').length;
-    const processedRefundsCount = refunds.filter(r => r.status === 'COMPLETED' || r.status === 'PROCESSED').length;
+    const refundAmount = refunds.reduce((sum, r) => sum + toAmount(r.amount ?? r.refundAmount), 0);
+    const pendingRefundsCount = refunds.filter(r => normalizeStatus(r.status) === 'PENDING').length;
+    const processedRefundsCount = refunds.filter(r => {
+      const status = normalizeStatus(r.status);
+      return status === 'COMPLETED' || status === 'PROCESSED';
+    }).length;
 
     // Calculate disbursement metrics from actual data
-    const sentDisbursements = disbursements.filter(d => d.status === 'COMPLETED' || d.status === 'PROCESSED');
-    const pendingDisbursements = disbursements.filter(d => d.status === 'PENDING');
+    const sentDisbursements = disbursements.filter(d => {
+      const status = normalizeStatus(d.status);
+      return status === 'COMPLETED' || status === 'PROCESSED';
+    });
+    const pendingDisbursements = disbursements.filter(d => normalizeStatus(d.status) === 'PENDING');
 
     return {
       totalRevenue,
@@ -387,7 +652,9 @@ const EventDetailsPage = () => {
       processedRefunds: processedRefundsCount,
       remittancesSent: sentDisbursements.length,
       remittancesPending: pendingDisbursements.length,
-      attendanceRate: eventData ? (eventData.attendees / eventData.capacity) * 100 : 0,
+      attendanceRate: eventData && eventData.capacity > 0
+        ? (Math.max(eventData.attendees, registrations.filter(r => normalizeStatus(r.status) === 'CONFIRMED').length) / eventData.capacity) * 100
+        : 0,
       conversionRate: 0, // Would need views tracking to calculate
       averageTicketPrice: paidRegistrations.length > 0
         ? totalRevenue / paidRegistrations.length
@@ -397,10 +664,11 @@ const EventDetailsPage = () => {
 
   // Filter payments
   const filteredPayments = registrations.filter(reg => {
+    const normalizedPaymentStatus = getRegistrationPaymentStatus(reg);
     const matchesFilter = paymentFilter === "all" || 
-      (paymentFilter === "successful" && reg.paymentStatus === 'COMPLETED') ||
-      (paymentFilter === "pending" && reg.paymentStatus === 'PENDING') ||
-      (paymentFilter === "failed" && reg.paymentStatus === 'FAILED');
+      (paymentFilter === "successful" && normalizedPaymentStatus === 'COMPLETED') ||
+      (paymentFilter === "pending" && normalizedPaymentStatus === 'PENDING') ||
+      (paymentFilter === "failed" && normalizedPaymentStatus === 'FAILED');
     
     const matchesSearch = !paymentSearch || 
       `${reg.attendee.firstName} ${reg.attendee.lastName}`.toLowerCase().includes(paymentSearch.toLowerCase()) ||
@@ -412,14 +680,13 @@ const EventDetailsPage = () => {
 
   // Group payments by method
   const paymentsByMethod = registrations.reduce((acc, reg) => {
-    if (reg.paymentStatus === 'COMPLETED' && reg.paymentMethod) {
+    if (getRegistrationPaymentStatus(reg) === 'COMPLETED' && reg.paymentMethod) {
       const method = reg.paymentMethod;
       if (!acc[method]) {
         acc[method] = { count: 0, total: 0 };
       }
       acc[method].count++;
-      const amount = typeof reg.totalAmount === 'string' ? parseFloat(reg.totalAmount) : reg.totalAmount;
-      acc[method].total += amount || 0;
+      acc[method].total += toAmount(reg.totalAmount);
     }
     return acc;
   }, {} as Record<string, { count: number; total: number }>);
@@ -477,6 +744,13 @@ const EventDetailsPage = () => {
 
 
   const handleEdit = () => {
+    // Managed events: admin owns them, no support mode required
+    // Organizer events: support mode must be active (audit trail required)
+    if (!eventData.isManaged && !supportModeActive) {
+      setSupportModeTriggeredByEdit(true);
+      setSupportModeDialogOpen(true);
+      return;
+    }
     navigate(`/organizer/events/create?edit=${eventData.id}`);
   };
 
@@ -488,8 +762,8 @@ const EventDetailsPage = () => {
         title: eventData.title,
         date: eventData.date,
         location: eventData.location || eventData.venue,
-        attendees: eventData.attendees,
-        revenue: 0, // Calculate from registrations if needed
+        attendees: Math.max(eventData.attendees, registrations.length),
+        revenue: metrics.totalRevenue,
         views: eventData.views,
         status: eventData.status,
         category: eventData.category,
@@ -498,10 +772,10 @@ const EventDetailsPage = () => {
         title: "Exported",
         description: "Event data exported successfully",
       });
-    } catch {
+    } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to export event data",
+        title: "Export failed",
+        description: extractErrorMessage(error, "Failed to export event data"),
         variant: "destructive",
       });
     }
@@ -509,7 +783,7 @@ const EventDetailsPage = () => {
 
   const handleRefresh = () => {
     if (eventId) {
-      window.location.reload();
+      setRefreshKey((k) => k + 1);
     }
   };
 
@@ -531,12 +805,9 @@ const EventDetailsPage = () => {
         });
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
-        : 'Failed to update data access level';
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Update failed",
+        description: extractErrorMessage(err, 'Failed to update data access level'),
         variant: "destructive",
       });
     } finally {
@@ -544,101 +815,369 @@ const EventDetailsPage = () => {
     }
   };
 
+  const primaryNavSections = [
+    { key: "overview", label: "Overview" },
+    { key: "details", label: "Details" },
+    { key: "attendees", label: "Attendees" },
+    { key: "tickets", label: "Tickets" },
+    { key: "payments", label: "Payments" },
+  ];
+
+  const moreNavSections = [
+    { key: "scan-settings", label: "Scan Settings" },
+    ...(permissions.canAccessAllEvents ? [
+      { key: "refunds", label: "Refunds" },
+      { key: "remittance", label: "Remittance" },
+      { key: "messages", label: "Messages" },
+      { key: "invitations", label: "Invitations" },
+      { key: "staff", label: "Assigned Staff" },
+    ] : []),
+  ];
+
   return (
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <BackButton to="/admin/events" label="Back to Events" />
-            <div>
-              <h1 className="text-base font-semibold text-foreground">{eventData.title}</h1>
-              <p className="text-muted-foreground hidden">Event ID: {eventData.id}</p>
-            </div>
+        {/* Sticky Header */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border -mx-6 px-6">
+          <div className="flex items-center gap-2 py-2.5">
+            {/* Breadcrumb */}
+            <button
+              type="button"
+              onClick={() => navigate('/admin/events')}
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Events</span>
+            </button>
+            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0 hidden sm:block" />
+            <h1 className="text-sm font-semibold text-foreground truncate flex-1 min-w-0">
+              {eventData.title}
+            </h1>
+            <Badge className={`text-xs shrink-0 ${getStatusBadge(eventData.status)}`}>
+              {eventData.status}
+            </Badge>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 shrink-0">
+                  <MoreHorizontal className="w-4 h-4" />
+                  <span className="hidden sm:inline">Actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={handleEdit}
+                  className={(!eventData.isManaged && !supportModeActive) ? "text-muted-foreground" : ""}
+                >
+                  {(!eventData.isManaged && !supportModeActive)
+                    ? <Lock className="h-4 w-4 mr-2" />
+                    : <Settings className="h-4 w-4 mr-2" />
+                  }
+                  Edit Event
+                  {(!eventData.isManaged && !supportModeActive) && (
+                    <span className="ml-auto text-xs text-muted-foreground">Support Mode</span>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Data
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleRefresh}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </DropdownMenuItem>
+                {permissions.canAccessAllEvents && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setActiveSection('overview')}>
+                      <User className="h-4 w-4 mr-2" />
+                      Data Access Level
+                    </DropdownMenuItem>
+                    {!supportModeActive ? (
+                      <DropdownMenuItem
+                        onClick={() => { setSupportModeTriggeredByEdit(false); setSupportModeDialogOpen(true); }}
+                        className="text-amber-600 focus:text-amber-600"
+                      >
+                        <ShieldAlert className="h-4 w-4 mr-2" />
+                        Enter Support Mode
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSupportModeActive(false);
+                          setSupportReason("");
+                          setSupportModeStartedAt(null);
+                        }}
+                        className="text-muted-foreground"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Exit Support Mode
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Export Data
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleEdit}>
-              <Settings className="h-4 w-4 mr-2" />
-              Edit Event
-            </Button>
-            <Button size="sm" onClick={handleRefresh}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+
+          {/* Button-based tab nav */}
+          <div className="flex flex-wrap items-center gap-1 pb-3">
+            {primaryNavSections.map((section) => (
+              <button
+                key={section.key}
+                onClick={() => setActiveSection(section.key)}
+                className={cn(
+                  "px-4 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors",
+                  activeSection === section.key
+                    ? "bg-primary text-primary-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}
+              >
+                {section.label}
+              </button>
+            ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={cn(
+                  "px-4 py-1.5 text-sm rounded-md whitespace-nowrap transition-colors flex items-center gap-1",
+                  moreNavSections.some(s => s.key === activeSection)
+                    ? "bg-primary text-primary-foreground font-medium"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                )}>
+                  More
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                {moreNavSections.map((section) => (
+                  <DropdownMenuItem
+                    key={section.key}
+                    onClick={() => setActiveSection(section.key)}
+                    className={activeSection === section.key ? "bg-muted" : ""}
+                  >
+                    {section.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
-        {/* Event Status and Basic Info */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <CheckCircle className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Status</span>
-              </div>
-              <Badge className={`text-xs ${getStatusBadge(eventData.status)}`}>
-                {eventData.status}
-              </Badge>
-            </CardContent>
-          </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Users className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Attendees</span>
-              </div>
-              <p className="text-base font-semibold text-foreground">
-                {eventData.attendees}/{eventData.capacity}
+        {/* ── Support Mode Banner ── */}
+        {supportModeActive && (
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/8 px-4 py-3 flex items-start gap-3">
+            <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-600">Support Mode Active</p>
+              <p className="text-xs text-amber-600/80 mt-0.5">
+                Editing as{" "}
+                <span className="font-medium">
+                  {adminUser?.firstName} {adminUser?.lastName}
+                </span>
+                {supportModeStartedAt && (
+                  <> &middot; started {supportModeStartedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</>
+                )}
               </p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Revenue</span>
-              </div>
-              <p className="text-base font-semibold text-foreground">
-                {formatCurrency(metrics.totalRevenue)}
-              </p>
-            </CardContent>
-          </Card>
-          <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium">Conversion</span>
-              </div>
-              <p className="text-base font-semibold text-foreground">
-                {eventData.conversion}%
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <div className="overflow-x-auto">
-            <TabsList className="inline-flex w-max min-w-full h-auto flex-wrap gap-1 rounded-lg bg-muted p-1">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="attendees">Attendees</TabsTrigger>
-              <TabsTrigger value="payments">Payments</TabsTrigger>
-              {permissions.canAccessAllEvents && (
-                <>
-                  <TabsTrigger value="refunds">Refunds</TabsTrigger>
-                  <TabsTrigger value="remittance">Remittance</TabsTrigger>
-                  <TabsTrigger value="staff">Assigned Staff</TabsTrigger>
-                </>
+              {supportReason && (
+                <p className="text-xs text-amber-600/70 mt-1 italic">
+                  Reason: "{supportReason}"
+                </p>
               )}
-              <TabsTrigger value="scan-settings">Scan Settings</TabsTrigger>
-            </TabsList>
+              <p className="text-xs text-amber-600/60 mt-1">
+                The organizer will be notified of any changes made during this session.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 border-amber-500/40 text-amber-600 hover:bg-amber-500/10 h-7 text-xs"
+              onClick={() => {
+                setSupportModeActive(false);
+                setSupportReason("");
+                setSupportModeStartedAt(null);
+              }}
+            >
+              <LogOut className="h-3.5 w-3.5 mr-1" />
+              Exit
+            </Button>
           </div>
+        )}
+
+        {/* ── Enter Support Mode Dialog ── */}
+        <Dialog open={supportModeDialogOpen} onOpenChange={setSupportModeDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-amber-600">
+                <ShieldAlert className="h-5 w-5" />
+                Enter Support Mode
+              </DialogTitle>
+              <DialogDescription>
+                Support Mode allows you to make changes to this organizer's event on their behalf.
+                Your session will be logged and the organizer will be notified.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/8 p-3 text-xs text-amber-600 space-y-1">
+                <p className="font-medium">Before you proceed:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-amber-600/80">
+                  <li>All changes will be attributed to your admin account</li>
+                  <li>The organizer receives an email notification</li>
+                  <li>Session activity is logged in the audit trail</li>
+                </ul>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="support-reason" className="text-sm font-medium">
+                  Reason for support session <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  id="support-reason"
+                  placeholder="e.g. Organizer requested help fixing ticket pricing after payment gateway error"
+                  value={supportReason}
+                  onChange={e => setSupportReason(e.target.value)}
+                  rows={3}
+                  className="resize-none text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Be specific — this reason is visible to the organizer and in audit logs.
+                </p>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSupportModeDialogOpen(false);
+                  setSupportReason("");
+                  setSupportModeTriggeredByEdit(false);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={supportReason.trim().length < 10}
+                className="bg-amber-500 hover:bg-amber-600 text-white"
+                onClick={() => {
+                  setSupportModeActive(true);
+                  setSupportModeStartedAt(new Date());
+                  setSupportModeDialogOpen(false);
+                  toast({
+                    title: "Support Mode Active",
+                    description: "Your session is now logged. The organizer will be notified.",
+                  });
+                  if (supportModeTriggeredByEdit) {
+                    setSupportModeTriggeredByEdit(false);
+                    navigate(`/organizer/events/create?edit=${eventData.id}`);
+                  }
+                }}
+              >
+                <ShieldAlert className="h-4 w-4 mr-2" />
+                {supportModeTriggeredByEdit ? "Activate & Edit Event" : "Activate Support Mode"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+          {/* Overview Tab */}
+        {activeSection === "overview" && <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Total Attendees</span>
+                  </div>
+                  <p className="text-2xl font-bold">{Math.max(eventData.attendees, registrations.length)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">of {eventData.capacity} capacity</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Total Revenue</span>
+                  </div>
+                  <p className="text-2xl font-bold">{formatCurrency(metrics.totalRevenue)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{metrics.successfulPayments} paid registrations</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-5 w-5 text-success" />
+                    <span className="text-sm font-medium text-muted-foreground">Confirmed</span>
+                  </div>
+                  <p className="text-2xl font-bold">{registrations.filter(r => normalizeStatus(r.status) === 'CONFIRMED').length}</p>
+                  <p className="text-xs text-muted-foreground mt-1">confirmed registrations</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Fill Rate</span>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {eventData.capacity > 0
+                      ? Math.round((Math.max(eventData.attendees, registrations.length) / eventData.capacity) * 100)
+                      : 0}%
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {Math.max(0, eventData.capacity - Math.max(eventData.attendees, registrations.length))} spots remaining
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Financial Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Platform Fees</p>
+                  <p className="text-xl font-bold">{formatCurrency(metrics.platformFees)}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Organizer Amount</p>
+                  <p className="text-xl font-bold">{formatCurrency(metrics.organizerAmount)}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="p-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Avg. Ticket Price</p>
+                  <p className="text-xl font-bold">{formatCurrency(metrics.averageTicketPrice)}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Registration Status Breakdown */}
+            <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+              <CardHeader>
+                <CardTitle>Registration Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 rounded-lg bg-success/10">
+                    <p className="text-2xl font-bold text-success">{metrics.successfulPayments}</p>
+                    <p className="text-xs text-muted-foreground">Paid</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-warning/10">
+                    <p className="text-2xl font-bold text-warning">{metrics.pendingPayments}</p>
+                    <p className="text-xs text-muted-foreground">Pending</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-destructive/10">
+                    <p className="text-2xl font-bold text-destructive">{metrics.failedPayments}</p>
+                    <p className="text-xs text-muted-foreground">Failed</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted">
+                    <p className="text-2xl font-bold">{metrics.processedRefunds}</p>
+                    <p className="text-xs text-muted-foreground">Refunded</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+        </div>}
 
           {/* Details Tab */}
-          <TabsContent value="details" className="space-y-6">
+        {activeSection === "details" && <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Event Information */}
               <div className="lg:col-span-2 space-y-6">
@@ -647,7 +1186,7 @@ const EventDetailsPage = () => {
                     <CardTitle>Event Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Event Title</label>
                         <p className="text-sm text-foreground">{eventData.title}</p>
@@ -704,7 +1243,7 @@ const EventDetailsPage = () => {
                     <CardTitle>Organizer Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Organizer Name</label>
                         <p className="text-sm text-foreground">{eventData.organizer.name}</p>
@@ -727,7 +1266,7 @@ const EventDetailsPage = () => {
                   </CardContent>
                 </Card>
 
-                {/* Organizer Data Access Control - Only for ADMIN_STAFF and SUPERADMIN */}
+                {/* Organizer Data Access Control - Only for ADMIN and SUPERADMIN */}
                 {permissions.canAccessAllEvents && (
                   <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                     <CardHeader>
@@ -952,10 +1491,10 @@ const EventDetailsPage = () => {
                 )}
               </div>
             ) : null}
-          </TabsContent>
+        </div>}
 
           {/* Attendees Tab */}
-          <TabsContent value="attendees" className="space-y-6">
+        {activeSection === "attendees" && <div className="space-y-6">
             {/* Attendees Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -967,7 +1506,7 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">
-                    {registrations.filter(r => r.status === 'CONFIRMED').length}
+                    {registrations.filter(r => normalizeStatus(r.status) === 'CONFIRMED').length}
                   </div>
                   <p className="text-sm text-muted-foreground">Confirmed</p>
                 </CardContent>
@@ -975,7 +1514,7 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-warning mb-2">
-                    {registrations.filter(r => r.status === 'PENDING').length}
+                    {registrations.filter(r => normalizeStatus(r.status) === 'PENDING').length}
                   </div>
                   <p className="text-sm text-muted-foreground">Pending</p>
                 </CardContent>
@@ -983,7 +1522,7 @@ const EventDetailsPage = () => {
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
                 <CardContent className="p-4 text-center">
                   <div className="text-base font-semibold text-primary mb-2">
-                    {registrations.filter(r => r.paymentStatus === 'COMPLETED').length}
+                    {registrations.filter(r => getRegistrationPaymentStatus(r) === 'COMPLETED').length}
                   </div>
                   <p className="text-sm text-muted-foreground">Paid</p>
                 </CardContent>
@@ -1040,53 +1579,69 @@ const EventDetailsPage = () => {
               </CardHeader>
               <CardContent>
                 {registrations.length > 0 ? (
-                  <div className="space-y-3">
-                    {registrations.map((reg) => {
-                      const attendeeName = `${reg.attendee.firstName} ${reg.attendee.lastName}`;
-                      const isConfirmed = reg.status === 'CONFIRMED';
-                      const isPending = reg.status === 'PENDING';
-                      const hasPaid = reg.paymentStatus === 'COMPLETED';
+                  <div className="rounded-lg border overflow-hidden">
+                    <div className="hidden md:grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_40px] gap-3 px-4 py-3 bg-muted/40 border-b text-xs uppercase tracking-wide text-muted-foreground font-medium">
+                      <span>Attendee</span>
+                      <span>Ticket</span>
+                      <span>Amount</span>
+                      <span>Payment</span>
+                      <span>Status</span>
+                      <span />
+                    </div>
+                    <div className="divide-y">
+                      {registrations.map((reg) => {
+                        const attendeeName = `${reg.attendee.firstName} ${reg.attendee.lastName}`.trim() || 'Guest';
+                        const normalizedRegistrationStatus = normalizeStatus(reg.status);
+                        const isConfirmed = normalizedRegistrationStatus === 'CONFIRMED';
+                        const isPending = normalizedRegistrationStatus === 'PENDING';
+                        const normalizedPaymentStatus = getRegistrationPaymentStatus(reg);
+                        const ticketDisplay = reg.ticketLineItems && reg.ticketLineItems.length > 0
+                          ? reg.ticketLineItems.map(item => `${item.ticketType}${item.quantity > 1 ? ` x${item.quantity}` : ''}`).join(', ')
+                          : (reg.ticketType || 'Standard');
+                        const amount = toAmount(reg.totalAmount);
 
-                      return (
-                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                              <User className="h-5 w-5 text-primary" />
+                        return (
+                          <div
+                            key={reg.id}
+                            className="grid grid-cols-1 md:grid-cols-[2fr_1.5fr_1fr_1fr_1fr_40px] gap-2 md:gap-3 items-center px-4 py-3 hover:bg-muted/30 cursor-pointer"
+                            onClick={() => { setSelectedRegistration(reg); setRegistrationSheetOpen(true); }}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                                <User className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{attendeeName}</p>
+                                <p className="text-xs text-muted-foreground truncate">{reg.attendee.email}</p>
+                              </div>
+                            </div>
+                            <div className="text-sm truncate text-muted-foreground md:text-foreground">{ticketDisplay}</div>
+                            <div className="text-sm font-medium">{formatCurrency(amount || 0)}</div>
+                            <div>
+                              <Badge className={`text-xs ${
+                                normalizedPaymentStatus === 'COMPLETED' ? 'bg-success/10 text-success border-success/20' :
+                                normalizedPaymentStatus === 'PENDING' ? 'bg-warning/10 text-warning border-warning/20' :
+                                'bg-muted text-muted-foreground border-border'
+                              }`}>
+                                {normalizedPaymentStatus || 'N/A'}
+                              </Badge>
                             </div>
                             <div>
-                              <h4 className="text-sm font-medium text-foreground">{attendeeName}</h4>
-                              <p className="text-sm text-muted-foreground">{reg.attendee.email}</p>
-                              {reg.attendee.phoneNumber && (
-                                <p className="text-xs text-muted-foreground">{reg.attendee.phoneNumber}</p>
-                              )}
+                              <Badge className={`text-xs ${
+                                isConfirmed ? 'bg-success/10 text-success border-success/20' :
+                                isPending ? 'bg-warning/10 text-warning border-warning/20' :
+                                'bg-destructive/10 text-destructive border-destructive/20'
+                              }`}>
+                                {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : normalizedRegistrationStatus || 'N/A'}
+                              </Badge>
+                            </div>
+                            <div className="hidden md:flex justify-end">
+                              <Eye className="h-4 w-4 text-muted-foreground" />
                             </div>
                           </div>
-                          <div className="flex items-center gap-4">
-                            <Badge className={`text-xs ${
-                              isConfirmed ? 'bg-success/10 text-success border-success/20' :
-                              isPending ? 'bg-warning/10 text-warning border-warning/20' :
-                              'bg-destructive/10 text-destructive border-destructive/20'
-                            }`}>
-                              {isConfirmed ? 'Confirmed' : isPending ? 'Pending' : reg.status}
-                            </Badge>
-                            {reg.ticketType && (
-                              <Badge className="text-xs bg-primary/10 text-primary border-primary/20">
-                                {reg.ticketType}
-                              </Badge>
-                            )}
-                            {hasPaid && (
-                              <Badge className="text-xs bg-success/10 text-success border-success/20">
-                                Paid
-                              </Badge>
-                            )}
-                            <span className="text-sm text-muted-foreground">{formatDate(reg.createdAt)}</span>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-12">
@@ -1097,10 +1652,10 @@ const EventDetailsPage = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+        </div>}
 
           {/* Payments Tab */}
-          <TabsContent value="payments" className="space-y-6">
+        {activeSection === "payments" && <div className="space-y-6">
             {/* Payment Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1187,15 +1742,19 @@ const EventDetailsPage = () => {
                 {filteredPayments.length > 0 ? (
                   <div className="space-y-3">
                     {filteredPayments.map((reg) => {
-                      const amount = typeof reg.totalAmount === 'string' ? parseFloat(reg.totalAmount) : reg.totalAmount;
+                      const amount = toAmount(reg.totalAmount);
                       const attendeeName = `${reg.attendee.firstName} ${reg.attendee.lastName}`;
-                      const paymentStatus = reg.paymentStatus || 'PENDING';
+                      const paymentStatus = getRegistrationPaymentStatus(reg) || 'PENDING';
                       const isSuccessful = paymentStatus === 'COMPLETED';
                       const isPending = paymentStatus === 'PENDING';
                       const isFailed = paymentStatus === 'FAILED';
 
                       return (
-                        <div key={reg.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors">
+                        <div
+                          key={reg.id}
+                          className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                          onClick={() => { setSelectedRegistration(reg); setRegistrationSheetOpen(true); }}
+                        >
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                               <CreditCard className="h-5 w-5 text-primary" />
@@ -1224,7 +1783,15 @@ const EventDetailsPage = () => {
                             }`}>
                               {isSuccessful ? 'Completed' : isPending ? 'Pending' : isFailed ? 'Failed' : paymentStatus}
                             </Badge>
-                            <Button variant="outline" size="sm">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRegistration(reg);
+                                setRegistrationSheetOpen(true);
+                              }}
+                            >
                               <Eye className="h-4 w-4" />
                             </Button>
                           </div>
@@ -1245,11 +1812,134 @@ const EventDetailsPage = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+        </div>}
 
-          {/* Refunds Tab - Only for ADMIN_STAFF and SUPERADMIN */}
-          {permissions.canAccessAllEvents && (
-            <TabsContent value="refunds" className="space-y-6">
+          {/* Registration / Payment Detail Sheet (Admin full-access) */}
+        <Sheet open={registrationSheetOpen} onOpenChange={setRegistrationSheetOpen}>
+          <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader className="mb-6">
+              <SheetTitle>Attendee & Payment Details</SheetTitle>
+              <SheetDescription>Complete registration and transaction information</SheetDescription>
+            </SheetHeader>
+
+            {selectedRegistration && (
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                    <User className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold">
+                      {`${selectedRegistration.attendee.firstName} ${selectedRegistration.attendee.lastName}`.trim() || 'Guest'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{selectedRegistration.attendee.email}</p>
+                    {selectedRegistration.attendee.phoneNumber && (
+                      <p className="text-sm text-muted-foreground">{selectedRegistration.attendee.phoneNumber}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Registration</p>
+                  <div className="rounded-lg border divide-y">
+                    {[
+                      { label: 'Registration ID', value: selectedRegistration.id, mono: true },
+                      { label: 'Status', value: selectedRegistration.status },
+                      { label: 'Created', value: formatDateTime(selectedRegistration.createdAt) },
+                      { label: 'Ticket Type', value: selectedRegistration.ticketType || 'Standard' },
+                      { label: 'Quantity', value: String(selectedRegistration.quantity || 1) },
+                    ].map(({ label, value, mono }) => (
+                      <div key={label} className="flex items-start justify-between px-3 py-2 gap-3">
+                        <span className="text-sm text-muted-foreground">{label}</span>
+                        <span className={`text-sm font-medium text-right break-all max-w-[60%] ${mono ? 'font-mono text-xs' : 'capitalize'}`}>{value || '—'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {(selectedRegistration.ticketLineItems?.length ?? 0) > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Ticket Breakdown</p>
+                    <div className="rounded-lg border divide-y">
+                      {selectedRegistration.ticketLineItems?.map((item, idx) => (
+                        <div key={`${item.ticketType}-${idx}`} className="flex items-center justify-between px-3 py-2">
+                          <div>
+                            <p className="text-sm font-medium">{item.ticketType}</p>
+                            <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                          </div>
+                          <p className="text-sm font-medium">{formatCurrency(Number(item.totalPrice || 0))}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Payment</p>
+                  <div className="rounded-lg border divide-y">
+                    {[
+                      { label: 'Amount', value: formatCurrency(typeof selectedRegistration.totalAmount === 'string' ? parseFloat(selectedRegistration.totalAmount) : selectedRegistration.totalAmount || 0) },
+                      { label: 'Payment Status', value: selectedRegistration.paymentStatus || 'N/A' },
+                      { label: 'Payment Method', value: selectedRegistration.paymentMethod || 'N/A' },
+                      { label: 'Payment Txn ID', value: selectedRegistration.paymentTransactionId || 'N/A', mono: true },
+                    ].map(({ label, value, mono }) => (
+                      <div key={label} className="flex items-start justify-between px-3 py-2 gap-3">
+                        <span className="text-sm text-muted-foreground">{label}</span>
+                        <span className={`text-sm font-medium text-right break-all max-w-[60%] ${mono ? 'font-mono text-xs' : 'capitalize'}`}>{value}</span>
+                      </div>
+                    ))}
+
+                    {selectedRegistration.paymentTransaction && (
+                      <>
+                        <div className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground">Transaction #</span>
+                          <span className="text-xs font-mono font-medium text-right break-all max-w-[60%]">{selectedRegistration.paymentTransaction.transactionNumber}</span>
+                        </div>
+                        <div className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground">Gateway Reference</span>
+                          <span className="text-xs font-mono font-medium text-right break-all max-w-[60%]">{selectedRegistration.paymentTransaction.gatewayReference}</span>
+                        </div>
+                        <div className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground">Gateway</span>
+                          <span className="text-sm font-medium">{selectedRegistration.paymentTransaction.gateway}</span>
+                        </div>
+                        <div className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground">Paid At</span>
+                          <span className="text-sm font-medium">{formatDateTime(selectedRegistration.paymentTransaction.paymentDate)}</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {selectedRegistration.registrationData && Object.keys(selectedRegistration.registrationData).length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Registration Form Responses</p>
+                    <div className="rounded-lg border divide-y">
+                      {Object.entries(selectedRegistration.registrationData).map(([key, value]) => (
+                        <div key={key} className="flex items-start justify-between px-3 py-2 gap-3">
+                          <span className="text-sm text-muted-foreground capitalize shrink-0">
+                            {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-sm font-medium text-right break-words max-w-[60%]">
+                            {Array.isArray(value)
+                              ? value.join(', ')
+                              : (typeof value === 'object' && value !== null)
+                                ? JSON.stringify(value)
+                                : String(value ?? '—')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
+
+          {/* Refunds Tab - Only for ADMIN and SUPERADMIN */}
+        {permissions.canAccessAllEvents && activeSection === "refunds" && <div className="space-y-6">
             {/* Refunds Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1369,12 +2059,10 @@ const EventDetailsPage = () => {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-          )}
+        </div>}
 
-          {/* Remittance Tab - Only for ADMIN_STAFF and SUPERADMIN */}
-          {permissions.canAccessAllEvents && (
-            <TabsContent value="remittance" className="space-y-6">
+          {/* Remittance Tab - Only for ADMIN and SUPERADMIN */}
+        {permissions.canAccessAllEvents && activeSection === "remittance" && <div className="space-y-6">
             {/* Remittance Summary */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -1564,23 +2252,401 @@ const EventDetailsPage = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-          )}
+        </div>}
 
-          {/* Assigned Staff Tab - Only for ADMIN_STAFF and SUPERADMIN */}
-          {permissions.canAccessAllEvents && (
-            <TabsContent value="staff" className="space-y-6">
+          {/* Assigned Staff Tab - Only for ADMIN and SUPERADMIN */}
+        {permissions.canAccessAllEvents && activeSection === "staff" && <div className="space-y-6">
             {eventId && (
               <EventStaffAssignment
                 eventId={eventId}
                 eventTitle={eventData?.title}
               />
             )}
-          </TabsContent>
-          )}
+        </div>}
+
+          {/* Tickets Tab */}
+        {activeSection === "tickets" && <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold">Ticket Types</h2>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-primary" />
+                    Ticket Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Manage advanced ticket types, packages, reserved seating, and pricing rules.
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => eventData?.id && navigate(`/admin/event/${eventData.id}/tickets/advanced`)}
+                    >
+                      Advanced Ticket Types
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => eventData?.id && navigate(`/admin/event/${eventData.id}/tickets/pricing`)}
+                    >
+                      Dynamic Pricing
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setActiveSection("invitations")}
+                    >
+                      Complimentary Tickets (Invitations)
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    Industry Standards Check
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Multiple ticket types</span>
+                    <Badge variant={hasMultipleTicketTypes ? "default" : "secondary"}>
+                      {hasMultipleTicketTypes ? "Configured" : "Not configured"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Complementary tickets</span>
+                    <Badge variant={hasComplementaryType ? "default" : "secondary"}>
+                      {hasComplementaryType ? "Configured" : "Available"}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Dynamic pricing</span>
+                    <Badge variant="outline">Available</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Packages & bundles</span>
+                    <Badge variant="outline">Available</Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Reserved seating</span>
+                    <Badge variant="outline">Available</Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Ticket className="h-4 w-4 text-primary" />
+                    Ticket Health
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total types</span>
+                    <span className="font-medium">{ticketTypeCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total capacity</span>
+                    <span className="font-medium">{totalTicketCapacity}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total sold</span>
+                    <span className="font-medium">{totalTicketsSold}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Availability</span>
+                    <Badge variant={totalTicketCapacity > totalTicketsSold ? "default" : "destructive"}>
+                      {totalTicketCapacity > totalTicketsSold ? "Open" : "Sold out"}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {parsedTicketTypes.length > 0 ? (
+              <div className="space-y-4">
+                {parsedTicketTypes.map((ticket) => {
+                  const soldPercent = ticket.capacity > 0 ? Math.round((ticket.sold / ticket.capacity) * 100) : 0;
+                  const revenue = ticket.sold * ticket.price;
+                  return (
+                    <Card key={ticket.id} className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <Ticket className="h-5 w-5 text-primary" />
+                            <div>
+                              <h3 className="font-semibold">{ticket.name}</h3>
+                              {ticket.description && (
+                                <p className="text-sm text-muted-foreground">{stripHtml(ticket.description)}</p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge variant="outline">{formatCurrency(ticket.price)}</Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Sold</span>
+                            <span className="font-medium">{ticket.sold} / {ticket.capacity}</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div
+                              className="bg-primary rounded-full h-2 transition-all"
+                              style={{ width: `${Math.min(soldPercent, 100)}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{soldPercent}% sold</span>
+                            <span className="font-medium text-primary">{formatCurrency(revenue)} revenue</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+
+                {/* Ticket Summary */}
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Types</p>
+                        <p className="text-xl font-bold">{ticketTypeCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Sold</p>
+                        <p className="text-xl font-bold">
+                          {totalTicketsSold}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Capacity</p>
+                        <p className="text-xl font-bold">
+                          {totalTicketCapacity}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                <CardContent className="py-12 text-center">
+                  <Ticket className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No ticket types configured for this event</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {eventData.price === 'free' ? 'This is a free event' : `Single ticket price: ${formatCurrency(eventData.ticketPrice || 0)}`}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+        </div>}
+
+          {/* Messages Tab */}
+        {permissions.canAccessAllEvents && activeSection === "messages" && <div className="space-y-6">
+              <EventCommunicationSection
+                eventId={eventData.id}
+                eventTitle={eventData.title}
+              />
+          </div>}
+
+          {/* Invitations Tab */}
+        {permissions.canAccessAllEvents && activeSection === "invitations" && <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-semibold">Registration Links</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create and manage invitation links for this event
+                  </p>
+                </div>
+                <Dialog open={createInviteDialogOpen} onOpenChange={setCreateInviteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Link
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create Registration Link</DialogTitle>
+                      <DialogDescription>
+                        Create a new invitation link for this event
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div>
+                        <Label htmlFor="invite-title">Title (optional)</Label>
+                        <Input
+                          id="invite-title"
+                          value={newInviteTitle}
+                          onChange={(e) => setNewInviteTitle(e.target.value)}
+                          placeholder="e.g., VIP Access, Early Bird"
+                          className="mt-2"
+                        />
+                      </div>
+                      <div>
+                        <Label>Invite Type</Label>
+                        <Select
+                          value={newInviteType}
+                          onValueChange={(v) => setNewInviteType(v as InviteType)}
+                        >
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={InviteType.ATTENDEE}>Attendee</SelectItem>
+                            <SelectItem value={InviteType.SPEAKER}>Speaker</SelectItem>
+                            <SelectItem value={InviteType.EXHIBITOR}>Exhibitor</SelectItem>
+                            <SelectItem value={InviteType.GUEST}>Guest</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setCreateInviteDialogOpen(false);
+                          setNewInviteTitle("");
+                        }}
+                        disabled={creatingInvite}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          if (!eventId) return;
+                          try {
+                            setCreatingInvite(true);
+                            await createInvitation(eventId, {
+                              inviteType: newInviteType,
+                              title: newInviteTitle || undefined,
+                            });
+                            toast({ title: "Success", description: "Invitation link created" });
+                            setCreateInviteDialogOpen(false);
+                            setNewInviteTitle("");
+                            // Reload invitations
+                            const response = await getEventInvitations(eventId);
+                            if (response.success && response.data?.invitations) {
+                              setInvitations(response.data.invitations);
+                            }
+                          } catch (err) {
+                            toast({
+                              title: "Failed",
+                              description: extractErrorMessage(err, "Failed to create invitation"),
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setCreatingInvite(false);
+                          }
+                        }}
+                        disabled={creatingInvite}
+                      >
+                        {creatingInvite ? "Creating..." : "Create"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {invitationsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader size="lg" className="h-8 w-8" />
+                  <span className="ml-2 text-muted-foreground">Loading invitations...</span>
+                </div>
+              ) : invitations.length === 0 ? (
+                <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                  <CardContent className="py-12 text-center">
+                    <Link2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">No invitation links created yet</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {invitations.map((inv) => {
+                    const linkUrl = getRegistrationLinkUrl(inv.token);
+                    return (
+                      <Card key={inv.id} className="border-0 bg-card-surface rounded-2xl shadow-sm">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Link2 className="h-4 w-4 text-primary" />
+                              <h3 className="font-semibold">{inv.title || `${inv.inviteType} Link`}</h3>
+                              <Badge variant={inv.isActive ? "default" : "secondary"}>
+                                {inv.isActive ? "Active" : "Revoked"}
+                              </Badge>
+                              <Badge variant="outline">{inv.inviteType}</Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(linkUrl);
+                                  setCopiedToken(inv.token);
+                                  setTimeout(() => setCopiedToken(null), 2000);
+                                  toast({ title: "Copied", description: "Link copied to clipboard" });
+                                }}
+                              >
+                                <Copy className="h-3 w-3 mr-1" />
+                                {copiedToken === inv.token ? "Copied!" : "Copy"}
+                              </Button>
+                              {inv.isActive && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      await revokeInvitation(inv.id);
+                                      toast({ title: "Revoked", description: "Invitation link revoked" });
+                                      if (eventId) {
+                                        const response = await getEventInvitations(eventId);
+                                        if (response.success && response.data?.invitations) {
+                                          setInvitations(response.data.invitations);
+                                        }
+                                      }
+                                    } catch (err) {
+                                      toast({
+                                        title: "Failed",
+                                        description: extractErrorMessage(err, "Failed to revoke invitation"),
+                                        variant: "destructive",
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                  Revoke
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            <p className="truncate">{linkUrl}</p>
+                            <div className="flex gap-4 text-xs">
+                              <span>Used: {inv.usedCount || inv.usageCount || 0}{inv.maxUses ? ` / ${inv.maxUses}` : ''}</span>
+                              <span>Created by: {inv.creator.firstName} {inv.creator.lastName}</span>
+                              <span>Created: {new Date(inv.createdAt).toLocaleDateString()}</span>
+                              {inv.expiresAt && (
+                                <span>Expires: {new Date(inv.expiresAt).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+          </div>}
 
           {/* Scan Settings Tab */}
-          <TabsContent value="scan-settings" className="space-y-6">
+        {activeSection === "scan-settings" && <div className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="text-base font-semibold">Scan Settings</h3>
@@ -1722,8 +2788,8 @@ const EventDetailsPage = () => {
                         } catch (error) {
                           console.error('Error saving scan config:', error);
                           toast({
-                            title: "Error",
-                            description: "Failed to save scan settings",
+                            title: "Save failed",
+                            description: extractErrorMessage(error, "Failed to save scan settings"),
                             variant: "destructive",
                           });
                         } finally {
@@ -1756,8 +2822,7 @@ const EventDetailsPage = () => {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
-        </Tabs>
+        </div>}
       </div>
   );
 };

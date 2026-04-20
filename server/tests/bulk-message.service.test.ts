@@ -49,9 +49,7 @@ describe('BulkMessageService', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test organizer
     const organizer = await prisma.user.create({
@@ -90,7 +88,7 @@ describe('BulkMessageService', () => {
         password: await hashPassword('password123'),
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),

@@ -145,7 +145,7 @@ describe('TicketSecurityService', () => {
       const validSignature = TicketSecurityService.generateSignature(payload);
 
       // Spy on crypto.timingSafeEqual to ensure it's called
-      const timingSafeSpy = jest.spyOn(crypto, 'timingSafeEqual');
+      const timingSafeSpy = vi.spyOn(crypto, 'timingSafeEqual');
 
       // Act
       TicketSecurityService.verifySignature(payload, validSignature);
@@ -394,7 +394,7 @@ describe('TicketSecurityService', () => {
       const validSignature = TicketSecurityService.generateBackupCodeSignature(code, registrationId);
 
       // Spy on crypto.timingSafeEqual
-      const timingSafeSpy = jest.spyOn(crypto, 'timingSafeEqual');
+      const timingSafeSpy = vi.spyOn(crypto, 'timingSafeEqual');
 
       // Act
       TicketSecurityService.verifyBackupCodeSignature(code, registrationId, validSignature);

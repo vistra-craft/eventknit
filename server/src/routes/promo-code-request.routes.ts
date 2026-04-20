@@ -47,33 +47,33 @@ organizerRouter.get('/mine', PromoCodeRequestController.getOrganizerRequests);
 export const adminRouter = Router();
 
 adminRouter.use(authenticate);
-adminRouter.use(requireMinRole(UserRole.ADMIN_STAFF));
+adminRouter.use(requireMinRole(UserRole.ADMIN));
 
 /**
  * @route   GET /api/v1/admin/promo-codes/requests
  * @desc    Get all promo code requests with filtering
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 adminRouter.get('/', PromoCodeRequestController.getRequests);
 
 /**
  * @route   GET /api/v1/admin/promo-codes/requests/pending-count
  * @desc    Get count of pending requests
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 adminRouter.get('/pending-count', PromoCodeRequestController.getPendingCount);
 
 /**
  * @route   GET /api/v1/admin/promo-codes/requests/:id
  * @desc    Get a single promo code request by ID
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 adminRouter.get('/:id', PromoCodeRequestController.getRequestById);
 
 /**
  * @route   PATCH /api/v1/admin/promo-codes/requests/:id/approve
  * @desc    Approve a promo code request
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 adminRouter.patch(
   '/:id/approve',
@@ -84,7 +84,7 @@ adminRouter.patch(
 /**
  * @route   PATCH /api/v1/admin/promo-codes/requests/:id/reject
  * @desc    Reject a promo code request
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 adminRouter.patch(
   '/:id/reject',

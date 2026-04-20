@@ -2,6 +2,7 @@
 export { default as FinanceDashboard } from './FinanceDashboard';
 export { default as EventFinanceDashboard } from './EventFinanceDashboard';
 export { default as PaymentTransactionsPage } from './PaymentTransactionsPage';
+export { default as PaymentTransactionDetailPage } from './PaymentTransactionDetailPage';
 export { default as DisbursementsPage } from './DisbursementsPage';
 export { default as RefundsPage } from './RefundsPage';
 export { default as ReconciliationPage } from './ReconciliationPage';
@@ -15,3 +16,4 @@ export { default as EditExpensePage } from './EditExpensePage';
 export { default as EditIncomePage } from './EditIncomePage';
 export { default as EditWagePage } from './EditWagePage';
 export { default as AdminFinancialManagement } from './AdminFinancialManagement';
+export { default as ResaleTransferReportingPage } from './ResaleTransferReportingPage';

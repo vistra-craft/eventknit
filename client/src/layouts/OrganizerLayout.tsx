@@ -1,21 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { Routes, Route, Outlet, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from "react";
+import { Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense } from 'react';
 import OrganizerSidebar from "../pages/organizer/OrganizerSidebar";
 import OrganizerHeader from "../pages/organizer/OrganizerHeader";
 import { organizerRoutes } from '../routes/organizerRoutes';
-import { ProtectedRoute } from '../components/ProtectedRoute';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
-import { useOrganizerApproval } from '../hooks/useOrganizerApproval';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '../components/ui/dialog';
-import { Button } from '../components/ui/button';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { Loader } from '../components/ui/loader';
+import { ChatPanel, ChatPanelTrigger } from '@/components/chat/ChatPanel';
+import { getInbox } from '@/lib/user-dashboard-api';
 
 /**
- * Loading component for suspense fallback
- * Professional skeleton loader with shimmer animations
+ * Dashboard skeleton — page header + 4 metric cards
  */
-const LoadingFallback = () => (
+const DashboardFallback = () => (
   <SkeletonGroup className="p-6 space-y-6">
     <SkeletonPageHeader showActions={false} />
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -26,11 +24,50 @@ const LoadingFallback = () => (
   </SkeletonGroup>
 );
 
+/**
+ * Simple centered spinner for form/create pages
+ */
+const SpinnerFallback = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+    <Loader size="lg" />
+  </div>
+);
+
+/**
+ * Route-aware loading fallback
+ */
+const LoadingFallback = () => {
+  const path = window.location.pathname;
+
+  if (path.includes('/create') || path.includes('/edit') || path.includes('/settings')) {
+    return <SpinnerFallback />;
+  }
+
+  return <DashboardFallback />;
+};
+
 const OrganizerLayout: React.FC = () => {
-  const navigate = useNavigate();
-  const { showApprovalModal, handleApprovalAcknowledged } = useOrganizerApproval();
   const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed, will be set by useEffect
   const [isMobile, setIsMobile] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await getInbox({ page: 1, limit: 1 });
+      if (res.success && res.data) {
+        setChatUnread(res.data.unreadCount);
+      }
+    } catch {
+      // Silently ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   // Check if screen is mobile on mount and resize, auto-manage sidebar
   useEffect(() => {
@@ -69,56 +106,6 @@ const OrganizerLayout: React.FC = () => {
   };
 
   return (
-    <>
-      {/* Organizer Approval Modal */}
-      <Dialog open={showApprovalModal} onOpenChange={() => {}}>
-        <DialogContent
-          className="sm:max-w-lg border-0 bg-transparent shadow-none p-0 [&>button]:hidden"
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
-        >
-          <DialogTitle className="sr-only">Account Approved</DialogTitle>
-          <DialogDescription className="sr-only">Your organizer account has been approved.</DialogDescription>
-          <div className="relative overflow-hidden rounded-2xl bg-card border border-border/40 shadow-2xl">
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-emerald-500 to-primary" />
-            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full bg-primary/10 blur-3xl animate-pulse" />
-            <div className="relative px-8 pt-10 pb-8 text-center">
-              <div className="mx-auto mb-6 w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-emerald-500/20 flex items-center justify-center ring-4 ring-primary/10">
-                <Sparkles className="w-9 h-9 text-primary" />
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">
-                You&apos;re Approved!
-              </h2>
-              <p className="text-muted-foreground leading-relaxed max-w-sm mx-auto">
-                Your event has been reviewed and approved. Your organizer dashboard is now fully unlocked.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2 mt-5 mb-8">
-                {['Manage Events', 'Track Sales', 'View Analytics'].map((label) => (
-                  <span
-                    key={label}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
-                  >
-                    <span className="w-1 h-1 rounded-full bg-primary" />
-                    {label}
-                  </span>
-                ))}
-              </div>
-              <Button
-                size="lg"
-                className="w-full gap-2 text-base font-semibold h-12 rounded-xl"
-                onClick={() => {
-                  handleApprovalAcknowledged();
-                  navigate('/organizer/dashboard');
-                }}
-              >
-                Proceed to Dashboard
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden lg:h-screen lg:overflow-hidden">
       {/* Main layout area (sidebar + header + page content) */}
       <div className="w-full flex flex-1 lg:h-full lg:overflow-hidden">
@@ -164,14 +151,16 @@ const OrganizerLayout: React.FC = () => {
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div className="fixed inset-0 bg-black/50" onClick={handleSidebarToggle}></div>
-          <div className="fixed left-0 top-0 h-full w-64 z-50">
+          <div className="fixed left-0 top-0 h-full w-[80vw] max-w-64 z-50">
             <OrganizerSidebar isOpen={sidebarOpen} onToggle={handleSidebarToggle} isMobile={isMobile} />
           </div>
         </div>
       )}
 
+      {/* Chat Panel — consistent messaging across all dashboards */}
+      <ChatPanel open={chatOpen} onOpenChange={setChatOpen} />
+      <ChatPanelTrigger unreadCount={chatUnread} onClick={() => setChatOpen(true)} />
     </div>
-    </>
   );
 };
 

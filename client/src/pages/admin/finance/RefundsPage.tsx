@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getRefunds, getRefundSummary, type Refund, type RefundSummary } from "@/lib/financial-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const RefundsPage = () => {
   const navigate = useNavigate();
@@ -46,24 +47,24 @@ const RefundsPage = () => {
       });
 
       if (response.success && response.data) {
-        const data = response.data;
+        const data: unknown = response.data;
         if (Array.isArray(data)) {
           // Flat array (filtered by eventId)
-          setRefunds(data);
+          setRefunds(data as Refund[]);
           setPagination({ page: 1, limit: 20, total: data.length, totalPages: 1 });
-        } else {
+        } else if (typeof data === 'object' && data !== null && 'refunds' in data) {
           // Paginated response: { refunds: [...], pagination: {...} }
-          const paginated = data as { refunds: Refund[]; pagination: typeof pagination };
+          type PaginatedRefundsResponse = {
+            refunds: Refund[];
+            pagination: { page: number; limit: number; total: number; totalPages: number };
+          };
+          const paginated = data as PaginatedRefundsResponse;
           setRefunds(paginated.refunds);
           setPagination(paginated.pagination);
         }
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load refunds",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load refunds");
     } finally {
       setLoading(false);
     }
@@ -146,7 +147,7 @@ const RefundsPage = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="text-sm text-muted-foreground">Total Refunded</div>
@@ -180,11 +181,11 @@ const RefundsPage = () => {
         {/* Filters */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search by refund #, transaction #, event, or attendee..."
+                  placeholder="Search refunds..."
                   value={search}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   className="pl-10"
@@ -247,8 +248,7 @@ const RefundsPage = () => {
                           {r.transaction?.transactionNumber || "N/A"}
                         </TableCell>
                         <TableCell>
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          {(r as any).event?.title || "N/A"}
+                          {r.event?.title ?? "N/A"}
                         </TableCell>
                         <TableCell>
                           <Badge

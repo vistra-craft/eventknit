@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getExpenses, deleteExpense, type PlatformExpense } from "@/lib/accounting-api";
 import { useToast } from "@/hooks/useToast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { showErrorToast } from "@/lib/utils/error";
 
 const ExpensesPage = () => {
   const navigate = useNavigate();
@@ -23,6 +25,7 @@ const ExpensesPage = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<PlatformExpense | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Fetch expenses
   useEffect(() => {
@@ -132,11 +135,14 @@ const ExpensesPage = () => {
     navigate(`/admin/finance/expenses/edit/${id}`);
   };
 
-  const handleDeleteExpense = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this expense? This action cannot be undone.")) {
-      return;
-    }
+  const handleDeleteExpense = (id: string) => {
+    setDeleteConfirm(id);
+  };
 
+  const confirmDeleteExpense = async () => {
+    if (!deleteConfirm) return;
+    const id = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       setDeleting(id);
       const response = await deleteExpense(id);
@@ -151,11 +157,7 @@ const ExpensesPage = () => {
       }
     } catch (err) {
       console.error('Error deleting expense:', err);
-      toast({
-        title: "Error",
-        description: "Failed to delete expense. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to delete expense. Please try again.");
     } finally {
       setDeleting(null);
     }
@@ -357,7 +359,7 @@ const ExpensesPage = () => {
         {/* View Expense Modal */}
         {showViewModal && selectedExpense && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-card-surface rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide">
+            <div className="bg-card-surface rounded-lg shadow-xl w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-hide mx-4">
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h2 className="text-base font-semibold text-foreground">Expense Details</h2>
                 <Button variant="ghost" size="sm" onClick={() => setShowViewModal(false)}>
@@ -434,6 +436,23 @@ const ExpensesPage = () => {
             </div>
           </div>
         )}
+
+        <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Expense</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this expense? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteExpense} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

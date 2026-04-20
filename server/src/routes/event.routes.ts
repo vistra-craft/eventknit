@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { EventController } from '../controllers/event.controller.js';
 import { SeatSelectionController } from '../controllers/seat-map.controller.js';
 import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
-import { authenticate, requireMinRole } from '../middleware/auth.middleware.js';
+import { authenticate, optionalAuth, requireMinRole } from '../middleware/auth.middleware.js';
+import { resolveEventIdParam } from '../middleware/resolve-event.middleware.js';
 import { eventValidations } from '../validations/event.validations.js';
 import { reserveSeatsSchema } from '../validations/venue.validations.js';
 import { guestRegistrationRateLimiter } from '../middleware/rateLimiter.middleware.js';
@@ -20,10 +21,10 @@ router.get('/', EventController.getEvents);
 
 /**
  * @route   GET /api/v1/events/:id
- * @desc    Get event by ID (public)
+ * @desc    Get event by ID (public; auth optional — organizers/admins can view own pending events)
  * @access  Public
  */
-router.get('/:id', EventController.getEventById);
+router.get('/:id', optionalAuth, resolveEventIdParam, EventController.getEventById);
 
 /**
  * @route   GET /api/v1/events/:id/related
@@ -32,7 +33,7 @@ router.get('/:id', EventController.getEventById);
  */
 router.get(
   '/:id/related',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   EventController.getRelatedEvents,
 );
 
@@ -43,6 +44,7 @@ router.get(
  */
 router.post(
   '/:id/register-guest',
+  resolveEventIdParam,
   guestRegistrationRateLimiter,
   validate(eventValidations.registerAsGuest),
   EventController.registerAsGuest,
@@ -55,7 +57,7 @@ router.post(
  */
 router.get(
   '/:id/seat-map',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   SeatSelectionController.getSeatMapAvailability,
 );
 
@@ -69,6 +71,7 @@ router.use(authenticate);
  */
 router.post(
   '/',
+  requireMinRole(UserRole.ATTENDEE), // ATTENDEE with PENDING_APPROVAL can create (becomeOrganizer flow); service enforces stricter check
   validate(eventValidations.createEvent),
   EventController.createEvent,
 );
@@ -80,6 +83,7 @@ router.post(
  */
 router.put(
   '/:id',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   validate(eventValidations.updateEvent),
   EventController.updateEvent,
@@ -92,6 +96,7 @@ router.put(
  */
 router.delete(
   '/:id',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   EventController.deleteEvent,
 );
@@ -103,6 +108,7 @@ router.delete(
  */
 router.post(
   '/:id/duplicate',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   validate(eventValidations.duplicateEvent),
   EventController.duplicateEvent,
@@ -115,6 +121,7 @@ router.post(
  */
 router.post(
   '/:id/register',
+  resolveEventIdParam,
   validate(eventValidations.registerForEvent),
   EventController.registerForEvent,
 );
@@ -126,6 +133,7 @@ router.post(
  */
 router.get(
   '/:id/registrations',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   EventController.getEventRegistrations,
 );
@@ -137,28 +145,31 @@ router.get(
  */
 router.delete(
   '/registrations/:id',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
   EventController.cancelRegistration,
 );
 
 /**
  * @route   POST /api/v1/events/:id/approve
  * @desc    Approve event (admin function)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/:id/approve',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  resolveEventIdParam,
+  requireMinRole(UserRole.ADMIN),
   EventController.approveEvent,
 );
 
 /**
  * @route   POST /api/v1/events/:id/reject
  * @desc    Reject event (admin function)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/:id/reject',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  resolveEventIdParam,
+  requireMinRole(UserRole.ADMIN),
   validate(eventValidations.rejectEvent),
   EventController.rejectEvent,
 );
@@ -170,6 +181,7 @@ router.post(
  */
 router.post(
   '/:id/cancel',
+  resolveEventIdParam,
   requireMinRole(UserRole.ORGANIZER),
   EventController.cancelEvent,
 );
@@ -177,23 +189,24 @@ router.post(
 /**
  * @route   PUT /api/v1/events/bulk/organizer-data-access
  * @desc    Bulk update organizer data access level (admin function)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  * @note    Must be defined before /:id/organizer-data-access to avoid route conflict
  */
 router.put(
   '/bulk/organizer-data-access',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   EventController.bulkUpdateOrganizerDataAccess,
 );
 
 /**
  * @route   PUT /api/v1/events/:id/organizer-data-access
  * @desc    Update organizer data access level (admin function)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/:id/organizer-data-access',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  resolveEventIdParam,
+  requireMinRole(UserRole.ADMIN),
   EventController.updateOrganizerDataAccess,
 );
 
@@ -211,7 +224,7 @@ router.get('/user/registered', EventController.getUserRegisteredEvents);
  */
 router.post(
   '/:id/seats/reserve',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   validate(reserveSeatsSchema),
   SeatSelectionController.reserveSeats,
 );
@@ -256,7 +269,7 @@ router.get(
  */
 router.post(
   '/:id/seats/best-available',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   validate(Joi.object({
     quantity: Joi.number().integer().min(1).max(10).default(1),
     preferredSeatTypes: Joi.array().items(Joi.string().valid('STANDARD', 'VIP', 'PREMIUM', 'ACCESSIBLE', 'COMPANION')).optional(),
@@ -276,7 +289,7 @@ router.post(
  */
 router.get(
   '/:id/seats/recommendations',
-  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  resolveEventIdParam,
   validateQuery(Joi.object({
     budget: Joi.number().positive().optional(),
     quantity: Joi.number().integer().min(1).max(10).default(1),

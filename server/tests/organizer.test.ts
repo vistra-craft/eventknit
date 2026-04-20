@@ -7,6 +7,7 @@ import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
+import { generateAccessToken } from '../src/utils/jwt';
 import { cleanupTestData } from './test-helpers';
 import { PermissionService } from '../src/services/permission.service';
 
@@ -48,9 +49,7 @@ describe('Organizer Staff Management', () => {
 
     // Clear all tables using comprehensive cleanup helper
     try {
-      await prisma.$transaction(async (tx) => {
-        await cleanupTestData(tx);
-      });
+      await cleanupTestData();
     } catch (error) {
       // If cleanup fails, log but continue - might be due to missing tables
       logger.warn('Cleanup warning:', error);
@@ -187,13 +186,13 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(201);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.staff.email).toBe('staff@test.com');
-      expect(response.body.data.staff.role).toBe(UserRole.ORGANIZER_STAFF);
+      expect(response.body.data.staff.role).toBe(UserRole.ORGANIZER_ADMIN);
       expect(response.body.data.staff.organizationName).toBe('Test Events Inc');
 
       // Verify managedBy relationship
@@ -218,7 +217,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(403);
 
@@ -231,6 +230,8 @@ describe('Organizer Staff Management', () => {
         return;
       }
 
+      // Validation now rejects invalid roles at the route level (400)
+      // before reaching the service authorization layer (403)
       const response = await request(app)
         .post('/api/v1/organizer/staff')
         .set('Authorization', `Bearer ${organizerToken}`)
@@ -241,7 +242,7 @@ describe('Organizer Staff Management', () => {
           lastName: 'Organizer',
           role: UserRole.ORGANIZER,
         })
-        .expect(403);
+        .expect(400);
 
       expect(response.body.success).toBe(false);
     });
@@ -261,7 +262,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'One',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(201);
 
@@ -274,7 +275,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Two',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(409);
 
@@ -295,7 +296,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         });
 
       // May return 400 (validation) or 503 (service unavailable if validation passes but service fails)
@@ -315,7 +316,7 @@ describe('Organizer Staff Management', () => {
           email: 'nostaffpass@test.com',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         });
 
       // May return 400 (validation) or 503 (service unavailable if validation passes but service fails)
@@ -342,7 +343,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         });
 
       // Service may not validate email format strictly, or may validate at database level
@@ -375,7 +376,7 @@ describe('Organizer Staff Management', () => {
           password: 'weak',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         });
 
       // Service may not validate password strength strictly
@@ -407,7 +408,7 @@ describe('Organizer Staff Management', () => {
           password: 'Staff123!@$',
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
         })
         .expect(401);
 
@@ -425,7 +426,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'One',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           // managedBy: organizerId, // Will be available after Prisma migration
           organizationName: 'Test Events Inc',
@@ -531,7 +532,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'ById',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           organizationName: 'Test Events Inc',
         },
@@ -661,7 +662,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'Update',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           organizationName: 'Test Events Inc',
         },
@@ -933,7 +934,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'Delete',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           // managedBy: organizerId, // Will be available after Prisma migration
           organizationName: 'Test Events Inc',
@@ -1065,7 +1066,7 @@ describe('Organizer Staff Management', () => {
           password,
           firstName: 'Staff',
           lastName: 'Deactivate',
-          role: UserRole.ORGANIZER_STAFF,
+          role: UserRole.ORGANIZER_ADMIN,
           status: UserStatus.ACTIVE,
           organizationName: 'Test Events Inc',
         },
@@ -1816,7 +1817,7 @@ describe('Organizer Staff Management', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.hasAccess).toBe(true);
-      expect(response.body.data.message).toContain('You have access');
+      expect(response.body.data.message).toContain('access');
 
       // Cleanup
       await prisma.event.deleteMany({
@@ -1854,7 +1855,7 @@ describe('Organizer Staff Management', () => {
       // Should return true for any event (including pending)
       expect(response.body.success).toBe(true);
       expect(response.body.data.hasAccess).toBe(true);
-      expect(response.body.data.message).toContain('You have access');
+      expect(response.body.data.message).toContain('access');
 
       // Cleanup
       await prisma.event.deleteMany({
@@ -1870,6 +1871,314 @@ describe('Organizer Staff Management', () => {
 
       await request(app)
         .get('/api/v1/organizer/dashboard-access')
+        .expect(401);
+    });
+  });
+
+  // ── Tests for staff role access to dashboard events ──
+
+  describe('GET /api/v1/organizer/dashboard/events - Staff Role Access', () => {
+    let orgId: string;
+    let staffToken: string;
+    let assignedEventId: string;
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+
+      const organizer = await prisma.user.findUnique({ where: { email: 'organizer@test.com' } });
+      orgId = organizer!.id;
+
+      // Create two events owned by organizer
+      const event1 = await prisma.event.create({
+        data: {
+          title: 'Assigned Event',
+          description: 'Staff is assigned here',
+          startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          location: 'Loc A',
+          venue: 'Venue A',
+          organizerId: orgId,
+          status: 'APPROVED',
+        },
+      });
+      assignedEventId = event1.id;
+
+      await prisma.event.create({
+        data: {
+          title: 'Unassigned Event',
+          description: 'Staff is NOT assigned here',
+          startDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          location: 'Loc B',
+          venue: 'Venue B',
+          organizerId: orgId,
+          status: 'APPROVED',
+        },
+      });
+
+      // Create organizer teller staff
+      const hashedPw = await hashPassword('Staff123!@$');
+      const staff = await prisma.user.upsert({
+        where: { email: 'teller-staff@test.com' },
+        update: {
+          password: hashedPw,
+          firstName: 'Teller',
+          lastName: 'Staff',
+          role: UserRole.ORGANIZER_TELLER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          organizationName: 'Test Events Inc',
+        },
+        create: {
+          email: 'teller-staff@test.com',
+          password: hashedPw,
+          firstName: 'Teller',
+          lastName: 'Staff',
+          role: UserRole.ORGANIZER_TELLER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          organizationName: 'Test Events Inc',
+        },
+      });
+
+      staffToken = generateAccessToken({
+        userId: staff.id,
+        email: staff.email,
+        role: staff.role,
+      });
+
+      // Assign staff to only event1
+      await prisma.eventStaff.upsert({
+        where: { eventId_staffId: { eventId: assignedEventId, staffId: staff.id } },
+        update: { isActive: true },
+        create: {
+          eventId: assignedEventId,
+          staffId: staff.id,
+          role: 'SCANNER',
+          staffType: 'ORGANIZER_ADMIN',
+          assignedBy: orgId,
+          isActive: true,
+        },
+      });
+    });
+
+    it('should return only assigned events for ORGANIZER_TELLER', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard/events')
+        .set('Authorization', `Bearer ${staffToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      const events = response.body.data.events || response.body.data;
+      expect(Array.isArray(events)).toBe(true);
+      expect(events.length).toBe(1);
+      expect(events[0].title).toBe('Assigned Event');
+    });
+
+    it('should return empty list for staff with no assignments', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Create unassigned staff
+      const hashedPw = await hashPassword('Unassigned123!@$');
+      const unassigned = await prisma.user.upsert({
+        where: { email: 'unassigned-staff@test.com' },
+        update: {
+          password: hashedPw,
+          firstName: 'Unassigned',
+          lastName: 'Staff',
+          role: UserRole.ORGANIZER_ADMIN,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          organizationName: 'Test Events Inc',
+        },
+        create: {
+          email: 'unassigned-staff@test.com',
+          password: hashedPw,
+          firstName: 'Unassigned',
+          lastName: 'Staff',
+          role: UserRole.ORGANIZER_ADMIN,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          organizationName: 'Test Events Inc',
+        },
+      });
+
+      const unassignedToken = generateAccessToken({
+        userId: unassigned.id,
+        email: unassigned.email,
+        role: unassigned.role,
+      });
+
+      const response = await request(app)
+        .get('/api/v1/organizer/dashboard/events')
+        .set('Authorization', `Bearer ${unassignedToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      const events = response.body.data.events || response.body.data;
+      expect(Array.isArray(events)).toBe(true);
+      expect(events.length).toBe(0);
+    });
+  });
+
+  // ── Tests for input validation on staff endpoints ──
+
+  describe('POST /api/v1/organizer/staff - Validation', () => {
+    it('should reject invalid email format', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/organizer/staff')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          email: 'not-an-email',
+          password: 'ValidPass1!',
+          firstName: 'Test',
+          lastName: 'User',
+          role: 'ORGANIZER_TELLER',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject missing required fields', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      // Missing password, firstName, lastName
+      const response = await request(app)
+        .post('/api/v1/organizer/staff')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          email: 'valid@staff.com',
+          role: 'ORGANIZER_TELLER',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject invalid role value', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .post('/api/v1/organizer/staff')
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({
+          email: 'valid@staff.com',
+          password: 'ValidPass1!',
+          firstName: 'Test',
+          lastName: 'User',
+          role: 'SUPERADMIN',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('PATCH /api/v1/organizer/staff/:id/role - Validation', () => {
+    let staffId: string;
+
+    beforeEach(async () => {
+      if (!dbConnected) return;
+
+      // Create a staff member to change role on
+      const hashedPw = await hashPassword('RoleTest123!@$');
+      const staff = await prisma.user.upsert({
+        where: { email: 'roletest-staff@test.com' },
+        update: {
+          password: hashedPw,
+          firstName: 'Role',
+          lastName: 'Test',
+          role: UserRole.ORGANIZER_TELLER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          organizationName: 'Test Events Inc',
+        },
+        create: {
+          email: 'roletest-staff@test.com',
+          password: hashedPw,
+          firstName: 'Role',
+          lastName: 'Test',
+          role: UserRole.ORGANIZER_TELLER,
+          status: UserStatus.ACTIVE,
+          isEmailVerified: true,
+          organizationName: 'Test Events Inc',
+        },
+      });
+      staffId = staff.id;
+    });
+
+    it('should reject invalid role value', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .patch(`/api/v1/organizer/staff/${staffId}/role`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({ role: 'ADMIN' })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+
+    it('should reject missing role field', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      const response = await request(app)
+        .patch(`/api/v1/organizer/staff/${staffId}/role`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .send({})
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+    });
+  });
+
+  // ── Test for GET /staff/assignments requiring auth middleware ──
+
+  describe('GET /api/v1/organizer/staff/assignments', () => {
+    it('should reject non-organizer user (attendee)', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/organizer/staff/assignments')
+        .set('Authorization', `Bearer ${attendeeToken}`)
+        .expect(403);
+    });
+
+    it('should require authentication', async () => {
+      if (!dbConnected) {
+        logger.info('⏭️  Skipping test - database not connected');
+        return;
+      }
+
+      await request(app)
+        .get('/api/v1/organizer/staff/assignments')
         .expect(401);
     });
   });

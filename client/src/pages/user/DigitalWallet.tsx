@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Wallet as WalletIcon, Trash2, Settings, Apple, CreditCard, CheckCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -18,6 +19,7 @@ import {
   generateGooglePayPass,
 } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface WalletTicket {
   id: string;
@@ -55,6 +57,7 @@ const DigitalWallet = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("tickets");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [removeConfirm, setRemoveConfirm] = useState<string | null>(null);
   const { toast } = useToast();
 
   const loadWallet = useCallback(async () => {
@@ -66,11 +69,7 @@ const DigitalWallet = () => {
       }
     } catch (error) {
       console.error("Error loading wallet:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load wallet",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load wallet");
     } finally {
       setLoading(false);
     }
@@ -92,17 +91,11 @@ const DigitalWallet = () => {
         loadWallet();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add ticket to wallet",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to add ticket to wallet");
     }
   };
 
   const handleRemoveTicket = async (registrationId: string) => {
-    if (!confirm("Are you sure you want to remove this ticket from your wallet?")) return;
-
     try {
       const response = await removeTicketFromWallet(registrationId);
       if (response.success) {
@@ -113,11 +106,7 @@ const DigitalWallet = () => {
         loadWallet();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to remove ticket",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to remove ticket");
     }
   };
 
@@ -133,11 +122,7 @@ const DigitalWallet = () => {
         window.open(response.data.downloadUrl, '_blank');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate Apple Wallet pass",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to generate Apple Wallet pass");
     }
   };
 
@@ -152,11 +137,7 @@ const DigitalWallet = () => {
         window.open(response.data.saveUrl, '_blank');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to generate Google Pay pass",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to generate Google Pay pass");
     }
   };
 
@@ -174,11 +155,7 @@ const DigitalWallet = () => {
         setWallet(response.data.wallet as Wallet);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update preferences",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to update preferences");
     }
   };
 
@@ -275,7 +252,7 @@ const DigitalWallet = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleRemoveTicket(ticket.registrationId)}
+                            onClick={() => setRemoveConfirm(ticket.registrationId)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -339,6 +316,19 @@ const DigitalWallet = () => {
             )}
           </TabsContent>
         </Tabs>
+
+      <AlertDialog open={!!removeConfirm} onOpenChange={() => setRemoveConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove ticket from wallet?</AlertDialogTitle>
+            <AlertDialogDescription>This will remove the ticket from your digital wallet. You can add it back later.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (removeConfirm) { handleRemoveTicket(removeConfirm); } setRemoveConfirm(null); }}>Remove</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

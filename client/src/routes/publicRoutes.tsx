@@ -27,6 +27,10 @@ const FeedbackPage = lazy(() => import('../pages/FeedbackPage'));
 const ExhibitorDetails = lazy(() => import('../pages/user/ExhibitorDetails'));
 const Support = lazy(() => import('../pages/Support'));
 const TransferAccept = lazy(() => import('../pages/TransferAccept'));
+const TicketViewPage = lazy(() => import('../pages/user/TicketViewPage'));
+const EventSurveyPage = lazy(() => import('../pages/EventSurveyPage'));
+const PaymentCallback = lazy(() => import('../pages/PaymentCallback'));
+const Confirmation = lazy(() => import('../pages/Confirmation'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 
 /**
@@ -124,10 +128,34 @@ export const publicRoutes: RouteConfig[] = [
     element: createElement(Support),
   },
 
+  // Public ticket view (works with or without auth, uses email verification)
+  {
+    path: 'tickets/:registrationId/view',
+    element: createElement(TicketViewPage),
+  },
+
+  // Post-event survey (linked from email)
+  {
+    path: 'events/:eventId/survey',
+    element: createElement(EventSurveyPage),
+  },
+
   // Ticket transfer acceptance (public, works with or without auth)
   {
     path: 'tickets/transfer/accept',
     element: createElement(TransferAccept),
+  },
+
+  // Paystack / Stripe payment callback after redirect from gateway
+  {
+    path: 'payment/callback',
+    element: createElement(PaymentCallback),
+  },
+
+  // Top-level confirmation page (reached after payment callback)
+  {
+    path: 'confirmation',
+    element: createElement(Confirmation),
   },
 
   // 404 - Catch all unknown routes

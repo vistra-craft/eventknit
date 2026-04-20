@@ -169,7 +169,7 @@ const MaintenancePage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">System Maintenance</h1>
-            <p className="text-muted-foreground">Manage system maintenance tasks and maintenance mode</p>
+            <p className="text-sm text-muted-foreground">Manage system maintenance tasks and maintenance mode</p>
           </div>
         </div>
 
@@ -218,7 +218,7 @@ const MaintenancePage = () => {
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-5 w-5 text-warning mt-0.5" />
                   <div>
-                    <p className="font-medium text-warning">Maintenance Mode Active</p>
+                    <p className="text-sm font-medium text-warning">Maintenance Mode Active</p>
                     <p className="text-sm text-muted-foreground">{maintenanceMode.message}</p>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ const MaintenancePage = () => {
                         {getTypeIcon(task.type)}
                       </div>
                       <div>
-                        <h3 className="font-semibold text-foreground">{task.name}</h3>
+                        <h3 className="text-sm font-semibold text-foreground">{task.name}</h3>
                         <p className="text-sm text-muted-foreground">{task.description}</p>
                       </div>
                     </div>
@@ -338,7 +338,7 @@ const MaintenancePage = () => {
                 <div className="p-3 rounded-lg bg-primary/10 mx-auto mb-4 w-fit">
                   <Database className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">Database Cleanup</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-2">Database Cleanup</h3>
                 <p className="text-sm text-muted-foreground mb-4">Clean up old data and optimize tables</p>
                 <Button size="sm" className="w-full">
                   Run Cleanup
@@ -351,7 +351,7 @@ const MaintenancePage = () => {
                 <div className="p-3 rounded-lg bg-success/10 mx-auto mb-4 w-fit">
                   <Server className="h-6 w-6 text-success" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">Cache Clear</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-2">Cache Clear</h3>
                 <p className="text-sm text-muted-foreground mb-4">Clear all application caches</p>
                 <Button size="sm" variant="outline" className="w-full">
                   Clear Cache
@@ -364,7 +364,7 @@ const MaintenancePage = () => {
                 <div className="p-3 rounded-lg bg-destructive/10 mx-auto mb-4 w-fit">
                   <Shield className="h-6 w-6 text-destructive" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">Security Scan</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-2">Security Scan</h3>
                 <p className="text-sm text-muted-foreground mb-4">Run security vulnerability scan</p>
                 <Button size="sm" variant="outline" className="w-full">
                   Start Scan
@@ -377,7 +377,7 @@ const MaintenancePage = () => {
                 <div className="p-3 rounded-lg bg-warning/10 mx-auto mb-4 w-fit">
                   <Settings className="h-6 w-6 text-warning" />
                 </div>
-                <h3 className="font-semibold text-foreground mb-2">System Restart</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-2">System Restart</h3>
                 <p className="text-sm text-muted-foreground mb-4">Restart system services</p>
                 <Button size="sm" variant="destructive" className="w-full">
                   Restart

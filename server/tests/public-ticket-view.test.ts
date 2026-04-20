@@ -165,7 +165,7 @@ describe('Public Ticket View Endpoint', () => {
         .expect(403);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Email does not match');
+      expect(response.body.message).toContain('doesn\'t match');
     });
 
     it('should reject ticket view without email parameter', async () => {

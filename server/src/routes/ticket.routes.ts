@@ -36,6 +36,13 @@ const resendTicketRateLimiter = rateLimit({
  */
 router.get('/:registrationId/view', TicketController.getTicketPublic);
 
+/**
+ * @route   GET /api/v1/tickets/:registrationId/download-public
+ * @desc    Download ticket as PDF (public - with email verification)
+ * @access  Public (requires email query parameter)
+ */
+router.get('/:registrationId/download-public', TicketController.downloadTicketPDFPublic);
+
 // Protected routes require authentication
 router.use(authenticate);
 

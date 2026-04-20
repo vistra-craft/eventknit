@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Upload, Camera, X } from "lucide-react";
+import { ArrowLeft, Upload, Camera, X, Crosshair } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,8 @@ import {
   type FeaturedEventData,
 } from "@/lib/featured-event-api";
 import { HeroPreview } from "@/components/admin/HeroPreview";
+import { FocalPointPicker } from "@/components/event-wizard/FocalPointPicker";
+import { showErrorToast } from "@/lib/utils/error";
 
 const EditFeaturedEventPage = () => {
   const navigate = useNavigate();
@@ -33,16 +35,16 @@ const EditFeaturedEventPage = () => {
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [focalX, setFocalX] = useState(50);
+  const [focalY, setFocalY] = useState(50);
+  const [showFocalPicker, setShowFocalPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchFeaturedEvent = async () => {
       if (!id) {
-        toast({
-          title: "Error",
-          description: "Featured event ID is missing",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error("Featured event ID is missing"), "Missing ID", "Featured event ID is missing");
         navigate("/admin/events/featured");
         return;
       }
@@ -64,16 +66,16 @@ const EditFeaturedEventPage = () => {
           displayOrder: featuredEvent.displayOrder,
           isActive: featuredEvent.isActive,
         });
-        if (featuredEvent.customImage) {
-          setImagePreview(featuredEvent.customImage);
+        const imageForPreview = featuredEvent.type === "IMAGE"
+          ? featuredEvent.imageUrl
+          : featuredEvent.customImage;
+        if (imageForPreview) setImagePreview(imageForPreview);
+        if (featuredEvent.type === "IMAGE") {
+          setFocalX(featuredEvent.imageFocalX ?? 50);
+          setFocalY(featuredEvent.imageFocalY ?? 50);
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to fetch featured event";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Load failed", "Failed to fetch featured event");
         navigate("/admin/events/featured");
       } finally {
         setFetching(false);
@@ -88,47 +90,32 @@ const EditFeaturedEventPage = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Error",
-        description: "Please upload an image file",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please upload an image file"), "Invalid file type", "Please upload an image file");
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Error",
-        description: "Image size must be less than 5MB",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Image size must be less than 5MB"), "File too large", "Image size must be less than 5MB");
       return;
     }
 
     setIsUploadingImage(true);
     try {
+      // Store the actual file for FormData submission
+      setUploadedFile(file);
+      // Generate preview only
       const reader = new FileReader();
       reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setImagePreview(base64String);
-        setFormData((prev) => ({ ...prev, customImage: base64String }));
+        setImagePreview(reader.result as string);
         setIsUploadingImage(false);
       };
       reader.onerror = () => {
-        toast({
-          title: "Error",
-          description: "Failed to read image file",
-          variant: "destructive",
-        });
+        showErrorToast(toast, new Error("Failed to read image file"), "Read failed", "Failed to read image file");
         setIsUploadingImage(false);
       };
       reader.readAsDataURL(file);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to upload image",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Upload failed", "Failed to upload image");
       setIsUploadingImage(false);
     }
   };
@@ -137,29 +124,42 @@ const EditFeaturedEventPage = () => {
     e.preventDefault();
 
     if (!id) {
-      toast({
-        title: "Error",
-        description: "Featured event ID is missing",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Featured event ID is missing"), "Missing ID", "Featured event ID is missing");
       return;
     }
 
     try {
       setLoading(true);
-      await updateFeaturedEvent(id, formData);
+
+      let payload: typeof formData | FormData = formData;
+
+      if (uploadedFile) {
+        // Send as multipart/form-data so the server receives req.file
+        const fd = new FormData();
+        fd.append('image', uploadedFile);
+        if (formData.customTitle) fd.append('customTitle', formData.customTitle);
+        if (formData.customCategory) fd.append('customCategory', formData.customCategory);
+        if (formData.displayStartDate) fd.append('displayStartDate', formData.displayStartDate);
+        if (formData.displayEndDate) fd.append('displayEndDate', formData.displayEndDate);
+        fd.append('displayOrder', String(formData.displayOrder));
+        fd.append('isActive', String(formData.isActive));
+        if (originalData?.type === "IMAGE") {
+          fd.append('imageFocalX', focalX.toString());
+          fd.append('imageFocalY', focalY.toString());
+        }
+        payload = fd;
+      } else if (originalData?.type === "IMAGE") {
+        payload = { ...formData, imageFocalX: focalX, imageFocalY: focalY };
+      }
+
+      await updateFeaturedEvent(id, payload);
       toast({
         title: "Success",
         description: "Featured event updated successfully",
       });
       navigate("/admin/events/featured");
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Failed to update featured event";
-      toast({
-        title: "Error",
-        description: message,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Update failed", "Failed to update featured event");
     } finally {
       setLoading(false);
     }
@@ -255,25 +255,61 @@ const EditFeaturedEventPage = () => {
                 className="hidden"
               />
               {imagePreview || formData.customImage ? (
-                <div className="relative">
-                  <img
-                    src={imagePreview || formData.customImage}
-                    alt="Preview"
-                    className="w-full h-48 object-cover rounded-lg border"
-                  />
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => {
-                      setImagePreview(null);
-                      setFormData((prev) => ({ ...prev, customImage: "" }));
-                      if (fileInputRef.current) fileInputRef.current.value = "";
-                    }}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+                <div className="space-y-3">
+                  {originalData?.type === "IMAGE" && showFocalPicker ? (
+                    <FocalPointPicker
+                      imageUrl={(imagePreview || formData.customImage)!}
+                      focalX={focalX}
+                      focalY={focalY}
+                      onFocalPointChange={(x, y) => { setFocalX(x); setFocalY(y); }}
+                      onReplace={() => fileInputRef.current?.click()}
+                      onRemove={() => {
+                        setImagePreview(null);
+                        setUploadedFile(null);
+                        setFormData((prev) => ({ ...prev, customImage: "" }));
+                        setShowFocalPicker(false);
+                        if (fileInputRef.current) fileInputRef.current.value = "";
+                      }}
+                    />
+                  ) : (
+                    <div className="relative">
+                      <img
+                        src={imagePreview || formData.customImage}
+                        alt="Preview"
+                        className="w-full h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setUploadedFile(null);
+                          setFormData((prev) => ({ ...prev, customImage: "" }));
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                  {/* Focal point toggle — only for standalone IMAGE type */}
+                  {originalData?.type === "IMAGE" && (
+                    <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Crosshair className="w-4 h-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium">Adjust focal point</p>
+                          <p className="text-xs text-muted-foreground">Control which part of the image shows in the hero</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={showFocalPicker}
+                        onCheckedChange={setShowFocalPicker}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
@@ -342,16 +378,21 @@ const EditFeaturedEventPage = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="displayStartDate">Display Start Date (optional)</Label>
               <Input
                 id="displayStartDate"
                 type="date"
                 value={formData.displayStartDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, displayStartDate: e.target.value })
-                }
+                onChange={(e) => {
+                  const newStart = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    displayStartDate: newStart,
+                    displayEndDate: prev.displayEndDate && newStart > prev.displayEndDate ? "" : prev.displayEndDate,
+                  }));
+                }}
               />
             </div>
             <div>
@@ -359,6 +400,7 @@ const EditFeaturedEventPage = () => {
               <Input
                 id="displayEndDate"
                 type="date"
+                min={formData.displayStartDate || undefined}
                 value={formData.displayEndDate}
                 onChange={(e) =>
                   setFormData({ ...formData, displayEndDate: e.target.value })

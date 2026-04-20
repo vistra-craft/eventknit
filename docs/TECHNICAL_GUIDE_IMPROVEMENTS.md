@@ -1,6 +1,7 @@
 # EventKnit v2.0 - Technical Improvements & Recommendations
 
 **Senior Engineering Analysis & Roadmap**
+**Last Updated:** April 2026
 
 ---
 
@@ -35,7 +36,15 @@ This document provides a comprehensive analysis of potential improvements to the
 14. [Data Analytics & ML](#data-analytics--ml)
 15. [Cost Optimization](#cost-optimization)
 16. [Developer Experience](#developer-experience)
-17. [Implementation Roadmap](#implementation-roadmap)
+17. [Accessibility (a11y) Compliance](#17-accessibility-a11y-compliance)
+18. [Internationalization (i18n) & Localization](#18-internationalization-i18n--localization)
+19. [WebSocket Rate Limiting & Security](#19-websocket-rate-limiting--security)
+20. [Backup, Disaster Recovery & Business Continuity](#20-backup-disaster-recovery--business-continuity)
+21. [API Deprecation & Versioning Strategy](#21-api-deprecation--versioning-strategy)
+22. [Mobile App Release Management](#22-mobile-app-release-management)
+23. [Smart Notification Routing & Optimization](#23-smart-notification-routing--optimization)
+24. [Data Migration Strategy for Microservices](#24-data-migration-strategy-for-microservices)
+25. [Implementation Roadmap](#18-implementation-roadmap)
 
 ---
 
@@ -4742,7 +4751,796 @@ const events = await api.events.eventsList({ page: 1, limit: 20 });
 
 ---
 
-## 17. Implementation Roadmap 🗺️
+## 17. Accessibility (a11y) Compliance 🔥 **MEDIUM PRIORITY**
+
+### Current State
+- Radix UI provides good baseline accessibility (keyboard navigation, ARIA attributes, focus management)
+- No formal WCAG audit or automated accessibility testing
+- Mobile app has no accessibility testing
+
+### Recommended Improvements
+
+#### 1. **WCAG 2.1 AA Compliance Audit**
+
+**Why:** Legal requirement in many markets (EU Accessibility Act, ADA in the US, Kenyan Disability Act). Also expands the addressable market — 15% of the global population lives with some form of disability.
+
+**Implementation:**
+
+```bash
+# Add automated a11y testing to CI
+npm install -D @axe-core/react axe-playwright
+
+# Playwright accessibility tests
+import { test, expect } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+test('event page meets WCAG AA', async ({ page }) => {
+  await page.goto('/events/test-event-id');
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa'])
+    .analyze();
+  expect(results.violations).toEqual([]);
+});
+```
+
+**Key Areas to Address:**
+- **Color contrast** — Verify all text meets 4.5:1 ratio (especially sky-500 accent on white backgrounds)
+- **Keyboard navigation** — Ensure all interactive elements are reachable via Tab, Enter, Escape
+- **Screen reader support** — Add `aria-label`, `aria-describedby`, and `role` attributes to custom components
+- **Focus management** — Ensure modals trap focus, dialogs return focus on close
+- **Image alt text** — All event images, organizer logos, and badge elements need descriptive alt text
+- **Form labels** — Every input must have an associated label (floating labels must maintain screen reader readability)
+- **Live regions** — Use `aria-live` for real-time scan feeds and notification counts
+
+**Mobile (Flutter):**
+```dart
+// Use Semantics widget for screen reader support
+Semantics(
+  label: 'Event: ${event.title}, starts ${event.startDate}',
+  child: EventCard(event: event),
+)
+
+// Run accessibility checks
+flutter test --accessibility
+```
+
+**Benefits:**
+- Legal compliance across target markets
+- 15% larger addressable audience
+- Better SEO (Google rewards accessible sites)
+- Improved UX for all users (keyboard shortcuts, focus indicators)
+
+---
+
+## 18. Internationalization (i18n) & Localization 🔥 **MEDIUM PRIORITY**
+
+### Current State
+- Mobile app has `intl` package (date/number formatting)
+- No multi-language support on web or backend
+- Hardcoded English strings throughout
+
+### Recommended Improvements
+
+#### 1. **Frontend i18n with react-i18next**
+
+```typescript
+// client/src/i18n/index.ts
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import Backend from 'i18next-http-backend';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+i18n
+  .use(Backend)
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    fallbackLng: 'en',
+    supportedLngs: ['en', 'sw', 'fr', 'pt'],
+    interpolation: { escapeValue: false },
+    backend: {
+      loadPath: '/locales/{{lng}}/{{ns}}.json',
+    },
+  });
+
+// Usage in components
+import { useTranslation } from 'react-i18next';
+
+function EventCard({ event }) {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <h2>{event.title}</h2>
+      <span>{t('event.registrations', { count: event.registrationCount })}</span>
+      <button>{t('event.registerNow')}</button>
+    </div>
+  );
+}
+```
+
+#### 2. **Priority Languages (African Market)**
+
+| Language | Markets | Users |
+|----------|---------|-------|
+| **English** | Kenya, Nigeria, Ghana, South Africa | Primary |
+| **Swahili** | Kenya, Tanzania, East Africa | High |
+| **French** | West/Central Africa (Senegal, Cameroon, Congo) | Medium |
+| **Portuguese** | Mozambique, Angola | Medium |
+| **Arabic** | North Africa (future expansion) | Low |
+
+#### 3. **Backend i18n for Emails and Notifications**
+
+```typescript
+// server/src/i18n/email-templates.ts
+const templates = {
+  en: {
+    bookingConfirmed: {
+      subject: 'Booking Confirmed — {{eventTitle}}',
+      body: 'Your registration for {{eventTitle}} is confirmed.',
+    },
+  },
+  sw: {
+    bookingConfirmed: {
+      subject: 'Tiketi Imethibitishwa — {{eventTitle}}',
+      body: 'Usajili wako kwa {{eventTitle}} umethibitishwa.',
+    },
+  },
+};
+```
+
+#### 4. **Mobile i18n with Flutter intl**
+
+```dart
+// Already have intl package — extend with ARB files
+// lib/l10n/app_en.arb, app_sw.arb, app_fr.arb
+{
+  "registerNow": "Register Now",
+  "eventDetails": "Event Details",
+  "ticketCount": "{count, plural, =0{No tickets} =1{1 ticket} other{{count} tickets}}"
+}
+```
+
+**Benefits:**
+- Access to 500M+ Swahili speakers across East Africa
+- Competitive advantage — most African event platforms are English-only
+- Required for government and NGO contracts in francophone Africa
+- Cost: ~2 weeks engineering + $5K-10K for professional translations
+
+---
+
+## 19. WebSocket Rate Limiting & Security 🔥 **HIGH PRIORITY**
+
+### Current State
+- Socket.IO connections authenticated via JWT
+- No connection rate limiting
+- No message rate limiting per client
+- No abuse detection
+
+### Recommended Improvements
+
+```typescript
+// server/src/middleware/websocket-rate-limit.ts
+import { Server, Socket } from 'socket.io';
+
+interface RateLimitConfig {
+  maxConnectionsPerIP: number;
+  maxMessagesPerMinute: number;
+  maxRoomsPerSocket: number;
+}
+
+const config: RateLimitConfig = {
+  maxConnectionsPerIP: 10,       // Max 10 sockets per IP
+  maxMessagesPerMinute: 120,     // Max 120 messages/min per socket
+  maxRoomsPerSocket: 5,          // Max 5 event rooms per socket
+};
+
+const ipConnectionCount = new Map<string, number>();
+const socketMessageCount = new Map<string, { count: number; resetAt: number }>();
+
+export function applyWebSocketRateLimiting(io: Server) {
+  // Connection rate limiting
+  io.use((socket: Socket, next) => {
+    const ip = socket.handshake.address;
+    const currentCount = ipConnectionCount.get(ip) || 0;
+
+    if (currentCount >= config.maxConnectionsPerIP) {
+      return next(new Error('Too many connections from this IP'));
+    }
+
+    ipConnectionCount.set(ip, currentCount + 1);
+    socket.on('disconnect', () => {
+      const count = ipConnectionCount.get(ip) || 1;
+      ipConnectionCount.set(ip, count - 1);
+    });
+
+    next();
+  });
+
+  // Message rate limiting
+  io.use((socket: Socket, next) => {
+    const originalEmit = socket.emit;
+    const originalOn = socket.on;
+
+    // Rate limit incoming messages
+    socket.on = function (event: string, listener: (...args: any[]) => void) {
+      return originalOn.call(this, event, (...args) => {
+        const now = Date.now();
+        const record = socketMessageCount.get(socket.id) || { count: 0, resetAt: now + 60000 };
+
+        if (now > record.resetAt) {
+          record.count = 0;
+          record.resetAt = now + 60000;
+        }
+
+        record.count++;
+        socketMessageCount.set(socket.id, record);
+
+        if (record.count > config.maxMessagesPerMinute) {
+          socket.emit('error', { message: 'Rate limit exceeded' });
+          return;
+        }
+
+        listener(...args);
+      });
+    } as any;
+
+    next();
+  });
+
+  // Room join limiting
+  io.on('connection', (socket) => {
+    let joinedRooms = 0;
+
+    socket.on('join-event', (eventId: string) => {
+      if (joinedRooms >= config.maxRoomsPerSocket) {
+        socket.emit('error', { message: 'Maximum room limit reached' });
+        return;
+      }
+      joinedRooms++;
+      socket.join(`event:${eventId}`);
+    });
+
+    socket.on('leave-event', (eventId: string) => {
+      joinedRooms = Math.max(0, joinedRooms - 1);
+      socket.leave(`event:${eventId}`);
+    });
+  });
+}
+```
+
+**Benefits:**
+- Prevents WebSocket connection exhaustion attacks
+- Limits resource consumption from misbehaving clients
+- Protects real-time infrastructure during high-traffic events
+- Cost: 1-2 days implementation
+
+---
+
+## 20. Backup, Disaster Recovery & Business Continuity 🔥 **HIGH PRIORITY**
+
+### Current State
+- Basic PostgreSQL backups via Docker volumes
+- No tested recovery procedures
+- No cross-region replication
+- No defined RPO/RTO targets
+
+### Recommended Strategy
+
+#### Recovery Targets
+
+| Metric | Target | Meaning |
+|--------|--------|---------|
+| **RPO** (Recovery Point Objective) | 1 hour | Maximum 1 hour of data loss acceptable |
+| **RTO** (Recovery Time Objective) | 30 minutes | Service must be restored within 30 minutes |
+| **Backup Retention** | 30 days daily + 12 months monthly | Full audit trail |
+
+#### Automated Backup Strategy
+
+```yaml
+# k8s/cronjobs/backup.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+spec:
+  schedule: "0 */4 * * *"  # Every 4 hours
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: backup
+            image: postgres:16-alpine
+            command:
+            - /bin/sh
+            - -c
+            - |
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              pg_dump -Fc $DATABASE_URL > /backups/eventknit_${TIMESTAMP}.dump
+              # Upload to S3
+              aws s3 cp /backups/eventknit_${TIMESTAMP}.dump \
+                s3://eventknit-backups/${ENVIRONMENT}/daily/
+              # Verify backup integrity
+              pg_restore --list /backups/eventknit_${TIMESTAMP}.dump > /dev/null 2>&1
+              if [ $? -eq 0 ]; then
+                echo "Backup verified: eventknit_${TIMESTAMP}.dump"
+              else
+                echo "BACKUP VERIFICATION FAILED" && exit 1
+              fi
+              # Cleanup local files older than 24h
+              find /backups -mtime +1 -delete
+            envFrom:
+            - secretRef:
+                name: database-secret
+          restartPolicy: OnFailure
+```
+
+#### Redis Backup
+
+```yaml
+# Redis AOF + RDB snapshots
+# redis.conf
+appendonly yes
+appendfsync everysec
+save 900 1        # Snapshot after 900s if 1+ keys changed
+save 300 10       # Snapshot after 300s if 10+ keys changed
+save 60 10000     # Snapshot after 60s if 10000+ keys changed
+```
+
+#### Disaster Recovery Runbook
+
+```markdown
+## DR Procedure — Database Failure
+
+1. Detect: Prometheus alert fires (pg_up == 0 for 2 minutes)
+2. Assess: Check if primary is recoverable or needs full restore
+3. Failover:
+   a. Promote read replica to primary: `pg_ctl promote`
+   b. Update DATABASE_URL in Kubernetes secrets
+   c. Restart API pods: `kubectl rollout restart deployment/eventknit-api`
+4. Restore (if no replica):
+   a. Spin up new PostgreSQL instance
+   b. Download latest backup: `aws s3 cp s3://eventknit-backups/latest.dump .`
+   c. Restore: `pg_restore -d eventknit latest.dump`
+   d. Apply WAL logs to minimize data loss
+5. Verify: Run smoke tests against restored database
+6. Notify: Post-incident communication to stakeholders
+```
+
+#### Quarterly DR Drills
+
+- Restore backup to staging environment
+- Verify data integrity (row counts, checksums)
+- Time the full recovery process
+- Document any gaps and update runbook
+
+**Benefits:**
+- Defined RPO/RTO gives stakeholders confidence
+- Automated backups eliminate human error
+- Tested recovery means faster actual recovery
+- Cost: ~$50/month for S3 backup storage
+
+---
+
+## 21. API Deprecation & Versioning Strategy 🔥 **MEDIUM PRIORITY**
+
+### Current State
+- All routes on `/api/v1`
+- No deprecation headers
+- No sunset timeline for endpoints
+
+### Recommended Strategy
+
+```typescript
+// server/src/middleware/deprecation.middleware.ts
+
+interface DeprecationConfig {
+  endpoint: string;
+  sunsetDate: string;        // ISO date when endpoint will be removed
+  replacement?: string;      // New endpoint to use
+  message?: string;
+}
+
+const deprecatedEndpoints: DeprecationConfig[] = [
+  // Example: when migrating to v2
+  {
+    endpoint: '/api/v1/events/search',
+    sunsetDate: '2027-01-01',
+    replacement: '/api/v2/search/events',
+    message: 'Use the new unified search API for better performance',
+  },
+];
+
+export function deprecationMiddleware(req: Request, res: Response, next: NextFunction) {
+  const deprecated = deprecatedEndpoints.find(d =>
+    req.path.startsWith(d.endpoint)
+  );
+
+  if (deprecated) {
+    // Standard HTTP deprecation headers (RFC 8594)
+    res.setHeader('Deprecation', 'true');
+    res.setHeader('Sunset', deprecated.sunsetDate);
+
+    if (deprecated.replacement) {
+      res.setHeader('Link', `<${deprecated.replacement}>; rel="successor-version"`);
+    }
+
+    // Custom header for client-side handling
+    res.setHeader('X-API-Deprecation-Message',
+      deprecated.message || `This endpoint will be removed on ${deprecated.sunsetDate}`
+    );
+  }
+
+  next();
+}
+```
+
+**Versioning Rules:**
+1. **Non-breaking changes** (new fields, new endpoints) — add to current version
+2. **Breaking changes** (field removal, type changes, behavior changes) — new version
+3. **Sunset timeline** — 6 months minimum from deprecation notice to removal
+4. **Migration guides** — Published in API docs for each breaking change
+5. **Client SDK versioning** — Mobile and web API clients maintain version compatibility
+
+**Benefits:**
+- Clients get advance warning before breaking changes
+- Standard HTTP headers enable automated tooling
+- Clear migration paths reduce support burden
+
+---
+
+## 22. Mobile App Release Management 🔥 **MEDIUM PRIORITY**
+
+### Current State
+- Manual app store submissions
+- No feature flags
+- No gradual rollout strategy
+- No over-the-air updates
+
+### Recommended Improvements
+
+#### 1. **Firebase Remote Config for Feature Flags**
+
+```dart
+// eventknit_mobile/lib/core/services/feature_flags.dart
+import 'package:firebase_remote_config/firebase_remote_config.dart';
+
+class FeatureFlags {
+  static final _remoteConfig = FirebaseRemoteConfig.instance;
+
+  static Future<void> initialize() async {
+    await _remoteConfig.setConfigSettings(RemoteConfigSettings(
+      fetchTimeout: const Duration(minutes: 1),
+      minimumFetchInterval: const Duration(hours: 1),
+    ));
+
+    await _remoteConfig.setDefaults({
+      'enable_organizer_dashboard': false,
+      'enable_offline_scanning': true,
+      'enable_walk_in_registration': false,
+      'max_offline_cache_hours': 24,
+      'scanning_batch_size': 50,
+    });
+
+    await _remoteConfig.fetchAndActivate();
+  }
+
+  static bool get enableOrganizerDashboard =>
+      _remoteConfig.getBool('enable_organizer_dashboard');
+
+  static bool get enableOfflineScanning =>
+      _remoteConfig.getBool('enable_offline_scanning');
+
+  static int get maxOfflineCacheHours =>
+      _remoteConfig.getInt('max_offline_cache_hours');
+}
+
+// Usage in UI
+if (FeatureFlags.enableOrganizerDashboard) {
+  // Show organizer tab in bottom navigation
+}
+```
+
+#### 2. **Staged Rollout Strategy**
+
+| Stage | Audience | Duration | Purpose |
+|-------|----------|----------|---------|
+| Internal | Team only (via Firebase App Distribution) | 1-2 days | Smoke testing |
+| Alpha | 1% of users (via Play Store staged rollout) | 2-3 days | Crash monitoring |
+| Beta | 10% of users | 3-5 days | Performance validation |
+| Production | 100% of users | — | Full release |
+
+**Rollback plan:** If crash rate exceeds 1% or critical bug reported → halt rollout, push hotfix, resume.
+
+#### 3. **Forced Update Mechanism**
+
+```dart
+// Check minimum app version on startup
+class VersionCheckService {
+  Future<VersionStatus> checkVersion() async {
+    final minVersion = await _remoteConfig.getString('min_app_version');
+    final currentVersion = await PackageInfo.fromPlatform();
+
+    if (isVersionBelow(currentVersion.version, minVersion)) {
+      return VersionStatus.forceUpdate;  // Show blocking update dialog
+    }
+
+    final recommendedVersion = await _remoteConfig.getString('recommended_app_version');
+    if (isVersionBelow(currentVersion.version, recommendedVersion)) {
+      return VersionStatus.suggestUpdate;  // Show dismissible update banner
+    }
+
+    return VersionStatus.upToDate;
+  }
+}
+```
+
+**Benefits:**
+- Gradual rollout catches issues before they affect all users
+- Feature flags enable A/B testing and kill switches
+- Forced update ensures security patches reach all devices
+- Cost: Free (Firebase Remote Config free tier is sufficient)
+
+---
+
+## 23. Smart Notification Routing & Optimization 🔥 **HIGH PRIORITY**
+
+### Current State
+- 54 notification types across 4 channels (email, SMS, push, in-app)
+- Notifications sent to all configured channels simultaneously
+- No delivery optimization or smart routing
+- No quiet hours or batching
+
+### Recommended Improvements
+
+#### 1. **Smart Channel Selection**
+
+```typescript
+// server/src/services/notification-router.service.ts
+
+interface NotificationRouting {
+  channels: ('email' | 'sms' | 'push' | 'inapp')[];
+  priority: 'urgent' | 'high' | 'medium' | 'low';
+  batchable: boolean;
+  quietHoursExempt: boolean;
+}
+
+const routingRules: Record<string, NotificationRouting> = {
+  // Urgent — all channels, bypass quiet hours
+  'payment.failed':        { channels: ['email', 'push', 'inapp'], priority: 'urgent', batchable: false, quietHoursExempt: true },
+  'security.alert':        { channels: ['email', 'sms', 'push', 'inapp'], priority: 'urgent', batchable: false, quietHoursExempt: true },
+
+  // High — primary channel + fallback
+  'registration.confirmed': { channels: ['email', 'push', 'inapp'], priority: 'high', batchable: false, quietHoursExempt: false },
+  'ticket.delivered':       { channels: ['email', 'inapp'], priority: 'high', batchable: false, quietHoursExempt: false },
+  'event.reminder.24h':     { channels: ['push', 'email'], priority: 'high', batchable: false, quietHoursExempt: false },
+
+  // Medium — single best channel
+  'event.update':           { channels: ['push', 'inapp'], priority: 'medium', batchable: true, quietHoursExempt: false },
+  'registration.milestone': { channels: ['inapp'], priority: 'medium', batchable: true, quietHoursExempt: false },
+
+  // Low — batch into digest
+  'marketing.newEvent':     { channels: ['email'], priority: 'low', batchable: true, quietHoursExempt: false },
+  'social.newFollower':     { channels: ['inapp'], priority: 'low', batchable: true, quietHoursExempt: false },
+};
+
+export class NotificationRouter {
+  async route(userId: string, type: string, payload: any) {
+    const rules = routingRules[type];
+    if (!rules) return;
+
+    const userPrefs = await this.getUserPreferences(userId);
+    const userTimezone = userPrefs.timezone || 'Africa/Nairobi';
+
+    // Check quiet hours (10 PM - 7 AM in user's timezone)
+    if (!rules.quietHoursExempt && this.isQuietHours(userTimezone)) {
+      if (rules.batchable) {
+        await this.addToDigest(userId, type, payload);
+        return;
+      }
+      // Non-batchable during quiet hours: send in-app only, defer others
+      await this.sendInApp(userId, type, payload);
+      await this.scheduleDeferred(userId, type, payload, '07:00', userTimezone);
+      return;
+    }
+
+    // Smart channel cascade: try push first, fall back to email if not delivered
+    for (const channel of rules.channels) {
+      if (!userPrefs.channels[channel]) continue; // User disabled this channel
+
+      const delivered = await this.send(userId, channel, type, payload);
+      if (delivered && channel === 'push') {
+        // Push delivered — skip email for non-urgent notifications
+        if (rules.priority !== 'urgent') break;
+      }
+    }
+  }
+
+  private isQuietHours(timezone: string): boolean {
+    const userHour = new Date().toLocaleString('en-US', {
+      timeZone: timezone, hour: 'numeric', hour12: false
+    });
+    const hour = parseInt(userHour);
+    return hour >= 22 || hour < 7;
+  }
+}
+```
+
+#### 2. **Notification Batching for Digests**
+
+```typescript
+// Batch low-priority notifications into daily/weekly digests
+export class NotificationDigestService {
+  // Run via cron: daily at 8 AM per user timezone
+  async sendDailyDigests() {
+    const usersWithDigests = await prisma.notificationDigest.findMany({
+      where: { sentAt: null },
+      groupBy: ['userId'],
+    });
+
+    for (const { userId } of usersWithDigests) {
+      const pending = await prisma.notificationDigest.findMany({
+        where: { userId, sentAt: null },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (pending.length === 0) continue;
+
+      await this.sendDigestEmail(userId, pending);
+      await prisma.notificationDigest.updateMany({
+        where: { userId, sentAt: null },
+        data: { sentAt: new Date() },
+      });
+    }
+  }
+}
+```
+
+**Benefits:**
+- 40% reduction in notification volume (batching + deduplication)
+- Higher open rates (right channel at right time)
+- Respects user preferences and sleep schedules
+- Reduces SMS costs (SMS only for truly urgent notifications)
+
+---
+
+## 24. Data Migration Strategy for Microservices 🔥 **MEDIUM PRIORITY**
+
+### Current State
+- Single PostgreSQL database with 152 models
+- All services share one database
+- Microservices migration planned (Section 1) but no data migration strategy
+
+### Challenge
+
+The hardest part of microservices migration is splitting the database without downtime. A monolith database with foreign key relationships across domains cannot be split overnight.
+
+### Recommended Approach: Strangler Fig Pattern
+
+```
+Phase 1: Dual Write                    Phase 2: Dual Read
+┌──────────┐                           ┌──────────┐
+│ Monolith │──write──▶ Monolith DB     │ Monolith │──read──▶ New Auth DB
+│          │──write──▶ New Auth DB     │          │──read──▶ Monolith DB (fallback)
+└──────────┘                           └──────────┘
+
+Phase 3: Cut Over                      Phase 4: Cleanup
+┌──────────┐                           ┌──────────┐  ┌────────────┐
+│Auth Svc  │──────▶ Auth DB            │Auth Svc  │──▶│  Auth DB   │
+│Monolith  │──────▶ Monolith DB        │Event Svc │──▶│  Event DB  │
+└──────────┘  (auth tables removed)    │Pay Svc   │──▶│  Payment DB│
+                                       └──────────┘  └────────────┘
+```
+
+#### Step-by-Step Migration (Auth Service Example)
+
+```typescript
+// Step 1: Create new Auth database
+// Run prisma migrate on auth-specific schema
+
+// Step 2: Dual-write middleware
+class DualWriteAuthRepository {
+  private monolithDb: PrismaClient;  // Old database
+  private authDb: PrismaClient;      // New database
+
+  async createUser(data: CreateUserDTO) {
+    // Write to both databases
+    const [monolithUser, authUser] = await Promise.all([
+      this.monolithDb.user.create({ data }),
+      this.authDb.user.create({ data }),
+    ]);
+
+    // Verify consistency
+    if (monolithUser.id !== authUser.id) {
+      logger.error('Dual-write inconsistency detected', {
+        monolithId: monolithUser.id,
+        authId: authUser.id,
+      });
+    }
+
+    return monolithUser; // Return monolith result during migration
+  }
+}
+
+// Step 3: Data backfill script
+async function backfillAuthDatabase() {
+  const batchSize = 1000;
+  let cursor: string | undefined;
+
+  while (true) {
+    const users = await monolithDb.user.findMany({
+      take: batchSize,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      select: { id: true, email: true, password: true, role: true, /* auth fields */ },
+    });
+
+    if (users.length === 0) break;
+
+    await authDb.user.createMany({
+      data: users,
+      skipDuplicates: true,
+    });
+
+    cursor = users[users.length - 1].id;
+    logger.info(`Backfilled ${users.length} users, cursor: ${cursor}`);
+  }
+}
+
+// Step 4: Verification
+async function verifyConsistency() {
+  const monolithCount = await monolithDb.user.count();
+  const authCount = await authDb.user.count();
+
+  if (monolithCount !== authCount) {
+    logger.error(`Count mismatch: monolith=${monolithCount}, auth=${authCount}`);
+    return false;
+  }
+
+  // Sample verification
+  const sample = await monolithDb.user.findMany({ take: 100, orderBy: { createdAt: 'desc' } });
+  for (const user of sample) {
+    const authUser = await authDb.user.findUnique({ where: { id: user.id } });
+    if (!authUser || authUser.email !== user.email) {
+      logger.error(`Data mismatch for user ${user.id}`);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Step 5: Switch reads to new database (feature flag)
+class AuthRepository {
+  async findUser(id: string) {
+    if (FeatureFlags.useNewAuthDB) {
+      return this.authDb.user.findUnique({ where: { id } });
+    }
+    return this.monolithDb.user.findUnique({ where: { id } });
+  }
+}
+
+// Step 6: Remove auth tables from monolith (after verification period)
+```
+
+#### Migration Order (by risk)
+
+| Service | Tables | Risk | Order |
+|---------|--------|------|-------|
+| **Auth** | User, Token, Session | Low (few FK deps) | 1st |
+| **Notification** | Notification, NotificationPreference | Low (leaf tables) | 2nd |
+| **Scanning** | TicketScan, Checkpoint, Facility | Medium (references Registration) | 3rd |
+| **Payment** | Transaction, PlatformFee, Disbursement | High (financial data) | 4th |
+| **Event** | Event, Registration, Ticket | Highest (core domain) | Last |
+
+**Benefits:**
+- Zero-downtime migration
+- Verifiable at every step
+- Rollback possible until final cutover
+- Estimated timeline: 2-3 months for auth + notification; 6-8 months for full extraction
+
+---
+
+## 18. Implementation Roadmap 🗺️
 
 ### Phase 1: Foundation (Months 1-2) 🔥 **CRITICAL**
 
@@ -4777,12 +5575,27 @@ const events = await api.events.eventsList({ page: 1, limit: 20 });
    - ✅ Add request validation
    - ✅ Setup WAF
    - ✅ Security audit logging
+   - ✅ WebSocket rate limiting and connection limits
+
+6. **Disaster Recovery** (Week 6-7)
+   - ✅ Automated PostgreSQL backups (4-hourly to S3)
+   - ✅ Redis AOF + RDB snapshot configuration
+   - ✅ Define RPO (1 hour) and RTO (30 minutes)
+   - ✅ DR runbook and quarterly drill schedule
+
+7. **Accessibility Baseline** (Week 7-8)
+   - ✅ Axe-core automated a11y testing in CI
+   - ✅ WCAG 2.1 AA audit for critical flows (registration, checkout, scanning)
+   - ✅ Keyboard navigation fixes for custom components
+   - ✅ Screen reader support for real-time scan feeds
 
 **Success Metrics:**
 - 99.9% uptime
 - < 500ms API response time (p95)
 - Zero critical security vulnerabilities
 - 100% test coverage for new code
+- RPO < 1 hour, RTO < 30 minutes
+- Zero WCAG AA violations on critical flows
 
 ---
 
@@ -4833,23 +5646,37 @@ const events = await api.events.eventsList({ page: 1, limit: 20 });
    - ✅ Scanning Service extraction (Go/Rust)
    - ✅ API Gateway implementation
 
-2. **Event-Driven Architecture** (Week 18-20)
+2. **Data Migration (Strangler Fig Pattern)** (Week 14-20, parallel with service extraction)
+   - ✅ Dual-write middleware for Auth → new Auth DB
+   - ✅ Data backfill scripts with consistency verification
+   - ✅ Feature-flagged read switching (monolith → service DB)
+   - ✅ Notification and Scanning data migration
+   - ✅ Payment data migration (highest risk — extended verification period)
+
+3. **Event-Driven Architecture** (Week 18-20)
    - ✅ Kafka/RabbitMQ setup
    - ✅ Event schema design
    - ✅ Producer/consumer implementation
    - ✅ Saga pattern for distributed transactions
 
-3. **Advanced Real-Time** (Week 20-22)
+4. **Advanced Real-Time** (Week 20-22)
    - ✅ Redis Streams migration
    - ✅ Server-Sent Events for dashboards
    - ✅ WebSocket scaling
    - ✅ Real-time analytics
+
+5. **API Versioning & Deprecation** (Week 22-23)
+   - ✅ Deprecation middleware with RFC 8594 headers
+   - ✅ `/api/v2` routes for microservices endpoints
+   - ✅ 6-month sunset timeline for deprecated v1 endpoints
+   - ✅ Migration guides published in API docs
 
 **Success Metrics:**
 - Independent service deployments
 - < 100ms event processing latency
 - 99.99% message delivery
 - Support 100K concurrent WebSocket connections
+- Zero data inconsistencies during migration (verified by consistency checks)
 
 ---
 
@@ -4874,12 +5701,29 @@ const events = await api.events.eventsList({ page: 1, limit: 20 });
    - ✅ Background sync
    - ✅ Performance optimizations
    - ✅ Advanced caching
+   - ✅ Firebase Remote Config for feature flags
+   - ✅ Staged rollout strategy (1% → 10% → 100%)
+   - ✅ Forced update mechanism
+
+4. **Internationalization** (Week 30-32)
+   - ✅ react-i18next integration on web
+   - ✅ Flutter ARB localization files
+   - ✅ Backend email/notification templates in Swahili and French
+   - ✅ Language detection and user preference storage
+
+5. **Smart Notification Routing** (Week 32-33)
+   - ✅ Channel cascade logic (push → email fallback)
+   - ✅ Quiet hours per user timezone
+   - ✅ Notification batching into daily/weekly digests
+   - ✅ Delivery tracking and optimization metrics
 
 **Success Metrics:**
 - 25% increase in user engagement
 - 15% increase in conversion rate
 - < 2s page load time
 - 90+ Lighthouse score
+- Swahili and French localization live
+- 40% reduction in notification volume via smart routing
 
 ---
 

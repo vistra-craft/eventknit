@@ -23,16 +23,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import { UserRole, UserStatus } from "@/types/auth";
 import { getEventStatusBadgeClass } from "@/lib/utils/event-badge-helpers";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
-import { useUploadAvatar } from "@/hooks/useUploadAvatar";
 
 const AdminProfilePage = () => {
 
   const { user, refreshProfile } = useAuth();
-  const uploadAvatarMutation = useUploadAvatar();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -113,11 +110,13 @@ const AdminProfilePage = () => {
     loadProfile();
   }, [user]);
 
+  const userHasPassword = user?.hasPassword !== false;
+
   // Validate password change form
   const validatePasswordForm = () => {
     const errors: Record<string, string> = {};
 
-    if (!passwordData.currentPassword.trim()) {
+    if (userHasPassword && !passwordData.currentPassword.trim()) {
       errors.currentPassword = "Current password is required";
     }
 
@@ -152,13 +151,17 @@ const AdminProfilePage = () => {
     setSaveMessage("");
 
     try {
-      await authApi.changePassword(
-        passwordData.currentPassword,
-        passwordData.newPassword
-      );
+      if (userHasPassword) {
+        await authApi.changePassword(
+          passwordData.currentPassword,
+          passwordData.newPassword
+        );
+      } else {
+        await authApi.setupPassword(passwordData.newPassword);
+      }
 
       setSaveStatus("success");
-      setSaveMessage("Password changed successfully");
+      setSaveMessage(userHasPassword ? "Password changed successfully" : "Password set successfully");
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -230,8 +233,9 @@ const AdminProfilePage = () => {
     }
   };
 
-  const handleAvatarChange = async (file: File) => {
-    await uploadAvatarMutation.mutateAsync(file);
+  const handleAvatarUploadComplete = async (url: string) => {
+    await authApi.updateProfile({ avatar: url });
+    await refreshProfile();
   };
 
   const getStatusBadge = (status: UserStatus) => {
@@ -248,12 +252,11 @@ const AdminProfilePage = () => {
   const getRoleLabel = (role: UserRole) => {
     const roleLabels: Record<UserRole, string> = {
       [UserRole.SUPERADMIN]: "Super Admin",
-      [UserRole.ADMIN_STAFF]: "Admin Staff",
-      [UserRole.MARKETER]: "Marketer",
+      [UserRole.ADMIN]: "Admin",
       [UserRole.SUPPORT]: "Support",
       [UserRole.TELLER]: "Teller",
       [UserRole.ORGANIZER]: "Organizer",
-      [UserRole.ORGANIZER_STAFF]: "Organizer Staff",
+      [UserRole.ORGANIZER_ADMIN]: "Organizer Admin",
       [UserRole.ORGANIZER_TELLER]: "Organizer Teller",
       [UserRole.ATTENDEE]: "Attendee",
     };
@@ -300,7 +303,7 @@ const AdminProfilePage = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Personal Information */}
@@ -322,9 +325,8 @@ const AdminProfilePage = () => {
                     {/* Profile Picture */}
                     <AvatarUpload
                       currentAvatar={user?.avatar}
-                      onAvatarChange={handleAvatarChange}
-                      isUploading={uploadAvatarMutation.isPending}
-                      userName={profileData.firstName && profileData.lastName ? `${profileData.firstName} ${profileData.lastName}` : "Admin"}
+                      onUploadComplete={handleAvatarUploadComplete}
+                      onRemove={() => authApi.updateProfile({ avatar: '' }).then(() => refreshProfile())}
                     />
 
                     {/* Form Fields */}
@@ -521,47 +523,55 @@ const AdminProfilePage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Key className="h-5 w-5 mr-2" />
-                  Change Password
+                  {userHasPassword ? "Change Password" : "Set Password"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="currentPassword"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter current password"
-                        value={passwordData.currentPassword}
-                        onChange={(e) => {
-                          setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }));
-                          if (passwordErrors.currentPassword) {
-                            setPasswordErrors((prev) => ({ ...prev, currentPassword: "" }));
-                          }
-                        }}
-                        disabled={isSaving}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
+                  {!userHasPassword && (
+                    <p className="text-sm text-muted-foreground">
+                      You signed up with a social account. Set a password to also log in with your email.
+                    </p>
+                  )}
+
+                  {userHasPassword && (
+                    <div>
+                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="currentPassword"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter current password"
+                          value={passwordData.currentPassword}
+                          onChange={(e) => {
+                            setPasswordData((prev) => ({ ...prev, currentPassword: e.target.value }));
+                            if (passwordErrors.currentPassword) {
+                              setPasswordErrors((prev) => ({ ...prev, currentPassword: "" }));
+                            }
+                          }}
+                          disabled={isSaving}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      {passwordErrors.currentPassword && (
+                        <p className="text-sm text-destructive mt-1">
+                          {passwordErrors.currentPassword}
+                        </p>
+                      )}
                     </div>
-                    {passwordErrors.currentPassword && (
-                      <p className="text-sm text-destructive mt-1">
-                        {passwordErrors.currentPassword}
-                      </p>
-                    )}
-                  </div>
+                  )}
 
                   <div>
                     <Label htmlFor="newPassword">New Password</Label>
@@ -648,7 +658,7 @@ const AdminProfilePage = () => {
                       ) : (
                         <Key className="h-4 w-4 mr-2" />
                       )}
-                      {isSaving ? "Changing Password..." : "Change Password"}
+                      {isSaving ? "Saving..." : userHasPassword ? "Change Password" : "Set Password"}
                     </Button>
                   </div>
                 </div>
@@ -656,10 +666,7 @@ const AdminProfilePage = () => {
             </Card>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <RoleSwitcher />
-          </div>
+
         </div>
       </div>
   );

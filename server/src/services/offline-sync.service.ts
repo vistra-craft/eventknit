@@ -5,6 +5,8 @@
 
 import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { WorkstationService } from './workstation.service.js';
+import { websocketService } from './websocket.service.js';
 
 export interface EventDataForOffline {
   event: {
@@ -46,7 +48,35 @@ export interface BatchScanInput {
   signatureValid: boolean;
   scannedAt: Date;
   scannedBy: string;
-  deviceInfo?: any;
+  deviceInfo?: Record<string, unknown>;
+}
+
+/** Payload shape sent by the mobile offline sync service */
+export interface SyncScanInput {
+  /** Mobile-generated UUID used for idempotency tracking */
+  id: string;
+  registrationId: string;
+  /** Raw QR code value (re-validated server-side) */
+  qrCode: string;
+  codeType: string;
+  signatureValid: boolean;
+  scannedAt: string; // ISO timestamp
+  scannedBy: string;
+  /** 'CHECK_IN' | 'CHECK_OUT' | 'MANUAL_CHECK_IN' | 'MANUAL_CHECK_OUT' */
+  scanType: string;
+  checkpointId?: string;
+  deviceInfo?: Record<string, unknown>;
+}
+
+export interface SyncScansResult {
+  successCount: number;
+  failureCount: number;
+  results: Array<{
+    id: string;
+    status: 'success' | 'failed';
+    errorCode?: string;
+    errorMessage?: string;
+  }>;
 }
 
 export interface BatchScanResult {
@@ -263,8 +293,8 @@ export class OfflineSyncService {
             scannedAt: new Date(scan.scannedAt),
             scanNumber: currentScanCount + 1,
             isValid: scan.signatureValid,
-            deviceId: scan.deviceInfo?.deviceId,
-            deviceType: scan.deviceInfo?.deviceType,
+            deviceId: scan.deviceInfo?.deviceId as string | null | undefined,
+            deviceType: scan.deviceInfo?.deviceType as string | null | undefined,
           },
         });
 
@@ -457,5 +487,94 @@ export class OfflineSyncService {
       userScansToday,
       lastUpdated: new Date(),
     };
+  }
+
+  /**
+   * Sync offline scans through the full check-in/check-out state machine.
+   *
+   * Unlike `processBatchScans` (which only records checkpoint-level data),
+   * this method drives `WorkstationService.scanTicket` / `checkOut` so that
+   * `EventRegistration.checkedInAt`, `isCurrentlyInside`, etc. are properly
+   * updated and WebSocket stats are pushed to the dashboard.
+   *
+   * Called by: POST /api/v1/offline/sync-scans
+   */
+  static async syncScansWithCheckIn(
+    scans: SyncScanInput[],
+    requestingUserId: string,
+  ): Promise<SyncScansResult> {
+    let successCount = 0;
+    let failureCount = 0;
+    const results: SyncScansResult['results'] = [];
+
+    for (const scan of scans) {
+      try {
+        const isCheckOut = scan.scanType === 'CHECK_OUT' || scan.scanType === 'MANUAL_CHECK_OUT';
+
+        // Resolve eventId from the registration (not trusting the mobile payload)
+        const registration = await prisma.eventRegistration.findUnique({
+          where: { id: scan.registrationId },
+          select: { eventId: true },
+        });
+
+        if (!registration) {
+          failureCount++;
+          results.push({ id: scan.id, status: 'failed', errorCode: 'INVALID_TICKET', errorMessage: 'Registration not found' });
+          continue;
+        }
+
+        const { eventId } = registration;
+        const deviceId = scan.deviceInfo?.deviceId as string | undefined;
+        const deviceType = scan.deviceInfo?.deviceType as string | undefined;
+
+        if (isCheckOut) {
+          const result = await WorkstationService.checkOut(
+            scan.registrationId,
+            requestingUserId,
+            undefined, // facility
+            deviceId,
+            deviceType,
+          );
+
+          if (result.success) {
+            successCount++;
+            results.push({ id: scan.id, status: 'success' });
+            await websocketService.sendStatisticsUpdate(eventId);
+          } else {
+            failureCount++;
+            results.push({ id: scan.id, status: 'failed', errorCode: result.errorCode, errorMessage: result.errorMessage });
+          }
+        } else {
+          // CHECK_IN / MANUAL_CHECK_IN — run full validation + state machine
+          const result = await WorkstationService.scanTicket(
+            scan.qrCode,
+            eventId,
+            requestingUserId,
+            undefined, // facility
+            deviceId,
+            deviceType,
+          );
+
+          if (result.success) {
+            successCount++;
+            results.push({ id: scan.id, status: 'success' });
+            await websocketService.sendStatisticsUpdate(eventId);
+          } else {
+            failureCount++;
+            results.push({ id: scan.id, status: 'failed', errorCode: result.errorCode, errorMessage: result.errorMessage });
+          }
+        }
+      } catch (error) {
+        failureCount++;
+        results.push({
+          id: scan.id,
+          status: 'failed',
+          errorCode: 'PROCESSING_ERROR',
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return { successCount, failureCount, results };
   }
 }

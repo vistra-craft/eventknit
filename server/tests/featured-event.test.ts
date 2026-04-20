@@ -7,30 +7,44 @@ import { logger } from '../src/utils/logger';
 import { generateAccessToken } from '../src/utils/jwt';
 import { cleanupTestData } from './test-helpers';
 
-const hashPassword = async (password: string): Promise<string> => {
+async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12);
-};
+}
 
 // Mock cloudinary package to prevent initialization
-jest.mock('cloudinary', () => ({
+vi.mock('cloudinary', () => ({
   v2: {
-    config: jest.fn(),
+    config: vi.fn(),
     uploader: {
-      upload_stream: jest.fn(),
-      destroy: jest.fn(),
+      upload_stream: vi.fn(),
+      destroy: vi.fn(),
     },
   },
 }));
 
+// Mock Geolocation service to avoid real HTTP calls (ipapi.co, ip-api.com)
+// These calls take ~3s each and always fail with "Reserved IP Address" in tests,
+// creating a timing window that can cause FK violations on audit logs.
+vi.mock('../src/services/geolocation.service.js', () => ({
+  GeolocationService: {
+    getLocationFromIP: vi.fn().mockResolvedValue({
+      country: 'Test Country',
+      countryCode: 'TC',
+      region: 'Test Region',
+      city: 'Test City',
+    }),
+  },
+}));
+
 // Mock Cloudinary service
-jest.mock('../src/services/cloudinary.service.js', () => ({
-  uploadImageToCloudinary: jest.fn().mockResolvedValue({
+vi.mock('../src/services/cloudinary.service.js', () => ({
+  uploadImageToCloudinary: vi.fn().mockResolvedValue({
     url: 'https://res.cloudinary.com/test/image/upload/v1234567890/test-image.jpg',
     publicId: 'featured-events/test-image',
     secureUrl: 'https://res.cloudinary.com/test/image/upload/v1234567890/test-image.jpg',
   }),
-  deleteImageFromCloudinary: jest.fn().mockResolvedValue(undefined),
-  extractPublicIdFromUrl: jest.fn((url: string) => {
+  deleteImageFromCloudinary: vi.fn().mockResolvedValue(undefined),
+  extractPublicIdFromUrl: vi.fn((url: string) => {
     const match = url.match(/\/upload\/.*\/(.+)$/);
     return match ? match[1] : null;
   }),
@@ -92,9 +106,7 @@ describe('Featured Events System', () => {
     if (!dbConnected) return;
 
     // Clean up in correct order to respect foreign keys
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test users
     const hashedPassword = await hashPassword('Test123!@$');
@@ -106,7 +118,7 @@ describe('Featured Events System', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -115,7 +127,7 @@ describe('Featured Events System', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },

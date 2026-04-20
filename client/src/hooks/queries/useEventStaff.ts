@@ -3,7 +3,7 @@ import { getEventStaff, type EventStaffAssignment } from '@/lib/admin-api';
 
 interface UseEventStaffOptions {
   role?: string;
-  staffType?: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+  staffType?: 'ADMIN' | 'ORGANIZER_ADMIN';
   isActive?: boolean;
 }
 
@@ -29,7 +29,7 @@ export function useEventStaff(eventId: string, options: UseEventStaffOptions = {
     queryFn: async () => {
       const filters: {
         role?: string;
-        staffType?: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+        staffType?: 'ADMIN' | 'ORGANIZER_ADMIN';
         isActive?: boolean;
       } = {};
 

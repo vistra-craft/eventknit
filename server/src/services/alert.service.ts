@@ -49,7 +49,7 @@ export class AlertService {
     const eventStaff = await prisma.eventStaff.findMany({
       where: {
         eventId: alert.eventId,
-        role: { in: ['SUPERADMIN', 'ADMIN_STAFF'] },
+        role: { in: ['SUPERADMIN', 'ADMIN'] },
       },
       select: {
         staffId: true,

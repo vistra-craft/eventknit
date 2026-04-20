@@ -250,7 +250,10 @@ export class AdminSecurityMiddleware {
    */
   static async checkAccess(req: AdminSecurityRequest, res: Response, next: NextFunction): Promise<void> {
     try {
-      const origin = req.get('origin') || req.get('referer');
+      // Use only the Origin header — never Referer.
+      // Referer includes the full path and is not a security boundary.
+      // Same-origin requests omit Origin entirely; those are handled by allowNoOrigin config.
+      const origin = req.get('origin') || undefined;
       const clientIP = AdminSecurityMiddleware.getClientIP(req);
 
       logger.debug('Admin security check', {

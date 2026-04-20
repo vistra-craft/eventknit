@@ -25,7 +25,7 @@ export class WorkstationController {
         return;
       }
 
-      const { code, eventId, facility, deviceId, deviceType } = req.body;
+      const { code, eventId, facility, deviceId, deviceType, sessionId } = req.body;
 
       // Validate required fields
       if (!code || typeof code !== 'string') {
@@ -34,6 +34,10 @@ export class WorkstationController {
 
       if (!eventId || typeof eventId !== 'string') {
         throw new ValidationError('Event ID is required and must be a string');
+      }
+
+      if (sessionId !== undefined && typeof sessionId !== 'string') {
+        throw new ValidationError('Session ID must be a string');
       }
 
       // Extract IP address and user agent
@@ -50,6 +54,8 @@ export class WorkstationController {
         deviceType,
         ipAddress,
         userAgent,
+        undefined,
+        sessionId,
       );
 
       if (!result.success) {
@@ -90,11 +96,19 @@ export class WorkstationController {
       const signatureValid = validation.signatureVerified ?? false;
 
       const responseData = {
+        success: true,
+        message: 'Ticket scanned successfully',
+        ticket: {
+          id: result.registrationId,
+          attendeeName: result.attendeeName,
+          ticketType: result.ticketType,
+          orderNumber: result.registrationId,
+          status: 'CHECKED_IN',
+          checkedInAt: result.checkedInAt,
+        },
         scanId: scanRecord?.id,
         registrationId: result.registrationId,
         eventId: result.eventId,
-        attendeeName: result.attendeeName,
-        ticketType: result.ticketType,
         scanType: scanRecord?.scanType,
         facility: facility || null,
         scannedAt: result.checkedInAt,
@@ -150,7 +164,7 @@ export class WorkstationController {
         return;
       }
 
-      const { code, eventId, facility } = req.body;
+      const { code, eventId, facility, sessionId } = req.body;
 
       // Validate required fields
       if (!code || typeof code !== 'string') {
@@ -159,6 +173,10 @@ export class WorkstationController {
 
       if (!eventId || typeof eventId !== 'string') {
         throw new ValidationError('Event ID is required and must be a string');
+      }
+
+      if (sessionId !== undefined && typeof sessionId !== 'string') {
+        throw new ValidationError('Session ID must be a string');
       }
 
       // Extract IP address and user agent
@@ -187,6 +205,8 @@ export class WorkstationController {
         undefined, // deviceType
         ipAddress,
         userAgent,
+        undefined,
+        sessionId,
       );
 
       if (!result.success) {
@@ -223,11 +243,15 @@ export class WorkstationController {
       const signatureValid = checkoutValidation.signatureVerified ?? false;
 
       const responseData = {
-        scanId: scanRecord?.id,
+        success: true,
+        message: 'Ticket checked out successfully',
         registrationId: result.registrationId,
+        checkedOutAt: result.checkedOutAt,
+        attendeeName: result.attendeeName,
+        ticketType: result.ticketType,
+        scanId: scanRecord?.id,
         scanType: scanRecord?.scanType,
         facility: facility || null,
-        checkedOutAt: result.checkedOutAt,
         signatureValid,
         codeType,
       };
@@ -369,7 +393,7 @@ export class WorkstationController {
   /**
    * Manual check-in
    * POST /api/v1/workstation/manual-check-in
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async manualCheckIn(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -384,7 +408,7 @@ export class WorkstationController {
         return;
       }
 
-      const { searchTerm, eventId, facility, code } = req.body;
+      const { searchTerm, eventId, facility, code, sessionId } = req.body;
 
       // Validate required fields
       if (!searchTerm || typeof searchTerm !== 'string') {
@@ -395,6 +419,10 @@ export class WorkstationController {
         throw new ValidationError('Event ID is required and must be a string');
       }
 
+      if (sessionId !== undefined && typeof sessionId !== 'string') {
+        throw new ValidationError('Session ID must be a string');
+      }
+
       // Call workstation service
       const result = await WorkstationService.manualCheckIn(
         searchTerm,
@@ -402,6 +430,8 @@ export class WorkstationController {
         req.user.id,
         facility,
         code,
+        undefined,
+        sessionId,
       );
 
       if (!result.success) {
@@ -443,11 +473,19 @@ export class WorkstationController {
       }
 
       const responseData = {
+        success: true,
+        message: 'Manual check-in successful',
+        ticket: {
+          id: result.registrationId,
+          attendeeName: result.attendeeName,
+          ticketType: result.ticketType,
+          orderNumber: result.registrationId,
+          status: 'CHECKED_IN',
+          checkedInAt: result.checkedInAt,
+        },
         scanId: scanRecord?.id,
         registrationId: result.registrationId,
         eventId: result.eventId,
-        attendeeName: result.attendeeName,
-        ticketType: result.ticketType,
         scanType: scanRecord?.scanType,
         facility: facility || null,
         checkedInAt: result.checkedInAt,
@@ -488,7 +526,7 @@ export class WorkstationController {
   /**
    * Manual check-out
    * POST /api/v1/workstation/manual-check-out
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async manualCheckOut(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -503,7 +541,7 @@ export class WorkstationController {
         return;
       }
 
-      const { searchTerm, eventId, facility, code } = req.body;
+      const { searchTerm, eventId, facility, code, sessionId } = req.body;
 
       // Validate required fields
       if (!searchTerm || typeof searchTerm !== 'string') {
@@ -514,6 +552,10 @@ export class WorkstationController {
         throw new ValidationError('Event ID is required and must be a string');
       }
 
+      if (sessionId !== undefined && typeof sessionId !== 'string') {
+        throw new ValidationError('Session ID must be a string');
+      }
+
       // Call workstation service
       const result = await WorkstationService.manualCheckOut(
         searchTerm,
@@ -521,6 +563,8 @@ export class WorkstationController {
         req.user.id,
         facility,
         code,
+        undefined,
+        sessionId,
       );
 
       if (!result.success) {
@@ -561,6 +605,8 @@ export class WorkstationController {
       const responseData = {
         scanId: scanRecord?.id,
         registrationId: result.registrationId,
+        attendeeName: result.attendeeName,
+        ticketType: result.ticketType,
         scanType: scanRecord?.scanType,
         facility: facility || null,
         checkedOutAt: result.checkedOutAt,
@@ -767,7 +813,7 @@ export class WorkstationController {
       }
 
       const eventId = (req.params.eventId as string) as string;
-      const { status, facility, search, page = '1', limit = '50' } = req.query;
+      const { status, checkedIn, facility, search, page = '1', limit = '50' } = req.query;
 
       if (!eventId) {
         throw new ValidationError('Event ID is required');
@@ -783,7 +829,22 @@ export class WorkstationController {
       };
 
       if (status && typeof status === 'string') {
-        where.ticketStatus = status as TicketStatus;
+        // Support both ticketStatus values and check-in pseudo-statuses
+        if (status === 'CHECKED_IN') {
+          where.checkedInAt = { not: null };
+        } else if (status === 'NOT_CHECKED_IN' || status === 'CONFIRMED') {
+          where.checkedInAt = null;
+          where.ticketStatus = 'ACTIVE';
+        } else {
+          where.ticketStatus = status as TicketStatus;
+        }
+      }
+
+      // Also support explicit checkedIn boolean param
+      if (checkedIn === 'true') {
+        where.checkedInAt = { not: null };
+      } else if (checkedIn === 'false') {
+        where.checkedInAt = null;
       }
 
       if (facility && typeof facility === 'string') {
@@ -801,8 +862,8 @@ export class WorkstationController {
         ];
       }
 
-      // Get attendees
-      const [attendees, total] = await Promise.all([
+      // Get attendees + total + checkedIn count
+      const [attendees, total, checkedInCount] = await Promise.all([
         prisma.eventRegistration.findMany({
           where,
           skip,
@@ -818,11 +879,15 @@ export class WorkstationController {
               },
             },
           },
-          orderBy: {
-            checkedInAt: 'desc',
-          },
+          orderBy: [
+            { checkedInAt: { sort: 'desc', nulls: 'last' } },
+            { createdAt: 'desc' },
+          ],
         }),
         prisma.eventRegistration.count({ where }),
+        prisma.eventRegistration.count({
+          where: { eventId, checkedInAt: { not: null } },
+        }),
       ]);
 
       res.status(200).json({
@@ -848,6 +913,7 @@ export class WorkstationController {
             qrCodeDataUrl: reg.qrCodeDataUrl,
             registrationData: reg.registrationData as Record<string, unknown> | null,
           })),
+          checkedInCount,
           pagination: {
             page: pageNum,
             limit: limitNum,
@@ -1067,9 +1133,131 @@ export class WorkstationController {
   }
 
   /**
+   * Record a badge print job
+   * POST /api/v1/workstation/events/:eventId/badge-prints
+   * Requires: TELLER or higher
+   */
+  static async createBadgePrint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required' } });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      if (!eventId) throw new ValidationError('Event ID is required');
+
+      const { registrationId, templateId } = req.body as { registrationId: unknown; templateId: unknown };
+
+      if (!registrationId || typeof registrationId !== 'string') {
+        throw new ValidationError('registrationId is required and must be a string');
+      }
+      if (!templateId || typeof templateId !== 'string') {
+        throw new ValidationError('templateId is required and must be a string');
+      }
+
+      // Verify registration belongs to this event
+      const registration = await prisma.eventRegistration.findFirst({
+        where: { id: registrationId, eventId },
+        select: { id: true },
+      });
+      if (!registration) {
+        throw new NotFoundError('Registration not found for this event');
+      }
+
+      const printerInfo = {
+        userId: req.user.id,
+        userAgent: req.headers['user-agent'] ?? null,
+      };
+
+      // Upsert: update existing job or create new one
+      const existing = await prisma.badgePrintJob.findFirst({
+        where: { eventId, registrationId },
+        select: { id: true },
+      });
+
+      let printJob;
+      if (existing) {
+        printJob = await prisma.badgePrintJob.update({
+          where: { id: existing.id },
+          data: {
+            templateId,
+            status: 'completed',
+            printedAt: new Date(),
+            printedBy: req.user.id,
+            printerInfo,
+          },
+          select: { id: true, registrationId: true, templateId: true, status: true, printedAt: true },
+        });
+      } else {
+        printJob = await prisma.badgePrintJob.create({
+          data: {
+            eventId,
+            registrationId,
+            templateId,
+            status: 'completed',
+            printedAt: new Date(),
+            printedBy: req.user.id,
+            printerInfo,
+          },
+          select: { id: true, registrationId: true, templateId: true, status: true, printedAt: true },
+        });
+      }
+
+      res.status(200).json({ success: true, data: { printJob } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get badge print status for an event (which registrations have been printed)
+   * GET /api/v1/workstation/events/:eventId/badge-prints
+   * Requires: TELLER or higher
+   */
+  static async getEventBadgePrints(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required' } });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      if (!eventId) throw new ValidationError('Event ID is required');
+
+      const printJobs = await prisma.badgePrintJob.findMany({
+        where: { eventId, status: 'completed' },
+        select: { registrationId: true, printedAt: true, printedBy: true, templateId: true },
+        orderBy: { printedAt: 'desc' },
+      });
+
+      // Deduplicate — one registration may have been reprinted multiple times
+      const seen = new Set<string>();
+      const printedRegistrationIds: string[] = [];
+      for (const job of printJobs) {
+        if (!seen.has(job.registrationId)) {
+          seen.add(job.registrationId);
+          printedRegistrationIds.push(job.registrationId);
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          printedRegistrationIds,
+          printJobs,
+          count: printedRegistrationIds.length,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Update event scan configuration
    * PUT /api/v1/workstation/events/:eventId/config
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async updateEventConfig(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -1149,6 +1337,56 @@ export class WorkstationController {
           scanSettings: updatedEvent.scanSettings,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Void / reverse a check-in
+   * POST /api/v1/workstation/registrations/:registrationId/void-checkin
+   * Requires: ADMIN or higher (reversals need supervisor privilege)
+   */
+  static async voidCheckIn(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, error: { code: 'AUTHENTICATION_REQUIRED', message: 'Authentication required' } });
+        return;
+      }
+
+      const registrationId = req.params.registrationId as string;
+      const { reason } = req.body as { reason?: string };
+
+      if (!registrationId) {
+        throw new ValidationError('Registration ID is required');
+      }
+
+      const result = await WorkstationService.voidCheckIn(registrationId, req.user.id, reason);
+
+      if (!result.success) {
+        res.status(400).json({
+          success: false,
+          error: { code: result.errorCode ?? 'VOID_ERROR', message: result.errorMessage ?? 'Void failed' },
+        });
+        return;
+      }
+
+      // Emit WebSocket events so the dashboard reflects the reversal immediately
+      if (result.eventId && result.scanId) {
+        websocketService.emitScanEvent(result.eventId, {
+          scanId: result.scanId,
+          registrationId,
+          eventId: result.eventId,
+          scanType: 'VOID' as ScanType,
+          facility: null,
+          scannedAt: new Date(),
+          attendeeName: result.attendeeName,
+          isReEntry: false,
+        });
+        await websocketService.sendStatisticsUpdate(result.eventId);
+      }
+
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }

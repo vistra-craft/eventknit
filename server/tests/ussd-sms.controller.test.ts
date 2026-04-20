@@ -5,13 +5,13 @@ import { USSDService } from '../src/services/ussd.service';
 import { logger } from '../src/utils/logger';
 
 // Mock dependencies
-jest.mock('../src/services/ussd-sms.service');
-jest.mock('../src/services/ussd.service');
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/services/ussd-sms.service');
+vi.mock('../src/services/ussd.service');
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
@@ -26,13 +26,13 @@ describe('USSDSMSController', () => {
       params: {},
     };
     mockResponse = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis(),
-      set: jest.fn().mockReturnThis(),
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis(),
+      send: vi.fn().mockReturnThis(),
+      set: vi.fn().mockReturnThis(),
     };
-    mockNext = jest.fn();
-    jest.clearAllMocks();
+    mockNext = vi.fn();
+    vi.clearAllMocks();
   });
 
   describe('handleIncomingSMS', () => {
@@ -43,7 +43,7 @@ describe('USSDSMSController', () => {
         MessageSid: 'SM123',
       };
 
-      (USSDSMSService.processIncomingSMS as jest.Mock).mockResolvedValue(undefined);
+      (USSDSMSService.processIncomingSMS as vi.Mock).mockResolvedValue(undefined);
 
       await USSDSMSController.handleIncomingSMS(
         mockRequest as Request,
@@ -70,7 +70,7 @@ describe('USSDSMSController', () => {
         messageId: 'MSG456',
       };
 
-      (USSDSMSService.processIncomingSMS as jest.Mock).mockResolvedValue(undefined);
+      (USSDSMSService.processIncomingSMS as vi.Mock).mockResolvedValue(undefined);
 
       await USSDSMSController.handleIncomingSMS(
         mockRequest as Request,
@@ -111,7 +111,7 @@ describe('USSDSMSController', () => {
         Body: 'REGISTER',
       };
 
-      (USSDSMSService.processIncomingSMS as jest.Mock).mockRejectedValue(
+      (USSDSMSService.processIncomingSMS as vi.Mock).mockRejectedValue(
         new Error('Processing error'),
       );
 
@@ -146,7 +146,7 @@ describe('USSDSMSController', () => {
         text: '1',
       };
 
-      (USSDService.handleRequest as jest.Mock).mockResolvedValue('END Registration complete');
+      (USSDService.handleRequest as vi.Mock).mockResolvedValue('END Registration complete');
 
       await USSDSMSController.handleUSSD(
         mockRequest as Request,
@@ -172,7 +172,7 @@ describe('USSDSMSController', () => {
         text: '',
       };
 
-      (USSDService.handleRequest as jest.Mock).mockResolvedValue('CON Welcome');
+      (USSDService.handleRequest as vi.Mock).mockResolvedValue('CON Welcome');
 
       await USSDSMSController.handleUSSD(
         mockRequest as Request,
@@ -213,7 +213,7 @@ describe('USSDSMSController', () => {
         text: '1',
       };
 
-      (USSDService.handleRequest as jest.Mock).mockRejectedValue(
+      (USSDService.handleRequest as vi.Mock).mockRejectedValue(
         new Error('Processing error'),
       );
 

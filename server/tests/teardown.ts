@@ -1,47 +1,39 @@
-// Global teardown file for Jest
+// Global teardown file for Vitest
 // This file runs after all tests complete
 // Note: Jobs should not be running during tests (they're only initialized in server.ts)
 // This teardown is a safety measure to ensure cleanup
 
-export default async function globalTeardown(): Promise<void> {
-  // Use a timeout to ensure this doesn't hang
+export async function teardown(): Promise<void> {
   const timeout = new Promise<void>((resolve) => {
-     
     setTimeout(() => {
-      console.log('⚠️  Teardown timeout - forcing exit');
+      console.log('Teardown timeout - forcing exit');
       resolve();
-    }, 5000); // 5 second timeout
+    }, 5000);
   });
 
-  const teardown = async () => {
+  const cleanup = async () => {
     try {
-      // Try to stop jobs if they exist (they shouldn't in test environment)
       try {
         const jobModule = await import('../src/jobs/index.js').catch(() => null);
         if (jobModule?.stopJobs) {
           jobModule.stopJobs();
         }
       } catch {
-        // Jobs module not available or jobs not running - this is expected
+        // Jobs module not available or jobs not running - expected
       }
 
-      // Try to close database connection
       try {
         const dbModule = await import('../src/config/database.js').catch(() => null);
         if (dbModule?.prisma) {
-          await dbModule.prisma.$disconnect().catch(() => {
-            // Already disconnected or error - ignore
-          });
+          await dbModule.prisma.$disconnect().catch(() => {});
         }
       } catch {
         // Database module not available - ignore
       }
-    } catch (_error) {
-      // Silently ignore all errors - we want tests to complete
+    } catch {
+      // Silently ignore all errors
     }
   };
 
-  // Race between teardown and timeout
-  await Promise.race([teardown(), timeout]);
+  await Promise.race([cleanup(), timeout]);
 }
-

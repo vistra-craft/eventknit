@@ -124,7 +124,35 @@ export const BADGE_SIZE_PRESETS: Record<BadgeSize, { width: number; height: numb
 
 // ==================== Default Templates (Fallback) ====================
 
-const DEFAULT_TEMPLATES: BadgeTemplate[] = [
+const SPEAKER_COLORS = {
+  dark: {
+    badge: '#1a1a1a',
+    labelText: '#1a1a1a',
+    labelBg: '#f5f5f5',
+    eventTitle: '#a3a3a3',
+    name: '#ffffff',
+    company: '#d4d4d4',
+    jobTitle: '#a3a3a3',
+  },
+  light: {
+    badge: '#f5f5f5',
+    labelText: '#f5f5f5',
+    labelBg: '#1a1a1a',
+    eventTitle: '#737373',
+    name: '#1a1a1a',
+    company: '#404040',
+    jobTitle: '#737373',
+  },
+};
+
+const getDefaultTemplates = (): BadgeTemplate[] => {
+  const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+  const s = isDark ? SPEAKER_COLORS.dark : SPEAKER_COLORS.light;
+  return DEFAULT_TEMPLATES_BASE(s);
+};
+
+ 
+const DEFAULT_TEMPLATES_BASE = (s: typeof SPEAKER_COLORS.dark): BadgeTemplate[] => [
   {
     id: 'default-standard',
     name: 'Standard Event Badge',
@@ -352,7 +380,7 @@ const DEFAULT_TEMPLATES: BadgeTemplate[] = [
     height: 76.2,
     sizePreset: '4x3',
     orientation: 'landscape',
-    backgroundColor: '#0d47a1',
+    backgroundColor: s.badge,
     elements: [
       {
         id: 'speaker-label',
@@ -366,8 +394,8 @@ const DEFAULT_TEMPLATES: BadgeTemplate[] = [
         fontFamily: 'Inter',
         fontWeight: 'bold',
         textAlign: 'center',
-        color: '#0d47a1',
-        backgroundColor: '#ffffff',
+        color: s.labelText,
+        backgroundColor: s.labelBg,
         borderRadius: 4,
         zIndex: 1,
       },
@@ -383,7 +411,7 @@ const DEFAULT_TEMPLATES: BadgeTemplate[] = [
         fontFamily: 'Inter',
         fontWeight: 'normal',
         textAlign: 'right',
-        color: '#bbdefb',
+        color: s.eventTitle,
         zIndex: 2,
       },
       {
@@ -398,7 +426,7 @@ const DEFAULT_TEMPLATES: BadgeTemplate[] = [
         fontFamily: 'Inter',
         fontWeight: 'bold',
         textAlign: 'left',
-        color: '#ffffff',
+        color: s.name,
         zIndex: 3,
       },
       {
@@ -413,7 +441,7 @@ const DEFAULT_TEMPLATES: BadgeTemplate[] = [
         fontFamily: 'Inter',
         fontWeight: 'normal',
         textAlign: 'left',
-        color: '#90caf9',
+        color: s.company,
         zIndex: 4,
       },
       {
@@ -428,7 +456,7 @@ const DEFAULT_TEMPLATES: BadgeTemplate[] = [
         fontFamily: 'Inter',
         fontWeight: 'normal',
         textAlign: 'left',
-        color: '#64b5f6',
+        color: s.jobTitle,
         zIndex: 5,
       },
       {
@@ -498,7 +526,7 @@ export const getBadgeTemplates = async (params?: {
       // Combine with defaults if requested
       const includeDefaults = params?.includeDefaults !== false;
       const allTemplates = includeDefaults
-        ? [...DEFAULT_TEMPLATES.filter(d => !templates.some(t => t.name === d.name)), ...templates]
+        ? [...getDefaultTemplates().filter(d => !templates.some(t => t.name === d.name)), ...templates]
         : templates;
 
       return {
@@ -510,14 +538,14 @@ export const getBadgeTemplates = async (params?: {
     // Fallback to defaults if API fails
     return {
       success: true,
-      data: { templates: DEFAULT_TEMPLATES },
+      data: { templates: getDefaultTemplates() },
     };
   } catch (error) {
     console.error('Error getting badge templates from API:', error);
     // Fallback to defaults
     return {
       success: true,
-      data: { templates: DEFAULT_TEMPLATES },
+      data: { templates: getDefaultTemplates() },
     };
   }
 };
@@ -530,7 +558,7 @@ export const getBadgeTemplateById = async (
 ): Promise<{ success: boolean; data: { template: BadgeTemplate | null } }> => {
   try {
     // Check defaults first (they have static IDs)
-    const defaultTemplate = DEFAULT_TEMPLATES.find(t => t.id === id);
+    const defaultTemplate = getDefaultTemplates().find(t => t.id === id);
     if (defaultTemplate) {
       return { success: true, data: { template: defaultTemplate } };
     }
@@ -599,7 +627,7 @@ export const updateBadgeTemplate = async (
 ): Promise<{ success: boolean; data: { template: BadgeTemplate } }> => {
   try {
     // If it's a default template, create a copy instead
-    const defaultTemplate = DEFAULT_TEMPLATES.find(t => t.id === id);
+    const defaultTemplate = getDefaultTemplates().find(t => t.id === id);
     if (defaultTemplate) {
       return createBadgeTemplate({
         ...defaultTemplate,
@@ -647,7 +675,7 @@ export const deleteBadgeTemplate = async (
 ): Promise<{ success: boolean }> => {
   try {
     // Cannot delete default templates
-    if (DEFAULT_TEMPLATES.some(t => t.id === id)) {
+    if (getDefaultTemplates().some(t => t.id === id)) {
       throw new Error('Cannot delete default templates');
     }
 
@@ -680,7 +708,7 @@ export const duplicateBadgeTemplate = async (
     }
 
     // Fallback for default templates
-    const defaultTemplate = DEFAULT_TEMPLATES.find(t => t.id === id);
+    const defaultTemplate = getDefaultTemplates().find(t => t.id === id);
     if (defaultTemplate) {
       return createBadgeTemplate({
         ...defaultTemplate,
@@ -748,13 +776,13 @@ export const getDefaultTemplate = async (params?: {
     // Fallback to first default template
     return {
       success: true,
-      data: { template: DEFAULT_TEMPLATES[0] },
+      data: { template: getDefaultTemplates()[0] },
     };
   } catch (error) {
     console.error('Error getting default template:', error);
     return {
       success: true,
-      data: { template: DEFAULT_TEMPLATES[0] },
+      data: { template: getDefaultTemplates()[0] },
     };
   }
 };

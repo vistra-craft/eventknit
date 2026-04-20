@@ -3,40 +3,40 @@ import { prisma } from '../../../src/config/database.js';
 import { SeatStatus } from '@prisma/client';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     eventRegistration: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     seatMap: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     seat: {
-      updateMany: jest.fn(),
-      update: jest.fn(),
+      updateMany: vi.fn(),
+      update: vi.fn(),
     },
     seatReservation: {
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
     },
-    $transaction: jest.fn(),
+    $transaction: vi.fn(),
   },
 }));
-jest.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/utils/logger.js');
 
 describe('SeatSelectionService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('reserveSeats', () => {
     it('should throw NotFoundError if registration not found', async () => {
       // Arrange
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -51,7 +51,7 @@ describe('SeatSelectionService', () => {
         eventId: 'event-2',
         event: { id: 'event-2' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       // Act & Assert
       await expect(
@@ -66,28 +66,28 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       const mockLockedSeats = [
         { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
       ];
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         const tx = {
-          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          $queryRaw: vi.fn().mockResolvedValue(mockLockedSeats),
           seatReservation: {
-            findFirst: jest.fn().mockResolvedValue(null), // No active reservations
-            findMany: jest.fn().mockResolvedValue([]), // No previous reservations
-            create: jest.fn().mockResolvedValue({
+            findFirst: vi.fn().mockResolvedValue(null), // No active reservations
+            findMany: vi.fn().mockResolvedValue([]), // No previous reservations
+            create: vi.fn().mockResolvedValue({
               id: 'reservation-1',
               seatId: 'seat-1',
               registrationId: 'reg-1',
               status: 'reserved',
             }),
-            updateMany: jest.fn(),
+            updateMany: vi.fn(),
           },
           seat: {
-            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+            updateMany: vi.fn().mockResolvedValue({ count: 1 }),
           },
         };
         return callback(tx);
@@ -111,18 +111,18 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       // Only 1 seat found when 2 were requested
       const mockLockedSeats = [
         { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
       ];
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         const tx = {
-          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
-          seatReservation: { findFirst: jest.fn(), findMany: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
-          seat: { updateMany: jest.fn() },
+          $queryRaw: vi.fn().mockResolvedValue(mockLockedSeats),
+          seatReservation: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), updateMany: vi.fn() },
+          seat: { updateMany: vi.fn() },
         };
         return callback(tx);
       });
@@ -140,22 +140,22 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       const mockLockedSeats = [
         { id: 'seat-1', seatIdentifier: 'A-1', status: 'BOOKED', basePrice: 100, currentPrice: 100 },
       ];
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         const tx = {
-          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          $queryRaw: vi.fn().mockResolvedValue(mockLockedSeats),
           seatReservation: {
-            findFirst: jest.fn(),
-            findMany: jest.fn().mockResolvedValue([]),
-            create: jest.fn(),
-            updateMany: jest.fn(),
+            findFirst: vi.fn(),
+            findMany: vi.fn().mockResolvedValue([]),
+            create: vi.fn(),
+            updateMany: vi.fn(),
           },
-          seat: { updateMany: jest.fn() },
+          seat: { updateMany: vi.fn() },
         };
         return callback(tx);
       });
@@ -173,26 +173,26 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       const mockLockedSeats = [
         { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
       ];
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         const tx = {
-          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          $queryRaw: vi.fn().mockResolvedValue(mockLockedSeats),
           seatReservation: {
-            findFirst: jest.fn().mockResolvedValue({
+            findFirst: vi.fn().mockResolvedValue({
               id: 'other-reservation',
               registrationId: 'reg-2', // Different registration
               status: 'reserved',
             }),
-            findMany: jest.fn().mockResolvedValue([]),
-            create: jest.fn(),
-            updateMany: jest.fn(),
+            findMany: vi.fn().mockResolvedValue([]),
+            create: vi.fn(),
+            updateMany: vi.fn(),
           },
-          seat: { updateMany: jest.fn() },
+          seat: { updateMany: vi.fn() },
         };
         return callback(tx);
       });
@@ -210,7 +210,7 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       const mockLockedSeats = [
         { id: 'seat-2', seatIdentifier: 'A-2', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
@@ -221,24 +221,24 @@ describe('SeatSelectionService', () => {
       ];
 
       const mockTxSeatReservation = {
-        findFirst: jest.fn()
+        findFirst: vi.fn()
           .mockResolvedValueOnce(null), // No active reservation by others on seat-2
-        findMany: jest.fn().mockResolvedValue(previousReservations),
-        create: jest.fn().mockResolvedValue({
+        findMany: vi.fn().mockResolvedValue(previousReservations),
+        create: vi.fn().mockResolvedValue({
           id: 'new-reservation',
           seatId: 'seat-2',
           registrationId: 'reg-1',
           status: 'reserved',
         }),
-        updateMany: jest.fn().mockResolvedValue({}),
+        updateMany: vi.fn().mockResolvedValue({}),
       };
       const mockTxSeat = {
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
       };
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         const tx = {
-          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          $queryRaw: vi.fn().mockResolvedValue(mockLockedSeats),
           seatReservation: mockTxSeatReservation,
           seat: mockTxSeat,
         };
@@ -266,7 +266,7 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       const mockLockedSeats = [
         { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 120 },
@@ -280,20 +280,20 @@ describe('SeatSelectionService', () => {
       };
 
       const mockTxSeatReservation = {
-        findFirst: jest.fn()
+        findFirst: vi.fn()
           .mockResolvedValueOnce(null) // No active reservation by others
           .mockResolvedValueOnce(existingReservation), // Existing reservation for this reg
-        findMany: jest.fn().mockResolvedValue([]), // No previous reservations to cancel
-        update: jest.fn().mockResolvedValue({ ...existingReservation, priceAtReservation: 120 }),
-        updateMany: jest.fn(),
-        create: jest.fn(),
+        findMany: vi.fn().mockResolvedValue([]), // No previous reservations to cancel
+        update: vi.fn().mockResolvedValue({ ...existingReservation, priceAtReservation: 120 }),
+        updateMany: vi.fn(),
+        create: vi.fn(),
       };
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         const tx = {
-          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          $queryRaw: vi.fn().mockResolvedValue(mockLockedSeats),
           seatReservation: mockTxSeatReservation,
-          seat: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+          seat: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
         };
         return callback(tx);
       });
@@ -320,31 +320,31 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       const mockLockedSeats = [
         { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
       ];
 
       const mockTxSeatReservation = {
-        findFirst: jest.fn()
+        findFirst: vi.fn()
           .mockResolvedValueOnce(null) // No active reservation by others
           .mockResolvedValueOnce(null), // No existing reservation for this reg
-        findMany: jest.fn().mockResolvedValue([]),
-        create: jest.fn().mockResolvedValue({
+        findMany: vi.fn().mockResolvedValue([]),
+        create: vi.fn().mockResolvedValue({
           id: 'new-res',
           seatId: 'seat-1',
           registrationId: 'reg-1',
           status: 'reserved',
         }),
-        updateMany: jest.fn(),
+        updateMany: vi.fn(),
       };
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         const tx = {
-          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          $queryRaw: vi.fn().mockResolvedValue(mockLockedSeats),
           seatReservation: mockTxSeatReservation,
-          seat: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+          seat: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
         };
         return callback(tx);
       });
@@ -372,7 +372,7 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       const mockLockedSeats = [
         { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
@@ -382,9 +382,9 @@ describe('SeatSelectionService', () => {
 
       let createCallCount = 0;
       const mockTxSeatReservation = {
-        findFirst: jest.fn().mockResolvedValue(null), // No active reservations by others, no existing
-        findMany: jest.fn().mockResolvedValue([]),
-        create: jest.fn().mockImplementation((args) => {
+        findFirst: vi.fn().mockResolvedValue(null), // No active reservations by others, no existing
+        findMany: vi.fn().mockResolvedValue([]),
+        create: vi.fn().mockImplementation((args) => {
           createCallCount++;
           return Promise.resolve({
             id: `new-res-${createCallCount}`,
@@ -393,14 +393,14 @@ describe('SeatSelectionService', () => {
             status: 'reserved',
           });
         }),
-        updateMany: jest.fn(),
+        updateMany: vi.fn(),
       };
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         const tx = {
-          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          $queryRaw: vi.fn().mockResolvedValue(mockLockedSeats),
           seatReservation: mockTxSeatReservation,
-          seat: { updateMany: jest.fn().mockResolvedValue({ count: 3 }) },
+          seat: { updateMany: vi.fn().mockResolvedValue({ count: 3 }) },
         };
         return callback(tx);
       });
@@ -424,7 +424,7 @@ describe('SeatSelectionService', () => {
         eventId: 'event-1',
         event: { id: 'event-1' },
       };
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(mockRegistration);
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(mockRegistration);
 
       const mockLockedSeats = [
         { id: 'seat-1', seatIdentifier: 'A-1', status: 'AVAILABLE', basePrice: 100, currentPrice: 100 },
@@ -432,19 +432,19 @@ describe('SeatSelectionService', () => {
 
       let capturedReservedUntil: Date | null = null;
 
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (callback) => {
         const tx = {
-          $queryRaw: jest.fn().mockResolvedValue(mockLockedSeats),
+          $queryRaw: vi.fn().mockResolvedValue(mockLockedSeats),
           seatReservation: {
-            findFirst: jest.fn().mockResolvedValue(null),
-            findMany: jest.fn().mockResolvedValue([]),
-            create: jest.fn().mockImplementation((args) => {
+            findFirst: vi.fn().mockResolvedValue(null),
+            findMany: vi.fn().mockResolvedValue([]),
+            create: vi.fn().mockImplementation((args) => {
               capturedReservedUntil = args.data.reservedUntil;
               return Promise.resolve({ id: 'res-1', status: 'reserved' });
             }),
-            updateMany: jest.fn(),
+            updateMany: vi.fn(),
           },
-          seat: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+          seat: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
         };
         return callback(tx);
       });
@@ -465,8 +465,8 @@ describe('SeatSelectionService', () => {
   describe('confirmSeatReservation', () => {
     it('should throw NotFoundError if no reservations found', async () => {
       // Arrange
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.seatReservation.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.seatReservation.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -476,8 +476,8 @@ describe('SeatSelectionService', () => {
 
     it('should return existing confirmation if already confirmed', async () => {
       // Arrange
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue([]); // No reserved ones
-      (prisma.seatReservation.findFirst as jest.Mock).mockResolvedValue({
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue([]); // No reserved ones
+      (prisma.seatReservation.findFirst as vi.Mock).mockResolvedValue({
         id: 'reservation-1',
         status: 'confirmed',
         seat: { id: 'seat-1' },
@@ -499,10 +499,10 @@ describe('SeatSelectionService', () => {
         { id: 'res-2', seatId: 'seat-2', status: 'reserved', seat: { id: 'seat-2' } },
       ];
 
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(mockReservations);
-      (prisma.seatReservation.updateMany as jest.Mock).mockResolvedValue({ count: 2 });
-      (prisma.seat.updateMany as jest.Mock).mockResolvedValue({ count: 2 });
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{ count: 2 }, { count: 2 }]);
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue(mockReservations);
+      (prisma.seatReservation.updateMany as vi.Mock).mockResolvedValue({ count: 2 });
+      (prisma.seat.updateMany as vi.Mock).mockResolvedValue({ count: 2 });
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{ count: 2 }, { count: 2 }]);
 
       // Act
       const result = await SeatSelectionService.confirmSeatReservation('reg-1');
@@ -519,7 +519,7 @@ describe('SeatSelectionService', () => {
   describe('cancelSeatReservation', () => {
     it('should throw NotFoundError if no reservations found', async () => {
       // Arrange
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act & Assert
       await expect(
@@ -534,8 +534,8 @@ describe('SeatSelectionService', () => {
         { id: 'res-2', seatId: 'seat-2', seat: { id: 'seat-2' } },
       ];
 
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(mockReservations);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{ count: 2 }, { count: 2 }]);
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue(mockReservations);
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{ count: 2 }, { count: 2 }]);
 
       // Act
       const result = await SeatSelectionService.cancelSeatReservation('reg-1');
@@ -555,8 +555,8 @@ describe('SeatSelectionService', () => {
         { id: 'res-2', seatId: 'seat-2', status: 'confirmed', seat: { id: 'seat-2' } },
       ];
 
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(mockReservations);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue(mockReservations);
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{}, {}]);
 
       // Act
       await SeatSelectionService.cancelSeatReservation('reg-1');
@@ -606,7 +606,7 @@ describe('SeatSelectionService', () => {
         },
       ];
 
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(mockReservations);
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue(mockReservations);
 
       // Act
       const result = await SeatSelectionService.getSeatSelection('reg-1');
@@ -624,7 +624,7 @@ describe('SeatSelectionService', () => {
 
     it('should return empty array if no reservations found', async () => {
       // Arrange
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       const result = await SeatSelectionService.getSeatSelection('reg-1');
@@ -637,7 +637,7 @@ describe('SeatSelectionService', () => {
   describe('getSeatMapAvailability', () => {
     it('should throw NotFoundError if seat map not found', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -687,7 +687,7 @@ describe('SeatSelectionService', () => {
         ],
       };
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
 
       // Act
       const result = await SeatSelectionService.getSeatMapAvailability('event-1');
@@ -722,7 +722,7 @@ describe('SeatSelectionService', () => {
         ],
       };
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
 
       // Act
       const result = await SeatSelectionService.getSeatMapAvailability('event-1');
@@ -735,7 +735,7 @@ describe('SeatSelectionService', () => {
   describe('cleanupExpiredReservations', () => {
     it('should return 0 if no expired reservations', async () => {
       // Arrange
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       const result = await SeatSelectionService.cleanupExpiredReservations();
@@ -761,8 +761,8 @@ describe('SeatSelectionService', () => {
         },
       ];
 
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(expiredReservations);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue(expiredReservations);
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{}, {}]);
 
       // Act
       const result = await SeatSelectionService.cleanupExpiredReservations();
@@ -791,8 +791,8 @@ describe('SeatSelectionService', () => {
         },
       ];
 
-      (prisma.seatReservation.findMany as jest.Mock).mockResolvedValue(expiredReservations);
-      (prisma.$transaction as jest.Mock).mockImplementation((operations) => {
+      (prisma.seatReservation.findMany as vi.Mock).mockResolvedValue(expiredReservations);
+      (prisma.$transaction as vi.Mock).mockImplementation((operations) => {
         // Verify the transaction operations
         expect(operations).toHaveLength(2);
         return Promise.resolve([{}, {}]);
@@ -802,7 +802,7 @@ describe('SeatSelectionService', () => {
       await SeatSelectionService.cleanupExpiredReservations();
 
       // Assert
-      const transactionCalls = (prisma.$transaction as jest.Mock).mock.calls[0][0];
+      const transactionCalls = (prisma.$transaction as vi.Mock).mock.calls[0][0];
       expect(transactionCalls).toHaveLength(2); // updateMany reservations + updateMany seats
     });
   });

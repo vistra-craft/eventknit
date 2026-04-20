@@ -7,41 +7,41 @@ import { OrganizerService } from '../src/services/organizer.service';
 import { prisma } from '../src/config/database';
 
 // Mock database
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     event: {
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
     },
     user: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
   },
 }));
 
 // Mock logger
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    error: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn(),
-    warn: jest.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
 const prismaMock = prisma as unknown as {
   event: {
-    findMany: jest.Mock;
-    findFirst: jest.Mock;
+    findMany: vi.Mock;
+    findFirst: vi.Mock;
   };
   user: {
-    findUnique: jest.Mock;
+    findUnique: vi.Mock;
   };
 };
 
 describe('OrganizerService.getDashboardAccessTier', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Tier 0 - No events', () => {
@@ -248,7 +248,7 @@ describe('OrganizerService.getDashboardAccessTier', () => {
 
 describe('OrganizerService.hasApprovedEvent', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should return true when organizer has an approved event', async () => {

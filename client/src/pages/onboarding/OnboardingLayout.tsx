@@ -11,7 +11,7 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 
 interface OnboardingLayoutProps {
   children: ReactNode;
@@ -108,7 +108,7 @@ export const OnboardingLayout = ({
         </div>
 
         {/* Content */}
-        <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
+        <div className="bg-card border border-border rounded-2xl p-4 sm:p-6 md:p-8 shadow-sm">
           {children}
         </div>
       </div>

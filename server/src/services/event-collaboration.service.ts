@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError, AuthorizationError } from '../utils/errors.js';
 
@@ -19,13 +20,14 @@ export class EventCollaborationService {
       canManageStaff?: boolean;
       canPublish?: boolean;
     },
+    isAdmin = false,
   ) {
     try {
-      // Verify event belongs to organizer
+      // Verify event belongs to organizer (admins bypass ownership check)
       const event = await prisma.event.findFirst({
         where: {
           id: eventId,
-          organizerId,
+          ...(isAdmin ? {} : { organizerId }),
           deletedAt: null,
         },
       });
@@ -133,9 +135,9 @@ export class EventCollaborationService {
   /**
    * Get event collaborators
    */
-  static async getEventCollaborators(eventId: string, organizerId: string) {
+  static async getEventCollaborators(eventId: string, organizerId: string, isAdmin = false) {
     try {
-      // Verify organizer owns the event or is a collaborator
+      // Verify organizer owns the event or is a collaborator (admins bypass)
       const event = await prisma.event.findFirst({
         where: {
           id: eventId,
@@ -147,17 +149,19 @@ export class EventCollaborationService {
         throw new NotFoundError('Event not found');
       }
 
-      const isOwner = event.organizerId === organizerId;
-      const isCollaborator = await prisma.eventCollaborator.findFirst({
-        where: {
-          eventId,
-          collaboratorId: organizerId,
-          isActive: true,
-        },
-      });
+      if (!isAdmin) {
+        const isOwner = event.organizerId === organizerId;
+        const isCollaborator = await prisma.eventCollaborator.findFirst({
+          where: {
+            eventId,
+            collaboratorId: organizerId,
+            isActive: true,
+          },
+        });
 
-      if (!isOwner && !isCollaborator) {
-        throw new AuthorizationError('You do not have permission to view collaborators');
+        if (!isOwner && !isCollaborator) {
+          throw new AuthorizationError('You do not have permission to view collaborators');
+        }
       }
 
       const collaborators = await prisma.eventCollaborator.findMany({
@@ -325,7 +329,11 @@ export class EventCollaborationService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: {
+        eventId: string;
+        action?: string;
+        userId?: string;
+      } = {
         eventId,
       };
 
@@ -378,7 +386,7 @@ export class EventCollaborationService {
     eventId: string,
     userId: string,
     action: string,
-    metadata?: any,
+    metadata?: Record<string, unknown>,
     ipAddress?: string,
     userAgent?: string,
   ) {
@@ -389,7 +397,7 @@ export class EventCollaborationService {
           userId,
           action,
           description: this.getActionDescription(action, metadata),
-          changes: metadata,
+          changes: metadata as unknown as Prisma.InputJsonValue,
           ipAddress,
           userAgent,
         },
@@ -403,7 +411,7 @@ export class EventCollaborationService {
   /**
    * Get action description
    */
-  private static getActionDescription(action: string, metadata?: any): string {
+  private static getActionDescription(action: string, metadata?: Record<string, unknown>): string {
     const descriptions: Record<string, string> = {
       collaborator_invited: `Invited ${metadata?.collaboratorId} as ${metadata?.role || 'collaborator'}`,
       collaboration_accepted: 'Accepted collaboration invitation',

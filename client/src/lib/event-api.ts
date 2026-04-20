@@ -42,6 +42,9 @@ export interface EventFilters {
   type?: EventType;
   dateFrom?: string; // ISO date string - filter events starting from this date
   dateTo?: string; // ISO date string - filter events starting before this date
+  declinedOrRecalledCancelled?: boolean; // REJECTED or (CANCELLED + recalledAt)
+  recalledCancelled?: boolean; // CANCELLED + recalledAt (recalled events only)
+  recalledPending?: boolean; // PENDING + recalledAt
 }
 
 /**
@@ -100,7 +103,7 @@ export interface CreateEventData {
   imageFocalY?: number;
   images?: string[];
   type?: EventType;
-  requirements?: string[];
+  requirements?: string[] | string;
   ageRestriction?: string;
   duration?: string;
   speakers?: Array<{
@@ -183,10 +186,7 @@ export interface RegisterForEventData {
   seatIds?: string[];
   // Consent data
   consent?: {
-    operationalConsent?: boolean; // Default: true (required)
     marketingConsent?: boolean;
-    demographicsConsent?: boolean;
-    analyticsConsent?: boolean;
   };
 }
 
@@ -224,6 +224,7 @@ export interface RegisterEventResponse {
   success: boolean;
   message: string;
   data: {
+    resumedPendingPayment?: boolean;
     registration: {
       id: string;
       eventId: string;
@@ -255,6 +256,26 @@ export interface EventRegistrationsResponse {
       paymentMethod?: string | null;
       paymentTransactionId?: string | null;
       createdAt: string;
+      /** Custom form fields submitted by the attendee */
+      registrationData?: Record<string, unknown> | null;
+      /** Per-ticket-type breakdown */
+      ticketLineItems?: Array<{
+        ticketType: string;
+        quantity: number;
+        unitPrice?: number;
+        totalPrice?: number;
+      }>;
+      /** Latest payment transaction details (FULL tier only) */
+      paymentTransaction?: {
+        id: string;
+        transactionNumber: string;
+        gatewayReference: string;
+        gateway: string;
+        amount: number;
+        currency: string;
+        paymentStatus: string;
+        paymentDate: string;
+      } | null;
       user?: {
         id: string;
         email: string;
@@ -295,6 +316,10 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
   // Date range filtering
   if (filters?.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
   if (filters?.dateTo) queryParams.append('dateTo', filters.dateTo);
+  // Special status filters
+  if (filters?.declinedOrRecalledCancelled) queryParams.append('declinedOrRecalledCancelled', 'true');
+  if (filters?.recalledCancelled) queryParams.append('recalledCancelled', 'true');
+  if (filters?.recalledPending) queryParams.append('recalledPending', 'true');
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/events?${queryString}` : '/events';
@@ -519,10 +544,7 @@ export interface RegisterAsGuestData {
   registrationData?: Record<string, unknown>;
   // Consent data
   consent?: {
-    operationalConsent?: boolean; // Default: true (required)
     marketingConsent?: boolean;
-    demographicsConsent?: boolean;
-    analyticsConsent?: boolean;
   };
 }
 
@@ -530,6 +552,7 @@ export interface RegisterAsGuestResponse {
   success: boolean;
   message: string;
   data: {
+    resumedPendingPayment?: boolean;
     registration: {
       id: string;
       eventId: string;
@@ -547,11 +570,9 @@ export interface RegisterAsGuestResponse {
       firstName: string;
       lastName: string;
       isNewUser: boolean;
-      requiresPasswordSetup: boolean;
+      requiresPasswordSetup?: boolean;
     };
     accessToken?: string;
-    refreshToken?: string;
-    expiresIn?: number;
   };
 }
 
@@ -625,6 +646,7 @@ export interface UserRegisteredEventsResponse {
   data: {
     events: Array<{
       id: string;
+      slug?: string | null;
       title: string;
       date: string;
       location: string;
@@ -639,6 +661,9 @@ export interface UserRegisteredEventsResponse {
       registrationId?: string;
       ticketType?: string;
       backupCode?: string;
+      ticketEmailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null;
+      ticketEmailSentAt?: string | null;
+      ticketEmailError?: string | null;
     }>;
     total?: number;
     page?: number;

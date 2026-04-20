@@ -13,6 +13,7 @@ import {
   isTicketTypeAvailable
 } from '@/utils/ticket-helpers';
 import { apiPost } from '@/lib/api';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 interface PromoValidationResponse {
   success: boolean;
@@ -93,7 +94,7 @@ export const TicketSelectionStep = ({
         setPromoError((response as { message?: string }).message || 'Invalid promo code');
       }
     } catch (err) {
-      setPromoError(err instanceof Error ? err.message : 'Invalid promo code');
+      setPromoError(extractErrorMessage(err, 'Unable to validate promo code. Please try again.'));
     } finally {
       setPromoLoading(false);
     }
@@ -165,12 +166,12 @@ export const TicketSelectionStep = ({
                         {currency} {ticket.originalPrice}
                       </span>
                       <span className="font-bold text-lg text-primary">
-                        {currency} {ticket.price}
+                        {ticket.price === 0 ? 'Free' : `${currency} ${ticket.price}`}
                       </span>
                     </div>
                   ) : (
                     <p className="font-bold text-lg text-primary">
-                      {currency} {ticket.price}
+                      {ticket.price === 0 ? 'Free' : `${currency} ${ticket.price}`}
                     </p>
                   )}
                 </div>
@@ -211,11 +212,11 @@ export const TicketSelectionStep = ({
                 </span>
 
                 {/* Quantity Selector */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:gap-2">
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 sm:h-8 sm:w-8"
                     onClick={() => updateQuantity(ticket.name, -1)}
                     disabled={!quantity}
                   >
@@ -225,7 +226,7 @@ export const TicketSelectionStep = ({
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-9 w-9 sm:h-8 sm:w-8"
                     onClick={() => updateQuantity(ticket.name, 1)}
                     disabled={
                       !isAvailable ||
@@ -294,7 +295,7 @@ export const TicketSelectionStep = ({
             <>
               <div className="flex justify-between items-center text-sm text-muted-foreground">
                 <span>Subtotal</span>
-                <span>{currency} {subtotal.toFixed(2)}</span>
+                <span>{subtotal === 0 ? 'Free' : `${currency} ${subtotal.toFixed(2)}`}</span>
               </div>
               <div className="flex justify-between items-center text-sm text-success">
                 <span>Discount ({promoDiscount.code})</span>
@@ -305,7 +306,7 @@ export const TicketSelectionStep = ({
           <div className="flex justify-between items-center">
             <span className="text-lg font-semibold">Total</span>
             <span className="text-2xl font-bold text-primary">
-              {currency} {totalPrice.toFixed(2)}
+              {totalPrice === 0 ? 'Free' : `${currency} ${totalPrice.toFixed(2)}`}
             </span>
           </div>
         </div>

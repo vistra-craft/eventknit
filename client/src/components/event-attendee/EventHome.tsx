@@ -1,16 +1,11 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   MapPin,
   Clock,
   Globe,
-  Building2,
-  CalendarDays,
-  Heart,
-  BadgeCheck,
   ExternalLink,
-  ChevronRight,
   Twitter,
   Facebook,
   Instagram,
@@ -18,40 +13,25 @@ import {
   Youtube,
   Github,
   Globe2,
+  Timer,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
+import { RichTextContent } from "@/components/ui/RichTextContent";
+import { EventMap } from '@/components/events/EventMap';
 import type { EventData, User, Sponsor } from "./EventAttendeeView";
-
-type TabKey = 'home' | 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge';
-
-interface TabConfig {
-  key: TabKey;
-  label: string;
-  icon: React.ElementType;
-  available: boolean;
-}
 
 interface EventHomeProps {
   event: EventData;
   user: User;
-  onNavigate: (tab: 'home' | 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge') => void;
-  availableTabs: TabConfig[];
 }
 
-// Quick action config - minimalist card style (like Exhibitors)
-const quickActionConfig = {
-  agenda: { label: 'Agenda', icon: CalendarDays, description: 'View schedule' },
-  exhibitors: { label: 'Exhibitors', icon: Building2, description: 'Browse booths' },
-  'my-event': { label: 'My Event', icon: Heart, description: 'Your registration' },
-  'my-badge': { label: 'My Badge', icon: BadgeCheck, description: 'View ticket' },
-};
+// ─── Sponsor helpers ──────────────────────────────────────────────────────────
 
-// Sponsor tier order for display
 const sponsorTierOrder: Sponsor['level'][] = [
-  'title', 'presenting', 'platinum', 'gold', 'silver', 'bronze', 'associate', 'community'
+  'title', 'presenting', 'platinum', 'gold', 'silver', 'bronze', 'associate', 'community',
 ];
 
 const sponsorTierLabels: Record<Sponsor['level'], string> = {
@@ -65,7 +45,6 @@ const sponsorTierLabels: Record<Sponsor['level'], string> = {
   community: 'Community Partner',
 };
 
-// Social link icon and label mapping
 const socialPlatformConfig: Record<string, { icon: React.ElementType; label: string }> = {
   twitter: { icon: Twitter, label: 'Twitter' },
   x: { icon: Twitter, label: 'X (Twitter)' },
@@ -77,18 +56,114 @@ const socialPlatformConfig: Record<string, { icon: React.ElementType; label: str
   website: { icon: Globe2, label: 'Website' },
 };
 
+// ─── Countdown hook ───────────────────────────────────────────────────────────
+
+interface CountdownParts {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  isStarted: boolean;
+  isOver: boolean;
+}
+
+function useCountdown(eventDate: string, endDate?: string): CountdownParts {
+  const compute = (): CountdownParts => {
+    const now = Date.now();
+    const start = new Date(eventDate).getTime();
+    const end = endDate ? new Date(endDate).getTime() : start + 24 * 60 * 60 * 1000;
+
+    if (now >= end) return { days: 0, hours: 0, minutes: 0, seconds: 0, isStarted: true, isOver: true };
+    if (now >= start) return { days: 0, hours: 0, minutes: 0, seconds: 0, isStarted: true, isOver: false };
+
+    const diff = start - now;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    return { days, hours, minutes, seconds, isStarted: false, isOver: false };
+  };
+
+  const [countdown, setCountdown] = useState<CountdownParts>(compute);
+
+  useEffect(() => {
+    if (countdown.isOver) return;
+    const id = setInterval(() => setCountdown(compute()), 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventDate, endDate, countdown.isOver]);
+
+  return countdown;
+}
+
+// ─── Countdown strip component ────────────────────────────────────────────────
+
+interface CountdownStripProps {
+  event: EventData;
+}
+
+function CountdownStrip({ event }: CountdownStripProps) {
+  const cd = useCountdown(event.date, event.endDate);
+
+  if (cd.isOver) return null;
+
+  if (cd.isStarted) {
+    return (
+      <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-success/10 border border-success/20 w-fit">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
+        </span>
+        <span className="text-success font-semibold text-sm">Happening Now</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <Timer className="w-4 h-4" />
+        <span className="text-xs font-medium uppercase tracking-wide">Starts in</span>
+      </div>
+      <div className="flex items-center gap-1">
+        {cd.days > 0 && (
+          <>
+            <CountdownUnit value={cd.days} label="d" />
+            <span className="text-muted-foreground font-bold text-sm mb-1">:</span>
+          </>
+        )}
+        <CountdownUnit value={cd.hours} label="h" />
+        <span className="text-muted-foreground font-bold text-sm mb-1">:</span>
+        <CountdownUnit value={cd.minutes} label="m" />
+        <span className="text-muted-foreground font-bold text-sm mb-1">:</span>
+        <CountdownUnit value={cd.seconds} label="s" />
+      </div>
+    </div>
+  );
+}
+
+function CountdownUnit({ value, label }: { value: number; label: string }) {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    <div className="flex flex-col items-center min-w-[36px]">
+      <span className="bg-foreground/5 border border-border rounded-md px-2 py-0.5 font-mono text-sm font-bold text-foreground tabular-nums">
+        {pad(value)}
+      </span>
+      <span className="text-[10px] text-muted-foreground mt-0.5 uppercase tracking-wide">{label}</span>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export const EventHome: React.FC<EventHomeProps> = ({
   event,
   user,
-  onNavigate,
-  availableTabs,
 }) => {
   const navigate = useNavigate();
 
-  // Group sponsors by tier
   const sponsorsByTier = React.useMemo(() => {
     if (!event.sponsors || event.sponsors.length === 0) return {};
-
     const grouped: Record<string, Sponsor[]> = {};
     event.sponsors.forEach(sponsor => {
       const tier = sponsor.level || 'associate';
@@ -98,48 +173,30 @@ export const EventHome: React.FC<EventHomeProps> = ({
     return grouped;
   }, [event.sponsors]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (dateString: string): string =>
+    new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
       year: 'numeric',
     });
-  };
 
-  const formatDateRange = () => {
-    const startDate = new Date(event.date);
-    const start = startDate.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
+  const formatDateRange = (): string => {
+    const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+    const start = new Date(event.date).toLocaleDateString('en-US', opts);
     if (event.endDate) {
-      const endDate = new Date(event.endDate);
-      const end = endDate.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      return `${start} - ${end}`;
+      const end = new Date(event.endDate).toLocaleDateString('en-US', opts);
+      return `${start} – ${end}`;
     }
-
     return start;
   };
 
-  // Get quick action tabs (excluding home)
-  const quickActionTabs = availableTabs.filter(
-    tab => tab.key !== 'home' && quickActionConfig[tab.key as keyof typeof quickActionConfig]
-  );
 
   return (
     <div className="relative">
-      {/* Hero Section with Event Image */}
+      {/* Hero Section */}
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 pt-6">
         <div className="relative rounded-xl overflow-hidden">
-          {/* Background Image */}
           <div
             className="h-[250px] sm:h-[300px] bg-cover bg-center"
             style={{
@@ -151,22 +208,16 @@ export const EventHome: React.FC<EventHomeProps> = ({
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
           </div>
 
-          {/* Hero Content */}
           <div className="absolute bottom-0 left-0 right-0 p-6">
             <div className="max-w-4xl">
-              {/* Event Title & Hashtag */}
               <div className="mb-3">
-                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                  {event.title}
-                </h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{event.title}</h1>
                 {event.hashtag && (
                   <Badge className="bg-primary/90 text-white border-0 text-sm">
                     #{event.hashtag}
                   </Badge>
                 )}
               </div>
-
-              {/* Event Meta */}
               <div className="flex flex-wrap items-center gap-4 text-white/90 text-sm">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
@@ -180,7 +231,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
                 )}
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
-                  <span>{event.venue || event.location}</span>
+                  <span>{event.venue ?? event.location}</span>
                 </div>
               </div>
             </div>
@@ -191,10 +242,10 @@ export const EventHome: React.FC<EventHomeProps> = ({
       {/* Main Content */}
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Left Sidebar - User Profile Card */}
+
+          {/* Sidebar */}
           <div className="lg:col-span-1">
             <Card variant="github" className="sticky top-24 overflow-hidden">
-              {/* Edit link */}
               <div className="absolute top-3 right-3">
                 <Button
                   variant="link"
@@ -206,7 +257,6 @@ export const EventHome: React.FC<EventHomeProps> = ({
                   Edit
                 </Button>
               </div>
-
               <CardContent className="pt-8 pb-6 px-6 text-center">
                 <Avatar
                   src={user.profileImage}
@@ -226,38 +276,13 @@ export const EventHome: React.FC<EventHomeProps> = ({
             </Card>
           </div>
 
-          {/* Main Content Area */}
+          {/* Main Content */}
           <div className="lg:col-span-3 space-y-8">
-            {/* Quick Actions - Minimalist card-based navigation */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {quickActionTabs.map((tab) => {
-                const config = quickActionConfig[tab.key as keyof typeof quickActionConfig];
-                if (!config) return null;
 
-                return (
-                  <Card
-                    key={tab.key}
-                    variant="github"
-                    className="group cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
-                    onClick={() => onNavigate(tab.key as 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge')}
-                  >
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center group-hover:bg-primary/10 transition-colors">
-                        <config.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground text-sm group-hover:text-primary transition-colors">
-                          {config.label}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-primary/50 transition-colors" />
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
+            {/* Countdown / Live status strip */}
+            <CountdownStrip event={event} />
 
-            {/* Sponsors Section */}
+            {/* Sponsors */}
             {event.sponsors && event.sponsors.length > 0 && (
               <Card variant="github">
                 <CardContent className="p-6 space-y-6">
@@ -273,7 +298,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
                         <div className="flex flex-wrap items-center gap-6">
                           {sponsors.map((sponsor, idx) => (
                             <a
-                              key={sponsor.id || idx}
+                              key={sponsor.id ?? idx}
                               href={sponsor.website}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -305,57 +330,48 @@ export const EventHome: React.FC<EventHomeProps> = ({
             {/* Event Details */}
             <Card variant="github">
               <CardContent className="p-6 space-y-6">
-                <div>
-                  {/* Date & Time */}
-                  <div className="space-y-3 text-sm text-muted-foreground">
-                    <div className="flex items-start gap-3">
-                      <Clock className="w-4 h-4 mt-0.5 text-muted-foreground/70" />
-                      <div>
-                        <p>From {formatDate(event.date)}{event.time && ` ${event.time}`}</p>
-                        {event.endDate && (
-                          <p>To {formatDate(event.endDate)}</p>
-                        )}
-                      </div>
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-4 h-4 mt-0.5 text-muted-foreground/70" />
+                    <div>
+                      <p>From {formatDate(event.date)}{event.time && ` · ${event.time}`}</p>
+                      {event.endDate && <p>To {formatDate(event.endDate)}</p>}
                     </div>
+                  </div>
 
-                    <div className="flex items-start gap-3">
-                      <Globe className="w-4 h-4 mt-0.5 text-muted-foreground/70" />
-                      <p>Dates are displayed in your time zone</p>
-                    </div>
+                  <div className="flex items-start gap-3">
+                    <Globe className="w-4 h-4 mt-0.5 text-muted-foreground/70" />
+                    <p>Dates are displayed in your local time zone</p>
+                  </div>
 
-                    <div className="flex items-start gap-3">
-                      <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground/70" />
-                      <div>
-                        <p className="font-medium text-foreground">{event.venue || event.location}</p>
-                        {event.venue && event.location && event.venue !== event.location && (
-                          <p>{event.location}</p>
-                        )}
-                      </div>
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground/70" />
+                    <div>
+                      <p className="font-medium text-foreground">{event.venue ?? event.location}</p>
+                      {event.venue && event.location && event.venue !== event.location && (
+                        <p>{event.location}</p>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Description */}
-                {(event.fullDescription || event.description) && (
-                  <div>
-                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                      {event.fullDescription || event.description}
-                    </p>
-                  </div>
+                {(event.fullDescription ?? event.description) && (
+                  <RichTextContent
+                    content={event.fullDescription ?? event.description ?? ''}
+                    className="text-sm text-muted-foreground"
+                  />
                 )}
 
-                {/* Social Links */}
                 {event.socialLinks && Object.keys(event.socialLinks).length > 0 && (
                   <div className="flex items-center gap-3 pt-4 border-t border-border">
                     {Object.entries(event.socialLinks).map(([platform, url]) => {
                       if (!url) return null;
                       const platformKey = platform.toLowerCase();
-                      const config = socialPlatformConfig[platformKey] || {
+                      const cfg = socialPlatformConfig[platformKey] ?? {
                         icon: ExternalLink,
                         label: platform.charAt(0).toUpperCase() + platform.slice(1),
                       };
-                      const PlatformIcon = config.icon;
-
+                      const PlatformIcon = cfg.icon;
                       return (
                         <a
                           key={platform}
@@ -363,7 +379,7 @@ export const EventHome: React.FC<EventHomeProps> = ({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-muted-foreground hover:text-primary transition-colors"
-                          title={config.label}
+                          title={cfg.label}
                         >
                           <PlatformIcon className="w-4 h-4" />
                         </a>
@@ -373,6 +389,33 @@ export const EventHome: React.FC<EventHomeProps> = ({
                 )}
               </CardContent>
             </Card>
+
+            {/* Venue Map */}
+            {!event.isOnline && (event.venue || event.location) && (
+              <Card variant="github">
+                <CardContent className="p-0 overflow-hidden">
+                  <div className="relative h-[220px]">
+                    <EventMap
+                      venue={event.venue || ''}
+                      location={event.location}
+                      coordinates={event.coordinates}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="absolute top-3 right-3 shadow-lg z-10"
+                      onClick={() => {
+                        const query = encodeURIComponent(`${event.venue ? event.venue + ', ' : ''}${event.location}`);
+                        window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+                      }}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                      Directions
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

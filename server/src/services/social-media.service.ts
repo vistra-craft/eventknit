@@ -583,7 +583,7 @@ export class SocialMediaService {
       await prisma.socialMediaPost.update({
         where: { id: postId },
         data: { status: 'failed' },
-      }).catch(() => {});
+      }).catch((err) => { logger.error('Failed to update post status to failed', { postId, error: err }); });
       throw error;
     }
   }

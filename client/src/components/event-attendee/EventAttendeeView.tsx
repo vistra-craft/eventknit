@@ -1,27 +1,20 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Home,
+  LayoutDashboard,
   CalendarDays,
-  Mic2,
-  Building2,
-  Heart,
+  Users,
   BadgeCheck,
   ChevronLeft,
-  Search,
-  Bell,
-  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar } from "@/components/ui/avatar";
-import { EventHome } from "./EventHome";
+import { EventOverview } from "./EventOverview";
 import { EventAgenda } from "./EventAgenda";
-import { EventSpeakers } from "./EventSpeakers";
-import { EventExhibitors } from "./EventExhibitors";
-import { EventMyEvent } from "./EventMyEvent";
+import { EventPeople } from "./EventPeople";
 import { EventMyBadge } from "./EventMyBadge";
 
-// Type definitions
+// ─── Type definitions ────────────────────────────────────────────────────────
+
 export interface Speaker {
   id?: string;
   name: string;
@@ -67,8 +60,23 @@ export interface AgendaItem {
   speakerDetails?: Speaker[];
 }
 
+export interface SeatInfo {
+  seatIdentifier: string;
+  sectionId?: string;
+  rowLabel?: string;
+  seatLabel?: string;
+  seatType: string;
+  reservationStatus: string;
+}
+
+export interface FAQ {
+  question: string;
+  answer: string;
+}
+
 export interface EventData {
   id: string;
+  slug?: string;
   title: string;
   description?: string;
   fullDescription?: string;
@@ -79,21 +87,46 @@ export interface EventData {
   venue?: string;
   type: string;
   image?: string;
+  imageFocalX?: number;
+  imageFocalY?: number;
   category?: string;
   status?: 'upcoming' | 'ongoing' | 'completed';
   registrationDate?: string;
   organizer?: string;
+  organizerId?: string;
   organizerDescription?: string;
+  organizerAvatar?: string;
   speakers?: Speaker[];
   sponsors?: Sponsor[];
   exhibitors?: Exhibitor[];
   agenda?: AgendaItem[];
+  faqs?: FAQ[];
   socialLinks?: Record<string, string>;
   hashtag?: string;
-  // Registration data for badge/ticket features
+  tags?: string[];
+  // Event requirements & restrictions
+  requirements?: string[];
+  ageRestriction?: string;
+  // Capacity & attendance
+  capacity?: number;
+  availableSlots?: number;
+  registrationCount?: number;
+  // Refund policy
+  refundPolicy?: string;
+  refundPolicyText?: string;
+  // Location extras
+  address?: string;
+  coordinates?: { lat: number; lng: number };
+  isOnline?: boolean;
+  onlineLink?: string;
+  // Registration & ticket data
   registrationId?: string;
   ticketType?: string;
   backupCode?: string;
+  // Attendee avatars for social proof
+  attendeeAvatars?: { id: string; firstName?: string; lastName?: string; avatar?: string }[];
+  // Seat allocation (populated from ticket endpoint)
+  seat?: SeatInfo;
 }
 
 export interface User {
@@ -110,7 +143,7 @@ interface EventAttendeeViewProps {
   user: User;
 }
 
-type TabKey = 'home' | 'agenda' | 'speakers' | 'exhibitors' | 'my-event' | 'my-badge';
+type TabKey = 'overview' | 'schedule' | 'people' | 'badge';
 
 interface TabConfig {
   key: TabKey;
@@ -119,46 +152,43 @@ interface TabConfig {
   available: boolean;
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, user }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const [activeTab, setActiveTab] = useState<TabKey>('overview');
 
-  // Determine which tabs are available based on event data
   const tabs = useMemo((): TabConfig[] => {
-    const hasAgenda = event.agenda && event.agenda.length > 0;
-    const hasSpeakers = event.speakers && event.speakers.length > 0;
-    const hasExhibitors = event.exhibitors && event.exhibitors.length > 0;
+    const hasAgenda = !!(event.agenda && event.agenda.length > 0);
+    const hasPeople = !!(
+      (event.speakers && event.speakers.length > 0) ||
+      (event.exhibitors && event.exhibitors.length > 0) ||
+      (event.sponsors && event.sponsors.length > 0)
+    );
 
     return [
-      { key: 'home' as TabKey, label: 'Home', icon: Home, available: true },
-      { key: 'agenda' as TabKey, label: 'Agenda', icon: CalendarDays, available: !!hasAgenda },
-      { key: 'speakers' as TabKey, label: 'Speakers', icon: Mic2, available: !!hasSpeakers },
-      { key: 'exhibitors' as TabKey, label: 'Exhibitors', icon: Building2, available: !!hasExhibitors },
-      { key: 'my-event' as TabKey, label: 'My Event', icon: Heart, available: true },
-      { key: 'my-badge' as TabKey, label: 'My Badge', icon: BadgeCheck, available: true },
+      { key: 'overview' as TabKey, label: 'Overview', icon: LayoutDashboard, available: true },
+      { key: 'schedule' as TabKey, label: 'Schedule', icon: CalendarDays, available: hasAgenda },
+      { key: 'people' as TabKey, label: 'People', icon: Users, available: hasPeople },
+      { key: 'badge' as TabKey, label: 'Badge', icon: BadgeCheck, available: true },
     ].filter(tab => tab.available) as TabConfig[];
   }, [event]);
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'home':
+      case 'overview':
+        return <EventOverview event={event} />;
+      case 'schedule':
+        return <EventAgenda event={event} user={user} />;
+      case 'people':
         return (
-          <EventHome
-            event={event}
-            user={user}
-            onNavigate={setActiveTab}
-            availableTabs={tabs}
+          <EventPeople
+            speakers={event.speakers ?? []}
+            exhibitors={event.exhibitors ?? []}
+            sponsors={event.sponsors ?? []}
           />
         );
-      case 'agenda':
-        return <EventAgenda event={event} user={user} />;
-      case 'speakers':
-        return <EventSpeakers speakers={event.speakers || []} />;
-      case 'exhibitors':
-        return <EventExhibitors exhibitors={event.exhibitors || []} sponsors={event.sponsors} />;
-      case 'my-event':
-        return <EventMyEvent event={event} user={user} />;
-      case 'my-badge':
+      case 'badge':
         return <EventMyBadge event={event} user={user} />;
       default:
         return null;
@@ -167,11 +197,11 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sticky Header/Navbar */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
+      {/* Sticky sub-header (sits below UnifiedNavbar) */}
+      <header className="sticky top-0 z-30 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            {/* Left - Back button & Event name */}
+            {/* Left — Back button & Event name */}
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
@@ -182,14 +212,12 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
               >
                 <ChevronLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground truncate max-w-[200px] sm:max-w-none">
-                  {event.title}
-                </span>
-              </div>
+              <span className="text-sm font-medium text-foreground truncate max-w-[200px] sm:max-w-none">
+                {event.title}
+              </span>
             </div>
 
-            {/* Center - Navigation Tabs (Desktop) */}
+            {/* Center — Navigation Tabs (Desktop) */}
             <nav className="hidden lg:flex items-center gap-1">
               {tabs.map((tab) => (
                 <button
@@ -206,27 +234,8 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
               ))}
             </nav>
 
-            {/* Right - Icons & Profile */}
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex" title="Search">
-                <Search className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="rounded-full hidden sm:flex" title="Messages">
-                <MessageCircle className="w-5 h-5" />
-              </Button>
-              <Button variant="ghost" size="icon" className="rounded-full" title="Notifications">
-                <Bell className="w-5 h-5" />
-              </Button>
-              <Avatar
-                src={user.profileImage}
-                name={user.name}
-                alt={user.name}
-                size="sm"
-                className="cursor-pointer"
-                onClick={() => navigate('/user/profile')}
-                title="Profile"
-              />
-            </div>
+            {/* Right — Spacer for layout balance */}
+            <div className="hidden lg:block" />
           </div>
         </div>
 
@@ -255,6 +264,7 @@ export const EventAttendeeView: React.FC<EventAttendeeViewProps> = ({ event, use
       <main>
         {renderTabContent()}
       </main>
+
     </div>
   );
 };

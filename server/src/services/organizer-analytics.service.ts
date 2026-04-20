@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { RegistrationStatus } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 
@@ -70,7 +71,7 @@ export class OrganizerAnalyticsService {
       };
 
       // Geographic distribution
-      const geographicData = registrations.reduce((acc: any, _reg) => {
+      const geographicData = registrations.reduce((acc: Record<string, unknown>, _reg) => {
         // Would need to extract location from registration data
         return acc;
       }, {});
@@ -119,7 +120,12 @@ export class OrganizerAnalyticsService {
     endDate?: Date;
   }) {
     try {
-      const where: any = {
+      const where: {
+        event: { organizerId: string; deletedAt: null };
+        paymentStatus: string;
+        eventId?: string;
+        paymentDate?: { gte?: Date; lte?: Date };
+      } = {
         event: {
           organizerId,
           deletedAt: null,
@@ -172,7 +178,7 @@ export class OrganizerAnalyticsService {
         },
       });
 
-      const revenueByTicketType = registrations.reduce((acc: any, reg) => {
+      const revenueByTicketType = registrations.reduce((acc: Record<string, { ticketType: string; quantity: number; revenue: number }>, reg) => {
         reg.ticketLineItems.forEach(item => {
           if (!acc[item.ticketType]) {
             acc[item.ticketType] = {
@@ -254,12 +260,16 @@ export class OrganizerAnalyticsService {
    */
   static async getAttendeeInsights(organizerId: string, eventId?: string) {
     try {
-      const where: any = {
+      const where: {
+        event: { organizerId: string; deletedAt: null };
+        status: RegistrationStatus;
+        eventId?: string;
+      } = {
         event: {
           organizerId,
           deletedAt: null,
         },
-        status: 'CONFIRMED',
+        status: RegistrationStatus.CONFIRMED,
       };
 
       if (eventId) {
@@ -296,7 +306,7 @@ export class OrganizerAnalyticsService {
       };
 
       // Repeat attendee identification
-      const attendeeEventCount = registrations.reduce((acc: any, reg) => {
+      const attendeeEventCount = registrations.reduce((acc: Record<string, number>, reg) => {
         acc[reg.attendeeId] = (acc[reg.attendeeId] || 0) + 1;
         return acc;
       }, {});
@@ -396,7 +406,10 @@ export class OrganizerAnalyticsService {
    */
   static async getMarketingAnalytics(organizerId: string, eventId?: string) {
     try {
-      const where: any = {
+      const where: {
+        event: { organizerId: string; deletedAt: null };
+        eventId?: string;
+      } = {
         event: {
           organizerId,
           deletedAt: null,
@@ -434,7 +447,7 @@ export class OrganizerAnalyticsService {
         },
       });
 
-      const promoPerformance = promoRedemptions.reduce((acc: any, redemption) => {
+      const promoPerformance = promoRedemptions.reduce((acc: Record<string, { code: string; redemptions: number; totalDiscount: number; revenue: number }>, redemption) => {
         const code = redemption.promoCode.code;
         if (!acc[code]) {
           acc[code] = {
@@ -467,7 +480,7 @@ export class OrganizerAnalyticsService {
         },
       });
 
-      const shareAnalytics = eventShares.reduce((acc: any, share) => {
+      const shareAnalytics = eventShares.reduce((acc: Record<string, { platform: string; shares: number; clicks: number; conversions: number }>, share) => {
         if (!acc[share.platform]) {
           acc[share.platform] = {
             platform: share.platform,
@@ -510,9 +523,9 @@ export class OrganizerAnalyticsService {
   /**
    * Helper: Calculate trends
    */
-  private static calculateTrends(data: any[], dateField: string, valueField?: string) {
-    const grouped = data.reduce((acc: any, item) => {
-      const date = new Date(item[dateField]);
+  private static calculateTrends(data: Record<string, unknown>[], dateField: string, valueField?: string) {
+    const grouped = data.reduce((acc: Record<string, { date: string; count: number; value: number }>, item) => {
+      const date = new Date(item[dateField] as string | number | Date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       
       if (!acc[key]) {
@@ -531,7 +544,7 @@ export class OrganizerAnalyticsService {
       return acc;
     }, {});
 
-    return Object.values(grouped).sort((a: any, b: any) => 
+    return Object.values(grouped).sort((a: { date: string; count: number; value: number }, b: { date: string; count: number; value: number }) => 
       a.date.localeCompare(b.date),
     );
   }
@@ -539,7 +552,7 @@ export class OrganizerAnalyticsService {
   /**
    * Helper: Calculate forecast
    */
-  private static calculateForecast(transactions: any[]) {
+  private static calculateForecast(transactions: Record<string, unknown>[]) {
     if (transactions.length < 2) {
       return {
         next30Days: 0,
@@ -550,12 +563,13 @@ export class OrganizerAnalyticsService {
 
     // Simple linear regression for forecasting
     const sorted = transactions.sort((a, b) =>
-      new Date(a.paymentDate || a.createdAt).getTime() - new Date(b.paymentDate || b.createdAt).getTime(),
+      new Date((a.paymentDate || a.createdAt) as string | number | Date).getTime() -
+      new Date((b.paymentDate || b.createdAt) as string | number | Date).getTime(),
     );
 
     const dailyRevenue = this.calculateTrends(sorted, 'paymentDate', 'amount');
     const avgDailyRevenue = dailyRevenue.length > 0
-      ? dailyRevenue.reduce((sum: number, d: any) => sum + d.value, 0) / dailyRevenue.length
+      ? dailyRevenue.reduce((sum: number, d: { date: string; count: number; value: number }) => sum + d.value, 0) / dailyRevenue.length
       : 0;
 
     return {
@@ -574,7 +588,11 @@ export class OrganizerAnalyticsService {
     endDate?: Date;
   }) {
     try {
-      const eventWhere: any = {
+      const eventWhere: {
+        organizerId: string;
+        deletedAt: null;
+        id?: string;
+      } = {
         organizerId,
         deletedAt: null,
       };
@@ -583,7 +601,7 @@ export class OrganizerAnalyticsService {
         eventWhere.id = filters.eventId;
       }
 
-      const dateFilter: any = {};
+      const dateFilter: { gte?: Date; lte?: Date } = {};
       if (filters?.startDate) {
         dateFilter.gte = filters.startDate;
       }
@@ -701,7 +719,7 @@ export class OrganizerAnalyticsService {
         },
       });
 
-      const paymentMethodStats = paymentTransactions.reduce((acc: any, t) => {
+      const paymentMethodStats = paymentTransactions.reduce((acc: Record<string, { method: string; count: number; total: number }>, t) => {
         const method = t.paymentMethod || 'unknown';
         if (!acc[method]) {
           acc[method] = { method, count: 0, total: 0 };
@@ -790,7 +808,11 @@ export class OrganizerAnalyticsService {
    */
   static async getAbandonmentAnalysis(organizerId: string, eventId?: string) {
     try {
-      const eventWhere: any = {
+      const eventWhere: {
+        organizerId: string;
+        deletedAt: null;
+        id?: string;
+      } = {
         organizerId,
         deletedAt: null,
       };

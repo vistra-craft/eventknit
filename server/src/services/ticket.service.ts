@@ -23,6 +23,7 @@ interface TicketEmailData {
       totalPrice: number;
     }>;
     accountInvitationToken?: string | null;
+    pdfUrl?: string | null; // Pre-generated Cloudinary URL — skips PDF regeneration if provided
     event: {
       id: string;
       title: string;
@@ -63,7 +64,7 @@ export class TicketService {
   static async generateQRCode(data: string): Promise<string> {
     try {
       const qrCodeDataUrl = await QRCode.toDataURL(data, {
-        errorCorrectionLevel: 'M',
+        errorCorrectionLevel: 'H',
         type: 'image/png',
         width: 300,
         margin: 2,
@@ -219,6 +220,183 @@ export class TicketService {
     ].join('\r\n');
 
     return icsContent;
+  }
+
+  /**
+   * Send Email 1: Immediate registration confirmation (no QR/PDF).
+   * Fast — confirms the booking instantly and sets expectation that the ticket is on its way.
+   */
+  static async sendRegistrationConfirmationEmail(data: {
+    registrationId: string;
+    eventTitle: string;
+    eventStartDate: Date;
+    eventStartTime?: string | null;
+    eventLocation: string;
+    eventVenue?: string | null;
+    eventImage?: string | null;
+    attendeeEmail: string;
+    attendeeFirstName: string;
+    attendeeLastName?: string | null;
+    ticketType?: string | null;
+    quantity: number;
+    accountInvitationToken?: string | null;
+  }): Promise<void> {
+    const {
+      registrationId,
+      eventTitle,
+      eventStartDate,
+      eventStartTime,
+      eventLocation,
+      eventVenue,
+      eventImage,
+      attendeeEmail,
+      attendeeFirstName,
+      attendeeLastName,
+      ticketType,
+      quantity,
+      accountInvitationToken,
+    } = data;
+
+    const dateStr = new Date(eventStartDate).toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    });
+    const dateTime = eventStartTime ? `${dateStr} at ${eventStartTime}` : dateStr;
+    const venue = eventVenue ? `${eventVenue}, ${eventLocation}` : eventLocation;
+    const attendeeName = `${attendeeFirstName}${attendeeLastName ? ` ${attendeeLastName}` : ''}`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Registration Confirmed - ${eventTitle}</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #ffffff;">
+        <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #ffffff;">
+          <tr>
+            <td align="center" style="padding: 40px 20px;">
+              <table role="presentation" style="max-width: 560px; width: 100%; border-collapse: collapse;">
+
+                <!-- Header -->
+                <tr>
+                  <td style="padding: 0 0 24px 0;">
+                    <p style="margin: 0; color: #1a1a1a; font-size: 14px; font-weight: 600; letter-spacing: -0.2px;">EventKnit</p>
+                  </td>
+                </tr>
+
+                <!-- Confirmation -->
+                <tr>
+                  <td style="padding: 0 0 8px 0;">
+                    <h1 style="margin: 0; color: #1a1a1a; font-size: 24px; font-weight: 700; line-height: 1.3;">You're registered, ${attendeeFirstName}.</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 0 0 28px 0;">
+                    <p style="margin: 0; color: #666666; font-size: 15px; line-height: 1.5;">Your spot is confirmed. A separate email with your ticket and QR code will arrive shortly.</p>
+                  </td>
+                </tr>
+
+                ${eventImage ? `
+                <tr>
+                  <td style="padding: 0 0 24px 0;">
+                    <img src="${eventImage}" alt="${eventTitle}" style="width: 100%; height: 180px; object-fit: cover; display: block; border-radius: 8px;">
+                  </td>
+                </tr>
+                ` : ''}
+
+                <!-- Event Details -->
+                <tr>
+                  <td style="padding: 0 0 28px 0;">
+                    <h2 style="margin: 0 0 16px 0; color: #1a1a1a; font-size: 18px; font-weight: 700;">${eventTitle}</h2>
+                    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                      <tr>
+                        <td style="padding: 6px 0; color: #999999; font-size: 13px; width: 90px; vertical-align: top;">Date</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-size: 14px;">${dateTime}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #999999; font-size: 13px; vertical-align: top;">Location</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-size: 14px;">${venue}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #999999; font-size: 13px; vertical-align: top;">Attendee</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-size: 14px;">${attendeeName}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; color: #999999; font-size: 13px; vertical-align: top;">Ticket</td>
+                        <td style="padding: 6px 0; color: #1a1a1a; font-size: 14px;">${ticketType || 'General Admission'} × ${quantity}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 0 0 24px 0;">
+                    <div style="border-top: 1px solid #e5e5e5;"></div>
+                  </td>
+                </tr>
+
+                <!-- What Happens Next -->
+                <tr>
+                  <td style="padding: 0 0 24px 0;">
+                    <p style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">What happens next</p>
+                    <p style="margin: 0 0 6px 0; color: #666666; font-size: 14px; line-height: 1.6;">1. Your ticket with QR code arrives in a <strong style="color: #1a1a1a;">second email</strong> within a few minutes.</p>
+                    <p style="margin: 0 0 6px 0; color: #666666; font-size: 14px; line-height: 1.6;">2. Save the QR code or backup code — you'll need it at the entrance.</p>
+                    <p style="margin: 0 0 16px 0; color: #666666; font-size: 14px; line-height: 1.6;">3. You can also view your ticket anytime online.</p>
+                    <a href="${config.frontend.url}/user/tickets/${registrationId}" style="display: inline-block; background-color: #1a8cff; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px;">View My Ticket</a>
+                  </td>
+                </tr>
+
+                ${accountInvitationToken ? `
+                <!-- Divider -->
+                <tr>
+                  <td style="padding: 0 0 24px 0;">
+                    <div style="border-top: 1px solid #e5e5e5;"></div>
+                  </td>
+                </tr>
+
+                <!-- Account Setup -->
+                <tr>
+                  <td style="padding: 0 0 24px 0;">
+                    <p style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 14px; font-weight: 600;">Set up your account</p>
+                    <p style="margin: 0 0 16px 0; color: #666666; font-size: 14px; line-height: 1.6;">
+                      Create a password to manage your tickets and register for future events faster.
+                    </p>
+                    <a href="${config.frontend.url}/auth/create-account?token=${accountInvitationToken}" style="display: inline-block; background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                      Set Up Password
+                    </a>
+                    <p style="margin: 10px 0 0 0; color: #999999; font-size: 12px;">This link is valid for 7 days.</p>
+                  </td>
+                </tr>
+                ` : ''}
+
+                <!-- Footer -->
+                <tr>
+                  <td style="padding: 24px 0 0 0; border-top: 1px solid #e5e5e5;">
+                    <p style="margin: 0 0 4px 0; color: #999999; font-size: 13px;">
+                      Need help? <a href="mailto:support@eventknit.com" style="color: #1a8cff; text-decoration: none;">support@eventknit.com</a>
+                    </p>
+                    <p style="margin: 0; color: #cccccc; font-size: 12px;">&copy; ${new Date().getFullYear()} EventKnit</p>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    await emailService.sendEmail({
+      to: attendeeEmail,
+      subject: `Registration Confirmed: ${eventTitle} - EventKnit`,
+      html,
+      isCritical: true,
+    });
+
+    logger.info(`Registration confirmation email sent to ${attendeeEmail} for event ${eventTitle}`);
   }
 
   /**
@@ -443,7 +621,7 @@ export class TicketService {
                           
                           <!-- QR Code -->
                           <div style="margin: 20px 0; text-align: center;">
-                            <img src="${qrCodeDataUrl}" alt="Ticket QR Code" style="width: 200px; height: 200px; display: block; margin: 0 auto; border: 2px solid #e9ecef; border-radius: 8px; padding: 10px; background-color: #ffffff;">
+                            <img src="cid:ticket-qr-code" alt="Ticket QR Code" style="width: 200px; height: 200px; display: block; margin: 0 auto; border: 2px solid #e9ecef; border-radius: 8px; padding: 10px; background-color: #ffffff;">
                           </div>
                           
                           <!-- Backup Code -->
@@ -550,24 +728,29 @@ export class TicketService {
         content: Buffer | string;
         contentType?: string;
         encoding?: string;
+        cid?: string;
       }> = [
         {
           filename: 'event.ics',
           content: Buffer.from(icsContent),
           contentType: 'text/calendar',
         },
-        // QR code PNG attachment (always available)
+        // QR code PNG — embedded inline via cid so it renders in Gmail/Outlook/Apple Mail
         {
           filename: `${event.title.replace(/[^a-z0-9]/gi, '-')}-qr-code.png`,
           content: qrCodeDataUrl.split(';base64,')[1] || qrCodeDataUrl,
           encoding: 'base64',
           contentType: 'image/png',
+          cid: 'ticket-qr-code',
         },
       ];
 
-      // Try to generate PDF ticket (always attempt, fallback to HTML if puppeteer unavailable)
+      // Attach PDF ticket: use pre-generated Cloudinary URL if available (avoids double generation),
+      // otherwise generate on-the-fly with fallback to HTML if Puppeteer is unavailable.
       try {
-        const pdfBuffer = await this.generateTicketPDF(registration.id);
+        const pdfBuffer = registration.pdfUrl
+          ? await fetch(registration.pdfUrl).then(r => r.arrayBuffer()).then(ab => Buffer.from(ab))
+          : await this.generateTicketPDF(registration.id);
         // Check if it's PDF (Buffer with PDF header) or HTML (fallback)
         const isHTMLFallback = pdfBuffer.toString('utf-8').trim().startsWith('<!-- FALLBACK_HTML -->');
         const isPDF = !isHTMLFallback && pdfBuffer.length > 4 && pdfBuffer[0] === 0x25 && pdfBuffer[1] === 0x50 && pdfBuffer[2] === 0x44 && pdfBuffer[3] === 0x46; // %PDF
@@ -604,7 +787,9 @@ export class TicketService {
 
       // Update email status in database
       if (emailResult.success) {
-        await prisma.eventRegistration.update({
+        // Use updateMany to avoid "record not found" if registration was
+        // cancelled/deleted while the email was being sent
+        await prisma.eventRegistration.updateMany({
           where: { id: registration.id },
           data: {
             ticketEmailSentAt: new Date(),
@@ -620,11 +805,13 @@ export class TicketService {
         }
       } else {
         const errorMessage = emailResult.error?.message || 'Unknown error';
-        await prisma.eventRegistration.update({
+        // Update status — use updateMany to avoid "record not found" errors
+        // if the registration was cancelled/deleted while email was being sent
+        await prisma.eventRegistration.updateMany({
           where: { id: registration.id },
           data: {
             ticketEmailStatus: 'FAILED',
-            ticketEmailError: errorMessage.substring(0, 500), // Limit error message length
+            ticketEmailError: errorMessage.substring(0, 500),
           },
         });
 
@@ -632,10 +819,11 @@ export class TicketService {
         throw new Error(`Failed to send ticket email after ${emailResult.attempts} attempts: ${errorMessage}`);
       }
     } catch (error) {
-      // Update status even if exception occurs
+      // Update status even if exception occurs — use updateMany to be resilient
+      // if registration was deleted (e.g., cancelled) while email was being sent
       try {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        await prisma.eventRegistration.update({
+        await prisma.eventRegistration.updateMany({
           where: { id: registration.id },
           data: {
             ticketEmailStatus: 'FAILED',
@@ -856,6 +1044,19 @@ export class TicketService {
             lastName: true,
           },
         },
+        seatReservation: {
+          include: {
+            seat: {
+              select: {
+                seatIdentifier: true,
+                sectionId: true,
+                rowLabel: true,
+                seatLabel: true,
+                seatType: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -866,7 +1067,6 @@ export class TicketService {
     // Use stored QR code if available (generated at registration time, like Eventbrite/vf-ticket)
     // Otherwise generate on-the-fly (backward compatibility for existing registrations)
     let qrCodeDataUrl: string;
-    let ticketDataForResponse: ReturnType<typeof TicketService.generateTicketData> | undefined;
     if (registration.qrCodeDataUrl) {
       // Use stored QR code (faster, like Eventbrite/vf-ticket)
       qrCodeDataUrl = registration.qrCodeDataUrl;
@@ -875,7 +1075,6 @@ export class TicketService {
       // Generate QR code on-the-fly (backward compatibility for old registrations)
       logger.debug(`Generating QR code on-the-fly for registration ${registrationId} (no stored QR code found)`);
       const ticketData = this.generateTicketData(registration.id, registration.eventId, registration.attendee.email);
-      ticketDataForResponse = ticketData;
       qrCodeDataUrl = await this.generateQRCode(ticketData);
 
       // Store generated QR code for future use
@@ -894,6 +1093,18 @@ export class TicketService {
       }
     }
 
+    // Extract seat allocation details when the attendee has a reserved seat
+    const seatInfo = registration.seatReservation?.seat
+      ? {
+        seatIdentifier: registration.seatReservation.seat.seatIdentifier,
+        sectionId: registration.seatReservation.seat.sectionId ?? undefined,
+        rowLabel: registration.seatReservation.seat.rowLabel ?? undefined,
+        seatLabel: registration.seatReservation.seat.seatLabel ?? undefined,
+        seatType: registration.seatReservation.seat.seatType,
+        reservationStatus: registration.seatReservation.status,
+      }
+      : undefined;
+
     return {
       id: registration.id,
       registrationId: registration.id,
@@ -901,7 +1112,7 @@ export class TicketService {
       eventTitle: registration.event.title || '',
       attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim() || registration.attendee.email || '',
       attendeeEmail: registration.attendee.email || '',
-      ticketType: registration.ticketType || undefined,
+      ticketType: registration.ticketType ?? undefined,
       ticketLineItems: registration.ticketLineItems?.map(item => ({
         ticketType: item.ticketType,
         quantity: item.quantity,
@@ -909,11 +1120,13 @@ export class TicketService {
         totalPrice: Number(item.totalPrice),
       })),
       currency: registration.event.currency || 'USD',
+      seat: seatInfo,
       qrCode: qrCodeDataUrl,
       backupCode: registration.backupCode || undefined,
       createdAt: registration.createdAt.toISOString(),
-      registration,
-      ticketData: ticketDataForResponse,
+      checkedInAt: registration.checkedInAt?.toISOString() ?? null,
+      checkedOutAt: registration.checkedOutAt?.toISOString() ?? null,
+      isCurrentlyInside: registration.isCurrentlyInside,
     };
   }
 
@@ -924,65 +1137,188 @@ export class TicketService {
    */
   static async generateTicketPDF(registrationId: string): Promise<Buffer> {
     try {
-      // Get ticket data
       const ticketData = await this.getTicketByRegistrationId(registrationId);
-      const { registration, qrCode } = ticketData;
+
+      const registration = await prisma.eventRegistration.findUnique({
+        where: { id: registrationId },
+        include: {
+          ticketLineItems: true,
+          event: {
+            include: {
+              organizer: {
+                select: { id: true, firstName: true, lastName: true, organizationName: true },
+              },
+            },
+          },
+          attendee: {
+            select: { id: true, email: true, firstName: true, lastName: true },
+          },
+        },
+      });
+
+      if (!registration) {
+        throw new NotFoundError('Registration not found');
+      }
+
       const { event, attendee } = registration;
-
-      // Format event date
       const eventDate = this.formatEventDate(event.startDate, event.endDate, event.startTime, event.endTime);
-
-      // Generate HTML content for PDF
-      // Note: For production, install puppeteer for server-side PDF generation:
-      // npm install puppeteer
-      // Otherwise, return HTML that frontend can convert to PDF
-      const registrationForHTML: TicketEmailData['registration'] = {
-        ...registration,
-        ticketLineItems: ticketData.ticketLineItems,
-        registrationData: registration.registrationData && typeof registration.registrationData === 'object' && !Array.isArray(registration.registrationData)
-          ? registration.registrationData as Record<string, unknown>
-          : null,
-      };
       const currency = ticketData.currency || 'USD';
-      const htmlContent = this.generateTicketHTML(registrationForHTML, event, attendee, eventDate, qrCode, currency);
+      const attendeeName = `${attendee.firstName || ''} ${attendee.lastName || ''}`.trim() || attendee.email;
+      const organizerName = event.organizer?.organizationName
+        || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim()
+        || 'EventKnit';
+      const location = event.venue
+        ? `${event.venue}${event.location ? `, ${event.location}` : ''}`
+        : event.location || 'TBA';
 
-      // Try to use puppeteer for PDF generation (if available)
-      // Check if puppeteer module exists using dynamic import
-      try {
-        // Use dynamic import to avoid TypeScript checking the import
-        // @ts-expect-error - puppeteer is optional dependency
-        const puppeteerModule = await import('puppeteer');
-        const puppeteer = puppeteerModule.default || puppeteerModule;
+      // PDFKit — direct PDF generation, no browser required
+      const PDFDocument = (await import('pdfkit')).default;
 
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        });
-
-        const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-
-        // Generate PDF
-        const pdfBuffer = await page.pdf({
-          format: 'A4',
-          printBackground: true,
-          margin: {
-            top: '20px',
-            right: '20px',
-            bottom: '20px',
-            left: '20px',
+      return new Promise<Buffer>((resolve, reject) => {
+        const doc = new PDFDocument({
+          size: 'A4',
+          margin: 50,
+          info: {
+            Title: `Ticket - ${event.title}`,
+            Author: 'EventKnit',
+            Subject: `Event ticket for ${attendeeName}`,
           },
         });
 
-        await browser.close();
-        return Buffer.from(pdfBuffer);
-      } catch {
-        // If puppeteer is not available, return HTML with a clear marker
-        // Frontend can use browser's print-to-PDF or a client-side library
-        logger.warn('Puppeteer not available, returning HTML for client-side PDF conversion');
-        const fallbackHtml = `<!-- FALLBACK_HTML -->\n${htmlContent}`;
-        return Buffer.from(fallbackHtml, 'utf-8');
-      }
+        const chunks: Buffer[] = [];
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        const pageWidth = doc.page.width - 100;
+        const rightCol = 320;
+
+        // ── Header band ─────────────────────────────────────
+        doc.rect(0, 0, doc.page.width, 80).fill('#1D9BF0');
+        doc.fontSize(24).fill('#FFFFFF').text('EventKnit', 50, 28);
+        doc.fontSize(10).fill('#FFFFFF').text('EVENT TICKET', 50, 55);
+        doc.fontSize(10).fill('#FFFFFF').text(
+          `#${registration.backupCode || registration.id.slice(0, 8).toUpperCase()}`,
+          0, 35, { align: 'right', width: doc.page.width - 50 },
+        );
+
+        // ── Event Title ─────────────────────────────────────
+        let y = 110;
+        doc.fontSize(22).fill('#0F1419').text(event.title, 50, y, { width: pageWidth });
+        y = doc.y + 15;
+
+        // ── Date ────────────────────────────────────────────
+        doc.fontSize(9).fill('#9CA3AF').text('DATE & TIME', 50, y);
+        y += 14;
+        doc.fontSize(12).fill('#0F1419').text(eventDate, 50, y, { width: 250 });
+        y = doc.y + 12;
+
+        // ── Location ────────────────────────────────────────
+        doc.fontSize(9).fill('#9CA3AF').text('LOCATION', 50, y);
+        y += 14;
+        doc.fontSize(12).fill('#0F1419').text(location, 50, y, { width: 250 });
+        y = doc.y + 12;
+
+        // ── Organizer ───────────────────────────────────────
+        doc.fontSize(9).fill('#9CA3AF').text('ORGANIZER', 50, y);
+        y += 14;
+        doc.fontSize(12).fill('#0F1419').text(organizerName, 50, y, { width: 250 });
+        y = doc.y + 20;
+
+        // ── Divider ─────────────────────────────────────────
+        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).dash(3, { space: 3 }).stroke('#E5E7EB').undash();
+        y += 20;
+
+        // ── Attendee ────────────────────────────────────────
+        doc.fontSize(9).fill('#9CA3AF').text('ATTENDEE', 50, y);
+        y += 14;
+        doc.fontSize(13).fill('#0F1419').text(attendeeName, 50, y);
+        y += 18;
+        doc.fontSize(10).fill('#6B7280').text(attendee.email, 50, y);
+        y += 25;
+
+        // ── Tickets ─────────────────────────────────────────
+        if (ticketData.ticketLineItems && ticketData.ticketLineItems.length > 0) {
+          doc.fontSize(9).fill('#9CA3AF').text('TICKETS', 50, y);
+          y += 14;
+          for (const item of ticketData.ticketLineItems) {
+            doc.fontSize(11).fill('#0F1419').text(`${item.ticketType} x${item.quantity}`, 50, y);
+            if (item.totalPrice > 0) {
+              doc.text(`${currency} ${item.totalPrice.toFixed(2)}`, rightCol, y, {
+                align: 'right', width: doc.page.width - rightCol - 50,
+              });
+            }
+            y += 18;
+          }
+        } else if (registration.ticketType) {
+          doc.fontSize(9).fill('#9CA3AF').text('TICKET TYPE', 50, y);
+          y += 14;
+          doc.fontSize(11).fill('#0F1419').text(registration.ticketType, 50, y);
+          y += 18;
+        }
+
+        // ── Total ───────────────────────────────────────────
+        if (registration.totalAmount && Number(registration.totalAmount) > 0) {
+          y += 5;
+          doc.moveTo(50, y).lineTo(doc.page.width - 50, y).stroke('#E5E7EB');
+          y += 10;
+          doc.fontSize(12).fill('#0F1419').text('Total', 50, y);
+          doc.fontSize(12).fill('#0F1419').text(
+            `${currency} ${Number(registration.totalAmount).toFixed(2)}`,
+            rightCol, y, { align: 'right', width: doc.page.width - rightCol - 50 },
+          );
+          y += 25;
+        } else {
+          doc.fontSize(11).fill('#16A34A').text('FREE', 50, y);
+          y += 25;
+        }
+
+        // ── QR Code ─────────────────────────────────────────
+        y += 10;
+        doc.moveTo(50, y).lineTo(doc.page.width - 50, y).dash(3, { space: 3 }).stroke('#E5E7EB').undash();
+        y += 25;
+
+        const qrSize = 140;
+        const qrX = (doc.page.width - qrSize) / 2;
+
+        if (ticketData.qrCode && ticketData.qrCode.startsWith('data:image')) {
+          try {
+            const base64Data = ticketData.qrCode.split(',')[1];
+            const qrBuffer = Buffer.from(base64Data, 'base64');
+            doc.image(qrBuffer, qrX, y, { width: qrSize, height: qrSize });
+          } catch (qrErr) {
+            logger.warn('Failed to embed QR code in PDF:', qrErr);
+            doc.rect(qrX, y, qrSize, qrSize).stroke('#E5E7EB');
+            doc.fontSize(10).fill('#9CA3AF').text('QR Code', qrX, y + 60, { width: qrSize, align: 'center' });
+          }
+        } else {
+          doc.rect(qrX, y, qrSize, qrSize).stroke('#E5E7EB');
+          doc.fontSize(10).fill('#9CA3AF').text('QR Code', qrX, y + 60, { width: qrSize, align: 'center' });
+        }
+        y += qrSize + 10;
+
+        // ── Backup Code ─────────────────────────────────────
+        if (registration.backupCode) {
+          doc.fontSize(9).fill('#9CA3AF').text('BACKUP CODE', 0, y, { align: 'center', width: doc.page.width });
+          y += 14;
+          doc.fontSize(16).fill('#0F1419').text(registration.backupCode, 0, y, {
+            align: 'center', width: doc.page.width, characterSpacing: 3,
+          });
+          y += 25;
+        }
+
+        // ── Footer ──────────────────────────────────────────
+        doc.fontSize(8).fill('#9CA3AF').text(
+          'Present this ticket at the event entrance.',
+          0, y + 10, { align: 'center', width: doc.page.width },
+        );
+        doc.fontSize(8).fill('#9CA3AF').text(
+          `Generated by EventKnit \u2022 ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+          0, y + 25, { align: 'center', width: doc.page.width },
+        );
+
+        doc.end();
+      });
     } catch (error) {
       logger.error('Failed to generate ticket PDF:', error);
       throw error;

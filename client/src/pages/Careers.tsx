@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Send, Users, TrendingUp, Calendar, Sparkles, Mail, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 import { apiPost } from "@/lib/api";
 
 const Careers = () => {
@@ -44,7 +44,10 @@ const Careers = () => {
       await apiPost("/careers", { email });
       setIsSubmitted(true);
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      const errorMessage = err instanceof Error ? err.message :
+        (err && typeof err === 'object' && 'message' in err) ? String((err as Record<string, unknown>).message) :
+        "Something went wrong. Please try again.";
+      setError(errorMessage || "Something went wrong. Please try again.");
       console.error("Career inquiry error:", err);
     } finally {
       setIsSubmitting(false);
@@ -137,7 +140,7 @@ const Careers = () => {
           <p className="text-sm font-medium text-muted-foreground text-center mb-8">
             Areas we're growing
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 max-w-4xl mx-auto">
             {areas.map((area, index) => (
               <div
                 key={index}

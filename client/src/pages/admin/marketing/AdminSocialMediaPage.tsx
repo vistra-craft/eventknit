@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/useToast";
 import EmptyState from "@/components/EmptyState";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   Share2,
   Instagram,
@@ -25,6 +26,7 @@ import {
   Filter,
   Trash2
 } from "lucide-react";
+import { showErrorToast } from "@/lib/utils/error";
 import {
   getSocialAccounts,
   getSocialPosts,
@@ -75,6 +77,7 @@ const AdminSocialMediaPage = () => {
   const [, setLoadingAccounts] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [, setLoadingMetrics] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Load social accounts from API
   const loadAccounts = async () => {
@@ -124,8 +127,14 @@ const AdminSocialMediaPage = () => {
   };
 
   // Handle post deletion
-  const handleDeletePost = async (postId: string) => {
-    if (!window.confirm("Are you sure you want to delete this post?")) return;
+  const handleDeletePost = (postId: string) => {
+    setDeleteConfirm(postId);
+  };
+
+  const confirmDeletePost = async () => {
+    if (!deleteConfirm) return;
+    const postId = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       const response = await deleteSocialPost(postId);
       if (response.success) {
@@ -137,11 +146,7 @@ const AdminSocialMediaPage = () => {
       }
     } catch (error) {
       console.error("Failed to delete post:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete post. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to delete post. Please try again.");
     }
   };
 
@@ -369,6 +374,7 @@ const AdminSocialMediaPage = () => {
   const totalImpressions = apiMetrics?.totalImpressions || socialPosts.reduce((sum, post) => sum + post.impressions, 0);
 
   return (
+    <>
       <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
@@ -733,6 +739,24 @@ const AdminSocialMediaPage = () => {
         </Card>
       )}
       </div>
+
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeletePost} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

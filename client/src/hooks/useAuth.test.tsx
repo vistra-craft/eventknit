@@ -85,7 +85,7 @@ describe('useAuth', () => {
     });
 
     it('should clear activeViewRole from localStorage', () => {
-      localStorage.setItem('activeViewRole', 'ADMIN_STAFF');
+      localStorage.setItem('activeViewRole', 'ADMIN');
       
       const { result } = renderHook(() => useAuth(), {
         wrapper: TestWrapper,

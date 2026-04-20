@@ -19,6 +19,7 @@ export interface ApiError {
   success: false;
   message: string;
   errors?: Record<string, string[]>;
+  retryAfter?: number;
 }
 
 /**
@@ -152,7 +153,22 @@ const apiRequestInternal = async <T>(
     if (!response.ok) {
       // Provide user-friendly messages for specific status codes
       let errorMessage = data.message || 'An error occurred';
-      if (response.status === 503) {
+      if (response.status === 429) {
+        // Rate limited — use server message, attach retryAfter for client-side handling
+        const retryAfterHeader = response.headers.get('retry-after');
+        const retryAfter = data.retryAfter
+          || (retryAfterHeader ? parseInt(retryAfterHeader, 10) : undefined);
+
+        errorMessage = data.message || 'You\'re sending requests too fast. Please wait a moment and try again.';
+
+        const error: ApiError = {
+          success: false,
+          message: errorMessage,
+          retryAfter,
+        };
+        (error as ApiError & { status: number }).status = 429;
+        throw error;
+      } else if (response.status === 503) {
         errorMessage = 'Service temporarily unavailable. The server may be down or overloaded. Please try again later.';
       } else if (response.status === 500) {
         errorMessage = 'Internal server error. Please try again later or contact support.';
@@ -246,7 +262,8 @@ export const apiRequest = async <T>(
       if (endpoint.includes('/auth/login') ||
         endpoint.includes('/auth/register') ||
         endpoint.includes('/auth/refresh') ||
-        endpoint.includes('/register-guest')) {
+        endpoint.includes('/register-guest') ||
+        endpoint.includes('/careers')) {
         throw error;
       }
 
@@ -302,7 +319,8 @@ export const apiRequest = async <T>(
 /**
  * GET request
  */
-export const apiGet = <T>(endpoint: string): Promise<T> => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const apiGet = <T>(endpoint: string, _options?: { params?: Record<string, string | number | boolean> }): Promise<T> => {
   return apiRequest<T>(endpoint, { method: 'GET' });
 };
 

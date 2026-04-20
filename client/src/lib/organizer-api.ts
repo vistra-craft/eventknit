@@ -290,7 +290,7 @@ export const getOrganizerPastEvents = async (filters?: {
  * Get organizer event by ID
  */
 export const getOrganizerEventById = async (eventId: string): Promise<EventResponse> => {
-  const response = await apiGet<EventResponse>(`/events/${eventId}`);
+  const response = await apiGet<EventResponse>(`/organizer/events/${eventId}`);
 
   // Transform backend event to frontend format (same as getEventById)
   if (response.success && response.data) {
@@ -411,7 +411,7 @@ export interface OrganizerStaff {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
-  role: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+  role: 'ORGANIZER_ADMIN' | 'ORGANIZER_TELLER';
   customRoleId?: string;
   customRole?: {
     id: string;
@@ -440,7 +440,7 @@ export interface CreateOrganizerStaffData {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
-  role: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+  role: 'ORGANIZER_ADMIN' | 'ORGANIZER_TELLER';
 }
 
 /**
@@ -507,7 +507,7 @@ export interface EventStaffAssignment {
   eventId: string;
   staffId: string;
   role: EventStaffRole;
-  staffType: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+  staffType: 'ADMIN' | 'ORGANIZER_ADMIN';
   assignedAt: string;
   assignedBy: string;
   notes?: string;
@@ -526,11 +526,15 @@ export interface EventStaffAssignment {
   event?: {
     id: string;
     title: string;
+    description?: string;
     startDate?: string;
     endDate?: string;
     startTime?: string;
     endTime?: string;
+    location?: string;
+    venue?: string;
     status?: string;
+    image?: string;
   };
 }
 
@@ -992,6 +996,8 @@ export enum KYCDocumentType {
   CANCELLED_CHEQUE = 'CANCELLED_CHEQUE',
   BANK_LETTER = 'BANK_LETTER',
   LETTER_AUTHORIZING_ENTRY = 'LETTER_AUTHORIZING_ENTRY',
+  BUSINESS_LICENSE = 'BUSINESS_LICENSE',
+  TAX_ID = 'TAX_ID',
   CR12 = 'CR12',
   CR13 = 'CR13',
   PARTNERSHIP_DEED = 'PARTNERSHIP_DEED',
@@ -1018,6 +1024,10 @@ export enum KYCDocumentType {
   TRADE_NAME_CERTIFICATE = 'TRADE_NAME_CERTIFICATE',
   GRANT_PROBATE = 'GRANT_PROBATE',
   AUTHORIZED_SIGNATORY_LETTER = 'AUTHORIZED_SIGNATORY_LETTER',
+  TILL_APPLICATION_FORM = 'TILL_APPLICATION_FORM',
+  MPESA_AUTHORIZATION_FORM = 'MPESA_AUTHORIZATION_FORM',
+  ANNUAL_RETURNS = 'ANNUAL_RETURNS',
+  DIRECTORS_LIST_LETTERHEAD = 'DIRECTORS_LIST_LETTERHEAD',
 }
 
 /**
@@ -1294,19 +1304,7 @@ export const cancelSubscription = async (): Promise<{ success: boolean; message:
 export interface ConsentStatistics {
   totalRegistrations: number;
   totalConsents: number;
-  operational: {
-    count: number;
-    percentage: number;
-  };
   marketing: {
-    count: number;
-    percentage: number;
-  };
-  demographics: {
-    count: number;
-    percentage: number;
-  };
-  analytics: {
     count: number;
     percentage: number;
   };
@@ -1378,5 +1376,58 @@ export const getEventRefundSummary = async (
   eventId: string,
 ): Promise<{ success: boolean; data: OrganizerRefundSummary }> => {
   return apiGet(`/organizer/events/${eventId}/refunds/summary`);
+};
+
+// ─── Staff Invitations ────────────────────────────────────────────────────────
+
+export interface OrgStaffInvitation {
+  id: string;
+  email: string;
+  role: string;
+  scope: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REVOKED' | 'EXPIRED';
+  organizationName?: string;
+  invitedBy: { firstName: string | null; lastName: string | null; email: string };
+  expiresAt: string;
+  acceptedAt?: string;
+  createdAt: string;
+}
+
+export const inviteOrganizerStaff = async (data: {
+  email: string;
+  role: string;
+  message?: string;
+}) => {
+  return apiPost<{ success: boolean; message: string; data: OrgStaffInvitation }>(
+    '/organizer/staff-invitations',
+    data,
+  );
+};
+
+export const getOrganizerStaffInvitations = async (params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const query = new URLSearchParams();
+  if (params?.status) query.set('status', params.status);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.limit) query.set('limit', String(params.limit));
+  const qs = query.toString();
+  return apiGet<{
+    success: boolean;
+    data: {
+      invitations: OrgStaffInvitation[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    };
+  }>(`/organizer/staff-invitations${qs ? `?${qs}` : ''}`);
+};
+
+export const resendOrganizerStaffInvitation = async (id: string) => {
+  return apiPost<{ success: boolean; message: string }>(`/organizer/staff-invitations/${id}/resend`, {});
+};
+
+export const revokeOrganizerStaffInvitation = async (id: string) => {
+  return apiPost<{ success: boolean; message: string }>(`/organizer/staff-invitations/${id}/revoke`, {});
 };
 

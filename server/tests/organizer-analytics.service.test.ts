@@ -2,25 +2,25 @@ import { OrganizerAnalyticsService } from '../src/services/organizer-analytics.s
 import { NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
-    event: { findFirst: jest.fn() },
-    eventRegistration: { findMany: jest.fn() },
-    eventPaymentTransaction: { findMany: jest.fn() },
-    refund: { findMany: jest.fn() },
+    event: { findFirst: vi.fn() },
+    eventRegistration: { findMany: vi.fn() },
+    eventPaymentTransaction: { findMany: vi.fn() },
+    refund: { findMany: vi.fn() },
   },
 }));
 
 const prismaMock = prisma as unknown as {
-  event: { findFirst: jest.Mock };
-  eventRegistration: { findMany: jest.Mock };
-  eventPaymentTransaction: { findMany: jest.Mock };
-  refund: { findMany: jest.Mock };
+  event: { findFirst: vi.Mock };
+  eventRegistration: { findMany: vi.Mock };
+  eventPaymentTransaction: { findMany: vi.Mock };
+  refund: { findMany: vi.Mock };
 };
 
 describe('OrganizerAnalyticsService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('getEventAnalytics', () => {

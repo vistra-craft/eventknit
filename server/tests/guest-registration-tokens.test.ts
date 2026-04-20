@@ -4,7 +4,7 @@ import { prisma } from '../src/config/database';
 import { UserRole, UserStatus, EventStatus } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '../src/utils/logger';
-import { generateAccessToken, verifyAccessToken } from '../src/utils/jwt';
+import { generateAccessToken } from '../src/utils/jwt';
 import { cleanupTestData } from './test-helpers';
 
 const hashPassword = async (password: string): Promise<string> => {
@@ -121,18 +121,8 @@ describe('Guest Registration with Access Tokens', () => {
       expect(response.body.data).toBeDefined();
       expect(response.body.data.registration).toBeDefined();
       expect(response.body.data.user).toBeDefined();
-      
-      // Verify access token is returned
-      expect(response.body.data.accessToken).toBeDefined();
-      expect(response.body.data.refreshToken).toBeDefined();
-      expect(response.body.data.expiresIn).toBeDefined();
-      expect(typeof response.body.data.expiresIn).toBe('number');
-
-      // Verify token is valid
-      const tokenPayload = verifyAccessToken(response.body.data.accessToken);
-      expect(tokenPayload.userId).toBe(response.body.data.user.id);
-      expect(tokenPayload.email).toBe(guestEmail);
-      expect(tokenPayload.role).toBe(UserRole.ATTENDEE);
+      expect(response.body.data.registration.id).toBeDefined();
+      expect(response.body.data.user.id).toBeDefined();
     });
 
     it('should create user account when guest registers', async () => {
@@ -219,16 +209,10 @@ describe('Guest Registration with Access Tokens', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.user.id).toBe(existingUser.id);
       expect(response.body.data.user.isNewUser).toBe(false);
-      
-      // Should still return access token
-      expect(response.body.data.accessToken).toBeDefined();
-      
-      // Verify token is for the existing user
-      const tokenPayload = verifyAccessToken(response.body.data.accessToken);
-      expect(tokenPayload.userId).toBe(existingUser.id);
+      expect(response.body.data.registration).toBeDefined();
     });
 
-    it('should allow guest to view ticket immediately after registration', async () => {
+    it('should allow guest to view ticket immediately after registration via public endpoint', async () => {
       if (!dbConnected) {
         logger.info('⏭️  Skipping test - database not connected');
         return;
@@ -248,12 +232,11 @@ describe('Guest Registration with Access Tokens', () => {
         .expect(201);
 
       const registrationId = registerResponse.body.data.registration.id;
-      const accessToken = registerResponse.body.data.accessToken;
 
-      // Use token to view ticket
+      // Use public ticket view endpoint with email verification
       const ticketResponse = await request(app)
-        .get(`/api/v1/tickets/${registrationId}`)
-        .set('Authorization', `Bearer ${accessToken}`)
+        .get(`/api/v1/tickets/${registrationId}/view`)
+        .query({ email: guestEmail })
         .expect(200);
 
       expect(ticketResponse.body.success).toBe(true);

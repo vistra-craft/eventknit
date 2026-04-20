@@ -49,7 +49,7 @@ const upload = multer({
 
 // All routes require authentication and organizer/staff role
 router.use(authenticate);
-router.use(requireMinRole(UserRole.ORGANIZER_STAFF));
+router.use(requireMinRole(UserRole.ORGANIZER_ADMIN));
 
 /**
  * @route   GET /api/v1/events/:id/import/template

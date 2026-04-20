@@ -49,9 +49,7 @@ describe('Staff Performance & Analytics', () => {
 
     // Clear all tables using comprehensive cleanup helper
     try {
-      await prisma.$transaction(async (tx) => {
-        await cleanupTestData(tx);
-      });
+      await cleanupTestData();
     } catch (error) {
       // If cleanup fails, log but continue - might be due to missing tables
       logger.warn('Cleanup warning:', error);
@@ -67,7 +65,7 @@ describe('Staff Performance & Analytics', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'User',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -76,7 +74,7 @@ describe('Staff Performance & Analytics', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'User',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -127,7 +125,7 @@ describe('Staff Performance & Analytics', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'Staff',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -136,7 +134,7 @@ describe('Staff Performance & Analytics', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'Staff',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -150,7 +148,7 @@ describe('Staff Performance & Analytics', () => {
         password: hashedPassword,
         firstName: 'Organizer',
         lastName: 'Staff',
-        role: UserRole.ORGANIZER_STAFF,
+        role: UserRole.ORGANIZER_ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -159,7 +157,7 @@ describe('Staff Performance & Analytics', () => {
         password: hashedPassword,
         firstName: 'Organizer',
         lastName: 'Staff',
-        role: UserRole.ORGANIZER_STAFF,
+        role: UserRole.ORGANIZER_ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -186,7 +184,7 @@ describe('Staff Performance & Analytics', () => {
       data: {
         eventId,
         staffId: adminStaffId,
-        staffType: 'ADMIN_STAFF' as const,
+        staffType: 'ADMIN' as const,
         role: 'SCANNER' as const,
         assignedBy: adminId,
         assignedAt: new Date('2024-11-01T00:00:00Z'),
@@ -200,7 +198,7 @@ describe('Staff Performance & Analytics', () => {
       data: {
         eventId,
         staffId: organizerStaffId,
-        staffType: 'ORGANIZER_STAFF' as const,
+        staffType: 'ORGANIZER_ADMIN' as const,
         role: 'SCANNER' as const,
         assignedBy: organizerId,
         assignedAt: new Date('2024-11-01T00:00:00Z'),

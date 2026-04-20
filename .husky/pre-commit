@@ -3,3 +3,10 @@
 # Run lint-staged in the server directory
 cd server && npx lint-staged
 
+# Run type-check on client (only if client files are staged)
+cd ../client
+STAGED_CLIENT=$(git diff --cached --name-only --diff-filter=ACM -- '../client/src/**/*.ts' '../client/src/**/*.tsx' 2>/dev/null)
+if [ -n "$STAGED_CLIENT" ]; then
+  echo "Checking client types..."
+  npx tsc --noEmit
+fi

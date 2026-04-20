@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getEvents, EventStatus, EventType } from "@/lib/event-api";
 import type { EventData } from "@/types/event";
 import { Loader } from "@/components/ui/loader";
-import { EventImage } from "@/components/EventImage";
+import { EventImage } from '@/components/events/EventImage';
 
 interface RelatedEventsSimpleProps {
   currentEventId?: string;
@@ -104,7 +104,7 @@ export const RelatedEventsSimple = ({
         {relatedEvents.map((event) => (
           <div
             key={event.id}
-            onClick={() => navigate(`/event/${event.id}`)}
+            onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
             className="group cursor-pointer overflow-hidden rounded-xl border border-border bg-background shadow-sm hover:shadow-md hover:shadow-primary/5 hover:border-primary/30 transition-all duration-200"
           >
             {/* Event Image */}

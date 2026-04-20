@@ -1,4 +1,4 @@
-import { EventCard } from "@/components/EventCard";
+import { EventCard } from '@/components/events/EventCard';
 import { useEffect, useState } from "react";
 import { getEvents, EventStatus } from "@/lib/event-api";
 import type { EventData } from "@/types/event";
@@ -94,6 +94,7 @@ export const RelatedEvents = ({ currentEventId, category, tags }: RelatedEventsP
           >
             <EventCard
               id={event.id}
+              slug={event.slug}
               title={event.title}
               image={event.image || ""}
               startDate={event.startDate}

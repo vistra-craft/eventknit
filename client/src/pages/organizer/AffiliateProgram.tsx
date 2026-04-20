@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   applyAsAffiliate,
 } from "@/lib/organizer-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
 
 interface AffiliateProgram {
   id: string;
@@ -62,11 +63,7 @@ const AffiliateProgram = () => {
       }
     } catch (error) {
       console.error("Error fetching programs:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load affiliate programs",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load affiliate programs');
     } finally {
       setLoading(false);
     }
@@ -114,11 +111,7 @@ const AffiliateProgram = () => {
         fetchPrograms();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create program",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to create program');
     }
   };
 
@@ -133,11 +126,7 @@ const AffiliateProgram = () => {
         fetchPrograms();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to apply as affiliate",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to apply as affiliate');
     }
   };
 
@@ -165,7 +154,7 @@ const AffiliateProgram = () => {
                 Create Program
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create Affiliate Program</DialogTitle>
               </DialogHeader>
@@ -267,7 +256,7 @@ const AffiliateProgram = () => {
                     <p className="text-muted-foreground mb-4">
                       {selectedProgram.description || "No description"}
                     </p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Commission Type</p>
                         <p className="text-lg font-semibold">
@@ -388,7 +377,7 @@ const CreateProgramForm = ({
           rows={3}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="commissionType">Commission Type *</Label>
           <Select
@@ -419,7 +408,7 @@ const CreateProgramForm = ({
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="minCommission">Min Commission</Label>
           <Input

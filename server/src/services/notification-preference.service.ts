@@ -88,8 +88,10 @@ export class NotificationPreferenceService {
         };
       }
 
-      const preferences = await prisma.notificationPreference.create({
-        data: {
+      const preferences = await prisma.notificationPreference.upsert({
+        where: { userId },
+        update: {},
+        create: {
           userId,
           ...defaultPrefs,
         },

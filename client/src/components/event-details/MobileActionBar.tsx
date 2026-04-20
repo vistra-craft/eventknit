@@ -45,6 +45,7 @@ export function MobileActionBar({
     event.ticketTypes && event.ticketTypes.length > 0
       ? Math.min(...event.ticketTypes.map((t) => t.price))
       : event.price ?? 0;
+  const isFreeEvent = event.isFree || lowestPrice === 0;
 
   return (
     <AnimatePresence>
@@ -59,7 +60,7 @@ export function MobileActionBar({
           <div className="flex items-center justify-between gap-3 max-w-lg mx-auto">
             {/* Price summary */}
             <div className="flex-shrink-0">
-              {event.isFree ? (
+              {isFreeEvent ? (
                 <p className="text-lg font-bold text-primary">Free</p>
               ) : (
                 <>

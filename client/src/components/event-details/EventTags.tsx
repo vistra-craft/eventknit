@@ -6,9 +6,21 @@ interface EventTagsProps {
 }
 
 export const EventTags = ({ tags, category }: EventTagsProps) => {
+  const seen = new Set<string>();
   const allTags: string[] = [];
-  if (category) allTags.push(category);
-  if (tags && tags.length > 0) allTags.push(...tags);
+  if (category) {
+    seen.add(category.toLowerCase());
+    allTags.push(category);
+  }
+  if (tags && tags.length > 0) {
+    for (const tag of tags) {
+      const key = tag.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        allTags.push(tag);
+      }
+    }
+  }
 
   if (allTags.length === 0) return null;
 

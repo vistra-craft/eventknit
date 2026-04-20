@@ -9,7 +9,7 @@ export class CheckpointController {
   /**
    * Create a new checkpoint
    * POST /api/v1/checkpoints
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async createCheckpoint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -72,7 +72,7 @@ export class CheckpointController {
   /**
    * Get checkpoint by ID
    * GET /api/v1/checkpoints/:checkpointId
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async getCheckpoint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -108,7 +108,7 @@ export class CheckpointController {
   /**
    * Get checkpoints for an event
    * GET /api/v1/checkpoints/event/:eventId
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async getEventCheckpoints(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -145,7 +145,7 @@ export class CheckpointController {
   /**
    * Update checkpoint
    * PUT /api/v1/checkpoints/:checkpointId
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async updateCheckpoint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -204,7 +204,7 @@ export class CheckpointController {
   /**
    * Delete checkpoint
    * DELETE /api/v1/checkpoints/:checkpointId
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async deleteCheckpoint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -236,7 +236,7 @@ export class CheckpointController {
   /**
    * Duplicate checkpoint
    * POST /api/v1/checkpoints/:checkpointId/duplicate
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async duplicateCheckpoint(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -346,7 +346,7 @@ export class CheckpointController {
   /**
    * Get checkpoint scans
    * GET /api/v1/checkpoints/:checkpointId/scans
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async getCheckpointScans(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -385,7 +385,7 @@ export class CheckpointController {
   /**
    * Get checkpoint statistics
    * GET /api/v1/checkpoints/:checkpointId/stats
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async getCheckpointStats(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -421,7 +421,7 @@ export class CheckpointController {
   /**
    * Get event checkpoint summary
    * GET /api/v1/checkpoints/event/:eventId/summary
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async getEventCheckpointSummary(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -453,7 +453,7 @@ export class CheckpointController {
   /**
    * Assign staff to checkpoint
    * POST /api/v1/checkpoints/:checkpointId/staff
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async assignStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -493,7 +493,7 @@ export class CheckpointController {
   /**
    * Remove staff from checkpoint
    * DELETE /api/v1/checkpoints/:checkpointId/staff/:staffId
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async removeStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -526,7 +526,7 @@ export class CheckpointController {
   /**
    * Get checkpoint staff
    * GET /api/v1/checkpoints/:checkpointId/staff
-   * Requires: ADMIN_STAFF or higher
+   * Requires: ADMIN or higher
    */
   static async getCheckpointStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {

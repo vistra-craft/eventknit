@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { Prisma } from '@prisma/client';
 
 export class AdvancedTicketTypesService {
   /**
@@ -14,7 +15,7 @@ export class AdvancedTicketTypesService {
       name: string;
       basePrice: number;
       maxPerOrder?: number;
-      rules?: any;
+      rules?: Prisma.JsonValue;
     },
   ) {
     const event = await prisma.event.findFirst({
@@ -58,13 +59,13 @@ export class AdvancedTicketTypesService {
     price?: number;
     minQuantity?: number;
     maxQuantity?: number;
-    bundleItems?: any[];
+    bundleItems?: Prisma.JsonValue[];
     isDonation?: boolean;
     minDonation?: number;
     maxDonation?: number;
     suggestedAmounts?: number[];
     hasReservedSeating?: boolean;
-    seatingChart?: any;
+    seatingChart?: Prisma.JsonValue;
     availableFrom?: Date;
     availableUntil?: Date;
     quantity?: number;
@@ -118,13 +119,13 @@ export class AdvancedTicketTypesService {
           price: data.price,
           minQuantity: data.minQuantity,
           maxQuantity: data.maxQuantity,
-          bundleItems: data.bundleItems,
+          bundleItems: data.bundleItems as unknown as Prisma.InputJsonValue,
           isDonation: data.isDonation || false,
           minDonation: data.minDonation,
           maxDonation: data.maxDonation,
           suggestedAmounts: data.suggestedAmounts,
           hasReservedSeating: data.hasReservedSeating || false,
-          seatingChart: data.seatingChart,
+          seatingChart: data.seatingChart as unknown as Prisma.InputJsonValue,
           availableFrom: data.availableFrom,
           availableUntil: data.availableUntil,
           quantity: data.quantity,
@@ -167,18 +168,12 @@ export class AdvancedTicketTypesService {
         throw new NotFoundError('Event not found');
       }
 
-      const where: any = {
+      const where: Prisma.TicketPackageWhereInput = {
         eventId,
         organizerId,
+        ...(filters?.type && { type: filters.type as 'group' | 'bundle' | 'donation' }),
+        ...(filters?.isActive !== undefined && { isActive: filters.isActive }),
       };
-
-      if (filters?.type) {
-        where.type = filters.type;
-      }
-
-      if (filters?.isActive !== undefined) {
-        where.isActive = filters.isActive;
-      }
 
       const packages = await prisma.ticketPackage.findMany({
         where,
@@ -201,12 +196,12 @@ export class AdvancedTicketTypesService {
     price?: number;
     minQuantity?: number;
     maxQuantity?: number;
-    bundleItems?: any[];
+    bundleItems?: Prisma.JsonValue[];
     minDonation?: number;
     maxDonation?: number;
     suggestedAmounts?: number[];
     hasReservedSeating?: boolean;
-    seatingChart?: any;
+    seatingChart?: Prisma.JsonValue;
     availableFrom?: Date;
     availableUntil?: Date;
     quantity?: number;
@@ -226,7 +221,11 @@ export class AdvancedTicketTypesService {
 
       const updated = await prisma.ticketPackage.update({
         where: { id: packageId },
-        data,
+        data: {
+          ...data,
+          bundleItems: data.bundleItems as unknown as Prisma.InputJsonValue | undefined,
+          seatingChart: data.seatingChart as unknown as Prisma.InputJsonValue | undefined,
+        },
       });
 
       return updated;
@@ -281,16 +280,17 @@ export class AdvancedTicketTypesService {
         throw new NotFoundError('Ticket package with reserved seating not found');
       }
 
-      const seatingChart = package_.seatingChart as any;
+      const seatingChart = package_.seatingChart as Record<string, unknown> | null;
       if (!seatingChart) {
         throw new ValidationError('No seating chart configured');
       }
 
       // Update seating chart to mark seats as sold
       // This is a simplified version - in production, you'd want more sophisticated seat management
+      const soldSeats = (seatingChart.soldSeats as string[]) || [];
       const updatedChart = {
         ...seatingChart,
-        soldSeats: [...(seatingChart.soldSeats || []), ...seats],
+        soldSeats: [...soldSeats, ...seats],
       };
 
       await prisma.ticketPackage.update({

@@ -7,7 +7,7 @@
 import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
-import { SeatStatus, SeatType } from '@prisma/client';
+import { Prisma, SeatStatus, SeatType, type Seat, type SeatReservation } from '@prisma/client';
 import { DynamicPricingService, SeatPricingContext } from './dynamic-pricing.service.js';
 
 export interface BestSeatCriteria {
@@ -21,7 +21,7 @@ export interface BestSeatCriteria {
 }
 
 export interface SeatScore {
-  seat: any;
+  seat: Seat;
   score: number;
   reasons: string[];
   dynamicPrice?: number;
@@ -58,7 +58,7 @@ export class SeatSelectionService {
       // Use transaction with row-level locking to prevent race conditions
       const reservations = await prisma.$transaction(async (tx) => {
         // Lock the seat rows using FOR UPDATE to prevent concurrent reservations
-        const lockedSeats = await tx.$queryRaw<Array<{ id: string; seatIdentifier: string; status: string; basePrice: any; currentPrice: any }>>`
+        const lockedSeats = await tx.$queryRaw<Array<{ id: string; seatIdentifier: string; status: string; basePrice: Prisma.Decimal | null; currentPrice: Prisma.Decimal | null }>>`
           SELECT s.id, s."seatIdentifier", s.status, s."basePrice", s."currentPrice"
           FROM "Seat" s
           INNER JOIN "SeatMap" sm ON s."seatMapId" = sm.id
@@ -125,7 +125,7 @@ export class SeatSelectionService {
         }
 
         // Create or update reservations for all requested seats
-        const newReservations: any[] = [];
+        const newReservations: SeatReservation[] = [];
         for (const seat of lockedSeats) {
           const existing = await tx.seatReservation.findFirst({
             where: {
@@ -542,17 +542,7 @@ export class SeatSelectionService {
         const { score, reasons } = this.calculateSeatScore(seat, criteria, dynamicPrice);
 
         scoredSeats.push({
-          seat: {
-            id: seat.id,
-            seatIdentifier: seat.seatIdentifier,
-            sectionId: seat.sectionId,
-            rowLabel: seat.rowLabel,
-            seatLabel: seat.seatLabel,
-            seatType: seat.seatType,
-            x: seat.x,
-            y: seat.y,
-            basePrice: Number(seat.basePrice),
-          },
+          seat,
           score,
           reasons,
           dynamicPrice,
@@ -586,7 +576,7 @@ export class SeatSelectionService {
    * Calculate score for a seat based on criteria
    */
   private static calculateSeatScore(
-    seat: any,
+    seat: Seat,
     criteria: BestSeatCriteria,
     dynamicPrice: number,
   ): { score: number; reasons: string[] } {
@@ -612,7 +602,7 @@ export class SeatSelectionService {
     }
 
     // Preferred section bonus
-    if (criteria.preferredSections?.includes(seat.sectionId)) {
+    if (seat.sectionId && criteria.preferredSections?.includes(seat.sectionId)) {
       score += 15;
       reasons.push('Preferred section (+15)');
     }

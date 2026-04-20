@@ -47,9 +47,7 @@ describe('RefundService', () => {
 
     // Clear all tables using comprehensive cleanup helper
     try {
-      await prisma.$transaction(async (tx) => {
-        await cleanupTestData(tx);
-      });
+      await cleanupTestData();
     } catch (error) {
       // If cleanup fails, log but continue - might be due to missing tables
       logger.warn('Cleanup warning:', error);
@@ -89,7 +87,7 @@ describe('RefundService', () => {
         password: adminPassword,
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
@@ -99,7 +97,7 @@ describe('RefundService', () => {
         password: adminPassword,
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),

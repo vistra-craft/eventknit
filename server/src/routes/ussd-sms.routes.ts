@@ -17,12 +17,12 @@ smsRouter.post('/webhook', USSDSMSController.handleIncomingSMS);
 /**
  * @route   GET /api/v1/admin/sms/sessions/:phoneNumber
  * @desc    Get SMS session status (admin only)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 smsRouter.get(
   '/sessions/:phoneNumber',
   authenticate,
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   USSDSMSController.getSessionStatus,
 );
 

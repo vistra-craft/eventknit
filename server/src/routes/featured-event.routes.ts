@@ -12,6 +12,17 @@ const router = Router();
  * Only processes multipart/form-data requests, skips JSON requests
  */
 const handleMulterUpload = (req: Request, res: Response, next: NextFunction): void => {
+  const isMulterLimitError = (value: unknown): value is { code: string; message?: string } => {
+    if (typeof value !== 'object' || value === null) {
+      return false;
+    }
+    if (!('code' in value)) {
+      return false;
+    }
+    const codeValue = value.code;
+    return typeof codeValue === 'string' && codeValue.startsWith('LIMIT_');
+  };
+
   // Skip multer for JSON requests - only process multipart/form-data
   const contentType = req.get('content-type') || '';
   if (!contentType.includes('multipart/form-data')) {
@@ -20,16 +31,15 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
   }
 
   uploadSingleImage(req, res, (err: unknown) => {
-    if (err instanceof (multer as any).MulterError || (err as any).code?.startsWith('LIMIT_')) {
-      const multerErr = err as any;
-      if (multerErr.code === 'LIMIT_FILE_SIZE') {
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
         res.status(413).json({
           success: false,
           message: 'File too large. Maximum file size is 5MB.',
         });
         return;
       }
-      if (multerErr.code === 'LIMIT_FILE_COUNT') {
+      if (err.code === 'LIMIT_FILE_COUNT') {
         res.status(400).json({
           success: false,
           message: 'Too many files. Only one file is allowed.',
@@ -38,7 +48,15 @@ const handleMulterUpload = (req: Request, res: Response, next: NextFunction): vo
       }
       res.status(400).json({
         success: false,
-        message: multerErr.message || 'File upload error',
+        message: err.message || 'File upload error',
+      });
+      return;
+    }
+
+    if (isMulterLimitError(err)) {
+      res.status(400).json({
+        success: false,
+        message: typeof err.message === 'string' ? err.message : 'File upload limit exceeded',
       });
       return;
     }
@@ -75,22 +93,22 @@ router.use(authenticate);
 /**
  * @route   GET /api/v1/featured-events
  * @desc    Get all featured events (admin)
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FeaturedEventController.getAllFeaturedEvents,
 );
 
 /**
  * @route   POST /api/v1/featured-events
  * @desc    Create a new featured event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.post(
   '/',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   handleMulterUpload,
   FeaturedEventController.createFeaturedEvent,
 );
@@ -98,22 +116,22 @@ router.post(
 /**
  * @route   GET /api/v1/featured-events/:id
  * @desc    Get featured event by ID
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.get(
   '/:id',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FeaturedEventController.getFeaturedEventById,
 );
 
 /**
  * @route   PUT /api/v1/featured-events/:id
  * @desc    Update featured event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.put(
   '/:id',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   handleMulterUpload,
   FeaturedEventController.updateFeaturedEvent,
 );
@@ -121,11 +139,11 @@ router.put(
 /**
  * @route   DELETE /api/v1/featured-events/:id
  * @desc    Delete featured event
- * @access  Private (ADMIN_STAFF+)
+ * @access  Private (ADMIN+)
  */
 router.delete(
   '/:id',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FeaturedEventController.deleteFeaturedEvent,
 );
 

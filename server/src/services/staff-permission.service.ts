@@ -18,11 +18,10 @@ export class StaffPermissionService {
     userRole: UserRole,
     eventId: string,
   ): Promise<boolean> {
-    // Admin staff (SUPERADMIN, ADMIN_STAFF, MARKETER, SUPPORT, TELLER) can access any event
+    // Admin roles (SUPERADMIN, ADMIN, SUPPORT, TELLER) can access any event
     const adminStaffRoles: UserRole[] = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ];
@@ -51,7 +50,7 @@ export class StaffPermissionService {
     }
 
     // Organizer staff can only access events they're assigned to
-    if (userRole === UserRole.ORGANIZER_STAFF || userRole === UserRole.ORGANIZER_TELLER) {
+    if (userRole === UserRole.ORGANIZER_ADMIN || userRole === UserRole.ORGANIZER_TELLER) {
       const assignment = await prisma.eventStaff.findUnique({
         where: {
           eventId_staffId: {
@@ -88,8 +87,7 @@ export class StaffPermissionService {
   ) {
     const adminStaffRoles: UserRole[] = [
       UserRole.SUPERADMIN,
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ];
@@ -167,7 +165,7 @@ export class StaffPermissionService {
     }
 
     // Organizer staff can only access assigned events
-    if (userRole === UserRole.ORGANIZER_STAFF || userRole === UserRole.ORGANIZER_TELLER) {
+    if (userRole === UserRole.ORGANIZER_ADMIN || userRole === UserRole.ORGANIZER_TELLER) {
       const assignments = await prisma.eventStaff.findMany({
         where: {
           staffId: userId,
@@ -272,7 +270,7 @@ export class StaffPermissionService {
 
     // Check if staff is organizer staff
     if (
-      staff.role !== UserRole.ORGANIZER_STAFF &&
+      staff.role !== UserRole.ORGANIZER_ADMIN &&
       staff.role !== UserRole.ORGANIZER_TELLER
     ) {
       return false;

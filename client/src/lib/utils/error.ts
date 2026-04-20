@@ -4,6 +4,8 @@
  * Standardized error extraction and handling for EventKnit.
  */
 
+type ToastFn = (opts: { title: string; description?: string; variant?: 'default' | 'destructive' }) => void;
+
 /**
  * Extracts a human-readable error message from an unknown error.
  *
@@ -79,6 +81,65 @@ export const isApiError = (
     (response as { success: unknown }).success === false &&
     'message' in response
   );
+};
+
+/**
+ * Type guard to check if an error is a rate limit (429) response
+ */
+export const isRateLimitError = (
+  error: unknown
+): error is { status: 429; message: string; retryAfter?: number } => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    (error as { status: number }).status === 429
+  );
+};
+
+/**
+ * Shows a destructive toast with a context-specific title.
+ *
+ * Replaces the broken pattern: `toast({ title: "Error", description: err instanceof Error ? err.message : 'fallback' })`
+ *
+ * @param toast   - The toast function from useToast()
+ * @param error   - The caught error (any type)
+ * @param title   - Context-specific title, e.g. "Save failed", "Upload failed"
+ * @param fallback - Fallback message if error message cannot be extracted
+ *
+ * @example
+ * } catch (err) {
+ *   showErrorToast(toast, err, 'Save failed');
+ * }
+ */
+export const showErrorToast = (
+  toast: ToastFn,
+  error: unknown,
+  title: string,
+  fallback = 'An error occurred'
+): void => {
+  // Rate limit errors get a specific, non-alarming title
+  if (isRateLimitError(error)) {
+    const retryMinutes = error.retryAfter
+      ? Math.ceil(error.retryAfter / 60)
+      : undefined;
+    const retryHint = retryMinutes
+      ? ` Please try again in ${retryMinutes} minute${retryMinutes > 1 ? 's' : ''}.`
+      : '';
+
+    toast({
+      title: 'Slow down',
+      description: (error.message || 'You\'re sending requests too fast.') + retryHint,
+      variant: 'destructive',
+    });
+    return;
+  }
+
+  toast({
+    title,
+    description: extractErrorMessage(error, fallback),
+    variant: 'destructive',
+  });
 };
 
 /**

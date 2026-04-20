@@ -234,7 +234,7 @@ class WebSocketService {
   /**
    * Emit event to any room
    */
-  emitToRoom(room: string, event: string, data: any): void {
+  emitToRoom(room: string, event: string, data: Record<string, unknown> | string | number | boolean | null): void {
     if (!this.io) {
       logger.warn(`WebSocket server not initialized, cannot emit to room: ${room}`);
       return;

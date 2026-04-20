@@ -3,96 +3,96 @@ import { ValidationError, NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
 // Mock database
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     event: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     facilityZone: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     eventFacility: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     facilityZoneMapping: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      delete: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      delete: vi.fn(),
     },
     attendeeZoneAccess: {
-      createMany: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      createMany: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     facilityMovement: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
     },
     eventRegistration: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
     },
-    $transaction: jest.fn(),
+    $transaction: vi.fn(),
   },
 }));
 
 // Mock logger
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    error: jest.fn(),
-    info: jest.fn(),
-    debug: jest.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
 const prismaMock = prisma as unknown as {
   event: {
-    findUnique: jest.Mock;
+    findUnique: vi.Mock;
   };
   facilityZone: {
-    create: jest.Mock;
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    update: jest.Mock;
-    delete: jest.Mock;
+    create: vi.Mock;
+    findUnique: vi.Mock;
+    findMany: vi.Mock;
+    update: vi.Mock;
+    delete: vi.Mock;
   };
   eventFacility: {
-    findUnique: jest.Mock;
+    findUnique: vi.Mock;
   };
   facilityZoneMapping: {
-    create: jest.Mock;
-    findUnique: jest.Mock;
-    delete: jest.Mock;
+    create: vi.Mock;
+    findUnique: vi.Mock;
+    delete: vi.Mock;
   };
   attendeeZoneAccess: {
-    createMany: jest.Mock;
-    findMany: jest.Mock;
-    findUnique: jest.Mock;
-    update: jest.Mock;
-    delete: jest.Mock;
+    createMany: vi.Mock;
+    findMany: vi.Mock;
+    findUnique: vi.Mock;
+    update: vi.Mock;
+    delete: vi.Mock;
   };
   facilityMovement: {
-    create: jest.Mock;
-    findMany: jest.Mock;
-    count: jest.Mock;
+    create: vi.Mock;
+    findMany: vi.Mock;
+    count: vi.Mock;
   };
   eventRegistration: {
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
+    findUnique: vi.Mock;
+    findMany: vi.Mock;
   };
-  $transaction: jest.Mock;
+  $transaction: vi.Mock;
 };
 
 describe('FacilityZoneService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('createZone', () => {

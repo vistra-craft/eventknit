@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Star, CheckCircle, AlertCircle } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { validateFeedbackToken, submitFeedbackViaToken } from "@/lib/feedback-api";
-import Logo from "@/components/Logo";
+import Logo from '@/components/layout/Logo';
 
 const IMPROVEMENT_AREAS = [
   { id: "registration", label: "Registration Process" },
@@ -267,7 +267,7 @@ const FeedbackPage: React.FC = () => {
             {/* Improvement Areas */}
             <div className="space-y-3">
               <Label>What could we improve? (select all that apply)</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {IMPROVEMENT_AREAS.map((area) => (
                   <label
                     key={area.id}

@@ -1,7 +1,6 @@
 import AdminEnhancedDashboard from "./AdminEnhancedDashboard";
 import TellerDashboard from "./TellerDashboard";
-import MarketerDashboard from "./MarketerDashboard";
-import SupportDashboard from "./SupportDashboard";
+import SupportDashboard from "./support/SupportDashboard";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
 
@@ -15,12 +14,10 @@ const AdminDashboard = () => {
 
   if (userRole === UserRole.TELLER) {
     dashboardContent = <TellerDashboard />;
-  } else if (userRole === UserRole.MARKETER) {
-    dashboardContent = <MarketerDashboard />;
   } else if (userRole === UserRole.SUPPORT) {
     dashboardContent = <SupportDashboard />;
   } else {
-    // For ADMIN_STAFF and SUPERADMIN, show full admin dashboard
+    // For ADMIN and SUPERADMIN, show full admin dashboard
     dashboardContent = <AdminEnhancedDashboard />;
   }
 

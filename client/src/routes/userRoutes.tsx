@@ -4,7 +4,9 @@
  */
 
 import { lazy, createElement } from 'react';
+import { Navigate } from 'react-router-dom';
 import type { RouteConfig } from './types';
+
 
 // Lazy load user dashboard page components
 const DashboardHome = lazy(() => import('../pages/user/DashboardHome'));
@@ -40,6 +42,8 @@ const NotificationPreferencesPage = lazy(() => import('../pages/user/Notificatio
 const EventManagementHub = lazy(() => import('../pages/user/EventManagementHub'));
 const CreateEventEntry = lazy(() => import('../pages/user/CreateEventEntry'));
 const CreateEventStepwise = lazy(() => import('../pages/CreateEventStepwise'));
+const VerificationPage = lazy(() => import('../pages/organizer/settings/VerificationPage'));
+const KYCVerificationPage = lazy(() => import('../pages/organizer/settings/KYCVerificationPage'));
 
 /**
  * User route definitions
@@ -198,6 +202,38 @@ export const userRoutes: RouteConfig[] = [
   {
     path: 'profile',
     element: createElement(UserProfilePage),
+  },
+
+  // Settings — rendered as a full section in UserDashboard via ?section=settings
+  {
+    path: 'settings',
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings', replace: true }),
+  },
+  {
+    path: 'settings/profile',
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings&tab=profile', replace: true }),
+  },
+  {
+    path: 'settings/notifications',
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings&tab=notifications', replace: true }),
+  },
+  {
+    path: 'settings/security',
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings&tab=security', replace: true }),
+  },
+  {
+    path: 'settings/appearance',
+    element: createElement(Navigate, { to: '/user/dashboard?section=settings&tab=appearance', replace: true }),
+  },
+
+  // Verification & KYC (same components as organizer, rendered in attendee layout)
+  {
+    path: 'verification',
+    element: createElement(VerificationPage),
+  },
+  {
+    path: 'kyc',
+    element: createElement(KYCVerificationPage),
   },
 
   // Financial

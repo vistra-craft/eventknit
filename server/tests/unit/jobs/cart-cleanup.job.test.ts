@@ -2,19 +2,19 @@ import { CartCleanupJob } from '../../../src/jobs/cart-cleanup.job';
 import { CartService } from '../../../src/services/cart.service';
 import { prisma } from '../../../src/config/database';
 
-jest.mock('../../../src/services/cart.service');
-jest.mock('../../../src/config/database', () => ({
+vi.mock('../../../src/services/cart.service');
+vi.mock('../../../src/config/database', () => ({
   prisma: {
-    $queryRaw: jest.fn(),
+    $queryRaw: vi.fn(),
   },
 }));
 
-const CartServiceMock = CartService as jest.Mocked<typeof CartService>;
-const prismaMock = prisma as unknown as { $queryRaw: jest.Mock };
+const CartServiceMock = CartService as vi.Mocked<typeof CartService>;
+const prismaMock = prisma as unknown as { $queryRaw: vi.Mock };
 
 describe('CartCleanupJob', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     prismaMock.$queryRaw.mockResolvedValue([{ result: 1 }]);
   });
 

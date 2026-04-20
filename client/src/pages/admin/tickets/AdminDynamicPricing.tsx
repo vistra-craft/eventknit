@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Percent,
@@ -28,6 +29,7 @@ import {
 import { getEvents, EventStatus } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
 import { useParams, useNavigate } from "react-router-dom";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface PricingRule {
   id: string;
@@ -83,6 +85,7 @@ const AdminDynamicPricing = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [priceCalculation, setPriceCalculation] = useState<PriceCalculation | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Event selector state
@@ -121,11 +124,7 @@ const AdminDynamicPricing = () => {
       }
     } catch (error) {
       console.error("Error fetching pricing rules:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load pricing rules",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load pricing rules");
     } finally {
       setLoading(false);
     }
@@ -151,11 +150,7 @@ const AdminDynamicPricing = () => {
       }
     } catch (error) {
       console.error("Error creating pricing rule:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create pricing rule",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to create pricing rule");
     }
   };
 
@@ -169,17 +164,11 @@ const AdminDynamicPricing = () => {
       }
     } catch (error) {
       console.error("Error calculating price:", error);
-      toast({
-        title: "Error",
-        description: "Failed to calculate price",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to calculate price");
     }
   };
 
   const handleDeleteRule = async (ruleId: string) => {
-    if (!confirm("Are you sure you want to delete this pricing rule?")) return;
-
     try {
       const response = await deletePricingRule(ruleId);
       if (response.success) {
@@ -191,11 +180,7 @@ const AdminDynamicPricing = () => {
       }
     } catch (error) {
       console.error("Error deleting rule:", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete rule",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to delete rule");
     }
   };
 
@@ -308,10 +293,10 @@ const AdminDynamicPricing = () => {
         </Button>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-page-title">Dynamic Pricing</h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-sm">
             Create pricing rules for time-based, demand-based, and group discounts
           </p>
         </div>
@@ -449,7 +434,7 @@ const AdminDynamicPricing = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteRule(rule.id)}
+                      onClick={() => setDeleteConfirm(rule.id)}
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
                       Delete
@@ -461,6 +446,19 @@ const AdminDynamicPricing = () => {
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete pricing rule?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (deleteConfirm) { handleDeleteRule(deleteConfirm); } setDeleteConfirm(null); }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
@@ -550,7 +548,7 @@ const CreateRuleForm = ({
 
       {formData.type === "time_based" && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="startDate">Start Date *</Label>
               <Input
@@ -572,7 +570,7 @@ const CreateRuleForm = ({
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="discountType">Discount Type *</Label>
               <Select
@@ -609,7 +607,7 @@ const CreateRuleForm = ({
 
       {formData.type === "demand_based" && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="demandThreshold">Demand Threshold (%) *</Label>
               <Input
@@ -660,7 +658,7 @@ const CreateRuleForm = ({
               placeholder="5"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="discountType">Discount Type *</Label>
               <Select

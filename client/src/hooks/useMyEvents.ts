@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getUserRegisteredEvents } from '../lib/event-api';
 import { getOrganizerEvents } from '../lib/organizer-api';
+import { getSavedEvents } from '../lib/saved-events-api';
 import { useAuth } from './useAuth';
 import { UserRole } from '../types/auth';
 
@@ -14,6 +15,7 @@ export type MyEventsTab = 'attending' | 'organizing' | 'saved';
 
 export interface AttendingEvent {
   id: string;
+  slug?: string | null;
   title: string;
   date: string;
   location: string;
@@ -30,6 +32,7 @@ export interface OrganizingEvent {
   location: string;
   venue: string;
   status: string;
+  isFree: boolean;
   attendees: number;
   capacity: number;
   revenue: number;
@@ -38,12 +41,14 @@ export interface OrganizingEvent {
   image: string;
   description: string;
   category: string;
+  slug?: string;
   ticketsSold?: number;
   checkedIn?: number;
 }
 
 export interface SavedEvent {
   id: string;
+  slug?: string | null;
   title: string;
   date: string;
   location: string;
@@ -87,8 +92,10 @@ export const useMyEvents = (): UseMyEventsReturn => {
   const { user } = useAuth();
 
   // Check if user can organize
-  const canOrganize = user?.role === UserRole.ORGANIZER ||
-                     user?.role === UserRole.ORGANIZER_STAFF ||
+  // Now includes ATTENDEE users (who may have created pending events)
+  const canOrganize = user?.role === UserRole.ATTENDEE ||
+                     user?.role === UserRole.ORGANIZER ||
+                     user?.role === UserRole.ORGANIZER_ADMIN ||
                      user?.role === UserRole.ORGANIZER_TELLER;
 
   // State
@@ -116,6 +123,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
       if (response.success && response.data) {
         setAttendingEvents(response.data.events.map(event => ({
           id: event.id,
+          slug: event.slug ?? null,
           title: event.title,
           date: event.date,
           location: event.location,
@@ -136,6 +144,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
   const fetchOrganizing = useCallback(async () => {
     if (!canOrganize) {
       setOrganizingEvents([]);
+      setOrganizingLoading(false);
       return;
     }
 
@@ -144,7 +153,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
       setOrganizingError(null);
       const response = await getOrganizerEvents({ limit: 100 });
       if (response.success && response.data) {
-        setOrganizingEvents(response.data.events.map(event => ({
+        const mappedEvents = response.data.events.map(event => ({
           id: event.id,
           title: event.title,
           date: event.date || '',
@@ -152,6 +161,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
           location: event.location,
           venue: event.venue || event.location,
           status: event.status || 'draft',
+          isFree: event.isFree ?? true,
           attendees: event.attendees || 0,
           capacity: event.capacity || 0,
           revenue: (event as unknown as Record<string, unknown>).revenue as number || 0,
@@ -162,7 +172,10 @@ export const useMyEvents = (): UseMyEventsReturn => {
           category: event.category || '',
           ticketsSold: event.attendees || 0,
           checkedIn: Math.floor((event.attendees || 0) * 0.7), // Estimate for now
-        })));
+        }));
+        setOrganizingEvents(mappedEvents);
+      } else {
+        console.warn('[useMyEvents] No organizing events data:', response);
       }
     } catch (error) {
       console.error('Error fetching organizing events:', error);
@@ -177,9 +190,26 @@ export const useMyEvents = (): UseMyEventsReturn => {
     try {
       setSavedLoading(true);
       setSavedError(null);
-      // TODO: Replace with actual saved events API when available
-      // For now, using empty array
-      setSavedEvents([]);
+      const response = await getSavedEvents({ page: 1, limit: 100 });
+      if (response.success && response.data) {
+        setSavedEvents(
+          response.data.map((savedEvent) => {
+            const event = savedEvent.event;
+            return {
+              id: event.id,
+              slug: event.slug ?? null,
+              title: event.title,
+              date: event.startDate,
+              location: event.location || '',
+              type: event.eventType || 'In-Person',
+              image:
+                event.coverImage ||
+                'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop',
+              category: event.category || undefined,
+            };
+          }),
+        );
+      }
     } catch (error) {
       console.error('Error fetching saved events:', error);
       setSavedError('Failed to load saved events');

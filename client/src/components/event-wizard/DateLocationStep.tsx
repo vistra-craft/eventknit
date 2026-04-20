@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Globe, Calendar, X, MapPin, Clock } from 'lucide-react';
+import { Globe, Calendar, X, MapPin, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import type { StepComponentProps } from './types';
 import { TIMEZONES, getCurrentTimezone, getTimezoneLabel } from './types';
+import { MapPicker } from './MapPicker';
+import { EventMap } from '@/components/events/EventMap';
 
 interface DateLocationStepProps extends StepComponentProps {
   eventType: string;
@@ -18,9 +20,10 @@ interface DateLocationStepProps extends StepComponentProps {
 // Time Picker Component
 function TimePicker({ value, onChange, id }: { value: string; onChange: (val: string) => void; id: string }) {
   const [isOpen, setIsOpen] = useState(false);
-  
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const hours = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-  
+
   const [selectedHour, selectedMinute] = value ? value.split(':') : ['00', '00'];
 
   const handleTimeSelect = (hour: string, minute: string) => {
@@ -29,8 +32,20 @@ function TimePicker({ value, onChange, id }: { value: string; onChange: (val: st
     setIsOpen(false);
   };
 
+  // Close on click outside
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [isOpen]);
+
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
           <Input
@@ -38,7 +53,7 @@ function TimePicker({ value, onChange, id }: { value: string; onChange: (val: st
             type="time"
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className={`h-12 pr-10`}
+            className="h-12 pr-10 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-inner-spin-button]:hidden"
             placeholder="HH:MM"
           />
           <button
@@ -129,7 +144,9 @@ export function DateLocationStep({
   timezone,
   setTimezone,
 }: DateLocationStepProps) {
-  const handleInputChange = (field: string, value: string | boolean | number) => {
+  const [showMapPicker, setShowMapPicker] = useState(false);
+
+  const handleInputChange = (field: string, value: string | boolean | number | { lat: number; lng: number } | null) => {
     onInputChange(field, value);
   };
 
@@ -139,20 +156,32 @@ export function DateLocationStep({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="date">Event Date *</Label>
-          <Input
-            id="date"
-            type="date"
-            value={eventData.date}
-            onChange={(e) => {
-              handleInputChange("date", e.target.value);
-              // Clear end date if it's before start date
-              if (eventData.endDate && e.target.value > eventData.endDate) {
-                handleInputChange("endDate", "");
-              }
-              if (validationErrors.date) setValidationErrors(prev => ({ ...prev, date: '' }));
-            }}
-            className={`h-12 ${validationErrors.date ? 'border-destructive' : ''}`}
-          />
+          <div className="relative">
+            <Input
+              id="date"
+              type="date"
+              value={eventData.date}
+              onChange={(e) => {
+                handleInputChange("date", e.target.value);
+                // Clear end date if it's before start date
+                if (eventData.endDate && e.target.value > eventData.endDate) {
+                  handleInputChange("endDate", "");
+                }
+                if (validationErrors.date) setValidationErrors(prev => ({ ...prev, date: '' }));
+              }}
+              className={`h-12 pr-10 [&::-webkit-calendar-picker-indicator]:hidden ${validationErrors.date ? 'border-destructive' : ''}`}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const input = document.getElementById('date') as HTMLInputElement | null;
+                input?.showPicker?.();
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <Calendar className="h-4 w-4" />
+            </button>
+          </div>
           {validationErrors.date && (
             <p className="text-sm text-destructive">{validationErrors.date}</p>
           )}
@@ -220,17 +249,29 @@ export function DateLocationStep({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="endDate">End Date</Label>
-          <Input
-            id="endDate"
-            type="date"
-            min={eventData.date || undefined}
-            value={eventData.endDate}
-            onChange={(e) => {
-              handleInputChange("endDate", e.target.value);
-              if (validationErrors.endDate) setValidationErrors(prev => ({ ...prev, endDate: '' }));
-            }}
-            className={`h-12 ${validationErrors.endDate ? 'border-destructive' : ''}`}
-          />
+          <div className="relative">
+            <Input
+              id="endDate"
+              type="date"
+              min={eventData.date || undefined}
+              value={eventData.endDate}
+              onChange={(e) => {
+                handleInputChange("endDate", e.target.value);
+                if (validationErrors.endDate) setValidationErrors(prev => ({ ...prev, endDate: '' }));
+              }}
+              className={`h-12 pr-10 [&::-webkit-calendar-picker-indicator]:hidden ${validationErrors.endDate ? 'border-destructive' : ''}`}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const input = document.getElementById('endDate') as HTMLInputElement | null;
+                input?.showPicker?.();
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <Calendar className="h-4 w-4" />
+            </button>
+          </div>
           {validationErrors.endDate && (
             <p className="text-sm text-destructive">{validationErrors.endDate}</p>
           )}
@@ -288,40 +329,36 @@ export function DateLocationStep({
                 <Label htmlFor="registrationDeadline" className="text-xs text-muted-foreground">
                   Last Registration Date
                 </Label>
-                <Input
-                  id="registrationDeadline"
-                  type="date"
-                  value={eventData.registrationDeadline}
-                  max={eventData.date || undefined}
-                  onChange={(e) => handleInputChange("registrationDeadline", e.target.value)}
-                  className="h-10"
-                />
+                <div className="relative">
+                  <Input
+                    id="registrationDeadline"
+                    type="date"
+                    value={eventData.registrationDeadline}
+                    max={eventData.date || undefined}
+                    onChange={(e) => handleInputChange("registrationDeadline", e.target.value)}
+                    className="h-10 pr-10 [&::-webkit-calendar-picker-indicator]:hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.getElementById('registrationDeadline') as HTMLInputElement | null;
+                      input?.showPicker?.();
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <Calendar className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="registrationDeadlineTime" className="text-xs text-muted-foreground">
                   Closing Time
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="registrationDeadlineTime"
-                    type="time"
-                    value={eventData.registrationDeadlineTime || "23:59"}
-                    onChange={(e) => handleInputChange("registrationDeadlineTime", e.target.value)}
-                    className="h-10 pr-10"
-                  />
-                  {eventData.registrationDeadlineTime && eventData.registrationDeadlineTime !== "23:59" && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-muted"
-                      onClick={() => handleInputChange("registrationDeadlineTime", "23:59")}
-                    >
-                      <X className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="sr-only">Reset to default</span>
-                    </Button>
-                  )}
-                </div>
+                <TimePicker
+                  id="registrationDeadlineTime"
+                  value={eventData.registrationDeadlineTime || "23:59"}
+                  onChange={(value) => handleInputChange("registrationDeadlineTime", value || "23:59")}
+                />
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
@@ -385,6 +422,48 @@ export function DateLocationStep({
             <p className="text-xs text-muted-foreground">
               Full address helps attendees find your venue
             </p>
+          </div>
+          <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+            <button
+              type="button"
+              onClick={() => setShowMapPicker((prev) => !prev)}
+              className="flex w-full items-center justify-between text-left"
+            >
+              <div>
+                <Label className="text-sm font-medium">Pin exact location (optional)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Search for an address, then click the map to set the exact coordinates.
+                </p>
+              </div>
+              {showMapPicker ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+            {showMapPicker && (
+              <div className="space-y-4">
+                <MapPicker
+                  value={eventData.coordinates || null}
+                  onChange={(coords) => handleInputChange('coordinates', coords)}
+                  venue={eventData.venue}
+                  address={eventData.address}
+                  location={eventData.location}
+                />
+                {(eventData.location || eventData.venue || eventData.coordinates) && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Attendee map preview
+                    </p>
+                    <EventMap
+                      venue={eventData.venue || ''}
+                      location={eventData.location || ''}
+                      coordinates={eventData.coordinates || undefined}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import Joi from 'joi';
+import { UserRole } from '@prisma/client';
 import { OrganizerDashboardController } from '../controllers/organizer-dashboard.controller.js';
 import { SocialOAuthController } from '../controllers/social-oauth.controller.js';
 import { VenueController } from '../controllers/venue.controller.js';
 import { SeatMapController } from '../controllers/seat-map.controller.js';
-import { authenticate } from '../middleware/auth.middleware.js';
+import { authenticate, authorize, requireActiveStatus } from '../middleware/auth.middleware.js';
+import { requirePermission } from '../middleware/permission.middleware.js';
 import { validate, validateQuery, validateParams } from '../middleware/validation.middleware.js';
 import { organizerDashboardValidations } from '../validations/organizer-dashboard.validations.js';
 import {
@@ -15,8 +17,19 @@ import {
 
 const router = Router();
 
-// All routes require authentication
+// All routes require authentication + organizer-level, admin, or attendee role
+// ATTENDEE is included because attendees who create paid events need access to KYC endpoints
 router.use(authenticate);
+router.use(authorize(
+  UserRole.ORGANIZER,
+  UserRole.ORGANIZER_ADMIN,
+  UserRole.ORGANIZER_TELLER,
+  UserRole.SUPERADMIN,
+  UserRole.ADMIN,
+  UserRole.ATTENDEE,
+));
+// Block PENDING_APPROVAL organizers and DEACTIVATED users from performing actions
+router.use(requireActiveStatus);
 
 // Event Templates
 router.post(
@@ -118,41 +131,90 @@ router.delete(
   OrganizerDashboardController.deleteDraft,
 );
 
-// Attendee Segmentation
+// Event Sessions
+router.post(
+  '/events/:eventId/sessions',
+  requirePermission('events.edit'),
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  validate(organizerDashboardValidations.createSession),
+  OrganizerDashboardController.createSession,
+);
+router.get(
+  '/events/:eventId/sessions',
+  requirePermission('events.view'),
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  validateQuery(organizerDashboardValidations.sessionsQuery),
+  OrganizerDashboardController.getEventSessions,
+);
+router.get(
+  '/events/:eventId/sessions/stats',
+  requirePermission('events.view'),
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  validateQuery(organizerDashboardValidations.sessionsQuery),
+  OrganizerDashboardController.getEventSessionStats,
+);
+router.get(
+  '/sessions/:sessionId',
+  requirePermission('events.view'),
+  validateParams(Joi.object({ sessionId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getSessionById,
+);
+router.put(
+  '/sessions/:sessionId',
+  requirePermission('events.edit'),
+  validateParams(Joi.object({ sessionId: Joi.string().uuid().required() })),
+  validate(organizerDashboardValidations.updateSession),
+  OrganizerDashboardController.updateSession,
+);
+router.delete(
+  '/sessions/:sessionId',
+  requirePermission('events.edit'),
+  validateParams(Joi.object({ sessionId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.deleteSession,
+);
+
+// Attendee Segmentation (requires attendees.manage)
 router.post(
   '/segments',
+  requirePermission('attendees.manage'),
   validate(organizerDashboardValidations.createSegment),
   OrganizerDashboardController.createSegment,
 );
 router.get(
   '/segments',
+  requirePermission('attendees.view'),
   validateQuery(organizerDashboardValidations.segmentsQuery),
   OrganizerDashboardController.getSegments,
 );
 router.get(
   '/segments/:segmentId',
+  requirePermission('attendees.view'),
   validateParams(Joi.object({ segmentId: Joi.string().uuid().required() })),
   OrganizerDashboardController.getSegmentById,
 );
 router.put(
   '/segments/:segmentId',
+  requirePermission('attendees.manage'),
   validateParams(Joi.object({ segmentId: Joi.string().uuid().required() })),
   validate(organizerDashboardValidations.updateSegment),
   OrganizerDashboardController.updateSegment,
 );
 router.post(
   '/segments/:segmentId/update-members',
+  requirePermission('attendees.manage'),
   validateParams(Joi.object({ segmentId: Joi.string().uuid().required() })),
   OrganizerDashboardController.updateSegmentMembers,
 );
 router.post(
   '/segments/:segmentId/members',
+  requirePermission('attendees.manage'),
   validateParams(Joi.object({ segmentId: Joi.string().uuid().required() })),
   validate(organizerDashboardValidations.addMemberToSegment),
   OrganizerDashboardController.addMemberToSegment,
 );
 router.delete(
   '/segments/:segmentId/members/:userId',
+  requirePermission('attendees.manage'),
   validateParams(Joi.object({
     segmentId: Joi.string().uuid().required(),
     userId: Joi.string().uuid().required(),
@@ -161,36 +223,42 @@ router.delete(
 );
 router.delete(
   '/segments/:segmentId',
+  requirePermission('attendees.manage'),
   validateParams(Joi.object({ segmentId: Joi.string().uuid().required() })),
   OrganizerDashboardController.deleteSegment,
 );
 
-// Attendee Tags
+// Attendee Tags (requires attendees.manage)
 router.post(
   '/tags',
+  requirePermission('attendees.manage'),
   validate(organizerDashboardValidations.createTag),
   OrganizerDashboardController.createTag,
 );
-router.get('/tags', OrganizerDashboardController.getTags);
+router.get('/tags', requirePermission('attendees.view'), OrganizerDashboardController.getTags);
 router.get(
   '/tags/:tagId',
+  requirePermission('attendees.view'),
   validateParams(Joi.object({ tagId: Joi.string().uuid().required() })),
   OrganizerDashboardController.getTagById,
 );
 router.put(
   '/tags/:tagId',
+  requirePermission('attendees.manage'),
   validateParams(Joi.object({ tagId: Joi.string().uuid().required() })),
   validate(organizerDashboardValidations.updateTag),
   OrganizerDashboardController.updateTag,
 );
 router.post(
   '/tags/:tagId/users',
+  requirePermission('attendees.manage'),
   validateParams(Joi.object({ tagId: Joi.string().uuid().required() })),
   validate(organizerDashboardValidations.tagUser),
   OrganizerDashboardController.tagUser,
 );
 router.delete(
   '/tags/:tagId/users/:userId',
+  requirePermission('attendees.manage'),
   validateParams(Joi.object({
     tagId: Joi.string().uuid().required(),
     userId: Joi.string().uuid().required(),
@@ -199,70 +267,82 @@ router.delete(
 );
 router.get(
   '/tags/:tagId/users',
+  requirePermission('attendees.view'),
   validateParams(Joi.object({ tagId: Joi.string().uuid().required() })),
   validateQuery(organizerDashboardValidations.taggedUsersQuery),
   OrganizerDashboardController.getTaggedUsers,
 );
 router.delete(
   '/tags/:tagId',
+  requirePermission('attendees.manage'),
   validateParams(Joi.object({ tagId: Joi.string().uuid().required() })),
   OrganizerDashboardController.deleteTag,
 );
 
-// Attendee Communication
+// Attendee Communication (requires communication.send)
 router.post(
   '/segments/:segmentId/send',
+  requirePermission('communication.send'),
   validateParams(Joi.object({ segmentId: Joi.string().uuid().required() })),
   validate(organizerDashboardValidations.sendMessage),
   OrganizerDashboardController.sendToSegment,
 );
 router.post(
   '/tags/:tagId/send',
+  requirePermission('communication.send'),
   validateParams(Joi.object({ tagId: Joi.string().uuid().required() })),
   validate(organizerDashboardValidations.sendMessage),
   OrganizerDashboardController.sendToTaggedUsers,
 );
 router.post(
   '/events/:eventId/send',
+  requirePermission('communication.send'),
   validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
   validate(organizerDashboardValidations.sendMessage),
   OrganizerDashboardController.sendToEventRegistrations,
 );
 router.get(
   '/communications',
+  requirePermission('communication.send'),
   validateQuery(organizerDashboardValidations.communicationHistoryQuery),
   OrganizerDashboardController.getCommunicationHistory,
 );
 
-// Analytics
+// Analytics (requires analytics.view)
 router.get(
   '/analytics/events/:eventId',
+  requirePermission('analytics.view'),
   validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
   validateQuery(organizerDashboardValidations.analyticsQuery),
   OrganizerDashboardController.getEventAnalytics,
 );
 router.get(
   '/analytics/revenue',
+  requirePermission('analytics.view'),
   validateQuery(organizerDashboardValidations.revenueAnalyticsQuery),
   OrganizerDashboardController.getRevenueAnalytics,
 );
 router.get(
   '/analytics/attendees',
+  requirePermission('analytics.view'),
   validateQuery(organizerDashboardValidations.attendeeInsightsQuery),
   OrganizerDashboardController.getAttendeeInsights,
 );
 router.get(
   '/analytics/marketing',
+  requirePermission('analytics.view'),
   validateQuery(organizerDashboardValidations.marketingAnalyticsQuery),
   OrganizerDashboardController.getMarketingAnalytics,
 );
 router.get(
   '/analytics/checkout',
+  requirePermission('analytics.view'),
   validateQuery(organizerDashboardValidations.checkoutAnalyticsQuery),
   OrganizerDashboardController.getCheckoutAnalytics,
 );
 router.get(
   '/analytics/abandonment',
+  requirePermission('analytics.view'),
   validateQuery(organizerDashboardValidations.abandonmentAnalyticsQuery),
   OrganizerDashboardController.getAbandonmentAnalysis,
 );
@@ -285,34 +365,40 @@ router.get(
   OrganizerDashboardController.getOrganizerPromoCodeAnalytics,
 );
 
-// Financial Management
+// Financial Management (requires financial.view / financial.manage)
 router.post(
   '/expenses',
+  requirePermission('financial.manage'),
   validate(organizerDashboardValidations.createExpense),
   OrganizerDashboardController.createExpense,
 );
 router.get(
   '/expenses',
+  requirePermission('financial.view'),
   validateQuery(organizerDashboardValidations.expensesQuery),
   OrganizerDashboardController.getExpenses,
 );
 router.get(
   '/financial/profit-loss',
+  requirePermission('financial.view'),
   validateQuery(organizerDashboardValidations.financialQuery),
   OrganizerDashboardController.getProfitLossStatement,
 );
 router.post(
   '/financial/goals',
+  requirePermission('financial.manage'),
   validate(organizerDashboardValidations.createFinancialGoal),
   OrganizerDashboardController.createFinancialGoal,
 );
 router.get(
   '/financial/goals',
+  requirePermission('financial.view'),
   validateQuery(organizerDashboardValidations.financialGoalsQuery),
   OrganizerDashboardController.getFinancialGoals,
 );
 router.get(
   '/financial/tax-summary',
+  requirePermission('financial.view'),
   validateQuery(organizerDashboardValidations.taxSummaryQuery),
   OrganizerDashboardController.getTaxSummary,
 );
@@ -335,6 +421,50 @@ router.post(
   OrganizerDashboardController.schedulePayout,
 );
 router.get('/payouts/summary', OrganizerDashboardController.getPayoutSummary);
+
+// Resale & Transfer Analytics (event-level)
+router.get(
+  '/events/:eventId/resale/stats',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventResaleStats,
+);
+router.get(
+  '/events/:eventId/resale/listings',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventResaleListings,
+);
+router.get(
+  '/events/:eventId/transfers/stats',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventTransferStats,
+);
+router.get(
+  '/events/:eventId/transfers/history',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventTransferHistory,
+);
+
+// Scan & Check-In Analytics (event-level)
+router.get(
+  '/events/:eventId/scans/overview',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventScanOverview,
+);
+router.get(
+  '/events/:eventId/scans/history',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventScanHistory,
+);
+router.get(
+  '/events/:eventId/scans/attendees',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getEventScanAttendees,
+);
+router.put(
+  '/events/:eventId/scans/config',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.updateEventScanConfig,
+);
 
 // Event Collaboration
 router.post(
@@ -398,6 +528,29 @@ router.delete(
   '/ticket-packages/:packageId',
   validateParams(Joi.object({ packageId: Joi.string().uuid().required() })),
   OrganizerDashboardController.deleteTicketPackage,
+);
+
+// Complementary ticket issuances
+router.post(
+  '/ticket-packages/:packageId/issue',
+  validateParams(Joi.object({ packageId: Joi.string().uuid().required() })),
+  validate(Joi.object({
+    emails: Joi.array().items(Joi.string().email()).min(1).max(50).required(),
+    quantity: Joi.number().integer().min(1).max(20).default(1),
+    note: Joi.string().max(500).optional(),
+    expiresAt: Joi.string().isoDate().optional(),
+  })),
+  OrganizerDashboardController.issueComplementaryTickets,
+);
+router.get(
+  '/ticket-packages/:packageId/issuances',
+  validateParams(Joi.object({ packageId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.getPackageIssuances,
+);
+router.patch(
+  '/ticket-issuances/:issuanceId/cancel',
+  validateParams(Joi.object({ issuanceId: Joi.string().uuid().required() })),
+  OrganizerDashboardController.cancelIssuance,
 );
 
 // Phase 3: Dynamic Pricing
@@ -618,50 +771,60 @@ router.delete(
   SeatMapController.deleteSeatMap,
 );
 
-// Phase 3: Advanced Team Features
+// Phase 3: Advanced Team Features (requires team.roles / team.view / team.manage)
 router.post(
   '/team/role-templates',
+  requirePermission('team.roles'),
   validate(organizerDashboardValidations.createRoleTemplate),
   OrganizerDashboardController.createRoleTemplate,
 );
 router.get(
   '/team/role-templates',
+  requirePermission('team.view'),
   validateQuery(organizerDashboardValidations.roleTemplatesQuery),
   OrganizerDashboardController.getRoleTemplates,
 );
 router.get(
   '/team/role-templates/:id',
+  requirePermission('team.view'),
   OrganizerDashboardController.getRoleTemplateById,
 );
 router.put(
   '/team/role-templates/:id',
+  requirePermission('team.roles'),
   validate(organizerDashboardValidations.updateRoleTemplate),
   OrganizerDashboardController.updateRoleTemplate,
 );
 router.delete(
   '/team/role-templates/:id',
+  requirePermission('team.roles'),
   OrganizerDashboardController.deleteRoleTemplate,
 );
 router.post(
   '/team/role-templates/:id/duplicate',
+  requirePermission('team.roles'),
   validate(organizerDashboardValidations.duplicateRoleTemplate),
   OrganizerDashboardController.duplicateRoleTemplate,
 );
 router.get(
   '/team/permissions',
+  requirePermission('team.view'),
   OrganizerDashboardController.getPermissions,
 );
 router.get(
   '/team/permissions/by-category',
+  requirePermission('team.view'),
   OrganizerDashboardController.getPermissionsByCategory,
 );
 router.get(
   '/team/activity-feed',
+  requirePermission('team.view'),
   validateQuery(organizerDashboardValidations.teamActivityQuery),
   OrganizerDashboardController.getTeamActivityFeed,
 );
 router.get(
   '/team/performance-metrics',
+  requirePermission('team.view'),
   validateQuery(organizerDashboardValidations.teamMetricsQuery),
   OrganizerDashboardController.getTeamPerformanceMetrics,
 );
@@ -672,7 +835,7 @@ router.get(
  * @desc    Set organizer entity type
  * @access  Private (ORGANIZER+)
  */
-router.post('/kyc/entity-type', OrganizerDashboardController.setEntityType);
+router.post('/kyc/entity-type', validate(organizerDashboardValidations.setEntityType), OrganizerDashboardController.setEntityType);
 
 /**
  * @route   GET /api/v1/organizer-dashboard/kyc/requirements
@@ -693,7 +856,7 @@ router.get('/kyc/documents', OrganizerDashboardController.getKYCDocuments);
  * @desc    Create/upload a KYC document
  * @access  Private (ORGANIZER+)
  */
-router.post('/kyc/documents', OrganizerDashboardController.createKYCDocument);
+router.post('/kyc/documents', validate(organizerDashboardValidations.createKYCDocument), OrganizerDashboardController.createKYCDocument);
 
 /**
  * @route   PUT /api/v1/organizer-dashboard/kyc/documents/:documentId
@@ -736,7 +899,7 @@ router.get('/kyc/directors', OrganizerDashboardController.getDirectors);
  * @desc    Create/add a director/shareholder
  * @access  Private (ORGANIZER+)
  */
-router.post('/kyc/directors', OrganizerDashboardController.createDirector);
+router.post('/kyc/directors', validate(organizerDashboardValidations.createDirector), OrganizerDashboardController.createDirector);
 
 /**
  * @route   DELETE /api/v1/organizer-dashboard/kyc/directors/:directorId
@@ -750,6 +913,13 @@ router.delete(
 );
 
 // ========== Subscription Management ==========
+
+/**
+ * @route   GET /api/v1/organizer-dashboard/subscription-plans
+ * @desc    Get all subscription plans (for organizer pricing/upgrade page)
+ * @access  Private (ORGANIZER+ and ATTENDEE)
+ */
+router.get('/subscription-plans', OrganizerDashboardController.getSubscriptionPlans);
 
 /**
  * @route   GET /api/v1/organizer-dashboard/subscription
@@ -775,6 +945,28 @@ router.post(
  * @access  Private (ORGANIZER+)
  */
 router.post('/subscription/cancel', OrganizerDashboardController.cancelSubscription);
+
+/**
+ * @route   POST /api/v1/organizer-dashboard/subscription/pay
+ * @desc    Initialize subscription payment via Paystack
+ * @access  Private (ORGANIZER+)
+ */
+router.post('/subscription/pay', validate(organizerDashboardValidations.initializeSubscriptionPayment), OrganizerDashboardController.initializeSubscriptionPayment);
+
+/**
+ * @route   GET /api/v1/organizer-dashboard/subscription/verify
+ * @desc    Verify subscription payment after Paystack callback
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/subscription/verify', OrganizerDashboardController.verifySubscriptionPayment);
+
+// ========== My Permissions ==========
+/**
+ * @route   GET /api/v1/organizer-dashboard/my-permissions
+ * @desc    Get the current user's effective permissions
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/my-permissions', OrganizerDashboardController.getMyPermissions);
 
 // ========== Consent Management ==========
 

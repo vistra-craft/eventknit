@@ -2,27 +2,27 @@ import { PostTemplatesService } from '../src/services/social-media/post-template
 import { NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     socialMediaPostTemplate: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
   socialMediaPostTemplate: {
-    create: jest.Mock;
-    findMany: jest.Mock;
-    findFirst: jest.Mock;
+    create: vi.Mock;
+    findMany: vi.Mock;
+    findFirst: vi.Mock;
   };
 };
 
 describe('PostTemplatesService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it('creates template', async () => {

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CheckCircle, Calendar, MapPin, Globe, Mail, Download, Share2 } from 'lucide-react';
+import { CheckCircle, Calendar, MapPin, Globe, Mail, Download, Share2, UserPlus, KeyRound } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader } from "@/components/ui/loader";
 import { useNavigate } from 'react-router-dom';
 import type { EventData } from '@/types/event';
@@ -9,6 +10,7 @@ import type { TicketSelection } from '../UnifiedRegistrationModal';
 import { downloadTicketPDF } from '@/lib/ticket-api';
 import { shareEvent } from '@/lib/utils/share';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 
 interface RegistrationData {
   userId?: string;
@@ -17,6 +19,9 @@ interface RegistrationData {
   lastName?: string;
   phoneNumber?: string;
   registrationData?: Record<string, string | boolean>;
+  isNewUser?: boolean;
+  requiresPasswordSetup?: boolean;
+  registrationId?: string;
   [key: string]: unknown;
 }
 
@@ -84,11 +89,7 @@ export const ConfirmationStep = ({
       });
     } catch (error) {
       console.error("Download failed:", error);
-      toast({
-        title: "Error",
-        description: "Failed to download ticket. Check your email for the ticket.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Download failed", "Failed to download ticket. Check your email for the ticket.");
     } finally {
       setIsDownloading(false);
     }
@@ -122,6 +123,34 @@ export const ConfirmationStep = ({
             ? "You're all set for the event"
             : 'Your payment has been processed successfully'}
         </p>
+
+            {/* Account Creation Notification */}
+            {registrationData?.isNewUser && (
+              <Alert className="bg-success/10 border-success mt-4">
+                <UserPlus className="h-5 w-5 text-success" />
+                <AlertTitle className="text-success">Welcome! Your Account Has Been Created</AlertTitle>
+                <AlertDescription className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    An account has been created for you using{' '}
+                    <strong>{registrationData.email}</strong>. You can now access your tickets
+                    and manage your event registrations.
+                  </p>
+                  {registrationData.requiresPasswordSetup && (
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-success text-success hover:bg-success/10"
+                        onClick={() => navigate('/user/profile/security')}
+                      >
+                        <KeyRound className="w-4 h-4 mr-2" />
+                        Set Up Password
+                      </Button>
+                    </div>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
       </div>
 
       {/* Event Details Card */}

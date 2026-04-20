@@ -10,7 +10,7 @@ import { ActionChoiceStep } from '@/components/onboarding/ActionChoiceStep';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { getVerificationStatus, type VerificationStatus } from '@/lib/verification-api';
 import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 
 type OnboardingStep = 1 | 2 | 3;
 
@@ -244,7 +244,7 @@ const OnboardingWizard = () => {
         </div>
 
         {/* Form Content */}
-        <div className="bg-card-surface rounded-2xl shadow-md p-8">
+        <div className="bg-card-surface rounded-2xl shadow-md p-4 sm:p-6 md:p-8">
             {/* Event Created Success Message */}
             {eventCreatedMessage && (
               <Alert className="mb-6 border-success/20 bg-success-light">

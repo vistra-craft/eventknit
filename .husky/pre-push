@@ -1,0 +1,64 @@
+#!/usr/bin/env sh
+
+# ─── EventKnit Pre-Push Checks ──────────────────────────────────────────────
+# Runs before every `git push`. Blocks the push if any check fails.
+# Fix the reported errors, then push again.
+# To skip in an emergency: git push --no-verify  (use sparingly)
+# ─────────────────────────────────────────────────────────────────────────────
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║              Running pre-push checks...                    ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+
+# ── 1. Server checks (lint · type-check · tests · build) ─────────────────────
+echo "▶ Server checks"
+cd "$REPO_ROOT/server" && node scripts/prepush-summary.js
+SERVER_EXIT=$?
+
+if [ $SERVER_EXIT -ne 0 ]; then
+  echo ""
+  echo "❌ Server checks failed. Push blocked."
+  echo "   Fix the errors above, then push again."
+  echo "   Emergency bypass: git push --no-verify"
+  exit 1
+fi
+
+# ── 2. Client checks (type-check + build) ────────────────────────────────────
+echo ""
+echo "▶ Client checks"
+cd "$REPO_ROOT/client"
+
+echo "  Running TypeScript type-check..."
+npm run type-check
+CLIENT_TC_EXIT=$?
+
+if [ $CLIENT_TC_EXIT -ne 0 ]; then
+  echo ""
+  echo "❌ Client type-check failed. Push blocked."
+  echo "   Fix the TypeScript errors above, then push again."
+  echo "   Emergency bypass: git push --no-verify"
+  exit 1
+fi
+
+echo "  Running client build..."
+npm run build
+CLIENT_BUILD_EXIT=$?
+
+if [ $CLIENT_BUILD_EXIT -ne 0 ]; then
+  echo ""
+  echo "❌ Client build failed. Push blocked."
+  echo "   Fix the build errors above, then push again."
+  echo "   Emergency bypass: git push --no-verify"
+  exit 1
+fi
+
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║            ✅  All checks passed. Pushing...               ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+exit 0

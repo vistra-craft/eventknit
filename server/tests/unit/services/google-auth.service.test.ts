@@ -1,5 +1,5 @@
 import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import axios from 'axios';
 import { GoogleAuthService } from '../../../src/services/google-auth.service.js';
 import { AuthenticationError, ValidationError } from '../../../src/utils/errors.js';
@@ -7,14 +7,14 @@ import * as jwt from '../../../src/utils/jwt.js';
 import * as databaseModule from '../../../src/config/database.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('axios', () => {
-  const mockGet = jest.fn();
-  const mockIsAxiosError = jest.fn();
+vi.mock('axios', () => {
+  const mockGet = vi.fn();
+  const mockIsAxiosError = vi.fn();
   return {
     default: {
       get: mockGet,
@@ -25,24 +25,27 @@ jest.mock('axios', () => {
   };
 });
 
-jest.mock('../../../src/utils/jwt.js');
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/jwt.js');
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/utils/password.js', () => ({
-  ...jest.requireActual('../../../src/utils/password.js'),
-  hashPassword: jest.fn(),
-  comparePassword: jest.fn(),
-  checkPasswordBreach: jest.fn(),
-  // hashToken uses real implementation (pure SHA-256, no side effects)
-}));
+vi.mock('../../../src/utils/password.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/utils/password.js')>();
+  return {
+    ...actual,
+    hashPassword: vi.fn(),
+    comparePassword: vi.fn(),
+    checkPasswordBreach: vi.fn(),
+    // hashToken uses real implementation (pure SHA-256, no side effects)
+  };
+});
 
-jest.mock('../../../src/config/index.js', () => ({
+vi.mock('../../../src/config/index.js', () => ({
   config: {
     google: {
       clientId: 'test-google-client-id',
@@ -57,17 +60,17 @@ jest.mock('../../../src/config/index.js', () => ({
   },
 }));
 
-jest.mock('../../../src/services/email.service.js', () => ({
+vi.mock('../../../src/services/email.service.js', () => ({
   emailService: {
-    sendVerificationCode: jest.fn(),
-    sendPasswordResetEmail: jest.fn(),
-    sendWelcomeEmail: jest.fn(),
-    sendAccountInvitation: jest.fn(),
+    sendVerificationCode: vi.fn(),
+    sendPasswordResetEmail: vi.fn(),
+    sendWelcomeEmail: vi.fn(),
+    sendAccountInvitation: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/utils/audit.js', () => ({
-  createAuditLog: jest.fn(),
+vi.mock('../../../src/utils/audit.js', () => ({
+  createAuditLog: vi.fn(),
   AuditActions: {
     USER_LOGIN: 'USER_LOGIN',
     USER_LOGOUT: 'USER_LOGOUT',
@@ -76,8 +79,8 @@ jest.mock('../../../src/utils/audit.js', () => ({
 }));
 
 // Get references to the mocked functions
-const mockAxiosGet = axios.get as jest.Mock;
-const mockAxiosIsAxiosError = axios.isAxiosError as unknown as jest.Mock;
+const mockAxiosGet = axios.get as vi.Mock;
+const mockAxiosIsAxiosError = axios.isAxiosError as unknown as vi.Mock;
 
 describe('GoogleAuthService', () => {
   let prisma: DeepMockProxy<PrismaClient>;
@@ -88,7 +91,7 @@ describe('GoogleAuthService', () => {
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockAxiosIsAxiosError.mockReturnValue(false);
   });
 
@@ -298,9 +301,9 @@ describe('GoogleAuthService', () => {
     };
 
     beforeEach(() => {
-      (jwt.generateAccessToken as jest.Mock).mockReturnValue(mockTokens.accessToken);
-      (jwt.generateRefreshToken as jest.Mock).mockReturnValue(mockTokens.refreshToken);
-      (jwt.parseExpiresIn as jest.Mock).mockReturnValue(mockTokens.expiresIn);
+      (jwt.generateAccessToken as vi.Mock).mockReturnValue(mockTokens.accessToken);
+      (jwt.generateRefreshToken as vi.Mock).mockReturnValue(mockTokens.refreshToken);
+      (jwt.parseExpiresIn as vi.Mock).mockReturnValue(mockTokens.expiresIn);
     });
 
     it('should create new user for first-time Google login with ID token', async () => {
@@ -579,7 +582,7 @@ describe('GoogleAuthService', () => {
       });
     });
 
-    it('should respect ORGANIZER role for new users', async () => {
+    it('should default to ATTENDEE role for new users regardless of requested role', async () => {
       // Arrange
       mockAxiosGet.mockResolvedValue({ data: {
         aud: 'test-google-client-id',
@@ -589,25 +592,25 @@ describe('GoogleAuthService', () => {
       } });
 
       prisma.user.findFirst.mockResolvedValue(null);
-      prisma.user.create.mockResolvedValue({ id: 'new-user', role: UserRole.ORGANIZER } as any);
+      prisma.user.create.mockResolvedValue({ id: 'new-user', role: UserRole.ATTENDEE } as any);
       prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
-      // Act
+      // Act - pass ORGANIZER but service should ignore it
       await GoogleAuthService.authenticateWithGoogle(
         'valid-token',
         'id_token',
         UserRole.ORGANIZER,
       );
 
-      // Assert
+      // Assert - all new registrations default to ATTENDEE
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          role: UserRole.ORGANIZER,
+          role: UserRole.ATTENDEE,
         }),
       });
     });
 
-    it('should throw error for invalid role (ADMIN) during registration', async () => {
+    it('should ignore invalid role (ADMIN) and default to ATTENDEE during registration', async () => {
       // Arrange
       const mockTokenInfo = {
         aud: 'test-google-client-id',
@@ -623,23 +626,22 @@ describe('GoogleAuthService', () => {
       mockAxiosGet.mockResolvedValue({ data: mockTokenInfo });
 
       prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ id: 'new-user', role: UserRole.ATTENDEE } as any);
+      prisma.refreshToken.upsert.mockResolvedValue({} as any);
 
-      // Act & Assert
-      await expect(
-        GoogleAuthService.authenticateWithGoogle(
-          'valid-token',
-          'id_token',
-          'ADMIN' as UserRole,
-        ),
-      ).rejects.toThrow(ValidationError);
+      // Act - service ignores ADMIN role, defaults to ATTENDEE
+      await GoogleAuthService.authenticateWithGoogle(
+        'valid-token',
+        'id_token',
+        'ADMIN' as UserRole,
+      );
 
-      await expect(
-        GoogleAuthService.authenticateWithGoogle(
-          'valid-token',
-          'id_token',
-          'ADMIN' as UserRole,
-        ),
-      ).rejects.toThrow('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
+      // Assert - created with ATTENDEE, not ADMIN
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          role: UserRole.ATTENDEE,
+        }),
+      });
     });
 
     it('should mark email as verified for Google users', async () => {

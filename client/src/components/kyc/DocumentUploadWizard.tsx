@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, X, CheckCircle2, FileText } from 'lucide-react';
+import React, { useState, useCallback, useRef } from 'react';
+import { Upload, X, CheckCircle2, FileText, Loader2 } from 'lucide-react';
 
 import {
   type DocumentRequirement,
@@ -13,7 +13,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/useToast';
+import { extractErrorMessage } from '@/lib/utils/error';
+import { uploadDocument } from '@/lib/upload-api';
 
 /* -------------------------------------------------------------------------- */
 /*                                   Types                                    */
@@ -38,7 +41,7 @@ interface UploadState {
   issueDate?: string;
   expiryDate?: string;
   file?: File;
-  preview?: string;
+  previewUrl?: string; // object URL for image preview (not used for submission)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -84,6 +87,7 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
   const [uploadStates, setUploadStates] = useState<Record<string, UploadState>>(
     {}
   );
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
 
   const groupedRequirements = groupByCategory(requirements);
 
@@ -92,13 +96,21 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
 
   const isRequirementComplete = (req: DocumentRequirement) =>
     getUploadedForType(req.documentType).filter(
+      (doc) => doc.status === 'APPROVED' || doc.status === 'PENDING'
+    ).length >= req.minQuantity;
+
+  const isRequirementApproved = (req: DocumentRequirement) =>
+    getUploadedForType(req.documentType).filter(
       (doc) => doc.status === 'APPROVED'
     ).length >= req.minQuantity;
+
+  // Keep refs to file inputs so we can reset them after upload
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   /* ---------------------------- File Handling ----------------------------- */
 
   const handleFileSelect = useCallback(
-    (documentType: KYCDocumentType, file: File) => {
+    async (documentType: KYCDocumentType, file: File, req: DocumentRequirement) => {
       if (!file.type.startsWith('image/') && !file.type.includes('pdf')) {
         toast({
           title: 'Invalid file type',
@@ -117,80 +129,76 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
         return;
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadStates((prev) => ({
-          ...prev,
-          [documentType]: {
-            ...prev[documentType],
-            file,
-            preview: reader.result as string,
-          },
-        }));
-      };
+      // Show the file name immediately while uploading
+      setUploadStates((prev) => ({
+        ...prev,
+        [documentType]: {
+          ...prev[documentType],
+          file,
+        },
+      }));
 
-      reader.readAsDataURL(file);
+      // Auto-upload
+      setUploading(documentType);
+
+      try {
+        const documentUrl = await uploadDocument(file);
+        const state = uploadStates[documentType];
+
+        await onUpload({
+          documentType,
+          documentNumber: state?.documentNumber,
+          documentUrl,
+          issueDate: state?.issueDate,
+          expiryDate: state?.expiryDate,
+        });
+
+        setUploadStates((prev) => {
+          const next = { ...prev };
+          delete next[documentType];
+          return next;
+        });
+
+        // Reset file input so the same file can be re-selected if needed
+        const input = fileInputRefs.current[documentType];
+        if (input) input.value = '';
+
+        toast({
+          title: 'Upload successful',
+          description: `${req.description} uploaded successfully`,
+        });
+      } catch (error: unknown) {
+        toast({
+          title: 'Upload failed',
+          description: extractErrorMessage(error, 'Something went wrong'),
+          variant: 'destructive',
+        });
+      } finally {
+        setUploading(null);
+      }
     },
-    [toast]
+    [toast, uploadStates, onUpload]
   );
-
-  /* ----------------------------- Upload ---------------------------------- */
-
-  const handleUpload = async (req: DocumentRequirement) => {
-    const state = uploadStates[req.documentType];
-    if (!state?.file || !state.preview) {
-      toast({
-        title: 'No file selected',
-        description: 'Please select a file before uploading',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setUploading(req.documentType);
-
-    try {
-      await onUpload({
-        documentType: req.documentType,
-        documentNumber: state.documentNumber,
-        documentUrl: state.preview,
-        issueDate: state.issueDate,
-        expiryDate: state.expiryDate,
-      });
-
-      setUploadStates((prev) => {
-        const next = { ...prev };
-        delete next[req.documentType];
-        return next;
-      });
-
-      toast({
-        title: 'Upload successful',
-        description: `${req.description} uploaded successfully`,
-      });
-    } catch (error: unknown) {
-      toast({
-        title: 'Upload failed',
-        description: error instanceof Error ? error.message : 'Something went wrong',
-        variant: 'destructive',
-      });
-    } finally {
-      setUploading(null);
-    }
-  };
 
   /* ----------------------------- Delete ---------------------------------- */
 
-  const handleDelete = async (documentId: string) => {
-    if (!onDelete || !confirm('Delete this document?')) return;
+  const handleDelete = (documentId: string) => {
+    if (!onDelete) return;
+    setDeletingDocId(documentId);
+  };
+
+  const confirmDelete = async () => {
+    if (!onDelete || !deletingDocId) return;
+    const docId = deletingDocId;
+    setDeletingDocId(null);
 
     try {
-      await onDelete(documentId);
+      await onDelete(docId);
       toast({ title: 'Document deleted' });
     } catch (error: unknown) {
       toast({
         title: 'Delete failed',
-        description: error instanceof Error ? error.message : 'Something went wrong',
+        description: extractErrorMessage(error, 'Something went wrong'),
         variant: 'destructive',
       });
     }
@@ -242,6 +250,7 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
               const uploaded = getUploadedForType(req.documentType);
               const state = uploadStates[req.documentType];
               const isComplete = isRequirementComplete(req);
+              const isApproved = isRequirementApproved(req);
 
               return (
                 <div
@@ -253,12 +262,12 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
                     <Label className="font-semibold">{req.description}</Label>
                     {req.isRequired && (
                       <Badge
-                        variant={isComplete ? 'default' : 'destructive'}
+                        variant={isApproved ? 'default' : isComplete ? 'secondary' : 'destructive'}
                       >
-                        Required
+                        {isApproved ? 'Approved' : isComplete ? 'Pending Review' : 'Required'}
                       </Badge>
                     )}
-                    {isComplete && (
+                    {isApproved && (
                       <CheckCircle2 className="w-4 h-4 text-success" />
                     )}
                   </div>
@@ -302,7 +311,7 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
                             },
                           }))
                         }
-                        disabled={disabled}
+                        disabled={disabled || uploading === req.documentType}
                       />
 
                       <input
@@ -310,33 +319,34 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
                         accept="image/*,.pdf"
                         hidden
                         id={`file-${req.documentType}`}
+                        ref={(el) => { fileInputRefs.current[req.documentType] = el; }}
                         onChange={(e) =>
                           e.target.files &&
                           handleFileSelect(
                             req.documentType,
-                            e.target.files[0]
+                            e.target.files[0],
+                            req
                           )
                         }
                       />
 
-                      <label htmlFor={`file-${req.documentType}`}>
-                        <div className="p-4 border-dashed border rounded cursor-pointer flex gap-2 items-center">
-                          <Upload className="w-4 h-4" />
-                          <span>
-                            {state?.file?.name ??
-                              'Click to select a file'}
+                      {uploading === req.documentType ? (
+                        <div className="p-4 border border-primary/30 bg-primary/5 rounded flex gap-2 items-center">
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">
+                            Uploading {state?.file?.name}...
                           </span>
                         </div>
-                      </label>
-
-                      <Button
-                        onClick={() => handleUpload(req)}
-                        disabled={!state?.file || uploading === req.documentType}
-                      >
-                        {uploading === req.documentType
-                          ? 'Uploading...'
-                          : 'Upload'}
-                      </Button>
+                      ) : (
+                        <label htmlFor={`file-${req.documentType}`}>
+                          <div className="p-4 border-dashed border rounded cursor-pointer flex gap-2 items-center hover:border-primary/50 transition-colors">
+                            <Upload className="w-4 h-4" />
+                            <span className="text-sm">
+                              Click to select and upload a file
+                            </span>
+                          </div>
+                        </label>
+                      )}
                     </>
                   )}
                 </div>
@@ -345,6 +355,22 @@ export const DocumentUploadWizard: React.FC<DocumentUploadWizardProps> = ({
           </CardContent>
         </Card>
       ))}
+
+      {/* Delete Document Confirmation */}
+      <AlertDialog open={!!deletingDocId} onOpenChange={(open) => !open && setDeletingDocId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Document</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this document? You will need to upload it again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

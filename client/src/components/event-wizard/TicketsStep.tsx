@@ -4,7 +4,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+
+
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import {
   Clock,
   Percent,
   Gift,
-  AlertCircle,
+  Calendar,
   ChevronDown,
   Copy,
   Trash2,
@@ -30,6 +31,7 @@ import {
 } from 'lucide-react';
 import type { StepComponentProps, TicketType, CurrencyOption } from './types';
 import { CURRENCIES, DEFAULT_CURRENCY } from './types';
+import { SeatingConfigurationSection, type SeatingConfig } from '../organizer/SeatingConfigurationSection';
 
 const SEGMENT_COLORS = [
   'bg-primary',
@@ -44,32 +46,32 @@ const TICKET_TEMPLATES: { label: string; icon: React.ReactNode; ticket: Partial<
   {
     label: 'General Admission',
     icon: <Ticket className="h-3.5 w-3.5" />,
-    ticket: { name: 'General Admission', type: 'paid', price: '0', quantity: '100', maxPerPerson: 10, salesChannel: 'both' },
+    ticket: { name: 'General Admission', type: 'paid', price: '', quantity: '100', maxPerPerson: 10, salesChannel: 'both' },
   },
   {
     label: 'VIP',
     icon: <Crown className="h-3.5 w-3.5" />,
-    ticket: { name: 'VIP', type: 'paid', price: '0', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
+    ticket: { name: 'VIP', type: 'paid', price: '', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
   },
   {
     label: 'Early Bird',
     icon: <Zap className="h-3.5 w-3.5" />,
-    ticket: { name: 'Early Bird', type: 'paid', price: '0', quantity: '100', maxPerPerson: 10, discountLabel: 'Early Bird', salesChannel: 'online' },
+    ticket: { name: 'Early Bird', type: 'paid', price: '', quantity: '100', maxPerPerson: 10, discountLabel: 'Early Bird', salesChannel: 'online' },
   },
   {
     label: 'Student',
     icon: <GraduationCap className="h-3.5 w-3.5" />,
-    ticket: { name: 'Student / Concession', type: 'paid', price: '0', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
+    ticket: { name: 'Student / Concession', type: 'paid', price: '', quantity: '50', maxPerPerson: 5, salesChannel: 'both' },
   },
   {
     label: 'Free Entry',
     icon: <DoorOpen className="h-3.5 w-3.5" />,
-    ticket: { name: 'Free Entry', type: 'free', price: '0', quantity: '200', maxPerPerson: 10, salesChannel: 'both' },
+    ticket: { name: 'Free Entry', type: 'free', price: '', quantity: '200', maxPerPerson: 10, salesChannel: 'both' },
   },
   {
     label: 'Complimentary',
     icon: <Users className="h-3.5 w-3.5" />,
-    ticket: { name: 'Speaker / Staff Pass', type: 'paid', price: '0', quantity: '20', maxPerPerson: 1, isComplementary: true, requiresInvitation: true, salesChannel: 'both' },
+    ticket: { name: 'Speaker / Staff Pass', type: 'paid', price: '', quantity: '20', maxPerPerson: 1, isComplementary: true, requiresInvitation: true, salesChannel: 'both' },
   },
 ];
 
@@ -143,7 +145,7 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
       name: template?.name || '',
       description: template?.description || '',
       type: template?.type || 'paid',
-      price: template?.price || '0',
+      price: template?.price || '',
       quantity: template?.quantity || '100',
       maxPerPerson: template?.maxPerPerson ?? 10,
       salesChannel: template?.salesChannel || 'both',
@@ -190,12 +192,6 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
 
   return (
     <div className="space-y-6">
-      {ticketsError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{ticketsError}</AlertDescription>
-        </Alert>
-      )}
 
       {/* ── Capacity Allocator ── */}
       <div className="space-y-3">
@@ -309,14 +305,21 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
       <div className="space-y-3">
         {ticketTypes.map((ticket, index) => {
           const nameError = ticketsError && !ticket.name.trim();
-          const priceError = ticketsError && ticket.type === 'paid' && !ticket.isComplementary && (!ticket.price || parseFloat(ticket.price) < 0);
+          const priceError = ticketsError && ticket.type === 'paid' && !ticket.isComplementary && (!ticket.price || parseFloat(ticket.price) <= 0);
           const isOpen = detailsOpen.has(ticket.id);
           const hasDetails = !!(ticket.description?.trim()) || ticket.isComplementary || !!ticket.originalPrice || ticket.isHidden || (ticket.salesChannel && ticket.salesChannel !== 'both') || ticket.availableFrom || ticket.availableUntil;
+
+          const hasError = nameError || priceError;
 
           return (
             <div
               key={ticket.id}
-              className="rounded-xl border border-gray-200 dark:border-zinc-800 bg-card p-4"
+              data-ticket-card
+              className={`rounded-xl border bg-card p-4 transition-colors ${
+                hasError
+                  ? 'border-destructive/40'
+                  : 'border-gray-200 dark:border-zinc-800'
+              }`}
             >
               {/* ── Compact row: 4 core fields ── */}
               <div className="grid grid-cols-2 gap-x-3 gap-y-2 md:grid-cols-[1fr_6.5rem_8.5rem_6rem]">
@@ -367,7 +370,15 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
                         placeholder="0.00"
                         value={ticket.price}
                         className={`h-9 pl-9 text-sm ${priceError ? 'border-destructive' : ''}`}
-                        onChange={(e) => updateTicket(index, { price: e.target.value })}
+                        onChange={(e) => {
+                          const nextPrice = e.target.value;
+                          const numericPrice = parseFloat(nextPrice);
+                          if (!isNaN(numericPrice) && numericPrice === 0) {
+                            updateTicket(index, { price: nextPrice, type: 'free' });
+                            return;
+                          }
+                          updateTicket(index, { price: nextPrice });
+                        }}
                       />
                     </div>
                   ) : (
@@ -400,8 +411,8 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
               {/* Inline errors */}
               {(nameError || priceError) && (
                 <div className="flex flex-wrap gap-x-4 mt-1.5">
-                  {nameError && <p className="text-[11px] text-destructive">Ticket name is required</p>}
-                  {priceError && <p className="text-[11px] text-destructive">Enter a valid price</p>}
+                  {nameError && <p className="text-[11px] text-muted-foreground">Give this ticket a name</p>}
+                  {priceError && <p className="text-[11px] text-muted-foreground">Set a price above 0, or switch to Free</p>}
                 </div>
               )}
 
@@ -615,21 +626,43 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
                             <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">From</Label>
-                                <Input
-                                  type="datetime-local"
-                                  value={ticket.availableFrom || ''}
-                                  className="h-10 text-sm"
-                                  onChange={(e) => updateTicket(index, { availableFrom: e.target.value })}
-                                />
+                                <div className="relative">
+                                  <Input
+                                    id={`avail-from-${ticket.id}`}
+                                    type="datetime-local"
+                                    value={ticket.availableFrom || ''}
+                                    max={ticket.availableUntil || undefined}
+                                    className="h-10 text-sm pr-10 [&::-webkit-calendar-picker-indicator]:hidden"
+                                    onChange={(e) => updateTicket(index, { availableFrom: e.target.value })}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => (document.getElementById(`avail-from-${ticket.id}`) as HTMLInputElement | null)?.showPicker?.()}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                                  >
+                                    <Calendar className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </div>
                               <div className="space-y-1">
                                 <Label className="text-xs text-muted-foreground">Until</Label>
-                                <Input
-                                  type="datetime-local"
-                                  value={ticket.availableUntil || ''}
-                                  className="h-10 text-sm"
-                                  onChange={(e) => updateTicket(index, { availableUntil: e.target.value })}
-                                />
+                                <div className="relative">
+                                  <Input
+                                    id={`avail-until-${ticket.id}`}
+                                    type="datetime-local"
+                                    value={ticket.availableUntil || ''}
+                                    min={ticket.availableFrom || undefined}
+                                    className="h-10 text-sm pr-10 [&::-webkit-calendar-picker-indicator]:hidden"
+                                    onChange={(e) => updateTicket(index, { availableUntil: e.target.value })}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => (document.getElementById(`avail-until-${ticket.id}`) as HTMLInputElement | null)?.showPicker?.()}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                                  >
+                                    <Calendar className="h-4 w-4" />
+                                  </button>
+                                </div>
                               </div>
                             </div>
                             <div className="space-y-1">
@@ -732,6 +765,20 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
           Add ticket type
         </button>
       </div>
+
+      {/* ── Seating Configuration ── */}
+      <SeatingConfigurationSection
+        config={{
+          hasSeatingMap: eventData.hasSeatingMap || false,
+          seatingType: (eventData.seatingType || '') as SeatingConfig['seatingType'],
+          seatMapRequired: eventData.seatMapRequired || false,
+        }}
+        onConfigChange={(updates) => {
+          Object.entries(updates).forEach(([key, value]) => {
+            onInputChange(key, value);
+          });
+        }}
+      />
 
       {/* ── Refund Policy ── */}
       {hasPaidTickets && (

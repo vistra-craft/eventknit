@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getPaymentTransactions, syncPaymentsFromPaystack, type PaymentTransaction } from "@/lib/financial-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const PaymentTransactionsPage = () => {
   const navigate = useNavigate();
@@ -49,12 +50,8 @@ const PaymentTransactionsPage = () => {
         setTransactions(response.data.transactions);
         setPagination(response.data.pagination);
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load payment transactions",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load payment transactions");
     } finally {
       setLoading(false);
     }
@@ -76,12 +73,8 @@ const PaymentTransactionsPage = () => {
         });
         loadTransactions();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to sync payments from Paystack",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to sync payments from Paystack");
     } finally {
       setSyncing(false);
     }
@@ -150,7 +143,7 @@ const PaymentTransactionsPage = () => {
         {/* Filters */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
@@ -161,7 +154,7 @@ const PaymentTransactionsPage = () => {
                 />
               </div>
               <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value, page: 1 })}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>

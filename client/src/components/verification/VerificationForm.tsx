@@ -18,7 +18,8 @@ import {
   type BusinessVerificationData
 } from '@/lib/verification-api';
 import { useToast } from '@/hooks/useToast';
-// File uploads use base64 encoding
+import { extractErrorMessage } from '@/lib/utils/error';
+import { uploadDocument } from '@/lib/upload-api';
 
 interface VerificationFormProps {
   redirectAfterBusinessVerification?: string; // Optional redirect path after business verification
@@ -50,8 +51,10 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
   });
   const [, setIdDocumentFrontFile] = useState<File | null>(null);
   const [idDocumentFrontPreview, setIdDocumentFrontPreview] = useState<string | null>(null);
+  const [idDocumentFrontUploading, setIdDocumentFrontUploading] = useState(false);
   const [, setIdDocumentBackFile] = useState<File | null>(null);
   const [idDocumentBackPreview, setIdDocumentBackPreview] = useState<string | null>(null);
+  const [idDocumentBackUploading, setIdDocumentBackUploading] = useState(false);
   
   // Business verification form state
   const [businessData, setBusinessData] = useState<Partial<BusinessVerificationData>>({
@@ -67,7 +70,9 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
     taxDocumentUrl: '',
   });
   const [businessLicenseFile, setBusinessLicenseFile] = useState<File | null>(null);
+  const [businessLicenseUploading, setBusinessLicenseUploading] = useState(false);
   const [taxDocumentFile, setTaxDocumentFile] = useState<File | null>(null);
+  const [taxDocumentUploading, setTaxDocumentUploading] = useState(false);
   
   const loadStatus = useCallback(async () => {
     try {
@@ -83,8 +88,8 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
     } catch (error) {
       console.error('Error loading verification status:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load verification status',
+        title: 'Load failed',
+        description: extractErrorMessage(error, 'Failed to load verification status'),
         variant: 'destructive',
       });
     } finally {
@@ -97,197 +102,87 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
     loadStatus();
   }, [loadStatus]);
   
+  const validateDocumentFile = (file: File): boolean => {
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      toast({ title: 'Invalid File', description: 'Please upload an image or PDF file', variant: 'destructive' });
+      return false;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: 'File Too Large', description: 'File size must be less than 10MB', variant: 'destructive' });
+      return false;
+    }
+    return true;
+  };
+
   const handleIdDocumentFrontUpload = async (file: File) => {
+    if (!validateDocumentFile(file)) return;
+    setIdDocumentFrontFile(file);
+    if (file.type.startsWith('image/')) setIdDocumentFrontPreview(URL.createObjectURL(file));
+    setIdDocumentFrontUploading(true);
     try {
-      // Validate file
-      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-        toast({
-          title: 'Invalid File',
-          description: 'Please upload an image or PDF file',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: 'File Too Large',
-          description: 'File size must be less than 10MB',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      setIdDocumentFrontFile(file);
-      // Create preview and convert to base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setIdDocumentFrontPreview(base64String);
-        setIdentityData(prev => ({ ...prev, idDocumentFrontUrl: base64String }));
-      };
-      reader.onerror = () => {
-        toast({
-          title: 'Upload Error',
-          description: 'Failed to read file. Please try again.',
-          variant: 'destructive',
-        });
-        setIdDocumentFrontFile(null);
-        setIdDocumentFrontPreview(null);
-      };
-      reader.readAsDataURL(file);
+      const url = await uploadDocument(file);
+      setIdentityData(prev => ({ ...prev, idDocumentFrontUrl: url }));
     } catch (error) {
       console.error('Error uploading ID document front:', error);
-      toast({
-        title: 'Upload Error',
-        description: 'Failed to upload ID document. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Upload Error', description: 'Failed to upload ID document. Please try again.', variant: 'destructive' });
       setIdDocumentFrontFile(null);
       setIdDocumentFrontPreview(null);
+      setIdentityData(prev => ({ ...prev, idDocumentFrontUrl: '' }));
+    } finally {
+      setIdDocumentFrontUploading(false);
     }
   };
 
   const handleIdDocumentBackUpload = async (file: File) => {
+    if (!validateDocumentFile(file)) return;
+    setIdDocumentBackFile(file);
+    if (file.type.startsWith('image/')) setIdDocumentBackPreview(URL.createObjectURL(file));
+    setIdDocumentBackUploading(true);
     try {
-      // Validate file
-      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-        toast({
-          title: 'Invalid File',
-          description: 'Please upload an image or PDF file',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: 'File Too Large',
-          description: 'File size must be less than 10MB',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      setIdDocumentBackFile(file);
-      // Create preview and convert to base64
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setIdDocumentBackPreview(base64String);
-        setIdentityData(prev => ({ ...prev, idDocumentBackUrl: base64String }));
-      };
-      reader.onerror = () => {
-        toast({
-          title: 'Upload Error',
-          description: 'Failed to read file. Please try again.',
-          variant: 'destructive',
-        });
-        setIdDocumentBackFile(null);
-        setIdDocumentBackPreview(null);
-      };
-      reader.readAsDataURL(file);
+      const url = await uploadDocument(file);
+      setIdentityData(prev => ({ ...prev, idDocumentBackUrl: url }));
     } catch (error) {
       console.error('Error uploading ID document back:', error);
-      toast({
-        title: 'Upload Error',
-        description: 'Failed to upload ID document. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Upload Error', description: 'Failed to upload ID document. Please try again.', variant: 'destructive' });
       setIdDocumentBackFile(null);
       setIdDocumentBackPreview(null);
+      setIdentityData(prev => ({ ...prev, idDocumentBackUrl: '' }));
+    } finally {
+      setIdDocumentBackUploading(false);
     }
   };
-  
+
   const handleBusinessLicenseUpload = async (file: File) => {
+    if (!validateDocumentFile(file)) return;
+    setBusinessLicenseFile(file);
+    setBusinessLicenseUploading(true);
     try {
-      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-        toast({
-          title: 'Invalid File',
-          description: 'Please upload an image or PDF file',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: 'File Too Large',
-          description: 'File size must be less than 10MB',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      setBusinessLicenseFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setBusinessData(prev => ({ ...prev, businessLicenseUrl: base64String }));
-      };
-      reader.onerror = () => {
-        toast({
-          title: 'Upload Error',
-          description: 'Failed to read file. Please try again.',
-          variant: 'destructive',
-        });
-        setBusinessLicenseFile(null);
-      };
-      reader.readAsDataURL(file);
+      const url = await uploadDocument(file);
+      setBusinessData(prev => ({ ...prev, businessLicenseUrl: url }));
     } catch (error) {
       console.error('Error uploading business license:', error);
-      toast({
-        title: 'Upload Error',
-        description: 'Failed to upload business license. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Upload Error', description: 'Failed to upload business license. Please try again.', variant: 'destructive' });
       setBusinessLicenseFile(null);
+      setBusinessData(prev => ({ ...prev, businessLicenseUrl: '' }));
+    } finally {
+      setBusinessLicenseUploading(false);
     }
   };
-  
+
   const handleTaxDocumentUpload = async (file: File) => {
+    if (!validateDocumentFile(file)) return;
+    setTaxDocumentFile(file);
+    setTaxDocumentUploading(true);
     try {
-      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-        toast({
-          title: 'Invalid File',
-          description: 'Please upload an image or PDF file',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: 'File Too Large',
-          description: 'File size must be less than 10MB',
-          variant: 'destructive',
-        });
-        return;
-      }
-      
-      setTaxDocumentFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setBusinessData(prev => ({ ...prev, taxDocumentUrl: base64String }));
-      };
-      reader.onerror = () => {
-        toast({
-          title: 'Upload Error',
-          description: 'Failed to read file. Please try again.',
-          variant: 'destructive',
-        });
-        setTaxDocumentFile(null);
-      };
-      reader.readAsDataURL(file);
+      const url = await uploadDocument(file);
+      setBusinessData(prev => ({ ...prev, taxDocumentUrl: url }));
     } catch (error) {
       console.error('Error uploading tax document:', error);
-      toast({
-        title: 'Upload Error',
-        description: 'Failed to upload tax document. Please try again.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Upload Error', description: 'Failed to upload tax document. Please try again.', variant: 'destructive' });
       setTaxDocumentFile(null);
+      setBusinessData(prev => ({ ...prev, taxDocumentUrl: '' }));
+    } finally {
+      setTaxDocumentUploading(false);
     }
   };
   
@@ -335,10 +230,9 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
       }
     } catch (error: unknown) {
       console.error('Error submitting identity verification:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to submit identity verification. Please try again.';
       toast({
-        title: 'Submission Error',
-        description: errorMessage,
+        title: 'Identity verification failed',
+        description: extractErrorMessage(error, 'Failed to submit identity verification. Please try again.'),
         variant: 'destructive',
       });
     } finally {
@@ -384,10 +278,9 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
       }
     } catch (error: unknown) {
       console.error('Error submitting business verification:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to submit business verification. Please try again.';
       toast({
-        title: 'Submission Error',
-        description: errorMessage,
+        title: 'Business verification failed',
+        description: extractErrorMessage(error, 'Failed to submit business verification. Please try again.'),
         variant: 'destructive',
       });
     } finally {
@@ -672,7 +565,12 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                        'ID Document Photo *'}
                     </Label>
                     <div className="mt-2">
-                      {idDocumentFrontPreview ? (
+                      {idDocumentFrontUploading ? (
+                        <div className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg">
+                          <Loader size="sm" className="mb-2" />
+                          <span className="text-sm text-muted-foreground">Uploading...</span>
+                        </div>
+                      ) : idDocumentFrontPreview ? (
                         <div className="relative">
                           <img src={idDocumentFrontPreview} alt="ID Document" className="w-full h-48 object-contain border border-border rounded-lg" />
                           <Button
@@ -684,8 +582,16 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                               setIdDocumentFrontPreview(null);
                               setIdDocumentFrontFile(null);
                               setIdentityData(prev => ({ ...prev, idDocumentFrontUrl: '' }));
+                              setIdDocumentFrontUploading(false);
                             }}
                           >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : identityData.idDocumentFrontUrl ? (
+                        <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                          <span className="text-sm text-foreground">Document uploaded</span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setIdentityData(prev => ({ ...prev, idDocumentFrontUrl: '' }))}>
                             <XCircle className="h-4 w-4" />
                           </Button>
                         </div>
@@ -719,7 +625,12 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                        'ID Document Back (Optional)'}
                     </Label>
                     <div className="mt-2">
-                      {idDocumentBackPreview ? (
+                      {idDocumentBackUploading ? (
+                        <div className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg">
+                          <Loader size="sm" className="mb-2" />
+                          <span className="text-sm text-muted-foreground">Uploading...</span>
+                        </div>
+                      ) : idDocumentBackPreview ? (
                         <div className="relative">
                           <img src={idDocumentBackPreview} alt="ID Document Back" className="w-full h-48 object-contain border border-border rounded-lg" />
                           <Button
@@ -731,8 +642,16 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                               setIdDocumentBackPreview(null);
                               setIdDocumentBackFile(null);
                               setIdentityData(prev => ({ ...prev, idDocumentBackUrl: '' }));
+                              setIdDocumentBackUploading(false);
                             }}
                           >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : identityData.idDocumentBackUrl ? (
+                        <div className="flex items-center justify-between p-3 border border-border rounded-lg">
+                          <span className="text-sm text-foreground">Document uploaded</span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setIdentityData(prev => ({ ...prev, idDocumentBackUrl: '' }))}>
                             <XCircle className="h-4 w-4" />
                           </Button>
                         </div>
@@ -768,7 +687,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                 
                 <Button
                   type="submit"
-                  disabled={submitting || !identityData.idDocumentFrontUrl}
+                  disabled={submitting || !identityData.idDocumentFrontUrl || idDocumentFrontUploading || idDocumentBackUploading}
                   className="w-full"
                 >
                   {submitting ? (
@@ -903,7 +822,12 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Business License (Optional)</Label>
-                      {businessLicenseFile ? (
+                      {businessLicenseUploading ? (
+                        <div className="mt-2 flex items-center gap-2 p-3 border border-border rounded-lg">
+                          <Loader size="sm" />
+                          <span className="text-sm text-muted-foreground">Uploading...</span>
+                        </div>
+                      ) : businessLicenseFile ? (
                         <div className="mt-2 p-3 border border-border rounded-lg flex items-center justify-between">
                           <span className="text-sm text-foreground">{businessLicenseFile.name}</span>
                           <Button
@@ -937,7 +861,12 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                     
                     <div>
                       <Label>Tax Document (Optional)</Label>
-                      {taxDocumentFile ? (
+                      {taxDocumentUploading ? (
+                        <div className="mt-2 flex items-center gap-2 p-3 border border-border rounded-lg">
+                          <Loader size="sm" />
+                          <span className="text-sm text-muted-foreground">Uploading...</span>
+                        </div>
+                      ) : taxDocumentFile ? (
                         <div className="mt-2 p-3 border border-border rounded-lg flex items-center justify-between">
                           <span className="text-sm text-foreground">{taxDocumentFile.name}</span>
                           <Button
@@ -972,7 +901,7 @@ const VerificationForm = ({ redirectAfterBusinessVerification, accountType, onSu
                   
                   <Button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || businessLicenseUploading || taxDocumentUploading}
                     className="w-full"
                   >
                     {submitting ? (

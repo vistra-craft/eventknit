@@ -8,6 +8,8 @@ export interface EmailAttachment {
   filename: string;
   content: Buffer | string;
   contentType?: string;
+  encoding?: string;
+  cid?: string; // Content-ID for inline images: reference with src="cid:<value>"
 }
 
 export interface EmailOptions {
@@ -28,6 +30,7 @@ export interface EmailResult {
 
 class EmailService {
   private transporter;
+  private readonly isConfigured: boolean;
   private readonly DEFAULT_MAX_RETRIES = 3;
   private readonly CRITICAL_MAX_RETRIES = 5;
   private readonly INITIAL_RETRY_DELAY_MS = 1000; // 1 second
@@ -35,7 +38,8 @@ class EmailService {
 
   constructor() {
     // Validate email configuration
-    if (!config.email.user || !config.email.password) {
+    this.isConfigured = !!(config.email.user && config.email.password);
+    if (!this.isConfigured) {
       logger.warn('Email service not configured: SMTP_USER and SMTP_PASSWORD are required');
       logger.warn('Ticket emails will fail. Please configure SMTP credentials in environment variables.');
     }
@@ -115,14 +119,28 @@ class EmailService {
    * to the configured test addresses instead of the actual recipients.
    */
   async sendEmail(options: EmailOptions): Promise<EmailResult> {
+    // Fail immediately if SMTP is not configured — no point retrying a config error
+    if (!this.isConfigured) {
+      logger.warn(`Email skipped (SMTP not configured): ${options.subject} to ${options.to}`);
+      return {
+        success: false,
+        attempts: 0,
+        error: new Error('Email service not configured: SMTP credentials missing'),
+      };
+    }
+
     const maxRetries = options.retries ?? (options.isCritical ? this.CRITICAL_MAX_RETRIES : this.DEFAULT_MAX_RETRIES);
     let lastError: Error | undefined;
     let attempts = 0;
 
+    // Hoist outside try so catch block can reference them for logging
+    let mailOptions: nodemailer.SendMailOptions = {};
+    let mailTrapConfig: MailTrapConfig | null = null;
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       attempts++;
       try {
-        let mailOptions: nodemailer.SendMailOptions = {
+        mailOptions = {
           from: config.email.from,
           to: options.to,
           subject: options.subject,
@@ -131,7 +149,7 @@ class EmailService {
         };
 
         // Check if mailTrap is enabled
-        const mailTrapConfig = await this.getMailTrapConfig();
+        mailTrapConfig = await this.getMailTrapConfig();
         if (mailTrapConfig && mailTrapConfig.trap === true) {
           const originalTo = mailOptions.to;
           const originalCc = mailOptions.cc;
@@ -176,17 +194,22 @@ class EmailService {
             filename: att.filename,
             content: att.content,
             contentType: att.contentType,
+            encoding: att.encoding,
+            cid: att.cid,
           }));
         }
 
         await this.transporter.sendMail(mailOptions);
-        
+
         // Success - log if it was a retry
         if (attempt > 0) {
           logger.info(`Email sent successfully after ${attempts} attempts to: ${options.to}`);
         } else {
           logger.info(`Email sent successfully to: ${options.to}`);
         }
+
+        // Persist email log
+        await this.saveEmailLog(mailOptions, options, mailTrapConfig, true, attempts, undefined);
 
         return { success: true, attempts };
       } catch (error) {
@@ -206,6 +229,9 @@ class EmailService {
           if (options.isCritical) {
             logger.warn(`CRITICAL EMAIL FAILURE: ${options.subject} to ${options.to} failed after ${attempts} attempts`);
           }
+
+          // Persist failed email log
+          await this.saveEmailLog(mailOptions, options, mailTrapConfig, false, attempts, lastError.message);
         } else {
           // Calculate delay for next retry
           const delay = this.calculateRetryDelay(attempt);
@@ -227,6 +253,47 @@ class EmailService {
       attempts,
       error: lastError,
     };
+  }
+
+  /**
+   * Persist an email log entry to the database (fire-and-forget — never blocks sending)
+   */
+  private async saveEmailLog(
+    mailOptions: nodemailer.SendMailOptions,
+    originalOptions: EmailOptions,
+    mailTrapConfig: MailTrapConfig | null,
+    success: boolean,
+    attempts: number,
+    errorMessage: string | undefined,
+  ): Promise<void> {
+    try {
+      const isTrapped = !!(mailTrapConfig && mailTrapConfig.trap === true);
+      const toStr = (val: string | string[] | undefined | nodemailer.SendMailOptions['to']) =>
+        val ? (Array.isArray(val) ? val.join(', ') : String(val)) : null;
+
+      await prisma.emailLog.create({
+        data: {
+          from: toStr(mailOptions.from) || config.email.from,
+          to: toStr(mailOptions.to) || '',
+          cc: toStr(mailOptions.cc) || null,
+          bcc: toStr(mailOptions.bcc) || null,
+          subject: String(mailOptions.subject || ''),
+          body: String(mailOptions.html || ''),
+          text: mailOptions.text ? String(mailOptions.text) : null,
+          attachments: originalOptions.attachments
+            ? originalOptions.attachments.map(a => ({ filename: a.filename, contentType: a.contentType }))
+            : undefined,
+          success,
+          attempts,
+          errorMessage: errorMessage || null,
+          mailTrapped: isTrapped,
+          originalTo: isTrapped ? originalOptions.to : null,
+        },
+      });
+    } catch (logError) {
+      // Never let logging failures affect email delivery
+      logger.error('Failed to save email log', logError);
+    }
   }
 
   async sendVerificationEmail(email: string, token: string): Promise<void> {
@@ -1512,22 +1579,22 @@ class EmailService {
       <html>
         <head>
           <meta charset="utf-8">
-          <title>Application Under Review</title>
+          <title>Event Submitted for Review</title>
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
           <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #4a6cf7;">Welcome to EventKnit, ${firstName}!</h1>
-            <p>Thank you for registering as an organizer on EventKnit.</p>
-            <p>Your application is currently <strong>under review</strong> by our team. This process ensures the quality and safety of events on our platform.</p>
+            <h1 style="color: #4a6cf7;">Your Event is Under Review, ${firstName}!</h1>
+            <p>Thank you for creating your event on EventKnit.</p>
+            <p>Your event is currently <strong>under review</strong> by our team. This process ensures the quality and safety of events on our platform.</p>
             <div style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
               <p style="margin: 0;"><strong>What happens next?</strong></p>
               <ul style="margin: 10px 0 0 0; padding-left: 20px;">
-                <li>Our team will review your application</li>
-                <li>You'll receive an email once your account is approved</li>
-                <li>You can still log in and browse events while you wait</li>
+                <li>Our team will review your event within 24-48 hours</li>
+                <li>You'll receive an email once your event is approved and goes live</li>
+                <li>You can continue browsing and attending other events while you wait</li>
               </ul>
             </div>
-            <p>If you have any questions, please don't hesitate to contact our support team.</p>
+            <p>If you have any questions about your event submission, please don't hesitate to contact our support team.</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
             <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
           </div>
@@ -1645,6 +1712,55 @@ class EmailService {
   }
 
   /**
+   * Send email to organizer when their event is rejected
+   */
+  async sendEventRejectedEmail(
+    email: string,
+    firstName: string,
+    eventTitle: string,
+    rejectionReason: string,
+  ): Promise<void> {
+    const dashboardUrl = `${config.frontend.url}/organizer/dashboard`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Event Review Update</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #e74c3c;">Event Review Update</h1>
+            <p>Hi ${firstName || 'there'},</p>
+            <p>Your event <strong>"${eventTitle}"</strong> was not approved in its current form.</p>
+            <div style="background-color: #fdf2f2; border-left: 4px solid #e74c3c; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0 0 5px 0;"><strong>Feedback from the review team:</strong></p>
+              <p style="margin: 0;">${rejectionReason}</p>
+            </div>
+            <p>You can update your event based on this feedback and resubmit it for review.</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${dashboardUrl}" style="background-color: #4a6cf7; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">Go to Dashboard</a>
+            </div>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: `Event Review Update: ${eventTitle}`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send event rejected email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
    * Send notification to admin about a new promo code request
    */
   async sendPromoCodeRequestNotification(
@@ -1654,7 +1770,7 @@ class EmailService {
     eventTitle?: string | null,
     message?: string | null,
   ): Promise<void> {
-    const reviewUrl = `${config.frontend.url}/admin/marketing/promo-codes?tab=requests`;
+    const reviewUrl = `${config.frontend.url}/admin/tickets/promo-codes?tab=requests`;
 
     const messageBlock = message
       ? `
@@ -1759,7 +1875,7 @@ class EmailService {
     promoCode: { code: string; discountType: string; discountValue: unknown; validFrom?: Date; validUntil?: Date },
     eventTitle?: string | null,
   ): Promise<void> {
-    const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
+    const viewUrl = `${config.frontend.url}/organizer/tickets`;
 
     const discountDisplay = promoCode.discountType === 'PERCENTAGE'
       ? `${promoCode.discountValue}%`
@@ -1865,7 +1981,7 @@ class EmailService {
     reason?: string | null,
     eventTitle?: string | null,
   ): Promise<void> {
-    const viewUrl = `${config.frontend.url}/organizer/marketing/promo-codes`;
+    const viewUrl = `${config.frontend.url}/organizer/tickets`;
 
     const reasonBlock = reason
       ? `
@@ -2021,6 +2137,274 @@ class EmailService {
     }
 
     return result;
+  }
+  /**
+   * Send staff invitation email
+   */
+  async sendStaffInvitationEmail(
+    email: string,
+    data: {
+      inviterName: string;
+      organizationName?: string;
+      role: string;
+      message?: string;
+      acceptUrl: string;
+      expiryHours: number;
+    },
+  ): Promise<void> {
+    const roleLabel = data.role
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+    const orgLine = data.organizationName
+      ? ` at <strong>${data.organizationName}</strong>`
+      : ' on the EventKnit platform';
+    const messageLine = data.message
+      ? `<p style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 12px 16px; margin: 20px 0; font-style: italic;">"${data.message}"</p>`
+      : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>You're Invited to Join EventKnit</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #4a6cf7;">You're Invited!</h1>
+            <p><strong>${data.inviterName}</strong> has invited you to join${orgLine} as a <strong>${roleLabel}</strong>.</p>
+            ${messageLine}
+            <p>Click the button below to set up your account:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${data.acceptUrl}" style="background-color: #4a6cf7; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px;">Accept Invitation</a>
+            </div>
+            <p>Or copy and paste this link into your browser:</p>
+            <p style="word-break: break-all; color: #4a6cf7;">${data.acceptUrl}</p>
+            <p><strong>This invitation expires in ${data.expiryHours} hours.</strong></p>
+            <p>If you don't recognize this invitation, you can safely ignore this email.</p>
+            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: `You're invited to join EventKnit as ${roleLabel}`,
+      html,
+      isCritical: true,
+    });
+
+    if (!result.success) {
+      throw new Error(`Failed to send invitation email after ${result.attempts} attempts: ${result.error?.message}`);
+    }
+  }
+  /**
+   * Send KYC verification reminder to organizer
+   */
+  async sendKYCReminderEmail(
+    email: string,
+    firstName: string,
+    eventTitle: string,
+  ): Promise<void> {
+    const verificationUrl = `${config.frontend.url}/organizer/settings?tab=verification`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>KYC Verification Reminder</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #ffffff; margin: 0; padding: 0;">
+          <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+            <p style="font-size: 16px; margin-bottom: 24px;">Hi ${firstName},</p>
+            <p style="font-size: 15px; color: #333;">Your event <strong>${eventTitle}</strong> is pending approval, but we need you to complete your KYC verification before it can go live.</p>
+            <p style="font-size: 15px; color: #333;">Paid events on EventKnit require verified organizer documents. This helps us keep the platform safe for everyone.</p>
+            <p style="font-size: 15px; color: #333; margin-top: 28px;">
+              <a href="${verificationUrl}" style="color: #1a1a1a; font-weight: 600; text-decoration: underline;">Complete your verification here</a>
+            </p>
+            <p style="font-size: 15px; color: #333; margin-top: 28px;">Once your documents are approved, we'll review your event right away.</p>
+            <p style="font-size: 15px; color: #555; margin-top: 32px;">— The EventKnit Team</p>
+            <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;">
+            <p style="font-size: 12px; color: #999;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: `Action needed: Complete KYC verification for "${eventTitle}"`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send KYC reminder email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send KYC rejection email to organizer
+   */
+  async sendKYCRejectionEmail(
+    email: string,
+    firstName: string,
+    reason: string,
+  ): Promise<void> {
+    const verificationUrl = `${config.frontend.url}/organizer/settings?tab=verification`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>KYC Verification Update</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #ffffff; margin: 0; padding: 0;">
+          <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+            <p style="font-size: 16px; margin-bottom: 24px;">Hi ${firstName},</p>
+            <p style="font-size: 15px; color: #333;">We've reviewed your KYC verification documents and unfortunately we're unable to approve them at this time.</p>
+            <div style="border-left: 3px solid #999; padding: 12px 16px; margin: 24px 0; background-color: #fafafa;">
+              <p style="font-size: 14px; color: #333; margin: 0;"><strong>Reason:</strong></p>
+              <p style="font-size: 14px; color: #555; margin: 8px 0 0;">${reason}</p>
+            </div>
+            <p style="font-size: 15px; color: #333;">You can update your documents and resubmit for review.</p>
+            <p style="font-size: 15px; color: #333; margin-top: 28px;">
+              <a href="${verificationUrl}" style="color: #1a1a1a; font-weight: 600; text-decoration: underline;">Update your documents here</a>
+            </p>
+            <p style="font-size: 15px; color: #555; margin-top: 32px;">— The EventKnit Team</p>
+            <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;">
+            <p style="font-size: 12px; color: #999;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: 'Your KYC verification was not approved',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send KYC rejection email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send KYC approval email to organizer
+   */
+  async sendKYCApprovalEmail(
+    email: string,
+    firstName: string,
+  ): Promise<void> {
+    const dashboardUrl = `${config.frontend.url}/organizer/dashboard`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>KYC Verification Approved</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #ffffff; margin: 0; padding: 0;">
+          <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+            <p style="font-size: 16px; margin-bottom: 24px;">Hi ${firstName},</p>
+            <p style="font-size: 15px; color: #333;">Your KYC verification has been approved. You can now create paid events and receive payouts on EventKnit.</p>
+            <p style="font-size: 15px; color: #333; margin-top: 28px;">
+              <a href="${dashboardUrl}" style="color: #1a1a1a; font-weight: 600; text-decoration: underline;">Go to your dashboard</a>
+            </p>
+            <p style="font-size: 15px; color: #555; margin-top: 32px;">— The EventKnit Team</p>
+            <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;">
+            <p style="font-size: 12px; color: #999;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: 'Your KYC verification has been approved',
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send KYC approval email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send role change notification email
+   */
+  async sendRoleChangeEmail(
+    email: string,
+    firstName: string,
+    oldRole: string,
+    newRole: string,
+  ): Promise<void> {
+    const formatRole = (role: string) => role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Role Updated</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5;">
+          <div style="max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #4a6cf7 0%, #3b5de7 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">Your Role Has Been Updated</h1>
+            </div>
+
+            <div style="background: #fff; padding: 30px; border: 1px solid #eee; border-top: none; border-radius: 0 0 10px 10px;">
+              <p style="font-size: 16px;">Hi ${firstName},</p>
+
+              <p style="color: #666;">
+                Your role on EventKnit has been updated effective immediately.
+              </p>
+
+              <div style="background: #f8f9ff; border-radius: 8px; padding: 20px; margin: 20px 0; border-left: 4px solid #4a6cf7;">
+                <p style="margin: 0 0 8px 0; color: #666;">Previous role:</p>
+                <p style="margin: 0 0 16px 0; font-weight: bold; font-size: 16px; color: #333;">${formatRole(oldRole)}</p>
+                <p style="margin: 0 0 8px 0; color: #666;">New role:</p>
+                <p style="margin: 0; font-weight: bold; font-size: 16px; color: #4a6cf7;">${formatRole(newRole)}</p>
+              </div>
+
+              <p style="color: #666;">
+                You will need to sign in again for the changes to take effect. Your permissions have been updated to reflect your new role.
+              </p>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${config.frontend.url}/auth/signin" style="background-color: #4a6cf7; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Sign In</a>
+              </div>
+
+              <p style="color: #999; font-size: 13px;">
+                If you have questions about this change, please contact your administrator.
+              </p>
+            </div>
+
+            <div style="padding: 20px; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #bbb;">This is an automated message. Please do not reply.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: `Your EventKnit Role Has Been Updated to ${formatRole(newRole)}`,
+      html,
+      isCritical: false,
+    });
+
+    if (!result.success) {
+      logger.warn(`Failed to send role change email to ${email}: ${result.error?.message}`);
+    }
   }
 }
 

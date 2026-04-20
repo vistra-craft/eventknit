@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/auth';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 
 interface OrganizerStaffSidebarProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ const OrganizerStaffSidebar: React.FC<OrganizerStaffSidebarProps> = ({
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     events: location.pathname.startsWith('/organizer/events'),
-    workstation: location.pathname.startsWith('/organizer/service-point'),
+    workstation: location.pathname.startsWith('/organizer/event-day'),
   });
 
   // Base navigation items - all organizer staff can see these
@@ -64,18 +64,18 @@ const OrganizerStaffSidebar: React.FC<OrganizerStaffSidebarProps> = ({
         return [
           {
             id: 'workstation',
-            label: 'Service Point',
+            label: 'Event Day Hub',
             icon: Monitor,
             group: 'main',
             children: [
-              { name: 'Events Overview', href: '/organizer/service-point' },
-              { name: 'QR Scanner', href: '/organizer/service-point/scanner' },
-              { name: 'Scan History', href: '/organizer/service-point/history' },
+              { name: 'Events Overview', href: '/organizer/event-day' },
+              { name: 'QR Scanner', href: '/organizer/event-day/scanner' },
+              { name: 'Scan History', href: '/organizer/event-day/history' },
             ],
           },
         ];
 
-      case UserRole.ORGANIZER_STAFF:
+      case UserRole.ORGANIZER_ADMIN:
         return [
           {
             id: 'analytics',
@@ -113,7 +113,7 @@ const OrganizerStaffSidebar: React.FC<OrganizerStaffSidebarProps> = ({
     setExpandedItems((prev) => ({
       ...prev,
       events: location.pathname.startsWith('/organizer/events'),
-      workstation: location.pathname.startsWith('/organizer/service-point'),
+      workstation: location.pathname.startsWith('/organizer/event-day'),
     }));
   }, [location.pathname]);
 

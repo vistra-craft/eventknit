@@ -10,24 +10,24 @@ const router = Router();
 /**
  * @route   GET /api/v1/admin/event-reports/stats
  * @desc    Get report statistics
- * @access  Admin only (ADMIN_STAFF+)
+ * @access  Admin only (ADMIN+)
  */
 router.get(
   '/stats',
   authenticate,
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   EventReportController.getReportStats,
 );
 
 /**
  * @route   GET /api/v1/admin/event-reports
  * @desc    Get all event reports with filters
- * @access  Admin only (ADMIN_STAFF+)
+ * @access  Admin only (ADMIN+)
  */
 router.get(
   '/',
   authenticate,
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   validateQuery(eventReportValidations.getReports),
   EventReportController.getReports,
 );
@@ -35,12 +35,12 @@ router.get(
 /**
  * @route   PATCH /api/v1/admin/event-reports/:id
  * @desc    Update report status
- * @access  Admin only (ADMIN_STAFF+)
+ * @access  Admin only (ADMIN+)
  */
 router.patch(
   '/:id',
   authenticate,
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   validate(eventReportValidations.updateReport),
   EventReportController.updateReport,
 );

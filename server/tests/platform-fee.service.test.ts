@@ -45,6 +45,7 @@ describe('PlatformFeeService', () => {
     // Clear all tables in correct order
     await prisma.$transaction(async (tx) => {
       await tx.refund.deleteMany();
+      await tx.platformIncome.deleteMany();
       await tx.platformFee.deleteMany();
       await tx.organizerDisbursement.deleteMany();
       await tx.eventPaymentTransaction.deleteMany();
@@ -209,6 +210,29 @@ describe('PlatformFeeService', () => {
       expect(Number(fee?.feeAmount)).toBe(750);
       expect(Number(fee?.organizerAmount)).toBe(9250);
       expect(fee?.status).toBe('calculated');
+    });
+
+    it('should auto-record platform income when fee is created', async () => {
+      if (!dbConnected) {
+        logger.warn('Skipping test - database not connected');
+        return;
+      }
+
+      const result = await PlatformFeeService.createPlatformFee(paymentTransactionId);
+
+      // Verify PlatformIncome was auto-created
+      const incomeRecords = await prisma.platformIncome.findMany({
+        where: {
+          transactionId: paymentTransactionId,
+          category: 'Platform Fees',
+        },
+      });
+      expect(incomeRecords.length).toBe(1);
+      expect(Number(incomeRecords[0].amount)).toBe(750);
+      expect(incomeRecords[0].status).toBe('received');
+      expect(incomeRecords[0].source).toBe('Ticket Sales');
+      expect(incomeRecords[0].reference).toBe(result.feeNumber);
+      expect(incomeRecords[0].eventId).toBe(eventId);
     });
 
     it('should not create duplicate platform fee', async () => {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { Html5QrcodeScanner } from "html5-qrcode/esm/html5-qrcode-scanner";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -39,10 +39,13 @@ import {
 } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { useToast } from "../../../hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { useIsMobile } from "../../../hooks/useMobile";
 import {
   scanTicket,
   scanOut,
+  manualCheckIn,
+  manualCheckOut,
   searchAttendees,
   getEvent,
   detectCodeType,
@@ -178,9 +181,12 @@ const vibrateError = (): void => {
 
 const ServicePointScanner: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const eventIdParam = searchParams.get('event');
   const { toast } = useToast();
+  // Detect whether we're under /admin or /organizer so back/history links work for both
+  const basePrefix = location.pathname.startsWith('/organizer') ? '/organizer' : '/admin';
   
   // State
   const [eventId, setEventId] = useState<string | null>(eventIdParam);
@@ -214,7 +220,10 @@ const ServicePointScanner: React.FC = () => {
   // Refs
   const html5QrCodeRef = useRef<Html5QrcodeScanner | null>(null);
   const scannerContainerRef = useRef<HTMLDivElement>(null);
+  const lastScannedRef = useRef<{ code: string; time: number } | null>(null);
   const deviceId = getDeviceId();
+  // Debounce: ignore the same code within 3 seconds to prevent double-scans while camera runs continuously
+  const SCAN_DEBOUNCE_MS = 3000;
 
   // Check camera permissions
   useEffect(() => {
@@ -314,11 +323,7 @@ const ServicePointScanner: React.FC = () => {
       }
     } catch (error) {
       console.error('Error syncing:', error);
-      toast({
-        title: "Sync Error",
-        description: error instanceof Error ? error.message : "Failed to sync scans",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Sync error", "Failed to sync scans");
     } finally {
       setSyncing(false);
       setSyncProgress({ synced: 0, total: 0 });
@@ -372,11 +377,7 @@ const ServicePointScanner: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading sessions:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load sessions",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Load failed", "Failed to load sessions");
       } finally {
         setSessionsLoading(false);
       }
@@ -419,11 +420,7 @@ const ServicePointScanner: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading events:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load events",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Load failed", "Failed to load events");
       } finally {
         setLoading(false);
       }
@@ -461,11 +458,7 @@ const ServicePointScanner: React.FC = () => {
   // Process scanned code
   const processCode = useCallback(async (code: string) => {
     if (!eventId) {
-      toast({
-        title: "Error",
-        description: "Please select an event first",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please select an event first"), "Please select an event first");
       return;
     }
 
@@ -634,8 +627,16 @@ const ServicePointScanner: React.FC = () => {
           errorTitle = "Ticket Not Found";
           errorDescription = "This ticket is not valid for this event.";
         } else if (error.code === 'ALREADY_SCANNED') {
-          errorTitle = "Already Scanned";
-          errorDescription = "This ticket has already been scanned.";
+          // Amber/warning — not a hard failure, staff may need to verify and wave through
+          toast({
+            title: "Already Checked In",
+            description: "This ticket was already scanned. Verify the attendee visually.",
+          });
+          setFlashStatus('error');
+          setTimeout(() => setFlashStatus('none'), 1000);
+          if (soundEnabled) playErrorSound();
+          vibrateError();
+          return;
         }
 
         toast({
@@ -646,11 +647,7 @@ const ServicePointScanner: React.FC = () => {
       }
     } catch (error) {
       console.error('Error processing code:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process scan. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Scan failed", "Failed to process scan. Please try again.");
     }
   }, [eventId, selectedSession, scanMode, soundEnabled, toast, deviceId, isOnlineState, isMobile]);
 
@@ -724,8 +721,14 @@ const ServicePointScanner: React.FC = () => {
 
       html5QrCode.render(
         (decodedText) => {
-          // Stop scanning after successful decode
-          stopScanning();
+          // Debounce: skip if this exact code was scanned within SCAN_DEBOUNCE_MS
+          const now = Date.now();
+          const last = lastScannedRef.current;
+          if (last && last.code === decodedText && now - last.time < SCAN_DEBOUNCE_MS) {
+            return;
+          }
+          lastScannedRef.current = { code: decodedText, time: now };
+          // Keep camera running — only processCode, do NOT stop scanning
           processCode(decodedText);
         },
         () => {
@@ -736,13 +739,9 @@ const ServicePointScanner: React.FC = () => {
       setIsScanning(true);
     } catch (error) {
       console.error('Error starting scanner:', error);
-      toast({
-        title: "Error",
-        description: "Failed to start camera. Please check permissions or use manual entry.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Camera failed", "Failed to start camera. Please check permissions or use manual entry.");
     }
-  }, [processCode, toast, cameraPermission, isMobile, stopScanning]);
+  }, [processCode, toast, cameraPermission, isMobile]);
 
   // Handle manual scan
   const handleManualScan = () => {
@@ -770,11 +769,7 @@ const ServicePointScanner: React.FC = () => {
       }
     } catch (error) {
       console.error('Error searching attendees:', error);
-      toast({
-        title: "Error",
-        description: "Failed to search attendees",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to search attendees");
     } finally {
       setSearching(false);
     }
@@ -785,21 +780,16 @@ const ServicePointScanner: React.FC = () => {
     if (!eventId) return;
 
     try {
-      let response: ScanResponse;
-
-      const manualRequest: ScanRequest = {
-        code: attendee.registrationId, // Use registration ID as code
+      const manualRequest = {
+        searchTerm: attendee.registrationId,
         eventId,
-        session: selectedSession,
-        deviceId,
-        deviceType: isMobile ? 'MOBILE' : 'DESKTOP',
+        facility: selectedSession || null,
+        code: searchCode.trim() || null,
       };
 
-      if (scanMode === 'check-in') {
-        response = await scanTicket(manualRequest);
-      } else {
-        response = await scanOut(manualRequest);
-      }
+      const response = scanMode === 'check-in'
+        ? await manualCheckIn(manualRequest)
+        : await manualCheckOut(manualRequest);
 
       if (response.success) {
         const scanResult: ScanResult = {
@@ -808,10 +798,10 @@ const ServicePointScanner: React.FC = () => {
           attendeeName: response.data.attendeeName,
           ticketType: response.data.ticketType,
           scannedAt: response.data.scannedAt instanceof Date ? response.data.scannedAt.toISOString() : response.data.scannedAt,
-          session: response.data.session,
+          session: selectedSession,
           status: 'success',
-          signatureValid: response.data.signatureValid,
-          codeType: response.data.codeType,
+          signatureValid: response.data.signatureValid ?? true,
+          codeType: response.data.codeType ?? 'QR_CODE',
           scanType: response.data.scanType,
           isReEntry: response.data.isReEntry,
         };
@@ -820,26 +810,23 @@ const ServicePointScanner: React.FC = () => {
         setShowSearchModal(false);
         setSearchTerm("");
         setSearchResults([]);
+        setSearchCode("");
 
         toast({
           title: "Success",
           description: `${scanMode === 'check-in' ? 'Checked in' : 'Checked out'}: ${response.data.attendeeName}`,
         });
       } else {
-        const error = response.error || { code: 'UNKNOWN', message: 'Scan failed' };
+        const error = response.error || { code: 'UNKNOWN', message: 'Operation failed' };
         toast({
-          title: "Error",
+          title: scanMode === 'check-in' ? "Check-in failed" : "Check-out failed",
           description: error.message || "Operation failed",
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Error in manual operation:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process operation",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to process operation");
     }
   };
 
@@ -884,7 +871,7 @@ const ServicePointScanner: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to="/admin/service-point" label="Back" />
+          <BackButton to={`${basePrefix}/event-day`} label="Back" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">Ticket Scanner</h1>
             <p className="text-muted-foreground mt-2">
@@ -897,9 +884,9 @@ const ServicePointScanner: React.FC = () => {
               onChange={(e) => {
                 const newEventId = e.target.value;
                 setEventId(newEventId);
-                navigate(`/admin/service-point/scanner?event=${newEventId}`);
+                navigate(`${basePrefix}/event-day/scanner?event=${newEventId}`);
               }}
-              className="px-3 py-2 border border-border rounded-md text-sm"
+              className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
             >
               <option value="">Select Event</option>
               {events.map(event => (
@@ -1029,7 +1016,7 @@ const ServicePointScanner: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {sessionsLoading ? (
                       <div className="col-span-full text-center text-muted-foreground py-4">
                         Loading sessions...
@@ -1128,7 +1115,7 @@ const ServicePointScanner: React.FC = () => {
                     >
                       <div id="qr-reader" ref={scannerContainerRef} className="w-full h-full" />
                       {!isScanning && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                        <div className="absolute inset-0 flex items-center justify-center bg-muted">
                           <div className="text-center p-4">
                             <QrCode className={`${isMobile ? 'w-12 h-12' : 'w-16 h-16'} text-muted-foreground mx-auto mb-4`} />
                             <p className={`${isMobile ? 'text-sm' : 'text-base'} text-muted-foreground mb-2`}>
@@ -1199,7 +1186,7 @@ const ServicePointScanner: React.FC = () => {
                             const value = e.target.value.toUpperCase().replace(/\s+/g, '');
                             setManualInput(value);
                           }}
-                          onKeyPress={(e) => e.key === 'Enter' && handleManualScan()}
+                          onKeyDown={(e) => e.key === 'Enter' && handleManualScan()}
                           maxLength={100}
                           className={isMobile ? 'text-base h-12' : ''}
                           autoComplete="off"
@@ -1267,14 +1254,14 @@ const ServicePointScanner: React.FC = () => {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => navigate('/admin/service-point/history')}
+                      onClick={() => navigate(`${basePrefix}/event-day/history`)}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-3 max-h-64 md:max-h-96 overflow-y-auto">
                     {scanResults.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <Scan className="w-8 h-8 mx-auto mb-2" />
@@ -1360,7 +1347,7 @@ const ServicePointScanner: React.FC = () => {
 
         {/* Manual Search Modal */}
         <Dialog open={showSearchModal} onOpenChange={setShowSearchModal}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Manual Search & Check {scanMode === 'check-in' ? 'In' : 'Out'}</DialogTitle>
               <DialogDescription>
@@ -1374,7 +1361,7 @@ const ServicePointScanner: React.FC = () => {
                   placeholder="Enter name, email, phone, backup code, or registration ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
               <div>
@@ -1393,12 +1380,12 @@ const ServicePointScanner: React.FC = () => {
               </Button>
 
               {searchResults.length > 0 && (
-                <div className="space-y-2 max-h-96 overflow-y-auto">
+                <div className="space-y-2 max-h-64 md:max-h-96 overflow-y-auto">
                   <p className="text-sm font-medium">Search Results ({searchResults.length})</p>
                   {searchResults.map((attendee) => (
                     <div
                       key={attendee.registrationId}
-                      className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-gray-50"
+                      className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/50"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">

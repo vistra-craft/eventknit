@@ -1,5 +1,5 @@
 import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import type { Request } from 'express';
 import { ProfileService } from '../../../src/services/profile.service.js';
 import { NotFoundError } from '../../../src/utils/errors.js';
@@ -7,18 +7,18 @@ import * as cloudinaryService from '../../../src/services/cloudinary.service.js'
 import * as databaseModule from '../../../src/config/database.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/services/cloudinary.service.js');
+vi.mock('../../../src/services/cloudinary.service.js');
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
@@ -31,7 +31,7 @@ describe('ProfileService', () => {
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('updateProfileWithAvatar', () => {
@@ -96,7 +96,7 @@ describe('ProfileService', () => {
       } as NonNullable<Request['file']>;
 
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (cloudinaryService.uploadImageToCloudinary as jest.Mock).mockResolvedValue({
+      (cloudinaryService.uploadImageToCloudinary as vi.Mock).mockResolvedValue({
         secureUrl: 'https://cloudinary.com/avatar.jpg',
       });
       prisma.user.update.mockResolvedValue({

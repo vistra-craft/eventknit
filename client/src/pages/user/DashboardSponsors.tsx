@@ -6,6 +6,7 @@ import EmptyState from '@/components/EmptyState';
 import { Award, Globe } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import { getEventById } from '@/lib/event-api';
+import { stripHtml } from '@/lib/utils';
 
 interface EventData {
   id: number | string;
@@ -194,7 +195,7 @@ const DashboardSponsors: React.FC<DashboardSponsorsProps> = ({ eventData }) => {
                                     {/* Description */}
                                     {sponsor.description && (
                                       <p className="text-sm text-muted-foreground text-center line-clamp-3">
-                                        {sponsor.description}
+                                        {stripHtml(sponsor.description)}
                                       </p>
                                     )}
 

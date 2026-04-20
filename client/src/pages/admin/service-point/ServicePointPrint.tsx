@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,9 +28,10 @@ import { useToast } from "@/hooks/useToast";
 import {
   getEventAttendees,
   getEventConfig,
+  getEventBadgePrints,
+  recordBadgePrint,
   type EventAttendee,
   type EventStatistics,
-  TicketStatus,
 } from "@/lib/workstation-api";
 import {
   getBadgeTemplates,
@@ -38,6 +39,7 @@ import {
   replaceTemplateVariables,
   mmToPixels,
 } from "@/lib/badge-template-api";
+import { getEventById } from "@/lib/event-api";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import QRCode from "qrcode";
@@ -67,19 +69,18 @@ const ServicePointPrint: React.FC = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get('event') || '';
-  const badgePreviewRef = useRef<HTMLDivElement>(null);
 
   // State
   const [templates, setTemplates] = useState<BadgeTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<BadgeTemplate | null>(null);
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
-  const [filteredAttendees, setFilteredAttendees] = useState<EventAttendee[]>([]);
   const [selectedAttendees, setSelectedAttendees] = useState<string[]>([]);
   const [printJobs, setPrintJobs] = useState<PrintJob[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [filterStatus, setFilterStatus] = useState<'all' | 'not_printed' | 'printed'>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [previewAttendee, setPreviewAttendee] = useState<EventAttendee | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -94,89 +95,18 @@ const ServicePointPrint: React.FC = () => {
     venue: ""
   });
 
-  const loadDemoData = useCallback(() => {
-    // Demo attendees for testing
-    const demoAttendees = [
-      {
-        registrationId: "reg-001",
-        attendeeName: "Sarah Johnson",
-        email: "sarah@techcorp.com",
-        phoneNumber: "+254 700 123 456",
-        ticketType: "VIP",
-        ticketStatus: TicketStatus.ACTIVE,
-        checkedInAt: null,
-        checkedOutAt: null,
-        isCurrentlyInside: false,
-        reEntryCount: 0,
-        lastScanFacility: null,
-      },
-      {
-        registrationId: "reg-002",
-        attendeeName: "Michael Chen",
-        email: "michael@innovatelab.io",
-        phoneNumber: "+254 700 234 567",
-        ticketType: "Standard",
-        ticketStatus: TicketStatus.ACTIVE,
-        checkedInAt: new Date(),
-        checkedOutAt: null,
-        isCurrentlyInside: true,
-        reEntryCount: 0,
-        lastScanFacility: "Main Entrance",
-      },
-      {
-        registrationId: "reg-003",
-        attendeeName: "Emma Wilson",
-        email: "emma@university.edu",
-        phoneNumber: "+254 700 345 678",
-        ticketType: "Student",
-        ticketStatus: TicketStatus.ACTIVE,
-        checkedInAt: null,
-        checkedOutAt: null,
-        isCurrentlyInside: false,
-        reEntryCount: 0,
-        lastScanFacility: null,
-      },
-      {
-        registrationId: "reg-004",
-        attendeeName: "David Kim",
-        email: "david@startuphub.co",
-        phoneNumber: "+254 700 456 789",
-        ticketType: "VIP",
-        ticketStatus: TicketStatus.ACTIVE,
-        checkedInAt: null,
-        checkedOutAt: null,
-        isCurrentlyInside: false,
-        reEntryCount: 0,
-        lastScanFacility: null,
-      },
-    ] as unknown as EventAttendee[];
-
-    setAttendees(demoAttendees);
-    setFilteredAttendees(demoAttendees);
-    setCurrentEvent({
-      id: eventId || "demo-1",
-      title: "Seamless East Africa 2025",
-      date: "July 2-3, 2025",
-      location: "Nairobi, Kenya",
-      venue: "Kenyatta International Convention Centre"
-    });
-    setEventStats({
-      totalAttendees: 4,
-      checkedIn: 1,
-      currentlyInside: 1,
-      checkedOut: 0,
-      reEntries: 0,
-      scansToday: 1,
-    });
-  }, [eventId]);
-
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
 
-      // Load templates, event config, and attendees in parallel
+      // Fetch event to resolve organizerId for scoped templates
+      const eventDetail = await getEventById(eventId).catch(() => null);
+      const organizerId = eventDetail?.data?.event?.organizer?.id;
+
+      // Load templates (scoped to organizer if available), event config, and attendees in parallel
       const [templatesRes, eventRes, attendeesRes] = await Promise.all([
-        getBadgeTemplates(),
+        getBadgeTemplates(organizerId ? { organizerId } : undefined),
         getEventConfig(eventId).catch(() => null),
         getEventAttendees(eventId, 1, 500).catch(() => null),
       ]);
@@ -184,7 +114,6 @@ const ServicePointPrint: React.FC = () => {
       // Set templates
       if (templatesRes.success && templatesRes.data.templates) {
         setTemplates(templatesRes.data.templates);
-        // Select first template by default
         if (templatesRes.data.templates.length > 0) {
           setSelectedTemplate(templatesRes.data.templates[0]);
         }
@@ -202,32 +131,26 @@ const ServicePointPrint: React.FC = () => {
         setEventStats(eventRes.data.statistics);
       }
 
-      // Set attendees
+      // Set attendees — required; if this fails completely, surface the error
       if (attendeesRes?.success && attendeesRes.data) {
         setAttendees(attendeesRes.data.attendees);
-        setFilteredAttendees(attendeesRes.data.attendees);
+      } else if (!attendeesRes) {
+        setError("Failed to load attendees. Please check your connection and try again.");
       }
 
-      // Load printed badges from localStorage
-      const storedPrinted = localStorage.getItem(`printed_badges_${eventId}`);
-      if (storedPrinted) {
-        setPrintedBadges(new Set(JSON.parse(storedPrinted)));
+      // Load printed badge status from server (shared across all workstations)
+      const badgePrintsRes = await getEventBadgePrints(eventId).catch(() => null);
+      if (badgePrintsRes?.success && badgePrintsRes.data.printedRegistrationIds) {
+        setPrintedBadges(new Set(badgePrintsRes.data.printedRegistrationIds));
       }
 
-    } catch (error) {
-      console.error("Error loading data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load data. Using demo mode.",
-        variant: "destructive",
-      });
-
-      // Load demo data
-      loadDemoData();
+    } catch (err) {
+      console.error("Error loading print center data:", err);
+      setError("Failed to load print center data. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [eventId, toast, loadDemoData]);
+  }, [eventId]);
 
   // Load data on mount
   useEffect(() => {
@@ -238,7 +161,26 @@ const ServicePointPrint: React.FC = () => {
     }
   }, [eventId, loadData]);
 
+  // Derived: filtered attendee list recomputed whenever search, status, or print state changes
+  const filteredAttendees = useMemo(() => {
+    return attendees.filter((attendee) => {
+      // Search filter: name, email, or phone
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matches =
+          attendee.attendeeName.toLowerCase().includes(term) ||
+          attendee.email.toLowerCase().includes(term) ||
+          (attendee.phoneNumber?.toLowerCase().includes(term) ?? false);
+        if (!matches) return false;
+      }
 
+      // Print status filter
+      if (filterStatus === 'printed' && !printedBadges.has(attendee.registrationId)) return false;
+      if (filterStatus === 'not_printed' && printedBadges.has(attendee.registrationId)) return false;
+
+      return true;
+    });
+  }, [attendees, searchTerm, filterStatus, printedBadges]);
 
   // Generate QR code as data URL
   const generateQRCode = async (data: string): Promise<string> => {
@@ -403,12 +345,15 @@ const ServicePointPrint: React.FC = () => {
         };
       }
 
-      // Mark as printed
+      // Record print server-side (shared across all workstations at this event)
+      if (selectedTemplate) {
+        recordBadgePrint(eventId, attendee.registrationId, selectedTemplate.id).catch((err) => {
+          console.error('Failed to record badge print:', err);
+        });
+      }
       setPrintedBadges(prev => {
         const newSet = new Set(prev);
         newSet.add(attendee.registrationId);
-        // Save to localStorage
-        localStorage.setItem(`printed_badges_${eventId}`, JSON.stringify([...newSet]));
         return newSet;
       });
 
@@ -543,7 +488,7 @@ const ServicePointPrint: React.FC = () => {
       case 'printing': return "bg-primary/10 text-primary";
       case 'completed': return "bg-success/10 text-success";
       case 'failed': return "bg-destructive/10 text-destructive";
-      default: return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+      default: return "bg-muted text-muted-foreground";
     }
   };
 
@@ -559,12 +504,33 @@ const ServicePointPrint: React.FC = () => {
 
   if (isLoading) {
     return (
-        <div className="flex items-center justify-center h-96">
-          <div className="flex flex-col items-center gap-4">
-            <Loader size="lg" />
-            <p className="text-muted-foreground">Loading print center...</p>
-          </div>
+      <div className="flex items-center justify-center h-96">
+        <div className="flex flex-col items-center gap-4">
+          <Loader size="lg" />
+          <p className="text-muted-foreground">Loading print center...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <BackButton to="/admin/event-day" label="Back" />
+          <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
+        </div>
+        <Card className="border-destructive/40">
+          <CardContent className="py-16">
+            <div className="flex flex-col items-center justify-center text-center">
+              <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+              <h2 className="text-lg font-semibold mb-2">Failed to Load Print Center</h2>
+              <p className="text-muted-foreground mb-6 max-w-md">{error}</p>
+              <Button onClick={() => loadData()}>Try Again</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -572,7 +538,7 @@ const ServicePointPrint: React.FC = () => {
     return (
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <BackButton to="/admin/service-point" label="Back" />
+            <BackButton to="/admin/event-day" label="Back" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
               <p className="text-sm text-muted-foreground">Print badges for event attendees</p>
@@ -586,7 +552,7 @@ const ServicePointPrint: React.FC = () => {
                 <p className="text-muted-foreground mb-6 max-w-md">
                   Please select an event from the Service Point dashboard to print badges for attendees.
                 </p>
-                <Button onClick={() => navigate('/admin/service-point')}>
+                <Button onClick={() => navigate('/admin/event-day')}>
                   Go to Service Point
                 </Button>
               </div>
@@ -601,7 +567,7 @@ const ServicePointPrint: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <BackButton to="/admin/service-point" label="Back" />
+            <BackButton to="/admin/event-day" label="Back" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">Badge Print Center</h1>
               <p className="text-sm text-muted-foreground">{currentEvent.title}</p>
@@ -611,7 +577,7 @@ const ServicePointPrint: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate('/admin/service-point/templates')}
+              onClick={() => navigate(eventId ? `/admin/event-day/event/${eventId}/templates` : '/admin/event-day/templates')}
             >
               <Settings className="w-4 h-4 mr-2" />
               Edit Templates
@@ -685,7 +651,7 @@ const ServicePointPrint: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate('/admin/service-point/templates')}
+                    onClick={() => navigate(eventId ? `/admin/event-day/event/${eventId}/templates` : '/admin/event-day/templates')}
                   >
                     <Settings className="w-4 h-4" />
                   </Button>
@@ -722,7 +688,7 @@ const ServicePointPrint: React.FC = () => {
                     <Button
                       variant="link"
                       size="sm"
-                      onClick={() => navigate('/admin/service-point/templates')}
+                      onClick={() => navigate(eventId ? `/admin/event-day/event/${eventId}/templates` : '/admin/event-day/templates')}
                     >
                       Create Template
                     </Button>
@@ -977,7 +943,7 @@ const ServicePointPrint: React.FC = () => {
         {/* Preview Modal */}
         {showPreviewModal && previewAttendee && selectedTemplate && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-card rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div className="bg-card rounded-xl shadow-xl w-[calc(100vw-2rem)] sm:max-w-2xl mx-4 max-h-[90vh] overflow-auto">
               <div className="flex items-center justify-between p-4 border-b border-border">
                 <h3 className="font-semibold text-foreground">Badge Preview - {previewAttendee.attendeeName}</h3>
                 <Button variant="ghost" size="sm" onClick={() => setShowPreviewModal(false)}>
@@ -987,8 +953,7 @@ const ServicePointPrint: React.FC = () => {
               <div className="p-6 flex flex-col items-center gap-4">
                 {/* Badge Preview */}
                 <div
-                  ref={badgePreviewRef}
-                  className="border-2 border-dashed border-gray-300 shadow-lg"
+                  className="border-2 border-dashed border-border shadow-lg"
                   style={{
                     width: `${mmToPixels(selectedTemplate.width)}px`,
                     height: `${mmToPixels(selectedTemplate.height)}px`,

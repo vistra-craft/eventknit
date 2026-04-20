@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Calendar,
-  Settings,
   Home,
   Menu,
-  TrendingUp,
   ChevronDown,
   ChevronRight,
   Monitor,
+  HeadphonesIcon,
+  Megaphone,
+  Users,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/auth';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 
 interface AdminStaffSidebarProps {
   isOpen: boolean;
@@ -26,91 +28,101 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
   isMobile = false,
 }) => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const userRole = user?.role;
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     events: location.pathname.startsWith('/admin/events'),
-    workstation: location.pathname.startsWith('/admin/service-point'),
+    workstation: location.pathname.startsWith('/admin/event-day'),
+    support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events',
+    marketing: location.pathname.startsWith('/admin/marketing') || location.pathname === '/admin/white-label',
   });
 
-  // Base navigation items - all admin staff can see these
-  const baseNavigationItems = [
-    {
-      id: 'dashboard',
-      label: 'Dashboard',
-      href: '/admin/dashboard',
-      icon: Home,
-      group: 'main',
-    },
-    {
-      id: 'events',
-      label: 'My Events',
-      icon: Calendar,
-      group: 'main',
-      children: [
-        { name: 'Upcoming Events', href: '/admin/events/upcoming' },
-      ],
-    },
-  ];
+  // Build navigation based on role
+  const getNavigationItems = () => {
+    const items: Array<{
+      id: string;
+      label: string;
+      href?: string;
+      icon: React.ComponentType<{ className?: string }>;
+      group: string;
+      children?: Array<{ name: string; href: string }>;
+    }> = [
+      {
+        id: 'dashboard',
+        label: 'Dashboard',
+        href: '/admin/dashboard',
+        icon: Home,
+        group: 'main',
+      },
+    ];
 
-  // Role-specific navigation items
-  const getRoleSpecificItems = () => {
-    if (!userRole) return [];
-
-    switch (userRole) {
-      case UserRole.TELLER:
-        return [
-          {
-            id: 'workstation',
-            label: 'Service Point',
-            icon: Monitor,
-            group: 'main',
-            children: [
-              { name: 'Events Overview', href: '/admin/service-point' },
-              { name: 'QR Scanner', href: '/admin/service-point/scanner' },
-              { name: 'Scan History', href: '/admin/service-point/history' },
-            ],
-          },
-        ];
-
-      case UserRole.MARKETER:
-        return [
-          {
-            id: 'analytics',
-            label: 'Analytics',
-            icon: TrendingUp,
-            group: 'main',
-            children: [
-              { name: 'Event Performance', href: '/admin/analytics/events' },
-            ],
-          },
-        ];
-
-      case UserRole.SUPPORT:
-        return [
-          {
-            id: 'support',
-            label: 'Support',
-            icon: Settings,
-            group: 'main',
-            children: [
-              { name: 'Support Inbox', href: '/admin/support' },
-            ],
-          },
-        ];
-
-      case UserRole.ADMIN_STAFF:
-      case UserRole.SUPERADMIN:
-        // Full admin sidebar - handled by AdminSidebar
-        return [];
-
-      default:
-        return [];
+    if (userRole === UserRole.SUPPORT) {
+      // SUPPORT: Dashboard, Events (read-only), Users (read-only), Support, Marketing
+      items.push(
+        {
+          id: 'events',
+          label: 'Events',
+          icon: Calendar,
+          group: 'main',
+          children: [
+            { name: 'All Events', href: '/admin/events' },
+            { name: 'Upcoming Events', href: '/admin/events/upcoming' },
+          ],
+        },
+        {
+          id: 'users',
+          label: 'Users',
+          icon: Users,
+          group: 'main',
+          children: [
+            { name: 'All Users', href: '/admin/users' },
+          ],
+        },
+        {
+          id: 'support',
+          label: 'Support',
+          icon: HeadphonesIcon,
+          group: 'operations',
+          children: [
+            { name: 'Support Services', href: '/admin/support' },
+            { name: 'Communications', href: '/admin/communications' },
+            { name: 'Platform Feedback', href: '/admin/feedback' },
+            { name: 'Flagged Events', href: '/admin/flagged-events' },
+            { name: 'Notification Settings', href: '/admin/notification-settings' },
+          ],
+        },
+        {
+          id: 'marketing',
+          label: 'Marketing',
+          icon: Megaphone,
+          group: 'operations',
+          children: [
+            { name: 'Social Media', href: '/admin/marketing/social' },
+            { name: 'White Label', href: '/admin/white-label' },
+          ],
+        },
+      );
+    } else if (userRole === UserRole.TELLER) {
+      // TELLER: Dashboard, Event Day Hub only
+      items.push({
+        id: 'workstation',
+        label: 'Event Day Hub',
+        icon: Monitor,
+        group: 'main',
+        children: [
+          { name: 'Select Event', href: '/admin/event-day' },
+          { name: 'QR Scanner', href: '/admin/event-day/scanner' },
+          { name: 'Print Center', href: '/admin/event-day/print' },
+          { name: 'Scan History', href: '/admin/event-day/history' },
+        ],
+      });
     }
+
+    return items;
   };
 
-  const navigationItems = [...baseNavigationItems, ...getRoleSpecificItems()];
+  const navigationItems = getNavigationItems();
 
   const toggleExpanded = (itemId: string) => {
     setExpandedItems((prev) => ({
@@ -129,7 +141,9 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
     setExpandedItems((prev) => ({
       ...prev,
       events: location.pathname.startsWith('/admin/events'),
-      workstation: location.pathname.startsWith('/admin/service-point'),
+      workstation: location.pathname.startsWith('/admin/event-day'),
+      support: location.pathname.startsWith('/admin/support') || location.pathname.startsWith('/admin/communications') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events',
+      marketing: location.pathname.startsWith('/admin/marketing') || location.pathname === '/admin/white-label',
     }));
   }, [location.pathname]);
 
@@ -161,10 +175,15 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
     account: 'Account',
   };
 
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <div
-      className={`bg-background border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col flex-shrink-0 lg:sticky lg:top-0 lg:h-screen`}
+      className={`bg-card-surface border-r border-border ${isOpen ? 'w-64' : 'w-16'} transition-all duration-300 flex flex-col h-screen`}
     >
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
       <div className="p-4">
         <div
           className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} mb-6`}
@@ -251,7 +270,7 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
                   return (
                     <Link
                       key={item.id}
-                      to={'href' in item ? item.href : '#'}
+                      to={item.href ?? '#'}
                       onClick={handleNavigationClick}
                       className={`flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                         isItemActive
@@ -271,6 +290,22 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
             </div>
           ))}
         </nav>
+      </div>
+      </div>
+
+      {/* Sign out button */}
+      <div className="p-4 border-t mt-2">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className={`w-full flex items-center ${
+            isOpen ? 'space-x-3 px-3 justify-start' : 'justify-center px-2'
+          } py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors`}
+          title={!isOpen ? 'Sign out' : undefined}
+        >
+          <LogOut className={`${isOpen ? 'h-5 w-5' : 'h-6 w-6'}`} />
+          {isOpen && <span>Sign out</span>}
+        </button>
       </div>
     </div>
   );

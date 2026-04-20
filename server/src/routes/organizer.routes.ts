@@ -4,12 +4,18 @@ import { EventStaffController } from '../controllers/event-staff.controller.js';
 import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
 import { InvoiceController } from '../controllers/invoice.controller.js';
 import { WhiteLabelController } from '../controllers/white-label.controller.js';
+import { StaffInvitationController } from '../controllers/staff-invitation.controller.js';
+import { staffInvitationValidations } from '../validations/staff-invitation.validations.js';
+import { organizerValidations } from '../validations/organizer.validations.js';
 import { RefundService } from '../services/refund.service.js';
+import { EventService } from '../services/event.service.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { canManageStaff } from '../utils/privileges.js';
 import { AuthorizationError, NotFoundError } from '../utils/errors.js';
+import { UserRole } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
+import { staffManagementRateLimiter } from '../middleware/rateLimiter.middleware.js';
 import {
   createBrandingSchema,
   createCustomDomainSchema,
@@ -35,7 +41,7 @@ const canManageStaffMiddleware = (req: AuthenticatedRequest, res: Response, next
  * @desc    Create staff member
  * @access  Private (ORGANIZER+)
  */
-router.post('/staff', canManageStaffMiddleware, OrganizerController.createStaff);
+router.post('/staff', staffManagementRateLimiter, canManageStaffMiddleware, validate(organizerValidations.createStaff), OrganizerController.createStaff);
 
 /**
  * @route   GET /api/v1/organizer/staff
@@ -49,7 +55,7 @@ router.get('/staff', canManageStaffMiddleware, OrganizerController.getStaff);
  * @desc    Get all staff assignments for organizer's events
  * @access  Private (ORGANIZER+)
  */
-router.get('/staff/assignments', EventStaffController.getOrganizerStaffAssignments);
+router.get('/staff/assignments', canManageStaffMiddleware, EventStaffController.getOrganizerStaffAssignments);
 
 /**
  * @route   GET /api/v1/organizer/staff/:id
@@ -66,6 +72,20 @@ router.get('/staff/:id', canManageStaffMiddleware, OrganizerController.getStaffB
 router.put('/staff/:id', canManageStaffMiddleware, OrganizerController.updateStaff);
 
 /**
+ * @route   PATCH /api/v1/organizer/staff/:id/role
+ * @desc    Change staff member's role (with session revocation, email notification, and audit trail)
+ * @access  Private (ORGANIZER+)
+ */
+router.patch(
+  '/staff/:id/role',
+  staffManagementRateLimiter,
+  canManageStaffMiddleware,
+  validateParams(organizerValidations.staffIdParam),
+  validate(organizerValidations.changeStaffRole),
+  OrganizerController.changeStaffRole,
+);
+
+/**
  * @route   DELETE /api/v1/organizer/staff/:id
  * @desc    Delete staff member (soft delete)
  * @access  Private (ORGANIZER+)
@@ -77,7 +97,7 @@ router.delete('/staff/:id', canManageStaffMiddleware, OrganizerController.delete
  * @desc    Deactivate staff member
  * @access  Private (ORGANIZER+)
  */
-router.post('/staff/:id/deactivate', canManageStaffMiddleware, OrganizerController.deactivateStaff);
+router.post('/staff/:id/deactivate', staffManagementRateLimiter, canManageStaffMiddleware, OrganizerController.deactivateStaff);
 
 /**
  * @route   GET /api/v1/organizer/dashboard/stats
@@ -113,6 +133,26 @@ router.post('/onboarding/complete', OrganizerController.completeOnboarding);
  * @access  Private (ORGANIZER+)
  */
 router.get('/events', OrganizerController.getOrganizerEvents);
+
+/**
+ * @route   GET /api/v1/organizer/events/:eventId
+ * @desc    Get single event details (authenticated — ensures token refresh works for non-approved events)
+ * @access  Private (authenticated users who own the event)
+ */
+router.get('/events/:eventId', async (req: AuthenticatedRequest & { params: { eventId: string } }, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: 'Authentication required' });
+      return;
+    }
+    const { eventId } = req.params;
+    const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN;
+    const event = await EventService.getEventById(eventId, req.user.id, isAdmin);
+    res.json({ success: true, data: { event } });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * @route   POST /api/v1/organizer/events/:eventId/staff
@@ -284,7 +324,9 @@ const verifyEventOwner = async (req: EventIdRequest, res: Response, next: NextFu
       throw new NotFoundError('Event not found');
     }
 
-    if (event.organizerId !== req.user.id) {
+    // Allow admins to manage any event (for service point operations)
+    const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN;
+    if (!isAdmin && event.organizerId !== req.user.id) {
       throw new AuthorizationError('You do not have permission to manage this event');
     }
 
@@ -335,6 +377,41 @@ router.get(
     }
   },
 );
+
+// ─── Staff Invitations ────────────────────────────────────────────────────────
+
+/**
+ * @route   POST /api/v1/organizer/staff-invitations
+ * @desc    Invite staff member to organizer team
+ * @access  Private (ORGANIZER+)
+ */
+router.post(
+  '/staff-invitations',
+  canManageStaffMiddleware,
+  validate(staffInvitationValidations.inviteStaff),
+  StaffInvitationController.inviteStaff,
+);
+
+/**
+ * @route   GET /api/v1/organizer/staff-invitations
+ * @desc    Get organizer's staff invitations
+ * @access  Private (ORGANIZER+)
+ */
+router.get('/staff-invitations', canManageStaffMiddleware, StaffInvitationController.getOrganizerInvitations);
+
+/**
+ * @route   POST /api/v1/organizer/staff-invitations/:id/resend
+ * @desc    Resend a staff invitation
+ * @access  Private (ORGANIZER+)
+ */
+router.post('/staff-invitations/:id/resend', canManageStaffMiddleware, StaffInvitationController.resendInvitation);
+
+/**
+ * @route   POST /api/v1/organizer/staff-invitations/:id/revoke
+ * @desc    Revoke a staff invitation
+ * @access  Private (ORGANIZER+)
+ */
+router.post('/staff-invitations/:id/revoke', canManageStaffMiddleware, StaffInvitationController.revokeInvitation);
 
 export default router;
 

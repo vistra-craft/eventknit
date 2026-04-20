@@ -13,15 +13,14 @@ export interface PermissionResult {
  * (Mirrors backend roleHierarchy)
  */
 export const roleHierarchy: Record<UserRole, number> = {
-  SUPERADMIN: 9,
-  ADMIN_STAFF: 8,
-  MARKETER: 7,
-  SUPPORT: 6,
-  TELLER: 5,
-  ORGANIZER: 4,
-  ORGANIZER_STAFF: 3,
-  ORGANIZER_TELLER: 2,
-  ATTENDEE: 1,
+  [UserRole.SUPERADMIN]: 10,
+  [UserRole.ADMIN]: 9,
+  [UserRole.SUPPORT]: 6,
+  [UserRole.TELLER]: 5,
+  [UserRole.ORGANIZER]: 4,
+  [UserRole.ORGANIZER_ADMIN]: 3,
+  [UserRole.ORGANIZER_TELLER]: 2,
+  [UserRole.ATTENDEE]: 1,
 };
 
 /**
@@ -29,42 +28,32 @@ export const roleHierarchy: Record<UserRole, number> = {
  * (Mirrors backend roleCreationRules)
  */
 export const roleCreationRules: Record<UserRole, UserRole[]> = {
-  SUPERADMIN: [
+  [UserRole.SUPERADMIN]: [
     UserRole.SUPERADMIN,
-    UserRole.ADMIN_STAFF,
-    UserRole.MARKETER,
+    UserRole.ADMIN,
     UserRole.SUPPORT,
     UserRole.TELLER,
     UserRole.ORGANIZER,
-    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_ADMIN,
     UserRole.ORGANIZER_TELLER,
     UserRole.ATTENDEE,
   ],
-  ADMIN_STAFF: [
-    UserRole.ADMIN_STAFF,
-    UserRole.MARKETER,
+  [UserRole.ADMIN]: [
+    UserRole.ADMIN,
     UserRole.SUPPORT,
     UserRole.TELLER,
     UserRole.ORGANIZER,
-    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_ADMIN,
     UserRole.ORGANIZER_TELLER,
     UserRole.ATTENDEE,
   ],
-  MARKETER: [
-    UserRole.MARKETER,
-    UserRole.SUPPORT,
-    UserRole.ORGANIZER,
-    UserRole.ORGANIZER_STAFF,
-    UserRole.ORGANIZER_TELLER,
-    UserRole.ATTENDEE,
-  ],
-  SUPPORT: [],
-  TELLER: [],
-  ORGANIZER: [
-    UserRole.ORGANIZER_STAFF,
+  [UserRole.SUPPORT]: [],
+  [UserRole.TELLER]: [],
+  [UserRole.ORGANIZER]: [
+    UserRole.ORGANIZER_ADMIN,
     UserRole.ORGANIZER_TELLER,
   ],
-  ORGANIZER_STAFF: [],
-  ORGANIZER_TELLER: [],
-  ATTENDEE: [],
+  [UserRole.ORGANIZER_ADMIN]: [],
+  [UserRole.ORGANIZER_TELLER]: [],
+  [UserRole.ATTENDEE]: [],
 };

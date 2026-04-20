@@ -10,10 +10,11 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // App Components
-import CheckoutHeader from "@/components/CheckoutHeader";
+import CheckoutHeader from '@/components/layout/CheckoutHeader';
 
 // API
-import { initializePayment, verifyPayment } from "@/lib/payment-api";
+import { initializePayment, initializeGuestPayment, verifyPayment } from "@/lib/payment-api";
+import { useAuth } from "@/hooks/useAuth";
 
 // Types
 interface TicketType {
@@ -32,12 +33,15 @@ interface PaymentData {
   totalPrice: number;
   discount?: number;
   promoCode?: string;
+  isNewUser?: boolean;
+  userEmail?: string;
 }
 
 const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
   const [verifying, setVerifying] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +74,7 @@ const PaymentPage = () => {
                 date: new Date().toISOString(),
                 isFreeEvent: false,
                 success: true,
+                isNewUser: paymentData?.isNewUser,
               },
               replace: true
             });
@@ -139,8 +144,14 @@ const PaymentPage = () => {
     setLoading(true);
 
     try {
-      // Initialize Paystack payment
-      const response = await initializePayment(paymentData.registrationId);
+      // Initialize Paystack payment — try authenticated, fall back to guest
+      let response;
+      if (isAuthenticated) {
+        response = await initializePayment(paymentData.registrationId);
+      } else {
+        const email = paymentData.userEmail || '';
+        response = await initializeGuestPayment(paymentData.registrationId, email);
+      }
 
       if (response.success && response.data?.authorizationUrl) {
         // Redirect to Paystack checkout
@@ -165,22 +176,22 @@ const PaymentPage = () => {
         <div className="max-w-4xl mx-auto px-4">
           {/* Progress Indicators */}
           <div className="flex items-center justify-center mb-6">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">
-                  <CheckCircle className="w-5 h-5" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold">
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <span className="ml-2 text-sm font-medium">Registration</span>
+                <span className="ml-1.5 sm:ml-2 text-xs sm:text-sm font-medium hidden sm:inline">Registration</span>
               </div>
-              <div className="w-8 h-0.5 bg-primary"></div>
+              <div className="w-4 sm:w-8 h-0.5 bg-primary"></div>
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-semibold">2</div>
-                <span className="ml-2 text-sm font-medium">Payment</span>
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold">2</div>
+                <span className="ml-1.5 sm:ml-2 text-xs sm:text-sm font-medium">Payment</span>
               </div>
-              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="w-4 sm:w-8 h-0.5 bg-muted"></div>
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-sm font-semibold">3</div>
-                <span className="ml-2 text-sm font-medium text-muted-foreground">Confirmation</span>
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-muted text-muted-foreground rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold">3</div>
+                <span className="ml-1.5 sm:ml-2 text-xs sm:text-sm font-medium text-muted-foreground hidden sm:inline">Confirmation</span>
               </div>
             </div>
           </div>
@@ -279,7 +290,7 @@ const PaymentPage = () => {
 
             {/* Payment Action - Right Column */}
             <div className="lg:col-span-2">
-              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm sticky top-24">
+              <Card className="border-0 bg-card-surface rounded-2xl shadow-sm lg:sticky lg:top-24">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />

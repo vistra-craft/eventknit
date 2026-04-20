@@ -5,29 +5,29 @@ import { NotFoundError } from '../../../src/utils/errors.js';
 import { Decimal } from '@prisma/client/runtime/library';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     invoice: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      count: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      count: vi.fn(),
     },
     eventPaymentTransaction: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     invoiceTemplate: {
-      findFirst: jest.fn(),
-      findUnique: jest.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/utils/logger.js');
 
 describe('InvoiceService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('createInvoice', () => {
@@ -89,8 +89,8 @@ describe('InvoiceService', () => {
         status: 'PAID',
       };
 
-      (prisma.eventPaymentTransaction.findUnique as jest.Mock).mockResolvedValue(mockTransaction);
-      (prisma.invoice.create as jest.Mock).mockResolvedValue(mockInvoice);
+      (prisma.eventPaymentTransaction.findUnique as vi.Mock).mockResolvedValue(mockTransaction);
+      (prisma.invoice.create as vi.Mock).mockResolvedValue(mockInvoice);
 
       // Act
       const result = await InvoiceService.createInvoice(transactionId);
@@ -107,7 +107,7 @@ describe('InvoiceService', () => {
 
     it('should throw NotFoundError if transaction not found', async () => {
       // Arrange
-      (prisma.eventPaymentTransaction.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.eventPaymentTransaction.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(InvoiceService.createInvoice('nonexistent')).rejects.toThrow(
@@ -140,9 +140,9 @@ describe('InvoiceService', () => {
         },
       };
 
-      (prisma.eventPaymentTransaction.findUnique as jest.Mock).mockResolvedValue(mockTransaction);
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(null); // No existing invoice
-      (prisma.invoice.create as jest.Mock).mockImplementation((args) => Promise.resolve({
+      (prisma.eventPaymentTransaction.findUnique as vi.Mock).mockResolvedValue(mockTransaction);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(null); // No existing invoice
+      (prisma.invoice.create as vi.Mock).mockImplementation((args) => Promise.resolve({
         id: 'invoice-1',
         ...args.data,
       }));
@@ -151,7 +151,7 @@ describe('InvoiceService', () => {
       await InvoiceService.createInvoice('txn-1', undefined, { includeTax: true, taxRate: 7.5 });
 
       // Assert
-      const createCall = (prisma.invoice.create as jest.Mock).mock.calls[0][0];
+      const createCall = (prisma.invoice.create as vi.Mock).mock.calls[0][0];
       expect(createCall.data.taxAmount).toBeDefined();
       // Tax amount should be 7.5% of 1000 = 75
       expect(Number(createCall.data.taxAmount)).toBe(75);
@@ -160,7 +160,7 @@ describe('InvoiceService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.eventPaymentTransaction.findUnique as jest.Mock).mockRejectedValue(error);
+      (prisma.eventPaymentTransaction.findUnique as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceService.createInvoice('txn-1')).rejects.toThrow(
@@ -179,7 +179,7 @@ describe('InvoiceService', () => {
         event: { title: 'Test Event' },
       };
 
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(mockInvoice);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(mockInvoice);
 
       // Act
       const result = await InvoiceService.getInvoiceById('invoice-1');
@@ -194,7 +194,7 @@ describe('InvoiceService', () => {
 
     it('should throw NotFoundError if invoice not found', async () => {
       // Arrange
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(InvoiceService.getInvoiceById('nonexistent')).rejects.toThrow(
@@ -205,7 +205,7 @@ describe('InvoiceService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoice.findUnique as jest.Mock).mockRejectedValue(error);
+      (prisma.invoice.findUnique as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceService.getInvoiceById('invoice-1')).rejects.toThrow(
@@ -222,7 +222,7 @@ describe('InvoiceService', () => {
         invoiceNumber: 'INV-2026-0001',
       };
 
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(mockInvoice);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(mockInvoice);
 
       // Act
       const result = await InvoiceService.getInvoiceByNumber('INV-2026-0001');
@@ -237,7 +237,7 @@ describe('InvoiceService', () => {
 
     it('should throw NotFoundError if invoice not found', async () => {
       // Arrange
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(InvoiceService.getInvoiceByNumber('INV-2026-9999')).rejects.toThrow(
@@ -248,7 +248,7 @@ describe('InvoiceService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoice.findUnique as jest.Mock).mockRejectedValue(error);
+      (prisma.invoice.findUnique as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceService.getInvoiceByNumber('INV-2026-0001')).rejects.toThrow(
@@ -265,8 +265,8 @@ describe('InvoiceService', () => {
         { id: 'invoice-2', invoiceNumber: 'INV-2026-0002' },
       ];
 
-      (prisma.invoice.findMany as jest.Mock).mockResolvedValue(mockInvoices);
-      (prisma.invoice.count as jest.Mock).mockResolvedValue(2);
+      (prisma.invoice.findMany as vi.Mock).mockResolvedValue(mockInvoices);
+      (prisma.invoice.count as vi.Mock).mockResolvedValue(2);
 
       // Act
       const result = await InvoiceService.getUserInvoices('user-1');
@@ -290,8 +290,8 @@ describe('InvoiceService', () => {
 
     it('should filter by status', async () => {
       // Arrange
-      (prisma.invoice.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.invoice.count as jest.Mock).mockResolvedValue(0);
+      (prisma.invoice.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.invoice.count as vi.Mock).mockResolvedValue(0);
 
       // Act
       await InvoiceService.getUserInvoices('user-1', { status: 'PAID' });
@@ -306,8 +306,8 @@ describe('InvoiceService', () => {
 
     it('should filter by event ID', async () => {
       // Arrange
-      (prisma.invoice.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.invoice.count as jest.Mock).mockResolvedValue(0);
+      (prisma.invoice.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.invoice.count as vi.Mock).mockResolvedValue(0);
 
       // Act
       await InvoiceService.getUserInvoices('user-1', { eventId: 'event-1' });
@@ -322,8 +322,8 @@ describe('InvoiceService', () => {
 
     it('should handle pagination', async () => {
       // Arrange
-      (prisma.invoice.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.invoice.count as jest.Mock).mockResolvedValue(50);
+      (prisma.invoice.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.invoice.count as vi.Mock).mockResolvedValue(50);
 
       // Act
       await InvoiceService.getUserInvoices('user-1', { page: 2, limit: 10 });
@@ -340,7 +340,7 @@ describe('InvoiceService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoice.findMany as jest.Mock).mockRejectedValue(error);
+      (prisma.invoice.findMany as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceService.getUserInvoices('user-1')).rejects.toThrow(
@@ -357,8 +357,8 @@ describe('InvoiceService', () => {
         { id: 'invoice-2', eventId: 'event-1' },
       ];
 
-      (prisma.invoice.findMany as jest.Mock).mockResolvedValue(mockInvoices);
-      (prisma.invoice.count as jest.Mock).mockResolvedValue(2);
+      (prisma.invoice.findMany as vi.Mock).mockResolvedValue(mockInvoices);
+      (prisma.invoice.count as vi.Mock).mockResolvedValue(2);
 
       // Act
       const result = await InvoiceService.getEventInvoices('event-1');
@@ -376,8 +376,8 @@ describe('InvoiceService', () => {
 
     it('should filter by status', async () => {
       // Arrange
-      (prisma.invoice.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.invoice.count as jest.Mock).mockResolvedValue(0);
+      (prisma.invoice.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.invoice.count as vi.Mock).mockResolvedValue(0);
 
       // Act
       await InvoiceService.getEventInvoices('event-1', { status: 'PENDING' });
@@ -393,7 +393,7 @@ describe('InvoiceService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoice.findMany as jest.Mock).mockRejectedValue(error);
+      (prisma.invoice.findMany as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceService.getEventInvoices('event-1')).rejects.toThrow(
@@ -441,8 +441,8 @@ describe('InvoiceService', () => {
         cssContent: 'body { margin: 0; }',
       };
 
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(mockInvoice);
-      (prisma.invoiceTemplate.findFirst as jest.Mock).mockResolvedValue(mockTemplate);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(mockInvoice);
+      (prisma.invoiceTemplate.findFirst as vi.Mock).mockResolvedValue(mockTemplate);
 
       // Act
       const result = await InvoiceService.generateInvoiceHTML('invoice-1');
@@ -490,8 +490,8 @@ describe('InvoiceService', () => {
         cssContent: '',
       };
 
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(mockInvoice);
-      (prisma.invoiceTemplate.findFirst as jest.Mock).mockResolvedValue(mockTemplate);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(mockInvoice);
+      (prisma.invoiceTemplate.findFirst as vi.Mock).mockResolvedValue(mockTemplate);
 
       // Act
       const result = await InvoiceService.generateInvoiceHTML('invoice-1');
@@ -535,8 +535,8 @@ describe('InvoiceService', () => {
         },
       };
 
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(mockInvoice);
-      (prisma.invoiceTemplate.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(mockInvoice);
+      (prisma.invoiceTemplate.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act
       const result = await InvoiceService.generateInvoiceHTML('invoice-1');
@@ -550,7 +550,7 @@ describe('InvoiceService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoice.findUnique as jest.Mock).mockRejectedValue(error);
+      (prisma.invoice.findUnique as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceService.generateInvoiceHTML('invoice-1')).rejects.toThrow(
@@ -567,8 +567,8 @@ describe('InvoiceService', () => {
         status: 'PAID',
       };
 
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(mockInvoice);
-      (prisma.invoice.update as jest.Mock).mockResolvedValue({
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(mockInvoice);
+      (prisma.invoice.update as vi.Mock).mockResolvedValue({
         ...mockInvoice,
         status: 'SENT',
         sentAt: new Date(),
@@ -592,7 +592,7 @@ describe('InvoiceService', () => {
 
     it('should throw NotFoundError if invoice not found', async () => {
       // Arrange
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(InvoiceService.markInvoiceAsSent('nonexistent', 'user@test.com')).rejects.toThrow(
@@ -603,8 +603,8 @@ describe('InvoiceService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue({ id: 'invoice-1' });
-      (prisma.invoice.update as jest.Mock).mockRejectedValue(error);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue({ id: 'invoice-1' });
+      (prisma.invoice.update as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceService.markInvoiceAsSent('invoice-1', 'user@test.com')).rejects.toThrow(
@@ -621,8 +621,8 @@ describe('InvoiceService', () => {
         status: 'PENDING',
       };
 
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(mockInvoice);
-      (prisma.invoice.update as jest.Mock).mockResolvedValue({
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(mockInvoice);
+      (prisma.invoice.update as vi.Mock).mockResolvedValue({
         ...mockInvoice,
         status: 'PAID',
       });
@@ -640,7 +640,7 @@ describe('InvoiceService', () => {
 
     it('should throw NotFoundError if invoice not found', async () => {
       // Arrange
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(InvoiceService.updateInvoiceStatus('nonexistent', 'PAID')).rejects.toThrow(
@@ -651,8 +651,8 @@ describe('InvoiceService', () => {
     it('should handle errors', async () => {
       // Arrange
       const error = new Error('Database error');
-      (prisma.invoice.findUnique as jest.Mock).mockResolvedValue({ id: 'invoice-1' });
-      (prisma.invoice.update as jest.Mock).mockRejectedValue(error);
+      (prisma.invoice.findUnique as vi.Mock).mockResolvedValue({ id: 'invoice-1' });
+      (prisma.invoice.update as vi.Mock).mockRejectedValue(error);
 
       // Act & Assert
       await expect(InvoiceService.updateInvoiceStatus('invoice-1', 'PAID')).rejects.toThrow(

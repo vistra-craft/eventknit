@@ -88,7 +88,7 @@ export class UnifiedMessagingService {
       id: conversationId,
       participants: [userId, conversationId],
       messages,
-    } as any;
+    } as { id: string; participants: string[]; messages: typeof messages };
   }
 
   /**
@@ -349,7 +349,7 @@ export class UnifiedMessagingService {
           where: {
             status: 'ACTIVE',
             role: {
-              in: ['ADMIN_STAFF', 'SUPERADMIN'],
+              in: ['ADMIN', 'SUPERADMIN'],
             },
           },
           select: { id: true },

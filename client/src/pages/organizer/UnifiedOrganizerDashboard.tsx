@@ -22,11 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import OrganizerEventCard from "@/components/OrganizerEventCard";
+import OrganizerEventCard from '@/components/organizer-ui/OrganizerEventCard';
 import { SubscriptionTierBadge } from "@/components/organizer/SubscriptionTierBadge";
 import { UpgradePrompt } from "@/components/organizer/UpgradePrompt";
 import { DashboardSkeleton } from "@/components/loaders/DashboardSkeleton";
 import { Loader } from "@/components/ui/loader";
+import { OrganizerWelcomeScreen } from '@/components/organizer-ui/OrganizerWelcomeScreen';
 import { useAuth } from "@/hooks/useAuth";
 import {
   useOrganizerDashboardStats,
@@ -56,7 +57,7 @@ const UnifiedOrganizerDashboard = () => {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   // React Query hooks
-  const { data: stats, isLoading: statsLoading } = useOrganizerDashboardStats();
+  const { data: stats, isLoading: statsLoading, isError: statsError, refetch: refetchStats } = useOrganizerDashboardStats();
   const { data: eventsData, isLoading: eventsLoading } = useOrganizerDashboardEvents(page);
   const { data: subscription, isLoading: subscriptionLoading } = useOrganizerSubscription();
   const { data: accessData } = useOrganizerDashboardAccess();
@@ -96,14 +97,14 @@ const UnifiedOrganizerDashboard = () => {
     }
   }, [location.state]);
 
-  // Load verification status once on mount to power the persistent KYC banner
+  // Load verification status on mount and whenever the user navigates back to this page
   useEffect(() => {
     getVerificationStatus()
       .then((res) => {
         if (res.success && res.data) setVerificationStatus(res.data);
       })
       .catch(() => { /* non-critical — banner simply won't show */ });
-  }, []);
+  }, [location.key]);
 
   // Intersection Observer for infinite scroll
   const handleLoadMore = useCallback(() => {
@@ -170,6 +171,16 @@ const UnifiedOrganizerDashboard = () => {
     return (
       <div className="bg-gradient-to-br from-background via-background to-muted/20">
         <DashboardSkeleton />
+      </div>
+    );
+  }
+
+  if (statsError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <AlertCircle className="h-12 w-12 text-muted-foreground" />
+        <p className="text-muted-foreground">Failed to load dashboard data</p>
+        <Button variant="outline" onClick={() => void refetchStats()}>Try again</Button>
       </div>
     );
   }
@@ -324,7 +335,7 @@ const UnifiedOrganizerDashboard = () => {
 
         {/* Stats Cards — Admin-style gradient cards */}
         <section className="mb-8">
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {statCards.map((stat, index) => (
               <div
                 key={index}
@@ -500,6 +511,8 @@ const UnifiedOrganizerDashboard = () => {
             )}
           </div>
       </div>
+      {/* Welcome screen for newly promoted organizers */}
+      <OrganizerWelcomeScreen />
     </div>
   );
 };

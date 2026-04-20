@@ -7,37 +7,37 @@ import { UserRole, UserStatus, RegistrationStatus } from '@prisma/client';
 import * as XLSX from 'xlsx';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     event: {
-      findFirst: jest.fn(),
+      findFirst: vi.fn(),
     },
     user: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
     },
     eventRegistration: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     attendeeImport: {
-      create: jest.fn(),
-      update: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      count: jest.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/utils/logger.js');
-jest.mock('../../../src/services/ticket.service.js');
-jest.mock('xlsx');
+vi.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/services/ticket.service.js');
+vi.mock('xlsx');
 
 describe('AttendeeImportService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('generateTemplate', () => {
@@ -88,8 +88,8 @@ describe('AttendeeImportService', () => {
         },
       };
 
-      (XLSX.read as jest.Mock).mockReturnValue(mockWorkbook);
-      (XLSX.utils.sheet_to_json as jest.Mock).mockReturnValue([
+      (XLSX.read as vi.Mock).mockReturnValue(mockWorkbook);
+      (XLSX.utils.sheet_to_json as vi.Mock).mockReturnValue([
         { firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
       ]);
 
@@ -111,8 +111,8 @@ describe('AttendeeImportService', () => {
         Sheets: { Sheet1: {} },
       };
 
-      (XLSX.read as jest.Mock).mockReturnValue(mockWorkbook);
-      (XLSX.utils.sheet_to_json as jest.Mock).mockReturnValue([
+      (XLSX.read as vi.Mock).mockReturnValue(mockWorkbook);
+      (XLSX.utils.sheet_to_json as vi.Mock).mockReturnValue([
         { firstName: 'Jane', lastName: 'Smith', email: 'jane@example.com' },
       ]);
 
@@ -217,8 +217,8 @@ describe('AttendeeImportService', () => {
         Sheets: { Sheet1: {} },
       };
 
-      (XLSX.read as jest.Mock).mockReturnValue(mockWorkbook);
-      (XLSX.utils.sheet_to_json as jest.Mock).mockReturnValue([]);
+      (XLSX.read as vi.Mock).mockReturnValue(mockWorkbook);
+      (XLSX.utils.sheet_to_json as vi.Mock).mockReturnValue([]);
 
       // Act & Assert
       expect(() => AttendeeImportService.parseFile(buffer, fileName)).toThrow(
@@ -235,8 +235,8 @@ describe('AttendeeImportService', () => {
         Sheets: { Sheet1: {} },
       };
 
-      (XLSX.read as jest.Mock).mockReturnValue(mockWorkbook);
-      (XLSX.utils.sheet_to_json as jest.Mock).mockReturnValue([
+      (XLSX.read as vi.Mock).mockReturnValue(mockWorkbook);
+      (XLSX.utils.sheet_to_json as vi.Mock).mockReturnValue([
         {
           'First Name': 'John',
           'Last Name': 'Doe',
@@ -271,7 +271,7 @@ describe('AttendeeImportService', () => {
 
     it('should throw NotFoundError if event not found', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -281,8 +281,8 @@ describe('AttendeeImportService', () => {
 
     it('should validate successfully with valid rows', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       const rows = [
         {
@@ -307,8 +307,8 @@ describe('AttendeeImportService', () => {
 
     it('should detect missing required fields', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       const rows = [
         { firstName: '', lastName: 'Doe', email: 'john@example.com' },
@@ -341,8 +341,8 @@ describe('AttendeeImportService', () => {
 
     it('should detect invalid email format', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       const rows = [
         { firstName: 'John', lastName: 'Doe', email: 'invalid-email' },
@@ -362,8 +362,8 @@ describe('AttendeeImportService', () => {
 
     it('should detect duplicate emails in file', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       const rows = [
         { firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
@@ -384,8 +384,8 @@ describe('AttendeeImportService', () => {
 
     it('should detect already registered attendees', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([
         { attendee: { email: 'john@example.com' } },
       ]);
 
@@ -407,8 +407,8 @@ describe('AttendeeImportService', () => {
 
     it('should detect invalid ticket type', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       const rows = [
         { firstName: 'John', lastName: 'Doe', email: 'john@example.com', ticketType: 'Premium' },
@@ -429,8 +429,8 @@ describe('AttendeeImportService', () => {
     it('should not validate ticket type for free events', async () => {
       // Arrange
       const freeEvent = { ...mockEvent, isFree: true };
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(freeEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(freeEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       const rows = [
         { firstName: 'John', lastName: 'Doe', email: 'john@example.com', ticketType: 'NonExistent' },
@@ -446,8 +446,8 @@ describe('AttendeeImportService', () => {
 
     it('should detect invalid checkpoint codes', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       const rows = [
         { firstName: 'John', lastName: 'Doe', email: 'john@example.com', checkpoints: 'INVALID-CODE' },
@@ -467,8 +467,8 @@ describe('AttendeeImportService', () => {
 
     it('should validate multiple checkpoint codes', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       const rows = [
         { firstName: 'John', lastName: 'Doe', email: 'john@example.com', checkpoints: 'LUNCH1,WORKSHOP-A' },
@@ -484,8 +484,8 @@ describe('AttendeeImportService', () => {
 
     it('should return preview of first 10 rows', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       const rows = Array.from({ length: 15 }, (_, i) => ({
         firstName: `User${i}`,
@@ -516,9 +516,9 @@ describe('AttendeeImportService', () => {
 
     it('should throw NotFoundError if event not found', async () => {
       // Arrange
-      (prisma.attendeeImport.create as jest.Mock).mockResolvedValue({ id: 'import-1' });
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(null);
-      (prisma.attendeeImport.update as jest.Mock).mockResolvedValue({});
+      (prisma.attendeeImport.create as vi.Mock).mockResolvedValue({ id: 'import-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(null);
+      (prisma.attendeeImport.update as vi.Mock).mockResolvedValue({});
 
       const rows = [{ firstName: 'John', lastName: 'Doe', email: 'john@example.com' }];
 
@@ -530,17 +530,17 @@ describe('AttendeeImportService', () => {
 
     it('should create import record with PROCESSING status', async () => {
       // Arrange
-      (prisma.attendeeImport.create as jest.Mock).mockResolvedValue({ id: 'import-1' });
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.user.create as jest.Mock).mockResolvedValue({ id: 'user-1', email: 'john@example.com' });
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.eventRegistration.create as jest.Mock).mockResolvedValue({ id: 'reg-1' });
-      (prisma.eventRegistration.update as jest.Mock).mockResolvedValue({ id: 'reg-1' });
-      (prisma.attendeeImport.update as jest.Mock).mockResolvedValue({});
-      (TicketService.generateBackupTicketCode as jest.Mock).mockReturnValue('BACKUP123');
-      (TicketService.generateTicketData as jest.Mock).mockReturnValue('ticket-data');
-      (TicketService.generateQRCode as jest.Mock).mockResolvedValue('qr-code-url');
+      (prisma.attendeeImport.create as vi.Mock).mockResolvedValue({ id: 'import-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.user.create as vi.Mock).mockResolvedValue({ id: 'user-1', email: 'john@example.com' });
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.create as vi.Mock).mockResolvedValue({ id: 'reg-1' });
+      (prisma.eventRegistration.update as vi.Mock).mockResolvedValue({ id: 'reg-1' });
+      (prisma.attendeeImport.update as vi.Mock).mockResolvedValue({});
+      (TicketService.generateBackupTicketCode as vi.Mock).mockReturnValue('BACKUP123');
+      (TicketService.generateTicketData as vi.Mock).mockReturnValue('ticket-data');
+      (TicketService.generateQRCode as vi.Mock).mockResolvedValue('qr-code-url');
 
       const rows = [{ firstName: 'John', lastName: 'Doe', email: 'john@example.com' }];
 
@@ -562,17 +562,17 @@ describe('AttendeeImportService', () => {
 
     it('should import attendees successfully', async () => {
       // Arrange
-      (prisma.attendeeImport.create as jest.Mock).mockResolvedValue({ id: 'import-1' });
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.user.create as jest.Mock).mockResolvedValue({ id: 'user-1', email: 'john@example.com' });
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.eventRegistration.create as jest.Mock).mockResolvedValue({ id: 'reg-1' });
-      (prisma.eventRegistration.update as jest.Mock).mockResolvedValue({ id: 'reg-1' });
-      (prisma.attendeeImport.update as jest.Mock).mockResolvedValue({});
-      (TicketService.generateBackupTicketCode as jest.Mock).mockReturnValue('BACKUP123');
-      (TicketService.generateTicketData as jest.Mock).mockReturnValue('ticket-data');
-      (TicketService.generateQRCode as jest.Mock).mockResolvedValue('qr-code-url');
+      (prisma.attendeeImport.create as vi.Mock).mockResolvedValue({ id: 'import-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.user.create as vi.Mock).mockResolvedValue({ id: 'user-1', email: 'john@example.com' });
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.create as vi.Mock).mockResolvedValue({ id: 'reg-1' });
+      (prisma.eventRegistration.update as vi.Mock).mockResolvedValue({ id: 'reg-1' });
+      (prisma.attendeeImport.update as vi.Mock).mockResolvedValue({});
+      (TicketService.generateBackupTicketCode as vi.Mock).mockReturnValue('BACKUP123');
+      (TicketService.generateTicketData as vi.Mock).mockReturnValue('ticket-data');
+      (TicketService.generateQRCode as vi.Mock).mockResolvedValue('qr-code-url');
 
       const rows = [{ firstName: 'John', lastName: 'Doe', email: 'john@example.com' }];
 
@@ -599,19 +599,19 @@ describe('AttendeeImportService', () => {
 
     it('should handle partial import failures', async () => {
       // Arrange
-      (prisma.attendeeImport.create as jest.Mock).mockResolvedValue({ id: 'import-1' });
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.user.create as jest.Mock)
+      (prisma.attendeeImport.create as vi.Mock).mockResolvedValue({ id: 'import-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.user.create as vi.Mock)
         .mockResolvedValueOnce({ id: 'user-1', email: 'john@example.com' })
         .mockRejectedValueOnce(new Error('Database error'));
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.eventRegistration.create as jest.Mock).mockResolvedValue({ id: 'reg-1' });
-      (prisma.eventRegistration.update as jest.Mock).mockResolvedValue({ id: 'reg-1' });
-      (prisma.attendeeImport.update as jest.Mock).mockResolvedValue({});
-      (TicketService.generateBackupTicketCode as jest.Mock).mockReturnValue('BACKUP123');
-      (TicketService.generateTicketData as jest.Mock).mockReturnValue('ticket-data');
-      (TicketService.generateQRCode as jest.Mock).mockResolvedValue('qr-code-url');
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.create as vi.Mock).mockResolvedValue({ id: 'reg-1' });
+      (prisma.eventRegistration.update as vi.Mock).mockResolvedValue({ id: 'reg-1' });
+      (prisma.attendeeImport.update as vi.Mock).mockResolvedValue({});
+      (TicketService.generateBackupTicketCode as vi.Mock).mockReturnValue('BACKUP123');
+      (TicketService.generateTicketData as vi.Mock).mockReturnValue('ticket-data');
+      (TicketService.generateQRCode as vi.Mock).mockResolvedValue('qr-code-url');
 
       const rows = [
         { firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
@@ -635,11 +635,11 @@ describe('AttendeeImportService', () => {
 
     it('should set status to FAILED if all rows fail', async () => {
       // Arrange
-      (prisma.attendeeImport.create as jest.Mock).mockResolvedValue({ id: 'import-1' });
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.user.create as jest.Mock).mockRejectedValue(new Error('Database error'));
-      (prisma.attendeeImport.update as jest.Mock).mockResolvedValue({});
+      (prisma.attendeeImport.create as vi.Mock).mockResolvedValue({ id: 'import-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.user.create as vi.Mock).mockRejectedValue(new Error('Database error'));
+      (prisma.attendeeImport.update as vi.Mock).mockResolvedValue({});
 
       const rows = [{ firstName: 'John', lastName: 'Doe', email: 'john@example.com' }];
 
@@ -659,17 +659,17 @@ describe('AttendeeImportService', () => {
 
     it('should respect sendWelcomeEmails option', async () => {
       // Arrange
-      (prisma.attendeeImport.create as jest.Mock).mockResolvedValue({ id: 'import-1' });
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.user.create as jest.Mock).mockResolvedValue({ id: 'user-1', email: 'john@example.com' });
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.eventRegistration.create as jest.Mock).mockResolvedValue({ id: 'reg-1' });
-      (prisma.eventRegistration.update as jest.Mock).mockResolvedValue({ id: 'reg-1' });
-      (prisma.attendeeImport.update as jest.Mock).mockResolvedValue({});
-      (TicketService.generateBackupTicketCode as jest.Mock).mockReturnValue('BACKUP123');
-      (TicketService.generateTicketData as jest.Mock).mockReturnValue('ticket-data');
-      (TicketService.generateQRCode as jest.Mock).mockResolvedValue('qr-code-url');
+      (prisma.attendeeImport.create as vi.Mock).mockResolvedValue({ id: 'import-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.user.create as vi.Mock).mockResolvedValue({ id: 'user-1', email: 'john@example.com' });
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.create as vi.Mock).mockResolvedValue({ id: 'reg-1' });
+      (prisma.eventRegistration.update as vi.Mock).mockResolvedValue({ id: 'reg-1' });
+      (prisma.attendeeImport.update as vi.Mock).mockResolvedValue({});
+      (TicketService.generateBackupTicketCode as vi.Mock).mockReturnValue('BACKUP123');
+      (TicketService.generateTicketData as vi.Mock).mockReturnValue('ticket-data');
+      (TicketService.generateQRCode as vi.Mock).mockResolvedValue('qr-code-url');
 
       const rows = [{ firstName: 'John', lastName: 'Doe', email: 'john@example.com' }];
 
@@ -694,8 +694,8 @@ describe('AttendeeImportService', () => {
         { id: 'import-1', fileName: 'test1.csv', successCount: 10, errorCount: 0 },
         { id: 'import-2', fileName: 'test2.csv', successCount: 8, errorCount: 2 },
       ];
-      (prisma.attendeeImport.findMany as jest.Mock).mockResolvedValue(mockImports);
-      (prisma.attendeeImport.count as jest.Mock).mockResolvedValue(15);
+      (prisma.attendeeImport.findMany as vi.Mock).mockResolvedValue(mockImports);
+      (prisma.attendeeImport.count as vi.Mock).mockResolvedValue(15);
 
       // Act
       const result = await AttendeeImportService.getImportHistory('event-1', 20, 0);
@@ -716,8 +716,8 @@ describe('AttendeeImportService', () => {
 
     it('should use default limit of 20', async () => {
       // Arrange
-      (prisma.attendeeImport.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.attendeeImport.count as jest.Mock).mockResolvedValue(0);
+      (prisma.attendeeImport.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.attendeeImport.count as vi.Mock).mockResolvedValue(0);
 
       // Act
       await AttendeeImportService.getImportHistory('event-1');
@@ -744,7 +744,7 @@ describe('AttendeeImportService', () => {
         errorCount: 2,
         status: ImportStatus.COMPLETED,
       };
-      (prisma.attendeeImport.findUnique as jest.Mock).mockResolvedValue(mockImport);
+      (prisma.attendeeImport.findUnique as vi.Mock).mockResolvedValue(mockImport);
 
       // Act
       const result = await AttendeeImportService.getImportById('import-1');
@@ -759,7 +759,7 @@ describe('AttendeeImportService', () => {
 
     it('should throw NotFoundError if import not found', async () => {
       // Arrange
-      (prisma.attendeeImport.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.attendeeImport.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(AttendeeImportService.getImportById('nonexistent')).rejects.toThrow(
@@ -816,7 +816,7 @@ describe('AttendeeImportService', () => {
 
     it('should throw NotFoundError if event not found', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -830,7 +830,7 @@ describe('AttendeeImportService', () => {
 
     it('should throw ValidationError for invalid ticket type', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
 
       // Act & Assert
       await expect(
@@ -845,9 +845,9 @@ describe('AttendeeImportService', () => {
 
     it('should throw ValidationError if already registered', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'user-1' });
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({ id: 'user-1' });
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue({
         id: 'reg-1',
         status: RegistrationStatus.CONFIRMED,
       });
@@ -864,22 +864,22 @@ describe('AttendeeImportService', () => {
 
     it('should register new user successfully', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.user.create as jest.Mock).mockResolvedValue({
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.user.create as vi.Mock).mockResolvedValue({
         id: 'user-1',
         email: 'john@example.com',
       });
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.eventRegistration.create as jest.Mock).mockResolvedValue({
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.create as vi.Mock).mockResolvedValue({
         id: 'reg-1',
       });
-      (prisma.eventRegistration.update as jest.Mock).mockResolvedValue({
+      (prisma.eventRegistration.update as vi.Mock).mockResolvedValue({
         id: 'reg-1',
       });
-      (TicketService.generateBackupTicketCode as jest.Mock).mockReturnValue('BACKUP123');
-      (TicketService.generateTicketData as jest.Mock).mockReturnValue('ticket-data');
-      (TicketService.generateQRCode as jest.Mock).mockResolvedValue('qr-code-url');
+      (TicketService.generateBackupTicketCode as vi.Mock).mockReturnValue('BACKUP123');
+      (TicketService.generateTicketData as vi.Mock).mockReturnValue('ticket-data');
+      (TicketService.generateQRCode as vi.Mock).mockResolvedValue('qr-code-url');
 
       // Act
       const result = await AttendeeImportService.quickRegister('event-1', 'staff-1', {
@@ -912,21 +912,21 @@ describe('AttendeeImportService', () => {
 
     it('should register existing user successfully', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         id: 'user-1',
         email: 'john@example.com',
       });
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.eventRegistration.create as jest.Mock).mockResolvedValue({
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.create as vi.Mock).mockResolvedValue({
         id: 'reg-1',
       });
-      (prisma.eventRegistration.update as jest.Mock).mockResolvedValue({
+      (prisma.eventRegistration.update as vi.Mock).mockResolvedValue({
         id: 'reg-1',
       });
-      (TicketService.generateBackupTicketCode as jest.Mock).mockReturnValue('BACKUP123');
-      (TicketService.generateTicketData as jest.Mock).mockReturnValue('ticket-data');
-      (TicketService.generateQRCode as jest.Mock).mockResolvedValue('qr-code-url');
+      (TicketService.generateBackupTicketCode as vi.Mock).mockReturnValue('BACKUP123');
+      (TicketService.generateTicketData as vi.Mock).mockReturnValue('ticket-data');
+      (TicketService.generateQRCode as vi.Mock).mockResolvedValue('qr-code-url');
 
       // Act
       const result = await AttendeeImportService.quickRegister('event-1', 'staff-1', {
@@ -943,18 +943,18 @@ describe('AttendeeImportService', () => {
 
     it('should default to first ticket type if not provided', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'user-1' });
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.eventRegistration.create as jest.Mock).mockResolvedValue({
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({ id: 'user-1' });
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.create as vi.Mock).mockResolvedValue({
         id: 'reg-1',
       });
-      (prisma.eventRegistration.update as jest.Mock).mockResolvedValue({
+      (prisma.eventRegistration.update as vi.Mock).mockResolvedValue({
         id: 'reg-1',
       });
-      (TicketService.generateBackupTicketCode as jest.Mock).mockReturnValue('BACKUP123');
-      (TicketService.generateTicketData as jest.Mock).mockReturnValue('ticket-data');
-      (TicketService.generateQRCode as jest.Mock).mockResolvedValue('qr-code-url');
+      (TicketService.generateBackupTicketCode as vi.Mock).mockReturnValue('BACKUP123');
+      (TicketService.generateTicketData as vi.Mock).mockReturnValue('ticket-data');
+      (TicketService.generateQRCode as vi.Mock).mockResolvedValue('qr-code-url');
 
       // Act
       const result = await AttendeeImportService.quickRegister('event-1', 'staff-1', {
@@ -969,18 +969,18 @@ describe('AttendeeImportService', () => {
 
     it('should handle QR code generation errors gracefully', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'user-1' });
-      (prisma.eventRegistration.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.eventRegistration.create as jest.Mock).mockResolvedValue({
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({ id: 'user-1' });
+      (prisma.eventRegistration.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.eventRegistration.create as vi.Mock).mockResolvedValue({
         id: 'reg-1',
       });
-      (prisma.eventRegistration.update as jest.Mock).mockResolvedValue({
+      (prisma.eventRegistration.update as vi.Mock).mockResolvedValue({
         id: 'reg-1',
       });
-      (TicketService.generateBackupTicketCode as jest.Mock).mockReturnValue('BACKUP123');
-      (TicketService.generateTicketData as jest.Mock).mockReturnValue('ticket-data');
-      (TicketService.generateQRCode as jest.Mock).mockRejectedValue(new Error('QR generation failed'));
+      (TicketService.generateBackupTicketCode as vi.Mock).mockReturnValue('BACKUP123');
+      (TicketService.generateTicketData as vi.Mock).mockReturnValue('ticket-data');
+      (TicketService.generateQRCode as vi.Mock).mockRejectedValue(new Error('QR generation failed'));
 
       // Act
       const result = await AttendeeImportService.quickRegister('event-1', 'staff-1', {
@@ -998,7 +998,7 @@ describe('AttendeeImportService', () => {
   describe('exportAttendees', () => {
     it('should throw NotFoundError if event not found', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(AttendeeImportService.exportAttendees('event-1')).rejects.toThrow(
@@ -1036,8 +1036,8 @@ describe('AttendeeImportService', () => {
         },
       ];
 
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue(mockRegistrations);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue(mockRegistrations);
 
       // Act
       const result = await AttendeeImportService.exportAttendees('event-1');
@@ -1077,8 +1077,8 @@ describe('AttendeeImportService', () => {
         },
       ];
 
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue(mockRegistrations);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue(mockRegistrations);
 
       // Act
       const result = await AttendeeImportService.exportAttendees('event-1');
@@ -1112,8 +1112,8 @@ describe('AttendeeImportService', () => {
         },
       ];
 
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue(mockRegistrations);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue(mockRegistrations);
 
       // Act
       const result = await AttendeeImportService.exportAttendees('event-1');
@@ -1131,8 +1131,8 @@ describe('AttendeeImportService', () => {
         registrationFields: [],
       };
 
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(mockEvent);
-      (prisma.eventRegistration.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(mockEvent);
+      (prisma.eventRegistration.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await AttendeeImportService.exportAttendees('event-1');

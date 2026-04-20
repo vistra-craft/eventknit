@@ -33,6 +33,7 @@ export interface CollectionEventItem {
   notes: string | null;
   event: {
     id: string;
+    slug?: string | null;
     title: string;
     startDate: string;
     endDate: string | null;

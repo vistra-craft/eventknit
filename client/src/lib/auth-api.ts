@@ -13,6 +13,8 @@ export interface User {
   otherName?: string | null;
   phoneNumber?: string | null;
   companyAffiliation?: string | null;
+  organizerEntityType?: string | null;
+  organizerIndustry?: string | null;
   role: UserRole;
   status: UserStatus;
   isEmailVerified: boolean;
@@ -44,6 +46,7 @@ export interface RegisterData {
   role?: UserRole;
   organizationName?: string;
   businessEmail?: string;
+  avatar?: string | null;
 }
 
 export interface LoginResponse {
@@ -230,6 +233,22 @@ export const verifyMagicLink = async (token: string): Promise<LoginResponse> => 
 };
 
 /**
+ * Verify invitation token and get associated email (for pre-filling forms)
+ */
+export interface VerifyInvitationResponse {
+  success: boolean;
+  data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export const verifyInvitationToken = async (token: string): Promise<VerifyInvitationResponse> => {
+  return apiGet<VerifyInvitationResponse>(`/auth/verify-invitation?token=${encodeURIComponent(token)}`);
+};
+
+/**
  * Create account from invitation token (for guest users)
  */
 export const createAccountFromInvitation = async (token: string, password: string): Promise<LoginResponse> => {
@@ -253,6 +272,59 @@ export const uploadAvatar = async (file: File): Promise<ApiResponse<{ avatar: st
   const formData = new FormData();
   formData.append('image', file);
   return apiPut<ApiResponse<{ avatar: string }>>('/auth/profile', formData);
+};
+
+// ─── Staff Invitations ────────────────────────────────────────────────────────
+
+export interface StaffInvitationInfo {
+  email: string;
+  role: string;
+  scope: string;
+  organizationName?: string;
+  inviterName: string;
+  message?: string;
+  expiresAt: string;
+}
+
+export const validateStaffInvitation = async (
+  token: string,
+): Promise<ApiResponse<StaffInvitationInfo>> => {
+  return apiPost<ApiResponse<StaffInvitationInfo>>('/auth/staff-invitation/validate', { token });
+};
+
+export interface AcceptStaffInvitationData {
+  token: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber?: string;
+}
+
+export interface AcceptStaffInvitationResponse {
+  success: boolean;
+  message: string;
+  data: {
+    user: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: UserRole;
+      status: UserStatus;
+      isEmailVerified: boolean;
+      organizationName?: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+    accessToken: string;
+    expiresIn: string;
+  };
+}
+
+export const acceptStaffInvitation = async (
+  data: AcceptStaffInvitationData,
+): Promise<AcceptStaffInvitationResponse> => {
+  return apiPost<AcceptStaffInvitationResponse>('/auth/staff-invitation/accept', data);
 };
 
 

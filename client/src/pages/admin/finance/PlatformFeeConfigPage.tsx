@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/useToast";
 import { getSetting, setSetting } from "@/lib/system-settings-api";
 import { Percent, Calculator, Save, Loader2, History, AlertTriangle } from "lucide-react";
+import { showErrorToast } from "@/lib/utils/error";
 
 
 interface FeeConfig {
@@ -63,11 +64,7 @@ const PlatformFeeConfigPage = () => {
       setConfig(loaded);
     } catch (error) {
       console.error("Failed to load fee config:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load fee configuration. Using defaults.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load fee configuration. Using defaults.");
     } finally {
       setLoading(false);
     }
@@ -126,7 +123,7 @@ const PlatformFeeConfigPage = () => {
       toast({ title: "Success", description: "Platform fee configuration saved." });
     } catch (error) {
       console.error("Failed to save fee config:", error);
-      toast({ title: "Error", description: "Failed to save fee configuration.", variant: "destructive" });
+      showErrorToast(toast, error, "Failed to save fee configuration.");
     } finally {
       setSaving(false);
     }
@@ -182,7 +179,7 @@ const PlatformFeeConfigPage = () => {
           )}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Fee Configuration Card */}
           <Card>
             <CardHeader>

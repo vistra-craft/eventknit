@@ -75,6 +75,7 @@ import {
   type DiscountType,
   type BulkGenerateData,
 } from "@/lib/admin-promo-code-api";
+import { showErrorToast } from "@/lib/utils/error";
 import {
   getPromoCodeRequests,
   getPendingRequestCount,
@@ -154,11 +155,7 @@ const AdminPromotionsPage = () => {
       }
     } catch (err: unknown) {
       console.error("Error loading data:", err);
-      toast({
-        title: "Error",
-        description: "Failed to load promo codes",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to load promo codes");
     } finally {
       setLoading(false);
     }
@@ -177,12 +174,8 @@ const AdminPromotionsPage = () => {
         setRequests(response.data.requests);
         setRequestsPagination(response.data.pagination);
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load requests",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to load requests");
     } finally {
       setRequestsLoading(false);
     }
@@ -227,10 +220,10 @@ const AdminPromotionsPage = () => {
         setDeletingCodeId(null);
         loadData();
       } else {
-        toast({ title: "Error", description: response.message || "Failed to delete", variant: "destructive" });
+        showErrorToast(toast, new Error(response.message || "Failed to delete"), "Failed to delete");
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to delete promo code", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to delete promo code");
     }
   };
 
@@ -241,24 +234,24 @@ const AdminPromotionsPage = () => {
         toast({ title: "Success", description: response.data?.isActive ? "Promo code activated" : "Promo code deactivated" });
         loadData();
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to toggle status", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to toggle status");
     }
   };
 
   const handleBulkGenerate = async () => {
     if (!bulkData.prefix.trim()) {
-      toast({ title: "Error", description: "Prefix is required", variant: "destructive" });
+      showErrorToast(toast, new Error("Prefix is required"), "Prefix is required");
       return;
     }
 
     if (!bulkData.discountValue || bulkData.discountValue <= 0) {
-      toast({ title: "Error", description: "Discount value must be greater than 0", variant: "destructive" });
+      showErrorToast(toast, new Error("Discount value must be greater than 0"), "Discount value must be greater than 0");
       return;
     }
 
     if (bulkData.discountType === "PERCENTAGE" && bulkData.discountValue > 100) {
-      toast({ title: "Error", description: "Percentage discount cannot exceed 100%", variant: "destructive" });
+      showErrorToast(toast, new Error("Percentage discount cannot exceed 100%"), "Percentage discount cannot exceed 100%");
       return;
     }
 
@@ -270,10 +263,10 @@ const AdminPromotionsPage = () => {
         setBulkDialogOpen(false);
         loadData();
       } else {
-        toast({ title: "Error", description: response.message || "Failed to generate", variant: "destructive" });
+        showErrorToast(toast, new Error(response.message || "Failed to generate"), "Failed to generate");
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to generate promo codes", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to generate promo codes");
     } finally {
       setSaving(false);
     }
@@ -293,10 +286,10 @@ const AdminPromotionsPage = () => {
         loadRequests();
         loadPendingCount();
       } else {
-        toast({ title: "Error", description: response.message || "Failed to reject", variant: "destructive" });
+        showErrorToast(toast, new Error(response.message || "Failed to reject"), "Failed to reject");
       }
-    } catch {
-      toast({ title: "Error", description: "Failed to reject request", variant: "destructive" });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to reject request");
     } finally {
       setRejecting(false);
     }
@@ -363,7 +356,7 @@ const AdminPromotionsPage = () => {
                 <Layers className="h-4 w-4 mr-2" />
                 Bulk Generate
               </Button>
-              <Button onClick={() => navigate("/admin/marketing/promo-codes/create")}>
+              <Button onClick={() => navigate("/admin/tickets/promo-codes/create")}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Code
               </Button>
@@ -491,7 +484,7 @@ const AdminPromotionsPage = () => {
                   <Tag className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">No promo codes found</h3>
                   <p className="text-muted-foreground mb-4">Create your first promo code to get started</p>
-                  <Button onClick={() => navigate("/admin/marketing/promo-codes/create")}>
+                  <Button onClick={() => navigate("/admin/tickets/promo-codes/create")}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Code
                   </Button>
@@ -573,7 +566,7 @@ const AdminPromotionsPage = () => {
                               <ToggleLeft className="h-5 w-5 text-muted-foreground" />
                             )}
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/marketing/promo-codes/${code.id}/edit`)}>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/admin/tickets/promo-codes/${code.id}/edit`)}>
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
@@ -709,7 +702,7 @@ const AdminPromotionsPage = () => {
                                   });
                                   if (request.organizer) params.set("organizerId", request.organizer.id);
                                   if (request.eventId) params.set("eventId", request.eventId);
-                                  navigate(`/admin/marketing/promo-codes/create?${params.toString()}`);
+                                  navigate(`/admin/tickets/promo-codes/create?${params.toString()}`);
                                 }}
                               >
                                 <CheckCircle className="h-4 w-4 mr-1" />

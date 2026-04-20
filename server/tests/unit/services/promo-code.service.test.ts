@@ -1,6 +1,6 @@
 import { PrismaClient, DiscountType, PromoCodeScope } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import {
   ValidationError,
   NotFoundError,
@@ -8,22 +8,22 @@ import {
 import * as databaseModule from '../../../src/config/database.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'batch-uuid-1234'),
+vi.mock('uuid', () => ({
+  v4: vi.fn(() => 'batch-uuid-1234'),
 }));
 
 import { PromoCodeService, CreatePromoCodeData, BulkGenerateData } from '../../../src/services/promo-code.service.js';
@@ -90,13 +90,13 @@ describe('PromoCodeService', () => {
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
-    jest.useFakeTimers();
-    jest.setSystemTime(now);
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   // =============================================
@@ -1073,7 +1073,7 @@ describe('PromoCodeService', () => {
       // Mock the transaction
       const mockTx = mockDeep<PrismaClient>();
       mockTx.promoCode.create.mockResolvedValue({} as any);
-      (prisma.$transaction as jest.Mock).mockImplementation(async (fn: any) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (fn: any) => {
         return fn(mockTx);
       });
 
@@ -1188,7 +1188,7 @@ describe('PromoCodeService', () => {
 
       const mockTx = mockDeep<PrismaClient>();
       mockTx.promoCode.create.mockResolvedValue({} as any);
-      (prisma.$transaction as jest.Mock).mockImplementation(async (fn: any) => {
+      (prisma.$transaction as vi.Mock).mockImplementation(async (fn: any) => {
         return fn(mockTx);
       });
 

@@ -67,7 +67,7 @@ export class TemplateService {
     // Verify user can create templates
     if (userRole !== UserRole.ORGANIZER &&
         userRole !== UserRole.SUPERADMIN &&
-        userRole !== UserRole.ADMIN_STAFF) {
+        userRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers and admins can create templates');
     }
 
@@ -89,7 +89,7 @@ export class TemplateService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
+    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN) {
       if (event.organizerId !== userId) {
         throw new AuthorizationError('You do not have permission to create templates for this event');
       }
@@ -184,7 +184,7 @@ export class TemplateService {
     // Verify user can view templates
     if (userRole !== UserRole.ORGANIZER &&
         userRole !== UserRole.SUPERADMIN &&
-        userRole !== UserRole.ADMIN_STAFF) {
+        userRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers and admins can view templates');
     }
 
@@ -205,7 +205,7 @@ export class TemplateService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
+    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN) {
       if (event.organizerId !== userId) {
         throw new AuthorizationError('You do not have permission to view templates for this event');
       }
@@ -272,7 +272,7 @@ export class TemplateService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
+    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN) {
       if (template.event.organizerId !== userId) {
         throw new AuthorizationError('You do not have permission to view this template');
       }
@@ -333,7 +333,7 @@ export class TemplateService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
+    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN) {
       if (template.event.organizerId !== userId) {
         throw new AuthorizationError('You do not have permission to update this template');
       }
@@ -448,7 +448,7 @@ export class TemplateService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
+    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN) {
       if (template.event.organizerId !== userId) {
         throw new AuthorizationError('You do not have permission to delete this template');
       }

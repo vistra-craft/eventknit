@@ -35,9 +35,7 @@ describe('ConsentService', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create organizer
     const organizerPassword = await hashPassword('Organizer123!@$');
@@ -97,7 +95,7 @@ describe('ConsentService', () => {
   });
 
   describe('createConsent', () => {
-    it('should create consent record with default operational consent', async () => {
+    it('should create consent record with marketingConsent defaulting to false', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
@@ -107,21 +105,15 @@ describe('ConsentService', () => {
         registrationId,
         attendeeId,
         eventId,
-        {
-          operationalConsent: true,
-          marketingConsent: false,
-        },
+        {},
       );
 
       expect(consent).toBeDefined();
-      expect(consent.operationalConsent).toBe(true);
       expect(consent.marketingConsent).toBe(false);
-      expect(consent.demographicsConsent).toBe(false);
-      expect(consent.analyticsConsent).toBe(false);
       expect(consent.registrationId).toBe(registrationId);
     });
 
-    it('should create consent with all consents enabled', async () => {
+    it('should create consent with marketingConsent enabled', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
@@ -131,18 +123,10 @@ describe('ConsentService', () => {
         registrationId,
         attendeeId,
         eventId,
-        {
-          operationalConsent: true,
-          marketingConsent: true,
-          demographicsConsent: true,
-          analyticsConsent: true,
-        },
+        { marketingConsent: true },
       );
 
-      expect(consent.operationalConsent).toBe(true);
       expect(consent.marketingConsent).toBe(true);
-      expect(consent.demographicsConsent).toBe(true);
-      expect(consent.analyticsConsent).toBe(true);
     });
 
     it('should fail if registration does not exist', async () => {
@@ -258,11 +242,10 @@ describe('ConsentService', () => {
       if (!dbConnected) return;
       await ConsentService.createConsent(registrationId, attendeeId, eventId, {
         marketingConsent: false,
-        demographicsConsent: false,
       });
     });
 
-    it('should update consent preferences', async () => {
+    it('should update marketingConsent to true', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
@@ -270,110 +253,66 @@ describe('ConsentService', () => {
 
       const updated = await ConsentService.updateConsent(registrationId, attendeeId, {
         marketingConsent: true,
-        demographicsConsent: true,
       });
 
       expect(updated.marketingConsent).toBe(true);
-      expect(updated.demographicsConsent).toBe(true);
       expect(updated.revokedAt).toBeNull();
     });
 
-    it('should set revokedAt when all consents are revoked', async () => {
+    it('should set revokedAt when marketingConsent is revoked', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
 
-      // First enable consents
       await ConsentService.updateConsent(registrationId, attendeeId, {
         marketingConsent: true,
-        demographicsConsent: true,
       });
 
-      // Then revoke all
       const updated = await ConsentService.updateConsent(registrationId, attendeeId, {
         marketingConsent: false,
-        demographicsConsent: false,
-        analyticsConsent: false,
       });
 
       expect(updated.revokedAt).toBeDefined();
     });
-
-    it('should not allow updating operational consent', async () => {
-      if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
-        return;
-      }
-
-      const before = await ConsentService.getConsent(registrationId, attendeeId);
-      expect(before?.operationalConsent).toBe(true);
-
-      // Try to update (operational consent is not in update interface, but test it stays true)
-      const updated = await ConsentService.updateConsent(registrationId, attendeeId, {
-        marketingConsent: true,
-      });
-
-      expect(updated.operationalConsent).toBe(true); // Should remain true
-    });
   });
 
   describe('hasConsent', () => {
-    beforeEach(async () => {
-      if (!dbConnected) return;
-      await ConsentService.createConsent(registrationId, attendeeId, eventId, {
-        marketingConsent: true,
-        demographicsConsent: true,
-        analyticsConsent: false,
-      });
-    });
-
-    it('should return true for operational consent', async () => {
-      if (!dbConnected) {
-        console.log('⏭️  Skipping test - database not connected');
-        return;
-      }
-
-      const hasConsent = await ConsentService.hasConsent(registrationId, 'operational');
-      expect(hasConsent).toBe(true);
-    });
-
     it('should return true for marketing consent when granted', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
 
+      await ConsentService.createConsent(registrationId, attendeeId, eventId, {
+        marketingConsent: true,
+      });
+
       const hasConsent = await ConsentService.hasConsent(registrationId, 'marketing');
       expect(hasConsent).toBe(true);
     });
 
-    it('should return false for analytics consent when not granted', async () => {
+    it('should return false for marketing consent when not granted', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
 
-      const hasConsent = await ConsentService.hasConsent(registrationId, 'analytics');
+      await ConsentService.createConsent(registrationId, attendeeId, eventId, {
+        marketingConsent: false,
+      });
+
+      const hasConsent = await ConsentService.hasConsent(registrationId, 'marketing');
       expect(hasConsent).toBe(false);
     });
 
-    it('should return false if consent does not exist', async () => {
+    it('should return false if no consent record exists', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
       }
 
-      const newRegistration = await prisma.eventRegistration.create({
-        data: {
-          eventId,
-          attendeeId,
-          status: RegistrationStatus.CONFIRMED,
-          totalAmount: 0,
-        },
-      });
-
-      const hasConsent = await ConsentService.hasConsent(newRegistration.id, 'operational');
+      const hasConsent = await ConsentService.hasConsent(registrationId, 'marketing');
       expect(hasConsent).toBe(false);
     });
   });
@@ -382,7 +321,7 @@ describe('ConsentService', () => {
     beforeEach(async () => {
       if (!dbConnected) return;
 
-      // Create multiple registrations
+      // Create 5 registrations — first 3 opt in to marketing
       for (let i = 0; i < 5; i++) {
         const attendee = await prisma.user.create({
           data: {
@@ -404,12 +343,8 @@ describe('ConsentService', () => {
           },
         });
 
-        // Create consents with different patterns
         await ConsentService.createConsent(registration.id, attendee.id, eventId, {
-          operationalConsent: true, // Always true
-          marketingConsent: i < 3, // First 3 have marketing consent
-          demographicsConsent: i < 2, // First 2 have demographics consent
-          analyticsConsent: i < 1, // Only first has analytics consent
+          marketingConsent: i < 3,
         });
       }
     });
@@ -424,13 +359,10 @@ describe('ConsentService', () => {
 
       expect(stats.totalRegistrations).toBeGreaterThanOrEqual(5);
       expect(stats.totalConsents).toBeGreaterThanOrEqual(5);
-      expect(stats.operational.count).toBeGreaterThanOrEqual(5);
       expect(stats.marketing.count).toBeGreaterThanOrEqual(3);
-      expect(stats.demographics.count).toBeGreaterThanOrEqual(2);
-      expect(stats.analytics.count).toBeGreaterThanOrEqual(1);
     });
 
-    it('should calculate percentages correctly', async () => {
+    it('should calculate marketing percentage correctly', async () => {
       if (!dbConnected) {
         console.log('⏭️  Skipping test - database not connected');
         return;
@@ -438,8 +370,6 @@ describe('ConsentService', () => {
 
       const stats = await ConsentService.getEventConsentStats(eventId, organizerId);
 
-      expect(stats.operational.percentage).toBeGreaterThanOrEqual(0);
-      expect(stats.operational.percentage).toBeLessThanOrEqual(100);
       expect(stats.marketing.percentage).toBeGreaterThanOrEqual(0);
       expect(stats.marketing.percentage).toBeLessThanOrEqual(100);
     });

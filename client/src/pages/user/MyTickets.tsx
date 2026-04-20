@@ -7,9 +7,10 @@ import { Loader } from "../../components/ui/loader";
 import BackButton from "../../components/BackButton";
 import EmptyState from "../../components/EmptyState";
 import { getUserRegisteredEvents } from "../../lib/event-api";
-import { downloadTicketPDF } from "../../lib/ticket-api";
+import { downloadTicketPDF, resendTicketEmail } from "../../lib/ticket-api";
 import { shareEvent } from "../../lib/utils/share";
 import { useToast } from "../../hooks/useToast";
+import { showErrorToast } from "../../lib/utils/error";
 
 interface Ticket {
   id: string;
@@ -20,6 +21,9 @@ interface Ticket {
   ticketId: string;
   registrationId?: string;
   image: string;
+  emailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null;
+  emailSentAt?: string | null;
+  emailError?: string | null;
 }
 
 const MyTickets: React.FC = () => {
@@ -29,6 +33,7 @@ const MyTickets: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -36,7 +41,7 @@ const MyTickets: React.FC = () => {
         setLoading(true);
         const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
         if (response.success && response.data) {
-          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string }) => ({
+          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string; ticketEmailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null; ticketEmailSentAt?: string | null; ticketEmailError?: string | null }) => ({
             id: event.id,
             title: event.title,
             date: event.date || "",
@@ -45,11 +50,14 @@ const MyTickets: React.FC = () => {
             ticketId: event.backupCode || `TKT-${event.id.slice(0, 8).toUpperCase()}`,
             registrationId: event.registrationId,
             image: event.image || "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=400&h=300&fit=crop",
+            emailStatus: event.ticketEmailStatus,
+            emailSentAt: event.ticketEmailSentAt,
+            emailError: event.ticketEmailError,
           })));
         }
       } catch (error) {
         console.error("Error fetching tickets:", error);
-        toast({ title: "Error", description: "Failed to load tickets", variant: "destructive" });
+        showErrorToast(toast, error, 'Load failed', 'Failed to load tickets');
       } finally {
         setLoading(false);
       }
@@ -67,7 +75,7 @@ const MyTickets: React.FC = () => {
 
   const handleDownload = async (ticket: Ticket) => {
     if (!ticket.registrationId) {
-      toast({ title: "Error", description: "Ticket not available", variant: "destructive" });
+      toast({ title: "Ticket unavailable", description: "Ticket not available", variant: "destructive" });
       return;
     }
     setDownloadingId(ticket.id);
@@ -75,7 +83,7 @@ const MyTickets: React.FC = () => {
       await downloadTicketPDF(ticket.registrationId);
       toast({ title: "Downloaded", description: "Ticket PDF downloaded" });
     } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Download failed", variant: "destructive" });
+      showErrorToast(toast, error, 'Download failed');
     } finally {
       setDownloadingId(null);
     }
@@ -84,6 +92,54 @@ const MyTickets: React.FC = () => {
   const handleShare = async (ticket: Ticket) => {
     const shared = await shareEvent(ticket.title, ticket.id);
     toast({ title: shared ? "Shared" : "Link Copied", description: shared ? "Event shared" : "Link copied" });
+  };
+
+  const handleResendEmail = async (ticket: Ticket) => {
+    if (!ticket.registrationId) {
+      toast({ title: "Not found", description: "Registration not found", variant: "destructive" });
+      return;
+    }
+
+    setResendingId(ticket.id);
+    try {
+      await resendTicketEmail(ticket.registrationId);
+      setTickets((prev) =>
+        prev.map((item) =>
+          item.id === ticket.id
+            ? { ...item, emailStatus: 'PENDING', emailError: null }
+            : item
+        )
+      );
+      toast({ title: "Sent", description: "Ticket email resend started" });
+    } catch (error) {
+      showErrorToast(toast, error, 'Resend failed', 'Failed to resend ticket email');
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const getEmailStatusLabel = (status?: Ticket['emailStatus']) => {
+    switch (status) {
+      case 'SUCCESS':
+        return 'Email Sent';
+      case 'FAILED':
+        return 'Email Failed';
+      case 'PENDING':
+      default:
+        return 'Email Pending';
+    }
+  };
+
+  const getEmailStatusClasses = (status?: Ticket['emailStatus']) => {
+    switch (status) {
+      case 'SUCCESS':
+        return 'bg-success/10 text-success';
+      case 'FAILED':
+        return 'bg-destructive/10 text-destructive';
+      case 'PENDING':
+      default:
+        return 'bg-warning/10 text-warning';
+    }
   };
 
   const tabs = [
@@ -159,6 +215,30 @@ const MyTickets: React.FC = () => {
                     <QrCode className="w-3.5 h-3.5" />
                     {ticket.ticketId}
                   </p>
+                  {ticket.registrationId && (
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="secondary"
+                        className={`text-[10px] ${getEmailStatusClasses(ticket.emailStatus)}`}
+                      >
+                        {getEmailStatusLabel(ticket.emailStatus)}
+                      </Badge>
+                      {ticket.emailStatus === 'FAILED' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-[10px]"
+                          disabled={resendingId === ticket.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleResendEmail(ticket);
+                          }}
+                        >
+                          {resendingId === ticket.id ? "Resending..." : "Resend"}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Button

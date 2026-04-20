@@ -221,9 +221,12 @@ class PushNotificationService {
         },
       );
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle expired/invalid subscriptions
-      if (error.statusCode === 404 || error.statusCode === 410) {
+      const statusCode = error instanceof Error && 'statusCode' in error
+        ? (error as { statusCode: number }).statusCode
+        : undefined;
+      if (statusCode === 404 || statusCode === 410) {
         logger.warn(`Push subscription no longer valid: ${subscription.endpoint}`);
         // Mark subscription as inactive
         await prisma.pushSubscription.updateMany({

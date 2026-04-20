@@ -1,5 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import {
   PlatformExpenseService,
   PlatformIncomeService,
@@ -10,17 +10,17 @@ import { NotFoundError } from '../../../src/utils/errors.js';
 import * as databaseModule from '../../../src/config/database.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -33,7 +33,7 @@ describe('Platform Finance Services', () => {
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('PlatformExpenseService', () => {
@@ -600,13 +600,25 @@ describe('Platform Finance Services', () => {
       employeeName: 'John Doe',
       department: 'Engineering',
       position: 'Senior Developer',
+      staffType: 'PERMANENT',
+      grossAmount: new Prisma.Decimal(5500),
       amount: new Prisma.Decimal(5000),
       currency: 'KES',
+      hoursWorked: new Prisma.Decimal(160),
+      hourlyRate: new Prisma.Decimal(34.38),
+      overtimeHours: null,
+      overtimeRate: null,
+      dailyRate: null,
+      eventDays: null,
+      bonuses: null,
+      deductions: new Prisma.Decimal(500),
       payPeriod: '2024-01',
       payDate: new Date('2024-01-31'),
       paymentMethod: 'BANK_TRANSFER',
       reference: 'PAY-123',
       notes: null,
+      eventId: null,
+      event: null,
       createdBy: 'admin-1',
       status: 'COMPLETED',
       createdAt: new Date(),
@@ -614,10 +626,13 @@ describe('Platform Finance Services', () => {
     };
 
     describe('getWages', () => {
-      it('should return paginated wages with default limit 20', async () => {
+      it('should return paginated wages with event include and aggregate', async () => {
         // Arrange
         prisma.wage.findMany.mockResolvedValue([mockWage] as any);
         prisma.wage.count.mockResolvedValue(1);
+        prisma.wage.aggregate.mockResolvedValue({
+          _sum: { amount: new Prisma.Decimal(5000), grossAmount: new Prisma.Decimal(5500) },
+        } as any);
 
         // Act
         const result = await WageService.getWages();
@@ -626,11 +641,16 @@ describe('Platform Finance Services', () => {
         expect(result.wages).toHaveLength(1);
         expect(result.page).toBe(1);
         expect(result.totalPages).toBe(1);
+        expect(result.totalAmount).toBe(5000);
+        expect(result.totalGrossAmount).toBe(5500);
         expect(prisma.wage.findMany).toHaveBeenCalledWith({
           where: {},
           skip: 0,
           take: 20,
           orderBy: { payDate: 'desc' },
+          include: {
+            event: { select: { id: true, title: true } },
+          },
         });
       });
 
@@ -638,6 +658,7 @@ describe('Platform Finance Services', () => {
         // Arrange
         prisma.wage.findMany.mockResolvedValue([mockWage] as any);
         prisma.wage.count.mockResolvedValue(1);
+        prisma.wage.aggregate.mockResolvedValue({ _sum: { amount: null, grossAmount: null } } as any);
 
         // Act
         await WageService.getWages({ department: 'Engineering' });
@@ -650,10 +671,45 @@ describe('Platform Finance Services', () => {
         );
       });
 
+      it('should filter by staffType', async () => {
+        // Arrange
+        prisma.wage.findMany.mockResolvedValue([mockWage] as any);
+        prisma.wage.count.mockResolvedValue(1);
+        prisma.wage.aggregate.mockResolvedValue({ _sum: { amount: null, grossAmount: null } } as any);
+
+        // Act
+        await WageService.getWages({ staffType: 'EVENT' });
+
+        // Assert
+        expect(prisma.wage.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { staffType: 'EVENT' },
+          }),
+        );
+      });
+
+      it('should filter by eventId', async () => {
+        // Arrange
+        prisma.wage.findMany.mockResolvedValue([mockWage] as any);
+        prisma.wage.count.mockResolvedValue(1);
+        prisma.wage.aggregate.mockResolvedValue({ _sum: { amount: null, grossAmount: null } } as any);
+
+        // Act
+        await WageService.getWages({ eventId: 'event-456' });
+
+        // Assert
+        expect(prisma.wage.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { eventId: 'event-456' },
+          }),
+        );
+      });
+
       it('should filter by status', async () => {
         // Arrange
         prisma.wage.findMany.mockResolvedValue([mockWage] as any);
         prisma.wage.count.mockResolvedValue(1);
+        prisma.wage.aggregate.mockResolvedValue({ _sum: { amount: null, grossAmount: null } } as any);
 
         // Act
         await WageService.getWages({ status: 'COMPLETED' });
@@ -670,6 +726,7 @@ describe('Platform Finance Services', () => {
         // Arrange
         prisma.wage.findMany.mockResolvedValue([mockWage] as any);
         prisma.wage.count.mockResolvedValue(1);
+        prisma.wage.aggregate.mockResolvedValue({ _sum: { amount: null, grossAmount: null } } as any);
 
         // Act
         await WageService.getWages({ payPeriod: '2024-01' });
@@ -688,6 +745,7 @@ describe('Platform Finance Services', () => {
         const endDate = new Date('2024-12-31');
         prisma.wage.findMany.mockResolvedValue([mockWage] as any);
         prisma.wage.count.mockResolvedValue(1);
+        prisma.wage.aggregate.mockResolvedValue({ _sum: { amount: null, grossAmount: null } } as any);
 
         // Act
         await WageService.getWages({ startDate, endDate });
@@ -707,7 +765,7 @@ describe('Platform Finance Services', () => {
     });
 
     describe('getWageById', () => {
-      it('should return wage if found', async () => {
+      it('should return wage with event relation if found', async () => {
         // Arrange
         prisma.wage.findUnique.mockResolvedValue(mockWage as any);
 
@@ -718,6 +776,9 @@ describe('Platform Finance Services', () => {
         expect(result).toEqual(mockWage);
         expect(prisma.wage.findUnique).toHaveBeenCalledWith({
           where: { id: 'wage-123' },
+          include: {
+            event: { select: { id: true, title: true } },
+          },
         });
       });
 
@@ -737,15 +798,20 @@ describe('Platform Finance Services', () => {
     });
 
     describe('createWage', () => {
-      it('should create wage with all fields', async () => {
+      it('should create wage with all fields including work details', async () => {
         // Arrange
         const createData = {
           employeeId: 'emp-123',
           employeeName: 'John Doe',
           department: 'Engineering',
           position: 'Senior Developer',
+          staffType: 'PERMANENT' as const,
+          grossAmount: 5500,
           amount: 5000,
           currency: 'USD',
+          hoursWorked: 160,
+          hourlyRate: 34.38,
+          deductions: 500,
           payPeriod: '2024-01',
           payDate: new Date('2024-01-31'),
           paymentMethod: 'BANK_TRANSFER' as const,
@@ -764,11 +830,69 @@ describe('Platform Finance Services', () => {
           data: expect.objectContaining({
             employeeName: 'John Doe',
             department: 'Engineering',
+            staffType: 'PERMANENT',
             amount: expect.any(Prisma.Decimal),
+            grossAmount: expect.any(Prisma.Decimal),
+            hoursWorked: expect.any(Prisma.Decimal),
+            hourlyRate: expect.any(Prisma.Decimal),
+            deductions: expect.any(Prisma.Decimal),
             paymentMethod: 'BANK_TRANSFER',
             status: 'COMPLETED',
           }),
+          include: {
+            event: { select: { id: true, title: true } },
+          },
         });
+      });
+
+      it('should create event-based wage with daily rate and event days', async () => {
+        // Arrange
+        const createData = {
+          employeeName: 'Jane Smith',
+          staffType: 'EVENT' as const,
+          amount: 6000,
+          dailyRate: 2000,
+          eventDays: 3,
+          payPeriod: '2024-03',
+          payDate: new Date('2024-03-15'),
+          eventId: 'event-123',
+        };
+        prisma.wage.create.mockResolvedValue({ ...mockWage, staffType: 'EVENT', eventId: 'event-123' } as any);
+
+        // Act
+        await WageService.createWage(createData);
+
+        // Assert
+        expect(prisma.wage.create).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            staffType: 'EVENT',
+            dailyRate: expect.any(Prisma.Decimal),
+            eventDays: 3,
+            eventId: 'event-123',
+          }),
+          include: {
+            event: { select: { id: true, title: true } },
+          },
+        });
+      });
+
+      it('should default grossAmount to amount if not provided', async () => {
+        // Arrange
+        const createData = {
+          employeeName: 'John Doe',
+          amount: 5000,
+          payPeriod: '2024-01',
+          payDate: new Date('2024-01-31'),
+        };
+        prisma.wage.create.mockResolvedValue(mockWage as any);
+
+        // Act
+        await WageService.createWage(createData);
+
+        // Assert
+        const createCall = prisma.wage.create.mock.calls[0][0];
+        expect(Number(createCall.data.grossAmount)).toBe(5000);
+        expect(Number(createCall.data.amount)).toBe(5000);
       });
 
       it('should use default currency KES if not provided', async () => {
@@ -785,14 +909,14 @@ describe('Platform Finance Services', () => {
         await WageService.createWage(createData);
 
         // Assert
-        expect(prisma.wage.create).toHaveBeenCalledWith({
+        expect(prisma.wage.create).toHaveBeenCalledWith(expect.objectContaining({
           data: expect.objectContaining({
             currency: 'KES',
           }),
-        });
+        }));
       });
 
-      it('should use default paymentMethod BANK_TRANSFER if not provided', async () => {
+      it('should use default staffType PERMANENT if not provided', async () => {
         // Arrange
         const createData = {
           employeeName: 'John Doe',
@@ -806,11 +930,12 @@ describe('Platform Finance Services', () => {
         await WageService.createWage(createData);
 
         // Assert
-        expect(prisma.wage.create).toHaveBeenCalledWith({
+        expect(prisma.wage.create).toHaveBeenCalledWith(expect.objectContaining({
           data: expect.objectContaining({
+            staffType: 'PERMANENT',
             paymentMethod: 'BANK_TRANSFER',
           }),
-        });
+        }));
       });
     });
 
@@ -828,7 +953,39 @@ describe('Platform Finance Services', () => {
 
         // Assert
         expect(result.department).toBe('Marketing');
-        expect(prisma.wage.update).toHaveBeenCalled();
+        expect(prisma.wage.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            include: {
+              event: { select: { id: true, title: true } },
+            },
+          }),
+        );
+      });
+
+      it('should connect event when eventId is provided', async () => {
+        // Arrange
+        prisma.wage.findUnique.mockResolvedValue(mockWage as any);
+        prisma.wage.update.mockResolvedValue({ ...mockWage, eventId: 'event-456' } as any);
+
+        // Act
+        await WageService.updateWage('wage-123', { eventId: 'event-456' });
+
+        // Assert
+        const updateCall = prisma.wage.update.mock.calls[0][0];
+        expect(updateCall.data.event).toEqual({ connect: { id: 'event-456' } });
+      });
+
+      it('should disconnect event when eventId is null', async () => {
+        // Arrange
+        prisma.wage.findUnique.mockResolvedValue({ ...mockWage, eventId: 'event-456' } as any);
+        prisma.wage.update.mockResolvedValue({ ...mockWage, eventId: null } as any);
+
+        // Act
+        await WageService.updateWage('wage-123', { eventId: null });
+
+        // Assert
+        const updateCall = prisma.wage.update.mock.calls[0][0];
+        expect(updateCall.data.event).toEqual({ disconnect: true });
       });
 
       it('should throw NotFoundError if wage not found', async () => {
@@ -870,110 +1027,109 @@ describe('Platform Finance Services', () => {
   });
 
   describe('PlatformFinanceSummaryService', () => {
+    const mockPlatformFeeAggregate = (feeAmount: number, grossAmount: number, organizerAmount: number, count: number) => ({
+      _sum: {
+        feeAmount: feeAmount ? new Prisma.Decimal(feeAmount) : null,
+        grossAmount: grossAmount ? new Prisma.Decimal(grossAmount) : null,
+        organizerAmount: organizerAmount ? new Prisma.Decimal(organizerAmount) : null,
+      },
+      _count: count,
+    });
+
+    const setupMocks = (
+      expenses: { amount: number; count: number },
+      income: { amount: number; count: number },
+      wages: { amount: number; grossAmount?: number; count: number },
+      fees: { feeAmount: number; grossAmount: number; organizerAmount: number; count: number },
+    ) => {
+      prisma.platformExpense.aggregate.mockResolvedValue({
+        _sum: { amount: expenses.amount ? new Prisma.Decimal(expenses.amount) : null },
+        _count: expenses.count,
+      } as any);
+      prisma.platformIncome.aggregate.mockResolvedValue({
+        _sum: { amount: income.amount ? new Prisma.Decimal(income.amount) : null },
+        _count: income.count,
+      } as any);
+      prisma.wage.aggregate.mockResolvedValue({
+        _sum: {
+          amount: wages.amount ? new Prisma.Decimal(wages.amount) : null,
+          grossAmount: wages.grossAmount ? new Prisma.Decimal(wages.grossAmount) : null,
+        },
+        _count: wages.count,
+      } as any);
+      prisma.platformFee.aggregate.mockResolvedValue(
+        mockPlatformFeeAggregate(fees.feeAmount, fees.grossAmount, fees.organizerAmount, fees.count) as any,
+      );
+    };
+
     describe('getFinanceSummary', () => {
-      it('should return summary with all categories', async () => {
-        // Arrange
-        prisma.platformExpense.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(200) },
-          _count: 5,
-        } as any);
+      it('should return comprehensive summary including platform fee revenue', async () => {
+        setupMocks(
+          { amount: 200, count: 5 },
+          { amount: 500, count: 10 },
+          { amount: 300, count: 3 },
+          { feeAmount: 750, grossAmount: 10000, organizerAmount: 9250, count: 4 },
+        );
 
-        prisma.platformIncome.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(500) },
-          _count: 10,
-        } as any);
-
-        prisma.wage.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(300) },
-          _count: 3,
-        } as any);
-
-        // Act
         const result = await PlatformFinanceSummaryService.getFinanceSummary();
 
-        // Assert
-        expect(result.totalIncome).toBe(500);
-        expect(result.totalExpenses).toBe(500); // 200 + 300 (expenses + wages)
+        // totalIncome = manualIncome (500) + platformFeeRevenue (750) = 1250
+        expect(result.totalIncome).toBe(1250);
+        // totalExpenses = operatingExpenses (200) + wages (300) = 500
+        expect(result.totalExpenses).toBe(500);
         expect(result.totalWages).toBe(300);
-        expect(result.netProfit).toBe(0); // 500 - 500
+        expect(result.netProfit).toBe(750); // 1250 - 500
         expect(result.expenseCount).toBe(5);
         expect(result.incomeCount).toBe(10);
         expect(result.wageCount).toBe(3);
+        // Platform fee breakdown
+        expect(result.platformFeeRevenue).toBe(750);
+        expect(result.manualIncome).toBe(500);
+        expect(result.totalGrossRevenue).toBe(10000);
+        expect(result.totalOrganizerPayouts).toBe(9250);
+        expect(result.platformFeeCount).toBe(4);
       });
 
       it('should calculate positive netProfit', async () => {
-        // Arrange
-        prisma.platformExpense.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(100) },
-          _count: 2,
-        } as any);
+        setupMocks(
+          { amount: 100, count: 2 },
+          { amount: 1000, count: 5 },
+          { amount: 200, count: 1 },
+          { feeAmount: 500, grossAmount: 5000, organizerAmount: 4500, count: 2 },
+        );
 
-        prisma.platformIncome.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(1000) },
-          _count: 5,
-        } as any);
-
-        prisma.wage.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(200) },
-          _count: 1,
-        } as any);
-
-        // Act
         const result = await PlatformFinanceSummaryService.getFinanceSummary();
 
-        // Assert
-        expect(result.totalIncome).toBe(1000);
+        expect(result.totalIncome).toBe(1500); // 1000 + 500
         expect(result.totalExpenses).toBe(300); // 100 + 200
-        expect(result.netProfit).toBe(700); // 1000 - 300
+        expect(result.netProfit).toBe(1200);
       });
 
       it('should calculate negative netProfit', async () => {
-        // Arrange
-        prisma.platformExpense.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(500) },
-          _count: 5,
-        } as any);
+        setupMocks(
+          { amount: 500, count: 5 },
+          { amount: 200, count: 2 },
+          { amount: 400, count: 2 },
+          { feeAmount: 0, grossAmount: 0, organizerAmount: 0, count: 0 },
+        );
 
-        prisma.platformIncome.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(200) },
-          _count: 2,
-        } as any);
-
-        prisma.wage.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(400) },
-          _count: 2,
-        } as any);
-
-        // Act
         const result = await PlatformFinanceSummaryService.getFinanceSummary();
 
-        // Assert
         expect(result.totalIncome).toBe(200);
         expect(result.totalExpenses).toBe(900); // 500 + 400
-        expect(result.netProfit).toBe(-700); // 200 - 900
+        expect(result.netProfit).toBe(-700);
       });
 
       it('should return zeros when no data exists', async () => {
-        // Arrange
-        prisma.platformExpense.aggregate.mockResolvedValue({
-          _sum: { amount: null },
-          _count: 0,
-        } as any);
+        setupMocks(
+          { amount: 0, count: 0 },
+          { amount: 0, count: 0 },
+          { amount: 0, count: 0 },
+          { feeAmount: 0, grossAmount: 0, organizerAmount: 0, count: 0 },
+        );
 
-        prisma.platformIncome.aggregate.mockResolvedValue({
-          _sum: { amount: null },
-          _count: 0,
-        } as any);
-
-        prisma.wage.aggregate.mockResolvedValue({
-          _sum: { amount: null },
-          _count: 0,
-        } as any);
-
-        // Act
         const result = await PlatformFinanceSummaryService.getFinanceSummary();
 
-        // Assert
         expect(result.totalIncome).toBe(0);
         expect(result.totalExpenses).toBe(0);
         expect(result.totalWages).toBe(0);
@@ -981,102 +1137,82 @@ describe('Platform Finance Services', () => {
         expect(result.expenseCount).toBe(0);
         expect(result.incomeCount).toBe(0);
         expect(result.wageCount).toBe(0);
+        expect(result.platformFeeRevenue).toBe(0);
+        expect(result.platformFeeCount).toBe(0);
       });
 
       it('should filter by date range', async () => {
-        // Arrange
         const startDate = new Date('2024-01-01');
         const endDate = new Date('2024-12-31');
 
-        prisma.platformExpense.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(100) },
-          _count: 1,
-        } as any);
+        setupMocks(
+          { amount: 100, count: 1 },
+          { amount: 300, count: 2 },
+          { amount: 50, count: 1 },
+          { feeAmount: 100, grossAmount: 1000, organizerAmount: 900, count: 1 },
+        );
 
-        prisma.platformIncome.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(300) },
-          _count: 2,
-        } as any);
-
-        prisma.wage.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(50) },
-          _count: 1,
-        } as any);
-
-        // Act
         await PlatformFinanceSummaryService.getFinanceSummary({ startDate, endDate });
 
-        // Assert
+        const expectedDateWhere = { createdAt: { gte: startDate, lte: endDate } };
+
         expect(prisma.platformExpense.aggregate).toHaveBeenCalledWith({
-          where: {
-            createdAt: { gte: startDate, lte: endDate },
-            status: 'COMPLETED',
-          },
+          where: { ...expectedDateWhere, status: 'COMPLETED' },
           _sum: { amount: true },
           _count: true,
         });
 
         expect(prisma.platformIncome.aggregate).toHaveBeenCalledWith({
-          where: {
-            createdAt: { gte: startDate, lte: endDate },
-            status: 'COMPLETED',
-          },
+          where: { ...expectedDateWhere, status: 'COMPLETED' },
           _sum: { amount: true },
           _count: true,
         });
 
         expect(prisma.wage.aggregate).toHaveBeenCalledWith({
-          where: {
-            createdAt: { gte: startDate, lte: endDate },
-            status: 'COMPLETED',
-          },
-          _sum: { amount: true },
+          where: { ...expectedDateWhere, status: 'COMPLETED' },
+          _sum: { amount: true, grossAmount: true },
+          _count: true,
+        });
+
+        expect(prisma.platformFee.aggregate).toHaveBeenCalledWith({
+          where: { ...expectedDateWhere },
+          _sum: { feeAmount: true, grossAmount: true, organizerAmount: true },
           _count: true,
         });
       });
 
-      it('should only include COMPLETED status entries', async () => {
-        // Arrange
-        prisma.platformExpense.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(100) },
-          _count: 1,
-        } as any);
+      it('should only include COMPLETED status for expenses/income/wages', async () => {
+        setupMocks(
+          { amount: 100, count: 1 },
+          { amount: 200, count: 1 },
+          { amount: 50, count: 1 },
+          { feeAmount: 100, grossAmount: 1000, organizerAmount: 900, count: 1 },
+        );
 
-        prisma.platformIncome.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(200) },
-          _count: 1,
-        } as any);
-
-        prisma.wage.aggregate.mockResolvedValue({
-          _sum: { amount: new Prisma.Decimal(50) },
-          _count: 1,
-        } as any);
-
-        // Act
         await PlatformFinanceSummaryService.getFinanceSummary();
 
-        // Assert
         expect(prisma.platformExpense.aggregate).toHaveBeenCalledWith(
           expect.objectContaining({
-            where: expect.objectContaining({
-              status: 'COMPLETED',
-            }),
+            where: expect.objectContaining({ status: 'COMPLETED' }),
           }),
         );
 
         expect(prisma.platformIncome.aggregate).toHaveBeenCalledWith(
           expect.objectContaining({
-            where: expect.objectContaining({
-              status: 'COMPLETED',
-            }),
+            where: expect.objectContaining({ status: 'COMPLETED' }),
           }),
         );
 
         expect(prisma.wage.aggregate).toHaveBeenCalledWith(
           expect.objectContaining({
-            where: expect.objectContaining({
-              status: 'COMPLETED',
-            }),
+            where: expect.objectContaining({ status: 'COMPLETED' }),
+          }),
+        );
+
+        // Platform fees don't filter by status (they're always valid once calculated)
+        expect(prisma.platformFee.aggregate).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: expect.not.objectContaining({ status: expect.anything() }),
           }),
         );
       });

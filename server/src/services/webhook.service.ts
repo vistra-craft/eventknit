@@ -1,5 +1,6 @@
 /* global URL */
 import { prisma } from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import crypto from 'crypto';
@@ -117,12 +118,12 @@ export class WebhookService {
 
       logger.info(`Webhook endpoint created: ${endpoint.id}`);
       return endpoint;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error creating webhook endpoint:', error);
-      throw new ValidationError(`Failed to create webhook endpoint: ${error.message}`);
+      throw new ValidationError(`Failed to create webhook endpoint: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -134,7 +135,10 @@ export class WebhookService {
     eventType?: string;
   }) {
     try {
-      const where: any = {};
+      const where: {
+        isActive?: boolean;
+        eventTypes?: { has: string };
+      } = {};
 
       if (filters?.isActive !== undefined) {
         where.isActive = filters.isActive;
@@ -157,9 +161,9 @@ export class WebhookService {
       });
 
       return endpoints;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error fetching webhook endpoints:', error);
-      throw new ValidationError(`Failed to fetch endpoints: ${error.message}`);
+      throw new ValidationError(`Failed to fetch endpoints: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -183,12 +187,12 @@ export class WebhookService {
       }
 
       return endpoint;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error fetching webhook endpoint:', error);
-      throw new ValidationError(`Failed to fetch endpoint: ${error.message}`);
+      throw new ValidationError(`Failed to fetch endpoint: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -244,12 +248,12 @@ export class WebhookService {
 
       logger.info(`Webhook endpoint updated: ${endpointId}`);
       return updated;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError || error instanceof ValidationError) {
         throw error;
       }
       logger.error('Error updating webhook endpoint:', error);
-      throw new ValidationError(`Failed to update endpoint: ${error.message}`);
+      throw new ValidationError(`Failed to update endpoint: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -272,12 +276,12 @@ export class WebhookService {
 
       logger.info(`Webhook endpoint deleted: ${endpointId}`);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error deleting webhook endpoint:', error);
-      throw new ValidationError(`Failed to delete endpoint: ${error.message}`);
+      throw new ValidationError(`Failed to delete endpoint: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -312,10 +316,10 @@ export class WebhookService {
 
       logger.info(`Webhook triggered for event: ${eventType} to ${endpoints.length} endpoints`);
       return { triggered: endpoints.length };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error triggering webhook:', error);
       // Don't throw - webhook failures shouldn't break the main flow
-      return { triggered: 0, error: error.message };
+      return { triggered: 0, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 
@@ -343,7 +347,7 @@ export class WebhookService {
           endpointId,
           eventType,
           eventId,
-          payload: eventData as any,
+          payload: eventData as unknown as Prisma.InputJsonValue,
           status: 'PENDING',
           maxAttempts: endpoint.maxRetries,
         },
@@ -359,7 +363,7 @@ export class WebhookService {
           lastTriggeredAt: new Date(),
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Error delivering webhook to endpoint ${endpointId}:`, error);
     }
   }
@@ -367,7 +371,10 @@ export class WebhookService {
   /**
    * Attempt to deliver a webhook
    */
-  private static async attemptDelivery(deliveryId: string, endpoint: any) {
+  private static async attemptDelivery(
+    deliveryId: string,
+    endpoint: { id: string; url: string; secret?: string | null; headers?: Prisma.JsonValue; maxRetries: number; retryDelay: number },
+  ) {
     try {
       const delivery = await prisma.webhookDelivery.findUnique({
         where: { id: deliveryId },
@@ -441,7 +448,7 @@ export class WebhookService {
         // Retry will be handled by a background job or cron
         logger.info(`Webhook delivery ${deliveryId} will be retried`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Error attempting webhook delivery ${deliveryId}:`, error);
 
       // Update delivery as failed
@@ -450,7 +457,7 @@ export class WebhookService {
         data: {
           attemptCount: { increment: 1 },
           status: 'FAILED',
-          errorMessage: error.message?.substring(0, 500),
+          errorMessage: error instanceof Error ? error.message?.substring(0, 500) : undefined,
           nextRetryAt: null,
         },
       });
@@ -492,9 +499,9 @@ export class WebhookService {
 
       logger.info(`Retried ${failedDeliveries.length} webhook deliveries`);
       return { retried: failedDeliveries.length };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error retrying webhook deliveries:', error);
-      throw new ValidationError(`Failed to retry deliveries: ${error.message}`);
+      throw new ValidationError(`Failed to retry deliveries: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -524,12 +531,12 @@ export class WebhookService {
       await this.deliverWebhook(endpointId, 'webhook.test', testPayload.data, 'test');
 
       return { success: true, message: 'Test webhook sent' };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error testing webhook endpoint:', error);
-      throw new ValidationError(`Failed to test endpoint: ${error.message}`);
+      throw new ValidationError(`Failed to test endpoint: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -548,7 +555,12 @@ export class WebhookService {
       const limit = filters?.limit || 50;
       const skip = (page - 1) * limit;
 
-      const where: any = {};
+      const where: {
+        endpointId?: string;
+        eventType?: string;
+        status?: string;
+        triggeredAt?: { gte?: Date; lte?: Date };
+      } = {};
 
       if (filters?.endpointId) {
         where.endpointId = filters.endpointId;
@@ -590,9 +602,9 @@ export class WebhookService {
           totalPages: Math.ceil(total / limit),
         },
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error fetching webhook delivery history:', error);
-      throw new ValidationError(`Failed to fetch delivery history: ${error.message}`);
+      throw new ValidationError(`Failed to fetch delivery history: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

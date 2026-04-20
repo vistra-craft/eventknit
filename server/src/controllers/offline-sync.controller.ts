@@ -4,7 +4,7 @@
  */
 
 import { Response } from 'express';
-import { OfflineSyncService } from '../services/offline-sync.service.js';
+import { OfflineSyncService, SyncScanInput } from '../services/offline-sync.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class OfflineSyncController {
@@ -190,6 +190,44 @@ export class OfflineSyncController {
         success: false,
         message:
           error instanceof Error ? error.message : 'Failed to resolve conflict',
+      });
+    }
+  }
+
+  /**
+   * POST /offline/sync-scans
+   * Sync offline scans through the full check-in/check-out state machine.
+   * Unlike /offline/scans/batch, this updates EventRegistration and emits
+   * WebSocket stats so the dashboard reflects the synced scans in real time.
+   */
+  static async syncScans(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { scans } = req.body as { scans: SyncScanInput[] };
+      const userId = req.user!.id;
+
+      if (!Array.isArray(scans) || scans.length === 0) {
+        res.status(400).json({ success: false, message: 'scans array is required and must not be empty' });
+        return;
+      }
+
+      for (const scan of scans) {
+        if (!scan.id || !scan.registrationId || !scan.qrCode || !scan.scannedAt) {
+          res.status(400).json({ success: false, message: 'Each scan must have id, registrationId, qrCode, and scannedAt' });
+          return;
+        }
+      }
+
+      const result = await OfflineSyncService.syncScansWithCheckIn(scans, userId);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: `Sync completed: ${result.successCount} successful, ${result.failureCount} failed`,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Sync failed',
       });
     }
   }

@@ -4,41 +4,41 @@ import { logger } from '../../../src/utils/logger.js';
 import * as cron from 'node-cron';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
-    $queryRaw: jest.fn(),
+    $queryRaw: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
-jest.mock('node-cron');
+vi.mock('node-cron');
 
 const mockSeatSelectionService = {
-  cleanupExpiredReservations: jest.fn(),
+  cleanupExpiredReservations: vi.fn(),
 };
 
-jest.mock('../../../src/services/seat-selection.service.js', () => ({
+vi.mock('../../../src/services/seat-selection.service.js', () => ({
   SeatSelectionService: mockSeatSelectionService,
 }));
 
 describe('SeatReservationCleanupJob', () => {
-  let mockScheduledTask: { stop: jest.Mock };
+  let mockScheduledTask: { stop: vi.Mock };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Database available by default
-    (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
+    (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
 
-    mockScheduledTask = { stop: jest.fn() };
-    (cron.schedule as jest.Mock).mockReturnValue(mockScheduledTask);
+    mockScheduledTask = { stop: vi.fn() };
+    (cron.schedule as vi.Mock).mockReturnValue(mockScheduledTask);
   });
 
   afterEach(() => {
@@ -61,7 +61,7 @@ describe('SeatReservationCleanupJob', () => {
 
     it('should warn if already running', () => {
       SeatReservationCleanupJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       SeatReservationCleanupJob.start();
 
@@ -75,7 +75,7 @@ describe('SeatReservationCleanupJob', () => {
   describe('stop', () => {
     it('should stop the running job', () => {
       SeatReservationCleanupJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       SeatReservationCleanupJob.stop();
 
@@ -95,7 +95,7 @@ describe('SeatReservationCleanupJob', () => {
 
   describe('cleanupExpiredReservations', () => {
     it('should skip if database is not available', async () => {
-      (prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('DB down'));
+      (prisma.$queryRaw as vi.Mock).mockRejectedValue(new Error('DB down'));
 
       await SeatReservationCleanupJob.cleanupExpiredReservations();
 
@@ -134,7 +134,7 @@ describe('SeatReservationCleanupJob', () => {
     });
 
     it('should handle database connection errors gracefully', async () => {
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
       const dbError = new Error('Can\'t reach database server');
       mockSeatSelectionService.cleanupExpiredReservations.mockRejectedValue(dbError);
 
@@ -147,7 +147,7 @@ describe('SeatReservationCleanupJob', () => {
     });
 
     it('should handle PrismaClientInitializationError gracefully', async () => {
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
       const prismaError = new Error('Prisma init error');
       Object.defineProperty(prismaError, 'constructor', {
         value: { name: 'PrismaClientInitializationError' },

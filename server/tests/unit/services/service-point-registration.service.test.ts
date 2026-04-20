@@ -1,38 +1,38 @@
 import { PrismaClient, EventStatus, UserRole, UserStatus, RegistrationStatus } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { ServicePointRegistrationService } from '../../../src/services/service-point-registration.service.js';
 import { ValidationError, NotFoundError } from '../../../src/utils/errors.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/services/sms.service.js', () => ({
+vi.mock('../../../src/services/sms.service.js', () => ({
   smsService: {
-    sendSMS: jest.fn().mockResolvedValue({ success: true }),
+    sendSMS: vi.fn().mockResolvedValue({ success: true }),
   },
 }));
 
-jest.mock('../../../src/services/ticket.service.js', () => ({
+vi.mock('../../../src/services/ticket.service.js', () => ({
   TicketService: {
-    generateBackupTicketCode: jest.fn().mockReturnValue('BACKUP-123456'),
-    generateTicketData: jest.fn().mockReturnValue('ticket-data-string'),
-    generateQRCode: jest.fn().mockResolvedValue('data:image/png;base64,qrcode'),
+    generateBackupTicketCode: vi.fn().mockReturnValue('BACKUP-123456'),
+    generateTicketData: vi.fn().mockReturnValue('ticket-data-string'),
+    generateQRCode: vi.fn().mockResolvedValue('data:image/png;base64,qrcode'),
   },
 }));
 
-jest.mock('../../../src/services/websocket.service.js', () => ({
+vi.mock('../../../src/services/websocket.service.js', () => ({
   websocketService: {
-    emitToRoom: jest.fn(),
+    emitToRoom: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
@@ -101,7 +101,7 @@ describe('ServicePointRegistrationService', () => {
 
   beforeEach(() => {
     mockReset(prismaMock);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('initiateRegistration', () => {
@@ -250,7 +250,7 @@ describe('ServicePointRegistrationService', () => {
       prismaMock.user.findFirst.mockResolvedValue(mockStaff as any);
       prismaMock.servicePointSession.findFirst.mockResolvedValue(null);
       prismaMock.servicePointSession.create.mockResolvedValue(mockSession as any);
-      (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: false, error: 'SMS failed' });
+      (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: false, error: 'SMS failed' });
 
       // Act
       const result = await ServicePointRegistrationService.initiateRegistration(

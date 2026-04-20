@@ -6,34 +6,34 @@ import { BulkMessageStatus } from '@prisma/client';
 import * as cron from 'node-cron';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
-    $queryRaw: jest.fn(),
+    $queryRaw: vi.fn(),
     bulkMessage: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/services/bulk-message.service.js');
-jest.mock('../../../src/utils/logger.js');
-jest.mock('node-cron');
+vi.mock('../../../src/services/bulk-message.service.js');
+vi.mock('../../../src/utils/logger.js');
+vi.mock('node-cron');
 
 describe('BulkMessageSchedulerJob', () => {
   let mockScheduledTask: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Mock database as available by default
-    (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
+    (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
 
     // Create mock scheduled task
     mockScheduledTask = {
-      stop: jest.fn(),
+      stop: vi.fn(),
     };
 
     // Mock cron.schedule to return the mock task
-    (cron.schedule as jest.Mock).mockReturnValue(mockScheduledTask);
+    (cron.schedule as vi.Mock).mockReturnValue(mockScheduledTask);
   });
 
   afterEach(() => {
@@ -53,7 +53,7 @@ describe('BulkMessageSchedulerJob', () => {
     it('should warn if job is already running', () => {
       // Arrange
       BulkMessageSchedulerJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       BulkMessageSchedulerJob.start();
@@ -66,7 +66,7 @@ describe('BulkMessageSchedulerJob', () => {
     it('should handle error when starting job', () => {
       // Arrange
       const mockError = new Error('Cron start failed');
-      (cron.schedule as jest.Mock).mockImplementation(() => {
+      (cron.schedule as vi.Mock).mockImplementation(() => {
         throw mockError;
       });
 
@@ -80,7 +80,7 @@ describe('BulkMessageSchedulerJob', () => {
     it('should stop the bulk message scheduler job successfully', () => {
       // Arrange
       BulkMessageSchedulerJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       BulkMessageSchedulerJob.stop();
@@ -103,7 +103,7 @@ describe('BulkMessageSchedulerJob', () => {
   describe('processScheduledMessages', () => {
     it('should skip if database is not available', async () => {
       // Arrange
-      (prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('Database unavailable'));
+      (prisma.$queryRaw as vi.Mock).mockRejectedValue(new Error('Database unavailable'));
 
       // Act
       await BulkMessageSchedulerJob.processScheduledMessages();
@@ -117,7 +117,7 @@ describe('BulkMessageSchedulerJob', () => {
 
     it('should log when no scheduled messages are ready', async () => {
       // Arrange
-      (prisma.bulkMessage.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.bulkMessage.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await BulkMessageSchedulerJob.processScheduledMessages();
@@ -130,7 +130,7 @@ describe('BulkMessageSchedulerJob', () => {
     it('should process scheduled messages that are ready to be sent', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
       const mockMessages = [
         {
@@ -145,8 +145,8 @@ describe('BulkMessageSchedulerJob', () => {
         },
       ];
 
-      (prisma.bulkMessage.findMany as jest.Mock).mockResolvedValue(mockMessages);
-      (BulkMessageService.sendBulkMessage as jest.Mock).mockResolvedValue(undefined);
+      (prisma.bulkMessage.findMany as vi.Mock).mockResolvedValue(mockMessages);
+      (BulkMessageService.sendBulkMessage as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await BulkMessageSchedulerJob.processScheduledMessages();
@@ -160,15 +160,15 @@ describe('BulkMessageSchedulerJob', () => {
         'Bulk message scheduler job completed. Processed 2 message(s)',
       );
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should query for messages with correct criteria', async () => {
       // Arrange
       const now = new Date('2026-01-29T12:00:00Z');
-      jest.useFakeTimers().setSystemTime(now);
+      vi.useFakeTimers().setSystemTime(now);
 
-      (prisma.bulkMessage.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.bulkMessage.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await BulkMessageSchedulerJob.processScheduledMessages();
@@ -188,7 +188,7 @@ describe('BulkMessageSchedulerJob', () => {
         },
       });
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should handle errors when sending individual messages and continue', async () => {
@@ -199,10 +199,10 @@ describe('BulkMessageSchedulerJob', () => {
         { id: 'msg-5', title: 'Message 5', scheduledAt: new Date('2026-01-29T11:45:00Z') },
       ];
 
-      (prisma.bulkMessage.findMany as jest.Mock).mockResolvedValue(mockMessages);
+      (prisma.bulkMessage.findMany as vi.Mock).mockResolvedValue(mockMessages);
 
       const sendError = new Error('Failed to send message');
-      (BulkMessageService.sendBulkMessage as jest.Mock)
+      (BulkMessageService.sendBulkMessage as vi.Mock)
         .mockResolvedValueOnce(undefined) // First succeeds
         .mockRejectedValueOnce(sendError) // Second fails
         .mockResolvedValueOnce(undefined); // Third succeeds
@@ -228,8 +228,8 @@ describe('BulkMessageSchedulerJob', () => {
         scheduledAt: new Date('2026-01-29T11:00:00Z'),
       };
 
-      (prisma.bulkMessage.findMany as jest.Mock).mockResolvedValue([mockMessage]);
-      (BulkMessageService.sendBulkMessage as jest.Mock).mockResolvedValue(undefined);
+      (prisma.bulkMessage.findMany as vi.Mock).mockResolvedValue([mockMessage]);
+      (BulkMessageService.sendBulkMessage as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await BulkMessageSchedulerJob.processScheduledMessages();
@@ -244,8 +244,8 @@ describe('BulkMessageSchedulerJob', () => {
     it('should handle database connection errors gracefully', async () => {
       // Arrange
       const dbError = new Error('Can\'t reach database server');
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.bulkMessage.findMany as jest.Mock).mockRejectedValue(dbError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.bulkMessage.findMany as vi.Mock).mockRejectedValue(dbError);
 
       // Act
       await BulkMessageSchedulerJob.processScheduledMessages();
@@ -260,8 +260,8 @@ describe('BulkMessageSchedulerJob', () => {
     it('should handle P1001 Prisma error code', async () => {
       // Arrange
       const dbError = new Error('P1001: Connection refused');
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.bulkMessage.findMany as jest.Mock).mockRejectedValue(dbError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.bulkMessage.findMany as vi.Mock).mockRejectedValue(dbError);
 
       // Act
       await BulkMessageSchedulerJob.processScheduledMessages();
@@ -278,8 +278,8 @@ describe('BulkMessageSchedulerJob', () => {
       const prismaError = new Error('Prisma init error');
       prismaError.constructor = { name: 'PrismaClientInitializationError' } as any;
 
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.bulkMessage.findMany as jest.Mock).mockRejectedValue(prismaError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.bulkMessage.findMany as vi.Mock).mockRejectedValue(prismaError);
 
       // Act
       await BulkMessageSchedulerJob.processScheduledMessages();
@@ -294,8 +294,8 @@ describe('BulkMessageSchedulerJob', () => {
     it('should log general errors', async () => {
       // Arrange
       const generalError = new Error('Some other error');
-      (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ result: 1 }]);
-      (prisma.bulkMessage.findMany as jest.Mock).mockRejectedValue(generalError);
+      (prisma.$queryRaw as vi.Mock).mockResolvedValue([{ result: 1 }]);
+      (prisma.bulkMessage.findMany as vi.Mock).mockRejectedValue(generalError);
 
       // Act
       await BulkMessageSchedulerJob.processScheduledMessages();

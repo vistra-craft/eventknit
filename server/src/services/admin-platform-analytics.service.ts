@@ -67,7 +67,11 @@ export class AdminPlatformAnalyticsService {
    */
   static async getGMVAnalytics(filters?: PlatformAnalyticsFilters): Promise<GMVData> {
     try {
-      const where: any = {
+      const where: {
+        paymentStatus: string;
+        paymentDate?: { gte?: Date; lte?: Date };
+        currency?: string;
+      } = {
         paymentStatus: 'success',
       };
 
@@ -147,7 +151,7 @@ export class AdminPlatformAnalyticsService {
    */
   static async getPlatformFeesAnalytics(filters?: PlatformAnalyticsFilters): Promise<PlatformFeesData> {
     try {
-      const where: any = {};
+      const where: { createdAt?: { gte?: Date; lte?: Date } } = {};
 
       if (filters?.startDate || filters?.endDate) {
         where.createdAt = {};
@@ -240,7 +244,7 @@ export class AdminPlatformAnalyticsService {
    */
   static async getPaymentGatewayHealth(filters?: PlatformAnalyticsFilters): Promise<PaymentGatewayHealth> {
     try {
-      const where: any = {};
+      const where: { createdAt?: { gte?: Date; lte?: Date } } = {};
 
       if (filters?.startDate || filters?.endDate) {
         where.createdAt = {};
@@ -329,7 +333,7 @@ export class AdminPlatformAnalyticsService {
    */
   static async getRefundTrends(filters?: PlatformAnalyticsFilters): Promise<RefundTrends> {
     try {
-      const where: any = {};
+      const where: { requestedAt?: { gte?: Date; lte?: Date } } = {};
 
       if (filters?.startDate || filters?.endDate) {
         where.requestedAt = {};
@@ -353,7 +357,10 @@ export class AdminPlatformAnalyticsService {
       const totalRefundAmount = refunds.reduce((sum, r) => sum + Number(r.refundAmount), 0);
 
       // Get total successful transactions for refund rate calculation
-      const transactionWhere: any = { paymentStatus: 'success' };
+      const transactionWhere: {
+        paymentStatus: string;
+        paymentDate?: { gte?: Date; lte?: Date };
+      } = { paymentStatus: 'success' };
       if (filters?.startDate || filters?.endDate) {
         transactionWhere.paymentDate = {};
         if (filters.startDate) transactionWhere.paymentDate.gte = filters.startDate;

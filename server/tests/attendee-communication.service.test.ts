@@ -2,21 +2,21 @@ import { AttendeeCommunicationService } from '../src/services/attendee-communica
 import { NotFoundError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
-    attendeeSegment: { findFirst: jest.fn() },
-    bulkMessage: { create: jest.fn(), findMany: jest.fn() },
+    attendeeSegment: { findFirst: vi.fn() },
+    bulkMessage: { create: vi.fn(), findMany: vi.fn() },
   },
 }));
 
 const prismaMock = prisma as unknown as {
-  attendeeSegment: { findFirst: jest.Mock };
-  bulkMessage: { create: jest.Mock; findMany: jest.Mock };
+  attendeeSegment: { findFirst: vi.Mock };
+  bulkMessage: { create: vi.Mock; findMany: vi.Mock };
 };
 
 describe('AttendeeCommunicationService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it('throws when audience segment missing', async () => {

@@ -155,7 +155,7 @@ const DatabasePage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Database Management</h1>
-            <p className="text-muted-foreground">Monitor and manage database performance and storage</p>
+            <p className="text-sm text-muted-foreground">Monitor and manage database performance and storage</p>
           </div>
           <div className="flex items-center gap-3">
             <Button 
@@ -190,7 +190,7 @@ const DatabasePage = () => {
                     </span>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="font-semibold text-foreground">{metric.name}</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{metric.name}</h3>
                     <p className="font-semibold text-primary">{metric.value}</p>
                     <p className="text-sm text-muted-foreground">{metric.description}</p>
                   </div>
@@ -236,7 +236,7 @@ const DatabasePage = () => {
                       <div className="p-2 rounded-lg bg-primary/10">
                         <Table className="h-5 w-5 text-primary" />
                       </div>
-                      <h3 className="font-semibold text-foreground">{table.name}</h3>
+                      <h3 className="text-sm font-semibold text-foreground">{table.name}</h3>
                     </div>
                     <Badge className={`text-xs ${getStatusBadge(table.status)}`}>
                       {table.status}

@@ -45,9 +45,7 @@ describe('Verification Service', () => {
     if (!dbConnected) return;
 
     // Clean up test data
-    await prisma.$transaction(async (tx: any) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test organizer
     const organizerPassword = await hashPassword('Organizer123!@$');

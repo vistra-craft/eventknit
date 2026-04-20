@@ -23,8 +23,9 @@ export const eventValidations = {
     tags: Joi.array().items(Joi.string().trim().max(50)).optional().messages({
       'array.max': 'Tags array is too large',
     }),
-    startDate: Joi.date().iso().required().messages({
+    startDate: Joi.date().iso().min('now').required().messages({
       'date.base': 'Start date must be a valid date',
+      'date.min': 'Start date must be in the future',
       'any.required': 'Start date is required',
     }),
     endDate: Joi.date().iso().greater(Joi.ref('startDate')).optional().allow(null).messages({
@@ -79,9 +80,44 @@ export const eventValidations = {
         Joi.object({
           name: Joi.string().trim().min(1).max(100).required(),
           price: Joi.number().min(0).precision(2).required(),
+          originalPrice: Joi.number().min(0).precision(2).optional().allow(null),
+          discountLabel: Joi.string().trim().max(100).optional().allow('', null),
           quantity: Joi.number().integer().min(1).optional().allow(null),
           features: Joi.array().items(Joi.string().trim().max(200)).optional(),
-        }),
+          isComplementary: Joi.boolean().optional().allow(null),
+          requiresInvitation: Joi.boolean().optional().allow(null),
+          availableFrom: Joi.string().isoDate().optional().allow('', null),
+          availableUntil: Joi.string().isoDate().optional().allow('', null),
+        }).custom((value, helpers) => {
+          // Validate discount: if originalPrice exists, it must be > price
+          if (value.originalPrice !== undefined && value.originalPrice !== null && value.price !== undefined) {
+            const origPrice = typeof value.originalPrice === 'string' ? parseFloat(value.originalPrice) : value.originalPrice;
+            const currPrice = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
+            if (!isNaN(origPrice) && !isNaN(currPrice) && origPrice <= currPrice) {
+              return helpers.error('any.custom', {
+                error: { message: 'Original price must be greater than current price for discounts' },
+              });
+            }
+          }
+          // Validate complementary tickets
+          if (value.isComplementary === true) {
+            const price = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
+            if (price !== 0 && !isNaN(price)) {
+              return helpers.error('any.custom', {
+                error: { message: 'Complementary tickets must have price of 0' },
+              });
+            }
+          }
+          return {
+            ...value,
+            isComplementary: value.isComplementary,
+            requiresInvitation: value.requiresInvitation,
+            originalPrice: value.originalPrice,
+            discountLabel: value.discountLabel,
+            availableFrom: value.availableFrom,
+            availableUntil: value.availableUntil,
+          };
+        }, 'ticket type validation'),
       ).min(1).optional().messages({
         'array.min': 'At least one ticket type is required for paid events',
       }),
@@ -89,9 +125,44 @@ export const eventValidations = {
         Joi.object({
           name: Joi.string().trim().min(1).max(100).required(),
           price: Joi.number().min(0).precision(2).optional().allow(null),
+          originalPrice: Joi.number().min(0).precision(2).optional().allow(null),
+          discountLabel: Joi.string().trim().max(100).optional().allow('', null),
           quantity: Joi.number().integer().min(1).optional().allow(null),
           features: Joi.array().items(Joi.string().trim().max(200)).optional(),
-        }),
+          isComplementary: Joi.boolean().optional().allow(null),
+          requiresInvitation: Joi.boolean().optional().allow(null),
+          availableFrom: Joi.string().isoDate().optional().allow('', null),
+          availableUntil: Joi.string().isoDate().optional().allow('', null),
+        }).custom((value, helpers) => {
+          // Validate discount: if originalPrice exists, it must be > price
+          if (value.originalPrice !== undefined && value.originalPrice !== null && value.price !== undefined) {
+            const origPrice = typeof value.originalPrice === 'string' ? parseFloat(value.originalPrice) : value.originalPrice;
+            const currPrice = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
+            if (!isNaN(origPrice) && !isNaN(currPrice) && origPrice <= currPrice) {
+              return helpers.error('any.custom', {
+                error: { message: 'Original price must be greater than current price for discounts' },
+              });
+            }
+          }
+          // Validate complementary tickets
+          if (value.isComplementary === true) {
+            const price = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
+            if (price !== 0 && !isNaN(price)) {
+              return helpers.error('any.custom', {
+                error: { message: 'Complementary tickets must have price of 0' },
+              });
+            }
+          }
+          return {
+            ...value,
+            isComplementary: value.isComplementary,
+            requiresInvitation: value.requiresInvitation,
+            originalPrice: value.originalPrice,
+            discountLabel: value.discountLabel,
+            availableFrom: value.availableFrom,
+            availableUntil: value.availableUntil,
+          };
+        }, 'ticket type validation'),
       ).optional(),
     }),
     capacity: Joi.number().integer().min(1).optional().allow(null).messages({
@@ -160,8 +231,49 @@ export const eventValidations = {
     // Validate that if isFree is false, either price or ticketTypes must be provided
     if (!value.isFree && !value.price && (!value.ticketTypes || value.ticketTypes.length === 0)) {
       return helpers.error('any.custom', {
-        message: 'Price or ticket types are required for paid events',
+        error: { message: 'Price or ticket types are required for paid events' },
       });
+    }
+    // Enforce paid vs free pricing rules
+    if (value.isFree === true) {
+      if (value.price !== undefined && value.price !== null && Number(value.price) > 0) {
+        return helpers.error('any.custom', {
+          error: { message: 'Free events must have a price of 0' },
+        });
+      }
+      if (value.ticketTypes && Array.isArray(value.ticketTypes)) {
+        for (const ticket of value.ticketTypes) {
+          if (ticket && ticket.price !== undefined && ticket.price !== null) {
+            const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+            if (!isNaN(price) && price > 0) {
+              return helpers.error('any.custom', {
+                error: { message: 'Free events cannot include paid ticket types' },
+              });
+            }
+          }
+        }
+      }
+    }
+    if (value.isFree === false) {
+      if (value.price !== undefined && value.price !== null && Number(value.price) <= 0) {
+        return helpers.error('any.custom', {
+          error: { message: 'Paid events must have a price greater than 0' },
+        });
+      }
+      // For paid events with ticket types, at least one non-complementary ticket
+      // must have price > 0. Free-tier tickets (price 0) are allowed alongside paid ones.
+      if (value.ticketTypes && Array.isArray(value.ticketTypes)) {
+        const hasPaidTicket = value.ticketTypes.some((ticket: Record<string, unknown>) => {
+          if (ticket?.isComplementary === true) return false;
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price as string) : Number(ticket.price);
+          return !isNaN(price) && price > 0;
+        });
+        if (!hasPaidTicket) {
+          return helpers.error('any.custom', {
+            error: { message: 'Paid events must have at least one ticket with a price greater than 0' },
+          });
+        }
+      }
     }
     return value;
   }),
@@ -182,8 +294,9 @@ export const eventValidations = {
       'string.max': 'Category must not exceed 100 characters',
     }),
     tags: Joi.array().items(Joi.string().trim().max(50)).optional(),
-    startDate: Joi.date().iso().optional().messages({
+    startDate: Joi.date().iso().min('now').optional().messages({
       'date.base': 'Start date must be a valid date',
+      'date.min': 'Start date must be in the future',
     }),
     endDate: Joi.date().iso().greater(Joi.ref('startDate')).optional().allow(null).messages({
       'date.base': 'End date must be a valid date',
@@ -236,7 +349,7 @@ export const eventValidations = {
           const currPrice = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
           if (!isNaN(origPrice) && !isNaN(currPrice) && origPrice <= currPrice) {
             return helpers.error('any.custom', {
-              message: 'Original price must be greater than current price for discounts',
+              error: { message: 'Original price must be greater than current price for discounts' },
             });
           }
         }
@@ -245,7 +358,7 @@ export const eventValidations = {
           const price = typeof value.price === 'string' ? parseFloat(value.price) : value.price;
           if (price !== 0 && !isNaN(price)) {
             return helpers.error('any.custom', {
-              message: 'Complementary tickets must have price of 0',
+              error: { message: 'Complementary tickets must have price of 0' },
             });
           }
         }
@@ -310,6 +423,48 @@ export const eventValidations = {
         options: Joi.array().items(Joi.string().trim().max(200)).optional(),
       }),
     ).optional(),
+  }).custom((value, helpers) => {
+    if (value.isFree === true) {
+      if (value.price !== undefined && value.price !== null && Number(value.price) > 0) {
+        return helpers.error('any.custom', {
+          error: { message: 'Free events must have a price of 0' },
+        });
+      }
+      if (value.ticketTypes && Array.isArray(value.ticketTypes)) {
+        for (const ticket of value.ticketTypes) {
+          if (ticket && ticket.price !== undefined && ticket.price !== null) {
+            const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+            if (!isNaN(price) && price > 0) {
+              return helpers.error('any.custom', {
+                error: { message: 'Free events cannot include paid ticket types' },
+              });
+            }
+          }
+        }
+      }
+    }
+    if (value.isFree === false) {
+      if (value.price !== undefined && value.price !== null && Number(value.price) <= 0) {
+        return helpers.error('any.custom', {
+          error: { message: 'Paid events must have a price greater than 0' },
+        });
+      }
+      // For paid events with ticket types, at least one non-complementary ticket
+      // must have price > 0. Free-tier tickets (price 0) are allowed alongside paid ones.
+      if (value.ticketTypes && Array.isArray(value.ticketTypes)) {
+        const hasPaidTicket = value.ticketTypes.some((ticket: Record<string, unknown>) => {
+          if (ticket?.isComplementary === true) return false;
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price as string) : Number(ticket.price);
+          return !isNaN(price) && price > 0;
+        });
+        if (!hasPaidTicket) {
+          return helpers.error('any.custom', {
+            error: { message: 'Paid events must have at least one ticket with a price greater than 0' },
+          });
+        }
+      }
+    }
+    return value;
   }),
 
   registerForEvent: Joi.object({

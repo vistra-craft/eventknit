@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Search, Calendar, MapPin, Users, Eye, History, MoreHorizontal, TrendingUp, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, Calendar, MapPin, Users, Eye, History, MoreHorizontal, TrendingUp, AlertCircle, Edit, BarChart3, Download, Copy, Share2 } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -7,11 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, EventStatus } from "../../../lib/event-api";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
+import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
+import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { exportEventData } from "../../../lib/utils/export";
+import { shareEvent } from "../../../lib/utils/share";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 
 interface Event {
   id: string;
+  slug?: string | null;
   title: string;
   organizer: string;
   date: string;
@@ -28,6 +36,8 @@ interface Event {
 }
 
 const PastEventsPage = () => {
+  const { toast } = useToast();
+  
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +46,10 @@ const PastEventsPage = () => {
   const [typeFilter, setTypeFilter] = useState("all");
   const [priceFilter, setPriceFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+  const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Fetch past events (approved events with endDate < now or status = COMPLETED)
   useEffect(() => {
@@ -88,6 +102,7 @@ const PastEventsPage = () => {
 
               return {
                 id: event.id,
+                slug: event.slug ?? null,
                 title: event.title,
                 organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
                 date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
@@ -153,6 +168,31 @@ const PastEventsPage = () => {
     { value: "10", label: "November" },
     { value: "11", label: "December" }
   ];
+
+  const handlePreviewEvent = (eventId: string) => {
+    setPreviewEventId(eventId);
+    setPreviewModalOpen(true);
+  };
+
+  // Fetch event details for preview modal
+  useEffect(() => {
+    const fetchPreviewEvent = async () => {
+      if (!previewEventId || !previewModalOpen) return;
+      try {
+        setPreviewLoading(true);
+        const response = await getEventById(previewEventId);
+        if (response.success && response.data) {
+          setPreviewEventData(response.data.event || null);
+        }
+      } catch (err) {
+        console.error('Error fetching event details:', err);
+        showErrorToast(toast, err, "Preview failed", "Failed to load event details");
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+    fetchPreviewEvent();
+  }, [previewEventId, previewModalOpen, toast]);
 
   if (loading) {
     return (
@@ -296,14 +336,99 @@ const PastEventsPage = () => {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-muted">
+                  <div className="flex items-center gap-2 ml-0 sm:ml-4 flex-shrink-0">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handlePreviewEvent(event.id)}
+                      className="border-primary text-primary hover:bg-muted"
+                    >
                       <Eye className="h-4 w-4 mr-1" />
                       View Details
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-primary hover:bg-muted">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-primary hover:bg-muted">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Manage Event
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to={`/event/${event.slug ?? event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Public Page
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/analytics/events?eventId=${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Analytics
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          try {
+                            exportEventData({
+                              id: event.id,
+                              title: event.title,
+                              date: event.date,
+                              location: event.location,
+                              attendees: event.actualAttendees,
+                              revenue: event.revenue,
+                              views: 0,
+                              status: 'completed',
+                              category: event.category,
+                            });
+                            toast({
+                              title: "Exported",
+                              description: "Event data exported successfully",
+                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Export failed", "Failed to export event data");
+                          }
+                        }}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Export Data
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.slug ?? event.id}`);
+                            toast({
+                              title: "Copied",
+                              description: "Event link copied to clipboard",
+                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Copy failed", "Failed to copy link");
+                          }
+                        }}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Event Link
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={async () => {
+                          const shared = await shareEvent(event.title, event.slug ?? event.id);
+                          if (shared) {
+                            toast({
+                              title: "Shared",
+                              description: "Event shared successfully",
+                            });
+                          } else {
+                            toast({
+                              title: "Link Copied",
+                              description: "Event link copied to clipboard",
+                            });
+                          }
+                        }}>
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share Event
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardContent>
@@ -322,6 +447,14 @@ const PastEventsPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Event Preview Modal */}
+        <EventPreviewModal
+          isOpen={previewModalOpen}
+          onOpenChange={setPreviewModalOpen}
+          event={previewEventData}
+          loading={previewLoading}
+        />
       </div>
   );
 };

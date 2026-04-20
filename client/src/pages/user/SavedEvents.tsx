@@ -7,6 +7,7 @@ import { Loader } from "../../components/ui/loader";
 import BackButton from "../../components/BackButton";
 import EmptyState from "../../components/EmptyState";
 import { useToast } from "../../hooks/useToast";
+import { showErrorToast } from "../../lib/utils/error";
 import { getSavedEvents, unsaveEvent, type SavedEventData } from "../../lib/saved-events-api";
 
 const SavedEvents: React.FC = () => {
@@ -22,7 +23,7 @@ const SavedEvents: React.FC = () => {
       setEvents(response.data);
     } catch (error) {
       console.error("Error fetching saved events:", error);
-      toast({ title: "Error", description: "Failed to load saved events", variant: "destructive" });
+      showErrorToast(toast, error, 'Load failed', 'Failed to load saved events');
     } finally {
       setLoading(false);
     }
@@ -37,8 +38,8 @@ const SavedEvents: React.FC = () => {
       await unsaveEvent(eventId);
       setEvents(prev => prev.filter(e => e.eventId !== eventId));
       toast({ title: "Removed", description: "Event removed from saved list" });
-    } catch {
-      toast({ title: "Error", description: "Failed to remove event", variant: "destructive" });
+    } catch (err) {
+      showErrorToast(toast, err, 'Remove failed', 'Failed to remove event');
     }
   };
 
@@ -68,7 +69,7 @@ const SavedEvents: React.FC = () => {
           {events.map((saved) => (
             <div
               key={saved.id}
-              onClick={() => navigate(`/event/${saved.eventId}`)}
+              onClick={() => navigate(`/event/${saved.event.slug ?? saved.eventId}`)}
               className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
             >
               <img
@@ -100,7 +101,7 @@ const SavedEvents: React.FC = () => {
                     variant="ghost"
                     size="sm"
                     className="h-7 px-2 text-xs"
-                    onClick={(e) => { e.stopPropagation(); navigate(`/event/${saved.eventId}`); }}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/event/${saved.event.slug ?? saved.eventId}`); }}
                   >
                     View Event
                   </Button>

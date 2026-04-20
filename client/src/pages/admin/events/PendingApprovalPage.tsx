@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, Calendar, MapPin, Users, Eye, Check, X, Clock, AlertCircle, MoreHorizontal, Edit, BarChart3, Download, Copy, Shield, ExternalLink, Mail } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -13,14 +13,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Pagination } from "../../../components/ui/pagination";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, EventStatus } from "../../../lib/event-api";
-import { approveEvent, rejectEvent } from "../../../lib/admin-api";
+import { getEvents, EventStatus, type EventData } from "../../../lib/event-api";
+import { approveEvent, rejectEvent, getAdminEventById, sendKYCReminder } from "../../../lib/admin-api";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 import { useToast } from "../../../hooks/useToast";
 import { exportEventData } from "../../../lib/utils/export";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { extractErrorMessage, showErrorToast } from "../../../lib/utils/error";
+
+const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').replace(/&[^;]+;/g, ' ').trim();
 
 interface Event {
   id: string;
+  slug?: string | null;
   title: string;
   organizer: string;
   organizerName?: string;
@@ -41,10 +46,12 @@ interface Event {
   createdAt: string;
   description: string;
   image?: string;
+  isRecalled?: boolean; // Flag for recalled events
+  recallReason?: string; // Reason for recall
+  recalledAt?: string; // Date when event was recalled
 }
 
 const PendingApprovalPage = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,12 +66,47 @@ const PendingApprovalPage = () => {
   const [processing, setProcessing] = useState<string | null>(null);
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [eventToApprove, setEventToApprove] = useState<Event | null>(null);
+  const [sendingReminder, setSendingReminder] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+  const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
-  // Fetch pending events
+  const handlePreviewEvent = (eventId: string) => {
+    setPreviewEventId(eventId);
+    setPreviewModalOpen(true);
+  };
+
+  // Fetch event details for preview modal
+  useEffect(() => {
+    const fetchPreviewEvent = async () => {
+      if (!previewEventId || !previewModalOpen) return;
+
+      try {
+        setPreviewLoading(true);
+        const response = await getAdminEventById(previewEventId);
+        if (response.success && response.data?.event) {
+          setPreviewEventData(response.data.event);
+        } else {
+          showErrorToast(toast, new Error("Failed to load event details"), "Preview failed", "Failed to load event details");
+          setPreviewModalOpen(false);
+        }
+      } catch (error: unknown) {
+        showErrorToast(toast, error, "Preview failed", "Failed to load event details");
+        setPreviewModalOpen(false);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewEvent();
+  }, [previewEventId, previewModalOpen, toast]);
+
+  // Fetch pending events (including recalled events sent back for re-approval)
   useEffect(() => {
     const fetchPendingEvents = async () => {
       try {
@@ -97,19 +139,13 @@ const PendingApprovalPage = () => {
           if (response.data.events) {
           const pendingEvents = response.data.events.map(event => ({
             id: event.id,
+            slug: event.slug ?? null,
             title: event.title,
             organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             organizerName: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             organizerId: event.organizer?.id,
-            organizerVerified: Boolean(
-              event.organizer && typeof (event.organizer as { isIdentityVerified?: boolean }).isIdentityVerified === "boolean"
-                ? (event.organizer as { isIdentityVerified?: boolean }).isIdentityVerified
-                : false
-            ),
-            organizerVerificationLevel:
-              typeof (event.organizer as { verificationLevel?: number })?.verificationLevel === "number"
-                ? (event.organizer as { verificationLevel?: number }).verificationLevel
-                : 1,
+            organizerVerified: Boolean(event.organizer?.isIdentityVerified),
+            organizerVerificationLevel: event.organizer?.verificationLevel ?? 1,
             date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
             startDate: event.startDate,
             startTime: event.startTime || '',
@@ -123,7 +159,10 @@ const PendingApprovalPage = () => {
             submittedDate: event.createdAt || new Date().toISOString(),
             createdAt: event.createdAt || new Date().toISOString(),
             description: event.description || '',
-            image: (event.image as string | undefined) || undefined,
+            image: event.image || undefined,
+            isRecalled: Boolean(event.recalledAt), // Flag for recalled events
+            recallReason: event.recallReason ?? undefined,
+            recalledAt: event.recalledAt ?? undefined,
           }));
           setEvents(pendingEvents);
           }
@@ -169,41 +208,41 @@ const PendingApprovalPage = () => {
   };
 
   const handleApproveClick = (event: Event) => {
-    // Check if it's a paid event with unverified organizer
-    if (!event.isFree && !event.organizerVerified) {
-      setEventToApprove(event);
-      setApproveDialogOpen(true);
-    } else {
-      handleApprove(event.id);
-    }
+    handleApprove(event);
   };
 
-  const handleApprove = async (eventId: string) => {
+  const handleApprove = async (event: Event) => {
     try {
-      setProcessing(eventId);
-      const response = await approveEvent(eventId);
+      setProcessing(event.id);
+      const response = await approveEvent(event.id);
       if (response.success) {
         toast({
           title: "Event Approved",
           description: "The event has been approved successfully.",
         });
         // Remove event from list
-        setEvents(events.filter(e => e.id !== eventId));
+        setEvents(events.filter(e => e.id !== event.id));
         setApproveDialogOpen(false);
         setEventToApprove(null);
       } else {
         throw new Error(response.message || 'Failed to approve event');
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
-        : 'Failed to approve event. Please try again.';
+      const errorMessage = extractErrorMessage(err, 'Failed to approve event. Please try again.');
       console.error('Error approving event:', err);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+
+      // Check if this is a KYC verification error — show dialog instead of toast
+      const isKycError = errorMessage.toLowerCase().includes('kyc') || errorMessage.toLowerCase().includes('verification');
+      if (isKycError && !event.isFree) {
+        setEventToApprove(event);
+        setApproveDialogOpen(true);
+      } else {
+        toast({
+          title: "Approval Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     } finally {
       setProcessing(null);
     }
@@ -217,11 +256,7 @@ const PendingApprovalPage = () => {
 
   const handleConfirmReject = async () => {
     if (!selectedEventId || !rejectionReason.trim()) {
-      toast({
-        title: "Error",
-        description: "Please provide a rejection reason.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, new Error("Please provide a rejection reason."), "Validation error", "Please provide a rejection reason.");
       return;
     }
 
@@ -242,15 +277,8 @@ const PendingApprovalPage = () => {
         throw new Error(response.message || 'Failed to reject event');
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
-        : 'Failed to reject event. Please try again.';
       console.error('Error rejecting event:', err);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Reject failed", "Failed to reject event. Please try again.");
     } finally {
       setProcessing(null);
     }
@@ -379,6 +407,11 @@ const PendingApprovalPage = () => {
                       <Badge className={`${getEventStatusBadgeClass('pending')} text-xs`}>
                         Pending
                       </Badge>
+                      {event.isRecalled && (
+                        <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-xs">
+                          Recalled
+                        </Badge>
+                      )}
                       <Badge className={`text-xs ${getTypeBadge(event.type)}`}>
                         {event.type}
                       </Badge>
@@ -419,10 +452,18 @@ const PendingApprovalPage = () => {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
+                    {event.isRecalled && event.recallReason && (
+                      <Alert className="mb-2 border-orange-500/20 bg-orange-500/5">
+                        <AlertCircle className="h-4 w-4 text-orange-600" />
+                        <AlertDescription className="text-sm text-orange-700">
+                          <strong>Recall Reason:</strong> {event.recallReason}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <p className="text-sm text-muted-foreground line-clamp-2">{stripHtml(event.description)}</p>
                   </div>
-                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/admin/events/${event.id}/preview`)} className="border-primary text-primary hover:bg-muted">
+                  <div className="flex items-center gap-2 ml-0 sm:ml-4 flex-shrink-0">
+                    <Button variant="outline" size="sm" onClick={() => handlePreviewEvent(event.id)} className="border-primary text-primary hover:bg-muted">
                       <Eye className="h-4 w-4 mr-1" />
                       Preview
                     </Button>
@@ -456,20 +497,24 @@ const PendingApprovalPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => window.open(`/admin/events/${event.id}`, '_blank')}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Event
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Manage Event
+                          </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Public Page
+                        <DropdownMenuItem asChild>
+                          <Link to={`/event/${event.slug ?? event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Public Page
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
-                          window.open(`/admin/analytics/events?eventId=${event.id}`, '_blank');
-                        }}>
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          View Analytics
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/analytics/events?eventId=${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Analytics
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           try {
@@ -488,12 +533,8 @@ const PendingApprovalPage = () => {
                               title: "Exported",
                               description: "Event data exported successfully",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to export event data",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Export failed", "Failed to export event data");
                           }
                         }}>
                           <Download className="h-4 w-4 mr-2" />
@@ -501,17 +542,13 @@ const PendingApprovalPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.slug ?? event.id}`);
                             toast({
                               title: "Copied",
                               description: "Event link copied to clipboard",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to copy link",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Copy failed", "Failed to copy link");
                           }
                         }}>
                           <Copy className="h-4 w-4 mr-2" />
@@ -553,59 +590,87 @@ const PendingApprovalPage = () => {
         )}
 
 
-        {/* Approve Warning Dialog for Unverified Organizers */}
-        <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        {/* Event Preview Modal */}
+        <EventPreviewModal
+          isOpen={previewModalOpen}
+          onOpenChange={setPreviewModalOpen}
+          event={previewEventData}
+          loading={previewLoading}
+        />
+
+        {/* KYC Required Dialog — shown when approving a paid event whose organizer hasn't completed KYC */}
+        <Dialog open={approveDialogOpen} onOpenChange={(open) => {
+          setApproveDialogOpen(open);
+          if (!open) setEventToApprove(null);
+        }}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-                Unverified Organizer - Paid Event
+                <Shield className="h-5 w-5 text-orange-600" />
+                KYC Verification Required
               </DialogTitle>
               <DialogDescription>
-                This is a paid event, but the organizer has not completed identity verification.
+                This paid event cannot be approved until the organizer completes KYC verification.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <Alert className="border-warning bg-warning/10">
-                <Shield className="h-4 w-4 text-warning" />
-                <AlertDescription className="text-warning">
-                  <strong>Important:</strong> The organizer will not be able to receive payouts from ticket sales until they complete identity verification. 
-                  You can still approve the event, but they will need to verify their identity to receive funds.
+              <Alert className="border-orange-300 bg-orange-50 dark:bg-orange-950/20">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <AlertDescription>
+                  Paid events require the organizer to have approved KYC documents before the event can go live.
+                  Please review their KYC submission and approve it first, then come back to approve this event.
                 </AlertDescription>
               </Alert>
               {eventToApprove && (
-                <div className="text-sm space-y-1">
+                <div className="text-sm space-y-2 rounded-lg border border-border p-3 bg-muted/30">
                   <p><strong>Event:</strong> {eventToApprove.title}</p>
-                  <p><strong>Organizer:</strong> {eventToApprove.organizer}</p>
-                  <p><strong>Verification Level:</strong> {eventToApprove.organizerVerificationLevel || 1} (Level 2+ required for payouts)</p>
+                  <p><strong>Organizer:</strong> {eventToApprove.organizerName || eventToApprove.organizer}</p>
                 </div>
               )}
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={() => {
                 setApproveDialogOpen(false);
                 setEventToApprove(null);
               }}>
-                Cancel
+                Close
               </Button>
-              <Button 
-                variant="default" 
-                onClick={() => eventToApprove && handleApprove(eventToApprove.id)}
-                disabled={processing === eventToApprove?.id}
-                className="bg-primary hover:bg-primary/90 text-white"
-              >
-                {processing === eventToApprove?.id ? (
-                  <>
-                    <Loader size="sm" className="h-4 w-4 mr-2" />
-                    Approving...
-                  </>
-                ) : (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Approve Anyway
-                  </>
-                )}
-              </Button>
+              {eventToApprove?.organizerId && (
+                <>
+                  <Button
+                    variant="outline"
+                    disabled={sendingReminder}
+                    onClick={async () => {
+                      if (!eventToApprove.organizerId) return;
+                      setSendingReminder(true);
+                      try {
+                        await sendKYCReminder(eventToApprove.organizerId, eventToApprove.title);
+                        toast({
+                          title: "Reminder sent",
+                          description: `KYC verification reminder emailed to ${eventToApprove.organizerName || eventToApprove.organizer}.`,
+                        });
+                      } catch (error) {
+                        showErrorToast(toast, error, "Failed to send reminder");
+                      } finally {
+                        setSendingReminder(false);
+                      }
+                    }}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    {sendingReminder ? "Sending..." : "Send Reminder"}
+                  </Button>
+                  <Button asChild>
+                    <Link
+                      to={`/admin/kyc/review/${eventToApprove.organizerId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Review Organizer KYC
+                    </Link>
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

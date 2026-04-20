@@ -4,44 +4,44 @@ import { NotFoundError } from '../../../src/utils/errors.js';
 import { UserRole, UserStatus } from '@prisma/client';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     user: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     event: {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     },
     organizerProfile: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     kYCDocument: {
-      groupBy: jest.fn(),
+      groupBy: vi.fn(),
     },
     eventRegistration: {
-      aggregate: jest.fn(),
+      aggregate: vi.fn(),
     },
   },
 }));
-jest.mock('../../../src/utils/logger.js');
-jest.mock('../../../src/utils/password.js');
-jest.mock('../../../src/utils/audit.js', () => ({
-  createAuditLog: jest.fn(),
+vi.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/utils/password.js');
+vi.mock('../../../src/utils/audit.js', () => ({
+  createAuditLog: vi.fn(),
   AuditActions: {},
 }));
-jest.mock('../../../src/utils/privileges.js', () => ({
-  validateRoleCreation: jest.fn(),
-  validateUserModification: jest.fn(),
-  validateUserDeletion: jest.fn(),
+vi.mock('../../../src/utils/privileges.js', () => ({
+  validateRoleCreation: vi.fn(),
+  validateUserModification: vi.fn(),
+  validateUserDeletion: vi.fn(),
 }));
 
 describe('AdminService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // ─── getUsers ─────────────────────────────────────────────────────────
@@ -65,8 +65,8 @@ describe('AdminService', () => {
     ];
 
     it('should return paginated users with default options', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue(baseUsers);
-      (prisma.user.count as jest.Mock).mockResolvedValue(1);
+      (prisma.user.findMany as vi.Mock).mockResolvedValue(baseUsers);
+      (prisma.user.count as vi.Mock).mockResolvedValue(1);
 
       const result = await AdminService.getUsers({});
 
@@ -88,8 +88,8 @@ describe('AdminService', () => {
     });
 
     it('should filter by role and status', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.user.count as jest.Mock).mockResolvedValue(0);
+      (prisma.user.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.user.count as vi.Mock).mockResolvedValue(0);
 
       await AdminService.getUsers({
         role: UserRole.ORGANIZER,
@@ -108,15 +108,15 @@ describe('AdminService', () => {
     });
 
     it('should include organizationName in search when role is ORGANIZER', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.user.count as jest.Mock).mockResolvedValue(0);
+      (prisma.user.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.user.count as vi.Mock).mockResolvedValue(0);
 
       await AdminService.getUsers({
         role: UserRole.ORGANIZER,
         search: 'alice',
       });
 
-      const call = (prisma.user.findMany as jest.Mock).mock.calls[0][0];
+      const call = (prisma.user.findMany as vi.Mock).mock.calls[0][0];
       expect(call.where.OR).toHaveLength(4); // email, firstName, lastName, organizationName
       expect(call.where.OR[3]).toEqual({
         organizationName: { contains: 'alice', mode: 'insensitive' },
@@ -124,25 +124,25 @@ describe('AdminService', () => {
     });
 
     it('should NOT include organizationName in search for non-organizer roles', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.user.count as jest.Mock).mockResolvedValue(0);
+      (prisma.user.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.user.count as vi.Mock).mockResolvedValue(0);
 
       await AdminService.getUsers({
         role: UserRole.ATTENDEE,
         search: 'test',
       });
 
-      const call = (prisma.user.findMany as jest.Mock).mock.calls[0][0];
+      const call = (prisma.user.findMany as vi.Mock).mock.calls[0][0];
       expect(call.where.OR).toHaveLength(3); // email, firstName, lastName only
     });
 
     it('should include enriched organizer fields when role is ORGANIZER', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.user.count as jest.Mock).mockResolvedValue(0);
+      (prisma.user.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.user.count as vi.Mock).mockResolvedValue(0);
 
       await AdminService.getUsers({ role: UserRole.ORGANIZER });
 
-      const call = (prisma.user.findMany as jest.Mock).mock.calls[0][0];
+      const call = (prisma.user.findMany as vi.Mock).mock.calls[0][0];
       const select = call.select;
 
       // Base fields
@@ -167,12 +167,12 @@ describe('AdminService', () => {
     });
 
     it('should NOT include enriched organizer fields for non-organizer roles', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.user.count as jest.Mock).mockResolvedValue(0);
+      (prisma.user.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.user.count as vi.Mock).mockResolvedValue(0);
 
       await AdminService.getUsers({ role: UserRole.ATTENDEE });
 
-      const call = (prisma.user.findMany as jest.Mock).mock.calls[0][0];
+      const call = (prisma.user.findMany as vi.Mock).mock.calls[0][0];
       const select = call.select;
 
       // Should have base fields
@@ -187,8 +187,8 @@ describe('AdminService', () => {
     });
 
     it('should calculate pagination correctly', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.user.count as jest.Mock).mockResolvedValue(75);
+      (prisma.user.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.user.count as vi.Mock).mockResolvedValue(75);
 
       const result = await AdminService.getUsers({ page: 3, limit: 25 });
 
@@ -207,8 +207,8 @@ describe('AdminService', () => {
     });
 
     it('should default to page 1 and limit 50 when not provided', async () => {
-      (prisma.user.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.user.count as jest.Mock).mockResolvedValue(0);
+      (prisma.user.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.user.count as vi.Mock).mockResolvedValue(0);
 
       await AdminService.getUsers({});
 
@@ -293,11 +293,11 @@ describe('AdminService', () => {
     };
 
     function setupMocksForSuccess() {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.event.findMany as jest.Mock).mockResolvedValue(mockRecentEvents);
-      (prisma.organizerProfile.findUnique as jest.Mock).mockResolvedValue(mockOrganizerProfile);
-      (prisma.kYCDocument.groupBy as jest.Mock).mockResolvedValue(mockKYCDocumentSummary);
-      (prisma.eventRegistration.aggregate as jest.Mock).mockResolvedValue(mockRevenueResult);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue(mockRecentEvents);
+      (prisma.organizerProfile.findUnique as vi.Mock).mockResolvedValue(mockOrganizerProfile);
+      (prisma.kYCDocument.groupBy as vi.Mock).mockResolvedValue(mockKYCDocumentSummary);
+      (prisma.eventRegistration.aggregate as vi.Mock).mockResolvedValue(mockRevenueResult);
     }
 
     it('should return full organizer details', async () => {
@@ -313,10 +313,10 @@ describe('AdminService', () => {
     });
 
     it('should throw NotFoundError when user does not exist', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.organizerProfile.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.kYCDocument.groupBy as jest.Mock).mockResolvedValue([]);
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.organizerProfile.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.kYCDocument.groupBy as vi.Mock).mockResolvedValue([]);
 
       await expect(AdminService.getOrganizerDetails('nonexistent'))
         .rejects.toThrow(NotFoundError);
@@ -423,11 +423,11 @@ describe('AdminService', () => {
     });
 
     it('should return "0" revenue when no registrations exist', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.organizerProfile.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.kYCDocument.groupBy as jest.Mock).mockResolvedValue([]);
-      (prisma.eventRegistration.aggregate as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.organizerProfile.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.kYCDocument.groupBy as vi.Mock).mockResolvedValue([]);
+      (prisma.eventRegistration.aggregate as vi.Mock).mockResolvedValue({
         _sum: { totalAmount: null },
       });
 
@@ -437,11 +437,11 @@ describe('AdminService', () => {
     });
 
     it('should handle organizer with no profile gracefully', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.organizerProfile.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.kYCDocument.groupBy as jest.Mock).mockResolvedValue([]);
-      (prisma.eventRegistration.aggregate as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue(mockUser);
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.organizerProfile.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.kYCDocument.groupBy as vi.Mock).mockResolvedValue([]);
+      (prisma.eventRegistration.aggregate as vi.Mock).mockResolvedValue({
         _sum: { totalAmount: null },
       });
 
@@ -453,17 +453,17 @@ describe('AdminService', () => {
     });
 
     it('should handle organizer with no KYC documents', async () => {
-      (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.user.findUnique as vi.Mock).mockResolvedValue({
         ...mockUser,
         kycStatus: null,
         kycSubmittedAt: null,
         kycApprovedAt: null,
         _count: { eventsCreated: 0, eventRegistrations: 0, kycDocuments: 0 },
       });
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([]);
-      (prisma.organizerProfile.findUnique as jest.Mock).mockResolvedValue(null);
-      (prisma.kYCDocument.groupBy as jest.Mock).mockResolvedValue([]);
-      (prisma.eventRegistration.aggregate as jest.Mock).mockResolvedValue({
+      (prisma.event.findMany as vi.Mock).mockResolvedValue([]);
+      (prisma.organizerProfile.findUnique as vi.Mock).mockResolvedValue(null);
+      (prisma.kYCDocument.groupBy as vi.Mock).mockResolvedValue([]);
+      (prisma.eventRegistration.aggregate as vi.Mock).mockResolvedValue({
         _sum: { totalAmount: null },
       });
 
@@ -478,23 +478,23 @@ describe('AdminService', () => {
       // Verify all 4 queries are called before aggregate (which depends on user check)
       const callOrder: string[] = [];
 
-      (prisma.user.findUnique as jest.Mock).mockImplementation(async () => {
+      (prisma.user.findUnique as vi.Mock).mockImplementation(async () => {
         callOrder.push('user.findUnique');
         return mockUser;
       });
-      (prisma.event.findMany as jest.Mock).mockImplementation(async () => {
+      (prisma.event.findMany as vi.Mock).mockImplementation(async () => {
         callOrder.push('event.findMany');
         return mockRecentEvents;
       });
-      (prisma.organizerProfile.findUnique as jest.Mock).mockImplementation(async () => {
+      (prisma.organizerProfile.findUnique as vi.Mock).mockImplementation(async () => {
         callOrder.push('organizerProfile.findUnique');
         return mockOrganizerProfile;
       });
-      (prisma.kYCDocument.groupBy as jest.Mock).mockImplementation(async () => {
+      (prisma.kYCDocument.groupBy as vi.Mock).mockImplementation(async () => {
         callOrder.push('kYCDocument.groupBy');
         return mockKYCDocumentSummary;
       });
-      (prisma.eventRegistration.aggregate as jest.Mock).mockImplementation(async () => {
+      (prisma.eventRegistration.aggregate as vi.Mock).mockImplementation(async () => {
         callOrder.push('eventRegistration.aggregate');
         return mockRevenueResult;
       });
@@ -512,7 +512,7 @@ describe('AdminService', () => {
 
     it('should convert numeric totalAmount to string', async () => {
       setupMocksForSuccess();
-      (prisma.eventRegistration.aggregate as jest.Mock).mockResolvedValue({
+      (prisma.eventRegistration.aggregate as vi.Mock).mockResolvedValue({
         _sum: { totalAmount: 99999.99 },
       });
 

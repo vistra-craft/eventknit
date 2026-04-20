@@ -7,12 +7,12 @@
  * - Simple layout: Menu (mobile) | Spacer | Theme + Notifications + Profile
  */
 
-import React, { useState } from "react";
-import { Menu, User, ChevronDown, LogOut, Settings, Bell } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Menu, User, ChevronDown, LogOut, Settings, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { ThemeToggle } from "../../components/ThemeToggle";
-import { cn } from "@/lib/utils";
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import NotificationBell from '@/components/profile/NotificationBell';
 
 interface AdminHeaderProps {
   onMenuToggle?: () => void;
@@ -22,7 +22,7 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
   const navigate = useNavigate();
   const { user: authUser, logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   // Format user data
   const userName = authUser
@@ -36,9 +36,19 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
     logout();
   };
 
-  // Notifications - will be populated from real-time backend when notification system is implemented
-  const notifications: { id: number; title: string; time: string; read: boolean }[] = [];
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    if (isProfileOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isProfileOpen]);
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
@@ -60,100 +70,44 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
         {/* Theme Toggle */}
         <ThemeToggle />
 
-        {/* Notifications */}
-        <div className="relative">
-          <button
-            onClick={() => {
-              setIsNotificationsOpen(!isNotificationsOpen);
-              setIsProfileOpen(false);
-            }}
-            className="relative p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-          >
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                {unreadCount}
-              </span>
-            )}
-          </button>
-
-          {/* Notifications dropdown */}
-          {isNotificationsOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-border bg-popover shadow-xl animate-scale-in origin-top-right z-50">
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <h3 className="font-semibold text-popover-foreground">Notifications</h3>
-                <button className="text-xs text-primary hover:underline">
-                  Mark all read
-                </button>
-              </div>
-              <div className="max-h-96 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 px-4">
-                    <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                    <p className="text-sm text-muted-foreground">No notifications yet</p>
-                  </div>
-                ) : (
-                  notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={cn(
-                        "flex gap-3 p-4 border-b border-border last:border-0 hover:bg-secondary/50 transition-colors cursor-pointer",
-                        !notification.read && "bg-primary/5"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "mt-1 h-2 w-2 rounded-full shrink-0",
-                          notification.read ? "bg-muted-foreground/30" : "bg-primary"
-                        )}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-popover-foreground">
-                          {notification.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {notification.time}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Notifications - shared component with dropdown */}
+        <NotificationBell />
 
         {/* Profile */}
-        <div className="relative">
+        <div className="relative" ref={profileRef}>
           <button
-            onClick={() => {
-              setIsProfileOpen(!isProfileOpen);
-              setIsNotificationsOpen(false);
-            }}
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent transition-colors"
           >
-            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-medium text-white">
+            <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-medium text-white shrink-0">
               {userInitial}
             </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium">{userName}</p>
-              <p className="text-xs text-muted-foreground truncate max-w-[120px]">{userEmail}</p>
-            </div>
-            <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
+            <span className="hidden md:block text-sm font-medium max-w-[120px] truncate">{userName}</span>
+            <ChevronDown className="hidden md:block h-3.5 w-3.5 text-muted-foreground" />
           </button>
 
           {/* Profile dropdown */}
           {isProfileOpen && (
-            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border bg-popover shadow-xl animate-scale-in origin-top-right z-50">
-              <div className="p-2">
+            <div className="absolute right-0 top-full mt-2 w-60 rounded-xl border border-border bg-popover shadow-xl animate-scale-in origin-top-right z-50">
+              {/* Identity block */}
+              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border">
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-sm font-medium text-white shrink-0">
+                  {userInitial}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-popover-foreground truncate">{userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+                </div>
+              </div>
+              <div className="p-1.5">
                 <button
                   onClick={() => {
                     setIsProfileOpen(false);
                     navigate('/admin/profile');
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
                 >
-                  <User className="h-4 w-4" />
+                  <User className="h-4 w-4 text-muted-foreground" />
                   <span>Profile</span>
                 </button>
                 <button
@@ -161,16 +115,26 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
                     setIsProfileOpen(false);
                     navigate('/admin/settings');
                   }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
                 >
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-4 w-4 text-muted-foreground" />
                   <span>Settings</span>
                 </button>
+                <button
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    navigate('/admin/dashboard');
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-popover-foreground hover:bg-secondary/50 transition-colors"
+                >
+                  <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
+                  <span>Dashboard</span>
+                </button>
               </div>
-              <div className="border-t border-border p-2">
+              <div className="border-t border-border p-1.5">
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Log out</span>
@@ -180,20 +144,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
           )}
         </div>
       </div>
-
-      {/* Click outside to close dropdowns */}
-      {(isNotificationsOpen || isProfileOpen) && (
-        <div
-          className="fixed inset-0 z-30"
-          onClick={() => {
-            setIsNotificationsOpen(false);
-            setIsProfileOpen(false);
-          }}
-        />
-      )}
     </header>
   );
 };
 
 export default AdminHeader;
-

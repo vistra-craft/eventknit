@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, MapPin, Users, DollarSign, Eye } from "lucide-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { EventThumbnail } from "@/components/ui/event-thumbnail";
-import { RichTextContent } from "@/components/ui/RichTextContent";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 import { getEventById, type EventData } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
+import { extractErrorMessage, showErrorToast } from "@/lib/utils/error";
 
 const EventPreviewPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -15,6 +13,8 @@ const EventPreviewPage = () => {
   const { toast } = useToast();
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -22,182 +22,71 @@ const EventPreviewPage = () => {
 
       try {
         setLoading(true);
+        setError(null);
         const response = await getEventById(eventId);
         if (response.success && response.data?.event) {
           setEvent(response.data.event);
         } else {
-          toast({
-            title: "Error",
-            description: "Failed to load event details",
-            variant: "destructive",
-          });
-          navigate("/admin/events");
+          setError("Failed to load event details");
+          showErrorToast(toast, new Error("Failed to load event details"), "Load failed", "Failed to load event details");
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to load event details";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
-        navigate("/admin/events");
+        setError(extractErrorMessage(error, "Failed to load event details"));
+        showErrorToast(toast, error, "Load failed", "Failed to load event details");
       } finally {
         setLoading(false);
       }
     };
 
     fetchEvent();
-  }, [eventId, navigate, toast]);
+  }, [eventId, toast]);
 
-  if (loading) {
-    return (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading event details...</p>
-          </div>
-        </div>
-    );
-  }
-
-  if (!event) {
-    return (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Event not found</p>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/admin/events")}
-            className="mt-4"
-          >
-            Back to Events
-          </Button>
-        </div>
-    );
-  }
+  const handleModalOpenChange = (open: boolean) => {
+    setShowModal(open);
+    if (!open) {
+      // Go back when modal closes
+      navigate(-1);
+    }
+  };
 
   return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-card-title">Event Preview</h1>
-            <p className="text-card-description">View event details</p>
-          </div>
-          <Button
-            variant="default"
-            onClick={() => window.open(`/event/${eventId}`, '_blank')}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            View Public Page
-          </Button>
+    <div className="space-y-6">
+      {/* Header with back button */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div className="flex-1">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            Event Preview
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            View complete event details
+          </p>
         </div>
-
-        {/* Event Details Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Event Information</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="flex items-start gap-6">
-                <EventThumbnail
-                  src={event.image}
-                  alt={event.title}
-                  category={event.category || ''}
-                  size="lg"
-                />
-                <div className="flex-1">
-                  <h2 className="text-card-title mb-2">
-                    {event.title}
-                  </h2>
-                  {event.category && (
-                    <Badge className="mb-2">{event.category}</Badge>
-                  )}
-                  {event.status && (
-                    <Badge className="ml-2 mb-2">{event.status}</Badge>
-                  )}
-                  {event.description && (
-                    <RichTextContent
-                      content={event.description}
-                      className="text-sm text-muted-foreground mt-3"
-                    />
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {event.startDate && (
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-card-description">Start Date</p>
-                      <p className="font-medium">
-                        {new Date(event.startDate).toLocaleDateString()}
-                        {event.startTime && ` at ${event.startTime}`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {event.endDate && (
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-card-description">End Date</p>
-                      <p className="font-medium">
-                        {new Date(event.endDate).toLocaleDateString()}
-                        {event.endTime && ` at ${event.endTime}`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {(event.location || event.venue) && (
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-card-description">Location</p>
-                      <p className="font-medium">{event.location || event.venue}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-card-description">Attendees</p>
-                    <p className="font-medium">{event.attendees || 0}</p>
-                  </div>
-                </div>
-                {event.capacity && (
-                  <div className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-card-description">Capacity</p>
-                      <p className="font-medium">{event.capacity}</p>
-                    </div>
-                  </div>
-                )}
-                {event.price !== undefined && (
-                  <div className="flex items-center gap-3">
-                    <DollarSign className="h-5 w-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-card-description">Price</p>
-                      <p className="font-medium">
-                        {event.isFree ? "Free" : `$${event.price}`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {eventId && (
+          <Button variant="default" asChild>
+            <Link to={`/event/${event?.slug ?? eventId}`} target="_blank" rel="noopener noreferrer">
+              <Eye className="h-4 w-4 mr-2" />
+              View Public Page
+            </Link>
+          </Button>
+        )}
       </div>
+
+      {/* Event Preview Modal */}
+      <EventPreviewModal
+        isOpen={showModal}
+        onOpenChange={handleModalOpenChange}
+        event={event}
+        loading={loading}
+        error={error}
+      />
+    </div>
   );
 };
 

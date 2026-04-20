@@ -34,7 +34,7 @@ export const useSocket = (options: UseSocketOptions = {}): UseSocketReturn => {
     }
 
     // Create socket connection
-    const socketURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const socketURL = import.meta.env.VITE_API_URL || window.location.origin;
     const socket = io(socketURL, {
       auth: { token },
       transports: ['websocket', 'polling'],
@@ -47,7 +47,6 @@ export const useSocket = (options: UseSocketOptions = {}): UseSocketReturn => {
 
     // Connection event handlers
     socket.on('connect', () => {
-      console.log('WebSocket connected:', socket.id);
       setIsConnected(true);
 
       // Auto-join event room if eventId provided
@@ -56,8 +55,7 @@ export const useSocket = (options: UseSocketOptions = {}): UseSocketReturn => {
       }
     });
 
-    socket.on('disconnect', (reason) => {
-      console.log('WebSocket disconnected:', reason);
+    socket.on('disconnect', () => {
       setIsConnected(false);
     });
 
@@ -70,8 +68,8 @@ export const useSocket = (options: UseSocketOptions = {}): UseSocketReturn => {
       console.error('WebSocket error:', error.message);
     });
 
-    socket.on('joined:event', (data: { eventId: string }) => {
-      console.log('Joined event room:', data.eventId);
+    socket.on('joined:event', () => {
+      // event room joined
     });
 
     // Cleanup on unmount

@@ -19,14 +19,14 @@ export interface CreateStaffData {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
-  role: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+  role: 'ORGANIZER_ADMIN' | 'ORGANIZER_TELLER';
 }
 
 export interface UpdateStaffData {
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
-  role?: 'ORGANIZER_STAFF' | 'ORGANIZER_TELLER';
+  role?: 'ORGANIZER_ADMIN' | 'ORGANIZER_TELLER';
   customRoleId?: string | null; // Assign or remove custom role
   status?: UserStatus;
 }
@@ -45,7 +45,7 @@ export class OrganizerService {
     // Validate organizer can create staff
     if (organizerRole !== UserRole.ORGANIZER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can create staff members');
     }
 
@@ -134,7 +134,7 @@ export class OrganizerService {
     // Validate organizer can view staff
     if (organizerRole !== UserRole.ORGANIZER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can view staff members');
     }
 
@@ -159,7 +159,7 @@ export class OrganizerService {
         organizationName: organizer.organizationName,
         deletedAt: null,
         role: {
-          in: [UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER],
+          in: [UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_TELLER],
         },
       },
       select: {
@@ -195,7 +195,7 @@ export class OrganizerService {
     // Validate organizer can view staff
     if (organizerRole !== UserRole.ORGANIZER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can view staff members');
     }
 
@@ -236,7 +236,7 @@ export class OrganizerService {
 
     // Verify staff belongs to organizer (unless admin)
     // Note: Will use managedBy after Prisma migration
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       // For now, check organizationName match
       if (staff.organizationName !== organizer.organizationName) {
         throw new AuthorizationError('You do not have permission to view this staff member');
@@ -288,7 +288,7 @@ export class OrganizerService {
 
     // Verify staff belongs to organizer (unless admin)
     // Note: Will use managedBy after Prisma migration
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       // For now, check organizationName match
       if (staff.organizationName !== organizer.organizationName) {
         throw new AuthorizationError('You do not have permission to modify this staff member');
@@ -350,6 +350,8 @@ export class OrganizerService {
         role: true,
         status: true,
         isEmailVerified: true,
+        customRoleId: true,
+        customRole: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -379,6 +381,125 @@ export class OrganizerService {
     });
 
     logger.info(`Staff updated by organizer: ${updatedStaff.email}`);
+
+    return updatedStaff;
+  }
+
+  /**
+   * Change a staff member's role.
+   * Only ORGANIZER can change their own staff roles (ORGANIZER_TELLER ↔ ORGANIZER_ADMIN).
+   * Revokes sessions, sends notification, creates audit log.
+   */
+  static async changeStaffRole(
+    staffId: string,
+    newRole: UserRole,
+    organizerId: string,
+    organizerRole: UserRole,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    // Only ORGANIZER_ADMIN and ORGANIZER_TELLER are valid targets
+    const allowedStaffRoles: UserRole[] = [UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_TELLER];
+    if (!allowedStaffRoles.includes(newRole)) {
+      throw new AuthorizationError('Staff can only be assigned ORGANIZER_ADMIN or ORGANIZER_TELLER roles');
+    }
+
+    const staff = await prisma.user.findUnique({
+      where: { id: staffId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        role: true,
+        status: true,
+        organizationName: true,
+      },
+    });
+
+    if (!staff) {
+      throw new NotFoundError('Staff member not found');
+    }
+
+    // Verify the staff member is actually organizer staff
+    if (!allowedStaffRoles.includes(staff.role)) {
+      throw new AuthorizationError('This user is not an organizer staff member');
+    }
+
+    if (staff.role === newRole) {
+      throw new ConflictError(`Staff member already has the ${newRole} role`);
+    }
+
+    // Verify ownership: staff belongs to this organizer's organization
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
+      const organizer = await prisma.user.findUnique({
+        where: { id: organizerId },
+        select: { organizationName: true },
+      });
+
+      if (!organizer || staff.organizationName !== organizer.organizationName) {
+        throw new AuthorizationError('You do not have permission to modify this staff member');
+      }
+    }
+
+    // Validate role creation privilege
+    validateRoleCreation(organizerRole, newRole);
+
+    const oldRole = staff.role;
+
+    // Update role
+    const updatedStaff = await prisma.user.update({
+      where: { id: staffId },
+      data: {
+        role: newRole,
+        updatedBy: organizerId,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        role: true,
+        status: true,
+        isEmailVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Revoke all refresh tokens — force re-login with new role in JWT
+    await prisma.refreshToken.deleteMany({
+      where: { userId: staffId },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: organizerId,
+      action: AuditActions.USER_UPDATED,
+      entity: 'User',
+      entityId: staffId,
+      metadata: {
+        action: 'role_change',
+        oldRole,
+        newRole,
+        changedBy: organizerId,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    // Send notification email (fire-and-forget)
+    const { emailService } = await import('./email.service.js');
+    emailService.sendRoleChangeEmail(
+      staff.email,
+      staff.firstName || 'Team member',
+      oldRole,
+      newRole,
+    ).catch((err: Error) => {
+      logger.warn(`Failed to send role change email to ${staff.email}:`, err);
+    });
+
+    logger.info(`Staff role changed: ${updatedStaff.email} ${oldRole} → ${newRole} by ${organizerId}`);
 
     return updatedStaff;
   }
@@ -423,7 +544,7 @@ export class OrganizerService {
 
     // Verify staff belongs to organizer (unless admin)
     // Note: Will use managedBy after Prisma migration
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       // For now, check organizationName match
       if (staff.organizationName !== organizer.organizationName) {
         throw new AuthorizationError('You do not have permission to delete this staff member');
@@ -622,7 +743,7 @@ export class OrganizerService {
     // Validate organizer can view dashboard
     if (organizerRole !== UserRole.ORGANIZER &&
       organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
+      organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can view dashboard');
     }
 
@@ -785,7 +906,7 @@ export class OrganizerService {
               ? JSON.parse(event.ticketTypes)
               : [];
 
-          ticketTypes.forEach((ticketType: any) => {
+          ticketTypes.forEach((ticketType: { name?: string; availableUntil?: string; [key: string]: unknown }) => {
             if (ticketType.availableUntil) {
               const deadlineDate = new Date(ticketType.availableUntil);
               if (deadlineDate > now) {
@@ -875,30 +996,51 @@ export class OrganizerService {
    * Get organizer events with dashboard data
    */
   static async getDashboardEvents(
-    organizerId: string,
-    organizerRole: UserRole,
+    userId: string,
+    userRole: UserRole,
     filters?: {
       page?: number;
       limit?: number;
     },
   ) {
-    // Validate organizer can view dashboard
-    if (organizerRole !== UserRole.ORGANIZER &&
-      organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
-      throw new AuthorizationError('Only organizers can view dashboard');
+    // Validate user can view dashboard
+    const allowedRoles: UserRole[] = [
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_TELLER,
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN,
+    ];
+    if (!allowedRoles.includes(userRole)) {
+      throw new AuthorizationError('You do not have permission to view dashboard');
     }
 
     const limit = filters?.limit || 12; // Default 12 for infinite scroll
     const page = filters?.page || 1;
     const skip = (page - 1) * limit;
 
+    // For staff roles, find events they are assigned to via EventStaff
+    let where: Record<string, unknown>;
+    if (userRole === UserRole.ORGANIZER_ADMIN || userRole === UserRole.ORGANIZER_TELLER) {
+      const assignments = await prisma.eventStaff.findMany({
+        where: { staffId: userId, isActive: true },
+        select: { eventId: true },
+      });
+      const assignedEventIds = assignments.map(a => a.eventId);
+      where = {
+        id: { in: assignedEventIds },
+        deletedAt: null,
+      };
+    } else {
+      where = {
+        organizerId: userId,
+        deletedAt: null,
+      };
+    }
+
     const [events, total] = await Promise.all([
       prisma.event.findMany({
-        where: {
-          organizerId,
-          deletedAt: null,
-        },
+        where,
         include: {
           organizer: {
             select: {
@@ -922,12 +1064,7 @@ export class OrganizerService {
         take: limit,
         skip,
       }),
-      prisma.event.count({
-        where: {
-          organizerId,
-          deletedAt: null,
-        },
-      }),
+      prisma.event.count({ where }),
     ]);
 
     // Transform events with dashboard data
@@ -994,6 +1131,7 @@ export class OrganizerService {
         description: event.description,
         category: event.category || '',
         organizer: event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`,
+        isFree: event.isFree,
         price: event.isFree ? 'Free' : event.price ? `$${Number(event.price)}` : 'N/A',
         rating: 0, // TODO: Add rating system
         fullDescription: event.fullDescription || event.description,
@@ -1016,10 +1154,11 @@ export class OrganizerService {
 
   /**
    * Get all organizer events (with filters)
+   * Now supports ATTENDEE users who have created events (pending approval)
    */
   static async getOrganizerEvents(
-    organizerId: string,
-    organizerRole: UserRole,
+    userId: string,
+    userRole: UserRole,
     filters: {
       status?: string;
       category?: string;
@@ -1030,17 +1169,33 @@ export class OrganizerService {
       upcoming?: boolean; // true for upcoming, false for past
     } = {},
   ) {
-    // Validate organizer can view events
-    if (organizerRole !== UserRole.ORGANIZER &&
-      organizerRole !== UserRole.SUPERADMIN &&
-      organizerRole !== UserRole.ADMIN_STAFF) {
-      throw new AuthorizationError('Only organizers can view their events');
+    // Validate user can view events they created or are assigned to
+    // Allow ATTENDEE (who created pending events), ORGANIZER, staff, and admin roles
+    const allowedRoles: UserRole[] = [
+      UserRole.ATTENDEE,
+      UserRole.ORGANIZER,
+      UserRole.ORGANIZER_ADMIN,
+      UserRole.ORGANIZER_TELLER,
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN,
+    ];
+    if (!allowedRoles.includes(userRole)) {
+      throw new AuthorizationError('You do not have permission to view events');
     }
 
-    const where: Record<string, unknown> = {
-      organizerId,
-      deletedAt: null,
-    };
+    // For staff roles, find events they are assigned to via EventStaff
+    const where: Record<string, unknown> = {};
+    if (userRole === UserRole.ORGANIZER_ADMIN || userRole === UserRole.ORGANIZER_TELLER) {
+      const assignments = await prisma.eventStaff.findMany({
+        where: { staffId: userId, isActive: true },
+        select: { eventId: true },
+      });
+      const assignedEventIds = assignments.map(a => a.eventId);
+      where.id = { in: assignedEventIds };
+    } else {
+      where.organizerId = userId;
+    }
+    where.deletedAt = null;
 
     if (filters.status) {
       where.status = filters.status;
@@ -1054,8 +1209,14 @@ export class OrganizerService {
     const now = new Date();
     if (filters.upcoming === true) {
       where.startDate = { gte: now };
+      // Exclude cancelled events from upcoming tab unless explicitly filtering by status
+      if (!where.status) {
+        where.status = { not: 'CANCELLED' };
+      }
     } else if (filters.upcoming === false) {
       where.AND = [
+        // Exclude cancelled events from past tab (they belong in the Cancelled tab)
+        { status: { not: 'CANCELLED' } },
         {
           OR: [
             { endDate: { lt: now } },
@@ -1176,6 +1337,7 @@ export class OrganizerService {
         description: event.description,
         category: event.category || '',
         organizer: event.organizer.organizationName || `${event.organizer.firstName} ${event.organizer.lastName}`,
+        isFree: event.isFree,
         price: event.isFree ? 'Free' : event.price ? `$${Number(event.price)}` : 'N/A',
         rating: 0, // TODO: Add rating system
         fullDescription: event.fullDescription || event.description,

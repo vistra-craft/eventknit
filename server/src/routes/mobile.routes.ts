@@ -108,6 +108,16 @@ router.post('/device/test', mobileController.sendTestNotification);
  */
 router.get('/dashboard/summary', mobileController.getDashboardSummary);
 
+/**
+ * Get per-event organizer dashboard stats
+ * Optimized for mobile organizer dashboard
+ */
+router.get(
+  '/dashboard/organizer/:eventId',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  mobileController.getOrganizerEventDashboard,
+);
+
 // ========== Offline Support ==========
 
 /**
@@ -125,7 +135,7 @@ router.get(
  */
 router.post(
   '/scan/sync',
-  authorize('TELLER', 'ORGANIZER', 'SUPERADMIN', 'ADMIN_STAFF'),
+  authorize('TELLER', 'ORGANIZER', 'SUPERADMIN', 'ADMIN'),
   validate(
     Joi.object({
       scans: Joi.array()

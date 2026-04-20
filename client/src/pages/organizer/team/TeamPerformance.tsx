@@ -22,6 +22,7 @@ import {
 import { Loader } from "@/components/ui/loader";
 import { useIsMobile } from "@/hooks/useMobile";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from '@/lib/utils/error';
 import {
   getOrganizerTeamSummary,
   getOrganizerTeamPerformance,
@@ -68,12 +69,7 @@ const TeamPerformance = () => {
       if (coverageRes.success) setCoverage(coverageRes.data);
       if (availabilityRes.success) setAvailability(availabilityRes.data);
     } catch (error) {
-      console.error("Error fetching performance data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load performance data",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, 'Failed to load performance data');
     } finally {
       setLoading(false);
     }

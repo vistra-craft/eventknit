@@ -9,18 +9,18 @@ describe('UserDashboardService', () => {
   beforeEach(() => {
     // Reset mocks on prisma methods used
     prismaAny.eventRegistration = {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      aggregate: jest.fn(),
-      groupBy: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      aggregate: vi.fn(),
+      groupBy: vi.fn(),
     };
     prismaAny.userInterest = {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     };
     prismaAny.event = {
-      findMany: jest.fn(),
+      findMany: vi.fn(),
     };
-    prismaAny.$queryRaw = jest.fn();
+    prismaAny.$queryRaw = vi.fn();
   });
 
   describe('getPersonalizedRecommendations', () => {
@@ -62,7 +62,7 @@ describe('UserDashboardService', () => {
 
       prismaAny.$queryRaw.mockResolvedValue([{ month: '2024-01', count: 2n }]);
 
-      prismaAny.eventRegistration.findMany = jest.fn().mockResolvedValue([
+      prismaAny.eventRegistration.findMany = vi.fn().mockResolvedValue([
         { event: { category: 'Music' } },
         { event: { category: 'Tech' } },
       ]);

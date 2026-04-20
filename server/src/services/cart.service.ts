@@ -203,11 +203,11 @@ export class CartService {
       }
 
       if (cart.status !== CartStatus.ACTIVE) {
-        throw new ValidationError('Cart is not active');
+        throw new ValidationError('Your cart is no longer active. Please start a new selection.');
       }
 
       if (cart.expiresAt < new Date()) {
-        throw new ValidationError('Cart has expired');
+        throw new ValidationError('Your cart has expired. Please select your tickets again.');
       }
 
       // Check event availability
@@ -335,7 +335,7 @@ export class CartService {
       }
 
       if (cart.status !== CartStatus.ACTIVE) {
-        throw new ValidationError('Cart is not active');
+        throw new ValidationError('Your cart is no longer active. Please start a new selection.');
       }
 
       const item = cart.items.find((i) => i.id === itemId);
@@ -416,15 +416,15 @@ export class CartService {
         }
 
         if (cart.status !== CartStatus.ACTIVE) {
-          throw new ValidationError('Cart is not active');
+          throw new ValidationError('Your cart is no longer active. Please start a new selection.');
         }
 
         if (cart.expiresAt < new Date()) {
-          throw new ValidationError('Cart has expired');
+          throw new ValidationError('Your cart has expired. Please select your tickets again.');
         }
 
         if (cart.items.length === 0) {
-          throw new ValidationError('Cart is empty');
+          throw new ValidationError('Your cart is empty. Please add tickets before checking out.');
         }
 
         // Lock inventory for each item
@@ -682,8 +682,25 @@ export class CartService {
   /**
    * Format cart response with calculated fields
    */
-  private static formatCartResponse(cart: any): CartWithItems {
-    const items = cart.items.map((item: any) => ({
+  private static formatCartResponse(cart: {
+    id: string;
+    userId: string | null;
+    sessionId: string;
+    status: CartStatus;
+    expiresAt: Date;
+    items: Array<{
+      id: string;
+      eventId: string;
+      ticketType: string;
+      quantity: number;
+      unitPrice: Prisma.Decimal | number;
+      seatIds: string[];
+      promoCodeId: string | null;
+      discountAmount: Prisma.Decimal | number | null;
+      event: { id: string; title: string; startDate: Date; image: string | null };
+    }>;
+  }): CartWithItems {
+    const items = cart.items.map((item) => ({
       id: item.id,
       eventId: item.eventId,
       ticketType: item.ticketType,
@@ -695,13 +712,13 @@ export class CartService {
       event: item.event,
     }));
 
-    const totalAmount = items.reduce((sum: number, item: any) => {
+    const totalAmount = items.reduce((sum, item) => {
       const itemTotal = item.unitPrice * item.quantity;
       const discount = item.discountAmount || 0;
       return sum + itemTotal - discount;
     }, 0);
 
-    const totalItems = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
     const remainingSeconds = Math.max(
       0,
       Math.floor((cart.expiresAt.getTime() - Date.now()) / 1000),

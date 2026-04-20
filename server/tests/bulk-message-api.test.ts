@@ -51,9 +51,7 @@ describe('Bulk Message API', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test admin
     const admin = await prisma.user.create({
@@ -62,7 +60,7 @@ describe('Bulk Message API', () => {
         password: await hashPassword('password123'),
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -150,7 +148,7 @@ describe('Bulk Message API', () => {
       expect(response.body.data.message.status).toBe(BulkMessageStatus.DRAFT);
     });
 
-    it('should require ADMIN_STAFF+ role', async () => {
+    it('should require ADMIN+ role', async () => {
       if (!dbConnected) return;
 
       const messageData = {
@@ -216,7 +214,7 @@ describe('Bulk Message API', () => {
       expect(response.body.data.messages.length).toBeGreaterThan(0);
     });
 
-    it('should require ADMIN_STAFF+ role', async () => {
+    it('should require ADMIN+ role', async () => {
       if (!dbConnected) return;
 
       // Create a temporary attendee token for this test

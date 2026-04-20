@@ -10,6 +10,8 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { PDFService } from './pdf.service.js';
 import { CloudinaryService } from './cloudinary.service.js';
+import { TicketService } from './ticket.service.js';
+import { registerQueueForMonitoring } from './queue-monitor.js';
 
 // Redis configuration for BullMQ
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6380';
@@ -91,8 +93,27 @@ export class TicketPdfQueueService {
       });
 
       worker.on('failed', (job, error) => {
-        logger.error(`PDF job ${job?.id} failed:`, error);
+        const maxAttempts = job?.opts?.attempts ?? 3;
+        const attemptsMade = job?.attemptsMade ?? 0;
+
+        if (attemptsMade >= maxAttempts) {
+          // All retries exhausted — alert ops (dead letter queue event)
+          logger.error('[DLQ] PDF job permanently failed after all retries', {
+            jobId: job?.id,
+            registrationId: job?.data?.registrationId,
+            eventId: job?.data?.eventId,
+            attendeeEmail: job?.data?.attendeeEmail,
+            attemptsMade,
+            maxAttempts,
+            error: error.message,
+          });
+        } else {
+          logger.warn(`PDF job ${job?.id} failed (attempt ${attemptsMade}/${maxAttempts}):`, error.message);
+        }
       });
+
+      // Register with Bull Board dashboard
+      registerQueueForMonitoring(queue);
 
       logger.info('Ticket PDF queue service initialized');
     } catch (error) {
@@ -124,19 +145,21 @@ export class TicketPdfQueueService {
    */
   static async addJob(data: TicketPdfJobData): Promise<string> {
     try {
-      // Update registration status to PENDING
-      await prisma.eventRegistration.update({
+      // Update registration status to PENDING (use updateMany to avoid throwing if record not yet visible)
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: {
           ticketPdfStatus: 'PENDING',
         },
       });
 
-      // If queue is not available, generate synchronously
+      // If queue is not available (e.g., Redis not running, test environment),
+      // skip PDF generation entirely. The ticket email will still be sent
+      // without a PDF attachment — the QR code and backup code are the primary
+      // entry credentials. PDF can be regenerated later via the resend endpoint.
       if (!queue) {
-        logger.debug('Queue not available, generating PDF synchronously');
-        await this.generatePdfSync(data);
-        return 'sync';
+        logger.debug('Queue not available — skipping PDF generation (ticket email will be sent without PDF)');
+        return 'skipped-no-queue';
       }
 
       // Add to queue with priority
@@ -149,10 +172,10 @@ export class TicketPdfQueueService {
       return job.id || 'unknown';
     } catch (error) {
       logger.error('Error adding PDF job:', error);
-
-      // Fall back to sync generation
-      await this.generatePdfSync(data);
-      return 'sync-fallback';
+      // Don't fall back to sync — it's too heavy for error paths.
+      // The ticket email will be sent without PDF. Users can request
+      // a resend once the queue is available.
+      return 'skipped-error';
     }
   }
 
@@ -216,14 +239,15 @@ export class TicketPdfQueueService {
    */
   private static async generatePdfSync(data: TicketPdfJobData): Promise<void> {
     try {
-      await prisma.eventRegistration.update({
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: { ticketPdfStatus: 'GENERATING' },
       });
 
       const pdfUrl = await this.generatePdf(data);
 
-      await prisma.eventRegistration.update({
+      // Use updateMany to avoid throwing if registration was deleted during generation
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: {
           ticketPdfUrl: pdfUrl,
@@ -237,9 +261,12 @@ export class TicketPdfQueueService {
 
       logger.info(`PDF generated synchronously for registration ${data.registrationId}`);
     } catch (error) {
-      await prisma.eventRegistration.update({
+      // Use updateMany to avoid throwing if registration doesn't exist
+      await prisma.eventRegistration.updateMany({
         where: { id: data.registrationId },
         data: { ticketPdfStatus: 'FAILED' },
+      }).catch((updateErr) => {
+        logger.error(`Failed to mark registration ${data.registrationId} as FAILED:`, updateErr);
       });
       throw error;
     }
@@ -265,48 +292,103 @@ export class TicketPdfQueueService {
   }
 
   /**
-   * Queue ticket email (separate from confirmation)
+   * Send Email 2: Ticket delivery email (called after PDF is ready).
+   * Fetches full registration data from DB and delegates to TicketService.
    */
   private static async queueTicketEmail(
     registrationId: string,
     _pdfUrl: string,
   ): Promise<void> {
     try {
-      // Get registration details
+      // Fetch full registration data needed by sendTicketEmail
       const registration = await prisma.eventRegistration.findUnique({
         where: { id: registrationId },
         include: {
-          attendee: {
-            select: {
-              email: true,
-              firstName: true,
-            },
-          },
+          ticketLineItems: true,
           event: {
             select: {
+              id: true,
               title: true,
+              description: true,
+              startDate: true,
+              endDate: true,
+              startTime: true,
+              endTime: true,
+              venue: true,
+              location: true,
+              address: true,
+              isOnline: true,
+              onlineLink: true,
+              image: true,
+              currency: true,
+              organizer: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  organizationName: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          attendee: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              companyAffiliation: true,
             },
           },
         },
       });
 
       if (!registration) {
+        logger.warn(`[queueTicketEmail] Registration ${registrationId} not found`);
         return;
       }
 
-      // Update email tracking
-      await prisma.eventRegistration.update({
-        where: { id: registrationId },
-        data: {
-          ticketEmailStatus: 'PENDING',
+      // Idempotency guard — skip if ticket email was already sent (prevents duplicate delivery on job retry)
+      if (registration.ticketEmailSentAt) {
+        logger.info(`[queueTicketEmail] Ticket email already sent at ${registration.ticketEmailSentAt.toISOString()} for registration ${registrationId} — skipping`);
+        return;
+      }
+
+      // Retrieve account invitation token if still valid (user hasn't set up account yet)
+      const emailVerification = await prisma.emailVerification.findFirst({
+        where: {
+          userId: registration.attendeeId,
+          token: { not: null },
+          expiresAt: { gt: new Date() },
+          verified: false,
         },
+        select: { token: true },
       });
 
-      // Note: Actual email sending would be done here or via another queue
-      // For now, we just mark it as ready to send
-      logger.info(`Ticket email queued for ${registration.attendee.email}`);
+      await TicketService.sendTicketEmail({
+        id: registration.id,
+        ticketType: registration.ticketType,
+        quantity: registration.quantity,
+        totalAmount: registration.totalAmount,
+        createdAt: registration.createdAt,
+        backupCode: registration.backupCode,
+        registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+        ticketLineItems: registration.ticketLineItems.map(item => ({
+          ticketType: item.ticketType,
+          quantity: item.quantity,
+          unitPrice: Number(item.unitPrice),
+          totalPrice: Number(item.totalPrice),
+        })),
+        accountInvitationToken: emailVerification?.token ?? null,
+        pdfUrl: registration.ticketPdfUrl, // Pass pre-generated URL to skip double PDF generation
+        event: registration.event,
+        attendee: registration.attendee,
+      });
+
+      logger.info(`[queueTicketEmail] Ticket email sent to ${registration.attendee.email} for registration ${registrationId}`);
     } catch (error) {
-      logger.error('Error queueing ticket email:', error);
+      logger.error('[queueTicketEmail] Error sending ticket email:', error);
     }
   }
 

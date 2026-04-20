@@ -55,9 +55,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
     if (!dbConnected) return;
 
     // Clear all tables
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     const hashedPassword = await hashPassword('Test123!@$');
 
@@ -95,6 +93,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
         isIdentityVerified: true, // Verified
         identityVerifiedAt: new Date(),
         verificationLevel: 2,
+        kycStatus: 'APPROVED',
       },
     });
     verifiedOrganizerId = verifiedOrganizer.id;
@@ -111,7 +110,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
         password: hashedPassword,
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
       },
@@ -541,6 +540,7 @@ describe('Eventbrite Approach: Event Creation and Payout Verification', () => {
           isIdentityVerified: true,
           identityVerifiedAt: new Date(),
           verificationLevel: 2,
+          kycStatus: 'APPROVED',
         },
       });
 

@@ -1,5 +1,5 @@
 import { PrismaClient, RegistrationStatus } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { PaymentService, InitializePaymentData } from '../../../src/services/payment.service.js';
 import {
   NotFoundError,
@@ -9,56 +9,56 @@ import * as databaseModule from '../../../src/config/database.js';
 import * as paymentGatewayManager from '../../../src/services/payment-gateway-manager.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/payment-gateway-manager.js', () => ({
-  getPaymentGatewayManager: jest.fn(),
+vi.mock('../../../src/services/payment-gateway-manager.js', () => ({
+  getPaymentGatewayManager: vi.fn(),
   GatewayType: {
     PAYSTACK: 'PAYSTACK',
     STRIPE: 'STRIPE',
   },
 }));
 
-jest.mock('../../../src/services/ticket.service.js', () => ({
+vi.mock('../../../src/services/ticket.service.js', () => ({
   TicketService: {
-    generateTicket: jest.fn(),
+    generateTicket: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/platform-fee.service.js', () => ({
+vi.mock('../../../src/services/platform-fee.service.js', () => ({
   PlatformFeeService: {
-    calculateAndRecordFees: jest.fn(),
+    calculateAndRecordFees: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/services/notification.service.js', () => ({
+vi.mock('../../../src/services/notification.service.js', () => ({
   NotificationService: {
-    sendNotification: jest.fn(),
+    sendNotification: vi.fn(),
   },
 }));
 
 const mockSeatSelectionService = {
-  confirmSeatReservation: jest.fn(),
+  confirmSeatReservation: vi.fn(),
 };
 
-jest.mock('../../../src/services/seat-selection.service.js', () => ({
+vi.mock('../../../src/services/seat-selection.service.js', () => ({
   SeatSelectionService: mockSeatSelectionService,
 }));
 
-jest.mock('../../../src/utils/transaction-helpers.js', () => ({
-  generatePaymentTransactionNumber: jest.fn(() => 'TXN-123456'),
+vi.mock('../../../src/utils/transaction-helpers.js', () => ({
+  generatePaymentTransactionNumber: vi.fn(() => 'TXN-123456'),
 }));
 
 describe('PaymentService', () => {
@@ -93,26 +93,32 @@ describe('PaymentService', () => {
 
     // Mock gateway manager
     const mockGateway = {
-      initializePayment: jest.fn(),
-      verifyPayment: jest.fn(),
-      processWebhook: jest.fn(),
-      handleWebhook: jest.fn(),
-      getName: jest.fn().mockReturnValue('PAYSTACK'),
+      initializePayment: vi.fn(),
+      verifyPayment: vi.fn(),
+      processWebhook: vi.fn(),
+      handleWebhook: vi.fn(),
+      getName: vi.fn().mockReturnValue('PAYSTACK'),
     };
 
     mockGatewayManager = {
-      initializePayment: jest.fn(),
-      verifyPayment: jest.fn(),
-      processWebhook: jest.fn(),
-      getDefaultGateway: jest.fn().mockReturnValue(mockGateway),
-      getGateway: jest.fn().mockReturnValue(mockGateway),
+      initializePayment: vi.fn(),
+      verifyPayment: vi.fn(),
+      processWebhook: vi.fn(),
+      getDefaultGateway: vi.fn().mockReturnValue(mockGateway),
+      getGateway: vi.fn().mockReturnValue(mockGateway),
     };
-    (paymentGatewayManager.getPaymentGatewayManager as jest.Mock).mockReturnValue(mockGatewayManager);
+    (paymentGatewayManager.getPaymentGatewayManager as vi.Mock).mockReturnValue(mockGatewayManager);
   });
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+
+    // Transaction mock — pass through to the same prisma mock so nested queries work
+    prisma.$transaction.mockImplementation((callback: any) => {
+      if (typeof callback === 'function') return callback(prisma);
+      return Promise.all(callback);
+    });
 
     // Reset all gateway mock methods
     const mockGateway = mockGatewayManager.getDefaultGateway();
@@ -174,7 +180,7 @@ describe('PaymentService', () => {
 
       await expect(
         paymentService.validateGuestPayment('registration-123', 'wrong@example.com'),
-      ).rejects.toThrow('Email does not match the registration');
+      ).rejects.toThrow('email address doesn\'t match this registration');
     });
 
     it('should throw error if payment already completed', async () => {
@@ -192,7 +198,7 @@ describe('PaymentService', () => {
 
       await expect(
         paymentService.validateGuestPayment('registration-123', 'test@example.com'),
-      ).rejects.toThrow('Payment already completed');
+      ).rejects.toThrow('Payment has already been completed');
     });
 
     it('should handle case-insensitive email matching', async () => {
@@ -226,6 +232,7 @@ describe('PaymentService', () => {
 
     it('should initialize payment for valid registration', async () => {
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null); // No existing payment
       prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
       const mockGateway = mockGatewayManager.getDefaultGateway();
 
@@ -239,6 +246,7 @@ describe('PaymentService', () => {
 
     it('should throw error if registration not found', async () => {
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
       prisma.eventRegistration.findUnique.mockResolvedValue(null);
 
       // Act & Assert
@@ -250,6 +258,7 @@ describe('PaymentService', () => {
     it('should throw error if registration is not pending', async () => {
       // Service now validates registration.status === RegistrationStatus.PENDING
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
       const confirmedRegistration = {
         ...mockRegistration,
         status: RegistrationStatus.CONFIRMED,
@@ -264,6 +273,7 @@ describe('PaymentService', () => {
 
     it('should use event currency if not specified', async () => {
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
       prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
       const mockGateway = mockGatewayManager.getDefaultGateway();
 
@@ -285,6 +295,7 @@ describe('PaymentService', () => {
 
     it('should include event metadata in payment initialization', async () => {
       // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
       prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
       const mockGateway = mockGatewayManager.getDefaultGateway();
 
@@ -298,6 +309,90 @@ describe('PaymentService', () => {
           amount: expect.any(Number),
         }),
       );
+    });
+
+    it('should generate deterministic idempotency key without timestamp', async () => {
+      // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+
+      // Act
+      await paymentService.initializePayment(paymentData);
+
+      // Assert — idempotency check should use registrationId-amount (no Date.now)
+      expect(prisma.eventPaymentTransaction.findUnique).toHaveBeenCalledWith({
+        where: { idempotencyKey: `${paymentData.registrationId}-${paymentData.amount}` },
+      });
+    });
+
+    it('should return existing payment for duplicate idempotent request (success)', async () => {
+      // Arrange — existing successful payment with same idempotency key
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue({
+        id: 'txn-existing',
+        idempotencyKey: `${paymentData.registrationId}-${paymentData.amount}`,
+        gatewayReference: 'PAY-EXISTING',
+        gateway: 'PAYSTACK',
+        paymentStatus: 'success',
+      } as any);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+
+      // Act
+      const result = await paymentService.initializePayment(paymentData);
+
+      // Assert — returns existing payment, doesn't call gateway
+      expect(result.status).toBe('ALREADY_PAID');
+      expect(result.reference).toBe('PAY-EXISTING');
+      const mockGateway = mockGatewayManager.getDefaultGateway();
+      expect(mockGateway.initializePayment).not.toHaveBeenCalled();
+    });
+
+    it('should return pending status for duplicate idempotent request (pending)', async () => {
+      // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue({
+        id: 'txn-pending',
+        idempotencyKey: `${paymentData.registrationId}-${paymentData.amount}`,
+        gatewayReference: 'PAY-PENDING',
+        gateway: 'PAYSTACK',
+        paymentStatus: 'pending',
+      } as any);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+
+      // Act
+      const result = await paymentService.initializePayment(paymentData);
+
+      // Assert
+      expect(result.status).toBe('PENDING');
+      expect(result.reference).toBe('PAY-PENDING');
+    });
+
+    it('should use client-provided idempotency key when given', async () => {
+      // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+      const customKey = 'client-custom-key-12345';
+
+      // Act
+      await paymentService.initializePayment({
+        ...paymentData,
+        idempotencyKey: customKey,
+      });
+
+      // Assert
+      expect(prisma.eventPaymentTransaction.findUnique).toHaveBeenCalledWith({
+        where: { idempotencyKey: customKey },
+      });
+    });
+
+    it('should run idempotency check and registration lookup in a transaction', async () => {
+      // Arrange
+      prisma.eventPaymentTransaction.findUnique.mockResolvedValue(null);
+      prisma.eventRegistration.findUnique.mockResolvedValue(mockRegistration as any);
+
+      // Act
+      await paymentService.initializePayment(paymentData);
+
+      // Assert — $transaction was called
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
   });
 
@@ -369,7 +464,7 @@ describe('PaymentService', () => {
 
       await expect(
         paymentService.verifyPayment(reference),
-      ).rejects.toThrow('Failed to verify payment');
+      ).rejects.toThrow('couldn\'t verify your payment');
     });
   });
 

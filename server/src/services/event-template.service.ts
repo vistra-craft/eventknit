@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 import crypto from 'crypto';
@@ -12,7 +13,7 @@ export class EventTemplateService {
     description?: string;
     category?: string;
     tags?: string[];
-    templateData: any;
+    templateData: Prisma.InputJsonValue;
     isPublic?: boolean;
     thumbnail?: string;
   }) {
@@ -61,7 +62,15 @@ export class EventTemplateService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: {
+        organizerId: string;
+        deletedAt: null;
+        category?: string;
+        OR?: Array<{
+          name?: { contains: string; mode: 'insensitive' };
+          description?: { contains: string; mode: 'insensitive' };
+        }>;
+      } = {
         organizerId,
         deletedAt: null,
       };
@@ -125,7 +134,15 @@ export class EventTemplateService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: {
+        isPublic: boolean;
+        deletedAt: null;
+        category?: string;
+        OR?: Array<{
+          name?: { contains: string; mode: 'insensitive' };
+          description?: { contains: string; mode: 'insensitive' };
+        }>;
+      } = {
         isPublic: true,
         deletedAt: null,
       };
@@ -236,7 +253,7 @@ export class EventTemplateService {
     description?: string;
     category?: string;
     tags?: string[];
-    templateData?: any;
+    templateData?: Prisma.JsonValue;
     isPublic?: boolean;
     thumbnail?: string;
   }) {
@@ -279,7 +296,7 @@ export class EventTemplateService {
   static async createTemplateVersion(templateId: string, organizerId: string, data: {
     name?: string;
     description?: string;
-    templateData?: any;
+    templateData?: Prisma.JsonValue;
   }) {
     try {
       const parent = await prisma.eventTemplate.findFirst({
@@ -313,7 +330,7 @@ export class EventTemplateService {
           description: data.description || parent.description,
           category: parent.category,
           tags: parent.tags,
-          templateData: data.templateData || parent.templateData,
+          templateData: (data.templateData || parent.templateData) as unknown as Prisma.InputJsonValue,
           isPublic: false,
           version: newVersion,
         },

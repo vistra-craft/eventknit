@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as authApi from '@/lib/auth-api';
 import { useToast } from '@/hooks/useToast';
+import { extractErrorMessage } from '@/lib/utils/error';
 
 /**
  * Hook for uploading user avatar
@@ -31,11 +32,9 @@ export function useUploadAvatar() {
       });
     },
     onError: (error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to upload avatar';
-      
       toast({
-        title: 'Error',
-        description: errorMessage,
+        title: 'Upload failed',
+        description: extractErrorMessage(error, 'Failed to upload avatar'),
         variant: 'destructive',
       });
     },

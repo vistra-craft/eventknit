@@ -410,7 +410,7 @@ describe('Early Bird Tickets', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('valid date strings');
+      expect(response.body.message).toContain('must be in iso format');
     });
   });
 });

@@ -1,13 +1,105 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { CheckCircle } from 'lucide-react';
-import { Loader } from '@/components/ui/loader';
-import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Mail,
+  ArrowRight,
+  ArrowLeft,
+  Check,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import Logo from '@/components/layout/Logo';
 import { forgotPassword } from '@/lib/auth-api';
+
+// Ambient Glow — gentle drift, blue only
+const AmbientGlow = ({
+  className,
+  delay = 0,
+  duration = 30,
+}: {
+  className?: string;
+  delay?: number;
+  duration?: number;
+}) => (
+  <motion.div
+    className={cn('absolute rounded-full blur-3xl', className)}
+    animate={{
+      x: [0, 40, -20, 0],
+      y: [0, -30, 20, 0],
+    }}
+    transition={{ duration, delay, repeat: Infinity, ease: 'easeInOut' }}
+  />
+);
+
+// Animated Input Component with floating label and icon
+const AnimatedInput = ({
+  id,
+  type,
+  label,
+  value,
+  onChange,
+  icon: Icon,
+  autoComplete,
+  disabled,
+}: {
+  id: string;
+  type: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  icon: React.ElementType;
+  autoComplete?: string;
+  disabled?: boolean;
+}) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const isActive = isFocused || value.length > 0;
+
+  return (
+    <motion.div
+      className="relative"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <div
+        className={cn(
+          'relative rounded-xl border-2 transition-all duration-300',
+          isFocused
+            ? 'border-primary shadow-lg shadow-primary/10'
+            : 'border-border hover:border-primary/50'
+        )}
+      >
+        <div className="absolute left-4 top-1/2 -translate-y-1/2">
+          <Icon className={cn('h-5 w-5 transition-colors duration-300', isFocused ? 'text-primary' : 'text-muted-foreground')} />
+        </div>
+        <motion.label
+          htmlFor={id}
+          className={cn(
+            'absolute left-12 pointer-events-none transition-colors duration-300',
+            isActive ? 'text-xs text-primary' : 'text-sm text-muted-foreground'
+          )}
+          animate={{ top: isActive ? 8 : '50%', translateY: isActive ? 0 : '-50%' }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          {label}
+        </motion.label>
+        <input
+          id={id}
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          autoComplete={autoComplete}
+          disabled={disabled}
+          className="w-full bg-transparent pl-12 pr-4 pt-6 pb-2 text-foreground outline-none rounded-xl disabled:cursor-not-allowed"
+        />
+      </div>
+    </motion.div>
+  );
+};
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -29,7 +121,6 @@ const ForgotPassword = () => {
       }
     } catch {
       // Don't reveal if email exists or not for security
-      // Show success even if email doesn't exist
       setIsSubmitted(true);
     } finally {
       setIsLoading(false);
@@ -37,134 +128,224 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="bg-background min-h-screen flex items-center justify-center">
-      <div className="p-4 w-full">
-        <div className="w-full max-w-md mx-auto">
-          <div className="bg-card-surface rounded-2xl shadow-md overflow-hidden">
-            <div className="p-5 lg:p-6">
-              {/* Header - always visible */}
-              <div className="flex items-center justify-between gap-4 mb-4">
-                <BackButton to="/auth/signin" label="Back to sign in" />
-                <Logo />
-              </div>
+    <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden">
+      {/* Ambient background */}
+      <div className="absolute inset-0">
+        <AmbientGlow className="w-[600px] h-[600px] bg-primary/10 -top-40 -left-40" delay={0} duration={30} />
+        <AmbientGlow className="w-[500px] h-[500px] bg-primary/8 bottom-0 right-0" delay={4} duration={35} />
+      </div>
 
+      {/* Card */}
+      <motion.div
+        className="w-full max-w-md relative z-10 px-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+      >
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+
+          <div className="relative p-8 sm:p-10">
+            {/* Logo */}
+            <Link to="/" className="flex justify-center">
+              <motion.div
+                className="mb-8"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Logo />
+              </motion.div>
+            </Link>
+
+            <AnimatePresence mode="wait">
               {!isSubmitted ? (
-                <>
-                  {/* Title */}
-                  <div className="mb-4">
-                    <h1 className="text-2xl font-bold text-foreground mb-1">Forgot password?</h1>
-                    <p className="text-sm text-muted-foreground">
+                <motion.div
+                  key="form"
+                  initial={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="space-y-5"
+                >
+                  {/* Header */}
+                  <motion.div
+                    className="text-center mb-2"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                  >
+                    <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+                      Forgot password?
+                    </h2>
+                    <p className="text-muted-foreground">
                       Enter your email and we'll send you a reset link
                     </p>
-                  </div>
+                  </motion.div>
+
+                  {/* Error */}
+                  <AnimatePresence>
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive"
+                      >
+                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                        <span className="text-sm">{error}</span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* Form */}
-                  <div className="space-y-4">
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      {error && (
-                        <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
-                          {error}
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <AnimatedInput
+                      id="email"
+                      type="email"
+                      label="Email address"
+                      value={email}
+                      onChange={(val) => {
+                        setEmail(val);
+                        if (error) setError(null);
+                      }}
+                      icon={Mail}
+                      autoComplete="email"
+                      disabled={isLoading}
+                    />
+
+                    <motion.button
+                      type="submit"
+                      disabled={isLoading || !email}
+                      className="w-full relative flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-medium text-sm text-primary-foreground bg-primary transition-all duration-300 hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 disabled:opacity-80 disabled:cursor-not-allowed disabled:hover:shadow-none"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.4 }}
+                      whileHover={!isLoading ? { scale: 1.01, y: -1 } : {}}
+                      whileTap={!isLoading ? { scale: 0.98 } : {}}
+                    >
+                      <span className={cn(isLoading && 'opacity-0')}>Send Reset Link</span>
+                      <ArrowRight className={cn('h-4 w-4', isLoading && 'opacity-0')} />
+                      {isLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         </div>
                       )}
+                    </motion.button>
+                  </form>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm font-medium text-foreground">Email address</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="you@example.com"
-                          value={email}
-                          onChange={(e) => {
-                            setEmail(e.target.value);
-                            if (error) setError(null);
-                          }}
-                          className="h-11 border-border focus:border-primary focus:ring-primary"
-                          required
-                          disabled={isLoading}
-                        />
-                      </div>
+                  {/* Back to sign in */}
+                  <motion.div
+                    className="text-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4, delay: 0.5 }}
+                  >
+                    <Link
+                      to="/auth/signin"
+                      className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to sign in
+                    </Link>
+                  </motion.div>
 
-                      <Button
-                        type="submit"
-                        variant="default"
-                        className="w-full h-11"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader size="sm" className="mr-2" />
-                            Sending reset link...
-                          </>
-                        ) : (
-                          'Send Reset Link'
-                        )}
-                      </Button>
-                    </form>
-
-                    {/* Sign in link */}
-                    <div className="text-center pt-1">
-                      <p className="text-sm text-muted-foreground">
-                        Remember your password?{' '}
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto font-medium"
-                          asChild
-                        >
-                          <Link to="/auth/signin">Sign in</Link>
-                        </Button>
-                      </p>
-                    </div>
-
-                    {/* Help tip */}
-                    <p className="text-xs text-center text-muted-foreground">
-                      Can't find the email? Check your spam folder. The reset link expires in 1 hour.
-                    </p>
-                  </div>
-                </>
+                  {/* Help tip */}
+                  <motion.p
+                    className="text-xs text-center text-muted-foreground"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.4, delay: 0.6 }}
+                  >
+                    Can't find the email? Check your spam folder. The reset link expires in 1 hour.
+                  </motion.p>
+                </motion.div>
               ) : (
                 /* Success State */
-                <div className="text-center space-y-4 py-4">
-                  <div className="flex justify-center">
-                    <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center">
-                      <CheckCircle className="w-6 h-6 text-success" />
-                    </div>
-                  </div>
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="flex flex-col items-center justify-center py-6 space-y-5"
+                >
+                  <motion.div
+                    className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
+                  >
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.3 }}
+                    >
+                      <Check className="h-10 w-10 text-emerald-500" strokeWidth={3} />
+                    </motion.div>
+                  </motion.div>
 
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground mb-1">Check your email</h2>
-                    <p className="text-sm text-muted-foreground">
+                  <motion.div
+                    className="text-center"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <h3 className="text-xl font-semibold text-foreground mb-2">Check your email</h3>
+                    <p className="text-muted-foreground">
                       We've sent a password reset link to{' '}
                       <span className="font-medium text-foreground">{email}</span>
                     </p>
-                  </div>
+                  </motion.div>
 
-                  <p className="text-sm text-muted-foreground">
+                  <motion.p
+                    className="text-sm text-muted-foreground"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
                     Didn't receive the email?{' '}
-                    <Button
-                      variant="link"
-                      className="p-0 h-auto font-medium"
+                    <button
+                      type="button"
                       onClick={() => {
                         setIsSubmitted(false);
                         setEmail('');
                       }}
+                      className="text-primary hover:text-primary/80 font-medium transition-colors"
                     >
                       Try again
-                    </Button>
-                  </p>
+                    </button>
+                  </motion.p>
 
-                  <Button
-                    variant="outline"
-                    className="w-full h-11"
-                    asChild
+                  <motion.div
+                    className="w-full"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 }}
                   >
-                    <Link to="/auth/signin">Return to Sign In</Link>
-                  </Button>
-                </div>
+                    <Link
+                      to="/auth/signin"
+                      className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-border bg-card hover:bg-secondary/50 transition-all duration-300 text-sm font-medium text-foreground"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Return to Sign In
+                    </Link>
+                  </motion.div>
+                </motion.div>
               )}
-            </div>
+            </AnimatePresence>
           </div>
         </div>
-      </div>
+
+        {/* Footer */}
+        <motion.p
+          className="text-center text-xs text-muted-foreground mt-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.8 }}
+        >
+          By continuing, you agree to our{' '}
+          <Link to="/terms-of-service" className="text-primary hover:underline">Terms of Service</Link>{' '}
+          and{' '}
+          <Link to="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>
+        </motion.p>
+      </motion.div>
     </div>
   );
 };

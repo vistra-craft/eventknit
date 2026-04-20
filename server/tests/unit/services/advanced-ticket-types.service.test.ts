@@ -1,10 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { AdvancedTicketTypesService } from '../../../src/services/advanced-ticket-types.service.js';
 import { NotFoundError, ValidationError } from '../../../src/utils/errors.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: mockDeep<PrismaClient>(),
 }));
 

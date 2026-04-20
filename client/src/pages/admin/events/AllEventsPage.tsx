@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus, CheckCircle, Clock, DollarSign } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Search, Calendar, MapPin, Users, Eye, MoreHorizontal, AlertCircle, CheckSquare, Square, Settings, Edit, BarChart3, Download, Share2, Copy, X, Plus, CheckCircle, Clock, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -8,25 +8,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "../../../components/ui/radio-group";
+import { Label } from "../../../components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
-import { RichTextContent } from "../../../components/ui/RichTextContent";
 import { Pagination } from "../../../components/ui/pagination";
 import { Loader } from "../../../components/ui/loader";
 import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
 import { getCategoriesByGroup } from "@/lib/event-categories";
-import { bulkUpdateOrganizerDataAccess, getAdminStaffEvents } from "../../../lib/admin-api";
+import { bulkUpdateOrganizerDataAccess, getAdminStaffEvents, recallEvent } from "../../../lib/admin-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast, extractErrorMessage } from "../../../lib/utils/error";
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { usePermissionsEnhanced } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import { getEventStatusBadgeClass, getEventTypeBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 
 interface Event {
   id: string;
+  slug?: string | null;
   title: string;
   organizer: string;
+  organizerId?: string;
+  organizerAvatar?: string | null;
+  organizerVerified?: boolean;
   date: string;
   startDate?: string;
   startTime?: string;
@@ -45,6 +53,7 @@ const AllEventsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const permissions = usePermissionsEnhanced();
+  const queryClient = useQueryClient();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,11 +76,49 @@ const AllEventsPage = () => {
   const [previewEventId, setPreviewEventId] = useState<string | null>(null);
   const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [showRecallDialog, setShowRecallDialog] = useState(false);
+  const [recallEventId, setRecallEventId] = useState<string | null>(null);
+  const [recallAction, setRecallAction] = useState<'PENDING' | 'CANCELLED'>('PENDING');
+  const [recallReason, setRecallReason] = useState("");
+  const [recalling, setRecalling] = useState(false);
   const { toast } = useToast();
 
   const handlePreviewEvent = (eventId: string) => {
     setPreviewEventId(eventId);
     setPreviewModalOpen(true);
+  };
+
+  const openRecallDialog = (eventId: string) => {
+    setRecallEventId(eventId);
+    setShowRecallDialog(true);
+  };
+
+  const handleRecallEvent = async () => {
+    if (!recallEventId) return;
+    try {
+      setRecalling(true);
+      const response = await recallEvent(recallEventId, recallAction, recallReason || undefined);
+      if (response.success) {
+        setShowRecallDialog(false);
+        setRecallEventId(null);
+        setRecallAction('PENDING');
+        setRecallReason("");
+        toast({
+          title: recallAction === 'PENDING' ? "Event recalled to pending" : "Event recalled and cancelled",
+          description: recallAction === 'PENDING'
+            ? "The event has been pulled down and is awaiting re-approval."
+            : "The event has been cancelled. You can find it in Recalled Events.",
+        });
+        // Remove recalled event from the list
+        setEvents(prev => prev.filter(e => e.id !== recallEventId));
+      } else {
+        throw new Error(response.message || 'Failed to recall event');
+      }
+    } catch (err: unknown) {
+      setError(extractErrorMessage(err, 'Failed to recall event. Please try again.'));
+    } finally {
+      setRecalling(false);
+    }
   };
 
   // Fetch event details for preview modal
@@ -85,20 +132,11 @@ const AllEventsPage = () => {
         if (response.success && response.data?.event) {
           setPreviewEventData(response.data.event);
         } else {
-          toast({
-            title: "Error",
-            description: "Failed to load event details",
-            variant: "destructive",
-          });
+          showErrorToast(toast, new Error("Failed to load event details"), "Preview failed", "Failed to load event details");
           setPreviewModalOpen(false);
         }
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : "Failed to load event details";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Preview failed", "Failed to load event details");
         setPreviewModalOpen(false);
       } finally {
         setPreviewLoading(false);
@@ -195,8 +233,12 @@ const AllEventsPage = () => {
 
             return {
               id: event.id,
+              slug: event.slug ?? null,
               title: event.title,
               organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
+              organizerId: event.organizer?.id,
+              organizerAvatar: event.organizer?.avatar ?? null,
+              organizerVerified: event.organizer?.isIdentityVerified ?? false,
               date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
               startDate: event.startDate,
               startTime: event.startTime || '',
@@ -308,17 +350,10 @@ const AllEventsPage = () => {
         setSelectedEvents(new Set());
         setBulkUpdateDialogOpen(false);
         // Refresh events
-        window.location.reload();
+        queryClient.invalidateQueries({ queryKey: ['admin'] });
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
-        : 'Failed to update data access';
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Update failed", "Failed to update data access");
     } finally {
       setBulkUpdating(false);
     }
@@ -382,7 +417,7 @@ const AllEventsPage = () => {
   return (
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">
               {permissions.canAccessAllEvents ? 'All Events' : 'My Assigned Events'}
@@ -553,7 +588,7 @@ const AllEventsPage = () => {
           </CardContent>
         </Card>
 
-        {/* Bulk Actions Toolbar - Only for ADMIN_STAFF and SUPERADMIN */}
+        {/* Bulk Actions Toolbar - Only for ADMIN and SUPERADMIN */}
         {selectedEvents.size > 0 && permissions.canAccessAllEvents && (
           <Card className="border-primary bg-primary/5">
             <CardContent className="p-4">
@@ -584,7 +619,7 @@ const AllEventsPage = () => {
 
         {/* Events List */}
         <div className="space-y-3">
-          {/* Select All Checkbox - Only for ADMIN_STAFF and SUPERADMIN */}
+          {/* Select All Checkbox - Only for ADMIN and SUPERADMIN */}
           {filteredEvents.length > 0 && permissions.canAccessAllEvents && (
             <div className="flex items-center gap-2 pb-2 border-b">
               <Button
@@ -668,10 +703,34 @@ const AllEventsPage = () => {
                           <Users className="h-4 w-4" />
                           <span>{event.attendees} attendees</span>
                         </div>
-                        <span className="text-muted-foreground">by {event.organizer}</span>
+                        {/* Organizer attribution */}
+                        <Link
+                          to={event.organizerId ? `/admin/users/organizers?id=${event.organizerId}` : "#"}
+                          onClick={e => e.stopPropagation()}
+                          className="flex items-center gap-1.5 group/org hover:text-foreground transition-colors"
+                        >
+                          {/* Avatar */}
+                          {event.organizerAvatar ? (
+                            <img
+                              src={event.organizerAvatar}
+                              alt={event.organizer}
+                              className="h-5 w-5 rounded-full object-cover ring-1 ring-border"
+                            />
+                          ) : (
+                            <span className="h-5 w-5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold flex items-center justify-center ring-1 ring-border">
+                              {event.organizer.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          <span className="text-muted-foreground group-hover/org:text-foreground transition-colors">
+                            {event.organizer}
+                          </span>
+                          {event.organizerVerified && (
+                            <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" aria-label="KYC Verified" />
+                          )}
+                        </Link>
                       </div>
                     </div>
-                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                  <div className="flex items-center gap-2 ml-0 sm:ml-4 flex-shrink-0">
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -688,12 +747,7 @@ const AllEventsPage = () => {
                            <Button
                              variant="destructive"
                              size="sm"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               // Open recall dialog - functionality already exists in UpcomingEventsPage
-                               // For now, navigate to upcoming events page where recall is available
-                               window.open(`/admin/events/upcoming`, '_blank');
-                             }}
+                             onClick={(e: React.MouseEvent) => { e.stopPropagation(); openRecallDialog(event.id); }}
                            >
                              <X className="h-4 w-4 mr-1" />
                              Recall
@@ -710,20 +764,24 @@ const AllEventsPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => window.open(`/admin/events/${event.id}`, '_blank')}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Event
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Manage Event
+                          </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Public Page
+                        <DropdownMenuItem asChild>
+                          <Link to={`/event/${event.slug ?? event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Public Page
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
-                          window.open(`/admin/analytics/events?eventId=${event.id}`, '_blank');
-                        }}>
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          View Analytics
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/analytics/events?eventId=${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Analytics
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           try {
@@ -742,12 +800,8 @@ const AllEventsPage = () => {
                               title: "Exported",
                               description: "Event data exported successfully",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to export event data",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Export failed", "Failed to export event data");
                           }
                         }}>
                           <Download className="h-4 w-4 mr-2" />
@@ -755,17 +809,13 @@ const AllEventsPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.slug ?? event.id}`);
                             toast({
                               title: "Copied",
                               description: "Event link copied to clipboard",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to copy link",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Copy failed", "Failed to copy link");
                           }
                         }}>
                           <Copy className="h-4 w-4 mr-2" />
@@ -824,215 +874,12 @@ const AllEventsPage = () => {
         )}
 
         {/* Event Preview Modal */}
-        <Dialog open={previewModalOpen} onOpenChange={(open) => {
-          setPreviewModalOpen(open);
-          if (!open) {
-            setPreviewEventData(null);
-            setPreviewEventId(null);
-          }
-        }}>
-          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-            {previewLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="text-center">
-                  <Loader size="lg" className="h-8 w-8 mx-auto mb-4" />
-                  <p className="text-sm text-muted-foreground">Loading event details...</p>
-                </div>
-              </div>
-            ) : !previewEventData ? (
-              <div className="text-center py-12">
-                <AlertCircle className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                <p className="text-muted-foreground">Event not found</p>
-              </div>
-            ) : (
-              <>
-                <DialogHeader className="space-y-3">
-                  <div className="flex items-start gap-4">
-                    <EventThumbnail
-                      src={previewEventData.image}
-                      alt={previewEventData.title}
-                      category={previewEventData.category || ''}
-                      size="lg"
-                      className="flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <DialogTitle className="text-xl font-bold text-foreground mb-3">
-                        {previewEventData.title}
-                      </DialogTitle>
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        {previewEventData.status && (
-                          <Badge className={`text-xs ${getStatusBadge(
-                            previewEventData.status === 'APPROVED' ? 'active' :
-                            previewEventData.status === 'REJECTED' ? 'declined' :
-                            previewEventData.status === 'CANCELLED' ? 'cancelled' :
-                            previewEventData.status === 'PENDING' ? 'pending' : 'pending'
-                          )}`}>
-                            {previewEventData.status}
-                          </Badge>
-                        )}
-                        {previewEventData.type && (
-                          <Badge className={`text-xs ${getTypeBadge(previewEventData.type === 'PUBLIC' ? 'public' : 'private')}`}>
-                            {previewEventData.type}
-                          </Badge>
-                        )}
-                        {previewEventData.category && (
-                          <Badge variant="outline" className="text-xs">
-                            {previewEventData.category}
-                          </Badge>
-                        )}
-                        <Badge className={`text-xs ${getPriceBadge(previewEventData.isFree ? 'free' : 'paid')}`}>
-                          {previewEventData.isFree ? 'Free Event' : 'Paid Event'}
-                        </Badge>
-                      </div>
-                      {previewEventData.organizer && (
-                        <DialogDescription className="text-sm">
-                          Organized by <span className="font-medium text-foreground">
-                            {previewEventData.organizer.organizationName ||
-                             `${previewEventData.organizer.firstName || ''} ${previewEventData.organizer.lastName || ''}`.trim() ||
-                             'Unknown Organizer'}
-                          </span>
-                        </DialogDescription>
-                      )}
-                    </div>
-                  </div>
-                </DialogHeader>
-
-                <div className="space-y-6 py-4">
-                  {/* Description Section */}
-                  {previewEventData.description && (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Description</h3>
-                      <div className="rounded-lg bg-muted/30 p-4 border border-border/40">
-                        <RichTextContent
-                          content={previewEventData.description}
-                          className="text-sm text-foreground leading-relaxed"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Event Details Grid */}
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">Event Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {previewEventData.startDate && (
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
-                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                            <Calendar className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Start Date</p>
-                            <p className="text-sm font-semibold text-foreground mt-1">
-                              {new Date(previewEventData.startDate).toLocaleDateString('en-US', {
-                                weekday: 'short',
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                              })}
-                            </p>
-                            {previewEventData.startTime && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{previewEventData.startTime}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {previewEventData.endDate && (
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
-                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <Calendar className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">End Date</p>
-                            <p className="text-sm font-semibold text-foreground mt-1">
-                              {new Date(previewEventData.endDate).toLocaleDateString('en-US', {
-                                weekday: 'short',
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                              })}
-                            </p>
-                            {previewEventData.endTime && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{previewEventData.endTime}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {(previewEventData.location || previewEventData.venue) && (
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
-                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
-                            <MapPin className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Location</p>
-                            <p className="text-sm font-semibold text-foreground mt-1 break-words">
-                              {previewEventData.location || previewEventData.venue}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
-                        <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                          <Users className="h-5 w-5 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Attendance</p>
-                          <p className="text-sm font-semibold text-foreground mt-1">
-                            {previewEventData.attendees || 0}
-                            {previewEventData.capacity && ` / ${previewEventData.capacity}`}
-                            {' '}
-                            {previewEventData.capacity ? 'registered' : 'attendees'}
-                          </p>
-                          {previewEventData.capacity && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {Math.round(((previewEventData.attendees || 0) / previewEventData.capacity) * 100)}% capacity
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {previewEventData.price !== undefined && (
-                        <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/40 hover:border-border/60 transition-colors">
-                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
-                            <DollarSign className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Price</p>
-                            <p className="text-sm font-semibold text-foreground mt-1">
-                              {previewEventData.isFree ? "Free Event" : `$${previewEventData.price}`}
-                            </p>
-                            {!previewEventData.isFree && (
-                              <p className="text-xs text-muted-foreground mt-0.5">Per ticket</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <DialogFooter className="gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setPreviewModalOpen(false)}
-                  >
-                    Close
-                  </Button>
-                  <Button
-                    variant="default"
-                    onClick={() => window.open(`/event/${previewEventId}`, '_blank')}
-                    className="gap-2"
-                  >
-                    <Eye className="h-4 w-4" />
-                    View Public Page
-                  </Button>
-                </DialogFooter>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
+        <EventPreviewModal
+          isOpen={previewModalOpen}
+          onOpenChange={setPreviewModalOpen}
+          event={previewEventData}
+          loading={previewLoading}
+        />
 
         {/* Bulk Update Dialog */}
         <Dialog open={bulkUpdateDialogOpen} onOpenChange={setBulkUpdateDialogOpen}>
@@ -1089,6 +936,74 @@ const AllEventsPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+      {/* Recall Event Dialog */}
+      <Dialog open={showRecallDialog} onOpenChange={setShowRecallDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Recall Event</DialogTitle>
+            <DialogDescription>
+              Pull down this approved event. Choose whether to set it back to pending for re-approval or permanently cancel it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <RadioGroup value={recallAction} onValueChange={(value) => setRecallAction(value as 'PENDING' | 'CANCELLED')}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="PENDING" id="all-recall-pending" />
+                <Label htmlFor="all-recall-pending" className="cursor-pointer">
+                  Set to Pending (Re-approval)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="CANCELLED" id="all-recall-cancelled" />
+                <Label htmlFor="all-recall-cancelled" className="cursor-pointer">
+                  Permanently Cancel
+                </Label>
+              </div>
+            </RadioGroup>
+            <div>
+              <label htmlFor="all-recall-reason" className="text-sm font-medium">
+                Reason for recall (optional)
+              </label>
+              <textarea
+                id="all-recall-reason"
+                className="mt-2 w-full min-h-[100px] px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
+                placeholder="Enter reason for recall..."
+                value={recallReason}
+                onChange={(e) => setRecallReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRecallDialog(false);
+                setRecallEventId(null);
+                setRecallAction('PENDING');
+                setRecallReason("");
+              }}
+              disabled={recalling}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRecallEvent}
+              disabled={recalling}
+            >
+              {recalling ? (
+                <>
+                  <Loader size="sm" className="w-4 h-4 mr-2" />
+                  Recalling...
+                </>
+              ) : (
+                recallAction === 'PENDING' ? 'Set to Pending' : 'Permanently Cancel'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       </div>
   );

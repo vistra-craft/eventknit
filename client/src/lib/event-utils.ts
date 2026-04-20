@@ -185,6 +185,26 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
   const date = formatEventDateRange(backendEvent.startDate, backendEvent.endDate);
   const time = formatEventTime(backendEvent.startTime, backendEvent.endTime);
 
+  const rawTicketTypes = backendEvent.ticketTypes
+    ? Array.isArray(backendEvent.ticketTypes)
+      ? backendEvent.ticketTypes
+      : []
+    : null;
+
+  const dedupedTicketTypes = rawTicketTypes
+    ? Array.from(
+      rawTicketTypes.reduce((map, ticket) => {
+        const name = typeof ticket?.name === 'string' ? ticket.name.trim() : '';
+        if (!name) return map;
+        const key = name.toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, ticket);
+        }
+        return map;
+      }, new Map<string, (typeof rawTicketTypes)[number]>()),
+    ).map(([, ticket]) => ticket)
+    : null;
+
   return {
     ...backendEvent,
     price,
@@ -209,11 +229,7 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
     coordinates: backendEvent.coordinates || null,
     timezone: backendEvent.timezone || null,
     // Convert ticket types if needed
-    ticketTypes: backendEvent.ticketTypes
-      ? Array.isArray(backendEvent.ticketTypes)
-        ? backendEvent.ticketTypes
-        : []
-      : null,
+    ticketTypes: dedupedTicketTypes,
     // Convert other JSON fields
     speakers: backendEvent.speakers
       ? Array.isArray(backendEvent.speakers)

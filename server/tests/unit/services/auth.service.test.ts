@@ -1,5 +1,5 @@
 import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { AuthService } from '../../../src/services/auth.service.js';
 import {
   AuthenticationError,
@@ -14,38 +14,42 @@ import { emailService } from '../../../src/services/email.service.js';
 import * as databaseModule from '../../../src/config/database.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   __esModule: true,
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/utils/password.js', () => ({
-  ...jest.requireActual('../../../src/utils/password.js'),
-  hashPassword: jest.fn(),
-  comparePassword: jest.fn(),
-  checkPasswordBreach: jest.fn(),
-  // hashToken uses real implementation (pure SHA-256, no side effects)
-}));
-jest.mock('../../../src/utils/jwt.js');
+vi.mock('../../../src/utils/password.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/utils/password.js')>();
+  return {
+    ...actual,
+    hashPassword: vi.fn(),
+    comparePassword: vi.fn(),
+    checkPasswordBreach: vi.fn(),
+    // hashToken uses real implementation (pure SHA-256, no side effects)
+  };
+});
+vi.mock('../../../src/utils/jwt.js');
 
-jest.mock('../../../src/services/email.service.js', () => ({
+vi.mock('../../../src/services/email.service.js', () => ({
   emailService: {
-    sendVerificationCode: jest.fn(),
-    sendPasswordResetEmail: jest.fn(),
-    sendWelcomeEmail: jest.fn(),
-    sendAccountInvitation: jest.fn(),
+    sendVerificationCode: vi.fn(),
+    sendPasswordResetEmail: vi.fn(),
+    sendWelcomeEmail: vi.fn(),
+    sendAccountInvitation: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
+vi.mock('../../../src/utils/logger.js', () => ({
   logger: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
-jest.mock('../../../src/config/index.js', () => ({
+vi.mock('../../../src/config/index.js', () => ({
   config: {
     jwt: {
       expiresIn: '1h',
@@ -57,8 +61,8 @@ jest.mock('../../../src/config/index.js', () => ({
   },
 }));
 
-jest.mock('../../../src/utils/audit.js', () => ({
-  createAuditLog: jest.fn(),
+vi.mock('../../../src/utils/audit.js', () => ({
+  createAuditLog: vi.fn(),
   AuditActions: {
     USER_LOGIN: 'USER_LOGIN',
     USER_LOGOUT: 'USER_LOGOUT',
@@ -75,7 +79,7 @@ describe('AuthService - Registration Flow', () => {
 
   beforeEach(() => {
     mockReset(prisma);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('requestRegistrationCode', () => {
@@ -97,7 +101,7 @@ describe('AuthService - Registration Flow', () => {
         userId: null,
         createdAt: new Date(),
       });
-      (emailService.sendVerificationCode as jest.Mock).mockResolvedValue(undefined);
+      (emailService.sendVerificationCode as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await AuthService.requestRegistrationCode(mockEmail);
@@ -136,7 +140,7 @@ describe('AuthService - Registration Flow', () => {
         userId: null,
         createdAt: new Date(),
       });
-      (emailService.sendVerificationCode as jest.Mock).mockResolvedValue(undefined);
+      (emailService.sendVerificationCode as vi.Mock).mockResolvedValue(undefined);
 
       // Act - Even if ORGANIZER role is passed, it should be ignored
       await AuthService.requestRegistrationCode(mockEmail, UserRole.ORGANIZER);
@@ -165,7 +169,7 @@ describe('AuthService - Registration Flow', () => {
         userId: null,
         createdAt: new Date(),
       });
-      (emailService.sendVerificationCode as jest.Mock).mockResolvedValue(undefined);
+      (emailService.sendVerificationCode as vi.Mock).mockResolvedValue(undefined);
 
       // Act - Pass ADMIN role (which previously would have failed)
       await AuthService.requestRegistrationCode(mockEmail, 'ADMIN' as UserRole);
@@ -252,7 +256,7 @@ describe('AuthService - Registration Flow', () => {
         userId: null,
         createdAt: new Date(),
       });
-      (emailService.sendVerificationCode as jest.Mock).mockResolvedValue(undefined);
+      (emailService.sendVerificationCode as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await AuthService.requestRegistrationCode(mockEmail);
@@ -295,18 +299,18 @@ describe('AuthService - Registration Flow', () => {
     };
 
     beforeEach(() => {
-      (passwordUtils.hashPassword as jest.Mock).mockResolvedValue('hashed-password');
-      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(0);
-      (jwtUtils.generateAccessToken as jest.Mock).mockReturnValue(mockTokens.accessToken);
-      (jwtUtils.generateRefreshToken as jest.Mock).mockReturnValue(mockTokens.refreshToken);
-      (jwtUtils.parseExpiresIn as jest.Mock).mockReturnValue(mockTokens.expiresIn);
+      (passwordUtils.hashPassword as vi.Mock).mockResolvedValue('hashed-password');
+      (passwordUtils.checkPasswordBreach as vi.Mock).mockResolvedValue(0);
+      (jwtUtils.generateAccessToken as vi.Mock).mockReturnValue(mockTokens.accessToken);
+      (jwtUtils.generateRefreshToken as vi.Mock).mockReturnValue(mockTokens.refreshToken);
+      (jwtUtils.parseExpiresIn as vi.Mock).mockReturnValue(mockTokens.expiresIn);
     });
 
     it('should reject breached password during registration', async () => {
       // Arrange
       prisma.emailVerification.findFirst.mockResolvedValue(mockVerification);
       prisma.user.findUnique.mockResolvedValue(null);
-      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(5000);
+      (passwordUtils.checkPasswordBreach as vi.Mock).mockResolvedValue(5000);
 
       // Act & Assert
       await expect(
@@ -489,7 +493,7 @@ describe('AuthService - Registration Flow', () => {
           mockFirstName,
           mockLastName,
         ),
-      ).rejects.toThrow('Invalid verification code');
+      ).rejects.toThrow('verification code you entered is incorrect');
     });
 
     it('should throw error for expired verification code', async () => {
@@ -520,7 +524,7 @@ describe('AuthService - Registration Flow', () => {
           mockFirstName,
           mockLastName,
         ),
-      ).rejects.toThrow('Verification code has expired');
+      ).rejects.toThrow('verification code has expired');
     });
 
     it('should throw error if user already exists (race condition)', async () => {
@@ -606,10 +610,10 @@ describe('AuthService - Registration Flow', () => {
       expect(jwtUtils.generateAccessToken).toHaveBeenCalled();
       expect(jwtUtils.generateRefreshToken).toHaveBeenCalled();
       expect(prisma.refreshToken.upsert).toHaveBeenCalledWith({
-        where: { token: mockTokens.refreshToken },
+        where: { token: hashToken(mockTokens.refreshToken) },
         create: expect.objectContaining({
           userId: 'user-123',
-          token: mockTokens.refreshToken,
+          token: hashToken(mockTokens.refreshToken),
           expiresAt: expect.any(Date),
         }),
         update: expect.any(Object),
@@ -650,17 +654,24 @@ describe('AuthService - Registration Flow', () => {
     };
 
     beforeEach(() => {
-      (passwordUtils.comparePassword as jest.Mock).mockResolvedValue(true);
-      (jwtUtils.generateAccessToken as jest.Mock).mockReturnValue(mockTokens.accessToken);
-      (jwtUtils.generateRefreshToken as jest.Mock).mockReturnValue(mockTokens.refreshToken);
-      (jwtUtils.parseExpiresIn as jest.Mock).mockReturnValue(mockTokens.expiresIn);
+      (passwordUtils.comparePassword as vi.Mock).mockResolvedValue(true);
+      (jwtUtils.generateAccessToken as vi.Mock).mockReturnValue(mockTokens.accessToken);
+      (jwtUtils.generateRefreshToken as vi.Mock).mockReturnValue(mockTokens.refreshToken);
+      (jwtUtils.parseExpiresIn as vi.Mock).mockReturnValue(mockTokens.expiresIn);
     });
 
     it('should login user with valid credentials', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      prisma.user.update.mockResolvedValue(mockUser as any);
-      prisma.refreshToken.upsert.mockResolvedValue({} as any);
+      // Login now uses $transaction with tx.user.updateMany
+      prisma.$transaction.mockImplementation(async (cb: any) => {
+        const tx = {
+          $queryRawUnsafe: vi.fn().mockResolvedValue([{ id: mockUser.id }]),
+          user: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+          refreshToken: { upsert: vi.fn().mockResolvedValue({}) },
+        };
+        return cb(tx);
+      });
 
       // Act
       const result = await AuthService.login(
@@ -674,12 +685,6 @@ describe('AuthService - Registration Flow', () => {
         where: { email: mockEmail },
       });
       expect(passwordUtils.comparePassword).toHaveBeenCalledWith(mockPassword, mockUser.password);
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: mockUser.id },
-        data: {
-          lastLoginAt: expect.any(Date),
-        },
-      });
       expect(result).toEqual({
         user: expect.objectContaining({
           id: mockUser.id,
@@ -703,14 +708,14 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.login({ email: mockEmail, password: mockPassword }),
-      ).rejects.toThrow('Invalid email or password');
+      ).rejects.toThrow('Incorrect email or password');
     });
 
     it('should throw error for wrong password', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (passwordUtils.comparePassword as jest.Mock).mockResolvedValue(false);
-      prisma.user.update.mockResolvedValue({} as any);
+      (passwordUtils.comparePassword as vi.Mock).mockResolvedValue(false);
+      prisma.user.updateMany.mockResolvedValue({ count: 1 } as any);
 
       // Act & Assert
       await expect(
@@ -719,10 +724,10 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.login({ email: mockEmail, password: 'WrongPassword' }),
-      ).rejects.toThrow('Invalid email or password');
+      ).rejects.toThrow('Incorrect email or password');
 
-      // Should increment failed login attempts
-      expect(prisma.user.update).toHaveBeenCalledWith({
+      // Should increment failed login attempts via updateMany
+      expect(prisma.user.updateMany).toHaveBeenCalledWith({
         where: { id: mockUser.id },
         data: expect.objectContaining({
           failedLoginAttempts: 1,
@@ -773,14 +778,27 @@ describe('AuthService - Registration Flow', () => {
         failedLoginAttempts: 3,
       };
       prisma.user.findUnique.mockResolvedValue(userWithFailedAttempts as any);
-      prisma.user.update.mockResolvedValue(mockUser as any);
-      prisma.refreshToken.upsert.mockResolvedValue({} as any);
+      // Login uses $transaction with tx.user.updateMany for reset
+      let txUpdateManyCall: any = null;
+      prisma.$transaction.mockImplementation(async (cb: any) => {
+        const tx = {
+          $queryRawUnsafe: vi.fn().mockResolvedValue([{ id: mockUser.id }]),
+          user: {
+            updateMany: vi.fn().mockImplementation((args: any) => {
+              txUpdateManyCall = args;
+              return Promise.resolve({ count: 1 });
+            }),
+          },
+          refreshToken: { upsert: vi.fn().mockResolvedValue({}) },
+        };
+        return cb(tx);
+      });
 
       // Act
       await AuthService.login({ email: mockEmail, password: mockPassword });
 
-      // Assert
-      expect(prisma.user.update).toHaveBeenCalledWith({
+      // Assert - tx.user.updateMany was called with reset data
+      expect(txUpdateManyCall).toEqual({
         where: { id: mockUser.id },
         data: {
           failedLoginAttempts: 0,
@@ -805,7 +823,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.login({ email: mockEmail, password: mockPassword }),
-      ).rejects.toThrow('Invalid email or password');
+      ).rejects.toThrow('Incorrect email or password');
     });
   });
 
@@ -839,10 +857,10 @@ describe('AuthService - Registration Flow', () => {
     };
 
     beforeEach(() => {
-      (jwtUtils.verifyRefreshToken as jest.Mock).mockReturnValue(true);
-      (jwtUtils.generateAccessToken as jest.Mock).mockReturnValue(mockNewTokens.accessToken);
-      (jwtUtils.generateRefreshToken as jest.Mock).mockReturnValue(mockNewTokens.refreshToken);
-      (jwtUtils.parseExpiresIn as jest.Mock).mockReturnValue(mockNewTokens.expiresIn);
+      (jwtUtils.verifyRefreshToken as vi.Mock).mockReturnValue(true);
+      (jwtUtils.generateAccessToken as vi.Mock).mockReturnValue(mockNewTokens.accessToken);
+      (jwtUtils.generateRefreshToken as vi.Mock).mockReturnValue(mockNewTokens.refreshToken);
+      (jwtUtils.parseExpiresIn as vi.Mock).mockReturnValue(mockNewTokens.expiresIn);
     });
 
     it('should refresh valid token', async () => {
@@ -857,7 +875,7 @@ describe('AuthService - Registration Flow', () => {
       // Assert
       expect(jwtUtils.verifyRefreshToken).toHaveBeenCalledWith(mockRefreshToken);
       expect(prisma.refreshToken.findUnique).toHaveBeenCalledWith({
-        where: { token: mockRefreshToken },
+        where: { token: hashToken(mockRefreshToken) },
         include: { user: true },
       });
       expect(prisma.refreshToken.update).toHaveBeenCalledWith({
@@ -966,7 +984,7 @@ describe('AuthService - Registration Flow', () => {
       // Assert
       expect(prisma.refreshToken.updateMany).toHaveBeenCalledWith({
         where: {
-          token: mockRefreshToken,
+          token: hashToken(mockRefreshToken),
           revoked: false,
         },
         data: {
@@ -1009,7 +1027,7 @@ describe('AuthService - Registration Flow', () => {
         usedAt: null,
         createdAt: new Date(),
       } as any);
-      (emailService.sendPasswordResetEmail as jest.Mock).mockResolvedValue(undefined);
+      (emailService.sendPasswordResetEmail as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await AuthService.forgotPassword(mockEmail);
@@ -1035,7 +1053,7 @@ describe('AuthService - Registration Flow', () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.passwordReset.create.mockResolvedValue({} as any);
-      (emailService.sendPasswordResetEmail as jest.Mock).mockResolvedValue(undefined);
+      (emailService.sendPasswordResetEmail as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await AuthService.forgotPassword(mockEmail, '192.168.1.100');
@@ -1066,7 +1084,7 @@ describe('AuthService - Registration Flow', () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.passwordReset.create.mockResolvedValue({} as any);
-      (emailService.sendPasswordResetEmail as jest.Mock).mockRejectedValue(
+      (emailService.sendPasswordResetEmail as vi.Mock).mockRejectedValue(
         new Error('Email service down'),
       );
 
@@ -1093,14 +1111,14 @@ describe('AuthService - Registration Flow', () => {
     };
 
     beforeEach(() => {
-      (passwordUtils.hashPassword as jest.Mock).mockResolvedValue('new-hashed-password');
-      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(0);
+      (passwordUtils.hashPassword as vi.Mock).mockResolvedValue('new-hashed-password');
+      (passwordUtils.checkPasswordBreach as vi.Mock).mockResolvedValue(0);
     });
 
     it('should reset password with valid token', async () => {
       // Arrange
       prisma.passwordReset.findUnique.mockResolvedValue(mockReset as any);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{}, {}]);
       prisma.user.update.mockResolvedValue({} as any);
       prisma.passwordReset.update.mockResolvedValue({} as any);
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
@@ -1121,7 +1139,7 @@ describe('AuthService - Registration Flow', () => {
     it('should revoke all user tokens after password reset', async () => {
       // Arrange
       prisma.passwordReset.findUnique.mockResolvedValue(mockReset as any);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{}, {}]);
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 2 });
 
       // Act
@@ -1145,7 +1163,7 @@ describe('AuthService - Registration Flow', () => {
     it('should reject breached password during password reset', async () => {
       // Arrange
       prisma.passwordReset.findUnique.mockResolvedValue(mockReset as any);
-      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(50000);
+      (passwordUtils.checkPasswordBreach as vi.Mock).mockResolvedValue(50000);
 
       // Act & Assert
       await expect(
@@ -1163,7 +1181,7 @@ describe('AuthService - Registration Flow', () => {
     it('should accept ipAddress parameter for audit logging', async () => {
       // Arrange
       prisma.passwordReset.findUnique.mockResolvedValue(mockReset as any);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{}, {}]);
       prisma.refreshToken.updateMany.mockResolvedValue({ count: 0 });
 
       // Act - should not throw when ipAddress is provided
@@ -1206,7 +1224,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.resetPassword(mockToken, mockNewPassword),
-      ).rejects.toThrow('Reset token has already been used');
+      ).rejects.toThrow('password reset link has already been used');
     });
 
     it('should throw error for expired token', async () => {
@@ -1224,7 +1242,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.resetPassword(mockToken, mockNewPassword),
-      ).rejects.toThrow('Reset token has expired');
+      ).rejects.toThrow('password reset link has expired');
     });
   });
 
@@ -1239,9 +1257,9 @@ describe('AuthService - Registration Flow', () => {
     };
 
     beforeEach(() => {
-      (passwordUtils.hashPassword as jest.Mock).mockResolvedValue('new-hashed-password');
-      (passwordUtils.comparePassword as jest.Mock).mockResolvedValue(true);
-      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(0);
+      (passwordUtils.hashPassword as vi.Mock).mockResolvedValue('new-hashed-password');
+      (passwordUtils.comparePassword as vi.Mock).mockResolvedValue(true);
+      (passwordUtils.checkPasswordBreach as vi.Mock).mockResolvedValue(0);
     });
 
     it('should change password with valid current password', async () => {
@@ -1298,7 +1316,7 @@ describe('AuthService - Registration Flow', () => {
     it('should reject breached password during password change', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(12000);
+      (passwordUtils.checkPasswordBreach as vi.Mock).mockResolvedValue(12000);
 
       // Act & Assert
       await expect(
@@ -1316,7 +1334,7 @@ describe('AuthService - Registration Flow', () => {
     it('should throw error for wrong current password', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (passwordUtils.comparePassword as jest.Mock).mockResolvedValue(false);
+      (passwordUtils.comparePassword as vi.Mock).mockResolvedValue(false);
 
       // Act & Assert
       await expect(
@@ -1325,7 +1343,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.changePassword(mockUserId, 'WrongPassword', mockNewPassword),
-      ).rejects.toThrow('Current password is incorrect');
+      ).rejects.toThrow('current password you entered is incorrect');
     });
 
     it('should throw error if user not found', async () => {
@@ -1390,8 +1408,8 @@ describe('AuthService - Registration Flow', () => {
     };
 
     beforeEach(() => {
-      (passwordUtils.hashPassword as jest.Mock).mockResolvedValue('new-hashed-password');
-      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(0);
+      (passwordUtils.hashPassword as vi.Mock).mockResolvedValue('new-hashed-password');
+      (passwordUtils.checkPasswordBreach as vi.Mock).mockResolvedValue(0);
     });
 
     it('should set initial password for user without password', async () => {
@@ -1444,7 +1462,7 @@ describe('AuthService - Registration Flow', () => {
     it('should reject breached password during password setup', async () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
-      (passwordUtils.checkPasswordBreach as jest.Mock).mockResolvedValue(8000);
+      (passwordUtils.checkPasswordBreach as vi.Mock).mockResolvedValue(8000);
 
       // Act & Assert
       await expect(
@@ -1508,7 +1526,7 @@ describe('AuthService - Registration Flow', () => {
         verifiedAt: null,
         createdAt: new Date(),
       } as any);
-      (emailService.sendVerificationCode as jest.Mock).mockResolvedValue(undefined);
+      (emailService.sendVerificationCode as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       await AuthService.requestEmailVerificationCode(mockEmail);
@@ -1592,7 +1610,7 @@ describe('AuthService - Registration Flow', () => {
       // Arrange
       prisma.user.findUnique.mockResolvedValue(mockUser as any);
       prisma.emailVerification.findFirst.mockResolvedValue(mockVerification as any);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}]);
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{}, {}]);
       prisma.emailVerification.update.mockResolvedValue({} as any);
       prisma.user.update.mockResolvedValue({} as any);
 
@@ -1628,7 +1646,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.verifyEmailWithCode(mockEmail, 'wrong-code'),
-      ).rejects.toThrow('Invalid verification code');
+      ).rejects.toThrow('verification code you entered is incorrect');
     });
 
     it('should throw error for expired code', async () => {
@@ -1647,7 +1665,7 @@ describe('AuthService - Registration Flow', () => {
 
       await expect(
         AuthService.verifyEmailWithCode(mockEmail, mockCode),
-      ).rejects.toThrow('Verification code has expired');
+      ).rejects.toThrow('verification code has expired');
     });
 
     it('should throw error if user not found', async () => {

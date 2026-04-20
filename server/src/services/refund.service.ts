@@ -184,6 +184,22 @@ export class RefundService {
     ipAddress?: string,
     userAgent?: string,
   ) {
+    // Atomically claim the refund for processing using optimistic locking.
+    // updateMany with status precondition prevents two admins from processing
+    // the same refund simultaneously (only the first one gets count === 1).
+    const claimed = await prisma.refund.updateMany({
+      where: { id: refundId, status: 'pending' },
+      data: { status: 'processing', processedAt: new Date(), processedBy },
+    });
+
+    if (claimed.count === 0) {
+      // Either refund doesn't exist or is no longer pending
+      const refundCheck = await prisma.refund.findUnique({ where: { id: refundId }, select: { status: true } });
+      if (!refundCheck) throw new NotFoundError('Refund not found');
+      throw new ValidationError(`Cannot process refund with status: ${refundCheck.status}`);
+    }
+
+    // Now fetch the full refund data for gateway call
     const refund = await prisma.refund.findUnique({
       where: { id: refundId },
       include: {
@@ -208,10 +224,6 @@ export class RefundService {
       throw new NotFoundError('Refund not found');
     }
 
-    if (refund.status !== 'pending') {
-      throw new ValidationError(`Cannot process refund with status: ${refund.status}`);
-    }
-
     try {
       // Initiate refund with Paystack
       const paystack = this.getPaystack();
@@ -232,19 +244,16 @@ export class RefundService {
         reference?: string;
       };
 
-      // Update refund status
+      // Update refund with gateway reference (status already set to 'processing' above)
       const updated = await prisma.refund.update({
         where: { id: refundId },
         data: {
-          status: 'processing',
-          processedAt: new Date(),
           refundReference: paystackRefundData.reference || paystackRefundData.id.toString(),
           metadata: {
             paystackRefundId: paystackRefundData.id,
             paystackTransactionId: paystackRefundData.transaction.id,
             ...(data.metadata || {}),
           } as Prisma.InputJsonValue,
-          processedBy,
         },
       });
 
@@ -268,6 +277,14 @@ export class RefundService {
 
       return updated;
     } catch (error) {
+      // Rollback status to 'pending' since the gateway call failed
+      await prisma.refund.update({
+        where: { id: refundId },
+        data: { status: 'pending', processedAt: null, processedBy: null },
+      }).catch((rollbackErr) => {
+        logger.error(`Failed to rollback refund ${refundId} status:`, rollbackErr);
+      });
+
       logger.error(`Failed to process refund ${refundId} with Paystack:`, error);
       throw new ValidationError('Failed to process refund with Paystack');
     }
@@ -821,7 +838,7 @@ export class RefundService {
       // Only admin or event organizer can view
       if (
         user?.role !== 'SUPERADMIN' &&
-        user?.role !== 'ADMIN_STAFF' &&
+        user?.role !== 'ADMIN' &&
         refund.transaction.event.organizerId !== userId
       ) {
         throw new AuthorizationError('Access denied');

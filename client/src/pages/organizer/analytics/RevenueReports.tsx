@@ -5,199 +5,218 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   DollarSign,
-  ArrowUpRight,
-  ArrowDownRight,
   Download,
   RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  BarChart3,
+  Target,
+  RotateCcw,
 } from "lucide-react";
 import {
-  CustomLineChart,
   CustomAreaChart,
   CustomBarChart,
   CustomPieChart,
-  CustomComposedChart,
 } from "@/components/charts/ChartComponents";
 import { CHART_COLORS } from "@/components/charts/chartConstants";
-import { getOrganizerDashboardStats, getOrganizerEvents } from "@/lib/organizer-api";
+import {
+  getRevenueAnalytics,
+  type FinancialTotals,
+  type RevenueByTicketType,
+  type RefundStats,
+  type AverageOrderValue,
+  type RevenueForecast,
+} from "@/lib/organizer-dashboard-api";
+import { getEvents } from "@/lib/event-api";
+import { extractErrorMessage } from "@/lib/utils/error";
+
+interface RevenueAnalyticsData {
+  summary: FinancialTotals;
+  byTicketType: RevenueByTicketType[];
+  refunds: RefundStats;
+  averageOrderValue: AverageOrderValue;
+  forecasting: RevenueForecast;
+}
+
+interface EventItem {
+  id: string;
+  title: string;
+  startDate?: string;
+  status?: string;
+  category?: string;
+}
+
+const getDateRange = (range: string): { startDate?: string; endDate?: string } => {
+  const now = new Date();
+  const end = now.toISOString().split("T")[0];
+  const start = new Date(now);
+  switch (range) {
+    case "7d":
+      start.setDate(start.getDate() - 7);
+      break;
+    case "30d":
+      start.setDate(start.getDate() - 30);
+      break;
+    case "90d":
+      start.setDate(start.getDate() - 90);
+      break;
+    case "1y":
+      start.setFullYear(start.getFullYear() - 1);
+      break;
+    default:
+      return {};
+  }
+  return { startDate: start.toISOString().split("T")[0], endDate: end };
+};
+
+const formatCurrency = (amount: number, currency = "NGN") => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
 
 const RevenueReports = () => {
   const [timeRange, setTimeRange] = useState("30d");
-  const [selectedEvent, setSelectedEvent] = useState("all");
-  const [stats, setStats] = useState<{ totalRevenue?: number } | null>(null);
-  const [events, setEvents] = useState<Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; status?: string; category?: string }>>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string>("all");
+  const [revenueData, setRevenueData] = useState<RevenueAnalyticsData | null>(null);
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const filters: { limit?: number; status?: string } = { limit: 100 };
-        
-        // Apply status filter
-        if (selectedEvent !== 'all') {
-          filters.status = selectedEvent.toUpperCase();
-        }
-        
-        const [statsResponse, eventsResponse] = await Promise.all([
-          getOrganizerDashboardStats(),
-          getOrganizerEvents(filters),
-        ]);
-        if (statsResponse.success) setStats(statsResponse.data.stats);
-        if (eventsResponse.success && eventsResponse.data?.events) {
-          setEvents(eventsResponse.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; status?: string; category?: string }>);
-        }
-      } catch (err) {
-        console.error('Failed to load revenue data:', err);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { startDate, endDate } = getDateRange(timeRange);
+      const eventId = selectedEventId !== "all" ? selectedEventId : undefined;
+
+      const [analyticsResponse, eventsResponse] = await Promise.all([
+        getRevenueAnalytics({ eventId, startDate, endDate }),
+        getEvents({ limit: 100 }),
+      ]);
+
+      if (analyticsResponse.success && analyticsResponse.data) {
+        setRevenueData(analyticsResponse.data);
       }
-    };
-    fetchData();
-  }, [timeRange, selectedEvent]);
-
-  // Calculate revenue data from real events
-  const revenueStats = stats ? [
-    { title: "Total Revenue", value: `$${stats.totalRevenue?.toLocaleString() || "0"}`, change: "+0%", changeType: "positive", description: "Total revenue generated", bgColor: "bg-success-light", color: "text-success" },
-    { title: "Platform Fees", value: `$${Math.round((stats.totalRevenue || 0) * 0.1).toLocaleString()}`, change: "+0%", changeType: "neutral", description: "Platform service fees", bgColor: "bg-primary/10", color: "text-primary" },
-    { title: "Net Revenue", value: `$${Math.round((stats.totalRevenue || 0) * 0.9).toLocaleString()}`, change: "+0%", changeType: "positive", description: "Revenue after fees", bgColor: "bg-success-light", color: "text-success" },
-  ] : [];
-
-  const revenueBreakdown = events.map(e => {
-    const revenue = typeof e.price === 'number' ? e.price * (e.attendees || 0) : 0;
-    return {
-      event: e.title,
-      revenue,
-      percentage: stats?.totalRevenue ? ((revenue / stats.totalRevenue) * 100).toFixed(1) : "0",
-      status: e.status || 'pending',
-      netRevenue: Math.round(revenue * 0.9),
-      attendees: e.attendees || 0,
-      ticketPrice: typeof e.price === 'number' ? e.price : 0,
-      refunds: 0,
-      revenuePerAttendee: (e.attendees || 0) > 0 ? Math.round(revenue / (e.attendees || 0)) : 0,
-      growth: "+0%",
-      date: e.startDate ? new Date(e.startDate).toLocaleDateString() : 'TBD',
-    };
-  });
-
-  const paymentMethods = [
-    { method: "Credit Card", percentage: 65, amount: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.65) : 0, count: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.65 / 100) : 0 },
-    { method: "Mobile Money", percentage: 25, amount: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.25) : 0, count: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.25 / 100) : 0 },
-    { method: "Bank Transfer", percentage: 10, amount: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.1) : 0, count: stats?.totalRevenue ? Math.round(stats.totalRevenue * 0.1 / 100) : 0 },
-  ];
-
-  // Group events by month for trends
-  const revenueTrendsMap = new Map<string, { revenue: number; events: number }>();
-  events.forEach(e => {
-    if (e.startDate) {
-      const date = new Date(e.startDate);
-      const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
-      const existing = revenueTrendsMap.get(monthKey) || { revenue: 0, events: 0 };
-      existing.revenue += typeof e.price === 'number' ? e.price * (e.attendees || 0) : 0;
-      existing.events += 1;
-      revenueTrendsMap.set(monthKey, existing);
-    }
-  });
-  const revenueTrends = Array.from(revenueTrendsMap.entries()).map(([month, data]) => ({
-    month,
-    revenue: data.revenue,
-    events: data.events,
-  }));
-
-  const financialInsights = [
-    { id: 1, type: "trend", title: "Revenue Growth", description: `Total revenue: $${stats?.totalRevenue?.toLocaleString() || "0"}`, impact: "positive", icon: DollarSign },
-    { id: 2, type: "insight", title: "Top Event", description: events.length > 0 ? `${events[0].title}` : "No events yet", impact: "neutral", icon: DollarSign },
-  ];
-
-  const insightsData = financialInsights;
-
-  // Calculate monthly revenue data from real events (using revenueTrends which is already calculated)
-  const monthlyRevenueData = revenueTrends.map(trend => ({
-    month: trend.month,
-    revenue: trend.revenue,
-    events: trend.events,
-    attendees: events.filter(e => {
-      if (!e.startDate) return false;
-      const date = new Date(e.startDate);
-      return date.toLocaleDateString('en-US', { month: 'short' }) === trend.month;
-    }).reduce((sum, e) => sum + (e.attendees || 0), 0),
-  }));
-
-  // Calculate revenue by event category from real events
-  const revenueByCategoryMap = new Map<string, number>();
-  events.forEach(event => {
-    const category = event.category || 'Other';
-    const revenue = typeof event.price === 'number' ? event.price * (event.attendees || 0) : 0;
-    revenueByCategoryMap.set(category, (revenueByCategoryMap.get(category) || 0) + revenue);
-  });
-  const totalCategoryRevenue = Array.from(revenueByCategoryMap.values()).reduce((a, b) => a + b, 0);
-  const revenueByEventTypeData = Array.from(revenueByCategoryMap.entries()).map(([type, revenue]) => ({
-    type,
-    revenue,
-    percentage: totalCategoryRevenue > 0 ? Math.round((revenue / totalCategoryRevenue) * 100) : 0,
-  })).sort((a, b) => b.revenue - a.revenue);
-
-  // Payment method data uses real paymentMethods which is calculated from stats
-  const paymentMethodData = paymentMethods.map(method => ({
-    method: method.method,
-    percentage: method.percentage,
-    amount: method.amount,
-  }));
-
-  // Revenue vs Attendees from real events
-  const revenueVsAttendeesData = revenueBreakdown.map(event => ({
-    attendees: event.attendees,
-    revenue: event.revenue,
-    event: event.event,
-  }));
-
-  // Use imported data
-  const statsData = revenueStats;
-
-  // Use imported data
-  const breakdownData = revenueBreakdown;
-  const paymentMethodsData = paymentMethods;
-  const trendsData = revenueTrends;
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <Badge variant="secondary" className="bg-success-light text-success">Completed</Badge>;
-      case "upcoming":
-        return <Badge variant="secondary" className="bg-primary/10 text-primary">Upcoming</Badge>;
-      case "active":
-        return <Badge variant="secondary" className="bg-warning/10 text-warning">Active</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+      if (eventsResponse.success && eventsResponse.data?.events) {
+        setEvents(eventsResponse.data.events as EventItem[]);
+      }
+    } catch (err) {
+      setError(extractErrorMessage(err, "Failed to load revenue data"));
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getInsightTypeColor = (type: string) => {
-    switch (type) {
-      case "growth":
-        return "text-success bg-success-light border-success/20";
-      case "strategy":
-        return "text-primary bg-primary/10 border-primary/20";
-      case "payment":
-        return "text-primary bg-primary/10 border-primary/20";
-      case "policy":
-        return "text-warning bg-warning/10 border-warning/20";
-      case "timing":
-        return "text-destructive bg-destructive/10 border-destructive/20";
-      case "pricing":
-        return "text-warning bg-warning/10 border-warning/20";
-      default:
-        return "text-muted-foreground bg-muted border-border";
-    }
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeRange, selectedEventId]);
+
+  const currency = revenueData?.summary.currency ?? "NGN";
+
+  const statCards = revenueData
+    ? [
+        {
+          title: "Gross Revenue",
+          value: formatCurrency(revenueData.summary.gross, currency),
+          description: "Total collected before deductions",
+          icon: DollarSign,
+          gradient: "from-success to-success/70",
+          positive: true,
+        },
+        {
+          title: "Net Revenue",
+          value: formatCurrency(revenueData.summary.net, currency),
+          description: "After platform fees",
+          icon: TrendingUp,
+          gradient: "from-primary to-primary/70",
+          positive: true,
+        },
+        {
+          title: "Platform Fees",
+          value: formatCurrency(revenueData.summary.platformFees ?? 0, currency),
+          description: "EventKnit service fees",
+          icon: BarChart3,
+          gradient: "from-warning to-warning/70",
+          positive: false,
+        },
+        {
+          title: "Avg Order Value",
+          value: formatCurrency(revenueData.averageOrderValue.value, currency),
+          description: `Range: ${formatCurrency(revenueData.averageOrderValue.min, currency)} – ${formatCurrency(revenueData.averageOrderValue.max, currency)}`,
+          icon: Target,
+          gradient: "from-primary/80 to-primary/50",
+          positive: true,
+        },
+        {
+          title: "Refunds",
+          value: formatCurrency(revenueData.refunds.amount, currency),
+          description: `${revenueData.refunds.count} refund${revenueData.refunds.count !== 1 ? "s" : ""}`,
+          icon: RotateCcw,
+          gradient: "from-destructive to-destructive/70",
+          positive: false,
+        },
+        {
+          title: "Projected Revenue",
+          value: formatCurrency(revenueData.forecasting.projectedRevenue, currency),
+          description: `${revenueData.forecasting.projectedRegistrations} registrations • ${Math.round(revenueData.forecasting.confidence * 100)}% confidence`,
+          icon: TrendingUp,
+          gradient: "from-success/80 to-success/50",
+          positive: true,
+        },
+      ]
+    : [];
+
+  const ticketTypeChartData = (revenueData?.byTicketType ?? []).map((t) => ({
+    type: t.ticketType,
+    revenue: t.revenue,
+    count: t.count,
+  }));
+
+  const handleExport = () => {
+    if (!revenueData) return;
+
+    const rows = [
+      ["Metric", "Value"],
+      ["Gross Revenue", revenueData.summary.gross],
+      ["Net Revenue", revenueData.summary.net],
+      ["Platform Fees", revenueData.summary.platformFees ?? 0],
+      ["Avg Order Value", revenueData.averageOrderValue.value],
+      ["Refund Amount", revenueData.refunds.amount],
+      ["Refund Count", revenueData.refunds.count],
+      ["Projected Revenue", revenueData.forecasting.projectedRevenue],
+      [],
+      ["Ticket Type", "Count", "Revenue"],
+      ...(revenueData.byTicketType.map((t) => [t.ticketType, t.count, t.revenue])),
+    ];
+
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `revenue-report-${timeRange}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
-      <div className="py-8">
-        <div className="space-y-8">
+    <div className="py-8">
+      <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-page-title">Revenue Reports</h1>
             <p className="text-page-subtitle mt-1">
-              Comprehensive financial analytics and revenue insights for your events
+              Real-time financial analytics powered by actual payment data
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <select
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
@@ -209,334 +228,485 @@ const RevenueReports = () => {
               <option value="1y">Last year</option>
             </select>
             <select
-              value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value)}
+              value={selectedEventId}
+              onChange={(e) => setSelectedEventId(e.target.value)}
               className="px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent bg-card text-foreground"
             >
               <option value="all">All Events</option>
-              <option value="completed">Completed Events</option>
-              <option value="upcoming">Upcoming Events</option>
-              <option value="active">Active Events</option>
+              {events.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title}
+                </option>
+              ))}
             </select>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={!revenueData}>
               <Download className="h-4 w-4 mr-2" />
-              Export Report
+              Export CSV
             </Button>
-            <Button variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
               Refresh
             </Button>
           </div>
         </div>
 
-        {/* Revenue Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {statsData.map((stat, index) => (
-            <Card key={index} className="hover:shadow-md transition-shadow duration-200">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">
-                      {stat.title}
-                    </p>
-                    <p className="text-xl font-bold text-foreground mb-1">
-                      {stat.value}
-                    </p>
-                    <div className="flex items-center">
-                      {stat.changeType === "positive" ? (
-                        <ArrowUpRight className="h-3 w-3 text-success mr-1" />
-                      ) : (
-                        <ArrowDownRight className="h-3 w-3 text-destructive mr-1" />
-                      )}
-                      <span
-                        className={`text-xs font-medium ${
-                          stat.changeType === "positive" ? "text-success" : "text-destructive"
-                        }`}
-                      >
-                        {stat.change}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {stat.description}
-                    </p>
-                  </div>
-                  <div className={`w-10 h-10 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                    <DollarSign className={`h-5 w-5 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Error state */}
+        {error && (
+          <div className="flex items-center gap-3 p-4 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive">
+            <AlertTriangle className="h-5 w-5 shrink-0" />
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
 
-        {/* Main Content Tabs */}
+        {/* Stats Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-border/40 bg-card h-28 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {statCards.map((stat, index) => (
+              <Card
+                key={index}
+                className="group overflow-hidden border border-border/40 bg-card hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">
+                        {stat.title}
+                      </p>
+                      <p className="mt-1 text-lg font-bold text-foreground leading-tight">
+                        {stat.value}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                        {stat.description}
+                      </p>
+                    </div>
+                    <div
+                      className={`w-9 h-9 shrink-0 bg-gradient-to-r ${stat.gradient} rounded-lg flex items-center justify-center`}
+                    >
+                      <stat.icon className="h-4 w-4 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="breakdown">Revenue Breakdown</TabsTrigger>
-            <TabsTrigger value="payments">Payment Methods</TabsTrigger>
-            <TabsTrigger value="insights">Financial Insights</TabsTrigger>
+            <TabsTrigger value="breakdown">Ticket Breakdown</TabsTrigger>
+            <TabsTrigger value="refunds">Refunds & Forecast</TabsTrigger>
           </TabsList>
 
+          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Revenue Trends */}
-              <Card>
+              {/* Revenue by Ticket Type - Bar */}
+              <Card className="border-border/40 bg-card">
                 <CardHeader>
-                  <CardTitle>Revenue Trends</CardTitle>
+                  <CardTitle>Revenue by Ticket Type</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CustomAreaChart
-                    data={monthlyRevenueData}
-                    dataKey="revenue"
-                    xAxisKey="month"
-                    height={300}
-                    color={CHART_COLORS.success}
-                    formatter={(value) => `$${(value as number).toLocaleString()}`}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Revenue by Event Type */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Revenue by Event Type</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomPieChart
-                    data={revenueByEventTypeData}
-                    dataKey="percentage"
-                    nameKey="type"
-                    height={300}
-                    formatter={(value) => `${value}%`}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Revenue vs Attendees */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Revenue vs Attendees Correlation</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomComposedChart
-                    data={revenueVsAttendeesData}
-                    xAxisKey="event"
-                    bars={[
-                      { dataKey: "attendees", name: "Attendees", color: CHART_COLORS.primary },
-                    ]}
-                    lines={[
-                      { dataKey: "revenue", name: "Revenue", color: CHART_COLORS.success },
-                    ]}
-                    height={300}
-                    formatter={(value, name) => {
-                      if (name === "Attendees") return (value as number).toLocaleString();
-                      if (name === "Revenue") return `$${(value as number).toLocaleString()}`;
-                      return (value as number).toString();
-                    }}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Monthly Revenue Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Monthly Revenue Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {trendsData.map((trend, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-foreground text-sm">{trend.month}</h3>
-                        <p className="text-xs text-muted-foreground">{trend.events} events</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-foreground">
-                          ${trend.revenue.toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">revenue</p>
-                      </div>
+                  {ticketTypeChartData.length > 0 ? (
+                    <CustomBarChart
+                      data={ticketTypeChartData}
+                      xAxisKey="type"
+                      dataKey="revenue"
+                      height={300}
+                      color={CHART_COLORS.success}
+                      formatter={(value) => formatCurrency(value as number, currency)}
+                    />
+                  ) : (
+                    <div className="h-[220px] sm:h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+                      No ticket sales in this period
                     </div>
-                  ))}
+                  )}
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
 
-          <TabsContent value="breakdown" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Event Revenue Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-6">
-                  {breakdownData.map((event) => (
-                    <div key={event.event} className="border border-border rounded-lg p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="font-medium text-foreground">{event.event}</h3>
-                          <p className="text-sm text-muted-foreground">{event.date}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(event.status)}
-                          <div className="text-right">
-                            <p className="text-lg font-bold text-foreground">
-                              ${event.netRevenue.toLocaleString()}
-                            </p>
-                            <p className="text-sm text-muted-foreground">net revenue</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Gross Revenue</p>
-                          <p className="font-medium">${event.revenue.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Attendees</p>
-                          <p className="font-medium">{event.attendees}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Ticket Price</p>
-                          <p className="font-medium">${event.ticketPrice}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Refunds</p>
-                          <p className="font-medium text-destructive">-${event.refunds.toLocaleString()}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Revenue/Attendee</p>
-                            <p className="font-medium">${event.revenuePerAttendee}</p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Growth</p>
-                            <p className="font-medium text-success">+{event.growth}%</p>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          View Details
-                        </Button>
-                      </div>
+              {/* Revenue Split - Pie */}
+              <Card className="border-border/40 bg-card">
+                <CardHeader>
+                  <CardTitle>Revenue Split</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {ticketTypeChartData.length > 0 ? (
+                    <CustomPieChart
+                      data={ticketTypeChartData}
+                      dataKey="revenue"
+                      nameKey="type"
+                      height={300}
+                      formatter={(value) => formatCurrency(value as number, currency)}
+                    />
+                  ) : (
+                    <div className="h-[220px] sm:h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+                      No ticket sales in this period
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="payments" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Payment Methods Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Methods Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomPieChart
-                    data={paymentMethodData}
-                    dataKey="percentage"
-                    nameKey="method"
-                    height={300}
-                    formatter={(value) => `${value}%`}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Payment Methods Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Methods Details</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {paymentMethodsData.map((method, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium text-foreground">{method.method}</span>
-                          <span className="text-sm text-muted-foreground">
-                            ${method.amount.toLocaleString()} ({method.percentage}%)
-                          </span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className="bg-primary h-2 rounded-full"
-                            style={{ width: `${method.percentage}%` }}
-                          ></div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{method.count} transactions</p>
-                      </div>
-                    ))}
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Payment Success Rate Trends */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Success Rate Trends</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomLineChart
-                    data={monthlyRevenueData}
-                    dataKey="revenue"
-                    xAxisKey="month"
-                    height={300}
-                    color={CHART_COLORS.success}
-                    formatter={(value) => `$${(value as number).toLocaleString()}`}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Revenue by Payment Method */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Revenue by Payment Method</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <CustomBarChart
-                    data={paymentMethodData}
-                    dataKey="amount"
-                    xAxisKey="method"
-                    height={300}
-                    color={CHART_COLORS.primary}
-                    formatter={(value) => `$${(value as number).toLocaleString()}`}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="insights" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {insightsData.map((insight) => (
-                <Card key={insight.id} className={`border ${getInsightTypeColor(insight.type).split(' ')[2]}`}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-3">
-                      <div className={`w-8 h-8 rounded-full ${getInsightTypeColor(insight.type).split(' ')[1]} flex items-center justify-center`}>
-                        {insight.icon && <insight.icon className={`h-4 w-4 ${getInsightTypeColor(insight.type).split(' ')[0]}`} />}
+            {/* Revenue Summary Row */}
+            {revenueData && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="border-border/40 bg-card">
+                  <CardContent className="p-5 space-y-3">
+                    <p className="text-sm font-semibold text-foreground">Revenue Waterfall</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Gross Revenue</span>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(revenueData.summary.gross, currency)}
+                        </span>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-foreground mb-1">{insight.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Platform Fees</span>
+                        <span className="font-medium text-destructive">
+                          −{formatCurrency(revenueData.summary.platformFees ?? 0, currency)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Refunds</span>
+                        <span className="font-medium text-destructive">
+                          −{formatCurrency(revenueData.refunds.amount, currency)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm pt-2 border-t border-border/60">
+                        <span className="font-semibold text-foreground">Net Revenue</span>
+                        <span className="font-bold text-success">
+                          {formatCurrency(revenueData.summary.net, currency)}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+
+                <Card className="border-border/40 bg-card">
+                  <CardContent className="p-5 space-y-3">
+                    <p className="text-sm font-semibold text-foreground">Order Analytics</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Avg Order Value</span>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(revenueData.averageOrderValue.value, currency)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Minimum</span>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(revenueData.averageOrderValue.min, currency)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Maximum</span>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(revenueData.averageOrderValue.max, currency)}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/40 bg-card">
+                  <CardContent className="p-5 space-y-3">
+                    <p className="text-sm font-semibold text-foreground">Revenue Forecast</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Projected</span>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(revenueData.forecasting.projectedRevenue, currency)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Registrations</span>
+                        <span className="font-medium text-foreground">
+                          {revenueData.forecasting.projectedRegistrations.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Confidence</span>
+                        <Badge variant="secondary" className="bg-success-light text-success text-xs">
+                          {Math.round(revenueData.forecasting.confidence * 100)}%
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Ticket Breakdown Tab */}
+          <TabsContent value="breakdown" className="space-y-6">
+            <Card className="border-border/40 bg-card">
+              <CardHeader>
+                <CardTitle>Revenue by Ticket Type</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {ticketTypeChartData.length === 0 ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    No ticket sale data available for this period
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                              Ticket Type
+                            </th>
+                            <th className="text-right py-3 px-4 font-medium text-muted-foreground">
+                              Tickets Sold
+                            </th>
+                            <th className="text-right py-3 px-4 font-medium text-muted-foreground">
+                              Revenue
+                            </th>
+                            <th className="text-right py-3 px-4 font-medium text-muted-foreground">
+                              Share
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ticketTypeChartData.map((t, i) => {
+                            const totalRevenue = ticketTypeChartData.reduce(
+                              (sum, r) => sum + r.revenue,
+                              0,
+                            );
+                            const share =
+                              totalRevenue > 0
+                                ? ((t.revenue / totalRevenue) * 100).toFixed(1)
+                                : "0";
+                            return (
+                              <tr
+                                key={i}
+                                className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                              >
+                                <td className="py-3 px-4 font-medium text-foreground">
+                                  {t.type}
+                                </td>
+                                <td className="py-3 px-4 text-right text-muted-foreground">
+                                  {t.count.toLocaleString()}
+                                </td>
+                                <td className="py-3 px-4 text-right font-semibold text-foreground">
+                                  {formatCurrency(t.revenue, currency)}
+                                </td>
+                                <td className="py-3 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <div className="w-16 bg-muted rounded-full h-1.5">
+                                      <div
+                                        className="bg-primary h-1.5 rounded-full"
+                                        style={{ width: `${share}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-muted-foreground w-10 text-right">
+                                      {share}%
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr className="border-t-2 border-border">
+                            <td className="py-3 px-4 font-bold text-foreground">Total</td>
+                            <td className="py-3 px-4 text-right font-bold text-foreground">
+                              {ticketTypeChartData
+                                .reduce((s, t) => s + t.count, 0)
+                                .toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 text-right font-bold text-success">
+                              {formatCurrency(
+                                ticketTypeChartData.reduce((s, t) => s + t.revenue, 0),
+                                currency,
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right font-bold text-muted-foreground">
+                              100%
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+
+                    {/* Bar chart */}
+                    <CustomAreaChart
+                      data={ticketTypeChartData}
+                      dataKey="revenue"
+                      xAxisKey="type"
+                      height={240}
+                      color={CHART_COLORS.primary}
+                      formatter={(value) => formatCurrency(value as number, currency)}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Refunds & Forecast Tab */}
+          <TabsContent value="refunds" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Refund Summary */}
+              <Card className="border-border/40 bg-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <RotateCcw className="h-5 w-5 text-destructive" />
+                    Refund Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {revenueData ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="rounded-xl bg-destructive/10 border border-destructive/20 p-4">
+                          <p className="text-xs text-muted-foreground uppercase font-medium">
+                            Total Refunded
+                          </p>
+                          <p className="text-2xl font-bold text-destructive mt-1">
+                            {formatCurrency(revenueData.refunds.amount, currency)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-muted border border-border/40 p-4">
+                          <p className="text-xs text-muted-foreground uppercase font-medium">
+                            Refund Count
+                          </p>
+                          <p className="text-2xl font-bold text-foreground mt-1">
+                            {revenueData.refunds.count}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 pt-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Gross Revenue</span>
+                          <span className="font-medium text-foreground">
+                            {formatCurrency(revenueData.summary.gross, currency)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Refund Rate</span>
+                          <span
+                            className={`font-semibold ${revenueData.summary.gross > 0 && (revenueData.refunds.amount / revenueData.summary.gross) > 0.05 ? "text-destructive" : "text-success"}`}
+                          >
+                            {revenueData.summary.gross > 0
+                              ? (
+                                  (revenueData.refunds.amount / revenueData.summary.gross) *
+                                  100
+                                ).toFixed(2)
+                              : "0.00"}
+                            %
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Avg Refund</span>
+                          <span className="font-medium text-foreground">
+                            {revenueData.refunds.count > 0
+                              ? formatCurrency(
+                                  revenueData.refunds.amount / revenueData.refunds.count,
+                                  currency,
+                                )
+                              : "—"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-border/60">
+                        <p className="text-xs text-muted-foreground">
+                          Refund requests are processed by EventKnit support. To dispute a refund
+                          decision, contact support with your event ID.
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="py-8 text-center text-muted-foreground text-sm">
+                      No refund data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Forecast */}
+              <Card className="border-border/40 bg-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-success" />
+                    Revenue Forecast
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {revenueData ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="rounded-xl bg-success-light border border-success/20 p-4">
+                          <p className="text-xs text-muted-foreground uppercase font-medium">
+                            Projected Revenue
+                          </p>
+                          <p className="text-2xl font-bold text-success mt-1">
+                            {formatCurrency(revenueData.forecasting.projectedRevenue, currency)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-primary/10 border border-primary/20 p-4">
+                          <p className="text-xs text-muted-foreground uppercase font-medium">
+                            Projected Registrations
+                          </p>
+                          <p className="text-2xl font-bold text-primary mt-1">
+                            {revenueData.forecasting.projectedRegistrations.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Forecast Confidence</span>
+                          <span className="text-sm font-semibold text-foreground">
+                            {Math.round(revenueData.forecasting.confidence * 100)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className="bg-primary h-2 rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.round(revenueData.forecasting.confidence * 100)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 pt-2 border-t border-border/60">
+                        {revenueData.forecasting.confidence >= 0.7 ? (
+                          <TrendingUp className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {revenueData.forecasting.confidence >= 0.7
+                            ? "Strong forecast signal. Keep up current event performance to hit projections."
+                            : "Low confidence forecast. More data needed for accurate projections."}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="py-8 text-center text-muted-foreground text-sm">
+                      No forecast data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
         </Tabs>
-        </div>
       </div>
+    </div>
   );
 };
 

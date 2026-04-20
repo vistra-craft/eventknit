@@ -22,17 +22,15 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
 import DashboardNavbar from "./DashboardNavbar";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import BackButton from "@/components/BackButton";
 import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
-import { useUploadAvatar } from "@/hooks/useUploadAvatar";
+import { updateProfile } from "@/lib/auth-api";
 import { ROLE_LABELS } from "@/constants/roleLabels";
 
 const UserProfilePage = () => {
   const { user, refreshProfile } = useAuth();
-  const uploadAvatarMutation = useUploadAvatar();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<"idle" | "success" | "error">("idle");
@@ -41,8 +39,6 @@ const UserProfilePage = () => {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Avatar upload state
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Profile form state
   const [profileData, setProfileData] = useState({
@@ -233,17 +229,10 @@ const UserProfilePage = () => {
     }
   };
 
-  // Handle avatar change
-  const handleAvatarChange = async (file: File) => {
-    if (file && file.size > 0) {
-      setIsUploadingAvatar(true);
-
-      try {
-        await uploadAvatarMutation.mutateAsync(file);
-      } finally {
-        setIsUploadingAvatar(false);
-      }
-    }
+  // Called by AvatarUpload after direct Cloudinary upload completes
+  const handleAvatarUploadComplete = async (url: string) => {
+    await updateProfile({ avatar: url });
+    await refreshProfile();
   };
 
   if (!user) {
@@ -317,9 +306,8 @@ const UserProfilePage = () => {
                     {/* Avatar Upload */}
                     <AvatarUpload
                       currentAvatar={user?.avatar || null}
-                      onAvatarChange={handleAvatarChange}
-                      isUploading={isUploadingAvatar || uploadAvatarMutation.isPending}
-                      userName={`${profileData.firstName} ${profileData.lastName}`.trim()}
+                      onUploadComplete={handleAvatarUploadComplete}
+                      onRemove={() => updateProfile({ avatar: '' }).then(() => refreshProfile())}
                     />
 
                     {/* Form Fields */}
@@ -659,10 +647,7 @@ const UserProfilePage = () => {
         </Card>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <RoleSwitcher />
-          </div>
+
         </div>
       </div>
     </div>

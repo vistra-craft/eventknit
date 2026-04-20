@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RichTextContent } from '@/components/ui/RichTextContent';
+import { stripHtml } from '@/lib/utils';
 import {
   Calendar,
   ShieldCheck,
@@ -12,6 +14,9 @@ import {
   Eye,
   EyeOff,
   Link2,
+  ChevronDown,
+  MapPin,
+  Users,
 } from 'lucide-react';
 import type {
   StepComponentProps,
@@ -51,6 +56,146 @@ const SPONSOR_LEVEL_COLORS: Record<string, string> = {
   presenting: 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300',
   partner: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300',
 };
+
+/** Expandable agenda item for the review step */
+function AgendaReviewItem({
+  item,
+  formatTime,
+  speakerNames,
+}: {
+  item: AgendaItem;
+  formatTime: (t: string) => string;
+  speakerNames: string[];
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const hasDetails = !!(item.description || item.room || speakerNames.length > 0);
+  const typeLabel = item.sessionType && item.sessionType !== 'other'
+    ? SESSION_TYPES.find(t => t.value === item.sessionType)?.label
+    : null;
+
+  return (
+    <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5">
+      {/* Main row: time + title + badge */}
+      <div className="flex items-start gap-2">
+        {item.startTime && (
+          <span className="text-xs text-muted-foreground tabular-nums w-14 shrink-0 pt-0.5">
+            {formatTime(item.startTime)}
+          </span>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">{item.title || 'Untitled session'}</span>
+            {typeLabel && (
+              <Badge variant="outline" className="text-[10px] shrink-0">{typeLabel}</Badge>
+            )}
+          </div>
+          {/* Time range */}
+          {item.startTime && item.endTime && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {formatTime(item.startTime)} – {formatTime(item.endTime)}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Expandable details */}
+      {hasDetails && (
+        <>
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="mt-1.5 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+          >
+            {expanded ? 'See less' : 'Show more'}
+            <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? 'rotate-180' : ''}`} />
+          </button>
+          {expanded && (
+            <div className="mt-2 space-y-1.5 pl-0 sm:pl-16">
+              {item.description && (
+                <p className="text-xs text-muted-foreground leading-relaxed">{stripHtml(item.description)}</p>
+              )}
+              {speakerNames.length > 0 && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Users className="h-3 w-3 shrink-0" />
+                  <span>{speakerNames.join(', ')}</span>
+                </div>
+              )}
+              {item.room && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3 shrink-0" />
+                  <span>{item.room}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Agenda section with show all / collapse for the review step */
+function AgendaReviewSection({
+  agenda,
+  formatTime,
+  speakers,
+}: {
+  agenda: AgendaItem[];
+  formatTime: (t: string) => string;
+  speakers: SpeakerItem[];
+}) {
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_COUNT = 4;
+  const visibleItems = showAll ? agenda : agenda.slice(0, INITIAL_COUNT);
+  const hiddenCount = agenda.length - INITIAL_COUNT;
+
+  // Build a lookup from speaker ID → name
+  const speakerMap = new Map(speakers.filter(s => s.id).map(s => [s.id!, s.name]));
+
+  return (
+    <div className="md:col-span-2">
+      <div className="flex items-center gap-2 mb-2.5">
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">
+          {agenda.length} Session{agenda.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="space-y-2">
+        {visibleItems.map((item, i) => {
+          // Resolve speaker names from IDs or legacy speakers array
+          const names: string[] = [];
+          if (item.speakerIds?.length) {
+            for (const id of item.speakerIds) {
+              const name = speakerMap.get(id);
+              if (name) names.push(name);
+            }
+          } else if (item.speakers?.length) {
+            names.push(...item.speakers);
+          }
+
+          return (
+            <AgendaReviewItem
+              key={item.id || i}
+              item={item}
+              formatTime={formatTime}
+              speakerNames={names}
+            />
+          );
+        })}
+      </div>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(!showAll)}
+          className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          {showAll ? 'Show less' : `Show all ${agenda.length} sessions`}
+          <ChevronDown className={`h-3 w-3 transition-transform ${showAll ? 'rotate-180' : ''}`} />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export function ReviewStep({
   eventData,
@@ -249,9 +394,14 @@ export function ReviewStep({
               className="flex items-center justify-between gap-4 py-2.5 px-3 rounded-lg bg-muted/40"
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-sm font-medium truncate">
-                  {ticket.name || `Ticket ${i + 1}`}
-                </span>
+                <div className="min-w-0">
+                  <span className="text-sm font-medium truncate block">
+                    {ticket.name || `Ticket ${i + 1}`}
+                  </span>
+                  {ticket.description && (
+                    <span className="text-xs text-muted-foreground line-clamp-1">{stripHtml(ticket.description)}</span>
+                  )}
+                </div>
                 {ticket.isComplementary && (
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/40 text-purple-600 dark:text-purple-300 shrink-0">
                     Comp
@@ -284,34 +434,7 @@ export function ReviewStep({
           <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-4">Program</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {agenda.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-2.5">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">
-                    {agenda.length} Session{agenda.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  {agenda.slice(0, 5).map((item, i) => (
-                    <div key={item.id || i} className="flex items-center gap-2 text-sm">
-                      {item.startTime && (
-                        <span className="text-xs text-muted-foreground tabular-nums w-14 shrink-0">
-                          {formatTime(item.startTime)}
-                        </span>
-                      )}
-                      <span className="truncate">{item.title || 'Untitled session'}</span>
-                      {item.sessionType && item.sessionType !== 'other' && (
-                        <Badge variant="outline" className="text-[10px] shrink-0">
-                          {SESSION_TYPES.find(t => t.value === item.sessionType)?.label}
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                  {agenda.length > 5 && (
-                    <p className="text-xs text-muted-foreground">+{agenda.length - 5} more</p>
-                  )}
-                </div>
-              </div>
+              <AgendaReviewSection agenda={agenda} formatTime={formatTime} speakers={speakers} />
             )}
 
             {speakers.length > 0 && (
@@ -357,7 +480,7 @@ export function ReviewStep({
                       className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border/60 bg-card text-sm"
                     >
                       {ex.logo ? (
-                        <img src={ex.logo} alt="" className="w-5 h-5 rounded object-cover" />
+                        <img src={ex.logo} alt="" className="w-5 h-5 rounded object-contain" />
                       ) : (
                         <Briefcase className="w-3.5 h-3.5 text-muted-foreground" />
                       )}
@@ -388,7 +511,7 @@ export function ReviewStep({
                       }`}
                     >
                       {sp.logo && (
-                        <img src={sp.logo} alt="" className="w-4 h-4 rounded-full object-cover" />
+                        <img src={sp.logo} alt="" className="w-4 h-4 rounded-full object-contain" />
                       )}
                       {sp.name}
                       <span className="text-[10px] opacity-70 capitalize">{sp.level}</span>

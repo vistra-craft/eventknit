@@ -17,7 +17,7 @@ export const CompletionScreen = () => {
 
   const role = state.user?.role;
   const isOrganizerRole =
-    role === 'ORGANIZER' || role === 'ORGANIZER_STAFF' || role === 'ORGANIZER_TELLER';
+    role === 'ORGANIZER' || role === 'ORGANIZER_ADMIN' || role === 'ORGANIZER_TELLER';
   const dashboardRoute = isOrganizerRole ? '/organizer/dashboard' : '/dashboard';
 
   // Auto-redirect after 3 seconds

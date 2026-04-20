@@ -2,48 +2,49 @@ import { InventoryService } from '../src/services/inventory.service';
 import { prisma } from '../src/config/database';
 
 // Mock ioredis
-jest.mock('ioredis', () => {
-  return jest.fn().mockImplementation(() => ({
-    on: jest.fn(),
-    connect: jest.fn().mockResolvedValue(undefined),
-    quit: jest.fn().mockResolvedValue(undefined),
-    get: jest.fn(),
-    setex: jest.fn(),
-    incrby: jest.fn(),
-    exists: jest.fn(),
-    eval: jest.fn(),
-    mget: jest.fn(),
-    pipeline: jest.fn(() => ({
-      setex: jest.fn().mockReturnThis(),
-      exec: jest.fn().mockResolvedValue([]),
+vi.mock('ioredis', () => {
+  const RedisMock = vi.fn().mockImplementation(() => ({
+    on: vi.fn(),
+    connect: vi.fn().mockResolvedValue(undefined),
+    quit: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn(),
+    setex: vi.fn(),
+    incrby: vi.fn(),
+    exists: vi.fn(),
+    eval: vi.fn(),
+    mget: vi.fn(),
+    pipeline: vi.fn(() => ({
+      setex: vi.fn().mockReturnThis(),
+      exec: vi.fn().mockResolvedValue([]),
     })),
     status: 'ready',
   }));
+  return { default: RedisMock, Redis: RedisMock };
 });
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     event: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
     },
-    $transaction: jest.fn((fn) => fn(prisma)),
+    $transaction: vi.fn((fn) => fn(prisma)),
   },
 }));
 
 const prismaMock = prisma as unknown as {
   event: {
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    update: jest.Mock;
+    findUnique: vi.Mock;
+    findMany: vi.Mock;
+    update: vi.Mock;
   };
-  $transaction: jest.Mock;
+  $transaction: vi.Mock;
 };
 
 describe('InventoryService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     prismaMock.$transaction.mockImplementation((fn) => fn(prisma));
   });
 

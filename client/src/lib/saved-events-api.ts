@@ -7,6 +7,7 @@ export interface SavedEventData {
   notes: string | null;
   event: {
     id: string;
+    slug: string | null;
     title: string;
     startDate: string;
     endDate: string | null;

@@ -1976,7 +1976,7 @@ describe('Authentication System', () => {
         orderBy: { createdAt: 'desc' },
       });
 
-      // Verify code and create account (like Facebook OAuth)
+      // Verify code and create account (like other OAuth flows)
       const response = await request(app)
         .post('/api/v1/auth/email-oauth/verify')
         .send({

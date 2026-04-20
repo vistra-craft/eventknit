@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -23,6 +23,10 @@ import {
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { getEvents, EventStatus, type EventData } from "@/lib/event-api";
+import { getOrganizerStaffEvents } from "@/lib/organizer-api";
+import { getAdminStaffEvents } from "@/lib/admin-api";
+import { useAuth } from "@/hooks/useAuth";
+import { UserRole } from "@/types/auth";
 
 type EventStatusFilter = "all" | "live" | "upcoming" | "completed";
 
@@ -32,6 +36,12 @@ interface EventWithComputedStatus extends EventData {
 
 const ServicePointEvents: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const basePrefix = location.pathname.startsWith('/organizer') ? '/organizer' : '/admin';
+
+  // Teller roles — only see their assigned events
+  const isTeller = user?.role === UserRole.ORGANIZER_TELLER || user?.role === UserRole.TELLER;
   const [events, setEvents] = useState<EventWithComputedStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,23 +68,46 @@ const ServicePointEvents: React.FC = () => {
     }
   };
 
-  // Fetch events
+  // Fetch events — tellers only see their assigned events; others see all approved events
   useEffect(() => {
+    if (!user?.id) return;
+
     const fetchEvents = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await getEvents({ status: EventStatus.APPROVED, limit: 100 });
 
-        if (response.success && response.data?.events) {
-          const eventsWithStatus = response.data.events.map((event) => ({
-            ...event,
-            computedStatus: computeEventStatus(event),
-          }));
-          setEvents(eventsWithStatus);
+        let rawEvents: EventData[] = [];
+
+        if (isTeller) {
+          // Fetch only assigned events for this teller
+          if (user.role === UserRole.ORGANIZER_TELLER) {
+            const response = await getOrganizerStaffEvents(user.id, { status: 'APPROVED' });
+            if (response.success && response.data?.assignments) {
+              rawEvents = response.data.assignments
+                .map((a) => a.event as EventData | undefined)
+                .filter((e): e is EventData => !!e);
+            }
+          } else if (user.role === UserRole.TELLER) {
+            const response = await getAdminStaffEvents(user.id, { status: 'APPROVED' });
+            if (response.success && response.data?.assignments) {
+              rawEvents = response.data.assignments
+                .map((a) => a.event as EventData | undefined)
+                .filter((e): e is EventData => !!e);
+            }
+          }
         } else {
-          setError("Failed to load events");
+          // Full access — fetch all approved events
+          const response = await getEvents({ status: EventStatus.APPROVED, limit: 100 });
+          if (response.success && response.data?.events) {
+            rawEvents = response.data.events;
+          }
         }
+
+        setEvents(rawEvents.map((event) => ({
+          ...event,
+          computedStatus: computeEventStatus(event),
+        })));
       } catch (err) {
         console.error("Error fetching events:", err);
         setError("Failed to load events. Please try again.");
@@ -84,7 +117,7 @@ const ServicePointEvents: React.FC = () => {
     };
 
     fetchEvents();
-  }, []);
+  }, [user?.id, user?.role, isTeller]);
 
   // Filter events based on search, status, and category
   const filteredEvents = useMemo(() => {
@@ -127,10 +160,8 @@ const ServicePointEvents: React.FC = () => {
         return "bg-primary/10 text-primary border-primary";
       case "ongoing":
         return "bg-success/10 text-success border-success";
-      case "completed":
-        return "bg-muted text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700";
       default:
-        return "bg-muted text-gray-800 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -158,7 +189,7 @@ const ServicePointEvents: React.FC = () => {
   };
 
   const handleEventClick = (eventId: string) => {
-    navigate(`/admin/service-point/event/${eventId}`);
+    navigate(`${basePrefix}/event-day/event/${eventId}`);
   };
 
   return (
@@ -166,7 +197,7 @@ const ServicePointEvents: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-foreground">Service Point</h1>
+            <h1 className="text-lg font-semibold text-foreground">Event Day Hub</h1>
             <p className="text-muted-foreground text-sm">
               Select an event to manage check-ins and facilities
             </p>
@@ -175,7 +206,7 @@ const ServicePointEvents: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/admin/service-point/templates")}
+              onClick={() => navigate(`${basePrefix}/event-day/templates`)}
             >
               <FileText className="w-4 h-4 mr-1" />
               Templates
@@ -183,7 +214,7 @@ const ServicePointEvents: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/admin/service-point/history")}
+              onClick={() => navigate(`${basePrefix}/event-day/history`)}
             >
               <History className="w-4 h-4 mr-1" />
               History
@@ -204,7 +235,7 @@ const ServicePointEvents: React.FC = () => {
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent className="max-h-64">
@@ -238,7 +269,7 @@ const ServicePointEvents: React.FC = () => {
           </div>
 
           <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as EventStatusFilter)}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
               <TabsTrigger value="all">All ({statusCounts.all})</TabsTrigger>
               <TabsTrigger value="live" className="text-success">
                 Live ({statusCounts.live})
@@ -337,7 +368,7 @@ const ServicePointEvents: React.FC = () => {
                   </div>
                   {event.category && (
                     <div className="absolute top-3 right-3">
-                      <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                      <Badge variant="secondary" className="bg-card/90 text-foreground">
                         {getCategoryLabel(event.category)}
                       </Badge>
                     </div>

@@ -10,6 +10,7 @@ import { PlatformFeeService } from './platform-fee.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
 import { getPaymentGatewayManager, GatewayType } from './payment-gateway-manager.js';
+import type { PaymentGateway } from './payment-gateway.interface.js';
 import { DigitalWalletService } from './digital-wallet.service.js';
 
 export interface InitializePaymentData {
@@ -64,12 +65,12 @@ export class PaymentService {
     const registrationEmail = registration.attendee.email?.toLowerCase().trim();
 
     if (registrationEmail !== normalizedEmail) {
-      throw new ValidationError('Email does not match the registration');
+      throw new ValidationError('The email address doesn\'t match this registration. Please use the same email you registered with.');
     }
 
     // Check if already paid
     if (registration.paymentStatus === 'COMPLETED') {
-      throw new ValidationError('Payment already completed');
+      throw new ValidationError('Payment has already been completed for this registration.');
     }
   }
 
@@ -78,35 +79,68 @@ export class PaymentService {
    * Supports idempotency keys to prevent duplicate payments
    */
   async initializePayment(data: InitializePaymentData) {
-    // Generate or use provided idempotency key
-    // Format: registrationId-amount-timestamp or provided key
-    const idempotencyKey = data.idempotencyKey ||
-      `${data.registrationId}-${data.amount}-${Date.now()}`;
+    if (!Number.isFinite(data.amount) || data.amount <= 0) {
+      throw new ValidationError('Invalid payment amount. Please restart checkout and try again.', 'PAYMENT_INIT_FAILED_INVALID_REQUEST');
+    }
 
-    // Check for existing payment with same idempotency key
-    const existingTransaction = await prisma.eventPaymentTransaction.findUnique({
-      where: { idempotencyKey },
+    // Deterministic idempotency key — same registration + amount always produces the same key.
+    // This prevents double-charges when users click "Pay" twice rapidly.
+    // Client-provided keys take priority for explicit dedup control.
+    const idempotencyKey = data.idempotencyKey ||
+      `${data.registrationId}-${data.amount}`;
+
+    // Atomic check: verify idempotency + registration status inside a transaction
+    // to prevent TOCTOU races between concurrent payment requests.
+    const { registration, existingTransaction } = await prisma.$transaction(async (tx) => {
+      const existing = await tx.eventPaymentTransaction.findUnique({
+        where: { idempotencyKey },
+      });
+
+      const reg = await tx.eventRegistration.findUnique({
+        where: { id: data.registrationId },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              currency: true,
+              organizer: {
+                select: {
+                  organizationName: true,
+                },
+              },
+            },
+          },
+          attendee: {
+            select: {
+              email: true,
+              firstName: true,
+              lastName: true,
+              phoneNumber: true,
+            },
+          },
+        },
+      });
+
+      return { registration: reg, existingTransaction: existing };
     });
 
+    // Handle idempotent duplicate requests
     if (existingTransaction) {
-      // If payment succeeded, return the existing successful payment
       if (existingTransaction.paymentStatus === 'success') {
         logger.info(`Idempotent payment request: returning existing successful payment for key ${idempotencyKey}`);
         return {
-          authorizationUrl: null, // Already paid
+          authorizationUrl: null,
           accessCode: null,
           reference: existingTransaction.gatewayReference,
           gateway: existingTransaction.gateway,
           status: 'ALREADY_PAID',
-          message: 'Payment already completed',
+          message: 'Payment has already been completed for this registration.',
         };
       }
 
-      // If payment is pending, return the existing pending payment URL
       if (existingTransaction.paymentStatus === 'pending') {
         logger.info(`Idempotent payment request: returning existing pending payment for key ${idempotencyKey}`);
-        // Note: We could potentially fetch the authorization URL from the gateway
-        // For now, we'll return the reference so client can verify or retry
         return {
           authorizationUrl: null,
           accessCode: null,
@@ -117,65 +151,61 @@ export class PaymentService {
         };
       }
 
-      // If payment failed, allow retry but log the idempotency key reuse
+      // If payment failed, allow retry
       logger.info(`Idempotent payment retry: previous payment failed for key ${idempotencyKey}`);
     }
-
-    // Get registration to verify it exists and is pending
-    const registration = await prisma.eventRegistration.findUnique({
-      where: { id: data.registrationId },
-      include: {
-        event: {
-          select: {
-            id: true,
-            title: true,
-            currency: true,
-            organizer: {
-              select: {
-                organizationName: true,
-              },
-            },
-          },
-        },
-        attendee: {
-          select: {
-            email: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    });
 
     if (!registration) {
       throw new NotFoundError('Registration not found');
     }
 
     if (registration.paymentStatus === 'COMPLETED') {
-      throw new ValidationError('Payment already completed');
+      throw new ValidationError('Payment has already been completed for this registration.');
     }
 
     if (registration.status !== RegistrationStatus.PENDING) {
-      throw new ValidationError('Can only initialize payment for pending registrations');
+      throw new ValidationError('This registration is no longer pending. Please start a new registration.');
     }
 
-    // Select gateway (use specified or default)
-    const gatewayType = data.gateway || this.gatewayManager.getDefaultGateway().getName() as GatewayType;
+    const normalizedCurrency = (data.currency || registration.event?.currency || 'KES').toUpperCase();
+
+    // Currency-aware gateway selection.
+    // For web checkout, exclude MPESA auto-selection until a dedicated STK flow is used in UI.
+    // MPESA can still be used when explicitly requested.
+    let gatewayType: GatewayType;
+    try {
+      gatewayType = this.gatewayManager.resolveGatewayForCurrency(normalizedCurrency, {
+        preferredGateway: data.gateway,
+        excludeGateways: data.gateway ? [] : ['MPESA'],
+      });
+    } catch (resolutionError) {
+      if (data.gateway) {
+        // If caller explicitly requested an unsupported gateway for this currency, try automatic fallback.
+        gatewayType = this.gatewayManager.resolveGatewayForCurrency(normalizedCurrency, {
+          excludeGateways: ['MPESA'],
+        });
+        logger.warn(`Preferred gateway ${data.gateway} is not available for ${normalizedCurrency}. Falling back to ${gatewayType}.`);
+      } else {
+        throw resolutionError;
+      }
+    }
+
     const gatewayInstance = this.gatewayManager.getGateway(gatewayType);
 
-    // Generate unique reference
-    const reference = `EVT-${registration.id}-${Date.now()}`;
+    // Generate unique reference (collision-resistant across rapid retries)
+    const reference = `EVT-${registration.id.slice(0, 8)}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 
     try {
       const response = await gatewayInstance.initializePayment({
         amount: data.amount,
-        currency: data.currency || registration.event?.currency || 'KES',
+        currency: normalizedCurrency,
         email: data.email,
         reference,
         metadata: {
           registrationId: data.registrationId,
           eventId: registration.eventId,
           eventTitle: registration.event.title,
+          phoneNumber: registration.attendee.phoneNumber || data.metadata?.phoneNumber,
           idempotencyKey, // Include idempotency key for tracking
           ...data.metadata,
         },
@@ -201,19 +231,48 @@ export class PaymentService {
         metadata: response.metadata,
       };
     } catch (error: unknown) {
-      logger.error('Failed to initialize payment:', error);
+      const errObj = error as Record<string, unknown> | null;
+      const errorCode = (typeof errObj?.code === 'string' ? errObj.code : 'UNKNOWN_ERROR');
+      const isTransient = (errObj?.isTransient === true);
+      const gatewayMessage = typeof errObj?.gatewayMessage === 'string'
+        ? errObj.gatewayMessage
+        : (typeof errObj?.message === 'string' ? errObj.message : undefined);
+      const errorMessage = error instanceof Error ? error.message : String(error);
 
-      // Rollback: Cancel registration and restore capacity if payment initialization fails
-      // This prevents orphaned registrations when payment fails
-      try {
-        await this.rollbackRegistration(data.registrationId);
-        logger.info(`Rolled back registration ${data.registrationId} due to payment initialization failure`);
-      } catch (rollbackError) {
-        logger.error(`Failed to rollback registration ${data.registrationId}:`, rollbackError);
-        // Continue to throw original error even if rollback fails
+      logger.error('Failed to initialize payment:', {
+        errorCode,
+        isTransient,
+        message: errorMessage,
+        registrationId: data.registrationId,
+        gateway: gatewayType,
+      });
+
+      // Only rollback on permanent errors (not transient)
+      // Transient errors: timeout, network, rate limit, service unavailable → allow retry
+      // Permanent errors: auth failure, config issues → rollback
+      if (!isTransient) {
+        try {
+          await this.rollbackRegistration(data.registrationId);
+          logger.info(`Rolled back registration ${data.registrationId} due to permanent payment error: ${errorCode}`);
+        } catch (rollbackError) {
+          logger.error(`Failed to rollback registration ${data.registrationId}:`, rollbackError);
+          // Continue to throw original error even if rollback fails
+        }
+      } else {
+        logger.info(`Transient payment error for registration ${data.registrationId}. Registration preserved for retry.`);
       }
 
-      throw new ValidationError(`Failed to initialize payment with ${gatewayType}. Please try again.`);
+      // Provide user-friendly but informative error message
+      let userMessage = 'Failed to initialize payment. Please try again.';
+      if (isTransient) {
+        userMessage = 'Payment service is temporarily unavailable. Please try again in a moment.';
+      } else if (errorCode === 'PAYSTACK_AUTH_ERROR') {
+        userMessage = 'Payment gateway configuration error. Please contact support.';
+      } else if (errorCode === 'INVALID_REQUEST') {
+        userMessage = gatewayMessage || 'Invalid payment request. Please check your information and try again.';
+      }
+
+      throw new ValidationError(userMessage, `PAYMENT_INIT_FAILED_${errorCode}`);
     }
   }
 
@@ -288,7 +347,7 @@ export class PaymentService {
   async verifyPayment(reference: string, gatewayType?: GatewayType): Promise<PaymentVerificationResult> {
     try {
       // Determine gateway - try to find from transaction if not specified
-      let gateway: any;
+      let gateway: PaymentGateway;
       if (gatewayType) {
         gateway = this.gatewayManager.getGateway(gatewayType);
       } else {
@@ -324,15 +383,26 @@ export class PaymentService {
       };
     } catch (error: unknown) {
       logger.error('Failed to verify payment:', error);
-      throw new ValidationError('Failed to verify payment');
+      throw new ValidationError('We couldn\'t verify your payment. If you were charged, please contact support.');
     }
   }
 
   /**
    * Handle payment webhook from payment gateway
    * Implements idempotency by tracking processed webhook events
+   * @param event Webhook event type (e.g., 'charge.success' for Paystack)
+   * @param data Webhook payload data
+   * @param gatewayType Detected or specified gateway type (PAYSTACK, STRIPE, etc.)
+   * @param signature Optional signature header for verification (passed to gateway)
+   * @param rawPayload Optional raw payload string for signature verification (especially for Paystack)
    */
-  async handleWebhook(event: string, data: Record<string, unknown>, gatewayType?: GatewayType): Promise<{ status: string; message?: string } | void> {
+  async handleWebhook(
+    event: string,
+    data: Record<string, unknown>,
+    gatewayType?: GatewayType,
+    signature?: string,
+    rawPayload?: string,
+  ): Promise<{ status: string; message?: string } | void> {
     // Extract webhook event ID for idempotency (defined outside try for catch block access)
     // Paystack: data.id, Stripe: id at top level or data.object.id
     const webhookEventId = (data.id as string) || (data.data as Record<string, unknown>)?.id as string;
@@ -344,7 +414,7 @@ export class PaymentService {
       }
 
       // Determine gateway type
-      let gateway: any;
+      let gateway: PaymentGateway;
       let detectedGatewayType: GatewayType;
 
       if (gatewayType) {
@@ -390,7 +460,7 @@ export class PaymentService {
           });
         } catch (createError) {
           // Unique constraint violation means another process is handling this event
-          if ((createError as any).code === 'P2002') {
+          if (createError instanceof Prisma.PrismaClientKnownRequestError && createError.code === 'P2002') {
             logger.info(`[PaymentService.handleWebhook] Race condition: webhook event being processed by another instance: ${webhookEventId}`);
             return { status: 'DUPLICATE', message: 'Webhook being processed by another instance' };
           }
@@ -398,12 +468,14 @@ export class PaymentService {
         }
       }
 
-      // Process webhook through gateway
-      // For Paystack (and similar gateways), the handler expects the raw webhook payload
-      // including both the event name and data. Our tests call PaymentService.handleWebhook
-      // with (event, data), so we reconstruct the original payload shape here.
+      // Process webhook through gateway with signature verification
+      // For Paystack: pass raw payload and signature for HMAC-SHA512 verification
+      // For Stripe: pass signature for timestamp + HMAC-SHA256 verification
       const webhookPayload = { event, data };
-      const webhookResult = await gateway.handleWebhook(webhookPayload, event);
+      const webhookResult = await gateway.handleWebhook(
+        detectedGatewayType === 'PAYSTACK' ? (rawPayload || webhookPayload) : webhookPayload,
+        signature,
+      );
       const reference = webhookResult.reference;
 
       if (!reference) {
@@ -415,6 +487,17 @@ export class PaymentService {
       const verification = await this.verifyPayment(reference, detectedGatewayType);
 
       if (verification.success) {
+        // Route subscription payments (SUB- prefix) to SubscriptionService
+        if (reference.startsWith('SUB-')) {
+          const { SubscriptionService } = await import('./subscription.service.js');
+          await SubscriptionService.handleSubscriptionPaymentSuccess(
+            reference,
+            verification.reference,
+          );
+          logger.info(`Subscription payment webhook processed: ${reference}`);
+          return { status: 'SUCCESS', message: 'Subscription payment processed' };
+        }
+
         // Find registration by reference
         const registration = await prisma.eventRegistration.findFirst({
           where: {
@@ -633,9 +716,9 @@ export class PaymentService {
             const { SeatSelectionService } = await import('./seat-selection.service.js');
             await SeatSelectionService.confirmSeatReservation(registration.id);
             logger.info(`Seat reservation confirmed for registration: ${registration.id}`);
-          } catch (seatError: any) {
+          } catch (seatError: unknown) {
             // Only log if it's a real error — missing reservations are expected for non-seated events
-            if (seatError?.message !== 'Seat reservation not found') {
+            if (!(seatError instanceof Error && seatError.message === 'Seat reservation not found')) {
               logger.error(`Failed to confirm seat reservation for registration ${registration.id}:`, seatError);
             }
           }
@@ -696,8 +779,8 @@ export class PaymentService {
               ticketLineItems?: Array<{
                 ticketType: string;
                 quantity: number;
-                unitPrice: any; // Decimal from Prisma
-                totalPrice: any; // Decimal from Prisma
+                unitPrice: Prisma.Decimal | number;
+                totalPrice: Prisma.Decimal | number;
               }>;
             };
 
@@ -712,15 +795,15 @@ export class PaymentService {
             try {
               logger.debug('[PaymentService.handleWebhook] Extracting ticketLineItems from registration');
               // Safely access ticketLineItems - it may not exist if Prisma query didn't include it
-              const lineItems = (registrationWithLineItems as any).ticketLineItems;
+              const lineItems = registrationWithLineItems.ticketLineItems;
               logger.debug('[PaymentService.handleWebhook] ticketLineItems raw value:', lineItems ? `${Array.isArray(lineItems) ? lineItems.length : 'not array'} items` : 'undefined/null');
 
               if (lineItems && Array.isArray(lineItems) && lineItems.length > 0) {
                 ticketLineItems = lineItems.map((item: {
                   ticketType: string;
                   quantity: number;
-                  unitPrice: any;
-                  totalPrice: any;
+                  unitPrice: Prisma.Decimal | number;
+                  totalPrice: Prisma.Decimal | number;
                 }) => ({
                   ticketType: item.ticketType,
                   quantity: item.quantity,

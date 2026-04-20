@@ -42,7 +42,7 @@ export interface UpdateStaffAssignmentData {
 
 export interface EventStaffFilters {
   role?: string;
-  staffType?: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+  staffType?: 'ADMIN' | 'ORGANIZER_ADMIN';
   isActive?: boolean;
 }
 
@@ -56,25 +56,24 @@ export class EventStaffService {
   /**
    * Determine staff type from user role
    */
-  private static getStaffType(userRole: UserRole): 'ADMIN_STAFF' | 'ORGANIZER_STAFF' {
+  private static getStaffType(userRole: UserRole): 'ADMIN' | 'ORGANIZER_ADMIN' {
     const adminStaffRoles: UserRole[] = [
-      UserRole.ADMIN_STAFF,
-      UserRole.MARKETER,
+      UserRole.ADMIN,
       UserRole.SUPPORT,
       UserRole.TELLER,
     ];
     
     if (adminStaffRoles.includes(userRole)) {
-      return 'ADMIN_STAFF';
+      return 'ADMIN';
     }
-    
+
     const organizerStaffRoles: UserRole[] = [
-      UserRole.ORGANIZER_STAFF,
+      UserRole.ORGANIZER_ADMIN,
       UserRole.ORGANIZER_TELLER,
     ];
-    
+
     if (organizerStaffRoles.includes(userRole)) {
-      return 'ORGANIZER_STAFF';
+      return 'ORGANIZER_ADMIN';
     }
     
     throw new ValidationError(`User role ${userRole} is not a valid staff role`);
@@ -115,7 +114,7 @@ export class EventStaffService {
     }
 
     // Check if staff is organizer staff
-    if (staff.role !== UserRole.ORGANIZER_STAFF && staff.role !== UserRole.ORGANIZER_TELLER) {
+    if (staff.role !== UserRole.ORGANIZER_ADMIN && staff.role !== UserRole.ORGANIZER_TELLER) {
       throw new ValidationError('Staff member must be an organizer staff member');
     }
 
@@ -208,7 +207,7 @@ export class EventStaffService {
     }
 
     // Determine staff type
-    let staffType: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+    let staffType: 'ADMIN' | 'ORGANIZER_ADMIN';
     try {
       staffType = this.getStaffType(staff.role);
     } catch {
@@ -216,16 +215,16 @@ export class EventStaffService {
     }
 
     // Validate permissions based on staff type
-    if (staffType === 'ADMIN_STAFF') {
-      // Only ADMIN_STAFF+ can assign admin staff
+    if (staffType === 'ADMIN') {
+      // Only ADMIN+ can assign admin staff
       if (
         assignedByRole !== UserRole.SUPERADMIN &&
-        assignedByRole !== UserRole.ADMIN_STAFF
+        assignedByRole !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admin staff can assign admin staff to events');
       }
     } else {
-      // ORGANIZER_STAFF - validate organizer can assign their staff
+      // ORGANIZER_ADMIN - validate organizer can assign their staff
       await this.validateOrganizerStaffAssignment(data.staffId, eventId, assignedBy);
     }
 
@@ -587,16 +586,16 @@ export class EventStaffService {
     }
 
     // Validate permissions
-    if (assignment.staffType === 'ADMIN_STAFF') {
-      // Only ADMIN_STAFF+ can remove admin staff
+    if (assignment.staffType === 'ADMIN') {
+      // Only ADMIN+ can remove admin staff
       if (
         removedByRole !== UserRole.SUPERADMIN &&
-        removedByRole !== UserRole.ADMIN_STAFF
+        removedByRole !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admin staff can remove admin staff from events');
       }
     } else {
-      // ORGANIZER_STAFF - only event organizer can remove
+      // ORGANIZER_ADMIN - only event organizer can remove
       if (assignment.event.organizerId !== removedBy) {
         throw new AuthorizationError('Only the event organizer can remove their staff');
       }
@@ -696,16 +695,16 @@ export class EventStaffService {
     }
 
     // Validate permissions
-    if (assignment.staffType === 'ADMIN_STAFF') {
-      // Only ADMIN_STAFF+ can update admin staff
+    if (assignment.staffType === 'ADMIN') {
+      // Only ADMIN+ can update admin staff
       if (
         updatedByRole !== UserRole.SUPERADMIN &&
-        updatedByRole !== UserRole.ADMIN_STAFF
+        updatedByRole !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admin staff can update admin staff assignments');
       }
     } else {
-      // ORGANIZER_STAFF - only event organizer can update
+      // ORGANIZER_ADMIN - only event organizer can update
       if (assignment.event.organizerId !== updatedBy) {
         throw new AuthorizationError('Only the event organizer can update their staff assignments');
       }
@@ -791,16 +790,16 @@ export class EventStaffService {
     }
 
     // Validate permissions
-    if (assignment.staffType === 'ADMIN_STAFF') {
-      // Only ADMIN_STAFF+ can update admin staff
+    if (assignment.staffType === 'ADMIN') {
+      // Only ADMIN+ can update admin staff
       if (
         updatedByRole !== UserRole.SUPERADMIN &&
-        updatedByRole !== UserRole.ADMIN_STAFF
+        updatedByRole !== UserRole.ADMIN
       ) {
         throw new AuthorizationError('Only admin staff can update admin staff assignments');
       }
     } else {
-      // ORGANIZER_STAFF - only event organizer can update
+      // ORGANIZER_ADMIN - only event organizer can update
       if (assignment.event.organizerId !== updatedBy) {
         throw new AuthorizationError('Only the event organizer can update their staff assignments');
       }
@@ -969,7 +968,7 @@ export class EventStaffService {
    */
   static async getEventStaffCount(
     eventId: string,
-    staffType?: 'ADMIN_STAFF' | 'ORGANIZER_STAFF',
+    staffType?: 'ADMIN' | 'ORGANIZER_ADMIN',
   ): Promise<number> {
     const where: Prisma.EventStaffWhereInput = {
       eventId,
@@ -1017,7 +1016,7 @@ export class EventStaffService {
     // Validate permissions
     if (
       assignedByRole !== UserRole.SUPERADMIN &&
-      assignedByRole !== UserRole.ADMIN_STAFF
+      assignedByRole !== UserRole.ADMIN
     ) {
       // For organizer, validate they own the event
       if (assignedByRole !== UserRole.ORGANIZER || event.organizerId !== assignedBy) {

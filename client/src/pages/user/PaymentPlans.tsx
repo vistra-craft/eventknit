@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -24,6 +25,7 @@ import {
   createPaymentPlan,
 } from "@/lib/payment-plan-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface PaymentPlan {
   id: string;
@@ -56,6 +58,7 @@ const PaymentPlans = () => {
   const [plans, setPlans] = useState<PaymentPlan[]>([]);
   const [overdue, setOverdue] = useState<PaymentInstallment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("plans");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -80,11 +83,7 @@ const PaymentPlans = () => {
       }
     } catch (error) {
       console.error("Error loading payment plans:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load payment plans",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load payment plans");
     } finally {
       setLoading(false);
     }
@@ -103,18 +102,12 @@ const PaymentPlans = () => {
         });
         loadData();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to process payment",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to process payment");
     }
   };
 
   const handleCancelPlan = async (planId: string) => {
-    if (!confirm("Are you sure you want to cancel this payment plan?")) return;
-
     try {
       const response = await cancelPaymentPlan(planId);
       if (response.success) {
@@ -124,12 +117,8 @@ const PaymentPlans = () => {
         });
         loadData();
       }
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to cancel payment plan",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Failed to cancel payment plan");
     }
   };
 
@@ -191,11 +180,7 @@ const PaymentPlans = () => {
                   setIsCreateDialogOpen(false);
                   loadData();
                 } catch {
-                  toast({
-                    title: "Error",
-                    description: "Failed to create payment plan",
-                    variant: "destructive",
-                  });
+                  showErrorToast(toast, null, "Failed to create payment plan");
                 }
               }}
               onCancel={() => setIsCreateDialogOpen(false)}
@@ -304,7 +289,7 @@ const PaymentPlans = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleCancelPlan(plan.id)}
+                            onClick={() => setCancelConfirm(plan.id)}
                           >
                             <X className="h-4 w-4 mr-1" />
                             Cancel Plan
@@ -369,6 +354,19 @@ const PaymentPlans = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={!!cancelConfirm} onOpenChange={() => setCancelConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel payment plan?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone. Any remaining payments will not be collected.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep plan</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (cancelConfirm) { handleCancelPlan(cancelConfirm); } setCancelConfirm(null); }}>Cancel plan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

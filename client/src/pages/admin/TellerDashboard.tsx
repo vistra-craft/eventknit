@@ -176,16 +176,16 @@ const TellerDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-3">
-            <Link to="/admin/service-point/scanner">
+            <Link to="/admin/event-day/scanner">
               <Button className="w-full" size={isMobile ? 'default' : 'lg'}>
                 <QrCode className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
                 Open Scanner
               </Button>
             </Link>
-            <Link to="/admin/service-point">
+            <Link to="/admin/event-day">
               <Button className="w-full" variant="outline" size={isMobile ? 'default' : 'lg'}>
                 <Monitor className={`${isMobile ? 'mr-2 h-4 w-4' : 'mr-2 h-5 w-5'}`} />
-                Service Point
+                Event Day Hub
               </Button>
             </Link>
             <Link to="/admin/events/assigned">
@@ -241,7 +241,7 @@ const TellerDashboard = () => {
                     </div>
                     <div className={`flex ${isMobile ? 'w-full gap-2' : 'gap-2'}`}>
                       <Link
-                        to={`/admin/service-point/scanner?eventId=${assignment.event.id}`}
+                        to={`/admin/event-day/scanner?eventId=${assignment.event.id}`}
                         className={isMobile ? 'flex-1' : ''}
                       >
                         <Button size={isMobile ? 'default' : 'sm'} className={isMobile ? 'w-full' : ''}>

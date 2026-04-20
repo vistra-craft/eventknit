@@ -1,7 +1,9 @@
 import { Response, NextFunction } from 'express';
 import { AdminService } from '../services/admin.service.js';
+import { SubscriptionService } from '../services/subscription.service.js';
+import { TicketIssuanceService } from '../services/ticket-issuance.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserRole, UserStatus, SubscriptionTier } from '@prisma/client';
 import { roleHierarchy, canCreateRole, canModifyUser, canDeleteUser } from '../utils/privileges.js';
 
 export class AdminController {
@@ -127,6 +129,39 @@ export class AdminController {
       res.status(200).json({
         success: true,
         message: 'User updated successfully',
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Change user role
+   */
+  static async changeUserRole(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { role } = req.body;
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const user = await AdminService.changeUserRole(
+        req.params.id as string,
+        role,
+        req.user.id,
+        req.user.role,
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({
+        success: true,
+        message: `Role updated to ${role}`,
         data: { user },
       });
     } catch (error) {
@@ -602,6 +637,183 @@ export class AdminController {
       next(error);
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Subscription Plan Management
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Get all subscription plans
+   */
+  static async getSubscriptionPlans(_req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const plans = await SubscriptionService.getPlans();
+
+      res.status(200).json({
+        success: true,
+        data: { plans },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update a subscription plan (pricing, description, features)
+   */
+  static async updateSubscriptionPlan(req: AuthenticatedRequest<{ tier: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { tier } = req.params;
+      if (!Object.values(SubscriptionTier).includes(tier as SubscriptionTier)) {
+        res.status(400).json({ success: false, message: `Invalid tier: ${tier}` });
+        return;
+      }
+
+      const { price, description, features, isActive } = req.body;
+      const plan = await SubscriptionService.updatePlan(tier as SubscriptionTier, { price, description, features, isActive });
+
+      res.status(200).json({
+        success: true,
+        message: `Subscription plan ${tier} updated successfully`,
+        data: { plan },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get organizer subscription summary (subscription + overrides + effective tier)
+   */
+  static async getOrganizerSubscription(req: AuthenticatedRequest<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id: organizerId } = req.params;
+      const summary = await SubscriptionService.getOrganizerSubscriptionSummary(organizerId);
+
+      res.status(200).json({
+        success: true,
+        data: summary,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Set a subscription override for an organizer
+   */
+  static async setOrganizerSubscriptionOverride(req: AuthenticatedRequest<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const { id: organizerId } = req.params;
+      const { tier, reason, expiresAt } = req.body;
+
+      if (!tier || !Object.values(SubscriptionTier).includes(tier)) {
+        res.status(400).json({ success: false, message: `Invalid tier: ${tier}` });
+        return;
+      }
+
+      const override = await SubscriptionService.createOverride(
+        organizerId,
+        tier,
+        req.user.id,
+        reason,
+        expiresAt ? new Date(expiresAt) : undefined,
+      );
+
+      res.status(201).json({
+        success: true,
+        message: `Subscription override set to ${tier} for organizer`,
+        data: { override },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Remove a subscription override
+   */
+  static async removeOrganizerSubscriptionOverride(req: AuthenticatedRequest<{ id: string; overrideId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { overrideId } = req.params;
+      const override = await SubscriptionService.removeOverride(overrideId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Subscription override removed',
+        data: { override },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * List all ticket issuances across the platform (admin view)
+   */
+  static async getTicketIssuances(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { status, eventId, page, limit } = req.query as Record<string, string>;
+      const result = await TicketIssuanceService.listAll({
+        status: status || undefined,
+        eventId: eventId || undefined,
+        page: page ? parseInt(page, 10) : 1,
+        limit: limit ? parseInt(limit, 10) : 50,
+      });
+
+      res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get event analytics (for admin mobile app)
+   */
+  static async getEventAnalytics(req: AuthenticatedRequest<{ eventId: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const { eventId } = req.params;
+      const analytics = await AdminService.getEventAnalytics(eventId);
+
+      res.status(200).json({
+        success: true,
+        data: analytics,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Cancel a ticket issuance (admin, no ownership check)
+   */
+  static async cancelTicketIssuance(req: AuthenticatedRequest<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const issuance = await TicketIssuanceService.adminCancel(id);
+      res.status(200).json({ success: true, message: 'Issuance cancelled', data: { issuance } });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 /**
@@ -609,16 +821,14 @@ export class AdminController {
  */
 function getRoleDescription(role: UserRole): string {
   const descriptions: Record<UserRole, string> = {
-    [UserRole.SUPERADMIN]: 'Full system access with all permissions',
-    [UserRole.ADMIN]: 'Platform administrator with broad system-wide permissions',
-    [UserRole.ADMIN_STAFF]: 'Administrative staff with management capabilities',
-    [UserRole.MARKETER]: 'Marketing team member with event promotion access',
-    [UserRole.SUPPORT]: 'Customer support team member',
-    [UserRole.TELLER]: 'Event staff member for ticket scanning and check-in',
-    [UserRole.ORGANIZER]: 'Event organizer with full event management capabilities',
-    [UserRole.ORGANIZER_STAFF]: 'Organizer staff member with limited event management',
-    [UserRole.ORGANIZER_TELLER]: 'Organizer teller for ticket scanning at specific events',
-    [UserRole.ATTENDEE]: 'Regular event attendee',
+    [UserRole.SUPERADMIN]: 'Full platform access including system health, database, logs, and backups',
+    [UserRole.ADMIN]: 'Full admin dashboard access except system management',
+    [UserRole.SUPPORT]: 'Customer support, communications, marketing, and flagged content review',
+    [UserRole.TELLER]: 'Event day hub — QR scanning, badge printing, and walk-in registration',
+    [UserRole.ORGANIZER]: 'Full organizer dashboard — events, staff, analytics, finance, branding',
+    [UserRole.ORGANIZER_ADMIN]: 'Manage organizer events, attendees, and analytics (no finance or settings)',
+    [UserRole.ORGANIZER_TELLER]: 'Event day operations — QR scanning and check-in for assigned events',
+    [UserRole.ATTENDEE]: 'Browse events, register, manage tickets and transfers',
   };
 
   return descriptions[role] || 'No description available';

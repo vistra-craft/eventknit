@@ -35,9 +35,7 @@ describe('AdvancedTeamService', () => {
   beforeEach(async () => {
     if (!dbConnected) return;
 
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Seed permissions
     await PermissionService.seedPermissions();
@@ -788,8 +786,9 @@ describe('AdvancedTeamService', () => {
 
       const result = await AdvancedTeamService.applyRoleTemplate(roleTemplateId, organizerId);
 
-      expect(result).toContain('events.view');
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveProperty('permissions');
+      expect(result.permissions).toHaveProperty('permissionKeys');
+      expect(result.permissions.permissionKeys).toContain('events.view');
     });
 
     it('should throw when template not found', async () => {

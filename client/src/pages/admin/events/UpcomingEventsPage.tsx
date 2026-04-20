@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Search, Calendar, MapPin, Users, Eye, Clock, MoreHorizontal, TrendingUp, AlertCircle, X, Edit, BarChart3, Download, Share2, Copy } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -13,16 +13,19 @@ import { Label } from "../../../components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, EventStatus } from "../../../lib/event-api";
+import { getEvents, EventStatus, getEventById, type EventData } from "../../../lib/event-api";
 import { recallEvent } from "../../../lib/admin-api";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 import { shareEvent } from "../../../lib/utils/share";
 import { exportEventData } from "../../../lib/utils/export";
 import { useToast } from "../../../hooks/useToast";
+import { extractErrorMessage, showErrorToast } from "../../../lib/utils/error";
 import { getCategoriesByGroup } from "@/lib/event-categories";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
 
 interface Event {
   id: string;
+  slug?: string | null;
   title: string;
   organizer: string;
   date: string;
@@ -39,7 +42,6 @@ interface Event {
 }
 
 const UpcomingEventsPage = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +59,40 @@ const UpcomingEventsPage = () => {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(25);
   const [total, setTotal] = useState(0);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+  const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const handlePreviewEvent = (eventId: string) => {
+    setPreviewEventId(eventId);
+    setPreviewModalOpen(true);
+  };
+
+  // Fetch event details for preview modal
+  useEffect(() => {
+    const fetchPreviewEvent = async () => {
+      if (!previewEventId || !previewModalOpen) return;
+
+      try {
+        setPreviewLoading(true);
+        const response = await getEventById(previewEventId);
+        if (response.success && response.data?.event) {
+          setPreviewEventData(response.data.event);
+        } else {
+          showErrorToast(toast, new Error("Failed to load event details"), "Preview failed", "Failed to load event details");
+          setPreviewModalOpen(false);
+        }
+      } catch (error: unknown) {
+        showErrorToast(toast, error, "Preview failed", "Failed to load event details");
+        setPreviewModalOpen(false);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewEvent();
+  }, [previewEventId, previewModalOpen, toast]);
 
   // Fetch upcoming events (approved events with startDate > now)
   useEffect(() => {
@@ -103,6 +139,7 @@ const UpcomingEventsPage = () => {
 
               return {
                 id: event.id,
+                slug: event.slug || null,
                 title: event.title,
                 organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
                 date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
@@ -154,6 +191,12 @@ const UpcomingEventsPage = () => {
         setSelectedEventId(null);
         setRecallAction('PENDING');
         setRecallReason("");
+        toast({
+          title: recallAction === 'PENDING' ? "Event recalled to pending" : "Event recalled and cancelled",
+          description: recallAction === 'PENDING'
+            ? "The event has been pulled down and is awaiting re-approval. You can find it in Recalled Events."
+            : "The event has been cancelled and attendees will be refunded. You can find it in Recalled Events.",
+        });
         // Refresh events
         const filters: Record<string, unknown> = {
           status: EventStatus.APPROVED,
@@ -184,6 +227,7 @@ const UpcomingEventsPage = () => {
               const daysUntil = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
               return {
                 id: event.id,
+                slug: event.slug ?? null,
                 title: event.title,
                 organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
                 date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
@@ -206,10 +250,7 @@ const UpcomingEventsPage = () => {
         throw new Error(response.message || 'Failed to recall event');
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
-        : 'Failed to recall event. Please try again.';
-      setError(errorMessage);
+      setError(extractErrorMessage(err, 'Failed to recall event. Please try again.'));
     } finally {
       setRecalling(false);
     }
@@ -447,11 +488,11 @@ const UpcomingEventsPage = () => {
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-                    <Button 
-                      variant="outline" 
+                  <div className="flex items-center gap-2 ml-0 sm:ml-4 flex-shrink-0">
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => navigate(`/admin/events/${event.id}/preview`)}
+                      onClick={() => handlePreviewEvent(event.id)}
                       className="border-primary text-primary hover:bg-muted"
                     >
                       <Eye className="h-4 w-4 mr-1" />
@@ -472,20 +513,24 @@ const UpcomingEventsPage = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => window.open(`/admin/events/${event.id}`, '_blank')}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Event
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Manage Event
+                          </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => window.open(`/event/${event.id}`, '_blank')}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Public Page
+                        <DropdownMenuItem asChild>
+                          <Link to={`/event/${event.slug ?? event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Public Page
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => {
-                          window.open(`/admin/analytics/events?eventId=${event.id}`, '_blank');
-                        }}>
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          View Analytics
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/analytics/events?eventId=${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Analytics
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           try {
@@ -504,12 +549,8 @@ const UpcomingEventsPage = () => {
                               title: "Exported",
                               description: "Event data exported successfully",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to export event data",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Export failed", "Failed to export event data");
                           }
                         }}>
                           <Download className="h-4 w-4 mr-2" />
@@ -517,24 +558,20 @@ const UpcomingEventsPage = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={async () => {
                           try {
-                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.id}`);
+                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.slug ?? event.id}`);
                             toast({
                               title: "Copied",
                               description: "Event link copied to clipboard",
                             });
-                          } catch {
-                            toast({
-                              title: "Error",
-                              description: "Failed to copy link",
-                              variant: "destructive",
-                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Copy failed", "Failed to copy link");
                           }
                         }}>
                           <Copy className="h-4 w-4 mr-2" />
                           Copy Event Link
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={async () => {
-                          const shared = await shareEvent(event.title, event.id);
+                          const shared = await shareEvent(event.title, event.slug ?? event.id);
                           if (shared) {
                             toast({
                               title: "Shared",
@@ -571,6 +608,14 @@ const UpcomingEventsPage = () => {
           </Card>
         )}
       </div>
+
+      {/* Event Preview Modal */}
+      <EventPreviewModal
+        isOpen={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        event={previewEventData}
+        loading={previewLoading}
+      />
 
       {/* Recall Event Dialog */}
       <Dialog open={showRecallDialog} onOpenChange={setShowRecallDialog}>

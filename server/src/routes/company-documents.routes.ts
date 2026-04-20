@@ -8,7 +8,7 @@ import { UserRole } from '@prisma/client';
 const router = Router();
 
 router.use(authenticate);
-router.use(requireMinRole(UserRole.ADMIN_STAFF));
+router.use(requireMinRole(UserRole.ADMIN));
 
 /**
  * @route   GET /api/v1/admin/company-documents

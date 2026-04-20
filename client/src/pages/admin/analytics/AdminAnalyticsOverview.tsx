@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,8 +69,17 @@ interface RecentEvent {
   category: string;
 }
 
+const TAB_ROUTES: Record<string, string> = {
+  overview: '/admin/analytics',
+  events: '/admin/analytics/events',
+  organizers: '/admin/analytics/users',
+  revenue: '/admin/analytics/revenue',
+  system: '/admin/analytics/system',
+};
+
 const AdminAnalyticsOverview = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("30d");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,16 +101,21 @@ const AdminAnalyticsOverview = () => {
 
   const currentTab = getCurrentTab();
 
+  const handleTabChange = (tab: string) => {
+    navigate(TAB_ROUTES[tab] ?? '/admin/analytics');
+  };
+
   // Transform API stats to UI format
   const transformStats = useCallback(
     (data: AdminDashboardStatsResponse["data"]): PlatformStat[] => {
       const { stats } = data;
+      if (!stats) return [];
       return [
         {
           title: "Total Events",
-          value: stats.totalEvents.value,
-          change: stats.totalEvents.change,
-          changeType: stats.totalEvents.changeType,
+          value: stats.totalEvents?.value ?? "—",
+          change: stats.totalEvents?.change ?? "0%",
+          changeType: stats.totalEvents?.changeType ?? "positive",
           icon: Calendar,
           color: "text-primary",
           bgColor: "bg-primary/10",
@@ -110,9 +124,9 @@ const AdminAnalyticsOverview = () => {
         },
         {
           title: "Active Organizers",
-          value: stats.organizers.value,
-          change: stats.organizers.change,
-          changeType: stats.organizers.changeType,
+          value: stats.organizers?.value ?? "—",
+          change: stats.organizers?.change ?? "0%",
+          changeType: stats.organizers?.changeType ?? "positive",
           icon: Building2,
           color: "text-success",
           bgColor: "bg-success/10",
@@ -121,9 +135,9 @@ const AdminAnalyticsOverview = () => {
         },
         {
           title: "Active Staff",
-          value: stats.activeStaff.value,
-          change: stats.activeStaff.change,
-          changeType: stats.activeStaff.changeType,
+          value: stats.activeStaff?.value ?? "—",
+          change: stats.activeStaff?.change ?? "0%",
+          changeType: stats.activeStaff?.changeType ?? "positive",
           icon: Users,
           color: "text-muted-foreground",
           bgColor: "bg-muted",
@@ -132,9 +146,9 @@ const AdminAnalyticsOverview = () => {
         },
         {
           title: "Platform Revenue",
-          value: stats.platformRevenue.value,
-          change: stats.platformRevenue.change,
-          changeType: stats.platformRevenue.changeType,
+          value: stats.platformRevenue?.value ?? "—",
+          change: stats.platformRevenue?.change ?? "0%",
+          changeType: stats.platformRevenue?.changeType ?? "positive",
           icon: DollarSign,
           color: "text-success",
           bgColor: "bg-success/10",
@@ -161,13 +175,14 @@ const AdminAnalyticsOverview = () => {
   const transformGrowthData = useCallback(
     (data: AdminDashboardGrowthResponse["data"]): GrowthDataPoint[] => {
       const { organizers, events, revenue, attendees } = data;
+      if (!Array.isArray(events)) return [];
       // Combine data series by index (they all have the same labels)
-      return events.map((eventPoint, index) => ({
+      return events.filter(Boolean).map((eventPoint, index) => ({
         month: eventPoint.label,
         events: eventPoint.value,
-        organizers: organizers[index]?.value || 0,
-        attendees: attendees[index]?.value || 0,
-        revenue: revenue[index]?.value || 0,
+        organizers: organizers?.[index]?.value ?? 0,
+        attendees: attendees?.[index]?.value ?? 0,
+        revenue: revenue?.[index]?.value ?? 0,
       }));
     },
     []
@@ -390,8 +405,8 @@ const AdminAnalyticsOverview = () => {
 
           {/* Main Content Tabs */}
           {!isLoading && !error && (
-          <Tabs value={currentTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+          <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="organizers">Organizers</TabsTrigger>

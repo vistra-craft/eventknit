@@ -29,8 +29,18 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
     <section className="space-y-4">
       {/* Top row: avatar + name + subtitle */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-2 ring-primary/5">
-          <Building className="w-5 h-5 text-primary" />
+        <div className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-primary/5 overflow-hidden">
+          {organizer?.avatar ? (
+            <img
+              src={organizer.avatar}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+              <Building className="w-5 h-5 text-primary" />
+            </div>
+          )}
         </div>
         <div>
           <h3 className="text-section-header leading-tight">{name}</h3>
@@ -39,7 +49,7 @@ export const OrganizerInfo = ({ organizer, organizerName, organizerDescription, 
       </div>
 
       {/* Organizer Description */}
-      {organizerDescription && (
+      {organizerDescription && textLength > 0 && (
         <div className="space-y-2">
           <div className={shouldTruncate && !isExpanded ? "line-clamp-3" : ""}>
             <RichTextContent

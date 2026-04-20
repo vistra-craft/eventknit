@@ -1,3 +1,13 @@
+// Mock LockService so Redis absence doesn't prevent scan operations in integration tests.
+// acquireLockWithRetry returns a token string (truthy = lock acquired).
+// releaseLock is a no-op.
+vi.mock('../src/services/lock.service.js', () => ({
+  LockService: {
+    acquireLockWithRetry: vi.fn().mockResolvedValue('test-lock-token'),
+    releaseLock: vi.fn().mockResolvedValue(true),
+  },
+}));
+
 import { WorkstationService } from '../src/services/workstation.service.js';
 import { TicketService } from '../src/services/ticket.service.js';
 import { prisma } from '../src/config/database.js';
@@ -51,9 +61,7 @@ describe('WorkstationService', () => {
     if (!dbConnected) return;
 
     // Clean up
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    await cleanupTestData();
 
     // Create test organizer
     const organizer = await prisma.user.create({
@@ -90,7 +98,7 @@ describe('WorkstationService', () => {
         password: 'hashedpassword',
         firstName: 'Test',
         lastName: 'Scanner',
-        role: 'ORGANIZER_STAFF',
+        role: 'ORGANIZER_ADMIN',
         status: 'ACTIVE',
         isEmailVerified: true,
       },
@@ -812,6 +820,112 @@ describe('WorkstationService', () => {
       await prisma.ticketScan.deleteMany({ where: { registrationId: testRegistrationId } });
     });
 
+    it('should perform manual check-in for registration with null backup code', async () => {
+      if (!dbConnected) return;
+
+      // Create a second attendee whose registration has NO backup code (null)
+      const attendeeNoCode = await prisma.user.create({
+        data: {
+          email: 'nocode@example.com',
+          password: 'hashedpassword',
+          firstName: 'NoCode',
+          lastName: 'Attendee',
+          role: 'ATTENDEE',
+          status: 'ACTIVE',
+          isEmailVerified: true,
+        },
+      });
+
+      const regNoCode = await prisma.eventRegistration.create({
+        data: {
+          eventId: testEventId,
+          attendeeId: attendeeNoCode.id,
+          status: 'CONFIRMED',
+          totalAmount: 0,
+          ticketStatus: 'ACTIVE',
+          backupCode: null, // <-- explicitly null: the bug scenario
+        },
+      });
+
+      const result = await WorkstationService.manualCheckIn(
+        regNoCode.id,
+        testEventId,
+        testScannerId,
+        'Main Entrance',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.isManual).toBe(true);
+      expect(result.registrationId).toBe(regNoCode.id);
+
+      // Verify the scan record was marked MANUAL_CHECK_IN
+      const scan = await prisma.ticketScan.findFirst({
+        where: { registrationId: regNoCode.id, scanType: 'MANUAL_CHECK_IN' },
+      });
+      expect(scan).toBeDefined();
+      expect(scan?.scanType).toBe('MANUAL_CHECK_IN');
+
+      // Verify registration state
+      const updated = await prisma.eventRegistration.findUnique({ where: { id: regNoCode.id } });
+      expect(updated?.isCurrentlyInside).toBe(true);
+      expect(updated?.checkedInAt).toBeDefined();
+
+      // Cleanup
+      await prisma.ticketScan.deleteMany({ where: { registrationId: regNoCode.id } });
+      await prisma.eventRegistration.delete({ where: { id: regNoCode.id } });
+      await prisma.user.delete({ where: { id: attendeeNoCode.id } });
+    });
+
+    it('should perform manual check-out for registration with null backup code', async () => {
+      if (!dbConnected) return;
+
+      const attendeeNoCode = await prisma.user.create({
+        data: {
+          email: 'nocode2@example.com',
+          password: 'hashedpassword',
+          firstName: 'NoCode2',
+          lastName: 'Attendee',
+          role: 'ATTENDEE',
+          status: 'ACTIVE',
+          isEmailVerified: true,
+        },
+      });
+
+      const regNoCode = await prisma.eventRegistration.create({
+        data: {
+          eventId: testEventId,
+          attendeeId: attendeeNoCode.id,
+          status: 'CONFIRMED',
+          totalAmount: 0,
+          ticketStatus: 'ACTIVE',
+          backupCode: null,
+        },
+      });
+
+      // Check in first (via registration ID)
+      await WorkstationService.manualCheckIn(regNoCode.id, testEventId, testScannerId);
+
+      // Now manual check-out
+      const result = await WorkstationService.manualCheckOut(
+        regNoCode.id,
+        testEventId,
+        testScannerId,
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.isManual).toBe(true);
+
+      const scan = await prisma.ticketScan.findFirst({
+        where: { registrationId: regNoCode.id, scanType: 'MANUAL_CHECK_OUT' },
+      });
+      expect(scan).toBeDefined();
+
+      // Cleanup
+      await prisma.ticketScan.deleteMany({ where: { registrationId: regNoCode.id } });
+      await prisma.eventRegistration.delete({ where: { id: regNoCode.id } });
+      await prisma.user.delete({ where: { id: attendeeNoCode.id } });
+    });
+
     it('should reject manual check-in for non-existent attendee', async () => {
       if (!dbConnected) return;
 
@@ -929,6 +1043,114 @@ describe('WorkstationService', () => {
         where: { attendeeId: anotherAttendee.id },
       });
       await prisma.user.delete({ where: { id: anotherAttendee.id } });
+    });
+  });
+
+  describe('voidCheckIn', () => {
+    it('should void a check-in and reset registration to pre-check-in state', async () => {
+      if (!dbConnected) return;
+
+      // Check the attendee in first
+      await WorkstationService.scanTicket(
+        testQRCode,
+        testEventId,
+        testScannerId,
+        'Main Entrance',
+        'device-123',
+        'MOBILE',
+      );
+
+      const result = await WorkstationService.voidCheckIn(
+        testRegistrationId,
+        testScannerId,
+        'Test void reason',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.registrationId).toBe(testRegistrationId);
+      expect(result.scanId).toBeDefined();
+
+      // Registration should be reset to pre-check-in state
+      const reg = await prisma.eventRegistration.findUnique({ where: { id: testRegistrationId } });
+      expect(reg?.checkedInAt).toBeNull();
+      expect(reg?.isCurrentlyInside).toBe(false);
+      expect(reg?.ticketStatus).toBe('ACTIVE');
+      expect(reg?.lastScanFacility).toBeNull();
+
+      // VOID audit record must exist with correct notes
+      const voidScan = await prisma.ticketScan.findFirst({
+        where: { registrationId: testRegistrationId, scanType: 'VOID' },
+      });
+      expect(voidScan).toBeDefined();
+      expect(voidScan?.notes).toBe('Test void reason');
+    });
+
+    it('should return NOT_CHECKED_IN error when ticket was never checked in', async () => {
+      if (!dbConnected) return;
+
+      // Ensure clean state
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: { checkedInAt: null, isCurrentlyInside: false },
+      });
+
+      const result = await WorkstationService.voidCheckIn(
+        testRegistrationId,
+        testScannerId,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('NOT_CHECKED_IN');
+    });
+
+    it('should return INVALID_TICKET error for non-existent registration', async () => {
+      if (!dbConnected) return;
+
+      const result = await WorkstationService.voidCheckIn(
+        'nonexistent-registration-id',
+        testScannerId,
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('INVALID_TICKET');
+    });
+
+    it('should use default notes when no reason is provided', async () => {
+      if (!dbConnected) return;
+
+      // Check in first
+      await WorkstationService.scanTicket(testQRCode, testEventId, testScannerId);
+
+      const result = await WorkstationService.voidCheckIn(testRegistrationId, testScannerId);
+
+      expect(result.success).toBe(true);
+
+      const voidScan = await prisma.ticketScan.findFirst({
+        where: { registrationId: testRegistrationId, scanType: 'VOID' },
+      });
+      expect(voidScan?.notes).toBe('Check-in voided by staff');
+    });
+
+    it('should decrement reEntryCount when voiding a re-entry', async () => {
+      if (!dbConnected) return;
+
+      // Simulate an attendee who has re-entered once
+      await prisma.eventRegistration.update({
+        where: { id: testRegistrationId },
+        data: {
+          checkedInAt: new Date(),
+          isCurrentlyInside: true,
+          ticketStatus: 'DEACTIVATED',
+          reEntryCount: 2,
+        },
+      });
+
+      const result = await WorkstationService.voidCheckIn(testRegistrationId, testScannerId);
+
+      expect(result.success).toBe(true);
+
+      const reg = await prisma.eventRegistration.findUnique({ where: { id: testRegistrationId } });
+      expect(reg?.reEntryCount).toBe(1); // decremented from 2
     });
   });
 });

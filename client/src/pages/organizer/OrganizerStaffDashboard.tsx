@@ -244,7 +244,7 @@ const OrganizerStaffDashboard = () => {
                       </div>
                     </div>
                     <Link
-                      to={`/organizer/events/${assignment.event.id}`}
+                      to={`/organizer/event/${assignment.event.id}`}
                       className={isMobile ? 'w-full' : ''}
                     >
                       <Button
@@ -300,7 +300,7 @@ const OrganizerStaffDashboard = () => {
                       </div>
                     </div>
                     <Link
-                      to={`/organizer/events/${assignment.event.id}`}
+                      to={`/organizer/event/${assignment.event.id}`}
                       className={isMobile ? 'w-full' : ''}
                     >
                       <Button

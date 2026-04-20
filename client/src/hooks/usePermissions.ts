@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
 import {
   canCreateRole,
@@ -14,6 +14,7 @@ import {
 } from "@/lib/permissions";
 import { UserRole } from "@/types/auth";
 import { getAdminStaffEvents } from "@/lib/admin-api";
+import { getMyPermissions } from "@/lib/organizer-dashboard-api";
 
 /**
  * Hook for checking user permissions
@@ -125,4 +126,47 @@ export const usePermissionsEnhanced = () => {
     ...basePermissions,
     isAssignedToEvent,
   };
+};
+
+/**
+ * Hook for fetching the current user's effective granular permissions
+ * from the backend (e.g., 'analytics.view', 'communication.send').
+ * Returns { permissions, hasPermission, loading }.
+ */
+export const useUserPermissions = () => {
+  const { user } = useAuth();
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      if (!user?.id) {
+        setPermissions([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const response = await getMyPermissions();
+        if (response.success && response.data?.permissions) {
+          setPermissions(response.data.permissions);
+        }
+      } catch (error) {
+        console.error('Error fetching user permissions:', error);
+        setPermissions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPermissions();
+  }, [user?.id]);
+
+  const hasPermission = useCallback(
+    (key: string) => permissions.includes(key),
+    [permissions],
+  );
+
+  return { permissions, hasPermission, loading };
 };

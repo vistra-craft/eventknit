@@ -104,6 +104,63 @@ export const organizerDashboardValidations = {
     }),
   }),
 
+  // Event Session validations
+  createSession: Joi.object({
+    title: Joi.string().trim().min(1).max(200).required().messages({
+      'string.min': 'Session title must be at least 1 character long',
+      'string.max': 'Session title must not exceed 200 characters',
+      'any.required': 'Session title is required',
+    }),
+    dayOfEvent: Joi.number().integer().min(1).required().messages({
+      'number.base': 'Day of event must be a number',
+      'number.min': 'Day of event must be at least 1',
+      'any.required': 'Day of event is required',
+    }),
+    startTime: Joi.date().iso().required().messages({
+      'date.base': 'Start time must be a valid date',
+      'any.required': 'Start time is required',
+    }),
+    endTime: Joi.date().iso().required().messages({
+      'date.base': 'End time must be a valid date',
+      'any.required': 'End time is required',
+    }),
+    location: Joi.string().trim().max(200).optional().allow('', null).messages({
+      'string.max': 'Location must not exceed 200 characters',
+    }),
+    capacity: Joi.number().integer().min(1).optional().allow(null).messages({
+      'number.base': 'Capacity must be a number',
+      'number.min': 'Capacity must be at least 1',
+    }),
+  }),
+
+  updateSession: Joi.object({
+    title: Joi.string().trim().min(1).max(200).optional().messages({
+      'string.min': 'Session title must be at least 1 character long',
+      'string.max': 'Session title must not exceed 200 characters',
+    }),
+    dayOfEvent: Joi.number().integer().min(1).optional().messages({
+      'number.base': 'Day of event must be a number',
+      'number.min': 'Day of event must be at least 1',
+    }),
+    startTime: Joi.date().iso().optional().messages({
+      'date.base': 'Start time must be a valid date',
+    }),
+    endTime: Joi.date().iso().optional().messages({
+      'date.base': 'End time must be a valid date',
+    }),
+    location: Joi.string().trim().max(200).optional().allow('', null).messages({
+      'string.max': 'Location must not exceed 200 characters',
+    }),
+    capacity: Joi.number().integer().min(1).optional().allow(null).messages({
+      'number.base': 'Capacity must be a number',
+      'number.min': 'Capacity must be at least 1',
+    }),
+  }),
+
+  sessionsQuery: Joi.object({
+    dayOfEvent: Joi.number().integer().min(1).optional(),
+  }),
+
   // Attendee Segmentation validations
   createSegment: Joi.object({
     name: Joi.string().trim().min(1).max(100).required().messages({
@@ -769,5 +826,75 @@ export const organizerDashboardValidations = {
 
   downgradeSubscription: Joi.object({
     tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required(),
+  }),
+
+  // KYC validations
+  setEntityType: Joi.object({
+    entityType: Joi.string()
+      .valid(
+        'INDIVIDUAL', 'SOLE_PROPRIETOR', 'PARTNERSHIP',
+        'LIMITED_LIABILITY_COMPANY', 'LIMITED_LIABILITY_PARTNERSHIP',
+        'EMPLOYMENT_AGENCY_LLC', 'FOREIGN_COMPANY_COMPLIANCE',
+        'PRIVATE_HOSPITAL_SOLE_PROPRIETOR', 'PRIVATE_HOSPITAL_LLC', 'PUBLIC_HOSPITAL',
+        'PRIVATE_EDUCATION_SOLE_PROPRIETOR', 'PRIVATE_EDUCATION_LLC',
+        'INTERNATIONAL_EDUCATION_LLC', 'PUBLIC_EDUCATION',
+        'COOPERATIVE_SOCIETY', 'INSURANCE_REINSURANCE',
+        'NGO', 'EMBASSY_UN_WORLD_BANK', 'DENOMINATIONAL_CHURCH',
+        'PARTNERSHIP_PROFESSIONAL', 'TRUST',
+      )
+      .required()
+      .messages({
+        'any.only': 'Invalid entity type',
+        'any.required': 'Entity type is required',
+      }),
+    industry: Joi.string().trim().max(100).optional().allow('', null),
+    businessName: Joi.string().trim().max(200).optional().allow('', null),
+    registrationNumber: Joi.string().trim().max(100).optional().allow('', null),
+  }),
+
+  createKYCDocument: Joi.object({
+    documentType: Joi.string().required().messages({
+      'any.required': 'Document type is required',
+    }),
+    documentNumber: Joi.string().trim().max(100).optional().allow('', null),
+    documentUrl: Joi.string().uri().optional().allow('', null).messages({
+      'string.uri': 'Document URL must be a valid URL',
+    }),
+    issueDate: Joi.date().iso().optional().allow(null),
+    expiryDate: Joi.date().iso().optional().allow(null),
+  }),
+
+  createDirector: Joi.object({
+    fullName: Joi.string().trim().min(1).max(200).required().messages({
+      'string.empty': 'Full name is required',
+      'any.required': 'Full name is required',
+    }),
+    nationality: Joi.string().trim().min(1).max(100).required().messages({
+      'string.empty': 'Nationality is required',
+      'any.required': 'Nationality is required',
+    }),
+    dateOfBirth: Joi.date().iso().required().messages({
+      'any.required': 'Date of birth is required',
+    }),
+    documentType: Joi.string().trim().min(1).max(100).required().messages({
+      'any.required': 'Document type is required',
+    }),
+    documentNumber: Joi.string().trim().min(1).max(100).required().messages({
+      'any.required': 'Document number is required',
+    }),
+    kraPin: Joi.string().trim().max(50).optional().allow('', null),
+    sharePercentage: Joi.number().min(0).max(100).optional().allow(null),
+    position: Joi.string().trim().max(100).optional().allow('', null),
+  }),
+
+  // Subscription payment validation
+  initializeSubscriptionPayment: Joi.object({
+    tier: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM').required().messages({
+      'any.only': 'Tier must be BASIC, STANDARD, or PREMIUM',
+      'any.required': 'Subscription tier is required',
+    }),
+    billingEmail: Joi.string().trim().email().optional().allow('', null).messages({
+      'string.email': 'Please provide a valid billing email',
+    }),
   }),
 };

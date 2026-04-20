@@ -3,16 +3,11 @@ import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
 export interface CreateConsentData {
-  operationalConsent?: boolean; // Always enforced as true
   marketingConsent?: boolean;
-  demographicsConsent?: boolean;
-  analyticsConsent?: boolean;
 }
 
 export interface UpdateConsentData {
   marketingConsent?: boolean;
-  demographicsConsent?: boolean;
-  analyticsConsent?: boolean;
 }
 
 export class ConsentService {
@@ -58,10 +53,7 @@ export class ConsentService {
         attendeeId,
         eventId,
         registrationId,
-        operationalConsent: true, // Required for ticket delivery
         marketingConsent: data.marketingConsent ?? false,
-        demographicsConsent: data.demographicsConsent ?? false,
-        analyticsConsent: data.analyticsConsent ?? false,
         consentVersion: '1.0',
       },
     });
@@ -121,18 +113,13 @@ export class ConsentService {
       throw new ValidationError('You do not have permission to update this consent');
     }
 
-    const revokeAll =
-      data.marketingConsent === false &&
-      data.demographicsConsent === false &&
-      data.analyticsConsent === false;
+    const newMarketingConsent = data.marketingConsent ?? consent.marketingConsent;
 
     const updated = await prisma.attendeeConsent.update({
       where: { registrationId },
       data: {
-        marketingConsent: data.marketingConsent ?? consent.marketingConsent,
-        demographicsConsent: data.demographicsConsent ?? consent.demographicsConsent,
-        analyticsConsent: data.analyticsConsent ?? consent.analyticsConsent,
-        revokedAt: revokeAll ? new Date() : null,
+        marketingConsent: newMarketingConsent,
+        revokedAt: newMarketingConsent === false ? new Date() : null,
       },
     });
 
@@ -173,7 +160,7 @@ export class ConsentService {
    */
   static async hasConsent(
     registrationId: string,
-    consentType: 'operational' | 'marketing' | 'demographics' | 'analytics',
+    consentType: 'marketing',
   ): Promise<boolean> {
     const consent = await prisma.attendeeConsent.findUnique({
       where: { registrationId },
@@ -181,16 +168,7 @@ export class ConsentService {
 
     if (!consent) return false;
 
-    switch (consentType) {
-    case 'operational':
-      return consent.operationalConsent;
-    case 'marketing':
-      return consent.marketingConsent;
-    case 'demographics':
-      return consent.demographicsConsent;
-    case 'analytics':
-      return consent.analyticsConsent;
-    }
+    return consentType === 'marketing' ? consent.marketingConsent : false;
   }
 
   /**
@@ -213,38 +191,15 @@ export class ConsentService {
       where: { eventId },
     });
 
-    const count = (key: keyof typeof consents[number]) =>
-      consents.filter(c => c[key]).length;
-
-    const operationalCount = count('operationalConsent');
-    const marketingCount = count('marketingConsent');
-    const demographicsCount = count('demographicsConsent');
-    const analyticsCount = count('analyticsConsent');
+    const marketingCount = consents.filter(c => c.marketingConsent).length;
 
     return {
       totalRegistrations,
       totalConsents: consents.length,
-      operational: {
-        count: operationalCount,
-        percentage:
-          totalRegistrations > 0
-            ? (operationalCount / totalRegistrations) * 100
-            : 0,
-      },
       marketing: {
         count: marketingCount,
         percentage:
-          consents.length > 0 ? (marketingCount / consents.length) * 100 : 0,
-      },
-      demographics: {
-        count: demographicsCount,
-        percentage:
-          consents.length > 0 ? (demographicsCount / consents.length) * 100 : 0,
-      },
-      analytics: {
-        count: analyticsCount,
-        percentage:
-          consents.length > 0 ? (analyticsCount / consents.length) * 100 : 0,
+          totalRegistrations > 0 ? (marketingCount / totalRegistrations) * 100 : 0,
       },
     };
   }

@@ -47,7 +47,7 @@ export class InvitationService {
     // Verify organizer can create invitations
     if (organizerRole !== UserRole.ORGANIZER &&
         organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
+        organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can create invitation links');
     }
 
@@ -70,7 +70,7 @@ export class InvitationService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to create invitations for this event');
       }
@@ -167,7 +167,7 @@ export class InvitationService {
     // Verify organizer can view invitations
     if (organizerRole !== UserRole.ORGANIZER &&
         organizerRole !== UserRole.SUPERADMIN &&
-        organizerRole !== UserRole.ADMIN_STAFF) {
+        organizerRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only organizers can view invitation links');
     }
 
@@ -188,7 +188,7 @@ export class InvitationService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to view invitations for this event');
       }
@@ -331,7 +331,7 @@ export class InvitationService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (invitation.event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to update this invitation');
       }
@@ -436,7 +436,7 @@ export class InvitationService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (invitation.event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to delete this invitation');
       }

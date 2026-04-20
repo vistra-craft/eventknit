@@ -156,6 +156,7 @@ describe('Promo Code System', () => {
 
       const promoCodeData = {
         code: 'SAVE50',
+        eventId,
         discountType: DiscountType.FIXED_AMOUNT,
         discountValue: 50,
         minOrderAmount: 100,
@@ -184,6 +185,7 @@ describe('Promo Code System', () => {
 
       const promoCodeData = {
         code: 'UNIQUE',
+        eventId,
         discountType: DiscountType.PERCENTAGE,
         discountValue: 10,
         validFrom: new Date().toISOString(),

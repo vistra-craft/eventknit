@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getCombinedTransactions, deleteExpense, deleteIncome, type AccountingTransaction, type FinancialOverview } from "@/lib/accounting-api";
 import { useToast } from "@/hooks/useToast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { showErrorToast } from "@/lib/utils/error";
 
 const TransactionsPage = () => {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ const TransactionsPage = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<AccountingTransaction | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<AccountingTransaction | null>(null);
 
   // Fetch transactions
   useEffect(() => {
@@ -150,11 +153,14 @@ const TransactionsPage = () => {
     }
   };
 
-  const handleDeleteTransaction = async (transaction: AccountingTransaction) => {
-    if (!window.confirm("Are you sure you want to delete this transaction? This action cannot be undone.")) {
-      return;
-    }
+  const handleDeleteTransaction = (transaction: AccountingTransaction) => {
+    setDeleteConfirm(transaction);
+  };
 
+  const confirmDeleteTransaction = async () => {
+    if (!deleteConfirm) return;
+    const transaction = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       setDeleting(transaction.id);
       const response = transaction.type === 'expense'
@@ -172,11 +178,7 @@ const TransactionsPage = () => {
       }
     } catch (err) {
       console.error('Error deleting transaction:', err);
-      toast({
-        title: "Error",
-        description: "Failed to delete transaction. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Failed to delete transaction. Please try again.");
     } finally {
       setDeleting(null);
     }
@@ -419,7 +421,7 @@ const TransactionsPage = () => {
                 </Button>
               </div>
               <div className="p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Transaction ID</label>
                     <p className="text-sm text-foreground">{selectedTransaction.id}</p>
@@ -491,6 +493,23 @@ const TransactionsPage = () => {
             </div>
           </div>
         )}
+
+        <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Transaction</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this transaction? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDeleteTransaction} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
   );
 };

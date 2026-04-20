@@ -26,6 +26,7 @@ export interface RegistrationData {
  */
 export interface EventData {
   id: string;
+  slug?: string | null; // Human-readable URL slug (e.g. "my-event-title-bc8cbfd6")
   title: string;
   description: string;
   fullDescription?: string | null;
@@ -43,6 +44,7 @@ export interface EventData {
   // Location
   venue?: string | null;
   location: string; // normalized to non-null string by transformers
+  address?: string | null;
   coordinates?: { lat: number; lng: number } | null;
   isOnline?: boolean;
   onlineLink?: string | null;
@@ -56,6 +58,7 @@ export interface EventData {
     name: string;
     price: number;
     quantity?: number | null;
+    description?: string | null;
     features?: string[];
     originalPrice?: number | null;
     discountLabel?: string | null;
@@ -141,6 +144,9 @@ export interface EventData {
     organizationName?: string | null;
     businessEmail?: string | null;
     phoneNumber?: string | null;
+    avatar?: string | null;
+    isIdentityVerified?: boolean;
+    verificationLevel?: number;
   };
 
   // Refund policy
@@ -151,6 +157,9 @@ export interface EventData {
 
   // Seating
   hasSeatMap?: boolean; // Whether a seat map is configured for this event
+
+  // Promo codes
+  hasPromoCodes?: boolean; // Whether this event has active promo codes
 
   // Computed fields
   organizerName?: string; // Computed from organizer
@@ -163,6 +172,11 @@ export interface EventData {
   rejectionReason?: string | null;
   approvedBy?: string | null;
   approvedAt?: string | null;
+
+  // Recall info
+  recalledBy?: string | null;
+  recalledAt?: string | null;
+  recallReason?: string | null;
 
   // Timestamps
   createdAt?: string; // ISO date string

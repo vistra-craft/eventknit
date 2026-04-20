@@ -2,31 +2,31 @@ import { WebhookService } from '../src/services/webhook.service.js';
 import { NotFoundError } from '../src/utils/errors.js';
 import { prisma } from '../src/config/database.js';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     webhookEndpoint: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
   webhookEndpoint: {
-    create: jest.Mock;
-    findMany: jest.Mock;
-    findUnique: jest.Mock;
-    update: jest.Mock;
-    delete: jest.Mock;
+    create: vi.Mock;
+    findMany: vi.Mock;
+    findUnique: vi.Mock;
+    update: vi.Mock;
+    delete: vi.Mock;
   };
 };
 
 describe('WebhookService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it('creates webhook config', async () => {

@@ -1,56 +1,50 @@
 import multer from 'multer';
-import { Request } from 'express';
+import type { RequestHandler } from 'express';
+
+// Local type so TS4023 doesn't fire when emitting declarations
+type MulterInstance = {
+  single(fieldname: string): RequestHandler;
+  array(fieldname: string, maxCount?: number): RequestHandler;
+  none(): RequestHandler;
+  any(): RequestHandler;
+};
 
 const storage = multer.memoryStorage();
 
-// Image-only filter
-const imageFilter = (_req: Request, file: any, cb: any) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only image files are allowed'));
-  }
-};
-
-// Document filter: images + PDFs + Word + Excel + PowerPoint + text
-const ALLOWED_DOCUMENT_MIMETYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-  'image/svg+xml',
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'text/plain',
-  'text/csv',
-]);
-
-const documentFilter = (_req: Request, file: any, cb: any) => {
-  if (ALLOWED_DOCUMENT_MIMETYPES.has(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Unsupported file type. Allowed: images, PDF, Word, Excel, PowerPoint, CSV, TXT'));
-  }
-};
-
-// Image upload (5 MB)
-export const upload: any = multer({
+// Multer configuration
+export const upload: MulterInstance = multer({
   storage,
-  fileFilter: imageFilter,
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
-});
+  fileFilter(_req, file, cb) {
+    // Check if file is an image
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max file size
+    files: 1, // Only one file at a time
+  },
+}) as unknown as MulterInstance;
 
-// Document upload (25 MB)
-export const documentUpload: any = multer({
+// Single image upload middleware
+export const uploadSingleImage: RequestHandler = upload.single('image');
+
+// Document upload (images + PDFs, up to 10MB)
+export const documentUpload: MulterInstance = multer({
   storage,
-  fileFilter: documentFilter,
-  limits: { fileSize: 25 * 1024 * 1024, files: 1 },
-});
+  fileFilter(_req, file, cb) {
+    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files and PDFs are allowed'));
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB for documents
+    files: 1,
+  },
+}) as unknown as MulterInstance;
 
-export const uploadSingleImage = upload.single('image');
-export const uploadSingleDocument = documentUpload.single('file');
+export const uploadSingleDocument: RequestHandler = documentUpload.single('file');

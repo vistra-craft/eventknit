@@ -28,6 +28,7 @@ import BackButton from "@/components/BackButton";
 import { getEventScans, type TicketScanRecord, type ScanHistoryFilters, ScanType } from "../../../lib/workstation-api";
 import { getEvents, type EventData } from "../../../lib/event-api";
 import { useToast } from "../../../hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface ScanStats {
   totalScans: number;
@@ -144,7 +145,7 @@ const ServicePointHistory: React.FC = () => {
             setPagination({
               page: response.data.pagination.page,
               limit: response.data.pagination.limit,
-              total: response.data.scans.length, // Use scans length as total
+              total: response.data.scans.length,
               totalPages: response.data.pagination.totalPages,
             });
           }
@@ -154,11 +155,7 @@ const ServicePointHistory: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading scans:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load scan history",
-          variant: "destructive",
-        });
+        showErrorToast(toast, error, "Failed to load scan history");
       } finally {
         setLoading(false);
       }
@@ -288,12 +285,12 @@ const ServicePointHistory: React.FC = () => {
       case ScanType.CHECK_IN:
         return "bg-primary/10 text-primary";
       case ScanType.CHECK_OUT:
-        return "bg-purple-100 text-purple-800";
+        return "bg-purple-500/10 text-purple-500";
       case ScanType.MANUAL_CHECK_IN:
       case ScanType.MANUAL_CHECK_OUT:
-        return "bg-orange-100 text-orange-800";
+        return "bg-orange-500/10 text-orange-500";
       default:
-        return "bg-muted text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -382,7 +379,7 @@ const ServicePointHistory: React.FC = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <BackButton to="/admin/service-point" label="Back" />
+          <BackButton to="/admin/event-day" label="Back" />
           <div className="flex-1">
             <h1 className="text-lg font-semibold text-foreground">Scan History</h1>
             <p className="text-muted-foreground mt-2">View and analyze all QR code scans</p>
@@ -401,7 +398,7 @@ const ServicePointHistory: React.FC = () => {
                     setSelectedEventId(e.target.value);
                     setPagination({ ...pagination, page: 1 });
                   }}
-                  className="px-3 py-2 border border-border rounded-md text-sm flex-1 max-w-md"
+                  className="px-3 py-2 border border-border rounded-md text-sm flex-1 max-w-md bg-input text-foreground"
                 >
                   <option value="">-- Select an event --</option>
                   {events.map(event => (
@@ -491,7 +488,7 @@ const ServicePointHistory: React.FC = () => {
                     <select
                       value={selectedSession}
                       onChange={(e) => setSelectedSession(e.target.value)}
-                      className="px-3 py-2 border border-border rounded-md text-sm"
+                      className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
                     >
                       {sessionsOptions.map(sess => (
                         <option key={sess.id} value={sess.id}>{sess.name}</option>
@@ -500,7 +497,7 @@ const ServicePointHistory: React.FC = () => {
                     <select
                       value={selectedStatus}
                       onChange={(e) => setSelectedStatus(e.target.value)}
-                      className="px-3 py-2 border border-border rounded-md text-sm"
+                      className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
                     >
                       {statuses.map(status => (
                         <option key={status.id} value={status.id}>{status.name}</option>
@@ -509,7 +506,7 @@ const ServicePointHistory: React.FC = () => {
                     <select
                       value={selectedScanType}
                       onChange={(e) => setSelectedScanType(e.target.value)}
-                      className="px-3 py-2 border border-border rounded-md text-sm"
+                      className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
                     >
                       {scanTypes.map(type => (
                         <option key={type.id} value={type.id}>{type.name}</option>
@@ -518,7 +515,7 @@ const ServicePointHistory: React.FC = () => {
                     <select
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      className="px-3 py-2 border border-border rounded-md text-sm"
+                      className="px-3 py-2 border border-border rounded-md text-sm bg-input text-foreground"
                     >
                       {dates.map(date => (
                         <option key={date.id} value={date.id}>{date.name}</option>
@@ -574,7 +571,7 @@ const ServicePointHistory: React.FC = () => {
                     <>
                       <div className="space-y-2">
                         {filteredScans.map((scan) => (
-                          <div key={scan.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-gray-50 transition-colors">
+                          <div key={scan.id} className="flex items-center justify-between p-4 border border-border/40 rounded-lg hover:bg-muted/50 transition-colors">
                             <div className="flex items-center gap-4">
                               <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                                 <span className="text-sm font-medium text-primary">
@@ -609,7 +606,7 @@ const ServicePointHistory: React.FC = () => {
                                   </div>
                                 </Badge>
                                 <Badge className={`text-xs mt-1 ${getScanTypeColor(scan.scanType)}`}>
-                                  {scan.scanType.replace('_', ' ')}
+                                  {scan.scanType.replace(/_/g, ' ')}
                                 </Badge>
                                 {scan.ticketType && (
                                   <p className="text-sm text-muted-foreground mt-1">{scan.ticketType}</p>
@@ -682,7 +679,7 @@ const ServicePointHistory: React.FC = () => {
                                 <span className="text-sm font-medium">{sess}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <div className="w-24 bg-gray-200 rounded-full h-2">
+                                <div className="w-24 bg-muted rounded-full h-2">
                                   <div 
                                     className="bg-primary h-2 rounded-full"
                                     style={{ 
@@ -720,7 +717,7 @@ const ServicePointHistory: React.FC = () => {
                                 {parseInt(hour) < 10 ? `0${hour}:00` : `${hour}:00`}
                               </span>
                               <div className="flex items-center gap-2">
-                                <div className="w-32 bg-gray-200 rounded-full h-2">
+                                <div className="w-32 bg-muted rounded-full h-2">
                                   <div 
                                     className="bg-primary h-2 rounded-full"
                                     style={{ 

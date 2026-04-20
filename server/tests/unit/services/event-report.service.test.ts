@@ -1,15 +1,15 @@
 import { PrismaClient } from '@prisma/client';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { eventReportService } from '../../../src/services/event-report.service.js';
 import { NotFoundError, ConflictError } from '../../../src/utils/errors.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: mockDeep<PrismaClient>(),
 }));
 
-jest.mock('../../../src/utils/logger.js', () => ({
-  logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+vi.mock('../../../src/utils/logger.js', () => ({
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
 import { prisma } from '../../../src/config/database.js';
@@ -255,13 +255,13 @@ describe('EventReportService', () => {
 
   describe('getReportStats', () => {
     it('should return aggregated stats', async () => {
-      prismaMock.eventReport.groupBy.mockResolvedValueOnce([
+      (prismaMock.eventReport.groupBy as any).mockResolvedValueOnce([
         { status: 'PENDING', _count: { status: 5 } },
         { status: 'INVESTIGATING', _count: { status: 2 } },
         { status: 'RESOLVED', _count: { status: 10 } },
         { status: 'DISMISSED', _count: { status: 3 } },
       ] as any);
-      prismaMock.eventReport.groupBy.mockResolvedValueOnce([
+      (prismaMock.eventReport.groupBy as any).mockResolvedValueOnce([
         { category: 'SPAM', _count: { category: 8 } },
         { category: 'FRAUD_SCAM', _count: { category: 7 } },
         { category: 'SAFETY', _count: { category: 5 } },
@@ -282,8 +282,8 @@ describe('EventReportService', () => {
     });
 
     it('should return zeros when no reports exist', async () => {
-      prismaMock.eventReport.groupBy.mockResolvedValueOnce([] as any);
-      prismaMock.eventReport.groupBy.mockResolvedValueOnce([] as any);
+      (prismaMock.eventReport.groupBy as any).mockResolvedValueOnce([] as any);
+      (prismaMock.eventReport.groupBy as any).mockResolvedValueOnce([] as any);
 
       const result = await eventReportService.getReportStats();
 

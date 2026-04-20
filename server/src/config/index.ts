@@ -4,8 +4,8 @@ import path from 'path';
 const env = process.env.NODE_ENV || 'development';
 const envPath = path.resolve(process.cwd(), `.env.${env}`);
 
+// Load environment-specific configuration
 dotenv.config({ path: envPath });
-dotenv.config(); // Also load .env for fallback
 
 // Determine database host - defaults to localhost for local dev, 'postgres' for Docker
 const getDatabaseHost = (): string => {
@@ -36,9 +36,11 @@ export const config = {
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-secret-key-change-in-production-min-32-chars',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-key-change-in-production-min-32-chars',
-    expiresIn: process.env.JWT_EXPIRES_IN || '15m', // 15 minutes
-    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d', // 7 days
+    expiresIn: process.env.JWT_EXPIRES_IN || '1h', // 1 hour
+    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d', // 30 days
     unsubscribeSecret: process.env.JWT_UNSUBSCRIBE_SECRET || 'dev-unsubscribe-secret-change-in-production-min-32',
+    // Set COOKIE_SECURE=true only when serving over HTTPS. Default false so HTTP deployments work.
+    cookieSecure: process.env.COOKIE_SECURE === 'true',
   },
   
   cors: {
@@ -65,21 +67,16 @@ export const config = {
   },
   
   rateLimit: {
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
-    max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10), // 100 requests
-    authWindowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS || '900000', 10),
-    authMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '5', 10), // 5 requests for auth
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10), // 1 minute
+    max: parseInt(process.env.RATE_LIMIT_MAX || '60', 10), // 60 requests per minute (~1/sec)
+    authWindowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
+    authMax: parseInt(process.env.AUTH_RATE_LIMIT_MAX || '10', 10), // 10 failed auth attempts per 15 min
   },
   
   security: {
     bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '12', 10),
     maxLoginAttempts: parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5', 10),
     lockoutDuration: parseInt(process.env.LOCKOUT_DURATION_MINUTES || '30', 10), // 30 minutes
-  },
-
-  facebook: {
-    appId: process.env.FACEBOOK_APP_ID || '',
-    appSecret: process.env.FACEBOOK_APP_SECRET || '',
   },
 
   google: {

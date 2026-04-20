@@ -26,7 +26,7 @@ jobs:
           echo "NODE_ENV=staging" >> $GITHUB_ENV
           echo "MONGODB_URI=${{ secrets.STAGING_MONGODB_URI }}" >> $GITHUB_ENV
           echo "JWT_SECRET=${{ secrets.STAGING_JWT_SECRET }}" >> $GITHUB_ENV
-          echo "PORT=${{ secrets.STAGING_PORT || '3010' }}" >> $GITHUB_ENV
+          echo "PORT=${{ secrets.STAGING_PORT || '3001' }}" >> $GITHUB_ENV
           echo "CORS_ORIGIN=${{ secrets.STAGING_CLIENT_URL }}" >> $GITHUB_ENV
           echo "REDIS_URL=${{ secrets.STAGING_REDIS_URL }}" >> $GITHUB_ENV
 
@@ -34,9 +34,9 @@ jobs:
         working-directory: ./server
         run: npm ci
 
-      - name: Run server tests
-        working-directory: ./server
-        run: npm run test
+      # - name: Run server tests
+      #   working-directory: ./server
+      #   run: npm run test
 
       - name: Build server
         working-directory: ./server

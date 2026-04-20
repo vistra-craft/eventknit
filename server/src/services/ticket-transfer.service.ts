@@ -2,10 +2,11 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
 import crypto from 'crypto';
-import { RegistrationStatus, TicketStatus } from '@prisma/client';
+import { RegistrationStatus, TicketStatus, Prisma } from '@prisma/client';
 import { TicketService } from './ticket.service.js';
 import { DigitalWalletService } from './digital-wallet.service.js';
 import { emailService } from './email.service.js';
+import { SeatTransferHelperService } from './seat-transfer-helper.service.js';
 
 export class TicketTransferService {
   /**
@@ -264,6 +265,23 @@ export class TicketTransferService {
       const result = await prisma.$transaction(async (tx) => {
         const oldRegistration = transfer.registration;
 
+        // Get recipient user details for seat transfer
+        const recipientUser = await tx.user.findUnique({
+          where: { id: userId },
+          select: {
+            email: true,
+            phoneNumber: true,
+            firstName: true,
+            lastName: true,
+          },
+        });
+
+        if (!recipientUser) {
+          throw new ValidationError('Recipient user not found');
+        }
+
+        const recipientFullName = `${recipientUser.firstName} ${recipientUser.lastName}`.trim();
+
         // 1. Create NEW registration for the recipient
         const newRegistration = await tx.eventRegistration.create({
           data: {
@@ -274,7 +292,7 @@ export class TicketTransferService {
             status: RegistrationStatus.CONFIRMED,
             paymentStatus: oldRegistration.paymentStatus,
             ticketType: oldRegistration.ticketType,
-            registrationData: (oldRegistration.registrationData as any) || undefined,
+            registrationData: (oldRegistration.registrationData as Prisma.JsonValue) || undefined,
             backupCode: TicketService.generateBackupTicketCode(),
             qrSecret: crypto.randomUUID(),
           },
@@ -293,7 +311,43 @@ export class TicketTransferService {
           });
         }
 
-        // 3. Void OLD registration
+        // 3. ✅ TRANSFER SEAT ALLOCATIONS (NEW)
+        // If event has seating, transfer seats to new registration
+        const event = await tx.event.findUnique({
+          where: { id: oldRegistration.eventId },
+          select: { hasSeatingMap: true },
+        });
+
+        if (event?.hasSeatingMap) {
+          const seatTransferResult = await SeatTransferHelperService.transferSeats(
+            tx,
+            {
+              fromRegistrationId: oldRegistration.id,
+              toRegistrationId: newRegistration.id,
+              toUserEmail: recipientUser.email,
+              toUserPhone: recipientUser.phoneNumber ?? undefined,
+              toUserName: recipientFullName,
+              eventId: oldRegistration.eventId,
+            },
+          );
+
+          if (seatTransferResult.transferred > 0) {
+            logger.info(
+              `[TicketTransfer] Successfully transferred ${seatTransferResult.transferred} seat(s) to new registration`,
+            );
+          }
+
+          if (seatTransferResult.errors.length > 0) {
+            logger.warn(
+              `[TicketTransfer] Seat transfer completed with ${seatTransferResult.errors.length} error(s):`,
+              seatTransferResult.errors,
+            );
+            // Don't throw - allow transfer even if some seats couldn't be transferred
+            // This prevents blocking the transfer for technical issues
+          }
+        }
+
+        // 4. Void OLD registration
         await tx.eventRegistration.update({
           where: { id: oldRegistration.id },
           data: {
@@ -303,7 +357,7 @@ export class TicketTransferService {
           },
         });
 
-        // 4. Update transfer status and link to the NEW registration ID
+        // 5. Update transfer status and link to the NEW registration ID
         await tx.ticketTransfer.update({
           where: { id: transfer.id },
           data: {
@@ -567,7 +621,7 @@ export class TicketTransferService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {};
+      const where: { fromUserId?: string; toUserId?: string; OR?: Array<{ fromUserId: string } | { toUserId: string }> } = {};
 
       if (filters?.type === 'sent') {
         where.fromUserId = userId;

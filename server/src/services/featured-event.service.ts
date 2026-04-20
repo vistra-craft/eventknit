@@ -59,7 +59,7 @@ export class FeaturedEventService {
     userAgent?: string,
   ) {
   // Verify user can create featured items (only admins)
-    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
+    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only admins can create featured items');
     }
 
@@ -329,7 +329,7 @@ export class FeaturedEventService {
           time: fe.event.startTime || '',
           venue: fe.event.venue || '',
           location: fe.event.location,
-          price: fe.event.isFree ? 'Free' : `From $${fe.event.price?.toString() || '0'}`,
+          price: (fe.event.isFree || !fe.event.price || Number(fe.event.price) === 0) ? 'Free' : `From $${Number(fe.event.price).toLocaleString()}`,
           displayOrder: fe.displayOrder,
           event: fe.event,
         };
@@ -413,7 +413,7 @@ export class FeaturedEventService {
     userAgent?: string,
   ) {
     // Verify user can update featured items (only admins)
-    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
+    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only admins can update featured items');
     }
 
@@ -534,7 +534,7 @@ export class FeaturedEventService {
     userAgent?: string,
   ) {
     // Verify user can delete featured events (only admins)
-    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN_STAFF) {
+    if (userRole !== UserRole.SUPERADMIN && userRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only admins can delete featured events');
     }
 

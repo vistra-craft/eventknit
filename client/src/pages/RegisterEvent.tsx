@@ -13,13 +13,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // App Components
-import CheckoutHeader from "@/components/CheckoutHeader";
+import CheckoutHeader from '@/components/layout/CheckoutHeader';
 
 // Hooks & API
 import { useEvent } from "@/hooks/useEvent";
 import { useAuth } from "@/hooks/useAuth";
 import { registerForEvent, registerAsGuest } from "@/lib/event-api";
-import { setAccessToken } from "@/lib/api";
 import { validatePromoCode } from "@/lib/promo-code-api";
 import type { RegistrationField } from "@/types/event";
 import { Badge } from "@/components/ui/badge";
@@ -52,10 +51,7 @@ const EventRegistration = () => {
   const [applyingCode, setApplyingCode] = useState(false);
   // Track if URL promo code has been processed
   const urlPromoApplied = useRef(false);
-  // Consent state (operational consent is always true, so we don't need state for it)
   const [marketingConsent, setMarketingConsent] = useState(false);
-  const [demographicsConsent, setDemographicsConsent] = useState(false);
-  const [analyticsConsent, setAnalyticsConsent] = useState(false);
 
   // Fetch event data
   useEffect(() => {
@@ -98,7 +94,7 @@ const EventRegistration = () => {
 
       const response = await validatePromoCode(
         code.trim(),
-        eventId,
+        event?.id ?? eventId,
         firstSelectedTicketType,
         totalAmount
       );
@@ -119,7 +115,7 @@ const EventRegistration = () => {
       }
     } catch {
       setAppliedDiscount(null);
-      setPromoError('Failed to validate promo code');
+      setPromoError('Unable to validate promo code. Please check your connection and try again.');
     } finally {
       setApplyingCode(false);
     }
@@ -134,7 +130,7 @@ const EventRegistration = () => {
     // 2. Event is loaded
     // 3. We haven't already applied it
     // 4. No discount is currently applied
-    if (urlPromoCode && event && !urlPromoApplied.current && !appliedDiscount) {
+    if (urlPromoCode && event && event.hasPromoCodes && !urlPromoApplied.current && !appliedDiscount) {
       // Set the promo code in input immediately for UX
       setPromoCode(urlPromoCode.toUpperCase());
 
@@ -159,7 +155,7 @@ const EventRegistration = () => {
     const hasSelectedTickets = Object.values(selectedTickets).some(qty => qty > 0);
 
     // If URL has promo code, tickets just got selected, and we haven't applied yet
-    if (urlPromoCode && hasSelectedTickets && !urlPromoApplied.current && !appliedDiscount && event && !event.isFree) {
+    if (urlPromoCode && hasSelectedTickets && !urlPromoApplied.current && !appliedDiscount && event && !event.isFree && event.hasPromoCodes) {
       urlPromoApplied.current = true;
       handleApplyPromoCode(urlPromoCode);
     }
@@ -357,7 +353,7 @@ const EventRegistration = () => {
         }
 
         // Register as guest
-        const response = await registerAsGuest(eventId, {
+        const response = await registerAsGuest(event.id, {
           email,
           firstName,
           lastName,
@@ -367,21 +363,13 @@ const EventRegistration = () => {
           quantity, // Backward compatibility
           registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
           consent: {
-            operationalConsent: true, // Always true - required for ticket delivery
             marketingConsent: marketingConsent,
-            demographicsConsent: demographicsConsent,
-            analyticsConsent: analyticsConsent,
           },
         });
 
         if (response.success && response.data) {
           const registration = response.data.registration;
           setIsGuestRegistration(response.data.user.isNewUser || true);
-
-          // Store access token if provided (for guest users)
-          if (response.data.accessToken) {
-            setAccessToken(response.data.accessToken);
-          }
 
           // Check if event is free
           const isFree = event.isFree || event.price === 0;
@@ -407,19 +395,20 @@ const EventRegistration = () => {
                   price: t.price
                 })).filter(t => t.quantity > 0) || [],
                 isGuestUser: !isAuthenticated,
+                isNewUser: response.data.user.isNewUser,
                 userEmail: email || authUser?.email,
                 isFreeEvent: true,
                 date: new Date().toISOString(),
-                accessToken: response.data.accessToken, // Pass token to confirmation page
               },
               replace: true,
             });
           } else {
             // Calculate total price from all selected tickets
-            const totalPrice = event.ticketTypes?.reduce((sum, ticket) => {
+            const calculatedTotalPrice = event.ticketTypes?.reduce((sum, ticket) => {
               const qty = selectedTickets[ticket.name] || 0;
               return sum + (ticket.price * qty);
             }, 0) || 0;
+            const totalPrice = Number(registration.totalAmount ?? calculatedTotalPrice);
 
             // Paid event - navigate to payment page with registration ID
             navigate(`/event/${eventId}/payment`, {
@@ -433,25 +422,24 @@ const EventRegistration = () => {
                   price: t.price
                 })).filter(t => t.quantity > 0) || [],
                 totalPrice: totalPrice,
+                isNewUser: response.data.user.isNewUser,
+                userEmail: email || authUser?.email,
               }
             });
           }
         } else {
-          throw new Error(response.message || 'Failed to register for event');
+          throw new Error(response.message || 'Registration failed. Please try again.');
         }
       } else {
         // Authenticated user - use regular registration
-      const response = await registerForEvent(eventId, {
+      const response = await registerForEvent(event.id, {
         tickets: tickets.length > 0 ? tickets : undefined,
         ticketType, // Backward compatibility
         quantity, // Backward compatibility
         registrationData: Object.keys(registrationData).length > 0 ? registrationData : undefined,
         promoCode: appliedDiscount ? promoCode : undefined,
         consent: {
-          operationalConsent: true, // Always true - required for ticket delivery
           marketingConsent: marketingConsent,
-          demographicsConsent: demographicsConsent,
-          analyticsConsent: analyticsConsent,
         },
       });
 
@@ -495,7 +483,8 @@ const EventRegistration = () => {
             return sum + (ticket.price * qty);
           }, 0) || 0;
           const discount = appliedDiscount?.amount || 0;
-          const totalPrice = subtotal - discount;
+          const calculatedTotalPrice = subtotal - discount;
+          const totalPrice = Number(registration.totalAmount ?? calculatedTotalPrice);
 
           // Paid event - navigate to payment page with registration ID
           navigate(`/event/${eventId}/payment`, {
@@ -511,17 +500,18 @@ const EventRegistration = () => {
               totalPrice: totalPrice,
               discount: discount,
               promoCode: appliedDiscount ? promoCode : undefined,
+              userEmail: authUser?.email,
             }
           });
         }
       } else {
-        throw new Error(response.message || 'Failed to register for event');
+        throw new Error(response.message || 'Registration failed. Please try again.');
         }
       }
     } catch (err: unknown) {
       const errorMessage = err && typeof err === 'object' && 'message' in err
         ? (err.message as string)
-        : 'Failed to register for event. Please try again.';
+        : 'Something went wrong with your registration. Please try again.';
       setSubmitError(errorMessage);
     } finally {
       setSubmitting(false);
@@ -938,12 +928,12 @@ const EventRegistration = () => {
                                       {currency} {ticket.originalPrice}
                                     </span>
                                     <span className="font-bold text-lg text-primary">
-                                      {currency} {ticket.price}
+                                      {ticket.price === 0 ? 'Free' : `${currency} ${ticket.price}`}
                                     </span>
                                   </div>
                                 ) : (
                                   <p className="font-bold text-lg text-primary">
-                                    {currency} {ticket.price}
+                                    {ticket.price === 0 ? 'Free' : `${currency} ${ticket.price}`}
                                   </p>
                                 )}
                               </div>
@@ -1025,17 +1015,19 @@ const EventRegistration = () => {
                         <div className="flex justify-between items-center">
                           <span className="text-base font-semibold">Total Price</span>
                           <span className="text-xl font-bold text-primary">
-                            {event.currency || '$'}{' '}
-                            {event.ticketTypes?.reduce((sum, ticket) => {
-                              const qty = selectedTickets[ticket.name] || 0;
-                              return sum + (ticket.price * qty);
-                            }, 0).toFixed(2)}
+                            {(() => {
+                              const total = event.ticketTypes?.reduce((sum, ticket) => {
+                                const qty = selectedTickets[ticket.name] || 0;
+                                return sum + (ticket.price * qty);
+                              }, 0) || 0;
+                              return total === 0 ? 'Free' : `${event.currency || '$'} ${total.toFixed(2)}`;
+                            })()}
                           </span>
                         </div>
                       </div>
                     )}
 
-                    {!event.isFree && Object.values(selectedTickets).some(qty => qty > 0) && (
+                    {!event.isFree && event.hasPromoCodes && Object.values(selectedTickets).some(qty => qty > 0) && (
                       <div className="pt-4 mt-2 border-t space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                           <Ticket className="w-4 h-4" />
@@ -1136,7 +1128,7 @@ const EventRegistration = () => {
                           return (
                             <div key={name} className="flex justify-between text-sm">
                               <span className="text-foreground">{qty}× {name}</span>
-                              {ticket && <span className="font-medium">{event.currency || '$'} {(ticket.price * qty).toFixed(2)}</span>}
+                              {ticket && <span className="font-medium">{ticket.price === 0 ? 'Free' : `${event.currency || '$'} ${(ticket.price * qty).toFixed(2)}`}</span>}
                             </div>
                           );
                         })}
@@ -1145,9 +1137,10 @@ const EventRegistration = () => {
                       <div className="flex justify-between text-sm pt-2 border-t font-semibold">
                         <span>Total</span>
                         <span className="text-primary">
-                          {event.currency || '$'} {
-                            event.ticketTypes?.reduce((sum, t) => sum + (t.price * (selectedTickets[t.name] || 0)), 0).toFixed(2)
-                          }
+                          {(() => {
+                            const total = event.ticketTypes?.reduce((sum, t) => sum + (t.price * (selectedTickets[t.name] || 0)), 0) || 0;
+                            return total === 0 ? 'Free' : `${event.currency || '$'} ${total.toFixed(2)}`;
+                          })()}
                           {appliedDiscount && (
                             <span className="ml-2 text-success font-normal text-xs">(-{event.currency || '$'}{appliedDiscount.amount.toFixed(2)} promo)</span>
                           )}
@@ -1259,84 +1252,63 @@ const EventRegistration = () => {
                       })}
                     </div>
 
-                    {/* Data Sharing Consent */}
-                    <div className="pt-6 border-t space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground">Data Sharing Preferences</h3>
+                    {/* Consent & Data Sharing */}
+                    <div className="pt-6 border-t space-y-4">
+                      <h3 className="text-sm font-semibold text-foreground">Consent & Data Sharing</h3>
 
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            id="marketingConsent"
-                            checked={marketingConsent}
-                            onCheckedChange={(checked) => setMarketingConsent(!!checked)}
-                          />
-                          <label htmlFor="marketingConsent" className="text-sm text-foreground cursor-pointer flex-1">
-                            <span className="font-medium">Marketing emails</span>
-                            <span className="block text-xs text-muted-foreground mt-0.5">
-                              Receive updates about future events from this organizer
-                            </span>
-                          </label>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            id="demographicsConsent"
-                            checked={demographicsConsent}
-                            onCheckedChange={(checked) => setDemographicsConsent(!!checked)}
-                          />
-                          <label htmlFor="demographicsConsent" className="text-sm text-foreground cursor-pointer flex-1">
-                            <span className="font-medium">Demographic data</span>
-                            <span className="block text-xs text-muted-foreground mt-0.5">
-                              Share location, age, etc. to help improve future events
-                            </span>
-                          </label>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                          <Checkbox
-                            id="analyticsConsent"
-                            checked={analyticsConsent}
-                            onCheckedChange={(checked) => setAnalyticsConsent(!!checked)}
-                          />
-                          <label htmlFor="analyticsConsent" className="text-sm text-foreground cursor-pointer flex-1">
-                            <span className="font-medium">Engagement analytics</span>
-                            <span className="block text-xs text-muted-foreground mt-0.5">
-                              Allow tracking of email opens and session views
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-muted-foreground">
-                        You can update these anytime.{" "}
-                        <a href="/privacy-policy" target="_blank" className="text-primary hover:underline">
-                          Privacy Policy
-                        </a>
-                        .
-                      </p>
-                    </div>
-                    
-                    {/* Terms & Conditions */}
-                    <div className="pt-6 border-t bg-primary/5 -mx-6 px-6">
-                      <div className="flex items-start gap-3 mb-4">
+                      {/* Terms & Privacy (required) */}
+                      <div className="flex items-start gap-3">
                         <Checkbox
                           id="termsConsent"
                           required
+                          className="mt-0.5"
                         />
-                        <label htmlFor="termsConsent" className="text-sm text-muted-foreground">
-                          I agree to the{" "}
-                          <a href="#" className="text-primary hover:underline font-medium">
-                            Terms and Conditions
+                        <label htmlFor="termsConsent" className="text-sm text-muted-foreground cursor-pointer flex-1">
+                          I agree to EventKnit's{" "}
+                          <a href="/terms-of-service" target="_blank" className="text-primary hover:underline font-medium">
+                            Terms of Service
                           </a>{" "}
-                          and{" "}
-                          <a href="#" className="text-primary hover:underline font-medium">
+                          and have read the{" "}
+                          <a href="/privacy-policy" target="_blank" className="text-primary hover:underline font-medium">
                             Privacy Policy
                           </a>
-                          . I understand that my information will be used for event management purposes.
+                          . <span className="text-destructive">*</span>
                         </label>
                       </div>
+
+                      {/* Data sharing with organizer (required, but explicit) */}
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="dataShareConsent"
+                          required
+                          className="mt-0.5"
+                        />
+                        <label htmlFor="dataShareConsent" className="text-sm text-muted-foreground cursor-pointer flex-1">
+                          I understand that my name, email, and registration details will be shared with the event organizer to facilitate my attendance. <span className="text-destructive">*</span>
+                        </label>
+                      </div>
+
+                      {/* Organizer marketing (optional) */}
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="marketingConsent"
+                          checked={marketingConsent}
+                          onCheckedChange={(checked) => setMarketingConsent(!!checked)}
+                          className="mt-0.5"
+                        />
+                        <label htmlFor="marketingConsent" className="text-sm text-muted-foreground cursor-pointer flex-1">
+                          I agree to receive marketing communications from this event organizer about future events and updates.
+                        </label>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        You can update your preferences anytime.{" "}
+                        <a href="/privacy-policy" target="_blank" className="text-primary hover:underline">
+                          Privacy Policy
+                        </a>
+                      </p>
                     </div>
-                    
+
                     {submitError && (
                       <Alert variant="destructive" className="mt-4">
                         <AlertCircle className="h-4 w-4" />

@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { Clock, MapPin, Mic, Users, Coffee, Calendar, Zap, Monitor, MessageCircle, Award, Music, PartyPopper } from "lucide-react";
+import { Clock, MapPin, Mic, Users, Coffee, Calendar, Zap, Monitor, MessageCircle, Award, Music, PartyPopper, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { RichTextContent } from "@/components/ui/RichTextContent";
 import { cn } from "@/lib/utils";
 import type { EventData, User, AgendaItem } from "./EventAttendeeView";
 
@@ -12,28 +13,29 @@ interface EventAgendaProps {
 }
 
 // Session type configuration — covers all creation form types + fallback
+// Colors use dark-mode-safe patterns: opacity-based backgrounds + dual-mode text
 const sessionTypeConfig: Record<string, { icon: React.ElementType; color: string; bgColor: string }> = {
-  keynote: { icon: Mic, color: 'text-purple-600', bgColor: 'bg-purple-100' },
+  keynote: { icon: Mic, color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-500/10' },
   panel: { icon: Users, color: 'text-primary', bgColor: 'bg-primary/10' },
   workshop: { icon: Calendar, color: 'text-success', bgColor: 'bg-success/10' },
-  breakout: { icon: Users, color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
-  'fireside-chat': { icon: MessageCircle, color: 'text-orange-600', bgColor: 'bg-orange-100' },
-  'lightning-talk': { icon: Zap, color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
-  demo: { icon: Monitor, color: 'text-blue-600', bgColor: 'bg-blue-100' },
-  qa: { icon: MessageCircle, color: 'text-violet-600', bgColor: 'bg-violet-100' },
-  roundtable: { icon: Users, color: 'text-teal-600', bgColor: 'bg-teal-100' },
-  tutorial: { icon: Calendar, color: 'text-emerald-600', bgColor: 'bg-emerald-100' },
-  'opening-ceremony': { icon: PartyPopper, color: 'text-pink-600', bgColor: 'bg-pink-100' },
-  'closing-ceremony': { icon: Award, color: 'text-pink-600', bgColor: 'bg-pink-100' },
-  awards: { icon: Award, color: 'text-amber-600', bgColor: 'bg-amber-100' },
-  entertainment: { icon: Music, color: 'text-fuchsia-600', bgColor: 'bg-fuchsia-100' },
-  social: { icon: Users, color: 'text-rose-600', bgColor: 'bg-rose-100' },
-  networking: { icon: Users, color: 'text-pink-600', bgColor: 'bg-pink-100' },
-  break: { icon: Coffee, color: 'text-amber-600', bgColor: 'bg-amber-100' },
-  lunch: { icon: Coffee, color: 'text-orange-600', bgColor: 'bg-orange-100' },
-  registration: { icon: Calendar, color: 'text-slate-600', bgColor: 'bg-slate-100' },
-  session: { icon: Calendar, color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
-  other: { icon: Calendar, color: 'text-gray-600', bgColor: 'bg-gray-100' },
+  breakout: { icon: Users, color: 'text-cyan-600 dark:text-cyan-400', bgColor: 'bg-cyan-500/10' },
+  'fireside-chat': { icon: MessageCircle, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-500/10' },
+  'lightning-talk': { icon: Zap, color: 'text-yellow-600 dark:text-yellow-400', bgColor: 'bg-yellow-500/10' },
+  demo: { icon: Monitor, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-500/10' },
+  qa: { icon: MessageCircle, color: 'text-violet-600 dark:text-violet-400', bgColor: 'bg-violet-500/10' },
+  roundtable: { icon: Users, color: 'text-teal-600 dark:text-teal-400', bgColor: 'bg-teal-500/10' },
+  tutorial: { icon: Calendar, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-500/10' },
+  'opening-ceremony': { icon: PartyPopper, color: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-500/10' },
+  'closing-ceremony': { icon: Award, color: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-500/10' },
+  awards: { icon: Award, color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-500/10' },
+  entertainment: { icon: Music, color: 'text-fuchsia-600 dark:text-fuchsia-400', bgColor: 'bg-fuchsia-500/10' },
+  social: { icon: Users, color: 'text-rose-600 dark:text-rose-400', bgColor: 'bg-rose-500/10' },
+  networking: { icon: Users, color: 'text-pink-600 dark:text-pink-400', bgColor: 'bg-pink-500/10' },
+  break: { icon: Coffee, color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-500/10' },
+  lunch: { icon: Coffee, color: 'text-orange-600 dark:text-orange-400', bgColor: 'bg-orange-500/10' },
+  registration: { icon: Calendar, color: 'text-muted-foreground', bgColor: 'bg-muted' },
+  session: { icon: Calendar, color: 'text-indigo-600 dark:text-indigo-400', bgColor: 'bg-indigo-500/10' },
+  other: { icon: Calendar, color: 'text-muted-foreground', bgColor: 'bg-muted' },
 };
 
 // Resolve session type: prefer explicit sessionType/type field, fall back to inference
@@ -78,6 +80,98 @@ const formatTime = (time: string): string => {
   if (!time) return '';
   return time.substring(0, 5); // HH:MM format
 };
+
+// Get speaker names from agenda item
+const getSpeakerNames = (item: AgendaItem): string => {
+  if (item.speakerDetails && item.speakerDetails.length > 0) {
+    return item.speakerDetails.map(s => s.name).join(', ');
+  }
+  if (item.speakers && item.speakers.length > 0) {
+    return item.speakers.join(', ');
+  }
+  return '';
+};
+
+// ─── Expandable agenda item ────────────────────────────────────────────────────
+
+function AgendaItemCard({ item, idx }: { item: AgendaItem; idx: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const type = resolveSessionType(item);
+  const config = sessionTypeConfig[type] || sessionTypeConfig.session;
+  const TypeIcon = config.icon;
+  const duration = calculateDuration(item.startTime, item.endTime);
+  const speakers = getSpeakerNames(item);
+  const hasDescription = !!item.description;
+
+  return (
+    <Card key={item.id || idx} variant="github" className="hover:shadow-md hover:border-primary/30 transition-all">
+      <CardContent className="p-3">
+        <div className="flex items-start gap-3">
+          {/* Type Icon */}
+          <div className={cn('p-1.5 rounded-md flex-shrink-0', config.bgColor)}>
+            <TypeIcon className={cn('w-4 h-4', config.color)} />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <div>
+                <h3 className="font-medium text-foreground text-sm">
+                  {item.title}
+                </h3>
+                {speakers && (
+                  <p className="text-xs text-muted-foreground">
+                    {speakers}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                  {type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                </Badge>
+                {duration && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {duration}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {hasDescription && (
+              <>
+                <div className={cn(!expanded && 'line-clamp-2')}>
+                  <RichTextContent
+                    content={item.description!}
+                    className="text-xs text-muted-foreground"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-0 text-xs text-primary hover:text-primary/80 mt-1 gap-1"
+                  onClick={() => setExpanded(e => !e)}
+                >
+                  {expanded ? (
+                    <><ChevronUp className="w-3 h-3" /> Show less</>
+                  ) : (
+                    <><ChevronDown className="w-3 h-3" /> See more</>
+                  )}
+                </Button>
+              </>
+            )}
+
+            {(item.room || item.location) && (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                <MapPin className="w-2.5 h-2.5" />
+                <span>{item.room || item.location}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
   // Get unique dates from agenda items
@@ -157,17 +251,6 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
     });
   };
 
-  // Get speaker names from agenda item
-  const getSpeakerNames = (item: AgendaItem): string => {
-    if (item.speakerDetails && item.speakerDetails.length > 0) {
-      return item.speakerDetails.map(s => s.name).join(', ');
-    }
-    if (item.speakers && item.speakers.length > 0) {
-      return item.speakers.join(', ');
-    }
-    return '';
-  };
-
   if (!event.agenda || event.agenda.length === 0) {
     return (
       <div className="container mx-auto px-4 sm:px-6 py-12">
@@ -233,65 +316,9 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
 
             {/* Sessions */}
             <div className="space-y-2 pl-3 border-l-2 border-muted ml-3">
-              {items.map((item, idx) => {
-                const type = resolveSessionType(item);
-                const config = sessionTypeConfig[type] || sessionTypeConfig.session;
-                const TypeIcon = config.icon;
-                const duration = calculateDuration(item.startTime, item.endTime);
-                const speakers = getSpeakerNames(item);
-
-                return (
-                  <Card key={item.id || idx} variant="github" className="hover:shadow-md hover:border-primary/30 transition-all">
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-3">
-                        {/* Type Icon */}
-                        <div className={cn('p-1.5 rounded-md', config.bgColor)}>
-                          <TypeIcon className={cn('w-4 h-4', config.color)} />
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-3 mb-1">
-                            <div>
-                              <h3 className="font-medium text-foreground text-sm">
-                                {item.title}
-                              </h3>
-                              {speakers && (
-                                <p className="text-xs text-muted-foreground">
-                                  {speakers}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1.5 flex-shrink-0">
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                {type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                              </Badge>
-                              {duration && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  {duration}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground mb-1.5 line-clamp-2">
-                              {item.description}
-                            </p>
-                          )}
-
-                          {(item.room || item.location) && (
-                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <MapPin className="w-2.5 h-2.5" />
-                              <span>{item.room || item.location}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+              {items.map((item, idx) => (
+                <AgendaItemCard key={item.id || idx} item={item} idx={idx} />
+              ))}
             </div>
           </div>
         ))}

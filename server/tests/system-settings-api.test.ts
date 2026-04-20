@@ -47,11 +47,9 @@ describe('System Settings API', () => {
 
     // Clean up in correct order
     try {
-      await prisma.$transaction(async (tx) => {
-        await tx.settingsHistory.deleteMany();
-        await tx.systemSettings.deleteMany();
-        await cleanupTestData(tx);
-      });
+      await prisma.settingsHistory.deleteMany();
+      await prisma.systemSettings.deleteMany();
+      await cleanupTestData();
     } catch (error) {
       // If cleanup fails, log but continue - might be due to missing tables
       logger.warn('Cleanup warning:', error);
@@ -65,7 +63,7 @@ describe('System Settings API', () => {
         password: adminPassword,
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
@@ -75,7 +73,7 @@ describe('System Settings API', () => {
         password: adminPassword,
         firstName: 'Admin',
         lastName: 'Test',
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
         status: UserStatus.ACTIVE,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),

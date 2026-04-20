@@ -2,47 +2,47 @@ import { AffiliateProgramService } from '../src/services/affiliate-program.servi
 import { NotFoundError, ValidationError } from '../src/utils/errors';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
-    event: { findFirst: jest.fn() },
+    event: { findFirst: vi.fn() },
     affiliateProgram: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
     },
     affiliate: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
     },
     affiliateConversion: {
-      create: jest.fn(),
+      create: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
-  event: { findFirst: jest.Mock };
+  event: { findFirst: vi.Mock };
   affiliateProgram: {
-    create: jest.Mock;
-    findMany: jest.Mock;
-    findFirst: jest.Mock;
+    create: vi.Mock;
+    findMany: vi.Mock;
+    findFirst: vi.Mock;
   };
   affiliate: {
-    findUnique: jest.Mock;
-    create: jest.Mock;
-    findFirst: jest.Mock;
-    update: jest.Mock;
+    findUnique: vi.Mock;
+    create: vi.Mock;
+    findFirst: vi.Mock;
+    update: vi.Mock;
   };
   affiliateConversion: {
-    create: jest.Mock;
+    create: vi.Mock;
   };
 };
 
 describe('AffiliateProgramService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('createProgram', () => {

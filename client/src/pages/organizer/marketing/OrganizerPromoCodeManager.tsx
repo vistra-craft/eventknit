@@ -32,6 +32,7 @@ import { getPromoCodes, updatePromoCode, deletePromoCode, type PromoCode } from 
 import { createPromoCodeRequest, getMyPromoCodeRequests, type PromoCodeRequest } from '@/lib/promo-code-request-api';
 import { getOrganizerEvents, getDashboardAccess } from '@/lib/organizer-api';
 import { useToast } from '@/hooks/useToast';
+import { showErrorToast } from '@/lib/utils/error';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ const OrganizerPromoCodeManager = () => {
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
   const [events, setEvents] = useState<OrganizerEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive' | 'expired'>('all');
   const [filterEvent, setFilterEvent] = useState<string>('all');
@@ -115,12 +117,8 @@ const OrganizerPromoCodeManager = () => {
       if (requestsResponse.success && requestsResponse.data) {
         setMyRequests(requestsResponse.data.requests);
       }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to load data',
-        variant: 'destructive',
-      });
+    } catch (err) {
+      showErrorToast(toast, err, 'Load failed', 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -145,18 +143,10 @@ const OrganizerPromoCodeManager = () => {
           setMyRequests(requestsResponse.data.requests);
         }
       } else {
-        toast({
-          title: 'Error',
-          description: response.message || 'Failed to submit request',
-          variant: 'destructive',
-        });
+        toast({ title: 'Submit failed', description: response.message || 'Failed to submit request', variant: 'destructive' });
       }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to submit request',
-        variant: 'destructive',
-      });
+    } catch (err) {
+      showErrorToast(toast, err, 'Submit failed', 'Failed to submit request');
     } finally {
       setRequestLoading(false);
     }
@@ -180,45 +170,31 @@ const OrganizerPromoCodeManager = () => {
         setEditingCode(null);
         fetchData();
       } else {
-        toast({
-          title: 'Error',
-          description: response.message || 'Failed to update promo code',
-          variant: 'destructive',
-        });
+        toast({ title: 'Update failed', description: response.message || 'Failed to update promo code', variant: 'destructive' });
       }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to update promo code',
-        variant: 'destructive',
-      });
+    } catch (err) {
+      showErrorToast(toast, err, 'Update failed', 'Failed to update promo code');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this promo code?')) return;
+  const handleDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
 
+  const executeDelete = async () => {
+    if (!confirmDeleteId) return;
+    const id = confirmDeleteId;
+    setConfirmDeleteId(null);
     try {
       const response = await deletePromoCode(id);
       if (response.success) {
-        toast({
-          title: 'Success',
-          description: 'Promo code deleted successfully',
-        });
+        toast({ title: 'Deleted', description: 'Promo code deleted successfully' });
         fetchData();
       } else {
-        toast({
-          title: 'Error',
-          description: response.message || 'Failed to delete promo code',
-          variant: 'destructive',
-        });
+        toast({ title: 'Delete failed', description: response.message || 'Failed to delete promo code', variant: 'destructive' });
       }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete promo code',
-        variant: 'destructive',
-      });
+    } catch (err) {
+      showErrorToast(toast, err, 'Delete failed', 'Failed to delete promo code');
     }
   };
 
@@ -452,7 +428,7 @@ const OrganizerPromoCodeManager = () => {
                             </Badge>
                           </div>
 
-                          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mt-4 text-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 text-sm">
                             <div>
                               <p className="text-muted-foreground">Discount</p>
                               <p className="font-semibold text-foreground">
@@ -757,6 +733,16 @@ const OrganizerPromoCodeManager = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}
+        title="Delete promo code?"
+        description="This action cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+        onConfirm={executeDelete}
+      />
     </div>
   );
 };

@@ -2,33 +2,33 @@ import { ScheduledPostsService } from '../src/services/social-media/scheduled-po
 import { SocialMediaService } from '../src/services/social-media.service';
 import { prisma } from '../src/config/database';
 
-jest.mock('../src/config/database', () => ({
+vi.mock('../src/config/database', () => ({
   prisma: {
     socialMediaPost: {
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
     },
   },
 }));
 
 const prismaMock = prisma as unknown as {
   socialMediaPost: {
-    findMany: jest.Mock;
-    findFirst: jest.Mock;
-    update: jest.Mock;
+    findMany: vi.Mock;
+    findFirst: vi.Mock;
+    update: vi.Mock;
   };
 };
 
-jest.mock('../src/services/social-media.service', () => ({
+vi.mock('../src/services/social-media.service', () => ({
   SocialMediaService: {
-    publishPost: jest.fn(),
+    publishPost: vi.fn(),
   },
 }));
 
 describe('ScheduledPostsService', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   it('processes scheduled posts', async () => {
@@ -36,7 +36,7 @@ describe('ScheduledPostsService', () => {
       { id: 'post-1', organizerId: 'org-1' },
       { id: 'post-2', organizerId: 'org-1' },
     ]);
-    (SocialMediaService.publishPost as jest.Mock).mockResolvedValue({});
+    (SocialMediaService.publishPost as vi.Mock).mockResolvedValue({});
 
     const result = await ScheduledPostsService.processScheduledPosts();
 

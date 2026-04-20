@@ -11,22 +11,22 @@ router.use(authenticate);
 /**
  * POST /api/v1/facilities/events/:eventId/reorder
  * Reorder facilities (must be defined before /:id routes)
- * Requires: ADMIN_STAFF or higher
+ * Requires: ADMIN or higher
  */
 router.post(
   '/events/:eventId/reorder',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FacilityController.reorderFacilities,
 );
 
 /**
  * POST /api/v1/facilities/events/:eventId/create-default
  * Create default "Main Entrance" facility
- * Requires: ADMIN_STAFF or higher
+ * Requires: ADMIN or higher
  */
 router.post(
   '/events/:eventId/create-default',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FacilityController.createDefaultFacility,
 );
 
@@ -44,11 +44,11 @@ router.post(
 /**
  * POST /api/v1/facilities/events/:eventId
  * Create a new facility
- * Requires: ADMIN_STAFF or higher
+ * Requires: ADMIN or higher
  */
 router.post(
   '/events/:eventId',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FacilityController.createFacility,
 );
 
@@ -77,22 +77,22 @@ router.get(
 /**
  * PUT /api/v1/facilities/events/:eventId/:id
  * Update a facility
- * Requires: ADMIN_STAFF or higher
+ * Requires: ADMIN or higher
  */
 router.put(
   '/events/:eventId/:id',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FacilityController.updateFacility,
 );
 
 /**
  * DELETE /api/v1/facilities/events/:eventId/:id
  * Delete a facility
- * Requires: ADMIN_STAFF or higher
+ * Requires: ADMIN or higher
  */
 router.delete(
   '/events/:eventId/:id',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   FacilityController.deleteFacility,
 );
 

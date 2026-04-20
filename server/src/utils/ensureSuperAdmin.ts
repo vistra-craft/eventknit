@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserRole, UserStatus, SubscriptionTier } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { hashPassword } from './password.js';
 import { logger } from './logger.js';
 
@@ -54,5 +55,58 @@ export const ensureSuperAdmin = async (): Promise<void> => {
     logger.info('Super admin created');
   } catch (error) {
     logger.error('Failed to ensure super admin:', error);
+  }
+};
+
+/**
+ * Ensure default subscription plans exist in the database
+ * Called automatically on server startup
+ */
+export const ensureSubscriptionPlans = async (): Promise<void> => {
+  try {
+    const plans = [
+      {
+        tier: SubscriptionTier.BASIC,
+        name: 'Basic',
+        description: 'Free tier with aggregated data only. Perfect for getting started.',
+        price: new Decimal(0),
+        currency: 'USD',
+        features: [] as string[],
+      },
+      {
+        tier: SubscriptionTier.STANDARD,
+        name: 'Standard',
+        description: 'Free tier with basic attendee data and consent-based access.',
+        price: new Decimal(0),
+        currency: 'USD',
+        features: ['attendee_list', 'export'],
+      },
+      {
+        tier: SubscriptionTier.PREMIUM,
+        name: 'Premium',
+        description: 'Full access to advanced analytics, demographics, and data export.',
+        price: new Decimal(10),
+        currency: 'USD',
+        features: ['attendee_list', 'export', 'demographics', 'analytics', 'advanced_export'],
+      },
+    ];
+
+    for (const plan of plans) {
+      await prisma.subscriptionPlan.upsert({
+        where: { tier: plan.tier },
+        create: plan,
+        update: {
+          name: plan.name,
+          description: plan.description,
+          price: plan.price,
+          currency: plan.currency,
+          features: plan.features,
+        },
+      });
+    }
+
+    logger.info('Subscription plans ready (BASIC, STANDARD, PREMIUM)');
+  } catch (error) {
+    logger.error('Failed to ensure subscription plans:', error);
   }
 };

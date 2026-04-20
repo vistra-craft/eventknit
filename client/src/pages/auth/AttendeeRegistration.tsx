@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Users } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useMultiStepForm, validateStepFields } from '@/hooks/useMultiStepForm';
@@ -572,7 +572,7 @@ const AttendeeRegistration = () => {
 
         {/* Form Content */}
         <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-6 md:p-8">
             <Form {...form}>
               {multiStep.currentStep === 1 && renderStep1()}
               {multiStep.currentStep === 2 && renderStep2()}

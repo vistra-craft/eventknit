@@ -56,6 +56,9 @@ export class EventController {
         type?: EventType;
         dateFrom?: string;
         dateTo?: string;
+        declinedOrRecalledCancelled?: boolean;
+        recalledCancelled?: boolean;
+        recalledPending?: boolean;
       } = {};
 
       logger.debug('[EventController] Query params:', req.query);
@@ -94,6 +97,16 @@ export class EventController {
       if (req.query.dateTo) {
         filters.dateTo = req.query.dateTo as string;
       }
+      // Recalled event filters
+      if (req.query.declinedOrRecalledCancelled !== undefined) {
+        filters.declinedOrRecalledCancelled = req.query.declinedOrRecalledCancelled === 'true' || req.query.declinedOrRecalledCancelled === '1';
+      }
+      if (req.query.recalledPending !== undefined) {
+        filters.recalledPending = req.query.recalledPending === 'true' || req.query.recalledPending === '1';
+      }
+      if (req.query.recalledCancelled !== undefined) {
+        filters.recalledCancelled = req.query.recalledCancelled === 'true' || req.query.recalledCancelled === '1';
+      }
 
       logger.debug('[EventController] Parsed filters:', filters);
 
@@ -120,10 +133,13 @@ export class EventController {
   static async getEventById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const eventId = req.params.id as string;
-      const userId = (req as any).user?.id;
-      logger.info(`[EventController.getEventById] Fetching event ${eventId} for user ${userId}`);
-      
-      const event = await EventService.getEventById(eventId, userId);
+      const userId = (req as AuthenticatedRequest).user?.id;
+      const userRole = (req as AuthenticatedRequest).user?.role as string | undefined;
+      const isAdmin = userRole
+        ? ['SUPERADMIN', 'ADMIN', 'SUPPORT', 'TELLER'].includes(userRole)
+        : false;
+
+      const event = await EventService.getEventById(eventId, userId, isAdmin);
 
       logger.info(`[EventController.getEventById] Successfully fetched event ${eventId}`);
       res.status(200).json({
@@ -249,6 +265,11 @@ export class EventController {
         userAgent,
       );
 
+      const registrationWithResumeMeta = registration as typeof registration & {
+        resumedPendingPayment?: boolean;
+      };
+      const resumedPendingPayment = registrationWithResumeMeta.resumedPendingPayment === true;
+
       logger.debug(`[EventController.registerForEvent] Registration completed successfully: ${registration.id}, status: ${registration.status}`);
 
       // Normalize totalAmount for API consumers as a fixed-precision string
@@ -259,12 +280,17 @@ export class EventController {
           : '0.00',
       };
 
-      res.status(201).json({
+      res.status(resumedPendingPayment ? 200 : 201).json({
         success: true,
-        message: registration.status === 'CONFIRMED'
-          ? 'Registration successful'
-          : 'Registration pending. Payment will be processed when payment system is implemented.',
-        data: { registration: normalizedRegistration },
+        message: resumedPendingPayment
+          ? 'Existing pending registration found. Continue payment to complete your registration.'
+          : registration.status === 'CONFIRMED'
+            ? 'Registration successful'
+            : 'Registration pending. Payment will be processed when payment system is implemented.',
+        data: {
+          registration: normalizedRegistration,
+          resumedPendingPayment,
+        },
       });
     } catch (error) {
       logger.error('[EventController.registerForEvent] Error in registration controller:', {
@@ -607,9 +633,14 @@ export class EventController {
         userAgent,
       );
 
-      res.status(201).json({
+      const resumedPendingPayment =
+        (result as typeof result & { resumedPendingPayment?: boolean }).resumedPendingPayment === true;
+
+      res.status(resumedPendingPayment ? 200 : 201).json({
         success: true,
-        message: 'Registration successful. Check your email for ticket confirmation and account setup.',
+        message: resumedPendingPayment
+          ? 'Existing pending registration found. Continue payment to complete your registration.'
+          : 'Registration successful. Check your email for your ticket and account setup link.',
         data: {
           registration: {
             ...result.registration,
@@ -619,8 +650,7 @@ export class EventController {
           },
           user: result.user,
           accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-          expiresIn: result.expiresIn,
+          resumedPendingPayment,
         },
       });
     } catch (error) {
@@ -643,12 +673,20 @@ export class EventController {
         userAgent,
       );
 
-      res.status(201).json({
+      const resumedPendingPayment =
+        (result as typeof result & { resumedPendingPayment?: boolean }).resumedPendingPayment === true;
+
+      res.status(resumedPendingPayment ? 200 : 201).json({
         success: true,
-        message: result.registration.status === 'CONFIRMED'
-          ? 'Registration successful'
-          : 'Registration pending. Payment will be processed when payment system is implemented.',
-        data: result,
+        message: resumedPendingPayment
+          ? 'Existing pending registration found. Continue payment to complete your registration.'
+          : result.registration.status === 'CONFIRMED'
+            ? 'Registration successful'
+            : 'Registration pending. Payment will be processed when payment system is implemented.',
+        data: {
+          ...result,
+          resumedPendingPayment,
+        },
       });
     } catch (error) {
       next(error);

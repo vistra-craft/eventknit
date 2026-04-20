@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { UserRole } from '../../types/auth';
-import { BecomeOrganizerModal } from '../../components/BecomeOrganizerModal';
+import { BecomeOrganizerModal } from '@/components/organizer-ui/BecomeOrganizerModal';
 import { Loader } from '../../components/ui/loader';
 
 const CreateEventEntry = () => {
@@ -27,7 +27,7 @@ const CreateEventEntry = () => {
     // Check if user can organize
     const canOrganize =
       user.role === UserRole.ORGANIZER ||
-      user.role === UserRole.ORGANIZER_STAFF ||
+      user.role === UserRole.ORGANIZER_ADMIN ||
       user.role === UserRole.ORGANIZER_TELLER;
 
     if (canOrganize) {

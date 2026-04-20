@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
+import type { ParamsDictionary } from 'express-serve-static-core';
 import { verifyAccessToken } from '../utils/jwt.js';
 import { AuthenticationError, AuthorizationError } from '../utils/errors.js';
 import { prisma } from '../config/database.js';
 import { UserRole, UserStatus } from '@prisma/client';
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest<P = ParamsDictionary> extends Request<P> {
   user?: {
     id: string;
     email: string;
@@ -76,15 +77,21 @@ export const authenticate = async (
 
 /**
  * Middleware to check if user has required role(s)
+ * ADMIN is automatically allowed wherever SUPERADMIN is allowed (same privilege tier).
  */
 export const authorize = (...allowedRoles: UserRole[]) => {
+  // ADMIN inherits SUPERADMIN access — they are the same privilege tier
+  const expanded = allowedRoles.includes(UserRole.SUPERADMIN) && !allowedRoles.includes(UserRole.ADMIN)
+    ? [...allowedRoles, UserRole.ADMIN]
+    : allowedRoles;
+
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
         throw new AuthenticationError('Authentication required');
       }
 
-      if (!allowedRoles.includes(req.user.role)) {
+      if (!expanded.includes(req.user.role)) {
         throw new AuthorizationError('You do not have permission to access this resource');
       }
 
@@ -97,19 +104,17 @@ export const authorize = (...allowedRoles: UserRole[]) => {
 
 /**
  * Role hierarchy check
- * SUPERADMIN > ADMIN_STAFF > other admin roles
- * ORGANIZER > ORGANIZER_STAFF > ORGANIZER_TELLER
+ * SUPERADMIN > ADMIN > other admin roles
+ * ORGANIZER > ORGANIZER_ADMIN > ORGANIZER_TELLER
  */
 const roleHierarchy: Record<UserRole, number> = {
   SUPERADMIN: 10,
   ADMIN: 9,
-  ADMIN_STAFF: 8,
-  MARKETER: 7,
-  SUPPORT: 6,
-  TELLER: 5,
-  ORGANIZER: 4,
-  ORGANIZER_STAFF: 3,
-  ORGANIZER_TELLER: 2,
+  SUPPORT: 7,
+  TELLER: 6,
+  ORGANIZER: 5,
+  ORGANIZER_ADMIN: 4,
+  ORGANIZER_TELLER: 3,
   ATTENDEE: 1,
 };
 
@@ -139,15 +144,21 @@ export const requireMinRole = (minRole: UserRole) => {
 
 /**
  * Middleware to check if user has one of the allowed roles
+ * ADMIN is automatically allowed wherever SUPERADMIN is allowed (same privilege tier).
  */
 export const requireRole = (allowedRoles: UserRole[]) => {
+  // ADMIN inherits SUPERADMIN access — they are the same privilege tier
+  const expanded = allowedRoles.includes(UserRole.SUPERADMIN) && !allowedRoles.includes(UserRole.ADMIN)
+    ? [...allowedRoles, UserRole.ADMIN]
+    : allowedRoles;
+
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
         throw new AuthenticationError('Authentication required');
       }
 
-      if (!allowedRoles.includes(req.user.role)) {
+      if (!expanded.includes(req.user.role)) {
         throw new AuthorizationError('You do not have sufficient permissions');
       }
 
@@ -156,6 +167,43 @@ export const requireRole = (allowedRoles: UserRole[]) => {
       next(error);
     }
   };
+};
+
+/**
+ * Middleware to block users whose account is not ACTIVE.
+ * Use on routes where only fully approved, active users should operate
+ * (e.g. organizer dashboard actions, event creation, staff invitations).
+ *
+ * PENDING_APPROVAL organizers must wait for admin approval.
+ * DEACTIVATED users must contact support or wait for reactivation.
+ * SUSPENDED users are already blocked by the authenticate middleware.
+ */
+export const requireActiveStatus = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): void => {
+  try {
+    if (!req.user) {
+      throw new AuthenticationError('Authentication required');
+    }
+
+    if (req.user.status === UserStatus.PENDING_APPROVAL) {
+      throw new AuthorizationError(
+        'Your account is pending approval. You will be notified once an admin reviews your application.',
+      );
+    }
+
+    if (req.user.status === UserStatus.DEACTIVATED) {
+      throw new AuthorizationError(
+        'Your account has been deactivated. Please contact support for assistance.',
+      );
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
 
 /**

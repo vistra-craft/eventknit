@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from '@jest/globals';
 import { prisma } from '../src/config/database.js';
 import { UserPreferencesService } from '../src/services/user-preferences.service.js';
 import { ValidationError, NotFoundError } from '../src/utils/errors.js';
@@ -46,7 +45,7 @@ describe('UserPreferencesService', () => {
     const testUser = await prisma.user.create({
       data: {
         email: `test-user-${Date.now()}@example.com`,
-        role: UserRole.ADMIN_STAFF,
+        role: UserRole.ADMIN,
       },
     });
     testUserId = testUser.id;

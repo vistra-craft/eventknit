@@ -1,5 +1,5 @@
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 function Bone({ className }: { className?: string }) {
   return (
@@ -14,23 +14,21 @@ export function EventDetailsSkeleton() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
 
-      {/* Hero skeleton */}
-      <div className="relative w-full h-[60vh] min-h-[400px] max-h-[700px] sm:h-[70vh] sm:min-h-[500px] skeleton-base skeleton-shimmer">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="absolute bottom-10 left-0 right-0 max-w-7xl mx-auto px-4 sm:px-6 space-y-4">
-          <Bone className="h-5 w-24 rounded-full" />
-          <Bone className="h-12 w-full max-w-lg" />
-          <Bone className="h-10 w-3/4 max-w-md" />
-          <div className="flex gap-3 pt-2">
-            <Bone className="h-8 w-28 rounded-full" />
-            <Bone className="h-8 w-24 rounded-full" />
-            <Bone className="h-8 w-32 rounded-full" />
-          </div>
+      {/* Body skeleton — matches max-w-6xl container with pt-24 from actual page */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full pt-24">
+        {/* Hero skeleton — matches EventHero: h-72 md:h-[420px] rounded-2xl */}
+        <div className="relative h-72 md:h-[420px] rounded-2xl overflow-hidden skeleton-base skeleton-shimmer" />
+
+        {/* Event header skeleton */}
+        <div className="space-y-3 py-8 border-b border-border/40">
+          <Bone className="h-8 w-full max-w-lg" />
+          <Bone className="h-4 w-56" />
+          <Bone className="h-4 w-72" />
         </div>
       </div>
 
-      {/* Body skeleton */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full py-10">
+      {/* Two-column body skeleton */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 w-full py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 lg:gap-12">
           {/* Left column */}
           <div className="space-y-10 skeleton-stagger">

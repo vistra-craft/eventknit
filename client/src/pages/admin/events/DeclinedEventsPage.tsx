@@ -1,20 +1,27 @@
 import { useState, useEffect } from "react";
-import { Search, Calendar, MapPin, Eye, X, MoreHorizontal, AlertTriangle, RotateCcw, AlertCircle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, Calendar, MapPin, Eye, X, MoreHorizontal, AlertTriangle, RotateCcw, AlertCircle, Edit, BarChart3, Download, Copy, Share2 } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "../../../components/ui/dropdown-menu";
 import { Loader } from "../../../components/ui/loader";
-import { getEvents, EventStatus } from "../../../lib/event-api";
+import { getEvents, getEventById, EventStatus, EventType, type EventData } from "../../../lib/event-api";
 import { approveEvent } from "../../../lib/admin-api";
 import { useToast } from "../../../hooks/useToast";
-
+import { showErrorToast } from "../../../lib/utils/error";
+import { shareEvent } from "../../../lib/utils/share";
+import { exportEventData } from "../../../lib/utils/export";
 import { getEventTypeBadgeClass, getPriceBadgeClass } from "../../../lib/utils/event-badge-helpers";
+import { EventThumbnail } from "../../../components/ui/event-thumbnail";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
 
 interface Event {
   id: string;
+  slug?: string | null;
   title: string;
   organizer: string;
   date: string;
@@ -24,6 +31,7 @@ interface Event {
   category: string;
   type: "public" | "private";
   isFree: boolean;
+  image?: string;
   declinedDate: string;
   reason: string;
   declinedBy: string;
@@ -40,37 +48,31 @@ const DeclinedEventsPage = () => {
   const [priceFilter, setPriceFilter] = useState("all");
   const [reasonFilter, setReasonFilter] = useState("all");
   const [processing, setProcessing] = useState<string | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+  const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
-  // Fetch declined events (status = REJECTED)
+  // Fetch declined events (status = REJECTED only)
   useEffect(() => {
     const fetchDeclinedEvents = async () => {
       try {
         setLoading(true);
         setError(null);
-        const filters: Record<string, unknown> = {
+        const filters: Parameters<typeof getEvents>[0] = {
           status: EventStatus.REJECTED,
         };
-        
-        if (categoryFilter !== "all") {
-          filters.category = categoryFilter;
-        }
-        
-        if (typeFilter !== "all") {
-          filters.type = typeFilter === "public" ? "PUBLIC" : "PRIVATE";
-        }
-        
-        if (priceFilter !== "all") {
-          filters.isFree = priceFilter === "free";
-        }
-        
-        if (searchTerm) {
-          filters.search = searchTerm;
-        }
+
+        if (categoryFilter !== "all") filters.category = categoryFilter;
+        if (typeFilter !== "all") filters.type = (typeFilter === "public" ? "PUBLIC" : "PRIVATE") as EventType;
+        if (priceFilter !== "all") filters.isFree = priceFilter === "free";
+        if (searchTerm) filters.search = searchTerm;
 
         const response = await getEvents(filters);
         if (response.success && response.data?.events) {
           const declinedEvents = response.data.events.map(event => ({
             id: event.id,
+            slug: event.slug ?? null,
             title: event.title,
             organizer: event.organizer?.organizationName || `${event.organizer?.firstName || ''} ${event.organizer?.lastName || ''}`.trim() || 'Unknown',
             date: event.startDate ? new Date(event.startDate).toLocaleDateString() : 'TBD',
@@ -80,9 +82,10 @@ const DeclinedEventsPage = () => {
             category: event.category || 'Uncategorized',
             type: (event.type === 'PUBLIC' ? 'public' : 'private') as "public" | "private",
             isFree: event.isFree || false,
+            image: event.image || undefined,
             declinedDate: event.rejectedAt || event.updatedAt || event.createdAt || new Date().toISOString(),
             reason: event.rejectionReason || 'No reason provided',
-            declinedBy: event.rejectedBy ? 'Admin' : 'System', // TODO V2: Fetch admin name from rejectedBy ID
+            declinedBy: event.rejectedBy ? 'Admin' : 'System',
           }));
           setEvents(declinedEvents);
         }
@@ -96,6 +99,44 @@ const DeclinedEventsPage = () => {
 
     fetchDeclinedEvents();
   }, [categoryFilter, typeFilter, priceFilter, searchTerm]);
+
+  const getDaysSinceDeclined = (declinedDate: string) => {
+    const declined = new Date(declinedDate);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - declined.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const handlePreviewEvent = (eventId: string) => {
+    setPreviewEventId(eventId);
+    setPreviewModalOpen(true);
+  };
+
+  // Fetch event details for preview
+  useEffect(() => {
+    const fetchPreviewEvent = async () => {
+      if (!previewEventId || !previewModalOpen) return;
+
+      try {
+        setPreviewLoading(true);
+        const response = await getEventById(previewEventId);
+        if (response.success && response.data?.event) {
+          setPreviewEventData(response.data.event);
+        } else {
+          showErrorToast(toast, new Error("Failed to load event details"), "Preview failed", "Failed to load event details");
+          setPreviewModalOpen(false);
+        }
+      } catch (error: unknown) {
+        showErrorToast(toast, error, "Preview failed", "Failed to load event details");
+        setPreviewModalOpen(false);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewEvent();
+  }, [previewEventId, previewModalOpen, toast]);
 
   const filteredEvents = events.filter(event => {
     const matchesReason = reasonFilter === "all" || event.reason.toLowerCase().includes(reasonFilter.toLowerCase());
@@ -128,26 +169,11 @@ const DeclinedEventsPage = () => {
         throw new Error(response.message || 'Failed to re-approve event');
       }
     } catch (err: unknown) {
-      const errorMessage = err && typeof err === 'object' && 'message' in err
-        ? (err.message as string)
-        : 'Failed to re-approve event. Please try again.';
       console.error('Error re-approving event:', err);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(toast, err, "Re-approve failed", "Failed to re-approve event. Please try again.");
     } finally {
       setProcessing(null);
     }
-  };
-
-  const getDaysSinceDeclined = (declinedDate: string) => {
-    const declined = new Date(declinedDate);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - declined.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
   };
 
   if (loading) {
@@ -251,7 +277,13 @@ const DeclinedEventsPage = () => {
           {filteredEvents.map((event) => (
             <Card key={event.id} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <EventThumbnail
+                    src={event.image}
+                    alt={event.title}
+                    category={event.category}
+                    size="md"
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-base font-semibold text-foreground truncate">{event.title}</h3>
@@ -280,6 +312,7 @@ const DeclinedEventsPage = () => {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mb-2">by {event.organizer}</p>
+                    
                     <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3 mb-2">
                       <div className="flex items-start gap-2">
                         <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
@@ -290,8 +323,13 @@ const DeclinedEventsPage = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-muted">
+                  <div className="flex items-center gap-2 ml-0 sm:ml-4 flex-shrink-0">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handlePreviewEvent(event.id)}
+                      className="border-primary text-primary hover:bg-muted"
+                    >
                       <Eye className="h-4 w-4 mr-1" />
                       Review
                     </Button>
@@ -309,9 +347,89 @@ const DeclinedEventsPage = () => {
                       )}
                       Re-approve
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-primary hover:bg-muted">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-primary hover:bg-muted">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Manage Event
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to={`/event/${event.slug ?? event.id}`} target="_blank" rel="noopener noreferrer">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Public Page
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link to={`/admin/analytics/events?eventId=${event.id}`} target="_blank" rel="noopener noreferrer">
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            View Analytics
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          try {
+                            exportEventData({
+                              id: event.id,
+                              title: event.title,
+                              date: event.date,
+                              location: event.location,
+                              attendees: 0,
+                              revenue: 0,
+                              views: 0,
+                              status: 'declined',
+                              category: event.category,
+                            });
+                            toast({
+                              title: "Exported",
+                              description: "Event data exported successfully",
+                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Export failed", "Failed to export event data");
+                          }
+                        }}>
+                          <Download className="h-4 w-4 mr-2" />
+                          Export Data
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(`${window.location.origin}/event/${event.slug ?? event.id}`);
+                            toast({
+                              title: "Copied",
+                              description: "Event link copied to clipboard",
+                            });
+                          } catch (error) {
+                            showErrorToast(toast, error, "Copy failed", "Failed to copy link");
+                          }
+                        }}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Copy Event Link
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={async () => {
+                          const shared = await shareEvent(event.title, event.slug ?? event.id);
+                          if (shared) {
+                            toast({
+                              title: "Shared",
+                              description: "Event shared successfully",
+                            });
+                          } else {
+                            toast({
+                              title: "Link Copied",
+                              description: "Event link copied to clipboard",
+                            });
+                          }
+                        }}>
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share Event
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </CardContent>
@@ -330,6 +448,14 @@ const DeclinedEventsPage = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Event Preview Modal */}
+        <EventPreviewModal
+          isOpen={previewModalOpen}
+          onOpenChange={setPreviewModalOpen}
+          event={previewEventData}
+          loading={previewLoading}
+        />
       </div>
   );
 };

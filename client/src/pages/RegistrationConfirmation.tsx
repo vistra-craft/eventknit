@@ -7,24 +7,19 @@ import {
   Calendar,
   Share2,
   Mail,
-  Lock,
   MapPin,
   Clock,
   ExternalLink,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { Button } from "@/components/ui/button";
-
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import CheckoutHeader from "@/components/CheckoutHeader";
+import CheckoutHeader from '@/components/layout/CheckoutHeader';
 import { useAuth } from "@/hooks/useAuth";
 import { getEventById } from "@/lib/event-api";
-import { setupPassword } from "@/lib/auth-api";
+import type { EventData } from "@/types/event";
 import { shareEvent } from "@/lib/utils/share";
 import { useToast } from "@/hooks/useToast";
-import { downloadTicketPDF, resendTicketEmail } from "@/lib/ticket-api";
-import { setAccessToken } from "@/lib/api";
+import { downloadTicketPDF, downloadTicketPDFPublic, resendTicketEmail } from "@/lib/ticket-api";
 
 interface TicketType {
   name: string;
@@ -48,57 +43,26 @@ interface ConfirmationData {
   isGuestUser?: boolean;
   userEmail?: string;
   isFreeEvent?: boolean;
+  isNewUser?: boolean;
   discount?: number;
   promoCode?: string;
 }
 
-type EventApiData = {
-  startDate?: string | null;
-  endDate?: string | null;
-  startTime?: string | null;
-  endTime?: string | null;
-  location?: string | null;
-  eventLocation?: string | null;
-  title?: string | null;
-  eventTitle?: string | null;
-  description?: string | null;
-  image?: string | null;
-  venue?: string | null;
-  currency?: string | null;
-  isFree?: boolean | null;
-  eventId?: string | null;
-} & Record<string, unknown>;
-
-type LocationState = {
-  accessToken?: string;
-} | null;
+type EventApiData = EventData;
 
 const RegistrationConfirmation: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id: eventId } = useParams<{ id: string }>();
-  const { user, isAuthenticated, refreshProfile } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   const [eventData, setEventData] = useState<EventApiData | ConfirmationData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [settingPassword, setSettingPassword] = useState(false);
-  const [passwordSetSuccess, setPasswordSetSuccess] = useState(false);
-  const [passwordData, setPasswordData] = useState({ password: "", confirmPassword: "" });
-  const [passwordError, setPasswordError] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
   const [isResending, setIsResending] = useState(false);
 
   const confirmationData = location.state as ConfirmationData | null;
-
-  // Store access token if provided (for guest users)
-  useEffect(() => {
-    const state = location.state as LocationState;
-    if (state?.accessToken) {
-      setAccessToken(state.accessToken);
-      refreshProfile().catch(() => {});
-    }
-  }, [location.state, refreshProfile]);
 
   // Fetch event data if not provided
   useEffect(() => {
@@ -108,7 +72,7 @@ const RegistrationConfirmation: React.FC = () => {
         setLoading(true);
         const response = await getEventById(eventId);
         if (response.success && response.data?.event) {
-          setEventData(response.data.event as unknown as EventApiData);
+          setEventData(response.data.event);
         }
       } catch (error) {
         console.error("Error fetching event:", error);
@@ -126,6 +90,7 @@ const RegistrationConfirmation: React.FC = () => {
   }, [eventId, confirmationData]);
 
   const isGuestUser = confirmationData?.isGuestUser ?? false;
+  const isNewUser = confirmationData?.isNewUser ?? false;
   const userEmail = confirmationData?.userEmail || user?.email || "";
   const event = eventData || confirmationData;
 
@@ -187,53 +152,18 @@ const RegistrationConfirmation: React.FC = () => {
   };
 
   // Handlers
-  const handleSetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordError("");
-
-    if (passwordData.password.length < 8) {
-      setPasswordError("Password must be at least 8 characters");
-      return;
-    }
-    if (!/(?=.*[a-zA-Z])/.test(passwordData.password)) {
-      setPasswordError("Must contain at least one letter");
-      return;
-    }
-    if (!/(?=.*\d)/.test(passwordData.password)) {
-      setPasswordError("Must contain at least one number");
-      return;
-    }
-    if (passwordData.password !== passwordData.confirmPassword) {
-      setPasswordError("Passwords do not match");
-      return;
-    }
-
-    setSettingPassword(true);
-    try {
-      const response = await setupPassword(passwordData.password);
-      if (response.success) {
-        toast({ title: "Password set!", description: "You can now log in with your email and password." });
-        setPasswordData({ password: "", confirmPassword: "" });
-        setPasswordSetSuccess(true);
-        await refreshProfile();
-      } else {
-        throw new Error(response.message || "Failed to set password");
-      }
-    } catch (err: unknown) {
-      setPasswordError(err instanceof Error ? err.message : "Failed to set password");
-    } finally {
-      setSettingPassword(false);
-    }
-  };
-
   const handleDownloadTicket = async () => {
     if (!confirmationData?.registrationId) return;
     setIsDownloading(true);
     try {
-      await downloadTicketPDF(confirmationData.registrationId);
+      if (isAuthenticated) {
+        await downloadTicketPDF(confirmationData.registrationId);
+      } else {
+        await downloadTicketPDFPublic(confirmationData.registrationId, userEmail);
+      }
       toast({ title: "Downloaded!", description: "Your ticket has been downloaded." });
     } catch {
-      toast({ title: "Error", description: "Failed to download. Check your email for the ticket.", variant: "destructive" });
+      toast({ title: "Download failed", description: "We couldn't download your ticket. Please try again or check your email for a copy.", variant: "destructive" });
     } finally {
       setIsDownloading(false);
     }
@@ -246,7 +176,7 @@ const RegistrationConfirmation: React.FC = () => {
       await resendTicketEmail(confirmationData.registrationId);
       toast({ title: "Email sent!", description: "Your ticket email has been resent." });
     } catch {
-      toast({ title: "Error", description: "Failed to resend email.", variant: "destructive" });
+      toast({ title: "Couldn't resend email", description: "Please try again in a moment. Your ticket is still valid.", variant: "destructive" });
     } finally {
       setIsResending(false);
     }
@@ -270,8 +200,13 @@ const RegistrationConfirmation: React.FC = () => {
     window.open(url, "_blank");
   };
 
-  const handleShareEvent = () => {
-    shareEvent(getTitle(), eventId || confirmationData?.eventId || "");
+  const handleShareEvent = async () => {
+    const shared = await shareEvent(getTitle(), eventId || confirmationData?.eventId || "");
+    if (shared) {
+      toast({ title: "Link copied!", description: "Event link has been copied to your clipboard." });
+    } else {
+      toast({ title: "Couldn't share", description: "Please copy the URL from the address bar manually.", variant: "destructive" });
+    }
   };
 
   if (loading) {
@@ -295,7 +230,6 @@ const RegistrationConfirmation: React.FC = () => {
   }
 
   const isFree = confirmationData?.isFreeEvent ?? (event && "isFree" in event ? event.isFree : false);
-  const showPasswordSetup = isGuestUser && (!isAuthenticated || (user && !user.hasPassword)) && !passwordSetSuccess;
   const ticketSummary = confirmationData?.tickets?.filter(t => t.quantity > 0) || [];
 
   return (
@@ -319,78 +253,6 @@ const RegistrationConfirmation: React.FC = () => {
           )}
         </div>
 
-        {/* Password Setup Card (Guest Users) */}
-        {showPasswordSetup && (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Lock className="w-4 h-4 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-sm">Create a password</h3>
-                <p className="text-xs text-muted-foreground">Access your tickets and register faster next time</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSetPassword} className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="password" className="text-xs">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={passwordData.password}
-                    onChange={(e) => setPasswordData({ ...passwordData, password: e.target.value })}
-                    placeholder="Min 8 characters"
-                    className="h-9 text-sm"
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="confirmPassword" className="text-xs">Confirm</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                    placeholder="Confirm password"
-                    className="h-9 text-sm"
-                    required
-                  />
-                </div>
-              </div>
-              <p className="text-[10px] text-muted-foreground">Must contain at least one letter and one number.</p>
-              {passwordError && (
-                <p className="text-xs text-destructive">{passwordError}</p>
-              )}
-              <div className="flex gap-2">
-                <Button type="submit" size="sm" disabled={settingPassword} className="flex-1">
-                  {settingPassword ? "Setting..." : "Set Password"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPasswordData({ password: "", confirmPassword: "" })}
-                  className="text-xs"
-                >
-                  Skip
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Password Set Success */}
-        {passwordSetSuccess && (
-          <div className="rounded-xl border border-success bg-success-light p-4 flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-            <p className="text-sm text-success">
-              Password set! You can now log in anytime.
-            </p>
-          </div>
-        )}
-
         {/* Email Notice */}
         <div className="rounded-xl border bg-card p-4 space-y-3">
           <div className="flex items-start gap-3">
@@ -398,7 +260,11 @@ const RegistrationConfirmation: React.FC = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">Check your email</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Your ticket with QR code is being sent to <span className="font-medium">{userEmail}</span>
+                Your ticket and QR code are on their way to{" "}
+                <span className="font-medium">{userEmail}</span>.
+                {isGuestUser && isNewUser && (
+                  <> The email also includes a link to set up your account.</>
+                )}
               </p>
             </div>
             {confirmationData?.registrationId && isAuthenticated && (
@@ -425,7 +291,7 @@ const RegistrationConfirmation: React.FC = () => {
           <div className="space-y-3 text-sm">
             <div className="font-medium">{getTitle()}</div>
 
-            <div className="flex items-center gap-6 text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 <span>{formatDate(getStartDate())}</span>
@@ -461,34 +327,34 @@ const RegistrationConfirmation: React.FC = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           <Button
             variant="outline"
             size="sm"
             onClick={handleAddToCalendar}
-            className="flex-col h-auto py-3 gap-1"
+            className="flex-col h-auto min-h-[52px] py-3 gap-1"
           >
             <Calendar className="w-4 h-4" />
-            <span className="text-[10px]">Add to Calendar</span>
+            <span className="text-[10px] sm:text-xs">Calendar</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleDownloadTicket}
             disabled={isDownloading || !confirmationData?.registrationId}
-            className="flex-col h-auto py-3 gap-1"
+            className="flex-col h-auto min-h-[52px] py-3 gap-1"
           >
             {isDownloading ? <Loader size="sm" /> : <Download className="w-4 h-4" />}
-            <span className="text-[10px]">Download</span>
+            <span className="text-[10px] sm:text-xs">Download</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleShareEvent}
-            className="flex-col h-auto py-3 gap-1"
+            className="flex-col h-auto min-h-[52px] py-3 gap-1"
           >
             <Share2 className="w-4 h-4" />
-            <span className="text-[10px]">Share</span>
+            <span className="text-[10px] sm:text-xs">Share</span>
           </Button>
         </div>
 
@@ -497,9 +363,14 @@ const RegistrationConfirmation: React.FC = () => {
           {confirmationData?.registrationId && (
             <Button
               className="w-full"
-              onClick={() => navigate(`/user/tickets/${confirmationData.registrationId}`, {
-                state: { userEmail, email: userEmail }
-              })}
+              onClick={() => {
+                const path = isAuthenticated
+                  ? `/user/tickets/${confirmationData.registrationId}`
+                  : `/tickets/${confirmationData.registrationId}/view`;
+                navigate(path, {
+                  state: { userEmail, email: userEmail },
+                });
+              }}
             >
               <Ticket className="w-4 h-4 mr-2" />
               View My Ticket

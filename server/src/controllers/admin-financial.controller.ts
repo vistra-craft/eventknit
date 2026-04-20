@@ -26,7 +26,14 @@ export class AdminFinancialController {
     try {
       const { category, status, startDate, endDate, page, limit } = req.query;
 
-      const filters: any = {};
+      const filters: {
+        category?: string;
+        status?: string;
+        startDate?: Date;
+        endDate?: Date;
+        page?: number;
+        limit?: number;
+      } = {};
       if (category) filters.category = category as string;
       if (status) filters.status = status as string;
       if (startDate) filters.startDate = new Date(startDate as string);
@@ -114,7 +121,14 @@ export class AdminFinancialController {
     try {
       const { category, status, startDate, endDate, page, limit } = req.query;
 
-      const filters: any = {};
+      const filters: {
+        category?: string;
+        status?: string;
+        startDate?: Date;
+        endDate?: Date;
+        page?: number;
+        limit?: number;
+      } = {};
       if (category) filters.category = category as string;
       if (status) filters.status = status as string;
       if (startDate) filters.startDate = new Date(startDate as string);
@@ -208,7 +222,10 @@ export class AdminFinancialController {
     try {
       const { startDate, endDate } = req.query;
 
-      const filters: any = {};
+      const filters: {
+        startDate?: Date;
+        endDate?: Date;
+      } = {};
       if (startDate) filters.startDate = new Date(startDate as string);
       if (endDate) filters.endDate = new Date(endDate as string);
 

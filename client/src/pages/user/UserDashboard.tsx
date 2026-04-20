@@ -1,27 +1,25 @@
-import { useLocation } from "react-router-dom";
+import { lazy, Suspense, useState, useEffect, useCallback } from "react";
+import { useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { Loader } from "@/components/ui/loader";
 import DashboardNavbar from "./DashboardNavbar";
+import { ChatPanel, ChatPanelTrigger } from "@/components/chat/ChatPanel";
+import { getInbox } from "@/lib/user-dashboard-api";
+
+const UserSettingsPage = lazy(() => import("./UserSettingsPage"));
 import DashboardHome from "./DashboardHome";
-import DashboardSpeakers from "./DashboardSpeakers";
-import DashboardExhibitors from "./DashboardExhibitors";
-import DashboardSponsors from "./DashboardSponsors";
 import DashboardAgenda from "./DashboardAgenda";
 import DashboardMyEvent from "./DashboardMyEvent";
 import DashboardMyBadge from "./DashboardMyBadge";
-// TODO: Uncomment when abstracts backend is implemented
-// import DashboardAbstracts from "./DashboardAbstracts";
 import DashboardAttendees from "./DashboardAttendees";
 import AttendeeDiscovery from "./AttendeeDiscovery";
 import NotificationsCenter from "./NotificationsCenter";
 import PersonalAnalytics from "./PersonalAnalytics";
 import PersonalizedRecommendations from "./PersonalizedRecommendations";
 import TicketTransfer from "./TicketTransfer";
-// TODO: Uncomment when reviews/feedback system is reimplemented
-// import EventReviews from "./EventReviews";
 import EventCollections from "./EventCollections";
 import InterestManagement from "./InterestManagement";
 import AdvancedSearch from "./AdvancedSearch";
-import DirectMessaging from "./DirectMessaging";
 import SocialNetworking from "./SocialNetworking";
 import TicketResale from "./TicketResale";
 import DigitalWallet from "./DigitalWallet";
@@ -36,47 +34,71 @@ import SavedEvents from "./SavedEvents";
 const UserDashboard = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const activeSection = searchParams.get("section") || "home";
+  const activeSection = searchParams.get("section") ?? "home";
   const { user: authUser } = useAuth();
 
-  // Get user data from auth context
-  const user = authUser ? {
-    name: `${authUser.firstName || ''} ${authUser.lastName || ''}`.trim() || authUser.email || 'User',
-    email: authUser.email || '',
-    initials: authUser.firstName && authUser.lastName 
-      ? `${authUser.firstName[0]}${authUser.lastName[0]}`.toUpperCase()
-      : (authUser.email ? authUser.email[0].toUpperCase() : 'U'),
-  } : {
-    name: 'User',
-    email: '',
-    initials: 'U',
-  };
+  // Chat panel state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
 
-  // Get event data from navigation state (for specific event views)
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await getInbox({ page: 1, limit: 1 });
+      if (res.success && res.data) {
+        setChatUnread(res.data.unreadCount);
+      }
+    } catch {
+      // Silently ignore — non-critical
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
+
+  // Open chat panel when navigating to section=messages
+  useEffect(() => {
+    if (activeSection === 'messages') {
+      setChatOpen(true);
+    }
+  }, [activeSection]);
+
+  const user = authUser
+    ? {
+        name: `${authUser.firstName ?? ''} ${authUser.lastName ?? ''}`.trim() || authUser.email || 'User',
+        email: authUser.email ?? '',
+        initials: authUser.firstName && authUser.lastName
+          ? `${authUser.firstName[0]}${authUser.lastName[0]}`.toUpperCase()
+          : (authUser.email ? authUser.email[0].toUpperCase() : 'U'),
+      }
+    : { name: 'User', email: '', initials: 'U' };
+
+  // location.state originates from React Router navigation and is typed as unknown.
+  // Components that consume these values are responsible for narrowing them safely.
+   
   const registration = location.state?.registration;
+   
   const eventData = location.state?.eventData;
-
-  // Show success message if available
-  const successMessage = location.state?.message;
-
-  // No longer check for specific event sections - using simplified structure
+  const successMessage = typeof location.state?.message === 'string'
+    ? (location.state.message as string)
+    : undefined;
 
   const renderSection = () => {
     switch (activeSection) {
       case "my-events":
-        return (
-          <DashboardMyEvent eventData={eventData} registration={registration} user={user} />
-        );
+        return <DashboardMyEvent />;
       case "tickets":
         return <MyTickets />;
       case "saved":
         return <SavedEvents />;
+      // speakers, exhibitors, sponsors are now inside EventAttendeeView (DashboardMyEvent)
+      // Redirect legacy URLs to my-events so context is preserved
       case "speakers":
-        return <DashboardSpeakers eventData={eventData} />;
       case "exhibitors":
-        return <DashboardExhibitors eventData={eventData} />;
       case "sponsors":
-        return <DashboardSponsors eventData={eventData} />;
+        return <Navigate to="/user/dashboard?section=my-events" replace />;
       case "attendees":
         return <DashboardAttendees />;
       case "agenda":
@@ -92,16 +114,13 @@ const UserDashboard = () => {
       case "networking":
         return <AttendeeDiscovery eventData={eventData} />;
       case "notifications":
-        return <NotificationsCenter eventData={eventData} />;
+        return <NotificationsCenter />;
       case "analytics":
         return <PersonalAnalytics eventData={eventData} user={user} />;
       case "recommendations":
         return <PersonalizedRecommendations />;
       case "ticket-transfer":
         return <TicketTransfer />;
-      // TODO: Uncomment when reviews/feedback system is reimplemented
-      // case "reviews":
-      //   return <EventReviews />;
       case "collections":
         return <EventCollections />;
       case "interests":
@@ -109,7 +128,9 @@ const UserDashboard = () => {
       case "search":
         return <AdvancedSearch />;
       case "messages":
-        return <DirectMessaging />;
+        // Messages are handled by the ChatPanel (sliding panel)
+        // Render home view underneath
+        return <DashboardHome user={user} />;
       case "social":
         return <SocialNetworking />;
       case "ticket-resale":
@@ -126,15 +147,16 @@ const UserDashboard = () => {
         return <PaymentPlans />;
       case "invoices":
         return <Invoices />;
-      // TODO: Uncomment when abstracts backend is implemented
-      // case "abstracts":
-      //   return <DashboardAbstracts eventData={eventData} user={user} registration={registration} />;
+      case "settings":
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center py-16"><Loader size="default" /></div>}>
+            <UserSettingsPage />
+          </Suspense>
+        );
       default:
         return (
           <DashboardHome
-            eventData={eventData}
             user={user}
-            registration={registration}
           />
         );
     }
@@ -142,24 +164,29 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <DashboardNavbar 
-        user={user} 
+      <DashboardNavbar
+        user={user}
         activeSection={activeSection}
-        eventTitle={eventData?.title}
+        eventTitle={
+          eventData != null && typeof eventData === 'object' && 'title' in eventData
+            ? String((eventData as { title: unknown }).title ?? '')
+            : undefined
+        }
       />
       <main className="pt-16 flex-1">
-        {/* Success Message */}
         {successMessage && (
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 pt-4 max-w-7xl">
             <div className="bg-success-light border border-success/20 rounded-lg p-4 mb-6">
-              <div className="flex">
-                <div className="text-success">{successMessage}</div>
-              </div>
+              <div className="text-success">{successMessage}</div>
             </div>
           </div>
         )}
         {renderSection()}
       </main>
+
+      {/* Chat panel + floating trigger */}
+      <ChatPanel open={chatOpen} onOpenChange={setChatOpen} />
+      <ChatPanelTrigger unreadCount={chatUnread} onClick={() => setChatOpen(true)} />
     </div>
   );
 };

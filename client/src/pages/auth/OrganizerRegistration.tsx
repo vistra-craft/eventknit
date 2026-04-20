@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Upload } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import BackButton from '@/components/BackButton';
-import Logo from '@/components/Logo';
+import Logo from '@/components/layout/Logo';
 import { useAuth } from '@/hooks/useAuth';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { useMultiStepForm, validateStepFields } from '@/hooks/useMultiStepForm';
@@ -190,8 +190,10 @@ const OrganizerRegistration = () => {
   const handleBack = () => {
     if (!multiStep.isFirstStep) {
       multiStep.goToPreviousStep();
+    } else if (window.history.length > 1) {
+      navigate(-1);
     } else {
-      navigate('/auth/user-type');
+      navigate('/');
     }
   };
 
@@ -636,7 +638,7 @@ const OrganizerRegistration = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between gap-4 mb-4">
-            <BackButton to="/auth/user-type" label="Back" />
+            <BackButton label="Back" />
             <Logo />
           </div>
 
@@ -667,7 +669,7 @@ const OrganizerRegistration = () => {
 
         {/* Form Content */}
         <Card className="border-0 bg-card-surface rounded-2xl shadow-md">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-6 md:p-8">
             <Form {...form}>
               <form onSubmit={(e) => e.preventDefault()}>
                 {multiStep.currentStep === 1 && renderStep1()}

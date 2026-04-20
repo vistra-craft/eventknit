@@ -8,17 +8,22 @@ import {
 } from '../utils/errors.js';
 import { createAuditLog, AuditActions } from '../utils/audit.js';
 import { logger } from '../utils/logger.js';
+import { hashToken } from '../utils/password.js';
 import { Decimal, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 import { hashPassword } from '../utils/password.js';
 import crypto from 'crypto';
-import { emailService as _emailService } from './email.service.js';
+import { emailService } from './email.service.js';
 import { TicketService } from './ticket.service.js';
+import { TicketPdfQueueService } from './ticket-pdf-queue.service.js';
 import { NotificationService } from './notification.service.js';
 import { NotificationType, NotificationPriority } from '@prisma/client';
 import { EventCollaborationService } from './event-collaboration.service.js';
+import { AuthService } from './auth.service.js';
+import { backgroundTasks } from '../utils/background-tasks.js';
 import { RefundService } from './refund.service.js';
 import { AttendeeCommunicationService } from './attendee-communication.service.js';
 import { websocketService } from './websocket.service.js';
+import { isValidUUID } from '../utils/id.utils.js';
 
 export interface CreateEventData {
   title: string;
@@ -124,14 +129,26 @@ export interface RegisterForEventData {
   seatIds?: string[];
   // Consent data
   consent?: {
-    operationalConsent?: boolean; // Default: true (required)
     marketingConsent?: boolean;
-    demographicsConsent?: boolean;
-    analyticsConsent?: boolean;
   };
 }
 
 export class EventService {
+  private static isRetryablePendingRegistration(registration: {
+    status: RegistrationStatus;
+    paymentStatus: string | null;
+  }): boolean {
+    return registration.status === RegistrationStatus.PENDING
+      && registration.paymentStatus !== 'COMPLETED';
+  }
+
+  private static markRegistrationAsResumed<T extends object>(registration: T): T & { resumedPendingPayment: true } {
+    return {
+      ...registration,
+      resumedPendingPayment: true,
+    };
+  }
+
   /**
    * Validate and sync registration status with payment status
    * Ensures status consistency across the application
@@ -239,6 +256,44 @@ export class EventService {
       }
     }
 
+    // Enforce paid vs free pricing rules
+    if (data.isFree === true) {
+      if (data.price !== undefined && data.price !== null) {
+        const price = typeof data.price === 'string' ? parseFloat(data.price) : Number(data.price);
+        if (!isNaN(price) && price > 0) {
+          throw new ValidationError('Free events must have a price of 0');
+        }
+      }
+      if (data.ticketTypes && Array.isArray(data.ticketTypes)) {
+        for (const ticket of data.ticketTypes) {
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+          if (!isNaN(price) && price > 0) {
+            throw new ValidationError('Free events cannot include paid ticket types');
+          }
+        }
+      }
+    }
+    if (data.isFree === false) {
+      if (data.price !== undefined && data.price !== null) {
+        const price = typeof data.price === 'string' ? parseFloat(data.price) : Number(data.price);
+        if (!isNaN(price) && price <= 0) {
+          throw new ValidationError('Paid events must have a price greater than 0');
+        }
+      }
+      if (data.ticketTypes && Array.isArray(data.ticketTypes)) {
+        // For paid events, at least one non-complementary ticket must have price > 0.
+        // Free-tier tickets (price 0) are allowed alongside paid ones.
+        const hasPaidTicket = data.ticketTypes.some((ticket: Record<string, unknown>) => {
+          if (ticket.isComplementary === true) return false;
+          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price as string) : Number(ticket.price);
+          return !isNaN(price) && price > 0;
+        });
+        if (!hasPaidTicket) {
+          throw new ValidationError('Paid events must have at least one ticket with a price greater than 0');
+        }
+      }
+    }
+
     // Verify organizer exists and get verification status
     const organizer = await prisma.user.findUnique({
       where: { id: organizerId },
@@ -257,23 +312,26 @@ export class EventService {
       throw new NotFoundError('Organizer not found');
     }
 
-    // Verify organizer can create events (check actual role from database, not token)
-    const actualRole = organizer.role;
-    if (actualRole !== UserRole.ORGANIZER &&
-      actualRole !== UserRole.SUPERADMIN &&
-      actualRole !== UserRole.ADMIN_STAFF) {
-      throw new AuthorizationError('Only organizers and admins can create events');
-    }
-
-    // Check account status
-    // PENDING_APPROVAL organizers can create their first event — it enters the
-    // event approval workflow regardless. Blocking here would break the atomic
-    // becomeOrganizer() flow where status is set to PENDING_APPROVAL immediately.
+    // Check account status first — blocked statuses apply to everyone
     if (organizer.status === UserStatus.DEACTIVATED) {
       throw new AuthorizationError('Your account has been deactivated. Please contact support.');
     }
     if (organizer.status === UserStatus.SUSPENDED) {
       throw new AuthorizationError('Your account has been suspended. Please contact support.');
+    }
+
+    // Verify organizer can create events (check actual role from database, not token).
+    // ATTENDEE users with PENDING_APPROVAL status are allowed — they went through
+    // becomeOrganizer() which keeps role as ATTENDEE until their first event is approved.
+    const actualRole = organizer.role;
+    const isPendingAttendee = actualRole === UserRole.ATTENDEE &&
+      organizer.status === UserStatus.PENDING_APPROVAL;
+
+    if (!isPendingAttendee &&
+      actualRole !== UserRole.ORGANIZER &&
+      actualRole !== UserRole.SUPERADMIN &&
+      actualRole !== UserRole.ADMIN) {
+      throw new AuthorizationError('Only organizers and admins can create events');
     }
 
     // Note: Eventbrite-style approach - no verification required to CREATE events
@@ -345,9 +403,15 @@ export class EventService {
       }) as Prisma.InputJsonValue;
     }
 
+    // Generate a stable ID and unique slug upfront
+    const newEventId = crypto.randomUUID();
+    const slug = await EventService.generateSlug(data.title);
+
     // Create event
     const event = await prisma.event.create({
       data: {
+        id: newEventId,
+        slug,
         title: data.title.trim(),
         description: data.description.trim(),
         organizerDescription: data.organizerDescription?.trim(),
@@ -386,7 +450,7 @@ export class EventService {
         socialLinks: data.socialLinks || undefined,
         faqs: data.faqs || undefined,
         registrationFields: data.registrationFields || undefined,
-        registrationCode: data.generateRegistrationCode !== false ? this.generateRegistrationCode() : null,
+        registrationCode: data.generateRegistrationCode !== false ? await this.generateUniqueRegistrationCode() : null,
         // Service fee configuration
         serviceFeeType: data.serviceFeeType || null,
         serviceFeeValue: data.serviceFeeValue ? new Decimal(Number(data.serviceFeeValue)) : null,
@@ -477,6 +541,9 @@ export class EventService {
     type?: EventType;
     dateFrom?: string; // ISO date string - filter events starting from this date
     dateTo?: string; // ISO date string - filter events starting before this date
+    declinedOrRecalledCancelled?: boolean; // Filter for declined (REJECTED) or recalled-cancelled (CANCELLED + recalledAt)
+    recalledCancelled?: boolean; // Filter for recalled-cancelled only (CANCELLED + recalledAt)
+    recalledPending?: boolean; // Filter for recalled-pending (PENDING + recalledAt)
   } = {}) {
     const where: Prisma.EventWhereInput = {
       deletedAt: null,
@@ -484,7 +551,27 @@ export class EventService {
 
     logger.debug('[EventService] Received filters:', filters);
 
-    if (filters.status) {
+    // Handle special filters for recalled events
+    if (filters.declinedOrRecalledCancelled) {
+      // REJECTED or (CANCELLED + recalledAt IS NOT NULL)
+      where.OR = [
+        { status: EventStatus.REJECTED },
+        {
+          AND: [
+            { status: EventStatus.CANCELLED },
+            { recalledAt: { not: null } },
+          ],
+        },
+      ];
+    } else if (filters.recalledCancelled) {
+      // CANCELLED + recalledAt IS NOT NULL (recalled events only)
+      where.status = EventStatus.CANCELLED;
+      where.recalledAt = { not: null };
+    } else if (filters.recalledPending) {
+      // PENDING + recalledAt IS NOT NULL
+      where.status = EventStatus.PENDING;
+      where.recalledAt = { not: null };
+    } else if (filters.status) {
       where.status = filters.status;
     }
 
@@ -580,12 +667,13 @@ export class EventService {
   }
 
   /**
-   * Get event by ID
+   * Get event by ID or slug. UUID format is matched by ID; anything else is treated as a slug.
    */
-  static async getEventById(eventId: string, requestingUserId?: string) {
+  static async getEventById(eventId: string, requestingUserId?: string, isAdmin = false) {
+    const isUuid = isValidUUID(eventId);
     const event = await prisma.event.findFirst({
       where: {
-        id: eventId,
+        ...(isUuid ? { id: eventId } : { slug: eventId }),
         deletedAt: null,
       },
       include: {
@@ -597,6 +685,7 @@ export class EventService {
             email: true,
             organizationName: true,
             businessEmail: true,
+            avatar: true,
           },
         },
         _count: {
@@ -623,23 +712,34 @@ export class EventService {
 
     // Access control: non-approved events visible only to organizer and admins
     const isOrganizer = requestingUserId && event.organizerId === requestingUserId;
-    console.log(`[EventService.getEventById] Event ${eventId}: status=${event.status}, requestingUserId=${requestingUserId}, organizerId=${event.organizerId}, isOrganizer=${isOrganizer}`);
-    
-    if (!isOrganizer && event.status !== 'APPROVED') {
-      console.log('[EventService.getEventById] Access denied: user is not organizer and event status is not APPROVED');
+
+    if (!isOrganizer && !isAdmin && event.status !== 'APPROVED') {
       throw new NotFoundError('Event not found');
     }
 
     // Hide organizer email/personal info from public API responses
-    if (!isOrganizer && event.organizer) {
+    if (!isOrganizer && !isAdmin && event.organizer) {
       event.organizer.email = '';
-      event.organizer.businessEmail = null as any;
+      event.organizer.businessEmail = null;
     }
 
     // Add sold-out status for each ticket type (without exposing exact counts)
     if (event.ticketTypes && Array.isArray(event.ticketTypes)) {
+      const ticketsArray = event.ticketTypes as Record<string, unknown>[];
+      const normalizedTicketTypes = Array.from(
+        ticketsArray.reduce((map: Map<string, Record<string, unknown>>, ticket: Record<string, unknown>) => {
+          const name = typeof ticket?.name === 'string' ? ticket.name.trim() : '';
+          if (!name) return map;
+          const key = name.toLowerCase();
+          if (!map.has(key)) {
+            map.set(key, ticket);
+          }
+          return map;
+        }, new Map<string, Record<string, unknown>>()),
+      ).map(([, ticket]) => ticket);
+
       const ticketTypesWithStatus = await Promise.all(
-        (event.ticketTypes as any[]).map(async (ticket: any) => {
+        normalizedTicketTypes.map(async (ticket: Record<string, unknown>) => {
           // Only check capacity if quantity is defined
           if (ticket.quantity !== null && ticket.quantity !== undefined) {
             const soldCount = await prisma.ticketLineItem.aggregate({
@@ -650,7 +750,7 @@ export class EventService {
                     in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
                   },
                 },
-                ticketType: ticket.name,
+                ticketType: ticket.name as string,
               },
               _sum: {
                 quantity: true,
@@ -658,7 +758,7 @@ export class EventService {
             });
 
             const sold = soldCount._sum.quantity || 0;
-            const remaining = ticket.quantity - sold;
+            const remaining = (ticket.quantity as number) - sold;
 
             return {
               ...ticket,
@@ -674,8 +774,44 @@ export class EventService {
         }),
       );
 
-      (event as any).ticketTypes = ticketTypesWithStatus;
+      (event as Record<string, unknown>).ticketTypes = ticketTypesWithStatus;
     }
+
+    // Fetch a few attendee avatars for social proof display (Lu.ma-style)
+    const recentAttendees = await prisma.eventRegistration.findMany({
+      where: {
+        eventId: event.id,
+        status: { in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING] },
+      },
+      select: {
+        attendee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    (event as Record<string, unknown>).attendeeAvatars = (recentAttendees ?? []).map((r) => ({
+      id: r.attendee.id,
+      firstName: r.attendee.firstName,
+      lastName: r.attendee.lastName,
+      avatar: r.attendee.avatar,
+    }));
+
+    // Check if this event has any active promo codes
+    const promoCodeCount = await prisma.promoCode.count({
+      where: {
+        eventId: event.id,
+        isActive: true,
+      },
+    });
+    (event as Record<string, unknown>).hasPromoCodes = promoCodeCount > 0;
 
     return event;
   }
@@ -833,6 +969,7 @@ export class EventService {
         endDate: true,
         venue: true,
         location: true,
+        isFree: true,
       },
     });
 
@@ -844,9 +981,10 @@ export class EventService {
     const originalStartDate = event.startDate;
     const originalVenue = event.venue;
     const originalLocation = event.location;
+    const effectiveIsFree = data.isFree ?? event.isFree;
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to update this event');
       }
@@ -864,7 +1002,7 @@ export class EventService {
     });
 
     // Verify organizer owns the event or is a collaborator (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId && !isCollaborator) {
         throw new AuthorizationError('You do not have permission to update this event');
       }
@@ -882,10 +1020,14 @@ export class EventService {
 
     const hasSignificantChanges = significantFields.some(field => data[field as keyof UpdateEventData] !== undefined);
 
-    // Only reset to PENDING if there are significant changes (not just image/media updates)
-    const newStatus = (event.status === EventStatus.APPROVED && hasSignificantChanges)
-      ? EventStatus.PENDING
-      : event.status;
+    // Reset to PENDING if there are significant changes to an approved event,
+    // or if a rejected event is edited (allowing resubmission for review).
+    // Minor updates (e.g., image changes) don't trigger re-review.
+    const shouldResetToPending = hasSignificantChanges && (
+      event.status === EventStatus.APPROVED ||
+      event.status === EventStatus.REJECTED
+    );
+    const newStatus = shouldResetToPending ? EventStatus.PENDING : event.status;
 
     // Prepare update data
     const updateData: Prisma.EventUpdateInput = {
@@ -958,11 +1100,26 @@ export class EventService {
     if (data.refundTiers !== undefined) updateData.refundTiers = data.refundTiers ? (data.refundTiers as Prisma.InputJsonValue) : Prisma.DbNull;
 
     // Validate ticket types data integrity before processing
+    if (data.price !== undefined && data.price !== null) {
+      const price = typeof data.price === 'string' ? parseFloat(data.price) : Number(data.price);
+      if (effectiveIsFree && !isNaN(price) && price > 0) {
+        throw new ValidationError('Free events must have a price of 0');
+      }
+      if (!effectiveIsFree && !isNaN(price) && price <= 0) {
+        throw new ValidationError('Paid events must have a price greater than 0');
+      }
+    }
     if (data.ticketTypes !== undefined && Array.isArray(data.ticketTypes)) {
       for (const ticket of data.ticketTypes) {
+        const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
+        if (effectiveIsFree && !isNaN(price) && price > 0) {
+          throw new ValidationError('Free events cannot include paid ticket types');
+        }
+        // Note: free-tier tickets (price 0) are allowed in paid events.
+        // The "at least one paid ticket" check is done below after the loop.
+
         // Validate complementary tickets
         if (ticket.isComplementary === true) {
-          const price = typeof ticket.price === 'string' ? parseFloat(ticket.price) : Number(ticket.price);
           if (price !== 0 && !isNaN(price)) {
             throw new ValidationError('Complementary tickets must have price of 0');
           }
@@ -987,6 +1144,54 @@ export class EventService {
           if (fromDate >= untilDate) {
             throw new ValidationError('Early bird "available from" date must be before "available until" date');
           }
+        }
+      }
+
+      // For paid events, at least one non-complementary ticket must have price > 0
+      if (!effectiveIsFree) {
+        const hasPaidTicket = data.ticketTypes.some((ticket: Record<string, unknown>) => {
+          if (ticket.isComplementary === true) return false;
+          const p = typeof ticket.price === 'string' ? parseFloat(ticket.price as string) : Number(ticket.price);
+          return !isNaN(p) && p > 0;
+        });
+        if (!hasPaidTicket) {
+          throw new ValidationError('Paid events must have at least one ticket with a price greater than 0');
+        }
+      }
+    }
+
+    // Validate quantity floors against sold tickets
+    if (data.ticketTypes && Array.isArray(data.ticketTypes) && data.ticketTypes.length > 0) {
+      const activeRegistrations = await prisma.eventRegistration.findMany({
+        where: {
+          eventId,
+          status: { not: 'CANCELLED' },
+          paymentStatus: { not: 'FAILED' },
+        },
+        select: { ticketType: true, ticketLineItems: true },
+      });
+
+      // Count sold tickets per type name (supports both line-items and legacy ticketType)
+      const soldByType = new Map<string, number>();
+      for (const reg of activeRegistrations) {
+        const lineItems = reg.ticketLineItems as Array<{ ticketType: string; quantity?: number }> | null;
+        if (lineItems && lineItems.length > 0) {
+          for (const item of lineItems) {
+            soldByType.set(item.ticketType, (soldByType.get(item.ticketType) || 0) + (item.quantity || 1));
+          }
+        } else if (reg.ticketType) {
+          soldByType.set(reg.ticketType, (soldByType.get(reg.ticketType) || 0) + 1);
+        }
+      }
+
+      for (const ticket of data.ticketTypes) {
+        const name = ticket.name as string;
+        const newQty = ticket.quantity !== undefined && ticket.quantity !== null ? Number(ticket.quantity) : null;
+        const sold = soldByType.get(name) || 0;
+        if (sold > 0 && newQty !== null && newQty < sold) {
+          throw new ValidationError(
+            `Cannot set quantity of "${name}" below ${sold} — that many tickets have already been sold.`,
+          );
         }
       }
     }
@@ -1200,7 +1405,7 @@ export class EventService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to delete this event');
       }
@@ -1273,15 +1478,19 @@ export class EventService {
     ipAddress?: string,
     userAgent?: string,
   ) {
+    // Resolve slug or UUID to actual event
+    const isUuid = isValidUUID(eventId);
+
     // Get event
     const event = await prisma.event.findFirst({
       where: {
-        id: eventId,
+        ...(isUuid ? { id: eventId } : { slug: eventId }),
         deletedAt: null,
       },
       select: {
         id: true,
         title: true,
+        organizerId: true,
         status: true,
         isFree: true,
         price: true,
@@ -1296,6 +1505,10 @@ export class EventService {
 
     if (!event) {
       throw new NotFoundError('Event not found');
+    }
+
+    if (event.organizerId === attendeeId) {
+      throw new ValidationError('Organizers cannot register for their own events');
     }
 
     // Check if event is approved
@@ -1321,10 +1534,35 @@ export class EventService {
           attendeeId,
         },
       },
+      include: {
+        ticketLineItems: {
+          select: {
+            quantity: true,
+          },
+        },
+      },
     });
 
+    const isPendingRetryRegistration = Boolean(
+      existingRegistration && this.isRetryablePendingRegistration(existingRegistration),
+    );
+    const existingReservedQuantity = isPendingRetryRegistration
+      ? (
+        existingRegistration!.ticketLineItems.length > 0
+          ? existingRegistration!.ticketLineItems.reduce((sum, item) => sum + item.quantity, 0)
+          : (existingRegistration!.quantity || 0)
+      )
+      : 0;
+
     if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
-      throw new ConflictError('You are already registered for this event');
+      if (isPendingRetryRegistration) {
+        logger.info(
+          `[registerForEvent] Updating pending registration ${existingRegistration.id} for attendee ${attendeeId} on event ${eventId}`,
+        );
+      }
+      if (!isPendingRetryRegistration) {
+        throw new ConflictError('You are already registered for this event');
+      }
     }
 
     // Calculate requested ticket quantity for purchase limit validation
@@ -1339,6 +1577,9 @@ export class EventService {
         registration: {
           eventId,
           attendeeId,
+          ...(isPendingRetryRegistration && existingRegistration
+            ? { id: { not: existingRegistration.id } }
+            : {}),
           status: {
             in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
           },
@@ -1354,6 +1595,9 @@ export class EventService {
       where: {
         eventId,
         attendeeId,
+        ...(isPendingRetryRegistration && existingRegistration
+          ? { id: { not: existingRegistration.id } }
+          : {}),
         status: {
           in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
         },
@@ -1470,10 +1714,14 @@ export class EventService {
         // Check ticket quantity limit
         if (ticketConfig.quantity !== null && ticketConfig.quantity !== undefined) {
           // Count existing registrations for this ticket type
-          const existingTickets = await prisma.ticketLineItem.count({
+          const existingTicketsAggregate = await prisma.ticketLineItem.aggregate({
+            _sum: { quantity: true },
             where: {
               registration: {
                 eventId,
+                ...(isPendingRetryRegistration && existingRegistration
+                  ? { id: { not: existingRegistration.id } }
+                  : {}),
                 status: {
                   in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
                 },
@@ -1481,6 +1729,7 @@ export class EventService {
               ticketType: selection.ticketType,
             },
           });
+          const existingTickets = existingTicketsAggregate._sum.quantity || 0;
 
           if (existingTickets + selection.quantity > ticketConfig.quantity) {
             throw new ValidationError(
@@ -1584,6 +1833,9 @@ export class EventService {
           where: {
             registration: {
               eventId,
+              ...(isPendingRetryRegistration && existingRegistration
+                ? { id: { not: existingRegistration.id } }
+                : {}),
               status: {
                 in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
               },
@@ -1598,6 +1850,9 @@ export class EventService {
         const legacyRegistrations = await tx.eventRegistration.count({
           where: {
             eventId,
+            ...(isPendingRetryRegistration && existingRegistration
+              ? { id: { not: existingRegistration.id } }
+              : {}),
             status: {
               in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
             },
@@ -1619,87 +1874,144 @@ export class EventService {
         }
       }
 
-      // Create registration atomically within the transaction
-      const newRegistration = await tx.eventRegistration.create({
-        data: {
-          eventId,
-          attendeeId,
-          ticketType: legacyTicketType, // Backward compatibility
-          quantity: legacyQuantity, // Backward compatibility
-          // Store as Decimal(10,2)
-          totalAmount: finalAmount,
-          registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
-          backupCode,
-          status: registrationStatus,
-          paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
-          invitationId: data.invitationId || null,
-          // Fraud detection fields (captured at registration time)
-          ipAddress: ipAddress || null,
-          userAgent: userAgent || null,
-          // Create ticket line items for multiple ticket types
-          ticketLineItems: ticketLineItems.length > 0 ? {
+      const registrationPayload = {
+        ticketType: legacyTicketType, // Backward compatibility
+        quantity: legacyQuantity, // Backward compatibility
+        // Store as Decimal(10,2)
+        totalAmount: finalAmount,
+        registrationData: data.registrationData ? (data.registrationData as Prisma.InputJsonValue) : undefined,
+        backupCode,
+        status: registrationStatus,
+        paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
+        invitationId: data.invitationId || null,
+        // Fraud detection fields (captured at registration time)
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
+        // Replace ticket line items for multiple ticket types
+        ticketLineItems: {
+          deleteMany: {},
+          ...(ticketLineItems.length > 0 ? {
             create: ticketLineItems.map(item => ({
               ticketType: item.ticketType,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               totalPrice: item.totalPrice,
             })),
-          } : undefined,
+          } : {}),
         },
-        include: {
-          ticketLineItems: true, // Include ticket line items for multiple ticket types
-          event: {
-            select: {
-              id: true,
-              title: true,
-              description: true,
-              startDate: true,
-              endDate: true,
-              startTime: true,
-              endTime: true,
-              venue: true,
-              location: true,
-              address: true,
-              isOnline: true,
-              onlineLink: true,
-              image: true,
-              currency: true,
-              organizer: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  organizationName: true,
-                  email: true,
+      };
+
+      // Create or update registration atomically within the transaction
+      const newRegistration = isPendingRetryRegistration && existingRegistration
+        ? await tx.eventRegistration.update({
+          where: { id: existingRegistration.id },
+          data: registrationPayload,
+          include: {
+            ticketLineItems: true, // Include ticket line items for multiple ticket types
+            event: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                startTime: true,
+                endTime: true,
+                venue: true,
+                location: true,
+                address: true,
+                isOnline: true,
+                onlineLink: true,
+                image: true,
+                currency: true,
+                organizer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    organizationName: true,
+                    email: true,
+                  },
                 },
               },
             },
-          },
-          attendee: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              companyAffiliation: true,
+            attendee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                companyAffiliation: true,
+              },
             },
           },
-        },
-      });
-
-      // Update available slots atomically within the same transaction
-      if (eventData.capacity !== null && totalQuantity > 0) {
-        const currentSlots = eventData.availableSlots ?? eventData.capacity;
-        const newAvailableSlots = Math.max(0, currentSlots - totalQuantity);
-
-        await tx.event.update({
-          where: { id: eventId },
+        })
+        : await tx.eventRegistration.create({
           data: {
-            availableSlots: newAvailableSlots,
+            eventId,
+            attendeeId,
+            ...registrationPayload,
+          },
+          include: {
+            ticketLineItems: true, // Include ticket line items for multiple ticket types
+            event: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+                startDate: true,
+                endDate: true,
+                startTime: true,
+                endTime: true,
+                venue: true,
+                location: true,
+                address: true,
+                isOnline: true,
+                onlineLink: true,
+                image: true,
+                currency: true,
+                organizer: {
+                  select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    organizationName: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+            attendee: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                companyAffiliation: true,
+              },
+            },
           },
         });
 
-        logger.debug(`[registerForEvent] Updated availableSlots from ${currentSlots} to ${newAvailableSlots} for event ${eventId}`);
+      // Update available slots atomically within the same transaction
+      if (eventData.capacity !== null) {
+        const currentSlots = eventData.availableSlots ?? eventData.capacity;
+        const slotDelta = isPendingRetryRegistration
+          ? (totalQuantity - existingReservedQuantity)
+          : totalQuantity;
+
+        if (slotDelta !== 0) {
+          const newAvailableSlots = Math.max(0, Math.min(eventData.capacity, currentSlots - slotDelta));
+
+          await tx.event.update({
+            where: { id: eventId },
+            data: {
+              availableSlots: newAvailableSlots,
+            },
+          });
+
+          logger.debug(`[registerForEvent] Updated availableSlots from ${currentSlots} to ${newAvailableSlots} for event ${eventId} (delta: ${slotDelta})`);
+        }
       }
 
       return newRegistration;
@@ -1776,10 +2088,7 @@ export class EventService {
         attendeeId,
         eventId,
         {
-          operationalConsent: data.consent?.operationalConsent ?? true, // Default: true (required)
           marketingConsent: data.consent?.marketingConsent ?? false,
-          demographicsConsent: data.consent?.demographicsConsent ?? false,
-          analyticsConsent: data.consent?.analyticsConsent ?? false,
         },
       );
       logger.debug(`[registerForEvent] Consent created for registration ${registration.id}`);
@@ -1998,32 +2307,43 @@ export class EventService {
           ticketLineItems = undefined;
         }
 
-        logger.debug(`[registerForEvent] Authenticated user - calling TicketService.sendTicketEmail for registration ${registration.id}`);
-        // Send email asynchronously (non-blocking) - user gets immediate response
-        TicketService.sendTicketEmail({
-          id: registration.id,
+        // Email 1: Immediate confirmation — fast, no QR/PDF, sent fire-and-forget
+        // Email 1: Confirmation email — pure SMTP, no DB writes, safe to fire-and-forget
+        TicketService.sendRegistrationConfirmationEmail({
+          registrationId: registration.id,
+          eventTitle: registration.event.title,
+          eventStartDate: registration.event.startDate,
+          eventStartTime: registration.event.startTime,
+          eventLocation: registration.event.location,
+          eventVenue: registration.event.venue,
+          eventImage: registration.event.image,
+          attendeeEmail: registration.attendee.email,
+          attendeeFirstName: registration.attendee.firstName || '',
+          attendeeLastName: registration.attendee.lastName,
           ticketType: registration.ticketType,
           quantity: registration.quantity,
-          totalAmount: registration.totalAmount,
-          createdAt: registration.createdAt,
-          backupCode: registration.backupCode,
-          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-          ticketLineItems,
-          event: registration.event,
-          attendee: registration.attendee,
-        }).catch((error) => {
-          // Log email error but don't fail registration - email can be resent later
-          logger.error('[registerForEvent] Authenticated user - failed to send ticket email (async):', {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-            registrationId: registration.id,
-            eventId,
-            attendeeEmail: registration.attendee.email,
-          });
-          // Don't fail registration if email fails - status already tracked in database
+          accountInvitationToken: null, // Authenticated users already have accounts
+        }).catch((err) => {
+          logger.error(`[registerForEvent] Confirmation email failed for registration ${registration.id}:`, err);
         });
-        // Email status will be updated in database by sendTicketEmail
-        logger.debug(`[registerForEvent] Authenticated user - ticket email sending started (async) for registration ${registration.id}`);
+
+        // Email 2: Queue ticket delivery — tracked because addJob writes to DB (ticketPdfStatus)
+        backgroundTasks.run(
+          TicketPdfQueueService.addJob({
+            registrationId: registration.id,
+            eventId: registration.event.id,
+            ticketNumber: registration.backupCode || registration.id,
+            attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim(),
+            attendeeEmail: registration.attendee.email,
+            eventTitle: registration.event.title,
+            eventDate: new Date(registration.event.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+            eventLocation: registration.event.venue ? `${registration.event.venue}, ${registration.event.location}` : registration.event.location,
+            qrCodeDataUrl: undefined,
+            priority: 2,
+          }),
+          'registerForEvent:ticket-pdf-queue',
+        );
+        logger.debug(`[registerForEvent] Authenticated user - confirmation email sent, ticket delivery queued for registration ${registration.id}`);
 
         // Send in-app notification (separate try-catch to ensure it's sent even if email fails)
         try {
@@ -2059,7 +2379,9 @@ export class EventService {
 
     logger.info(`Registration created: ${registration.id} for event: ${eventId} by attendee: ${attendeeId}`);
 
-    return registration;
+    return isPendingRetryRegistration
+      ? this.markRegistrationAsResumed(registration)
+      : registration;
   }
 
   /**
@@ -2073,7 +2395,7 @@ export class EventService {
     userAgent?: string,
   ) {
     // Verify admin
-    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN_STAFF) {
+    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only admins can approve events');
     }
 
@@ -2087,6 +2409,8 @@ export class EventService {
         id: true,
         title: true,
         status: true,
+        isFree: true,
+        organizerId: true,
       },
     });
 
@@ -2102,9 +2426,24 @@ export class EventService {
       throw new ValidationError('Cannot approve a rejected event. Organizer must resubmit.');
     }
 
-    // Approve event
-    const approvedEvent = await prisma.event.update({
-      where: { id: eventId },
+    // For paid events, verify organizer has completed KYC
+    if (!event.isFree) {
+      const organizer = await prisma.user.findUnique({
+        where: { id: event.organizerId },
+        select: { kycStatus: true, organizationName: true },
+      });
+
+      if (!organizer || organizer.kycStatus !== 'APPROVED') {
+        throw new ValidationError(
+          `Cannot approve a paid event: the organizer${organizer?.organizationName ? ` (${organizer.organizationName})` : ''} has not completed KYC verification. Please notify the organizer to complete their KYC before approving this event.`,
+        );
+      }
+    }
+
+    // Approve event atomically — use updateMany with status condition to prevent race conditions
+    // (two admins approving simultaneously). If no rows are updated, another admin already changed the status.
+    const updateResult = await prisma.event.updateMany({
+      where: { id: eventId, status: EventStatus.PENDING },
       data: {
         status: EventStatus.APPROVED,
         approvedBy: adminId,
@@ -2114,6 +2453,15 @@ export class EventService {
         rejectedAt: null,
         rejectionReason: null,
       },
+    });
+
+    if (updateResult.count === 0) {
+      throw new ValidationError('Event status has already been changed by another admin');
+    }
+
+    // Fetch the updated event with organizer data for notifications
+    const approvedEvent = await prisma.event.findUniqueOrThrow({
+      where: { id: eventId },
       include: {
         organizer: {
           select: {
@@ -2123,21 +2471,42 @@ export class EventService {
             email: true,
             organizationName: true,
             status: true,
+            role: true, // Include role to check for ATTENDEE -> ORGANIZER upgrade
           },
         },
       },
     });
 
-    // Auto-activate organizer account if still pending approval
+    // Auto-activate organizer account if still pending approval.
+    // Also upgrade role from ATTENDEE to ORGANIZER whenever an attendee's event is approved,
+    // regardless of whether their account is PENDING or already ACTIVE.
+    const userUpdateData: { status?: UserStatus; role?: UserRole } = {};
+
     if (approvedEvent.organizer.status === UserStatus.PENDING_APPROVAL) {
+      userUpdateData.status = UserStatus.ACTIVE;
+    }
+
+    if (approvedEvent.organizer.role === UserRole.ATTENDEE) {
+      userUpdateData.role = UserRole.ORGANIZER;
+      logger.info(
+        `Upgrading user ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) from ATTENDEE to ORGANIZER on event approval`,
+      );
+    }
+
+    if (Object.keys(userUpdateData).length > 0) {
       await prisma.user.update({
         where: { id: approvedEvent.organizerId },
-        data: { status: UserStatus.ACTIVE },
+        data: userUpdateData,
       });
       logger.info(
-        `Auto-activated organizer account ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) on event approval`,
+        `Updated organizer account ${approvedEvent.organizerId} (${approvedEvent.organizer.email}) on event approval`,
       );
+    }
 
+    if (
+      approvedEvent.organizer.status === UserStatus.PENDING_APPROVAL ||
+      approvedEvent.organizer.role === UserRole.ATTENDEE
+    ) {
       // Emit the same socket event that the direct organizer-approval admin action emits.
       // Without this, the client's useOrganizerApproval hook (socket + polling path) never
       // detects the status transition, and the "You're Approved!" modal never shows.
@@ -2150,6 +2519,14 @@ export class EventService {
           message: 'Your organizer account has been approved!',
         },
       );
+
+      // Send approval email — pure SMTP, no DB writes, safe to fire-and-forget
+      emailService.sendOrganizerApprovedEmail(
+        approvedEvent.organizer.email,
+        approvedEvent.organizer.firstName || '',
+      ).catch((err) => {
+        logger.error('Failed to send organizer approved email:', err);
+      });
     }
 
     // Audit log
@@ -2201,7 +2578,7 @@ export class EventService {
     userAgent?: string,
   ) {
     // Verify admin
-    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN_STAFF) {
+    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only admins can reject events');
     }
 
@@ -2230,15 +2607,24 @@ export class EventService {
       throw new ValidationError('Cannot reject an approved event. Use recall instead.');
     }
 
-    // Reject event
-    const rejectedEvent = await prisma.event.update({
-      where: { id: eventId },
+    // Reject event atomically — use updateMany with status condition to prevent race conditions
+    const updateResult = await prisma.event.updateMany({
+      where: { id: eventId, status: EventStatus.PENDING },
       data: {
         status: EventStatus.REJECTED,
         rejectedBy: adminId,
         rejectedAt: new Date(),
         rejectionReason: rejectionReason.trim(),
       },
+    });
+
+    if (updateResult.count === 0) {
+      throw new ValidationError('Event status has already been changed by another admin');
+    }
+
+    // Fetch the updated event with organizer data for notifications
+    const rejectedEvent = await prisma.event.findUniqueOrThrow({
+      where: { id: eventId },
       include: {
         organizer: {
           select: {
@@ -2268,7 +2654,17 @@ export class EventService {
 
     logger.info(`Event rejected: ${eventId} by admin: ${adminId}`);
 
-    // Send notification to organizer
+    // Send rejection email — pure SMTP, no DB writes, safe to fire-and-forget
+    emailService.sendEventRejectedEmail(
+      rejectedEvent.organizer.email,
+      rejectedEvent.organizer.firstName || rejectedEvent.organizer.organizationName || '',
+      rejectedEvent.title,
+      rejectionReason,
+    ).catch((err) => {
+      logger.error('Failed to send event rejection email:', err);
+    });
+
+    // Send in-app notification to organizer
     try {
       await NotificationService.sendNotification({
         userId: rejectedEvent.organizerId,
@@ -2322,7 +2718,7 @@ export class EventService {
     }
 
     // Verify organizer owns the event (unless admin)
-    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+    if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
       if (event.organizerId !== organizerId) {
         throw new AuthorizationError('You do not have permission to cancel this event');
       }
@@ -2520,7 +2916,7 @@ export class EventService {
     userAgent?: string,
   ) {
     // Verify admin
-    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN_STAFF) {
+    if (adminRole !== UserRole.SUPERADMIN && adminRole !== UserRole.ADMIN) {
       throw new AuthorizationError('Only admins can recall events');
     }
 
@@ -2549,8 +2945,27 @@ export class EventService {
     }
 
     // Check if event is approved
+    if (event.status === EventStatus.CANCELLED) {
+      throw new ValidationError('Event is already cancelled');
+    }
     if (event.status !== EventStatus.APPROVED) {
       throw new ValidationError('Only approved events can be recalled');
+    }
+
+    // Prevent recalling/cancelling events that have already started
+    if (action === 'CANCELLED') {
+      const eventWithDate = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: { startDate: true },
+      });
+      if (eventWithDate?.startDate) {
+        const startDate = eventWithDate.startDate instanceof Date
+          ? eventWithDate.startDate
+          : new Date(eventWithDate.startDate);
+        if (startDate < new Date()) {
+          throw new ValidationError('Cannot cancel an event that has already started. Use the completion flow instead.');
+        }
+      }
     }
 
     // Prepare update data
@@ -2562,9 +2977,17 @@ export class EventService {
       rejectedBy?: null;
       rejectedAt?: null;
       rejectionReason?: null;
+      recalledBy: string;
+      recalledAt: Date;
+      recallReason: string;
+      recallAction: string;
     } = {
       status: action === 'PENDING' ? EventStatus.PENDING : EventStatus.CANCELLED,
       updatedBy: adminId,
+      recalledBy: adminId,
+      recalledAt: new Date(),
+      recallReason: reason || 'No reason provided',
+      recallAction: action,
     };
 
     // If setting to PENDING, clear approval fields
@@ -2861,17 +3284,17 @@ export class EventService {
     }
 
     // Verify organizer owns the event (unless admin)
-    const isAdmin = organizerRole === UserRole.SUPERADMIN || organizerRole === UserRole.ADMIN_STAFF;
+    const isAdmin = organizerRole === UserRole.SUPERADMIN || organizerRole === UserRole.ADMIN;
     if (!isAdmin && event.organizerId !== organizerId) {
       throw new AuthorizationError('You do not have permission to view registrations for this event');
     }
 
-    // Get registrations
+    // Get registrations with full payment + form data
     const registrations = await prisma.eventRegistration.findMany({
       where: {
         eventId,
         status: {
-          in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
+          in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING, RegistrationStatus.CANCELLED],
         },
       },
       include: {
@@ -2884,20 +3307,48 @@ export class EventService {
             phoneNumber: true,
           },
         },
+        ticketLineItems: {
+          select: {
+            ticketType: true,
+            quantity: true,
+            unitPrice: true,
+            totalPrice: true,
+          },
+        },
+        paymentTransaction: {
+          select: {
+            id: true,
+            transactionNumber: true,
+            gatewayReference: true,
+            gateway: true,
+            amount: true,
+            currency: true,
+            paymentStatus: true,
+            paymentDate: true,
+          },
+        },
       },
+      // registrationData is a direct field on the model, auto-included
       orderBy: { createdAt: 'desc' },
     });
 
-    // Use new tier-based filtering system (admins always see everything)
+    // Use data access filtering (admins always see everything)
     if (!isAdmin) {
       // Import DataAccessService dynamically to avoid circular dependencies
       const { DataAccessService } = await import('./data-access.service.js');
 
-      // Filter data based on subscription tier and consent
+      // Filter data based on event's organizerDataAccess level (if explicitly set)
+      // or fall back to subscription tier filtering
+      const dataAccessOverride = event.organizerDataAccess !== 'RESTRICTED'
+        ? event.organizerDataAccess
+        : undefined;
       return await DataAccessService.filterAttendeeData(
         registrations,
         organizerId,
         eventId,
+        undefined,
+        undefined,
+        dataAccessOverride,
       );
     }
 
@@ -2914,7 +3365,7 @@ export class EventService {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    // Get registration
+    // Get registration with ticket line items for accurate quantity calculation
     const registration = await prisma.eventRegistration.findUnique({
       where: { id: registrationId },
       include: {
@@ -2925,6 +3376,11 @@ export class EventService {
             startDate: true,
             capacity: true,
             availableSlots: true,
+          },
+        },
+        ticketLineItems: {
+          select: {
+            quantity: true,
           },
         },
       },
@@ -2943,26 +3399,37 @@ export class EventService {
       throw new ValidationError('Registration is already cancelled');
     }
 
-    // Cancel registration
-    await prisma.eventRegistration.update({
-      where: { id: registrationId },
-      data: {
-        status: RegistrationStatus.CANCELLED,
-        cancelledAt: new Date(),
-        cancelledBy: attendeeId,
-      },
-    });
+    // Calculate actual ticket quantity from line items (or fall back to legacy quantity)
+    const totalTickets = registration.ticketLineItems.length > 0
+      ? registration.ticketLineItems.reduce((sum, item) => sum + item.quantity, 0)
+      : registration.quantity;
 
-    // Update available slots if capacity exists
-    if (registration.event.capacity !== null) {
-      const newAvailableSlots = (registration.event.availableSlots || registration.event.capacity) + registration.quantity;
-      await prisma.event.update({
-        where: { id: registration.event.id },
+    // Cancel registration and update available slots atomically within a transaction
+    await prisma.$transaction(async (tx) => {
+      await tx.eventRegistration.update({
+        where: { id: registrationId },
         data: {
-          availableSlots: Math.min(registration.event.capacity, newAvailableSlots),
+          status: RegistrationStatus.CANCELLED,
+          cancelledAt: new Date(),
+          cancelledBy: attendeeId,
         },
       });
-    }
+
+      // Update available slots if capacity exists
+      if (registration.event.capacity !== null) {
+        const currentSlots = registration.event.availableSlots ?? registration.event.capacity;
+        const newAvailableSlots = Math.min(
+          registration.event.capacity,
+          currentSlots + totalTickets,
+        );
+        await tx.event.update({
+          where: { id: registration.event.id },
+          data: {
+            availableSlots: newAvailableSlots,
+          },
+        });
+      }
+    });
 
     // Audit log
     await createAuditLog({
@@ -2991,8 +3458,11 @@ export class EventService {
       limit?: number;
     },
   ) {
-    const limit = filters?.limit || 12; // Default 12 for infinite scroll
-    const page = filters?.page || 1;
+    const rawLimit = filters?.limit || 12; // Default 12 for infinite scroll
+    const rawPage = filters?.page || 1;
+    // Bounds checking to prevent abuse (NaN, negative, or excessively large values)
+    const limit = Math.min(Math.max(Number.isFinite(rawLimit) ? rawLimit : 12, 1), 100);
+    const page = Math.max(Number.isFinite(rawPage) ? rawPage : 1, 1);
     const skip = (page - 1) * limit;
 
     const [registrations, total] = await Promise.all([
@@ -3077,6 +3547,7 @@ export class EventService {
 
       return {
         id: event.id,
+        slug: event.slug || null,
         title: event.title,
         date: dateString,
         location: event.location,
@@ -3091,6 +3562,17 @@ export class EventService {
         registrationId: registration.id,
         ticketType: registration.ticketType,
         backupCode: registration.backupCode,
+        ticketEmailStatus: registration.ticketEmailStatus,
+        ticketEmailSentAt: registration.ticketEmailSentAt ? registration.ticketEmailSentAt.toISOString() : null,
+        ticketEmailError: registration.ticketEmailError,
+        // Payment data for attendee visibility
+        totalAmount: registration.totalAmount !== null && registration.totalAmount !== undefined
+          ? Number(registration.totalAmount)
+          : 0,
+        paymentStatus: registration.paymentStatus || null,
+        paymentMethod: registration.paymentMethod || null,
+        isFree: event.isFree,
+        currency: event.currency || 'KES',
       };
     });
 
@@ -3120,7 +3602,7 @@ export class EventService {
 
     // Get and validate invitation
     const invitation = await InvitationService.getInvitationByToken(token);
-    const eventId = invitation.event.id;
+    let eventId = invitation.event.id;
 
     // Extract email from registration data (required field)
     const email = registrationData.email as string;
@@ -3176,6 +3658,24 @@ export class EventService {
     });
 
     if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
+      if (this.isRetryablePendingRegistration(existingRegistration)) {
+        logger.info(
+          `[registerViaInvitation] Reusing pending registration ${existingRegistration.id} for attendee ${user.id} on event ${eventId}`,
+        );
+
+        return {
+          registration: this.markRegistrationAsResumed(existingRegistration),
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isNewUser: !user.isEmailVerified,
+          },
+          resumedPendingPayment: true,
+        };
+      }
+
       throw new ConflictError('You are already registered for this event');
     }
 
@@ -3202,6 +3702,8 @@ export class EventService {
     if (!event) {
       throw new NotFoundError('Event not found');
     }
+    // Ensure all subsequent queries use the real UUID, not a slug
+    eventId = event.id;
 
     // Validate event status
     if (event.status !== EventStatus.APPROVED) {
@@ -3376,10 +3878,13 @@ export class EventService {
       throw new ValidationError('Email, first name, and last name are required');
     }
 
+    // Resolve slug or UUID to actual event
+    const isUuid = isValidUUID(eventId);
+
     // Get event
     const event = await prisma.event.findFirst({
       where: {
-        id: eventId,
+        ...(isUuid ? { id: eventId } : { slug: eventId }),
         deletedAt: null,
       },
       select: {
@@ -3409,6 +3914,8 @@ export class EventService {
     if (!event) {
       throw new NotFoundError('Event not found');
     }
+    // Ensure all subsequent queries use the real UUID, not a slug
+    eventId = event.id;
 
     // Check if event is approved
     if (event.status !== EventStatus.APPROVED) {
@@ -3501,6 +4008,10 @@ export class EventService {
         throw new ConflictError('This account has been permanently suspended. Please contact support for assistance.');
       }
 
+      if (user.status === UserStatus.DEACTIVATED) {
+        throw new ConflictError('This account has been deactivated. Please contact support to appeal or wait for the deactivation period to end.');
+      }
+
       // Update existing user profile data if new information is provided
       const updateData: {
         firstName?: string;
@@ -3546,13 +4057,14 @@ export class EventService {
     if (finalIsNewUser || !finalUserHasPassword) {
       accountInvitationToken = crypto.randomBytes(32).toString('hex');
       const accountInvitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      const accountInvitationTokenHash = hashToken(accountInvitationToken);
 
-      // Store account invitation token in EmailVerification table
+      // Store hashed account invitation token in EmailVerification table
       await prisma.emailVerification.create({
         data: {
           userId: user.id,
           email: user.email,
-          token: accountInvitationToken,
+          token: accountInvitationTokenHash,
           expiresAt: accountInvitationExpiresAt,
           verified: false,
         },
@@ -3568,10 +4080,35 @@ export class EventService {
           attendeeId: user.id,
         },
       },
+      include: {
+        ticketLineItems: {
+          select: {
+            quantity: true,
+          },
+        },
+      },
     });
 
+    const isPendingRetryRegistration = Boolean(
+      existingRegistration && this.isRetryablePendingRegistration(existingRegistration),
+    );
+    const isCancelledReRegistration = existingRegistration?.status === RegistrationStatus.CANCELLED;
+    const existingReservedQuantity = isPendingRetryRegistration
+      ? (
+        existingRegistration!.ticketLineItems.length > 0
+          ? existingRegistration!.ticketLineItems.reduce((sum, item) => sum + item.quantity, 0)
+          : (existingRegistration!.quantity || 0)
+      )
+      : 0;
+
     if (existingRegistration && existingRegistration.status !== RegistrationStatus.CANCELLED) {
-      throw new ConflictError('You are already registered for this event');
+      if (!isPendingRetryRegistration) {
+        throw new ConflictError('You are already registered for this event');
+      }
+
+      logger.info(
+        `[registerAsGuest] Updating pending registration ${existingRegistration.id} for attendee ${user.id} on event ${eventId}`,
+      );
     }
 
     // Process tickets: Support both new tickets array and legacy ticketType/quantity
@@ -3629,6 +4166,13 @@ export class EventService {
           throw new ValidationError(`Invalid ticket type: ${selection.ticketType}`);
         }
 
+        // Check if ticket requires invitation (complementary/invitation-gated tickets)
+        if (ticketConfig.isComplementary || ticketConfig.requiresInvitation) {
+          throw new ValidationError(
+            `Ticket type "${selection.ticketType}" requires an invitation. Please use the invitation link provided.`,
+          );
+        }
+
         // Check early bird availability
         const { isTicketTypeAvailable } = await import('../utils/ticket-helpers.js');
         const availability = isTicketTypeAvailable(ticketConfig);
@@ -3641,10 +4185,14 @@ export class EventService {
         // Check ticket quantity limit
         if (ticketConfig.quantity !== null && ticketConfig.quantity !== undefined) {
           // Count existing tickets for this ticket type
-          const existingTickets = await prisma.ticketLineItem.count({
+          const existingTicketsAggregate = await prisma.ticketLineItem.aggregate({
+            _sum: { quantity: true },
             where: {
               registration: {
                 eventId,
+                ...(isPendingRetryRegistration && existingRegistration
+                  ? { id: { not: existingRegistration.id } }
+                  : {}),
                 status: {
                   in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
                 },
@@ -3652,6 +4200,7 @@ export class EventService {
               ticketType: selection.ticketType,
             },
           });
+          const existingTickets = existingTicketsAggregate._sum.quantity || 0;
 
           if (existingTickets + selection.quantity > ticketConfig.quantity) {
             throw new ValidationError(
@@ -3693,7 +4242,8 @@ export class EventService {
 
     // Use transaction with Serializable isolation level to prevent capacity race condition
     // This ensures atomic capacity check and registration creation
-    const isReRegistration = existingRegistration && existingRegistration.status === RegistrationStatus.CANCELLED;
+    const shouldUpdateExistingRegistration = Boolean(existingRegistration) &&
+      (isCancelledReRegistration || isPendingRetryRegistration);
     const registration = await prisma.$transaction(async (tx) => {
       // Fetch event within transaction (will be serialized with other concurrent transactions)
       const lockedEvent = await tx.event.findUnique({
@@ -3716,6 +4266,9 @@ export class EventService {
           where: {
             registration: {
               eventId,
+              ...(isPendingRetryRegistration && existingRegistration
+                ? { id: { not: existingRegistration.id } }
+                : {}),
               status: {
                 in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
               },
@@ -3730,6 +4283,9 @@ export class EventService {
         const legacyRegistrations = await tx.eventRegistration.count({
           where: {
             eventId,
+            ...(isPendingRetryRegistration && existingRegistration
+              ? { id: { not: existingRegistration.id } }
+              : {}),
             status: {
               in: [RegistrationStatus.CONFIRMED, RegistrationStatus.PENDING],
             },
@@ -3741,8 +4297,9 @@ export class EventService {
 
         const existingTotalTickets = (existingTickets._sum.quantity || 0) + legacyRegistrations;
 
-        // For re-registrations, we don't need to check capacity (slot already reserved)
-        if (!isReRegistration && existingTotalTickets + totalQuantity > lockedEvent.capacity) {
+        // Check capacity: re-registrations still need to verify capacity hasn't been reduced
+        // (The cancelled registration's slot was already restored, so it's not counted in existingTotalTickets)
+        if (existingTotalTickets + totalQuantity > lockedEvent.capacity) {
           throw new ValidationError(
             `Event is sold out or insufficient capacity. Only ${lockedEvent.capacity - existingTotalTickets} tickets remaining.`,
           );
@@ -3754,7 +4311,7 @@ export class EventService {
       const legacyQuantity = totalQuantity || (guestData.quantity || 1);
 
       // Create or update registration
-      const reg = isReRegistration
+      const reg = shouldUpdateExistingRegistration
         ? await tx.eventRegistration.update({
           where: {
             eventId_attendeeId: {
@@ -3770,8 +4327,12 @@ export class EventService {
             backupCode,
             status: registrationStatus,
             paymentStatus: event.isFree ? 'COMPLETED' : 'PENDING',
-            cancelledAt: null, // Clear cancellation timestamp
-            cancelledBy: null, // Clear cancellation user
+            ...(isCancelledReRegistration
+              ? {
+                cancelledAt: null, // Clear cancellation timestamp
+                cancelledBy: null, // Clear cancellation user
+              }
+              : {}),
             // Delete old ticket line items and create new ones
             ticketLineItems: {
               deleteMany: {},
@@ -3885,25 +4446,35 @@ export class EventService {
           },
         });
 
-      // Update available slots if capacity exists (only for new registrations)
-      if (lockedEvent.capacity !== null && !isReRegistration) {
-        const newAvailableSlots = (lockedEvent.availableSlots || lockedEvent.capacity) - totalQuantity;
-        await tx.event.update({
-          where: { id: eventId },
-          data: {
-            availableSlots: Math.max(0, newAvailableSlots),
-          },
-        });
+      // Update available slots if capacity exists
+      if (lockedEvent.capacity !== null) {
+        const currentSlots = lockedEvent.availableSlots || lockedEvent.capacity;
+        const previousReservedQuantity = isPendingRetryRegistration ? existingReservedQuantity : 0;
+        const slotDelta = shouldUpdateExistingRegistration
+          ? (totalQuantity - previousReservedQuantity)
+          : totalQuantity;
+
+        if (slotDelta !== 0) {
+          const newAvailableSlots = Math.max(0, Math.min(lockedEvent.capacity, currentSlots - slotDelta));
+          await tx.event.update({
+            where: { id: eventId },
+            data: {
+              availableSlots: newAvailableSlots,
+            },
+          });
+        }
       }
 
       return reg;
     }, {
-      isolationLevel: 'Serializable', // Highest isolation level to prevent race conditions
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
       timeout: 10000, // 10 second timeout
     });
 
-    if (isReRegistration) {
+    if (isCancelledReRegistration) {
       logger.info(`Re-registration created: ${registration.id} for event: ${eventId} by user: ${user.id} (previously cancelled)`);
+    } else if (isPendingRetryRegistration) {
+      logger.info(`Pending registration updated: ${registration.id} for event: ${eventId} by user: ${user.id}`);
     }
 
     // Generate QR code immediately at registration time (like Eventbrite/vf-ticket)
@@ -3991,33 +4562,43 @@ export class EventService {
           ticketLineItems = undefined;
         }
 
-        // Send email asynchronously (non-blocking) - user gets immediate response
-        logger.debug(`[registerForEvent] Calling TicketService.sendTicketEmail for registration ${registration.id}`);
-        TicketService.sendTicketEmail({
-          id: registration.id,
+        // Email 1: Immediate confirmation — fast, no QR/PDF, sent fire-and-forget
+        // Email 1: Confirmation email — pure SMTP, no DB writes, safe to fire-and-forget
+        TicketService.sendRegistrationConfirmationEmail({
+          registrationId: registration.id,
+          eventTitle: registration.event.title,
+          eventStartDate: registration.event.startDate,
+          eventStartTime: registration.event.startTime,
+          eventLocation: registration.event.location,
+          eventVenue: registration.event.venue,
+          eventImage: registration.event.image,
+          attendeeEmail: registration.attendee.email,
+          attendeeFirstName: registration.attendee.firstName || '',
+          attendeeLastName: registration.attendee.lastName,
           ticketType: registration.ticketType,
           quantity: registration.quantity,
-          totalAmount: registration.totalAmount,
-          createdAt: registration.createdAt,
-          backupCode: registration.backupCode,
-          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-          ticketLineItems,
-          accountInvitationToken, // Consolidated: Send setup link in ticket email
-          event: registration.event,
-          attendee: registration.attendee,
-        }).catch((emailError) => {
-          // Log email error but don't fail registration - email can be resent later
-          logger.error(`[registerForEvent] Failed to send ticket email (async) to ${user.email} for event ${eventId}:`, {
-            error: emailError instanceof Error ? emailError.message : String(emailError),
-            stack: emailError instanceof Error ? emailError.stack : undefined,
-            registrationId: registration.id,
-            eventId,
-            userEmail: user.email,
-          });
-          // Registration still succeeds even if email fails - status already tracked in database
+          accountInvitationToken,
+        }).catch((err) => {
+          logger.error(`[registerAsGuest] Confirmation email failed for registration ${registration.id}:`, err);
         });
-        // Email status will be updated in database by sendTicketEmail
-        logger.debug(`[registerForEvent] Ticket email sending started (async) for registration ${registration.id}`);
+
+        // Email 2: Queue ticket delivery (QR + PDF) in background
+        backgroundTasks.run(
+          TicketPdfQueueService.addJob({
+            registrationId: registration.id,
+            eventId: registration.event.id,
+            ticketNumber: registration.backupCode || registration.id,
+            attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim(),
+            attendeeEmail: registration.attendee.email,
+            eventTitle: registration.event.title,
+            eventDate: new Date(registration.event.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+            eventLocation: registration.event.venue ? `${registration.event.venue}, ${registration.event.location}` : registration.event.location,
+            qrCodeDataUrl: undefined, // Worker will fetch stored QR from DB
+            priority: 2,
+          }),
+          'registerAsGuest:ticket-pdf-queue',
+        );
+        logger.debug(`[registerAsGuest] Confirmation email sent, ticket delivery queued for registration ${registration.id}`);
 
         // Send registration confirmed notification for free events
         try {
@@ -4116,33 +4697,65 @@ export class EventService {
 
     logger.info(`Guest registration created: ${registration.id} for event: ${eventId} by user: ${user.id}`);
 
-    // Generate access token for guest user so they can immediately view their ticket
-    const { generateAccessToken, generateRefreshToken, parseExpiresIn } = await import('../utils/jwt.js');
-    const { config } = await import('../config/index.js');
-
-    const tokenPayload = {
-      userId: user.id,
+    // Issue an access token so the guest can proceed to payment seamlessly
+    const tokens = await AuthService.generateTokens({
+      id: user.id,
       email: user.email,
       role: user.role,
-    };
-
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-    const expiresIn = parseExpiresIn(config.jwt.expiresIn);
+    });
 
     return {
-      registration,
+      registration: isPendingRetryRegistration
+        ? this.markRegistrationAsResumed(registration)
+        : registration,
       user: {
         id: user.id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         isNewUser: finalIsNewUser,
+        requiresPasswordSetup: !user.password,
       },
-      accessToken,
-      refreshToken,
-      expiresIn,
+      accessToken: tokens.accessToken,
+      ...(isPendingRetryRegistration ? { resumedPendingPayment: true } : {}),
     };
+  }
+
+  /**
+   * Generate a URL-friendly slug from an event title.
+   * Appends the first 8 chars of the event ID to guarantee uniqueness.
+   * e.g. "Mini Mornings at Unseen – March 3" + id → "mini-mornings-at-unseen-march-3-bc8cbfd6"
+   */
+  static async generateSlug(title: string, excludeId?: string): Promise<string> {
+    const base = title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '') // remove special chars (keep letters, digits, spaces, hyphens)
+      .trim()
+      .replace(/\s+/g, '-')         // spaces → hyphens
+      .replace(/-+/g, '-')          // collapse multiple hyphens
+      .replace(/^-|-$/g, '');       // trim leading/trailing hyphens
+
+    // Guard: ensure the slug can never be mistaken for a UUID.
+    // If the base happens to match UUID format (e.g. title is a hex string),
+    // prefix with "evt-" so the resolver always treats it as a slug.
+    let slug = isValidUUID(base) ? `evt-${base}` : base;
+    let counter = 1;
+    const maxAttempts = 100;
+    while (counter <= maxAttempts) {
+      const existing = await prisma.event.findFirst({
+        where: {
+          slug,
+          ...(excludeId ? { id: { not: excludeId } } : {}),
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!existing) return slug;
+      counter++;
+      slug = `${base}-${counter}`;
+    }
+    // Fallback: append random suffix to guarantee uniqueness
+    return `${base}-${crypto.randomUUID().slice(0, 8)}`;
   }
 
   /**
@@ -4161,6 +4774,23 @@ export class EventService {
     }
 
     return code;
+  }
+
+  /**
+   * Generate a unique registration code, checking database for collisions
+   */
+  static async generateUniqueRegistrationCode(): Promise<string> {
+    const maxAttempts = 10;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const code = this.generateRegistrationCode();
+      const existing = await prisma.event.findFirst({
+        where: { registrationCode: code },
+        select: { id: true },
+      });
+      if (!existing) return code;
+    }
+    // Extremely unlikely fallback — append timestamp fragment
+    return `${this.generateRegistrationCode()}${Date.now().toString(36).slice(-3).toUpperCase()}`;
   }
 
   /**
@@ -4188,7 +4818,7 @@ export class EventService {
     if (
       event.organizerId !== userId &&
       userRole !== UserRole.SUPERADMIN &&
-      userRole !== UserRole.ADMIN_STAFF
+      userRole !== UserRole.ADMIN
     ) {
       throw new AuthorizationError('Only event organizer or admin can generate registration codes');
     }
@@ -4256,7 +4886,7 @@ export class EventService {
       }
 
       // Verify organizer owns the event (unless admin)
-      if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN_STAFF) {
+      if (organizerRole !== UserRole.SUPERADMIN && organizerRole !== UserRole.ADMIN) {
         if (originalEvent.organizerId !== organizerId) {
           throw new AuthorizationError('You do not have permission to duplicate this event');
         }

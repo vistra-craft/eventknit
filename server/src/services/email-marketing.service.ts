@@ -278,7 +278,7 @@ export class EmailMarketingService {
       await prisma.emailCampaign.update({
         where: { id: campaignId },
         data: { status: 'failed' },
-      }).catch(() => {});
+      }).catch((err) => { logger.error('Failed to update campaign status to failed', { campaignId, error: err }); });
       throw error;
     }
   }

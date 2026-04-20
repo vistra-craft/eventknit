@@ -32,8 +32,8 @@ export class StaffPerformanceController {
       }
 
       // Check permissions
-      const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN_STAFF;
-      const isOrganizer = req.user.role === UserRole.ORGANIZER || req.user.role === UserRole.ORGANIZER_STAFF || req.user.role === UserRole.ORGANIZER_TELLER;
+      const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN;
+      const isOrganizer = req.user.role === UserRole.ORGANIZER || req.user.role === UserRole.ORGANIZER_ADMIN || req.user.role === UserRole.ORGANIZER_TELLER;
       const isSelf = req.user.id === staffId;
 
       // Staff can only view their own performance
@@ -84,12 +84,12 @@ export class StaffPerformanceController {
       }
 
       // Determine staff type based on user role
-      let staffType: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+      let staffType: 'ADMIN' | 'ORGANIZER_ADMIN';
       
-      if (req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN_STAFF) {
-        staffType = 'ADMIN_STAFF';
-      } else if (req.user.role === UserRole.ORGANIZER || req.user.role === UserRole.ORGANIZER_STAFF || req.user.role === UserRole.ORGANIZER_TELLER) {
-        staffType = 'ORGANIZER_STAFF';
+      if (req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN) {
+        staffType = 'ADMIN';
+      } else if (req.user.role === UserRole.ORGANIZER || req.user.role === UserRole.ORGANIZER_ADMIN || req.user.role === UserRole.ORGANIZER_TELLER) {
+        staffType = 'ORGANIZER_ADMIN';
       } else {
         throw new AuthorizationError('Insufficient permissions to view team performance');
       }
@@ -134,12 +134,12 @@ export class StaffPerformanceController {
       }
 
       // Determine staff type based on user role
-      let staffType: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+      let staffType: 'ADMIN' | 'ORGANIZER_ADMIN';
       
-      if (req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN_STAFF) {
-        staffType = 'ADMIN_STAFF';
-      } else if (req.user.role === UserRole.ORGANIZER || req.user.role === UserRole.ORGANIZER_STAFF || req.user.role === UserRole.ORGANIZER_TELLER) {
-        staffType = 'ORGANIZER_STAFF';
+      if (req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN) {
+        staffType = 'ADMIN';
+      } else if (req.user.role === UserRole.ORGANIZER || req.user.role === UserRole.ORGANIZER_ADMIN || req.user.role === UserRole.ORGANIZER_TELLER) {
+        staffType = 'ORGANIZER_ADMIN';
       } else {
         throw new AuthorizationError('Insufficient permissions to view team summary');
       }
@@ -181,8 +181,8 @@ export class StaffPerformanceController {
       }
 
       // Check permissions (same as getStaffPerformance)
-      const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN_STAFF;
-      const isOrganizer = req.user.role === UserRole.ORGANIZER || req.user.role === UserRole.ORGANIZER_STAFF || req.user.role === UserRole.ORGANIZER_TELLER;
+      const isAdmin = req.user.role === UserRole.SUPERADMIN || req.user.role === UserRole.ADMIN;
+      const isOrganizer = req.user.role === UserRole.ORGANIZER || req.user.role === UserRole.ORGANIZER_ADMIN || req.user.role === UserRole.ORGANIZER_TELLER;
       const isSelf = req.user.id === staffId;
 
       if (!isSelf && !isAdmin && !isOrganizer) {
@@ -226,7 +226,7 @@ export class StaffPerformanceController {
       // Only organizers can access this
       if (
         req.user.role !== UserRole.ORGANIZER &&
-        req.user.role !== UserRole.ORGANIZER_STAFF &&
+        req.user.role !== UserRole.ORGANIZER_ADMIN &&
         req.user.role !== UserRole.ORGANIZER_TELLER
       ) {
         throw new AuthorizationError(
@@ -271,7 +271,7 @@ export class StaffPerformanceController {
       // Only organizers can access this
       if (
         req.user.role !== UserRole.ORGANIZER &&
-        req.user.role !== UserRole.ORGANIZER_STAFF &&
+        req.user.role !== UserRole.ORGANIZER_ADMIN &&
         req.user.role !== UserRole.ORGANIZER_TELLER
       ) {
         throw new AuthorizationError(
@@ -316,7 +316,7 @@ export class StaffPerformanceController {
       // Only organizers can access this
       if (
         req.user.role !== UserRole.ORGANIZER &&
-        req.user.role !== UserRole.ORGANIZER_STAFF &&
+        req.user.role !== UserRole.ORGANIZER_ADMIN &&
         req.user.role !== UserRole.ORGANIZER_TELLER
       ) {
         throw new AuthorizationError(

@@ -17,14 +17,14 @@ import { websocketService } from '../src/services/websocket.service';
 import { cleanupTestData } from './test-helpers';
 
 // Mock dependencies
-jest.mock('../src/services/sms.service');
-jest.mock('../src/services/email.service');
-jest.mock('../src/services/websocket.service');
-jest.mock('../src/utils/logger', () => ({
+vi.mock('../src/services/sms.service');
+vi.mock('../src/services/email.service');
+vi.mock('../src/services/websocket.service');
+vi.mock('../src/utils/logger', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
   },
 }));
 
@@ -66,9 +66,9 @@ describe('NotificationService - Comprehensive Tests', () => {
     if (!dbConnected) return;
 
     // Clear all tables using comprehensive cleanup helper
-    await prisma.$transaction(async (tx) => {
-      await cleanupTestData(tx);
-    });
+    // Called directly (not inside $transaction) — cleanupTestData uses TRUNCATE CASCADE
+    // which is inherently atomic and can exceed the default 5s transaction timeout
+    await cleanupTestData();
 
     // Create test organizer (use upsert to handle existing users)
     const organizer = await prisma.user.upsert({
@@ -210,22 +210,22 @@ describe('NotificationService - Comprehensive Tests', () => {
     });
 
     // Reset mocks and set up default return values
-    jest.clearAllMocks();
-    (smsService.isEnabled as jest.Mock).mockReturnValue(true);
-    (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true, messageId: 'SM123' });
-    (emailService.sendEmail as jest.Mock).mockResolvedValue({ success: true, messageId: 'EM123' });
-    (websocketService.sendNotification as jest.Mock).mockResolvedValue(undefined);
+    vi.clearAllMocks();
+    (smsService.isEnabled as vi.Mock).mockReturnValue(true);
+    (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true, messageId: 'SM123' });
+    (emailService.sendEmail as vi.Mock).mockResolvedValue({ success: true, messageId: 'EM123' });
+    (websocketService.sendNotification as vi.Mock).mockResolvedValue(undefined);
   });
 
   beforeEach(async () => {
     if (!dbConnected) return;
 
     // Reset mocks before each test
-    jest.clearAllMocks();
-    (smsService.isEnabled as jest.Mock).mockReturnValue(true);
-    (smsService.sendSMS as jest.Mock).mockResolvedValue({ success: true, messageId: 'SM123' });
-    (emailService.sendEmail as jest.Mock).mockResolvedValue({ success: true, messageId: 'EM123' });
-    (websocketService.sendNotification as jest.Mock).mockResolvedValue(undefined);
+    vi.clearAllMocks();
+    (smsService.isEnabled as vi.Mock).mockReturnValue(true);
+    (smsService.sendSMS as vi.Mock).mockResolvedValue({ success: true, messageId: 'SM123' });
+    (emailService.sendEmail as vi.Mock).mockResolvedValue({ success: true, messageId: 'EM123' });
+    (websocketService.sendNotification as vi.Mock).mockResolvedValue(undefined);
   });
 
   describe('sendBulkNotification', () => {
@@ -330,7 +330,7 @@ describe('NotificationService - Comprehensive Tests', () => {
           password: await hashPassword('password123'),
           firstName: 'Staff',
           lastName: 'Member',
-          role: UserRole.ADMIN_STAFF,
+          role: UserRole.ADMIN,
           status: UserStatus.ACTIVE,
           isEmailVerified: true,
         },
@@ -341,7 +341,7 @@ describe('NotificationService - Comprehensive Tests', () => {
         data: {
           eventId: _eventId,
           staffId: staff.id,
-          staffType: 'ADMIN_STAFF',
+          staffType: 'ADMIN',
           role: 'SUPERVISOR',
           isActive: true,
           assignedBy: organizerId,
@@ -414,7 +414,7 @@ describe('NotificationService - Comprehensive Tests', () => {
       // Mock shouldSendNotification to return true for SMS (since getUserPreferences forces SMS to false)
       // This allows us to test SMS delivery even though the service normally disables it
       const originalShouldSend = NotificationPreferenceService.shouldSendNotification.bind(NotificationPreferenceService);
-      jest.spyOn(NotificationPreferenceService, 'shouldSendNotification').mockImplementation(
+      vi.spyOn(NotificationPreferenceService, 'shouldSendNotification').mockImplementation(
         async (userId: string, notificationType: NotificationType, channel: string) => {
           // For SMS channel and this user, return true
           if (channel === 'sms' && userId === attendeeId1) {
@@ -439,7 +439,7 @@ describe('NotificationService - Comprehensive Tests', () => {
       expect(smsService.sendSMS).toHaveBeenCalled();
 
       // Restore original method
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     it('should deliver via WebSocket when inApp channel is enabled', async () => {
@@ -459,7 +459,7 @@ describe('NotificationService - Comprehensive Tests', () => {
     it('should skip SMS when SMS service is disabled', async () => {
       if (!dbConnected) return;
 
-      (smsService.isEnabled as jest.Mock).mockReturnValue(false);
+      (smsService.isEnabled as vi.Mock).mockReturnValue(false);
 
       await NotificationService.sendNotification({
         userId: attendeeId1,

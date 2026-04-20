@@ -31,6 +31,8 @@ export interface CheckOutResult {
   success: boolean;
   registrationId: string;
   checkedOutAt: Date;
+  attendeeName?: string;
+  ticketType?: string | null;
   errorCode?: string;
   errorMessage?: string;
 }
@@ -39,6 +41,16 @@ export interface EventScanConfig {
   allowReEntry: boolean;
   requireCheckOut: boolean;
   maxReEntries: number | null;
+}
+
+export interface VoidCheckInResult {
+  success: boolean;
+  registrationId: string;
+  eventId?: string;
+  attendeeName?: string;
+  scanId?: string;
+  errorCode?: string;
+  errorMessage?: string;
 }
 
 export interface AttendeeSearchResult {
@@ -85,6 +97,24 @@ export class WorkstationService {
    */
   private static getTicketFormat(code: string): 'SIGNED' | 'LEGACY' | 'BACKUP' {
     return TicketSecurityService.detectTicketFormat(code);
+  }
+
+  /**
+   * Validate session belongs to event and return session metadata
+   */
+  private static async getSessionInfo(sessionId: string, eventId: string): Promise<{ id: string; dayOfEvent: number } | null> {
+    const session = await prisma.eventSession.findFirst({
+      where: {
+        id: sessionId,
+        eventId,
+      },
+      select: {
+        id: true,
+        dayOfEvent: true,
+      },
+    });
+
+    return session ? { id: session.id, dayOfEvent: session.dayOfEvent } : null;
   }
 
   /**
@@ -367,6 +397,178 @@ export class WorkstationService {
   /**
    * Scan ticket (check-in)
    */
+  /**
+   * Core check-in state machine — called by scanTicket and manualCheckIn.
+   * Accepts an already-validated registration ID + signature metadata.
+   */
+  private static async performCheckIn(
+    registrationId: string,
+    eventId: string,
+    scannedBy: string,
+    validationMeta: { codeType: 'QR_CODE' | 'BACKUP_CODE'; signatureVerified: boolean },
+    facility?: string,
+    deviceId?: string,
+    deviceType?: string,
+    ipAddress?: string,
+    userAgent?: string,
+    location?: { lat: number; lng: number },
+    sessionId?: string,
+  ): Promise<ScanResult> {
+    // Acquire distributed lock to prevent concurrent scans on the same ticket.
+    // Fail-hard: if Redis is unavailable or another process holds the lock after
+    // retries, we reject the scan rather than risk a double check-in.
+    const lockKey = `scan:${registrationId}:${eventId}`;
+    const lockValue = await LockService.acquireLockWithRetry(lockKey, 5000, 3, 100);
+    if (!lockValue) {
+      logger.error(`Lock acquisition failed for ${lockKey} — rejecting scan to prevent double check-in`);
+      return {
+        success: false,
+        registrationId,
+        eventId,
+        checkedInAt: new Date(),
+        errorCode: 'LOCK_FAILED',
+        errorMessage: 'System is busy processing another scan for this ticket. Please try again in a moment.',
+      };
+    }
+
+    try {
+      const scanConfig = await this.getEventScanConfig(eventId);
+      if (!scanConfig) {
+        return { success: false, registrationId, eventId, checkedInAt: new Date(), errorCode: 'INVALID_EVENT', errorMessage: 'Event not found' };
+      }
+
+      const existingRegistration = await prisma.eventRegistration.findUnique({
+        where: { id: registrationId },
+        select: {
+          isCurrentlyInside: true,
+          ticketStatus: true,
+          checkedInAt: true,
+          reEntryCount: true,
+          checkedOutAt: true,
+        },
+      });
+
+      if (!existingRegistration) {
+        return { success: false, registrationId, eventId, checkedInAt: new Date(), errorCode: 'INVALID_TICKET', errorMessage: 'Registration not found' };
+      }
+
+      if (existingRegistration.isCurrentlyInside) {
+        return { success: false, registrationId, eventId, checkedInAt: new Date(), errorCode: 'ALREADY_SCANNED', errorMessage: 'Ticket has already been checked in' };
+      }
+
+      const isReEntry = existingRegistration.checkedInAt !== null && !existingRegistration.isCurrentlyInside;
+
+      if (isReEntry) {
+        if (validationMeta.codeType === 'QR_CODE' && !validationMeta.signatureVerified) {
+          return { success: false, registrationId, eventId, checkedInAt: new Date(), errorCode: 'INVALID_SIGNATURE', errorMessage: 'Invalid signature for re-entry' };
+        }
+        if (!scanConfig.allowReEntry) {
+          return { success: false, registrationId, eventId, checkedInAt: new Date(), errorCode: 'REENTRY_NOT_ALLOWED', errorMessage: 'Re-entry is not allowed for this event' };
+        }
+        if (scanConfig.requireCheckOut && !existingRegistration.checkedOutAt) {
+          return { success: false, registrationId, eventId, checkedInAt: new Date(), errorCode: 'CHECKOUT_REQUIRED', errorMessage: 'Ticket must be checked out before re-entry' };
+        }
+        if (scanConfig.maxReEntries !== null && existingRegistration.reEntryCount >= scanConfig.maxReEntries) {
+          return { success: false, registrationId, eventId, checkedInAt: new Date(), errorCode: 'MAX_REENTRIES_EXCEEDED', errorMessage: `Maximum re-entries (${scanConfig.maxReEntries}) exceeded` };
+        }
+      }
+
+      const canCheckIn = await VenueCapacityService.canCheckIn(eventId);
+      if (!canCheckIn) {
+        return { success: false, registrationId, eventId, checkedInAt: new Date(), errorCode: 'VENUE_AT_CAPACITY', errorMessage: 'Venue is at maximum capacity. Check-in is temporarily blocked.' };
+      }
+
+      const now = new Date();
+
+      let sessionInfo: { id: string; dayOfEvent: number } | null = null;
+      if (sessionId) {
+        sessionInfo = await this.getSessionInfo(sessionId, eventId);
+        if (!sessionInfo) {
+          return { success: false, registrationId, eventId, checkedInAt: now, errorCode: 'INVALID_SESSION', errorMessage: 'Session not found for this event' };
+        }
+      } else {
+        const activeAttendance = await prisma.sessionAttendance.findFirst({
+          where: { registrationId, checkedOutAt: null, session: { eventId } },
+          orderBy: { checkedInAt: 'desc' },
+          include: { session: { select: { dayOfEvent: true } } },
+        });
+        if (activeAttendance) {
+          sessionInfo = { id: activeAttendance.sessionId, dayOfEvent: activeAttendance.session.dayOfEvent };
+        }
+      }
+
+      let previousScanId: string | undefined;
+      if (isReEntry) {
+        const previousScan = await prisma.ticketScan.findFirst({
+          where: { registrationId, eventId, scanType: ScanType.CHECK_OUT },
+          orderBy: { scannedAt: 'desc' },
+        });
+        previousScanId = previousScan?.id;
+      }
+
+      const updateData: {
+        checkedInAt: Date; checkedInBy: string; ticketStatus: TicketStatus;
+        isCurrentlyInside: boolean; lastScanFacility: string | null;
+        reEntryCount?: { increment: number };
+      } = {
+        checkedInAt: now, checkedInBy: scannedBy,
+        ticketStatus: TicketStatus.DEACTIVATED,
+        isCurrentlyInside: true, lastScanFacility: facility || null,
+      };
+      if (isReEntry) updateData.reEntryCount = { increment: 1 };
+
+      const updatedRegistration = await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: updateData,
+        include: { attendee: { select: { firstName: true, lastName: true } } },
+      });
+
+      await prisma.ticketScan.create({
+        data: {
+          registrationId, eventId, sessionId: sessionInfo?.id,
+          scanType: ScanType.CHECK_IN, scannedBy,
+          facility: facility || null, deviceId: deviceId || null,
+          deviceType: deviceType || null, isValid: true, isReEntry,
+          previousScanId: previousScanId || null,
+          ipAddress: ipAddress || null, userAgent: userAgent || null,
+          location: location || undefined, dayOfEvent: sessionInfo?.dayOfEvent,
+        },
+      });
+
+      if (sessionInfo) {
+        await prisma.sessionAttendance.upsert({
+          where: { sessionId_registrationId: { sessionId: sessionInfo.id, registrationId } },
+          update: { checkedInAt: now, attended: true },
+          create: { sessionId: sessionInfo.id, registrationId, checkedInAt: now, attended: true },
+        });
+      }
+
+      if (validationMeta.codeType === 'QR_CODE' && !validationMeta.signatureVerified) {
+        logger.warn(`QR code scanned with invalid signature: registrationId=${registrationId}, eventId=${eventId}`);
+      }
+
+      try {
+        const alerts = await VenueCapacityService.incrementOccupancy(eventId);
+        if (alerts.length > 0) {
+          AlertService.sendCapacityAlerts(alerts).catch((err) => {
+            logger.error('Failed to send capacity alerts', { error: err, eventId });
+          });
+        }
+      } catch (capacityError) {
+        logger.error('Failed to update venue occupancy', { error: capacityError, eventId });
+      }
+
+      return {
+        success: true, registrationId, eventId,
+        attendeeName: `${updatedRegistration.attendee.firstName || ''} ${updatedRegistration.attendee.lastName || ''}`.trim(),
+        ticketType: updatedRegistration.ticketType,
+        checkedInAt: now,
+      };
+    } finally {
+      if (lockValue) await LockService.releaseLock(lockKey, lockValue);
+    }
+  }
+
   static async scanTicket(
     code: string,
     eventId: string,
@@ -377,8 +579,21 @@ export class WorkstationService {
     ipAddress?: string,
     userAgent?: string,
     location?: { lat: number; lng: number },
+    sessionId?: string,
   ): Promise<ScanResult> {
     try {
+      const sessionInfo = sessionId ? await this.getSessionInfo(sessionId, eventId) : null;
+      if (sessionId && !sessionInfo) {
+        return {
+          success: false,
+          registrationId: '',
+          eventId,
+          checkedInAt: new Date(),
+          errorCode: 'INVALID_SESSION',
+          errorMessage: 'Session not found for this event',
+        };
+      }
+
       // Validate ticket first
       const validation = await this.validateTicket(code, eventId);
 
@@ -395,235 +610,11 @@ export class WorkstationService {
 
       const registrationId = validation.registrationId;
 
-      // Acquire distributed lock to prevent concurrent scans
-      // If Redis is not available, proceed without locking (with warning)
-      const lockKey = `scan:${registrationId}:${eventId}`;
-      const lockValue = await LockService.acquireLockWithRetry(lockKey, 5000, 3, 100);
-
-      if (!lockValue) {
-        logger.warn(`Lock acquisition failed for ${lockKey} - proceeding without lock (Redis may not be available)`);
-      }
-
-      try {
-        // Get event scan configuration
-        const scanConfig = await this.getEventScanConfig(eventId);
-        if (!scanConfig) {
-          return {
-            success: false,
-            registrationId,
-            eventId,
-            checkedInAt: new Date(),
-            errorCode: 'INVALID_EVENT',
-            errorMessage: 'Event not found',
-          };
-        }
-
-        // Check if already scanned (prevent double scan)
-        const existingRegistration = await prisma.eventRegistration.findUnique({
-          where: { id: registrationId },
-          select: {
-            isCurrentlyInside: true,
-            ticketStatus: true,
-            checkedInAt: true,
-            reEntryCount: true,
-            checkedOutAt: true,
-          },
-        });
-
-        if (!existingRegistration) {
-          return {
-            success: false,
-            registrationId,
-            eventId,
-            checkedInAt: new Date(),
-            errorCode: 'INVALID_TICKET',
-            errorMessage: 'Registration not found',
-          };
-        }
-
-        // Check if already checked in (not a re-entry)
-        if (existingRegistration.isCurrentlyInside) {
-          return {
-            success: false,
-            registrationId,
-            eventId,
-            checkedInAt: new Date(),
-            errorCode: 'ALREADY_SCANNED',
-            errorMessage: 'Ticket has already been checked in',
-          };
-        }
-
-        // Handle re-entry scenario (ticket was previously checked in but is not currently inside)
-        // This covers both ACTIVE (re-entry allowed) and DEACTIVATED (re-entry not allowed) cases
-        const isReEntry = existingRegistration.checkedInAt !== null && !existingRegistration.isCurrentlyInside;
-
-        if (isReEntry) {
-          // Verify signature on re-entry (prevent replay attacks)
-          if (validation.codeType === 'QR_CODE' && validation.signatureVerified === false) {
-            return {
-              success: false,
-              registrationId,
-              eventId,
-              checkedInAt: new Date(),
-              errorCode: 'INVALID_SIGNATURE',
-              errorMessage: 'Invalid signature for re-entry',
-            };
-          }
-
-          // Check if re-entry is allowed
-          if (!scanConfig.allowReEntry) {
-            return {
-              success: false,
-              registrationId,
-              eventId,
-              checkedInAt: new Date(),
-              errorCode: 'REENTRY_NOT_ALLOWED',
-              errorMessage: 'Re-entry is not allowed for this event',
-            };
-          }
-
-          // Check if check-out is required before re-entry
-          if (scanConfig.requireCheckOut && !existingRegistration.checkedOutAt) {
-            return {
-              success: false,
-              registrationId,
-              eventId,
-              checkedInAt: new Date(),
-              errorCode: 'CHECKOUT_REQUIRED',
-              errorMessage: 'Ticket must be checked out before re-entry',
-            };
-          }
-
-          // Validate re-entry count against maxReEntries
-          if (scanConfig.maxReEntries !== null && existingRegistration.reEntryCount >= scanConfig.maxReEntries) {
-            return {
-              success: false,
-              registrationId,
-              eventId,
-              checkedInAt: new Date(),
-              errorCode: 'MAX_REENTRIES_EXCEEDED',
-              errorMessage: `Maximum re-entries (${scanConfig.maxReEntries}) exceeded`,
-            };
-          }
-        }
-
-        // Check venue capacity before allowing check-in
-        const canCheckIn = await VenueCapacityService.canCheckIn(eventId);
-        if (!canCheckIn) {
-          return {
-            success: false,
-            registrationId,
-            eventId,
-            checkedInAt: new Date(),
-            errorCode: 'VENUE_AT_CAPACITY',
-            errorMessage: 'Venue is at maximum capacity. Check-in is temporarily blocked.',
-          };
-        }
-
-        const now = new Date();
-
-        // Find previous scan for re-entry linking
-        let previousScanId: string | undefined;
-        if (isReEntry) {
-          const previousScan = await prisma.ticketScan.findFirst({
-            where: {
-              registrationId,
-              eventId,
-              scanType: ScanType.CHECK_OUT,
-            },
-            orderBy: {
-              scannedAt: 'desc',
-            },
-          });
-          previousScanId = previousScan?.id;
-        }
-
-        // Update registration
-        const updateData: {
-          checkedInAt: Date;
-          checkedInBy: string;
-          ticketStatus: TicketStatus;
-          isCurrentlyInside: boolean;
-          lastScanFacility: string | null;
-          reEntryCount?: { increment: number };
-        } = {
-          checkedInAt: now,
-          checkedInBy: scannedBy,
-          ticketStatus: TicketStatus.DEACTIVATED,
-          isCurrentlyInside: true,
-          lastScanFacility: facility || null,
-        };
-
-        // Increment re-entry count if this is a re-entry
-        if (isReEntry) {
-          updateData.reEntryCount = { increment: 1 };
-        }
-
-        const updatedRegistration = await prisma.eventRegistration.update({
-          where: { id: registrationId },
-          data: updateData,
-          include: {
-            attendee: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        });
-
-        // Create scan record
-        await prisma.ticketScan.create({
-          data: {
-            registrationId,
-            eventId,
-            scanType: ScanType.CHECK_IN,
-            scannedBy,
-            facility: facility || null,
-            deviceId: deviceId || null,
-            deviceType: deviceType || null,
-            isValid: true,
-            isReEntry,
-            previousScanId: previousScanId || null,
-            ipAddress: ipAddress || null,
-            userAgent: userAgent || null,
-            location: location || undefined,
-          },
-        });
-
-        // Log signature verification status for security monitoring
-        if (validation.codeType === 'QR_CODE' && validation.signatureVerified === false) {
-          logger.warn(`QR code scanned with invalid signature: registrationId=${registrationId}, eventId=${eventId}`);
-        }
-
-        // Update venue occupancy and check for capacity alerts
-        try {
-          const alerts = await VenueCapacityService.incrementOccupancy(eventId);
-          if (alerts.length > 0) {
-            // Send capacity alerts asynchronously (don't block check-in)
-            AlertService.sendCapacityAlerts(alerts).catch((err) => {
-              logger.error('Failed to send capacity alerts', { error: err, eventId });
-            });
-          }
-        } catch (capacityError) {
-          // Log but don't fail the check-in if capacity tracking fails
-          logger.error('Failed to update venue occupancy', { error: capacityError, eventId });
-        }
-
-        return {
-          success: true,
-          registrationId,
-          eventId,
-          attendeeName: `${updatedRegistration.attendee.firstName || ''} ${updatedRegistration.attendee.lastName || ''}`.trim(),
-          ticketType: updatedRegistration.ticketType,
-          checkedInAt: now,
-        };
-      } finally {
-        // Always release the lock if we acquired one
-        if (lockValue) {
-          await LockService.releaseLock(lockKey, lockValue);
-        }
-      }
+      return this.performCheckIn(
+        registrationId, eventId, scannedBy,
+        { codeType: validation.codeType ?? 'QR_CODE', signatureVerified: validation.signatureVerified ?? false },
+        facility, deviceId, deviceType, ipAddress, userAgent, location, sessionId,
+      );
     } catch (error) {
       logger.error('Error scanning ticket:', error);
       return {
@@ -649,6 +640,7 @@ export class WorkstationService {
     ipAddress?: string,
     userAgent?: string,
     location?: { lat: number; lng: number },
+    sessionId?: string,
   ): Promise<CheckOutResult> {
     try {
       // Validate ticket is currently inside
@@ -657,6 +649,13 @@ export class WorkstationService {
         select: {
           isCurrentlyInside: true,
           eventId: true,
+          ticketType: true,
+          attendee: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
         },
       });
 
@@ -680,13 +679,20 @@ export class WorkstationService {
         };
       }
 
-      // Acquire distributed lock to prevent concurrent checkouts
-      // If Redis is not available, proceed without locking (with warning)
+      // Acquire distributed lock to prevent concurrent checkouts.
+      // Fail-hard: reject rather than risk a double checkout.
       const lockKey = `scan:${registrationId}:${registration.eventId}`;
       const lockValue = await LockService.acquireLockWithRetry(lockKey, 5000, 3, 100);
 
       if (!lockValue) {
-        logger.warn(`Lock acquisition failed for ${lockKey} - proceeding without lock (Redis may not be available)`);
+        logger.error(`Lock acquisition failed for ${lockKey} — rejecting checkout to prevent double checkout`);
+        return {
+          success: false,
+          registrationId,
+          checkedOutAt: new Date(),
+          errorCode: 'LOCK_FAILED',
+          errorMessage: 'System is busy processing another scan for this ticket. Please try again in a moment.',
+        };
       }
 
       try {
@@ -708,6 +714,58 @@ export class WorkstationService {
 
         const now = new Date();
 
+        // Resolve session info and compute duration for this checkout
+        let sessionInfo: { id: string; dayOfEvent: number } | null = null;
+        let attendanceCheckedInAt: Date | null = null;
+
+        if (sessionId) {
+          sessionInfo = await this.getSessionInfo(sessionId, registration.eventId);
+          if (!sessionInfo) {
+            return {
+              success: false,
+              registrationId,
+              checkedOutAt: now,
+              errorCode: 'INVALID_SESSION',
+              errorMessage: 'Session not found for this event',
+            };
+          }
+
+          const existingAttendance = await prisma.sessionAttendance.findUnique({
+            where: {
+              sessionId_registrationId: {
+                sessionId: sessionInfo.id,
+                registrationId,
+              },
+            },
+            select: { checkedInAt: true },
+          });
+
+          attendanceCheckedInAt = existingAttendance?.checkedInAt ?? null;
+        } else {
+          const activeAttendance = await prisma.sessionAttendance.findFirst({
+            where: {
+              registrationId,
+              checkedOutAt: null,
+              session: {
+                eventId: registration.eventId,
+              },
+            },
+            orderBy: { checkedInAt: 'desc' },
+            include: {
+              session: { select: { dayOfEvent: true } },
+            },
+          });
+
+          if (activeAttendance) {
+            sessionInfo = { id: activeAttendance.sessionId, dayOfEvent: activeAttendance.session.dayOfEvent };
+            attendanceCheckedInAt = activeAttendance.checkedInAt;
+          }
+        }
+
+        const durationSeconds = attendanceCheckedInAt
+          ? Math.max(0, Math.round((now.getTime() - attendanceCheckedInAt.getTime()) / 1000))
+          : undefined;
+
         // Update registration
         // Set ticketStatus to ACTIVE only if re-entry is allowed, otherwise keep it DEACTIVATED
         await prisma.eventRegistration.update({
@@ -725,6 +783,7 @@ export class WorkstationService {
           data: {
             registrationId,
             eventId: registration.eventId,
+            sessionId: sessionInfo?.id,
             scanType: ScanType.CHECK_OUT,
             scannedBy,
             facility: facility || null,
@@ -735,8 +794,42 @@ export class WorkstationService {
             ipAddress: ipAddress || null,
             userAgent: userAgent || null,
             location: location || undefined,
+            dayOfEvent: sessionInfo?.dayOfEvent,
+            durationSeconds,
           },
         });
+
+        if (sessionInfo) {
+          const attendance = await prisma.sessionAttendance.findUnique({
+            where: {
+              sessionId_registrationId: {
+                sessionId: sessionInfo.id,
+                registrationId,
+              },
+            },
+          });
+
+          if (attendance) {
+            await prisma.sessionAttendance.update({
+              where: { id: attendance.id },
+              data: {
+                checkedOutAt: now,
+                durationSeconds,
+                attended: true,
+              },
+            });
+          } else {
+            await prisma.sessionAttendance.create({
+              data: {
+                sessionId: sessionInfo.id,
+                registrationId,
+                checkedOutAt: now,
+                durationSeconds,
+                attended: true,
+              },
+            });
+          }
+        }
 
         // Update venue occupancy (decrement on check-out)
         try {
@@ -750,6 +843,8 @@ export class WorkstationService {
           success: true,
           registrationId,
           checkedOutAt: now,
+          attendeeName: `${registration.attendee.firstName || ''} ${registration.attendee.lastName || ''}`.trim(),
+          ticketType: registration.ticketType,
         };
       } finally {
         // Always release the lock if we acquired one
@@ -973,6 +1068,7 @@ export class WorkstationService {
     facility?: string,
     deviceId?: string,
     deviceType?: string,
+    sessionId?: string,
   ): Promise<ManualCheckInResult> {
     try {
       // Search for registration - use limit 2 to detect multiple matches
@@ -1015,15 +1111,20 @@ export class WorkstationService {
         }
       }
 
-      // Perform check-in using scanTicket logic
-      // We'll use the registration ID directly since we found it
-      const scanResult = await this.scanTicket(
-        registration.backupCode || registration.registrationId,
+      // Perform check-in directly by registration ID — no code validation needed
+      // since we already resolved the registration via searchAttendees.
+      const scanResult = await this.performCheckIn(
+        registration.registrationId,
         eventId,
         scannedBy,
+        { codeType: 'BACKUP_CODE', signatureVerified: false },
         facility,
         deviceId,
         deviceType,
+        undefined,
+        undefined,
+        undefined,
+        sessionId,
       );
 
       if (!scanResult.success) {
@@ -1079,6 +1180,7 @@ export class WorkstationService {
     facility?: string,
     deviceId?: string,
     deviceType?: string,
+    sessionId?: string,
   ): Promise<ManualCheckOutResult> {
     try {
       // Search for registration - use limit 2 to detect multiple matches
@@ -1115,6 +1217,10 @@ export class WorkstationService {
         facility,
         deviceId,
         deviceType,
+        undefined,
+        undefined,
+        undefined,
+        sessionId,
       );
 
       if (!checkoutResult.success) {
@@ -1151,6 +1257,286 @@ export class WorkstationService {
         errorMessage: error instanceof Error ? error.message : 'Unknown error during manual check-out',
         isManual: true,
       };
+    }
+  }
+
+  // ─── Organizer Scan Analytics (with ownership verification) ───
+
+  private static async verifyEventOwnership(eventId: string, organizerId: string, isAdmin = false): Promise<void> {
+    const event = await prisma.event.findFirst({
+      where: { id: eventId, ...(isAdmin ? {} : { organizerId }) },
+      select: { id: true },
+    });
+    if (!event) {
+      throw new Error('Event not found or access denied');
+    }
+  }
+
+  static async getOrganizerEventScanOverview(eventId: string, organizerId: string, isAdmin = false) {
+    await this.verifyEventOwnership(eventId, organizerId, isAdmin);
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: {
+        allowReEntry: true,
+        requireCheckOut: true,
+        maxReEntries: true,
+        scanSettings: true,
+      },
+    });
+
+    const [totalAttendees, checkedInCount, currentlyInsideCount, reEntrySum] = await Promise.all([
+      prisma.eventRegistration.count({ where: { eventId } }),
+      prisma.eventRegistration.count({ where: { eventId, checkedInAt: { not: null } } }),
+      prisma.eventRegistration.count({ where: { eventId, isCurrentlyInside: true } }),
+      prisma.eventRegistration.aggregate({ where: { eventId }, _sum: { reEntryCount: true } }),
+    ]);
+
+    const checkedOutCount = checkedInCount - currentlyInsideCount;
+    const scansToday = await prisma.ticketScan.count({
+      where: {
+        eventId,
+        scannedAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      },
+    });
+
+    return {
+      config: {
+        allowReEntry: event?.allowReEntry ?? false,
+        requireCheckOut: event?.requireCheckOut ?? false,
+        maxReEntries: event?.maxReEntries ?? null,
+        scanSettings: event?.scanSettings ?? null,
+      },
+      statistics: {
+        totalAttendees,
+        checkedIn: checkedInCount,
+        currentlyInside: currentlyInsideCount,
+        checkedOut: checkedOutCount,
+        reEntries: reEntrySum._sum.reEntryCount ?? 0,
+        scansToday,
+      },
+    };
+  }
+
+  static async getOrganizerEventScans(
+    eventId: string,
+    organizerId: string,
+    filters: { scanType?: string; page?: number; limit?: number },
+    isAdmin = false,
+  ) {
+    await this.verifyEventOwnership(eventId, organizerId, isAdmin);
+
+    const pageNum = filters.page ?? 1;
+    const limitNum = filters.limit ?? 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: Record<string, unknown> = { eventId };
+    if (filters.scanType) {
+      where.scanType = filters.scanType;
+    }
+
+    const [scans, total] = await Promise.all([
+      prisma.ticketScan.findMany({
+        where,
+        skip,
+        take: limitNum,
+        include: {
+          registration: {
+            include: {
+              attendee: { select: { id: true, firstName: true, lastName: true, email: true } },
+            },
+          },
+        },
+        orderBy: { scannedAt: 'desc' },
+      }),
+      prisma.ticketScan.count({ where }),
+    ]);
+
+    const scannerIds = [...new Set(scans.map((s) => s.scannedBy))];
+    const scanners = await prisma.user.findMany({
+      where: { id: { in: scannerIds } },
+      select: { id: true, firstName: true, lastName: true },
+    });
+    const scannerMap = new Map(scanners.map((s) => [s.id, s]));
+
+    return {
+      scans: scans.map((scan) => {
+        const scanner = scannerMap.get(scan.scannedBy);
+        return {
+          id: scan.id,
+          registrationId: scan.registrationId,
+          eventId: scan.eventId,
+          scanType: scan.scanType,
+          scannedAt: scan.scannedAt,
+          scannedBy: scanner ? `${scanner.firstName || ''} ${scanner.lastName || ''}`.trim() : scan.scannedBy,
+          facility: scan.facility,
+          session: scan.sessionId,
+          attendeeName: `${scan.registration.attendee.firstName || ''} ${scan.registration.attendee.lastName || ''}`.trim(),
+          ticketType: scan.registration.ticketType,
+          isReEntry: scan.isReEntry,
+          isValid: scan.isValid,
+          scanLocation: scan.location,
+        };
+      }),
+      total,
+      pagination: { page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) },
+    };
+  }
+
+  static async getOrganizerEventAttendees(
+    eventId: string,
+    organizerId: string,
+    filters: { page?: number; limit?: number },
+    isAdmin = false,
+  ) {
+    await this.verifyEventOwnership(eventId, organizerId, isAdmin);
+
+    const pageNum = filters.page ?? 1;
+    const limitNum = filters.limit ?? 20;
+    const skip = (pageNum - 1) * limitNum;
+
+    const [attendees, total] = await Promise.all([
+      prisma.eventRegistration.findMany({
+        where: { eventId },
+        skip,
+        take: limitNum,
+        include: {
+          attendee: { select: { id: true, firstName: true, lastName: true, email: true, phoneNumber: true } },
+        },
+        orderBy: { checkedInAt: 'desc' },
+      }),
+      prisma.eventRegistration.count({ where: { eventId } }),
+    ]);
+
+    return {
+      attendees: attendees.map((reg) => ({
+        registrationId: reg.id,
+        visitorId: reg.attendee.id,
+        attendeeName: `${reg.attendee.firstName || ''} ${reg.attendee.lastName || ''}`.trim(),
+        firstName: reg.attendee.firstName,
+        lastName: reg.attendee.lastName,
+        email: reg.attendee.email,
+        phoneNumber: reg.attendee.phoneNumber,
+        ticketType: reg.ticketType,
+        ticketStatus: reg.ticketStatus,
+        isCurrentlyInside: reg.isCurrentlyInside,
+        checkedInAt: reg.checkedInAt,
+        checkedOutAt: reg.checkedOutAt,
+        reEntryCount: reg.reEntryCount,
+        lastScanFacility: reg.lastScanFacility,
+        registeredAt: reg.createdAt,
+      })),
+      total,
+      pagination: { page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) },
+    };
+  }
+
+  static async updateOrganizerEventScanConfig(
+    eventId: string,
+    organizerId: string,
+    updates: { allowReEntry?: boolean; requireCheckOut?: boolean; maxReEntries?: number | null },
+    isAdmin = false,
+  ) {
+    await this.verifyEventOwnership(eventId, organizerId, isAdmin);
+
+    const event = await prisma.event.update({
+      where: { id: eventId },
+      data: updates,
+      select: { allowReEntry: true, requireCheckOut: true, maxReEntries: true, scanSettings: true },
+    });
+
+    return {
+      allowReEntry: event.allowReEntry,
+      requireCheckOut: event.requireCheckOut,
+      maxReEntries: event.maxReEntries,
+      scanSettings: event.scanSettings,
+    };
+  }
+
+  /**
+   * Void / reverse a check-in.
+   * Resets EventRegistration to pre-check-in state and creates a VOID TicketScan
+   * for the audit trail. Requires ADMIN or higher (enforced at route level).
+   */
+  static async voidCheckIn(
+    registrationId: string,
+    voidedBy: string,
+    reason?: string,
+  ): Promise<VoidCheckInResult> {
+    const registration = await prisma.eventRegistration.findUnique({
+      where: { id: registrationId },
+      select: {
+        eventId: true,
+        checkedInAt: true,
+        isCurrentlyInside: true,
+        reEntryCount: true,
+        attendee: { select: { firstName: true, lastName: true } },
+      },
+    });
+
+    if (!registration) {
+      return { success: false, registrationId, errorCode: 'INVALID_TICKET', errorMessage: 'Registration not found' };
+    }
+
+    if (!registration.checkedInAt) {
+      return { success: false, registrationId, errorCode: 'NOT_CHECKED_IN', errorMessage: 'This ticket has never been checked in' };
+    }
+
+    const lockKey = `scan:${registrationId}:${registration.eventId}`;
+    const lockValue = await LockService.acquireLockWithRetry(lockKey, 5000, 3, 100);
+    if (!lockValue) {
+      logger.error(`Lock acquisition failed for void on ${lockKey}`);
+      return { success: false, registrationId, errorCode: 'LOCK_FAILED', errorMessage: 'System busy, please try again' };
+    }
+
+    try {
+      // Reset registration to pre-check-in state
+      await prisma.eventRegistration.update({
+        where: { id: registrationId },
+        data: {
+          checkedInAt: null,
+          checkedInBy: null,
+          checkedOutAt: null,
+          isCurrentlyInside: false,
+          ticketStatus: TicketStatus.ACTIVE,
+          lastScanFacility: null,
+          ...(registration.reEntryCount > 0 ? { reEntryCount: { decrement: 1 } } : {}),
+        },
+      });
+
+      // Decrement venue occupancy if the attendee was marked inside
+      if (registration.isCurrentlyInside) {
+        try {
+          await VenueCapacityService.decrementOccupancy(registration.eventId);
+        } catch (err) {
+          logger.error('Failed to decrement venue occupancy on void', { err, registrationId });
+        }
+      }
+
+      // Create VOID scan record for the audit trail
+      const voidScan = await prisma.ticketScan.create({
+        data: {
+          registrationId,
+          eventId: registration.eventId,
+          scanType: ScanType.VOID,
+          scannedBy: voidedBy,
+          isValid: true,
+          isReEntry: false,
+          notes: reason ?? 'Check-in voided by staff',
+        },
+      });
+
+      const attendeeName = `${registration.attendee.firstName ?? ''} ${registration.attendee.lastName ?? ''}`.trim();
+
+      return {
+        success: true,
+        registrationId,
+        eventId: registration.eventId,
+        attendeeName,
+        scanId: voidScan.id,
+      };
+    } finally {
+      await LockService.releaseLock(lockKey, lockValue);
     }
   }
 }

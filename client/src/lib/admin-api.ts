@@ -2,7 +2,8 @@
  * Admin API Functions
  */
 
-import { apiGet, apiPost, apiPut, apiDelete } from './api';
+import { apiGet, apiPost, apiPut, apiDelete, apiPatch } from './api';
+import type { EventResponse } from './event-api';
 
 /**
  * Admin Dashboard Stats Response
@@ -187,6 +188,13 @@ export interface RejectEventResponse {
 /**
  * Approve an event
  */
+/**
+ * Get event details as admin (works for any event status including PENDING)
+ */
+export const getAdminEventById = async (eventId: string): Promise<EventResponse> => {
+  return apiGet<EventResponse>(`/admin/events/${eventId}`);
+};
+
 export const approveEvent = async (eventId: string): Promise<ApproveEventResponse> => {
   return apiPost<ApproveEventResponse>(`/events/${eventId}/approve`, {});
 };
@@ -251,7 +259,7 @@ export const bulkUpdateOrganizerDataAccess = async (
  * User Status Management Types
  */
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DEACTIVATED' | 'PENDING_APPROVAL';
-export type UserRole = 'SUPERADMIN' | 'ADMIN_STAFF' | 'ORGANIZER' | 'ATTENDEE';
+export type UserRole = 'SUPERADMIN' | 'ADMIN' | 'ORGANIZER' | 'ATTENDEE';
 
 export interface User {
   id: string;
@@ -264,6 +272,7 @@ export interface User {
   isEmailVerified: boolean;
   organizationName?: string | null;
   businessEmail?: string | null;
+  companyAffiliation?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -279,6 +288,7 @@ export interface OrganizerUser extends User {
   organizerIndustry?: string | null;
   profileCompleted?: boolean;
   lastLoginAt?: string | null;
+  organizerSubscription?: { tier: 'BASIC' | 'STANDARD' | 'PREMIUM' } | null;
   _count?: {
     eventsCreated: number;
     eventRegistrations: number;
@@ -690,7 +700,7 @@ export interface EventStaffAssignment {
   eventId: string;
   staffId: string;
   role: EventStaffRole;
-  staffType: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+  staffType: 'ADMIN' | 'ORGANIZER_ADMIN';
   assignedAt: string;
   assignedBy: string;
   notes?: string;
@@ -709,7 +719,13 @@ export interface EventStaffAssignment {
   event?: {
     id: string;
     title: string;
+    description?: string;
     startDate?: string;
+    endDate?: string;
+    location?: string;
+    venue?: string;
+    status?: string;
+    image?: string;
   };
 }
 
@@ -762,7 +778,7 @@ export const getEventStaff = async (
   eventId: string,
   filters?: {
     role?: string;
-    staffType?: 'ADMIN_STAFF' | 'ORGANIZER_STAFF';
+    staffType?: 'ADMIN' | 'ORGANIZER_ADMIN';
     isActive?: boolean;
   }
 ): Promise<GetEventStaffResponse> => {
@@ -1214,5 +1230,324 @@ export const rejectOrganizerKYC = async (userId: string, reason: string): Promis
   data: { message: string };
 }> => {
   return apiPost(`/admin/kyc/users/${userId}/reject`, { reason });
+};
+
+export const sendKYCReminder = async (userId: string, eventTitle: string): Promise<{
+  success: boolean;
+  message: string;
+}> => {
+  return apiPost(`/admin/kyc/users/${userId}/remind`, { eventTitle });
+};
+
+// ========== Subscription Plan Management ==========
+
+export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM';
+
+export interface SubscriptionPlan {
+  id: string;
+  tier: SubscriptionTier;
+  name: string;
+  description: string | null;
+  price: string; // Decimal comes as string from API
+  currency: string;
+  features: string[];
+  isActive: boolean;
+  subscriberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SubscriptionOverride {
+  id: string;
+  organizerId: string;
+  tier: SubscriptionTier;
+  reason: string | null;
+  grantedBy: string;
+  expiresAt: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  grantedByUser: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+export interface OrganizerSubscriptionSummary {
+  subscription: {
+    id: string;
+    organizerId: string;
+    tier: SubscriptionTier;
+    isActive: boolean;
+    expiresAt: string | null;
+    billingEmail: string | null;
+  };
+  overrides: SubscriptionOverride[];
+  effectiveTier: SubscriptionTier;
+}
+
+export const getSubscriptionPlans = async (): Promise<{
+  success: boolean;
+  data: { plans: SubscriptionPlan[] };
+}> => {
+  return apiGet('/admin/subscription-plans');
+};
+
+export const updateSubscriptionPlan = async (
+  tier: SubscriptionTier,
+  data: { price?: number; description?: string; features?: string[]; isActive?: boolean },
+): Promise<{
+  success: boolean;
+  data: { plan: SubscriptionPlan };
+}> => {
+  return apiPut(`/admin/subscription-plans/${tier}`, data);
+};
+
+export const getOrganizerSubscription = async (organizerId: string): Promise<{
+  success: boolean;
+  data: OrganizerSubscriptionSummary;
+}> => {
+  return apiGet(`/admin/organizers/${organizerId}/subscription`);
+};
+
+export const setSubscriptionOverride = async (
+  organizerId: string,
+  data: { tier: SubscriptionTier; reason?: string; expiresAt?: string },
+): Promise<{
+  success: boolean;
+  data: { override: SubscriptionOverride };
+}> => {
+  return apiPost(`/admin/organizers/${organizerId}/subscription/override`, data);
+};
+
+export const removeSubscriptionOverride = async (
+  organizerId: string,
+  overrideId: string,
+): Promise<{
+  success: boolean;
+  data: { override: SubscriptionOverride };
+}> => {
+  return apiDelete(`/admin/organizers/${organizerId}/subscription/override/${overrideId}`);
+};
+
+// ===========================================================================
+// ==================== Resale & Transfer Analytics ==========================
+// ===========================================================================
+
+export interface AdminResaleStats {
+  totalListings: number;
+  activeListings: number;
+  soldListings: number;
+  cancelledListings: number;
+  expiredListings: number;
+  totalResaleValue: number;
+  totalPlatformFees: number;
+  totalSellerPayouts: number;
+  pendingPayouts: { count: number; amount: number };
+  topEvents: Array<{
+    id: string;
+    title: string;
+    resaleCount: number;
+    totalValue: number;
+    totalFees: number;
+  }>;
+}
+
+export interface AdminTransferStats {
+  totalTransfers: number;
+  pendingTransfers: number;
+  acceptedTransfers: number;
+  rejectedTransfers: number;
+  cancelledTransfers: number;
+  expiredTransfers: number;
+}
+
+export interface AdminResaleActivity {
+  id: string;
+  status: string;
+  originalPrice: number;
+  resalePrice: number;
+  currency: string;
+  platformFee: number | null;
+  sellerPayout: number | null;
+  paymentStatus: string | null;
+  listedAt: string;
+  soldAt: string | null;
+  expiresAt: string | null;
+  seller: { id: string; firstName: string; lastName: string; email: string };
+  buyer: { id: string; firstName: string; lastName: string; email: string } | null;
+  event: { id: string; title: string };
+  ticketType: string;
+}
+
+export interface ResalePayoutItem {
+  id: string;
+  seller: { id: string; firstName: string; lastName: string; email: string };
+  event: { id: string; title: string };
+  ticketType: string;
+  resalePrice: number;
+  platformFee: number;
+  sellerPayout: number;
+  currency: string;
+  soldAt: string | null;
+  paymentReference: string | null;
+}
+
+export const getAdminResaleStats = async (
+  filters?: { startDate?: string; endDate?: string },
+): Promise<{ success: boolean; data: AdminResaleStats }> => {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.set('startDate', filters.startDate);
+  if (filters?.endDate) params.set('endDate', filters.endDate);
+  const query = params.toString();
+  return apiGet(`/admin/platform-analytics/resale/stats${query ? `?${query}` : ''}`);
+};
+
+export const getAdminTransferStats = async (
+  filters?: { startDate?: string; endDate?: string },
+): Promise<{ success: boolean; data: AdminTransferStats }> => {
+  const params = new URLSearchParams();
+  if (filters?.startDate) params.set('startDate', filters.startDate);
+  if (filters?.endDate) params.set('endDate', filters.endDate);
+  const query = params.toString();
+  return apiGet(`/admin/platform-analytics/transfers/stats${query ? `?${query}` : ''}`);
+};
+
+export const getAdminResaleActivity = async (
+  filters?: { status?: string; eventId?: string; page?: number; limit?: number },
+): Promise<{
+  success: boolean;
+  data: { listings: AdminResaleActivity[]; total: number; page: number; totalPages: number };
+}> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.eventId) params.set('eventId', filters.eventId);
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/admin/platform-analytics/resale/activity${query ? `?${query}` : ''}`);
+};
+
+export const getAdminResalePendingPayouts = async (
+  filters?: { page?: number; limit?: number },
+): Promise<{
+  success: boolean;
+  data: {
+    payouts: ResalePayoutItem[];
+    total: number;
+    page: number;
+    totalPages: number;
+    summary: { totalPending: number; totalPayoutAmount: number; totalPlatformFees: number };
+  };
+}> => {
+  const params = new URLSearchParams();
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/admin/platform-analytics/resale/pending-payouts${query ? `?${query}` : ''}`);
+};
+
+// ===========================================================================
+// ==================== Ticket Issuances =====================================
+// ===========================================================================
+
+export interface AdminTicketIssuance {
+  id: string;
+  email: string;
+  quantity: number;
+  status: 'PENDING' | 'CLAIMED' | 'CANCELLED' | 'EXPIRED';
+  claimToken: string;
+  note: string | null;
+  expiresAt: string | null;
+  claimedAt: string | null;
+  createdAt: string;
+  package: {
+    id: string;
+    name: string;
+    type: string;
+    event: { id: string; title: string };
+  };
+}
+
+export const getAdminTicketIssuances = async (filters?: {
+  status?: string;
+  eventId?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  success: boolean;
+  data: { issuances: AdminTicketIssuance[]; total: number; page: number; limit: number };
+}> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.eventId) params.set('eventId', filters.eventId);
+  if (filters?.page) params.set('page', String(filters.page));
+  if (filters?.limit) params.set('limit', String(filters.limit));
+  const query = params.toString();
+  return apiGet(`/admin/ticket-issuances${query ? `?${query}` : ''}`);
+};
+
+export const cancelAdminTicketIssuance = async (issuanceId: string): Promise<{
+  success: boolean;
+  message: string;
+}> => {
+  return apiPatch(`/admin/ticket-issuances/${issuanceId}/cancel`, {});
+};
+
+// ─── Staff Invitations ────────────────────────────────────────────────────────
+
+export interface StaffInvitation {
+  id: string;
+  email: string;
+  role: string;
+  scope: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REVOKED' | 'EXPIRED';
+  organizationName?: string;
+  invitedBy: { firstName: string | null; lastName: string | null; email: string };
+  expiresAt: string;
+  acceptedAt?: string;
+  createdAt: string;
+}
+
+export interface InviteStaffData {
+  email: string;
+  role: string;
+  message?: string;
+}
+
+export const inviteAdminStaff = async (data: InviteStaffData) => {
+  return apiPost<{ success: boolean; message: string; data: StaffInvitation }>(
+    '/admin/staff-invitations',
+    data,
+  );
+};
+
+export const getAdminStaffInvitations = async (params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const query = new URLSearchParams();
+  if (params?.status) query.set('status', params.status);
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.limit) query.set('limit', String(params.limit));
+  const qs = query.toString();
+  return apiGet<{
+    success: boolean;
+    data: {
+      invitations: StaffInvitation[];
+      pagination: { page: number; limit: number; total: number; totalPages: number };
+    };
+  }>(`/admin/staff-invitations${qs ? `?${qs}` : ''}`);
+};
+
+export const resendAdminStaffInvitation = async (id: string) => {
+  return apiPost<{ success: boolean; message: string }>(`/admin/staff-invitations/${id}/resend`, {});
+};
+
+export const revokeAdminStaffInvitation = async (id: string) => {
+  return apiPost<{ success: boolean; message: string }>(`/admin/staff-invitations/${id}/revoke`, {});
 };
 

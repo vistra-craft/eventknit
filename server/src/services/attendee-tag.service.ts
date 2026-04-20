@@ -329,7 +329,10 @@ export class AttendeeTagService {
       const page = filters?.page || 1;
       const skip = (page - 1) * limit;
 
-      const where: any = {
+      const where: {
+        tagId: string;
+        eventId?: string;
+      } = {
         tagId,
       };
 

@@ -7,12 +7,10 @@ import { AuthorizationError } from './errors.js';
 export const roleHierarchy: Record<UserRole, number> = {
   SUPERADMIN: 10,
   ADMIN: 9,
-  ADMIN_STAFF: 8,
-  MARKETER: 7,
   SUPPORT: 6,
   TELLER: 5,
   ORGANIZER: 4,
-  ORGANIZER_STAFF: 3,
+  ORGANIZER_ADMIN: 3,
   ORGANIZER_TELLER: 2,
   ATTENDEE: 1,
 };
@@ -24,51 +22,29 @@ const roleCreationRules: Record<UserRole, UserRole[]> = {
   SUPERADMIN: [
     UserRole.SUPERADMIN,
     UserRole.ADMIN,
-    UserRole.ADMIN_STAFF,
-    UserRole.MARKETER,
     UserRole.SUPPORT,
     UserRole.TELLER,
     UserRole.ORGANIZER,
-    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_ADMIN,
     UserRole.ORGANIZER_TELLER,
     UserRole.ATTENDEE,
   ],
   ADMIN: [
     UserRole.ADMIN,
-    UserRole.ADMIN_STAFF,
-    UserRole.MARKETER,
     UserRole.SUPPORT,
     UserRole.TELLER,
     UserRole.ORGANIZER,
-    UserRole.ORGANIZER_STAFF,
-    UserRole.ORGANIZER_TELLER,
-    UserRole.ATTENDEE,
-  ],
-  ADMIN_STAFF: [
-    UserRole.ADMIN_STAFF,
-    UserRole.MARKETER,
-    UserRole.SUPPORT,
-    UserRole.TELLER,
-    UserRole.ORGANIZER,
-    UserRole.ORGANIZER_STAFF,
-    UserRole.ORGANIZER_TELLER,
-    UserRole.ATTENDEE,
-  ],
-  MARKETER: [
-    UserRole.MARKETER,
-    UserRole.SUPPORT,
-    UserRole.ORGANIZER,
-    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_ADMIN,
     UserRole.ORGANIZER_TELLER,
     UserRole.ATTENDEE,
   ],
   SUPPORT: [],
   TELLER: [],
   ORGANIZER: [
-    UserRole.ORGANIZER_STAFF,
+    UserRole.ORGANIZER_ADMIN,
     UserRole.ORGANIZER_TELLER,
   ],
-  ORGANIZER_STAFF: [],
+  ORGANIZER_ADMIN: [],
   ORGANIZER_TELLER: [],
   ATTENDEE: [],
 };
@@ -88,20 +64,15 @@ export const canModifyUser = (userRole: UserRole, targetUserRole: UserRole): boo
   // SUPERADMIN can modify anyone
   if (userRole === UserRole.SUPERADMIN) return true;
 
-  // ADMIN_STAFF cannot modify SUPERADMIN
-  if (userRole === UserRole.ADMIN_STAFF && targetUserRole === UserRole.SUPERADMIN) {
+  // ADMIN can modify anyone except SUPERADMIN
+  if (userRole === UserRole.ADMIN && targetUserRole === UserRole.SUPERADMIN) {
     return false;
   }
-
-  // MARKETER cannot modify SUPERADMIN or ADMIN_STAFF
-  if (userRole === UserRole.MARKETER &&
-    (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)) {
-    return false;
-  }
+  if (userRole === UserRole.ADMIN) return true;
 
   // ORGANIZER can only modify their staff
   if (userRole === UserRole.ORGANIZER) {
-    return targetUserRole === UserRole.ORGANIZER_STAFF || targetUserRole === UserRole.ORGANIZER_TELLER;
+    return targetUserRole === UserRole.ORGANIZER_ADMIN || targetUserRole === UserRole.ORGANIZER_TELLER;
   }
 
   // Otherwise, check role hierarchy
@@ -115,24 +86,19 @@ export const canDeleteUser = (userRole: UserRole, targetUserRole: UserRole): boo
   // SUPERADMIN can delete anyone (including other SUPERADMINs)
   if (userRole === UserRole.SUPERADMIN) return true;
 
-  // ADMIN_STAFF cannot delete SUPERADMIN
-  if (userRole === UserRole.ADMIN_STAFF && targetUserRole === UserRole.SUPERADMIN) {
+  // ADMIN can delete anyone except SUPERADMIN
+  if (userRole === UserRole.ADMIN && targetUserRole === UserRole.SUPERADMIN) {
     return false;
   }
-
-  // MARKETER cannot delete SUPERADMIN or ADMIN_STAFF
-  if (userRole === UserRole.MARKETER &&
-    (targetUserRole === UserRole.SUPERADMIN || targetUserRole === UserRole.ADMIN_STAFF)) {
-    return false;
-  }
+  if (userRole === UserRole.ADMIN) return true;
 
   // ORGANIZER can only delete their staff
   if (userRole === UserRole.ORGANIZER) {
-    return targetUserRole === UserRole.ORGANIZER_STAFF || targetUserRole === UserRole.ORGANIZER_TELLER;
+    return targetUserRole === UserRole.ORGANIZER_ADMIN || targetUserRole === UserRole.ORGANIZER_TELLER;
   }
 
-  // Users can always delete themselves (soft delete)
-  return false; // For now, only admins can delete
+  // For now, only admins can delete
+  return false;
 };
 
 /**
@@ -141,8 +107,7 @@ export const canDeleteUser = (userRole: UserRole, targetUserRole: UserRole): boo
 export const canManageStaff = (userRole: UserRole): boolean => {
   const allowedRoles: UserRole[] = [
     UserRole.SUPERADMIN,
-    UserRole.ADMIN_STAFF,
-    UserRole.MARKETER,
+    UserRole.ADMIN,
     UserRole.ORGANIZER,
   ];
   return allowedRoles.includes(userRole);
@@ -182,30 +147,36 @@ export const validateUserDeletion = (userRole: UserRole, targetUserRole: UserRol
 };
 
 /**
- * Check if user is admin staff (can access all events)
+ * Check if user is admin staff (can access admin dashboard)
  */
 export const isAdminStaff = (userRole: UserRole): boolean => {
-  const adminStaffRoles: UserRole[] = [
+  const adminRoles: UserRole[] = [
     UserRole.SUPERADMIN,
-    UserRole.ADMIN_STAFF,
-    UserRole.MARKETER,
+    UserRole.ADMIN,
     UserRole.SUPPORT,
     UserRole.TELLER,
   ];
-  return adminStaffRoles.includes(userRole);
+  return adminRoles.includes(userRole);
+};
+
+/**
+ * Check if user has platform admin privileges (SUPERADMIN or ADMIN).
+ * Use this instead of inline SUPERADMIN/ADMIN checks in services and controllers.
+ */
+export const isPlatformAdmin = (userRole: UserRole): boolean => {
+  return userRole === UserRole.SUPERADMIN || userRole === UserRole.ADMIN;
 };
 
 /**
  * Check if user is organizer staff (limited access)
  */
 export const isOrganizerStaff = (userRole: UserRole): boolean => {
-  return userRole === UserRole.ORGANIZER_STAFF || userRole === UserRole.ORGANIZER_TELLER;
+  return userRole === UserRole.ORGANIZER_ADMIN || userRole === UserRole.ORGANIZER_TELLER;
 };
 
 /**
- * Check if user can access all events (admin staff)
+ * Check if user can access all events (admin roles)
  */
 export const canAccessAllEvents = (userRole: UserRole): boolean => {
   return isAdminStaff(userRole);
 };
-

@@ -4,23 +4,23 @@ import { logger } from '../../../src/utils/logger.js';
 import * as cron from 'node-cron';
 
 // Mock dependencies
-jest.mock('../../../src/services/ussd-sms.service.js');
-jest.mock('../../../src/utils/logger.js');
-jest.mock('node-cron');
+vi.mock('../../../src/services/ussd-sms.service.js');
+vi.mock('../../../src/utils/logger.js');
+vi.mock('node-cron');
 
 describe('SMSSessionCleanupJob', () => {
   let mockScheduledTask: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Create mock scheduled task
     mockScheduledTask = {
-      stop: jest.fn(),
+      stop: vi.fn(),
     };
 
     // Mock cron.schedule to return the mock task
-    (cron.schedule as jest.Mock).mockReturnValue(mockScheduledTask);
+    (cron.schedule as vi.Mock).mockReturnValue(mockScheduledTask);
   });
 
   afterEach(() => {
@@ -46,7 +46,7 @@ describe('SMSSessionCleanupJob', () => {
     it('should warn if job is already running', () => {
       // Arrange
       SMSSessionCleanupJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       SMSSessionCleanupJob.start();
@@ -58,13 +58,13 @@ describe('SMSSessionCleanupJob', () => {
 
     it('should execute cleanup when cron job triggers', async () => {
       // Arrange
-      (USSDSMSService.cleanupExpiredSessions as jest.Mock).mockResolvedValue(undefined);
+      (USSDSMSService.cleanupExpiredSessions as vi.Mock).mockResolvedValue(undefined);
 
       // Act
       SMSSessionCleanupJob.start();
 
       // Get the callback function passed to cron.schedule
-      const cronCallback = (cron.schedule as jest.Mock).mock.calls[0][1];
+      const cronCallback = (cron.schedule as vi.Mock).mock.calls[0][1];
 
       // Execute the callback
       await cronCallback();
@@ -78,13 +78,13 @@ describe('SMSSessionCleanupJob', () => {
     it('should handle errors during cleanup execution', async () => {
       // Arrange
       const mockError = new Error('Cleanup failed');
-      (USSDSMSService.cleanupExpiredSessions as jest.Mock).mockRejectedValue(mockError);
+      (USSDSMSService.cleanupExpiredSessions as vi.Mock).mockRejectedValue(mockError);
 
       // Act
       SMSSessionCleanupJob.start();
 
       // Get the callback function passed to cron.schedule
-      const cronCallback = (cron.schedule as jest.Mock).mock.calls[0][1];
+      const cronCallback = (cron.schedule as vi.Mock).mock.calls[0][1];
 
       // Execute the callback
       await cronCallback();
@@ -100,7 +100,7 @@ describe('SMSSessionCleanupJob', () => {
     it('should stop the cleanup job successfully', () => {
       // Arrange
       SMSSessionCleanupJob.start();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       SMSSessionCleanupJob.stop();
@@ -123,7 +123,7 @@ describe('SMSSessionCleanupJob', () => {
       // Arrange
       SMSSessionCleanupJob.start();
       SMSSessionCleanupJob.stop();
-      jest.clearAllMocks();
+      vi.clearAllMocks();
 
       // Act
       SMSSessionCleanupJob.start();

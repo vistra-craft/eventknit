@@ -26,6 +26,7 @@ import {
 } from "@/components/charts/ChartComponents";
 import { CHART_COLORS } from "@/components/charts/chartConstants";
 import { getOrganizerDashboardStats, getOrganizerEvents } from "@/lib/organizer-api";
+import { extractErrorMessage } from '@/lib/utils/error';
 
 const AnalyticsOverview = () => {
   const [timeRange, setTimeRange] = useState("30d");
@@ -82,7 +83,7 @@ const AnalyticsOverview = () => {
           setEvents(eventsResponse.data.events as Array<{ id: string; title: string; startDate?: string; attendees?: number; price?: number | string | null; views?: number; rating?: number; status?: string; category?: string; capacity?: number }>);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load analytics data');
+        setError(extractErrorMessage(err, 'Failed to load analytics data'));
       } finally {
         setLoading(false);
       }
@@ -394,7 +395,7 @@ const AnalyticsOverview = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="events">Top Events</TabsTrigger>
             <TabsTrigger value="insights">Insights</TabsTrigger>
@@ -568,7 +569,7 @@ const AnalyticsOverview = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {recentInsights.map((insight) => (
                 <Card key={insight.id} className={`border ${getImpactColor(insight.impact).split(' ')[2]}`}>
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex items-start space-x-3">
                       <div className={`w-8 h-8 rounded-full ${getImpactColor(insight.impact).split(' ')[1]} flex items-center justify-center`}>
                         <insight.icon className={`h-4 w-4 ${getImpactColor(insight.impact).split(' ')[0]}`} />

@@ -40,7 +40,14 @@ export class UserFeaturesController {
     try {
       const { eventId, category, minPrice, maxPrice, page, limit } = req.query;
 
-      const filters: any = {};
+      const filters: {
+        eventId?: string;
+        category?: string;
+        minPrice?: number;
+        maxPrice?: number;
+        page?: number;
+        limit?: number;
+      } = {};
       if (eventId) filters.eventId = eventId as string;
       if (category) filters.category = category as string;
       if (minPrice) filters.minPrice = parseFloat(minPrice as string);

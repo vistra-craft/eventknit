@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Menu, User, ChevronDown, LogOut, Building2 } from "lucide-react";
+import { Menu, User, LogOut, Building2, Settings, LayoutDashboard } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import NotificationBell from "../../components/NotificationBell";
-import { ThemeToggle } from "../../components/ThemeToggle";
+import NotificationBell from "../../components/profile/NotificationBell";
+import { ThemeToggle } from "../../components/layout/ThemeToggle";
 
 interface OrganizerHeaderProps {
   onMenuToggle?: () => void;
@@ -55,7 +55,8 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
               variant="ghost" 
               size="sm"
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center space-x-2 hover:bg-muted transition-colors"
+              className="rounded-full p-0 w-10 h-10 flex items-center justify-center hover:bg-muted transition-colors"
+              title={`${userName}\n${userEmail}`}
             >
               {userAvatar ? (
                 <img 
@@ -68,18 +69,11 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                   <User className="h-4 w-4 text-primary-foreground" />
                 </div>
               )}
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-foreground">{userName}</p>
-                {userOrganization && (
-                  <p className="text-xs text-muted-foreground">{userOrganization}</p>
-                )}
-              </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
             
             {/* Profile Dropdown Menu */}
             {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50">
+              <div className="absolute right-0 mt-2 w-56 sm:w-64 bg-card border border-border rounded-lg shadow-lg z-50">
                 <div className="p-4 border-b border-border">
                   <div className="flex items-center space-x-3">
                     {userAvatar ? (
@@ -110,12 +104,36 @@ const OrganizerHeader: React.FC<OrganizerHeaderProps> = ({
                   <button
                     onClick={() => {
                       setIsProfileOpen(false);
-                      navigate('/organizer/profile');
+                      navigate('/organizer/settings/profile');
                     }}
                     className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
                   >
                     <User className="h-4 w-4" />
                     <span>View Profile</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      navigate('/organizer/settings/security');
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </button>
+                  
+                  <div className="border-t border-border my-2"></div>
+                  
+                  <button
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      navigate('/user/dashboard');
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    <span>Dashboard</span>
                   </button>
                   
                   <div className="border-t border-border my-2"></div>

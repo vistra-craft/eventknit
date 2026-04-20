@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
+import BackButton from "@/components/BackButton";
 import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { Loader } from "@/components/ui/loader";
 import { getUserRegisteredEvents } from "@/lib/event-api";
 import { initiateTicketTransfer, getTransferHistory, cancelTicketTransfer } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 const TicketTransfer: React.FC = () => {
   const location = useLocation();
@@ -30,7 +32,7 @@ const TicketTransfer: React.FC = () => {
   const { toast } = useToast();
 
   // Pre-select from location.state (e.g., from MyTickets page)
-  const preselectedRegistrationId = (location.state as any)?.registrationId;
+  const preselectedRegistrationId = (location.state as { registrationId?: string } | null)?.registrationId;
 
   useEffect(() => {
     fetchData();
@@ -53,11 +55,7 @@ const TicketTransfer: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load data. Please try again.",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -65,11 +63,7 @@ const TicketTransfer: React.FC = () => {
 
   const handleTransfer = async (registrationId: string) => {
     if (!transferData.toEmail) {
-      toast({
-        title: "Error",
-        description: "Please enter recipient email",
-        variant: "destructive",
-      });
+      showErrorToast(toast, null, "Please enter recipient email");
       return;
     }
 
@@ -90,11 +84,7 @@ const TicketTransfer: React.FC = () => {
         fetchData();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to initiate transfer",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to initiate transfer");
     } finally {
       setTransferring(false);
     }
@@ -111,11 +101,7 @@ const TicketTransfer: React.FC = () => {
         fetchData();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to cancel transfer",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to cancel transfer");
     }
   };
 
@@ -166,6 +152,7 @@ const TicketTransfer: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <BackButton to="/user/dashboard" label="Back to Dashboard" className="mb-6" />
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground mb-2">Ticket Transfer</h1>
         <p className="text-muted-foreground">

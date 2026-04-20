@@ -5,6 +5,7 @@
  */
 
 import { prisma } from '../config/database.js';
+import { Prisma } from '@prisma/client';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
@@ -20,7 +21,7 @@ export interface CreateVenueData {
   capacity?: number;
   venueType?: string;
   amenities?: string[];
-  defaultSeatMap?: any;
+  defaultSeatMap?: Record<string, unknown> | null;
 }
 
 export interface UpdateVenueData extends Partial<CreateVenueData> {
@@ -43,11 +44,11 @@ export class VenueService {
           state: data.state,
           country: data.country,
           postalCode: data.postalCode,
-          coordinates: data.coordinates as any,
+          coordinates: data.coordinates as unknown as Prisma.InputJsonValue,
           capacity: data.capacity,
           venueType: data.venueType,
           amenities: data.amenities || [],
-          defaultSeatMap: data.defaultSeatMap as any,
+          defaultSeatMap: data.defaultSeatMap as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -68,7 +69,12 @@ export class VenueService {
     search?: string;
   }) {
     try {
-      const where: any = { organizerId };
+      const where: {
+        organizerId: string;
+        isActive?: boolean;
+        venueType?: string;
+        OR?: Array<{ name?: { contains: string; mode: 'insensitive' } } | { address?: { contains: string; mode: 'insensitive' } } | { description?: { contains: string; mode: 'insensitive' } } | { city?: { contains: string; mode: 'insensitive' } }>;
+      } = { organizerId };
 
       if (filters?.isActive !== undefined) {
         where.isActive = filters.isActive;
@@ -104,7 +110,7 @@ export class VenueService {
    */
   static async getVenueById(venueId: string, organizerId?: string) {
     try {
-      const where: any = { id: venueId };
+      const where: { id: string; organizerId?: string } = { id: venueId };
       if (organizerId) {
         where.organizerId = organizerId;
       }
@@ -154,11 +160,11 @@ export class VenueService {
           ...(data.state !== undefined && { state: data.state }),
           ...(data.country !== undefined && { country: data.country }),
           ...(data.postalCode !== undefined && { postalCode: data.postalCode }),
-          ...(data.coordinates && { coordinates: data.coordinates as any }),
+          ...(data.coordinates && { coordinates: data.coordinates as unknown as Prisma.InputJsonValue }),
           ...(data.capacity !== undefined && { capacity: data.capacity }),
           ...(data.venueType !== undefined && { venueType: data.venueType }),
           ...(data.amenities && { amenities: data.amenities }),
-          ...(data.defaultSeatMap && { defaultSeatMap: data.defaultSeatMap as any }),
+          ...(data.defaultSeatMap && { defaultSeatMap: data.defaultSeatMap as unknown as Prisma.InputJsonValue }),
           ...(data.isActive !== undefined && { isActive: data.isActive }),
         },
       });

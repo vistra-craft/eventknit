@@ -1,7 +1,7 @@
 /**
  * Organizer Routes
  * All routes under /organizer/* path (protected, requires organizer roles)
- * Supports multiple role variations: ORGANIZER, ORGANIZER_STAFF, ORGANIZER_TELLER
+ * Supports multiple role variations: ORGANIZER, ORGANIZER_ADMIN, ORGANIZER_TELLER
  */
 
 import { lazy, createElement } from 'react';
@@ -9,20 +9,27 @@ import { Navigate } from 'react-router-dom';
 import type { ProtectedRouteConfig } from './types';
 import { UserRole } from '../types/auth';
 
+// Service Point (shared with admin, used by ORGANIZER_TELLER role)
+const ServicePointEvents = lazy(() => import('../pages/admin/service-point/ServicePointEvents'));
+const ServicePointEventDashboard = lazy(() => import('../pages/admin/service-point/ServicePointEventDashboard'));
+const ServicePointScanner = lazy(() => import('../pages/admin/service-point/ServicePointScanner'));
+const ServicePointHistory = lazy(() => import('../pages/admin/service-point/ServicePointHistory'));
+
 // Lazy load organizer page components
 
 // Dashboard & Onboarding
 const OrganizerDashboard = lazy(() => import('../pages/organizer/OrganizerDashboard'));
 const OnboardingWizard = lazy(() => import('../pages/organizer/OnboardingWizard'));
 
-// Event Management - Unified Page
-const UnifiedEventsPage = lazy(() => import('../pages/organizer/UnifiedEventsPage'));
-const AttendingEventsPage = lazy(() => import('../pages/organizer/AttendingEventsPage'));
-const CreateEventPage = lazy(() => import('../pages/organizer/CreateEventPage'));
-const StandaloneCreateEventPage = lazy(() => import('../pages/organizer/StandaloneCreateEventPage'));
-const EventManagementPage = lazy(() => import('../pages/organizer/EventManagementPage'));
-const EventTemplates = lazy(() => import('../pages/organizer/EventTemplates'));
-const EventCollaboration = lazy(() => import('../pages/organizer/EventCollaboration'));
+// Event Management
+const UnifiedEventsPage = lazy(() => import('../pages/organizer/events/UnifiedEventsPage'));
+const AttendingEventsPage = lazy(() => import('../pages/organizer/events/AttendingEventsPage'));
+const CreateEventPage = lazy(() => import('../pages/organizer/events/CreateEventPage'));
+const StandaloneCreateEventPage = lazy(() => import('../pages/organizer/events/StandaloneCreateEventPage'));
+const EventManagementPage = lazy(() => import('../pages/organizer/events/EventManagementPage'));
+const EventTemplates = lazy(() => import('../pages/organizer/events/EventTemplates'));
+const EventCollaboration = lazy(() => import('../pages/organizer/events/EventCollaboration'));
+const EventSurveyManagement = lazy(() => import('../pages/organizer/events/EventSurveyManagement'));
 
 // Analytics
 const AnalyticsOverview = lazy(() => import('../pages/organizer/analytics').then(m => ({ default: m.AnalyticsOverview })));
@@ -36,50 +43,49 @@ const StaffManagementPage = lazy(() => import('../pages/organizer/team').then(m 
 // const TeamCalendarPage = lazy(() => import('../pages/organizer/team').then(m => ({ default: m.TeamCalendarPage })));
 
 // Settings & Profile
-const OrganizerSettingsPage = lazy(() => import('../pages/organizer/OrganizerSettingsPage'));
-const OrganizerProfileSetup = lazy(() => import('../pages/organizer/OrganizerProfileSetup'));
+const OrganizerSettingsPage = lazy(() => import('../pages/organizer/settings/OrganizerSettingsPage'));
+const OrganizerProfileSetup = lazy(() => import('../pages/organizer/settings/OrganizerProfileSetup'));
 
 // Verification & Subscription
-const VerificationPage = lazy(() => import('../pages/organizer/VerificationPage'));
-const KYCVerificationPage = lazy(() => import('../pages/organizer/KYCVerificationPage'));
-const SubscriptionManagement = lazy(() => import('../pages/organizer/SubscriptionManagement'));
+const VerificationPage = lazy(() => import('../pages/organizer/settings/VerificationPage'));
+const KYCVerificationPage = lazy(() => import('../pages/organizer/settings/KYCVerificationPage'));
+const SubscriptionManagement = lazy(() => import('../pages/organizer/finance/SubscriptionManagement'));
 
 // Venues
-const VenueManagement = lazy(() => import('../pages/organizer/VenueManagement'));
+const VenueManagement = lazy(() => import('../pages/organizer/events/VenueManagement'));
 
-// Attendees
-const AttendeeSegmentation = lazy(() => import('../pages/organizer/AttendeeSegmentation'));
-const AttendeeTagsManagement = lazy(() => import('../pages/organizer/AttendeeTagsManagement'));
-const AttendeeCommunication = lazy(() => import('../pages/organizer/AttendeeCommunication'));
+// Attendees & Communication
+const AttendeeSegmentation = lazy(() => import('../pages/organizer/attendees/AttendeeSegmentation'));
+const AttendeeTagsManagement = lazy(() => import('../pages/organizer/attendees/AttendeeTagsManagement'));
+const AttendeeCommunication = lazy(() => import('../pages/organizer/attendees/AttendeeCommunication'));
+const OrganizerNotificationsCenter = lazy(() => import('../pages/organizer/OrganizerNotificationsCenter'));
 
 // Marketing
-const OrganizerPromoCodeManager = lazy(() => import('../pages/organizer/marketing/OrganizerPromoCodeManager'));
 const AffiliateProgram = lazy(() => import('../pages/organizer/AffiliateProgram'));
 
 // Financial
-const FinancialManagement = lazy(() => import('../pages/organizer/FinancialManagement'));
-const PayoutManagement = lazy(() => import('../pages/organizer/PayoutManagement'));
+const FinancialManagement = lazy(() => import('../pages/organizer/finance/FinancialManagement'));
+const PayoutManagement = lazy(() => import('../pages/organizer/finance/PayoutManagement'));
 
-// Advanced Tickets & Pricing
-const AdvancedTicketTypes = lazy(() => import('../pages/organizer/AdvancedTicketTypes'));
-const DynamicPricing = lazy(() => import('../pages/organizer/DynamicPricing'));
+// Tickets Management (consolidated hub)
+const TicketsManagementHub = lazy(() => import('../pages/organizer/finance/TicketsManagementHub'));
 
 // Branding
-const OrganizerBrandingPage = lazy(() => import('../pages/organizer/OrganizerBrandingPage'));
+const OrganizerBrandingPage = lazy(() => import('../pages/organizer/settings/OrganizerBrandingPage'));
 
 /**
  * Common role combinations
  */
 const ALL_ORGANIZER_ROLES = [
   UserRole.ORGANIZER,
-  UserRole.ORGANIZER_STAFF,
+  UserRole.ORGANIZER_ADMIN,
   UserRole.ORGANIZER_TELLER,
   UserRole.SUPERADMIN,
 ];
 
 const NON_TELLER_ROLES = [
   UserRole.ORGANIZER,
-  UserRole.ORGANIZER_STAFF,
+  UserRole.ORGANIZER_ADMIN,
   UserRole.SUPERADMIN,
 ];
 
@@ -102,7 +108,7 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
   {
     path: 'onboarding',
     element: createElement(OnboardingWizard),
-    allowedRoles: [UserRole.ORGANIZER, UserRole.ORGANIZER_STAFF, UserRole.ORGANIZER_TELLER],
+    allowedRoles: [UserRole.ORGANIZER, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_TELLER],
   },
   {
     path: 'profile-setup',
@@ -181,6 +187,11 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     element: createElement(EventCollaboration),
     allowedRoles: NON_TELLER_ROLES,
   },
+  {
+    path: 'event/:eventId/survey',
+    element: createElement(EventSurveyManagement),
+    allowedRoles: NON_TELLER_ROLES,
+  },
 
   // Analytics
   {
@@ -221,38 +232,38 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
   //   allowedRoles: NON_TELLER_ROLES,
   // },
 
-  // Settings
+  // Settings — open to all authenticated users (ATTENDEE sees profile/security/notifications/appearance; organizer-specific sections hidden by role)
   {
     path: 'settings',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
   {
     path: 'settings/profile',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
   {
     path: 'settings/notifications',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
   {
     path: 'settings/security',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
   {
     path: 'settings/appearance',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
 
   // Profile (legacy route, redirects to settings)
   {
     path: 'profile',
     element: createElement(OrganizerSettingsPage),
-    allowedRoles: ALL_ORGANIZER_ROLES,
+    allowedRoles: [...ALL_ORGANIZER_ROLES, UserRole.ATTENDEE],
   },
 
   // Verification & Subscription
@@ -264,7 +275,7 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
   {
     path: 'kyc',
     element: createElement(KYCVerificationPage),
-    allowedRoles: ORGANIZER_ADMIN_ONLY,
+    allowedRoles: [...ORGANIZER_ADMIN_ONLY, UserRole.ATTENDEE],
   },
   {
     path: 'subscription',
@@ -277,6 +288,13 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     path: 'venues',
     element: createElement(VenueManagement),
     allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Notifications
+  {
+    path: 'notifications',
+    element: createElement(OrganizerNotificationsCenter),
+    allowedRoles: ALL_ORGANIZER_ROLES,
   },
 
   // Attendees
@@ -298,11 +316,6 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
 
   // Marketing
   {
-    path: 'marketing/promo-codes',
-    element: createElement(OrganizerPromoCodeManager),
-    allowedRoles: NON_TELLER_ROLES,
-  },
-  {
     path: 'marketing/affiliate',
     element: createElement(AffiliateProgram),
     allowedRoles: NON_TELLER_ROLES,
@@ -320,15 +333,27 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     allowedRoles: ORGANIZER_ADMIN_ONLY,
   },
 
-  // Advanced Tickets & Pricing (event-scoped)
+  // Tickets Management (consolidated hub)
+  {
+    path: 'tickets',
+    element: createElement(TicketsManagementHub),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+  {
+    path: 'tickets/:eventId',
+    element: createElement(TicketsManagementHub),
+    allowedRoles: NON_TELLER_ROLES,
+  },
+
+  // Legacy Advanced Tickets & Pricing (redirect to new hub)
   {
     path: 'event/:eventId/tickets/advanced',
-    element: createElement(AdvancedTicketTypes),
+    element: createElement(Navigate, { to: '/organizer/tickets/:eventId', replace: true }),
     allowedRoles: NON_TELLER_ROLES,
   },
   {
     path: 'event/:eventId/pricing',
-    element: createElement(DynamicPricing),
+    element: createElement(Navigate, { to: '/organizer/tickets/:eventId', replace: true }),
     allowedRoles: NON_TELLER_ROLES,
   },
 
@@ -337,5 +362,27 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     path: 'branding',
     element: createElement(OrganizerBrandingPage),
     allowedRoles: ORGANIZER_ADMIN_ONLY,
+  },
+
+  // Event Day Hub (for ORGANIZER_TELLER role — shared operational pages)
+  {
+    path: 'event-day',
+    element: createElement(ServicePointEvents),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'event-day/event/:eventId',
+    element: createElement(ServicePointEventDashboard),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'event-day/scanner',
+    element: createElement(ServicePointScanner),
+    allowedRoles: ALL_ORGANIZER_ROLES,
+  },
+  {
+    path: 'event-day/history',
+    element: createElement(ServicePointHistory),
+    allowedRoles: ALL_ORGANIZER_ROLES,
   },
 ];

@@ -57,6 +57,71 @@ export const cancelSubscription = async (): Promise<{ success: boolean; message:
   return apiPost('/organizer-dashboard/subscription/cancel', {});
 };
 
+// ========== Subscription Plans (public) ==========
+
+/**
+ * Subscription plan configuration from admin
+ */
+export interface SubscriptionPlanConfig {
+  id: string;
+  tier: SubscriptionTier;
+  name: string;
+  description: string | null;
+  price: string; // Decimal as string
+  currency: string;
+  features: string[];
+  isActive: boolean;
+}
+
+/**
+ * Get subscription plans (for organizer pricing/upgrade page)
+ */
+export const getSubscriptionPlans = async (): Promise<{ success: boolean; data: { plans: SubscriptionPlanConfig[] } }> => {
+  return apiGet('/organizer-dashboard/subscription-plans');
+};
+
+// ========== Subscription Payment ==========
+
+/**
+ * Initialize subscription payment data
+ */
+export interface InitializeSubscriptionPaymentData {
+  tier: SubscriptionTier;
+  billingEmail: string;
+}
+
+/**
+ * Initialize subscription payment (returns Paystack authorization URL)
+ */
+export const initializeSubscriptionPayment = async (
+  data: InitializeSubscriptionPaymentData,
+): Promise<{
+  success: boolean;
+  data: {
+    authorizationUrl: string;
+    accessCode: string;
+    reference: string;
+    paymentId: string;
+  };
+}> => {
+  return apiPost('/organizer-dashboard/subscription/pay', data);
+};
+
+/**
+ * Verify subscription payment after Paystack callback
+ */
+export const verifySubscriptionPayment = async (
+  reference: string,
+): Promise<{
+  success: boolean;
+  data: {
+    status: 'SUCCESS' | 'FAILED';
+    subscription: OrganizerSubscription | null;
+  };
+}> => {
+  return apiGet(`/organizer-dashboard/subscription/verify?reference=${reference}`);
+};
+
 // ========== Consent Management ==========
 
 /**

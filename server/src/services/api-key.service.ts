@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
+import { Prisma, type ApiKey } from '@prisma/client';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 
@@ -23,7 +24,7 @@ export class ApiKeyService {
   /**
    * Verify API key
    */
-  static async verifyApiKey(apiKey: string): Promise<{ valid: boolean; apiKeyRecord?: any }> {
+  static async verifyApiKey(apiKey: string): Promise<{ valid: boolean; apiKeyRecord?: ApiKey }> {
     try {
       // Extract key prefix
       const keyPrefix = apiKey.substring(0, 10);
@@ -58,7 +59,7 @@ export class ApiKeyService {
       }
 
       return { valid: false };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error verifying API key:', error);
       return { valid: false };
     }
@@ -103,9 +104,9 @@ export class ApiKeyService {
         ...apiKeyRecord,
         key: apiKey, // Only returned on creation
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error creating API key:', error);
-      throw new ValidationError(`Failed to create API key: ${error.message}`);
+      throw new ValidationError(`Failed to create API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -117,15 +118,10 @@ export class ApiKeyService {
     createdBy?: string;
   }) {
     try {
-      const where: any = {};
-
-      if (filters?.isActive !== undefined) {
-        where.isActive = filters.isActive;
-      }
-
-      if (filters?.createdBy) {
-        where.createdBy = filters.createdBy;
-      }
+      const where: Prisma.ApiKeyWhereInput = {
+        ...(filters?.isActive !== undefined && { isActive: filters.isActive }),
+        ...(filters?.createdBy && { createdBy: filters.createdBy }),
+      };
 
       const apiKeys = await prisma.apiKey.findMany({
         where,
@@ -144,9 +140,9 @@ export class ApiKeyService {
         const { keyHash: _keyHash, ...rest } = key;
         return rest;
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error fetching API keys:', error);
-      throw new ValidationError(`Failed to fetch API keys: ${error.message}`);
+      throw new ValidationError(`Failed to fetch API keys: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -172,12 +168,12 @@ export class ApiKeyService {
       // Remove keyHash from response
       const { keyHash: _keyHash, ...rest } = apiKey;
       return rest;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error fetching API key:', error);
-      throw new ValidationError(`Failed to fetch API key: ${error.message}`);
+      throw new ValidationError(`Failed to fetch API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -223,12 +219,12 @@ export class ApiKeyService {
       // Remove keyHash from response
       const { keyHash: _keyHash, ...rest } = updated;
       return rest;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error updating API key:', error);
-      throw new ValidationError(`Failed to update API key: ${error.message}`);
+      throw new ValidationError(`Failed to update API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -251,12 +247,12 @@ export class ApiKeyService {
 
       logger.info(`API key deleted: ${apiKeyId}`);
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundError) {
         throw error;
       }
       logger.error('Error deleting API key:', error);
-      throw new ValidationError(`Failed to delete API key: ${error.message}`);
+      throw new ValidationError(`Failed to delete API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -284,7 +280,7 @@ export class ApiKeyService {
           responseTime: data.responseTime,
           ipAddress: data.ipAddress,
           userAgent: data.userAgent,
-          requestBody: data.requestBody ? (data.requestBody as any) : undefined,
+          requestBody: data.requestBody ? (data.requestBody as Prisma.InputJsonValue) : undefined,
           errorMessage: data.errorMessage,
         },
       });
@@ -296,7 +292,7 @@ export class ApiKeyService {
           lastRequestAt: new Date(),
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Don't throw - logging failures shouldn't break API requests
       logger.error('Error logging API request:', error);
     }
@@ -310,17 +306,15 @@ export class ApiKeyService {
     endDate?: Date;
   }) {
     try {
-      const where: any = { apiKeyId };
-
-      if (filters?.startDate || filters?.endDate) {
-        where.createdAt = {};
-        if (filters.startDate) {
-          where.createdAt.gte = filters.startDate;
-        }
-        if (filters.endDate) {
-          where.createdAt.lte = filters.endDate;
-        }
-      }
+      const where: Prisma.ApiRequestWhereInput = { 
+        apiKeyId,
+        ...(filters?.startDate || filters?.endDate ? {
+          createdAt: {
+            ...(filters.startDate && { gte: filters.startDate }),
+            ...(filters.endDate && { lte: filters.endDate }),
+          },
+        } : {}),
+      };
 
       const [totalRequests, successfulRequests, failedRequests, avgResponseTime] = await Promise.all([
         prisma.apiRequest.count({ where }),
@@ -380,9 +374,9 @@ export class ApiKeyService {
           count: item._count.id,
         })),
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error fetching API usage stats:', error);
-      throw new ValidationError(`Failed to fetch usage stats: ${error.message}`);
+      throw new ValidationError(`Failed to fetch usage stats: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -422,7 +416,7 @@ export class ApiKeyService {
       const resetAt = new Date(Date.now() + apiKey.rateLimitWindow * 1000);
 
       return { allowed, remaining, resetAt };
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error('Error checking rate limit:', error);
       // On error, allow the request but log it
       return { allowed: true, remaining: 0, resetAt: new Date() };

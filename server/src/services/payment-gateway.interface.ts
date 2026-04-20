@@ -8,7 +8,7 @@ export interface PaymentGatewayConfig {
   publicKey?: string;
   webhookSecret?: string;
   environment?: 'test' | 'live';
-  [key: string]: any; // Allow gateway-specific config
+  [key: string]: string | undefined; // Allow gateway-specific config
 }
 
 export interface InitializePaymentRequest {

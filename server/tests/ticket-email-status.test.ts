@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import request from 'supertest';
 import app from '../src/app';
 import { prisma } from '../src/config/database';
@@ -258,9 +258,11 @@ describe('Ticket Email Status Tracking', () => {
       } catch (error) {
         // If email service is not configured, check that status is still tracked
         if (error instanceof Error && (
-          error.message.includes('not configured') || 
+          error.message.includes('not configured') ||
           error.message.includes('503') ||
-          error.message.includes('Missing credentials')
+          error.message.includes('Missing credentials') ||
+          error.message.includes('sending limit exceeded') ||
+          error.message.includes('550')
         )) {
           // Verify that even on failure, status is tracked
           const updatedRegistration = await prisma.eventRegistration.findUnique({
@@ -416,13 +418,14 @@ describe('Ticket Email Status Tracking', () => {
 
       // Mock email service to capture HTML content
       let emailHTML: string | undefined;
-      const originalSendEmail = require('../src/services/email.service').emailService.sendEmail;
-      const mockSendEmail = jest.fn().mockImplementation(async (options: any) => {
+      const emailModule = await import('../src/services/email.service.js');
+      const originalSendEmail = emailModule.emailService.sendEmail;
+      const mockSendEmail = vi.fn().mockImplementation(async (options: any) => {
         emailHTML = options.html;
         return { success: true, attempts: 1 };
       });
 
-      require('../src/services/email.service').emailService.sendEmail = mockSendEmail;
+      emailModule.emailService.sendEmail = mockSendEmail as any;
 
       try {
         await TicketService.sendTicketEmail({
@@ -437,14 +440,14 @@ describe('Ticket Email Status Tracking', () => {
           attendee: registration.attendee,
         });
 
-        // Verify stored QR code was used in email
+        // Verify QR code is referenced in the email (via CID attachment)
         expect(emailHTML).toBeDefined();
-        if (storedQRCode && emailHTML) {
-          // Email HTML should contain the stored QR code (at least part of it)
-          expect(emailHTML).toContain(storedQRCode.substring(0, 50));
+        if (emailHTML) {
+          // Email now uses CID reference for QR code (inline attachment)
+          expect(emailHTML).toContain('cid:ticket-qr-code');
         }
       } finally {
-        require('../src/services/email.service').emailService.sendEmail = originalSendEmail;
+        emailModule.emailService.sendEmail = originalSendEmail;
       }
     });
 
@@ -625,13 +628,14 @@ describe('Ticket Email Status Tracking', () => {
 
       // Mock email service to capture attachments
       let attachmentsUsed: any[] = [];
-      const originalSendEmail = require('../src/services/email.service').emailService.sendEmail;
-      const mockSendEmail = jest.fn().mockImplementation(async (options: any) => {
+      const emailModule = await import('../src/services/email.service.js');
+      const originalSendEmail = emailModule.emailService.sendEmail;
+      const mockSendEmail = vi.fn().mockImplementation(async (options: any) => {
         attachmentsUsed = options.attachments || [];
         return { success: true, attempts: 1 };
       });
 
-      require('../src/services/email.service').emailService.sendEmail = mockSendEmail;
+      emailModule.emailService.sendEmail = mockSendEmail as any;
 
       try {
         await TicketService.sendTicketEmail({
@@ -665,7 +669,7 @@ describe('Ticket Email Status Tracking', () => {
         );
         expect(ticketPDF).toBeDefined();
       } finally {
-        require('../src/services/email.service').emailService.sendEmail = originalSendEmail;
+        emailModule.emailService.sendEmail = originalSendEmail;
       }
     });
   });

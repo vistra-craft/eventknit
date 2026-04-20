@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, Star, Tag } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { getUserInterests, upsertInterest, removeInterest, updateInterestWeight } from "@/lib/user-dashboard-api";
 import EmptyState from "@/components/EmptyState";
 
@@ -33,11 +34,7 @@ const InterestManagement: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching interests:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load interests",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load interests");
     } finally {
       setLoading(false);
     }
@@ -45,11 +42,7 @@ const InterestManagement: React.FC = () => {
 
   const handleAddInterest = async () => {
     if (!newCategory.trim()) {
-      toast({
-        title: "Error",
-        description: "Category is required",
-        variant: "destructive",
-      });
+      showErrorToast(toast, null, "Category is required");
       return;
     }
 
@@ -74,11 +67,7 @@ const InterestManagement: React.FC = () => {
         fetchInterests();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add interest",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to add interest");
     }
   };
 
@@ -93,11 +82,7 @@ const InterestManagement: React.FC = () => {
         fetchInterests();
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove interest",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to remove interest");
     }
   };
 

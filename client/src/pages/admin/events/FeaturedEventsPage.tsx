@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2, Radio, ChevronUp, ChevronDown } from "lucide-react";
+import { Search, Calendar, MapPin, Eye, Star, Plus, Edit, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Badge } from "../../../components/ui/badge";
 import { EventThumbnail } from "../../../components/ui/event-thumbnail";
-import { ConfirmationDialog } from "../../../components/ui/confirmation-dialog";
+import { ConfirmDialog } from "../../../components/ui/confirm-dialog";
 import { useToast } from "../../../hooks/useToast";
 import {
   getAllFeaturedEvents,
@@ -15,11 +15,14 @@ import {
   updateFeaturedEvent,
   type FeaturedEventData,
 } from "../../../lib/featured-event-api";
+import { getEventById, type EventData } from "../../../lib/event-api";
+import { EventPreviewModal } from '@/components/events/EventPreviewModal';
+import { showErrorToast } from "@/lib/utils/error";
 
 /**
- * Check if a featured event is currently live on the hero section
+ * Check if a featured event is currently displayed on the hero section
  */
-const isEventLive = (event: FeaturedEventData): boolean => {
+const isOnHero = (event: FeaturedEventData): boolean => {
   if (!event.isActive) return false;
 
   const now = new Date();
@@ -51,6 +54,40 @@ const FeaturedEventsPage = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [reordering, setReordering] = useState<string | null>(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewEventId, setPreviewEventId] = useState<string | null>(null);
+  const [previewEventData, setPreviewEventData] = useState<EventData | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const handlePreviewEvent = (eventId: string) => {
+    setPreviewEventId(eventId);
+    setPreviewModalOpen(true);
+  };
+
+  // Fetch event details for preview modal
+  useEffect(() => {
+    const fetchPreviewEvent = async () => {
+      if (!previewEventId || !previewModalOpen) return;
+
+      try {
+        setPreviewLoading(true);
+        const response = await getEventById(previewEventId);
+        if (response.success && response.data?.event) {
+          setPreviewEventData(response.data.event);
+        } else {
+          showErrorToast(toast, new Error("Failed to load event details"), "Preview failed", "Failed to load event details");
+          setPreviewModalOpen(false);
+        }
+      } catch (error: unknown) {
+        showErrorToast(toast, error, "Preview failed", "Failed to load event details");
+        setPreviewModalOpen(false);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewEvent();
+  }, [previewEventId, previewModalOpen, toast]);
 
   const fetchFeaturedEvents = useCallback(async () => {
     try {
@@ -59,11 +96,7 @@ const FeaturedEventsPage = () => {
       setFeaturedEvents(data);
     } catch (error) {
       console.error("Failed to fetch featured events:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch featured events",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Fetch failed", "Failed to fetch featured events");
     } finally {
       setLoading(false);
     }
@@ -117,12 +150,8 @@ const FeaturedEventsPage = () => {
         title: "Reordered",
         description: "Display order updated",
       });
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to reorder",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Reorder failed", "Failed to reorder");
     } finally {
       setReordering(null);
     }
@@ -146,12 +175,8 @@ const FeaturedEventsPage = () => {
         title: "Reordered",
         description: "Display order updated",
       });
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to reorder",
-        variant: "destructive",
-      });
+    } catch (error) {
+      showErrorToast(toast, error, "Reorder failed", "Failed to reorder");
     } finally {
       setReordering(null);
     }
@@ -176,15 +201,7 @@ const FeaturedEventsPage = () => {
       setDeleteDialogOpen(false);
       setDeletingId(null);
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to delete featured event";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Delete failed", "Failed to delete featured event");
     } finally {
       setDeleting(false);
     }
@@ -196,15 +213,15 @@ const FeaturedEventsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-base font-semibold text-foreground">Featured Events</h1>
-            <p className="text-muted-foreground">Manage events featured on the platform homepage hero section</p>
+            <p className="text-sm text-muted-foreground">Manage events featured on the platform homepage hero section</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>{filteredEvents.length} of {featuredEvents.length} featured events</span>
-              {featuredEvents.filter(isEventLive).length > 0 && (
+              {featuredEvents.filter(isOnHero).length > 0 && (
                 <Badge className="bg-success text-white text-xs">
-                  <Radio className="h-3 w-3 mr-1" />
-                  {featuredEvents.filter(isEventLive).length} Live
+                  <Eye className="h-3 w-3 mr-1" />
+                  {featuredEvents.filter(isOnHero).length} On Hero
                 </Badge>
               )}
             </div>
@@ -284,11 +301,11 @@ const FeaturedEventsPage = () => {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-foreground truncate">{displayTitle}</h3>
-                          {isEventLive(featuredEvent) && (
-                            <Badge className="bg-success text-white text-xs animate-pulse">
-                              <Radio className="h-3 w-3 mr-1" />
-                              LIVE
+                          <h3 className="text-base font-semibold text-foreground truncate">{displayTitle}</h3>
+                          {isOnHero(featuredEvent) && (
+                            <Badge className="bg-success text-white text-xs">
+                              <Eye className="h-3 w-3 mr-1" />
+                              On Hero
                             </Badge>
                           )}
                           <Badge className="bg-warning/10 text-warning border-warning/20 text-xs">
@@ -346,7 +363,7 @@ const FeaturedEventsPage = () => {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex items-center gap-2 ml-0 sm:ml-4 flex-shrink-0">
                         {/* Reorder buttons */}
                         <div className="flex flex-col gap-0.5">
                           <Button
@@ -375,7 +392,7 @@ const FeaturedEventsPage = () => {
                           size="sm"
                           onClick={() => {
                             if (featuredEvent.eventId) {
-                              navigate(`/admin/events/${featuredEvent.eventId}/preview`);
+                              handlePreviewEvent(featuredEvent.eventId);
                             }
                           }}
                           disabled={!featuredEvent.eventId}
@@ -414,21 +431,29 @@ const FeaturedEventsPage = () => {
               <div className="text-muted-foreground">
                 <Star className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
                 <h3 className="text-lg font-medium mb-2">No featured events found</h3>
-                <p>Try adjusting your search or filter criteria, or add a new featured event</p>
+                <p className="text-sm">Try adjusting your search or filter criteria, or add a new featured event</p>
               </div>
             </CardContent>
           </Card>
         )}
 
+        {/* Event Preview Modal */}
+        <EventPreviewModal
+          isOpen={previewModalOpen}
+          onOpenChange={setPreviewModalOpen}
+          event={previewEventData}
+          loading={previewLoading}
+        />
+
         {/* Delete Confirmation Dialog */}
-        <ConfirmationDialog
+        <ConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           title="Remove Featured Event"
           description="Are you sure you want to remove this featured event? This action cannot be undone."
           confirmText="Remove"
           cancelText="Cancel"
-          type="danger"
+          variant="danger"
           loading={deleting}
           onConfirm={handleDeleteConfirm}
         />

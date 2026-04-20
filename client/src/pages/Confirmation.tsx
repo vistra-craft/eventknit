@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // App Components
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
 interface TicketType {
   name: string;
@@ -21,11 +21,32 @@ interface ConfirmationData {
   paymentMethod: string;
   paymentId: string;
   date: string;
+  isNewUser?: boolean;
 }
 
 const Confirmation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const state = location.state as ConfirmationData | null;
+
+  // Guard: if no state (e.g. direct navigation / refresh), redirect home
+  if (!state || !state.paymentId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <CheckCircle2 className="w-12 h-12 text-success" />
+          <h1 className="text-2xl font-bold">Payment Confirmed</h1>
+          <p className="text-muted-foreground text-sm text-center max-w-sm">
+            Your registration is confirmed. Check your email for your ticket and QR code.
+          </p>
+          <Button onClick={() => navigate('/')}>Back to Home</Button>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   const {
     eventTitle,
@@ -33,8 +54,9 @@ const Confirmation = () => {
     totalPrice,
     paymentMethod,
     paymentId,
-    date
-  } = location.state as ConfirmationData;
+    date,
+    isNewUser
+  } = state;
 
   const handleDownloadTickets = () => {
     // In a real app, this would generate and download tickets
@@ -64,6 +86,13 @@ const Confirmation = () => {
               <strong>Check your email!</strong> Your ticket confirmation with QR code has been sent to your registered email address.
             </p>
           </div>
+          {isNewUser && (
+            <div className="mt-3 p-4 bg-success/10 border border-success/30 rounded-lg max-w-md mx-auto">
+              <p className="text-sm text-success">
+                <strong>Your account has been created.</strong> Set a password in your profile to manage tickets faster next time.
+              </p>
+            </div>
+          )}
         </div>
 
         <Card className="mb-8">
@@ -73,7 +102,7 @@ const Confirmation = () => {
           <CardContent>
             <h3 className="font-medium mb-4">{eventTitle}</h3>
             <div className="space-y-4">
-              {tickets.map((ticket, index) => (
+              {tickets && tickets.length > 0 ? tickets.map((ticket, index) => (
                 <div key={index} className="flex justify-between items-center border-b pb-3">
                   <div className="flex items-center gap-3">
                     <Ticket className="w-5 h-5 text-primary" />
@@ -88,7 +117,11 @@ const Confirmation = () => {
                     ${(ticket.price * ticket.quantity).toFixed(2)}
                   </p>
                 </div>
-              ))}
+              )) : (
+                <p className="text-sm text-muted-foreground">
+                  Full ticket details have been sent to your email.
+                </p>
+              )}
 
               <div className="pt-2 space-y-2">
                 <div className="flex justify-between">

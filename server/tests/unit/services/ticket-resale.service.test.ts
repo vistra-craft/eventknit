@@ -1,11 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
-import { mockDeep, mockReset, DeepMockProxy } from 'jest-mock-extended';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
 import { TicketResaleService } from '../../../src/services/ticket-resale.service.js';
 import { NotFoundError, ValidationError } from '../../../src/utils/errors.js';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: mockDeep<PrismaClient>(),
 }));
 

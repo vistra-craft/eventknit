@@ -56,7 +56,9 @@
   "include": [
     "src/**/*",
     "tests/**/*",
-    "prisma/**/*"
+    "prisma/**/*",
+    "scripts/**/*.ts",
+    "vitest.config.ts"
   ],
   "exclude": [
     "node_modules",

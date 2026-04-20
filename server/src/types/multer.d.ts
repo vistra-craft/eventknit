@@ -62,6 +62,13 @@ declare module 'multer' {
   function multer(options?: Options): Multer;
 
   namespace multer {
+    class MulterError extends Error {
+      code: string;
+      field?: string;
+
+      constructor(code: string, field?: string);
+    }
+
     function diskStorage(options: DiskStorageOptions): StorageEngine;
     function memoryStorage(): StorageEngine;
   }

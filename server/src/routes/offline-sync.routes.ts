@@ -24,11 +24,19 @@ router.get(
 
 // ==================== Batch Scan Upload ====================
 
-// POST /offline/scans/batch - Upload batch of scans
+// POST /offline/scans/batch - Upload batch of scans (checkpoint-level recording only)
 router.post(
   '/scans/batch',
   requireMinRole(UserRole.TELLER),
   OfflineSyncController.processBatchScans,
+);
+
+// POST /offline/sync-scans - Sync scans through the full check-in state machine
+// Updates EventRegistration (checkedInAt, isCurrentlyInside) and emits WebSocket stats
+router.post(
+  '/sync-scans',
+  requireMinRole(UserRole.TELLER),
+  OfflineSyncController.syncScans,
 );
 
 // ==================== Sync Status ====================
@@ -45,14 +53,14 @@ router.get(
 // GET /offline/scans/conflicts/:eventId - Get scan conflicts
 router.get(
   '/scans/conflicts/:eventId',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   OfflineSyncController.getConflicts,
 );
 
 // POST /offline/scans/conflicts/:conflictId/resolve - Resolve conflict
 router.post(
   '/scans/conflicts/:conflictId/resolve',
-  requireMinRole(UserRole.ADMIN_STAFF),
+  requireMinRole(UserRole.ADMIN),
   OfflineSyncController.resolveConflict,
 );
 

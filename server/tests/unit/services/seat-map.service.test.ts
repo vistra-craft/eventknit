@@ -1,36 +1,39 @@
-import { SeatMapService } from '../../../src/services/seat-map.service.js';
+import { SeatMapService, SeatMapLayout, SectionConfig, RowConfig } from '../../../src/services/seat-map.service.js';
 import { prisma } from '../../../src/config/database.js';
 import { NotFoundError } from '../../../src/utils/errors.js';
 import { SeatStatus, SeatType } from '@prisma/client';
 
 // Mock dependencies
-jest.mock('../../../src/config/database.js', () => ({
+vi.mock('../../../src/config/database.js', () => ({
   prisma: {
     event: {
-      findFirst: jest.fn(),
+      findFirst: vi.fn(),
     },
     venue: {
-      findFirst: jest.fn(),
+      findFirst: vi.fn(),
     },
     seatMap: {
-      upsert: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      upsert: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     seat: {
-      findMany: jest.fn(),
-      deleteMany: jest.fn(),
-      create: jest.fn(),
+      findMany: vi.fn(),
+      deleteMany: vi.fn(),
+      create: vi.fn(),
     },
-    $transaction: jest.fn(),
+    seatReservation: {
+      count: vi.fn().mockResolvedValue(0),
+    },
+    $transaction: vi.fn(),
   },
 }));
-jest.mock('../../../src/utils/logger.js');
+vi.mock('../../../src/utils/logger.js');
 
 describe('SeatMapService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const mockLayout = {
@@ -54,7 +57,7 @@ describe('SeatMapService', () => {
   describe('upsertSeatMap', () => {
     it('should throw NotFoundError if event not found', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -67,8 +70,8 @@ describe('SeatMapService', () => {
 
     it('should throw NotFoundError if venue not found', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue({ id: 'event-1' });
-      (prisma.venue.findFirst as jest.Mock).mockResolvedValue(null);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue({ id: 'event-1' });
+      (prisma.venue.findFirst as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -82,27 +85,27 @@ describe('SeatMapService', () => {
 
     it('should throw ValidationError for invalid layout - no sections', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue({ id: 'event-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue({ id: 'event-1' });
 
       // Act & Assert
       await expect(
         SeatMapService.upsertSeatMap('org-1', {
           eventId: 'event-1',
-          layout: {},
+          layout: {} as unknown as SeatMapLayout,
         }),
       ).rejects.toThrow('Invalid layout: must have sections array');
     });
 
     it('should throw ValidationError for invalid section', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue({ id: 'event-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue({ id: 'event-1' });
 
       // Act & Assert
       await expect(
         SeatMapService.upsertSeatMap('org-1', {
           eventId: 'event-1',
           layout: {
-            sections: [{ id: 'section-1' }], // Missing rows
+            sections: [{ id: 'section-1' } as unknown as SectionConfig], // Missing rows
           },
         }),
       ).rejects.toThrow('Invalid section: must have id and rows array');
@@ -110,7 +113,7 @@ describe('SeatMapService', () => {
 
     it('should throw ValidationError for invalid row', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue({ id: 'event-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue({ id: 'event-1' });
 
       // Act & Assert
       await expect(
@@ -120,7 +123,7 @@ describe('SeatMapService', () => {
             sections: [
               {
                 id: 'section-1',
-                rows: [{ id: 'row-1' }], // Missing seats
+                rows: [{ id: 'row-1' } as unknown as RowConfig], // Missing seats
               },
             ],
           },
@@ -130,7 +133,7 @@ describe('SeatMapService', () => {
 
     it('should throw ValidationError for invalid seat', async () => {
       // Arrange
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue({ id: 'event-1' });
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue({ id: 'event-1' });
 
       // Act & Assert
       await expect(
@@ -161,9 +164,9 @@ describe('SeatMapService', () => {
         layout: mockLayout,
       };
 
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue({ id: 'event-1' });
-      (prisma.seatMap.upsert as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}, {}]);
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue({ id: 'event-1' });
+      (prisma.seatMap.upsert as vi.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{}, {}, {}]);
 
       // Act
       const result = await SeatMapService.upsertSeatMap('org-1', {
@@ -203,9 +206,9 @@ describe('SeatMapService', () => {
     it('should generate seats from layout', async () => {
       // Arrange
       const mockSeatMap = { id: 'seatmap-1', eventId: 'event-1' };
-      (prisma.event.findFirst as jest.Mock).mockResolvedValue({ id: 'event-1' });
-      (prisma.seatMap.upsert as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.$transaction as jest.Mock).mockImplementation((operations) => {
+      (prisma.event.findFirst as vi.Mock).mockResolvedValue({ id: 'event-1' });
+      (prisma.seatMap.upsert as vi.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.$transaction as vi.Mock).mockImplementation((operations) => {
         return Promise.resolve(operations.map(() => ({})));
       });
 
@@ -217,7 +220,7 @@ describe('SeatMapService', () => {
 
       // Assert
       expect(prisma.$transaction).toHaveBeenCalled();
-      const transactionCalls = (prisma.$transaction as jest.Mock).mock.calls[0][0];
+      const transactionCalls = (prisma.$transaction as vi.Mock).mock.calls[0][0];
       expect(Array.isArray(transactionCalls)).toBe(true);
       expect(transactionCalls.length).toBeGreaterThan(0); // deleteMany + creates
     });
@@ -226,7 +229,7 @@ describe('SeatMapService', () => {
   describe('getSeatMapByEventId', () => {
     it('should throw NotFoundError if seat map not found', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -240,7 +243,7 @@ describe('SeatMapService', () => {
         id: 'seatmap-1',
         event: { id: 'event-1', organizerId: 'org-1' },
       };
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
 
       // Act & Assert
       await expect(
@@ -268,7 +271,7 @@ describe('SeatMapService', () => {
         ],
       };
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
 
       // Act
       const result = await SeatMapService.getSeatMapByEventId('event-1', 'org-1');
@@ -297,7 +300,7 @@ describe('SeatMapService', () => {
         id: 'seatmap-1',
         event: { id: 'event-1', organizerId: 'org-1' },
       };
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
 
       // Act
       const result = await SeatMapService.getSeatMapByEventId('event-1');
@@ -310,7 +313,7 @@ describe('SeatMapService', () => {
   describe('getAvailableSeats', () => {
     it('should throw NotFoundError if seat map not found', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(
@@ -336,8 +339,8 @@ describe('SeatMapService', () => {
         },
       ];
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.seat.findMany as jest.Mock).mockResolvedValue(mockSeats);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seat.findMany as vi.Mock).mockResolvedValue(mockSeats);
 
       // Act
       const result = await SeatMapService.getAvailableSeats('event-1');
@@ -360,8 +363,8 @@ describe('SeatMapService', () => {
 
     it('should filter by sectionId', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue({ id: 'seatmap-1' });
-      (prisma.seat.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue({ id: 'seatmap-1' });
+      (prisma.seat.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await SeatMapService.getAvailableSeats('event-1', { sectionId: 'section-1' });
@@ -378,8 +381,8 @@ describe('SeatMapService', () => {
 
     it('should filter by seatType', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue({ id: 'seatmap-1' });
-      (prisma.seat.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue({ id: 'seatmap-1' });
+      (prisma.seat.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await SeatMapService.getAvailableSeats('event-1', { seatType: SeatType.VIP });
@@ -396,8 +399,8 @@ describe('SeatMapService', () => {
 
     it('should filter by minPrice', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue({ id: 'seatmap-1' });
-      (prisma.seat.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue({ id: 'seatmap-1' });
+      (prisma.seat.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await SeatMapService.getAvailableSeats('event-1', { minPrice: 50 });
@@ -414,8 +417,8 @@ describe('SeatMapService', () => {
 
     it('should filter by maxPrice', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue({ id: 'seatmap-1' });
-      (prisma.seat.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue({ id: 'seatmap-1' });
+      (prisma.seat.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await SeatMapService.getAvailableSeats('event-1', { maxPrice: 200 });
@@ -432,8 +435,8 @@ describe('SeatMapService', () => {
 
     it('should filter by price range', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue({ id: 'seatmap-1' });
-      (prisma.seat.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue({ id: 'seatmap-1' });
+      (prisma.seat.findMany as vi.Mock).mockResolvedValue([]);
 
       // Act
       await SeatMapService.getAvailableSeats('event-1', { minPrice: 50, maxPrice: 200 });
@@ -450,7 +453,7 @@ describe('SeatMapService', () => {
 
     it('should exclude seats with active reservations', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue({ id: 'seatmap-1' });
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue({ id: 'seatmap-1' });
       const mockSeats = [
         {
           id: 'seat-1',
@@ -465,7 +468,7 @@ describe('SeatMapService', () => {
           reservations: [{ status: 'reserved' }],
         },
       ];
-      (prisma.seat.findMany as jest.Mock).mockResolvedValue(mockSeats);
+      (prisma.seat.findMany as vi.Mock).mockResolvedValue(mockSeats);
 
       // Act
       const result = await SeatMapService.getAvailableSeats('event-1');
@@ -484,8 +487,8 @@ describe('SeatMapService', () => {
         event: { id: 'event-1', organizerId: 'org-1' },
       };
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.seatMap.update as jest.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.update as vi.Mock).mockResolvedValue(mockSeatMap);
 
       // Act
       const result = await SeatMapService.updateSeatMap('event-1', 'org-1', {
@@ -513,9 +516,9 @@ describe('SeatMapService', () => {
         event: { id: 'event-1', organizerId: 'org-1' },
       };
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.seatMap.update as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.$transaction as jest.Mock).mockResolvedValue([{}, {}, {}]);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.update as vi.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.$transaction as vi.Mock).mockResolvedValue([{}, {}, {}]);
 
       // Act
       await SeatMapService.updateSeatMap('event-1', 'org-1', {
@@ -533,12 +536,12 @@ describe('SeatMapService', () => {
         event: { id: 'event-1', organizerId: 'org-1' },
       };
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
 
       // Act & Assert
       await expect(
         SeatMapService.updateSeatMap('event-1', 'org-1', {
-          layout: { invalid: true },
+          layout: { invalid: true } as unknown as SeatMapLayout,
         }),
       ).rejects.toThrow('Invalid layout: must have sections array');
     });
@@ -550,7 +553,7 @@ describe('SeatMapService', () => {
         event: { id: 'event-1', organizerId: 'org-1' },
       };
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
 
       // Act & Assert
       await expect(
@@ -567,7 +570,7 @@ describe('SeatMapService', () => {
         event: { id: 'event-1', organizerId: 'org-1' },
       };
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
 
       // Act & Assert
       await expect(
@@ -582,8 +585,8 @@ describe('SeatMapService', () => {
         event: { id: 'event-1', organizerId: 'org-1' },
       };
 
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(mockSeatMap);
-      (prisma.seatMap.delete as jest.Mock).mockResolvedValue({});
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(mockSeatMap);
+      (prisma.seatMap.delete as vi.Mock).mockResolvedValue({});
 
       // Act
       const result = await SeatMapService.deleteSeatMap('event-1', 'org-1');
@@ -597,7 +600,7 @@ describe('SeatMapService', () => {
 
     it('should throw NotFoundError if seat map not found', async () => {
       // Arrange
-      (prisma.seatMap.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.seatMap.findUnique as vi.Mock).mockResolvedValue(null);
 
       // Act & Assert
       await expect(

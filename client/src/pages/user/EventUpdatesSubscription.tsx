@@ -1,6 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,7 @@ import {
   updateSubscriptionPreferences,
 } from "@/lib/user-dashboard-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 
 interface Subscription {
   id: string;
@@ -44,6 +46,7 @@ const EventUpdatesSubscription = () => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubscribeDialogOpen, setIsSubscribeDialogOpen] = useState(false);
+  const [unsubConfirm, setUnsubConfirm] = useState<string | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const { toast } = useToast();
 
@@ -60,11 +63,7 @@ const EventUpdatesSubscription = () => {
       }
     } catch (error) {
       console.error("Error loading subscriptions:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load subscriptions",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to load subscriptions");
     } finally {
       setLoading(false);
     }
@@ -86,17 +85,11 @@ const EventUpdatesSubscription = () => {
         loadSubscriptions();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to subscribe",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to subscribe");
     }
   };
 
   const handleUnsubscribe = async (eventId: string) => {
-    if (!confirm("Are you sure you want to unsubscribe from this event?")) return;
-
     try {
       const response = await unsubscribeFromEvent(eventId);
       if (response.success) {
@@ -107,11 +100,7 @@ const EventUpdatesSubscription = () => {
         loadSubscriptions();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to unsubscribe",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to unsubscribe");
     }
   };
 
@@ -130,11 +119,7 @@ const EventUpdatesSubscription = () => {
         loadSubscriptions();
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update preferences",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Failed to update preferences");
     }
   };
 
@@ -227,7 +212,7 @@ const EventUpdatesSubscription = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleUnsubscribe(subscription.eventId)}
+                        onClick={() => setUnsubConfirm(subscription.eventId)}
                       >
                         <BellOff className="h-4 w-4 mr-1" />
                         Unsubscribe
@@ -256,6 +241,19 @@ const EventUpdatesSubscription = () => {
             </DialogContent>
           </Dialog>
         )}
+
+      <AlertDialog open={!!unsubConfirm} onOpenChange={() => setUnsubConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsubscribe from event?</AlertDialogTitle>
+            <AlertDialogDescription>You will no longer receive updates about this event.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (unsubConfirm) { handleUnsubscribe(unsubConfirm); } setUnsubConfirm(null); }}>Unsubscribe</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

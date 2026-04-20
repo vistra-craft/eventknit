@@ -313,6 +313,104 @@ export class AdminService {
   }
 
   /**
+   * Change a user's role.
+   * Validates privilege hierarchy, revokes sessions (forces re-login so the
+   * new role is picked up in the JWT), sends notification email, and creates
+   * an audit log entry with old/new role metadata.
+   */
+  static async changeUserRole(
+    userId: string,
+    newRole: UserRole,
+    adminId: string,
+    adminRole: UserRole,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundError('User not found');
+    }
+
+    if (targetUser.role === newRole) {
+      throw new ValidationError(`User already has the ${newRole} role`);
+    }
+
+    // Validate the admin can modify this user AND assign the target role
+    validateUserModification(adminRole, targetUser.role);
+    validateRoleCreation(adminRole, newRole);
+
+    const oldRole = targetUser.role;
+
+    // Update the role
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        role: newRole,
+        updatedBy: adminId,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        role: true,
+        status: true,
+        isEmailVerified: true,
+        organizationName: true,
+        businessEmail: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Revoke all refresh tokens so the user must re-login
+    // and receives a new JWT with the updated role
+    await prisma.refreshToken.updateMany({
+      where: { userId, revoked: false },
+      data: {
+        revoked: true,
+        revokedAt: new Date(),
+        revokedReason: 'role_change',
+      },
+    });
+
+    // Audit log
+    await createAuditLog({
+      userId: adminId,
+      action: AuditActions.USER_UPDATED,
+      entity: 'User',
+      entityId: userId,
+      metadata: {
+        action: 'role_change',
+        oldRole,
+        newRole,
+        changedBy: adminId,
+      },
+      ipAddress,
+      userAgent,
+    });
+
+    // Send notification email (fire-and-forget)
+    const { emailService } = await import('./email.service.js');
+    emailService.sendRoleChangeEmail(
+      targetUser.email,
+      targetUser.firstName || 'User',
+      oldRole,
+      newRole,
+    ).catch((err: Error) => {
+      logger.warn(`Failed to send role change email to ${targetUser.email}:`, err);
+    });
+
+    logger.info(`Role changed for ${updatedUser.email}: ${oldRole} → ${newRole} by admin ${adminId}`);
+
+    return updatedUser;
+  }
+
+  /**
    * Delete user (soft delete)
    */
   static async deleteUser(
@@ -434,6 +532,9 @@ export class AdminService {
       organizerIndustry: true,
       profileCompleted: true,
       lastLoginAt: true,
+      organizerSubscription: {
+        select: { tier: true },
+      },
       _count: {
         select: {
           eventsCreated: true,
@@ -1217,7 +1318,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+            in: ['ADMIN', 'SUPPORT', 'TELLER'],
           },
           status: 'ACTIVE',
         },
@@ -1226,7 +1327,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+            in: ['ADMIN', 'SUPPORT', 'TELLER'],
           },
           status: 'ACTIVE',
           createdAt: { lt: startDate },
@@ -1434,7 +1535,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+            in: ['SUPERADMIN', 'ADMIN', 'SUPPORT', 'TELLER'],
           },
         },
       }),
@@ -1442,7 +1543,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['SUPERADMIN', 'ADMIN_STAFF', 'MARKETER', 'SUPPORT', 'TELLER'],
+            in: ['SUPERADMIN', 'ADMIN', 'SUPPORT', 'TELLER'],
           },
           createdAt: { lt: startDate },
         },
@@ -1455,7 +1556,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'],
+            in: ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'],
           },
         },
       }),
@@ -1463,7 +1564,7 @@ export class AdminService {
         where: {
           deletedAt: null,
           role: {
-            in: ['ORGANIZER', 'ORGANIZER_STAFF', 'ORGANIZER_TELLER'],
+            in: ['ORGANIZER', 'ORGANIZER_ADMIN', 'ORGANIZER_TELLER'],
           },
           createdAt: { lt: startDate },
         },
@@ -1725,6 +1826,166 @@ export class AdminService {
     });
 
     return formattedActivities;
+  }
+
+  /**
+   * Get event analytics for admin mobile app
+   */
+  static async getEventAnalytics(eventId: string) {
+    // Find the event
+    const event = await prisma.event.findFirst({
+      where: { id: eventId, deletedAt: null },
+      include: {
+        organizer: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            organizationName: true,
+          },
+        },
+      },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    // Parse ticket types from JSON field
+    const ticketTypes = (event.ticketTypes as Array<{
+      name: string;
+      price: number;
+      quantity: number;
+      features?: string[];
+    }>) || [];
+
+    // Calculate total tickets from ticketTypes quantities, fall back to event capacity
+    const totalTickets = ticketTypes.length > 0
+      ? ticketTypes.reduce((sum, tt) => sum + (tt.quantity || 0), 0)
+      : (event.capacity || 0);
+
+    // Get registration status counts
+    const statusCounts = await prisma.eventRegistration.groupBy({
+      by: ['status'],
+      where: { eventId },
+      _count: { id: true },
+    });
+
+    const statusMap = statusCounts.reduce((acc, item) => {
+      acc[item.status] = item._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const confirmedCount = statusMap['CONFIRMED'] || 0;
+    const pendingCount = statusMap['PENDING'] || 0;
+    const ticketsSold = confirmedCount + pendingCount;
+    const ticketsAvailable = Math.max(0, totalTickets - ticketsSold);
+    const salesRate = totalTickets > 0
+      ? Math.round((ticketsSold / totalTickets) * 10000) / 100
+      : 0;
+
+    // Total revenue (sum of totalAmount where status = CONFIRMED)
+    const revenueResult = await prisma.eventRegistration.aggregate({
+      where: { eventId, status: 'CONFIRMED' },
+      _sum: { totalAmount: true },
+    });
+    const totalRevenue = Number(revenueResult._sum.totalAmount || 0);
+
+    // Total check-ins
+    const totalCheckIns = await prisma.eventRegistration.count({
+      where: { eventId, checkedInAt: { not: null } },
+    });
+    const checkInRate = ticketsSold > 0
+      ? Math.round((totalCheckIns / ticketsSold) * 10000) / 100
+      : 0;
+
+    // Ticket breakdown by ticketType
+    const soldByType = await prisma.eventRegistration.groupBy({
+      by: ['ticketType'],
+      where: {
+        eventId,
+        status: { in: ['CONFIRMED', 'PENDING'] },
+      },
+      _count: { id: true },
+    });
+
+    const revenueByType = await prisma.eventRegistration.groupBy({
+      by: ['ticketType'],
+      where: {
+        eventId,
+        status: 'CONFIRMED',
+      },
+      _sum: { totalAmount: true },
+    });
+
+    const soldMap = soldByType.reduce((acc, item) => {
+      if (item.ticketType) acc[item.ticketType] = item._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const revenueMap = revenueByType.reduce((acc, item) => {
+      if (item.ticketType) acc[item.ticketType] = Number(item._sum.totalAmount || 0);
+      return acc;
+    }, {} as Record<string, number>);
+
+    const ticketBreakdown = ticketTypes.map((tt) => {
+      const sold = soldMap[tt.name] || 0;
+      const total = tt.quantity || 0;
+      const revenue = revenueMap[tt.name] || 0;
+      const percentage = total > 0
+        ? Math.round((sold / total) * 10000) / 100
+        : 0;
+      return { ticketType: tt.name, sold, total, revenue, percentage };
+    });
+
+    // If there are registrations with ticket types not in ticketTypes JSON, include them too
+    const knownTypes = new Set(ticketTypes.map((tt) => tt.name));
+    for (const typeName of Object.keys(soldMap)) {
+      if (!knownTypes.has(typeName)) {
+        const sold = soldMap[typeName] || 0;
+        const revenue = revenueMap[typeName] || 0;
+        ticketBreakdown.push({
+          ticketType: typeName,
+          sold,
+          total: 0,
+          revenue,
+          percentage: 0,
+        });
+      }
+    }
+
+    // Attendees by facility
+    const facilityGroups = await prisma.eventRegistration.groupBy({
+      by: ['lastScanFacility'],
+      where: {
+        eventId,
+        lastScanFacility: { not: null },
+      },
+      _count: { id: true },
+    });
+
+    const attendeesByFacility: Record<string, number> = {};
+    for (const group of facilityGroups) {
+      if (group.lastScanFacility) {
+        attendeesByFacility[group.lastScanFacility] = group._count.id;
+      }
+    }
+
+    return {
+      eventId: event.id,
+      eventTitle: event.title,
+      totalTickets,
+      ticketsSold,
+      ticketsAvailable,
+      salesRate,
+      totalRevenue,
+      totalCheckIns,
+      checkInRate,
+      ticketBreakdown,
+      salesTrend: [] as Array<{ date: string; count: number }>,
+      checkInTrend: [] as Array<{ date: string; count: number }>,
+      attendeesByFacility,
+    };
   }
 
   /**

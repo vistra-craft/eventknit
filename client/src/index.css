@@ -1,5 +1,6 @@
 /* React Resizable styles for draggable badge elements - must be first */
 @import 'react-resizable/css/styles.css';
+@import 'leaflet/dist/leaflet.css';
 
 @tailwind base;
 @tailwind components;
@@ -51,6 +52,14 @@
     --color-success-light: 142 76% 95%; /* Light tint for backgrounds */
     --color-success-dark: 142 76% 30%; /* Darker for hover */
 
+    /* INFO - Blue for informational states */
+    --color-info: 204 88% 53%;        /* #1D9BF0 - Same as primary blue */
+    --color-info-light: 204 88% 95%;  /* Light tint for backgrounds */
+
+    /* WARNING - Amber for caution states */
+    --color-warning: 38 92% 50%;      /* #F59E0B - Amber */
+    --color-warning-light: 38 92% 95%; /* Light tint for backgrounds */
+
     /* ========================================================================
        SEMANTIC COLOR VARIABLES - Built from base tokens
        ======================================================================== */
@@ -78,6 +87,14 @@
     --success: var(--color-success);
     --success-foreground: var(--color-white);
     --success-light: var(--color-success-light);
+
+    /* Info */
+    --info: var(--color-info);
+    --info-foreground: var(--color-white);
+
+    /* Warning */
+    --warning: var(--color-warning);
+    --warning-foreground: var(--color-white);
 
     /* Navigation & Sidebar */
     --nav-hover: var(--color-blue);
@@ -213,6 +230,10 @@
     --color-success: 142 71% 45%;     /* Brighter green for dark mode */
     --color-success-light: 142 50% 20%; /* Dark tint for backgrounds */
     --color-success-dark: 142 71% 40%; /* Darker for hover */
+    --color-info: 204 88% 58%;        /* Brighter blue for dark mode */
+    --color-info-light: 204 50% 20%;  /* Dark tint for info backgrounds */
+    --color-warning: 38 92% 55%;      /* Brighter amber for dark mode */
+    --color-warning-light: 38 70% 20%; /* Dark tint for warning backgrounds */
 
     /* Dark mode grays */
     --color-gray-50: 0 0% 10%;        /* #1a1a1a - Main background */
@@ -249,6 +270,14 @@
     --success: var(--color-success);
     --success-foreground: var(--color-white);
     --success-light: var(--color-success-light);
+
+    /* Info - Dark Mode */
+    --info: var(--color-info);
+    --info-foreground: var(--color-white);
+
+    /* Warning - Dark Mode */
+    --warning: var(--color-warning);
+    --warning-foreground: var(--color-white);
 
     /* Navigation & Sidebar - Dark Mode */
     --nav-hover: var(--color-blue);
@@ -570,6 +599,30 @@
     @apply border-[hsl(var(--success))];
   }
 
+  .text-info {
+    color: hsl(var(--info));
+  }
+
+  .bg-info {
+    background-color: hsl(var(--info));
+  }
+
+  .border-info {
+    border-color: hsl(var(--info));
+  }
+
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+
+  .border-warning {
+    border-color: hsl(var(--warning));
+  }
+
   /* Animation Utilities */
   @keyframes scroll {
     0% {
@@ -578,6 +631,24 @@
 
     100% {
       transform: translateX(-100%);
+    }
+  }
+
+  @keyframes marquee-right {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes marquee-left {
+    0% {
+      transform: translateX(-50%);
+    }
+    100% {
+      transform: translateX(0);
     }
   }
 
@@ -618,46 +689,42 @@
     /* Chrome, Safari and Opera */
   }
 
-  /* Custom blue gradient scrollbar */
+  /* Minimal scrollbar — thin, muted, theme-aware */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
   }
 
   ::-webkit-scrollbar-track {
-    background: hsl(var(--color-gray-100));
-    border-radius: 4px;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, hsl(204 88% 53%) 0%, hsl(204 88% 43%) 100%);
-    border-radius: 4px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
+    background: hsl(var(--color-gray-400) / 0.3);
+    border-radius: 3px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, hsl(204 88% 58%) 0%, hsl(204 88% 48%) 100%);
-    background-clip: padding-box;
+    background: hsl(var(--color-gray-400) / 0.5);
   }
 
-  /* Firefox scrollbar */
+  /* Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: hsl(204 88% 53%) hsl(var(--color-gray-100));
+    scrollbar-color: hsl(var(--color-gray-400) / 0.3) transparent;
   }
 
-  /* Dark mode scrollbar */
-  .dark ::-webkit-scrollbar-track {
-    background: hsl(0 0% 15%);
-  }
-
+  /* Dark mode */
   .dark ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, hsl(204 88% 58%) 0%, hsl(204 88% 48%) 100%);
+    background: hsl(0 0% 100% / 0.12);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: hsl(0 0% 100% / 0.2);
   }
 
   .dark * {
-    scrollbar-color: hsl(204 88% 58%) hsl(0 0% 15%);
+    scrollbar-color: hsl(0 0% 100% / 0.12) transparent;
   }
 
   /* ============================================================================
@@ -694,7 +761,7 @@
     }
   }
 
-  /* Shimmer Animation - Classic sweep effect (Facebook/Meta style) */
+  /* Shimmer Animation - Classic sweep loading effect */
   .skeleton-shimmer {
     position: relative;
     overflow: hidden;
@@ -781,6 +848,44 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  /* ============================================================================
+   * Auth Breath Loader — ProtectedRoute loading state
+   * ============================================================================ */
+
+  /* Subtle scale + opacity pulse on the brand mark */
+  @keyframes auth-breathe {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.85;
+    }
+  }
+
+  /* Radial glow ring pulse behind the brand mark */
+  @keyframes auth-glow {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    50% {
+      transform: scale(1.15);
+      opacity: 1;
+    }
+  }
+
+  /* Thin progress bar shimmer sliding left → right */
+  @keyframes auth-progress {
+    0% {
+      transform: translateX(-150%);
+    }
+    100% {
+      transform: translateX(450%);
     }
   }
 

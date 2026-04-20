@@ -8,20 +8,22 @@
  * - Max-width constraint on content area
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { Suspense } from 'react';
 import AdminSidebar from "../pages/admin/AdminSidebar";
 import AdminHeader from "../pages/admin/AdminHeader";
 import { adminRoutes } from '../routes/adminRoutes';
-import { ProtectedRoute } from '../components/ProtectedRoute';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '../components/ui/Skeleton';
+import { Loader } from '../components/ui/loader';
+import { ChatPanel, ChatPanelTrigger } from '@/components/chat/ChatPanel';
+import { getInbox } from '@/lib/user-dashboard-api';
 
 /**
- * Loading component for suspense fallback
- * Professional skeleton loader with shimmer animations
+ * Dashboard skeleton — page header + 4 metric cards
  */
-const LoadingFallback = () => (
+const DashboardFallback = () => (
   <SkeletonGroup className="p-6 space-y-6">
     <SkeletonPageHeader showActions={false} />
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -32,9 +34,53 @@ const LoadingFallback = () => (
   </SkeletonGroup>
 );
 
+/**
+ * Simple centered spinner for form/create pages
+ */
+const SpinnerFallback = () => (
+  <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+    <Loader size="lg" />
+  </div>
+);
+
+/**
+ * Route-aware loading fallback
+ * Shows dashboard skeleton for listing/dashboard pages, spinner for form pages
+ */
+const LoadingFallback = () => {
+  const path = window.location.pathname;
+
+  // Form/create/edit pages — simple spinner
+  if (path.includes('/create') || path.includes('/edit') || path.includes('/settings')) {
+    return <SpinnerFallback />;
+  }
+
+  // Dashboard and listing pages — stats cards skeleton
+  return <DashboardFallback />;
+};
+
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await getInbox({ page: 1, limit: 1 });
+      if (res.success && res.data) {
+        setChatUnread(res.data.unreadCount);
+      }
+    } catch {
+      // Silently ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 60000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   // Check if screen is mobile on mount and resize
   useEffect(() => {
@@ -128,6 +174,10 @@ const AdminLayout: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Chat Panel — consistent messaging across all dashboards */}
+      <ChatPanel open={chatOpen} onOpenChange={setChatOpen} />
+      <ChatPanelTrigger unreadCount={chatUnread} onClick={() => setChatOpen(true)} />
     </div>
   );
 };

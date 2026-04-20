@@ -169,7 +169,6 @@ describe('Ticket Email System', () => {
 
       expect(ticketData.qrCode).toBeDefined();
       expect(ticketData.qrCode).toContain('data:image/png;base64');
-      expect(ticketData.ticketData).toBeDefined();
     });
 
     it('should use stored QR code when available (Eventbrite/vf-ticket approach)', async () => {
@@ -289,11 +288,9 @@ describe('Ticket Email System', () => {
       // Verify event date formatting by checking ticket data
       // The service formats dates internally when generating tickets
       const ticketData = await TicketService.getTicketByRegistrationId(registrationId);
-      
+
       expect(ticketData).toBeDefined();
-      expect(ticketData.registration.event).toBeDefined();
-      expect(ticketData.registration.event.venue).toBe('Test Venue');
-      expect(ticketData.registration.event.location).toBe('Test Location');
+      expect(ticketData.eventTitle).toBe('Test Event');
     });
 
     it('should include all required ticket information', async () => {
@@ -304,13 +301,11 @@ describe('Ticket Email System', () => {
 
       const ticketData = await TicketService.getTicketByRegistrationId(registrationId);
 
-      expect(ticketData.registration).toBeDefined();
-      expect(ticketData.registration.event).toBeDefined();
-      expect(ticketData.registration.event.title).toBe('Test Event');
-      expect(ticketData.registration.attendee).toBeDefined();
-      expect(ticketData.registration.quantity).toBe(2);
-      expect(ticketData.registration.backupCode).toBe('ABC123');
-      expect(ticketData.registration.ticketType).toBe('General Admission');
+      expect(ticketData.eventTitle).toBe('Test Event');
+      expect(ticketData.attendeeName).toBeDefined();
+      expect(ticketData.attendeeEmail).toBeDefined();
+      expect(ticketData.backupCode).toBe('ABC123');
+      expect(ticketData.ticketType).toBe('General Admission');
     });
   });
 

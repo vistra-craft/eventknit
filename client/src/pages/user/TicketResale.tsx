@@ -1,5 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import { useState, useEffect, useCallback } from "react";
+import BackButton from "@/components/BackButton";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import {
   Ticket,
   Plus,
@@ -26,6 +28,7 @@ import {
 } from "@/lib/user-dashboard-api";
 import { getUserRegisteredEvents } from "@/lib/event-api";
 import { useToast } from "@/hooks/useToast";
+import { showErrorToast } from "@/lib/utils/error";
 import { useAuthContext } from "@/hooks/useAuthContext";
 
 // Paystack popup type
@@ -90,12 +93,13 @@ const TicketResale = () => {
   const [myResales, setMyResales] = useState<ResaleTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [isListDialogOpen, setIsListDialogOpen] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [paystackLoaded, setPaystackLoaded] = useState(false);
   const { toast } = useToast();
 
   // Pre-select from location.state (e.g., from MyTickets page)
-  const preselectedRegistrationId = (location.state as any)?.registrationId;
+  const preselectedRegistrationId = (location.state as { registrationId?: string } | null)?.registrationId;
 
   // Load Paystack script
   useEffect(() => {
@@ -147,7 +151,7 @@ const TicketResale = () => {
       }
     } catch (error) {
       console.error("Error loading resale data:", error);
-      toast({ title: "Error", description: "Failed to load resale tickets", variant: "destructive" });
+      showErrorToast(toast, error, "Failed to load resale tickets");
     } finally {
       setLoading(false);
     }
@@ -166,7 +170,7 @@ const TicketResale = () => {
         loadData();
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to list ticket", variant: "destructive" });
+      showErrorToast(toast, error, "Failed to list ticket");
     }
   };
 
@@ -177,10 +181,10 @@ const TicketResale = () => {
         toast({ title: "Success", description: "Ticket purchased successfully!" });
         loadData();
       } else {
-        toast({ title: "Error", description: response.message || "Payment verification failed", variant: "destructive" });
+        toast({ title: "Verification failed", description: response.message || "Payment verification failed", variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Error", description: "Payment verification failed", variant: "destructive" });
+      showErrorToast(toast, error, "Payment verification failed");
     }
   };
 
@@ -221,18 +225,12 @@ const TicketResale = () => {
         throw new Error('Payment processor not ready');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to start payment",
-        variant: "destructive",
-      });
+      showErrorToast(toast, error, "Payment failed", "Failed to start payment");
       setPurchasingId(null);
     }
   }, [authState.user?.email, paystackLoaded]);
 
   const handleCancel = async (resaleId: string) => {
-    if (!confirm("Are you sure you want to cancel this listing?")) return;
-
     try {
       const response = await cancelResale(resaleId);
       if (response.success) {
@@ -240,7 +238,7 @@ const TicketResale = () => {
         loadData();
       }
     } catch (error) {
-      toast({ title: "Error", description: "Failed to cancel listing", variant: "destructive" });
+      showErrorToast(toast, error, "Failed to cancel listing");
     }
   };
 
@@ -261,7 +259,8 @@ const TicketResale = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <BackButton to="/user/dashboard" label="Back to Dashboard" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Ticket Resale Marketplace</h1>
@@ -414,7 +413,7 @@ const TicketResale = () => {
                         </div>
                       </div>
                       {resale.status === "LISTED" && (
-                        <Button variant="outline" size="sm" onClick={() => handleCancel(resale.id)}>
+                        <Button variant="outline" size="sm" onClick={() => setCancelConfirm(resale.id)}>
                           <X className="h-4 w-4 mr-1" />
                           Cancel
                         </Button>
@@ -427,6 +426,19 @@ const TicketResale = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={!!cancelConfirm} onOpenChange={() => setCancelConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel listing?</AlertDialogTitle>
+            <AlertDialogDescription>This will remove your ticket from the resale marketplace.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep listing</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (cancelConfirm) { handleCancel(cancelConfirm); } setCancelConfirm(null); }}>Cancel listing</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
