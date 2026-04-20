@@ -1,105 +1,15 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { motion, useInView } from "framer-motion";
 import { TrendingUp, CalendarPlus, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EventImage } from "./EventImage";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { EASE } from "@/lib/animation-constants";
+import { useEvents } from "@/hooks/useEvents";
+import { EventStatus, EventType } from "@/lib/event-api";
+import type { EventData } from "@/types/event";
 
-interface PopularEvent {
-  id: string;
-  slug?: string | null;
-  title: string;
-  image: string;
-  startDate: string;
-  startTime?: string;
-  venue: string;
-  location: string;
-  registrations: number;
-  isFree?: boolean;
-  price?: number | null;
-  currency?: string;
-}
-
-// Dummy data for prototyping — remove when wiring to real API
-const DUMMY_POPULAR: PopularEvent[] = [
-  {
-    id: "pop-1",
-    title: "Africa Tech Summit 2026",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600",
-    startDate: new Date(Date.now() + 3 * 86400000).toISOString(),
-    startTime: "09:00",
-    venue: "KICC Convention Center",
-    location: "Nairobi, Kenya",
-    registrations: 847,
-    isFree: false,
-    price: 2500,
-    currency: "KES",
-  },
-  {
-    id: "pop-2",
-    title: "Nairobi Jazz Festival",
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600",
-    startDate: new Date(Date.now() + 5 * 86400000).toISOString(),
-    startTime: "18:00",
-    venue: "Carnivore Grounds",
-    location: "Nairobi, Kenya",
-    registrations: 623,
-    isFree: false,
-    price: 1500,
-    currency: "KES",
-  },
-  {
-    id: "pop-3",
-    title: "Startup Pitch Night",
-    image: "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?w=600",
-    startDate: new Date(Date.now() + 2 * 86400000).toISOString(),
-    startTime: "17:30",
-    venue: "iHub",
-    location: "Nairobi, Kenya",
-    registrations: 412,
-    isFree: true,
-  },
-  {
-    id: "pop-4",
-    title: "East African Food Festival",
-    image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=600",
-    startDate: new Date(Date.now() + 6 * 86400000).toISOString(),
-    startTime: "10:00",
-    venue: "Uhuru Gardens",
-    location: "Nairobi, Kenya",
-    registrations: 389,
-    isFree: false,
-    price: 500,
-    currency: "KES",
-  },
-  {
-    id: "pop-5",
-    title: "Community Marathon 2026",
-    image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=600",
-    startDate: new Date(Date.now() + 4 * 86400000).toISOString(),
-    startTime: "06:00",
-    venue: "Nyayo Stadium",
-    location: "Nairobi, Kenya",
-    registrations: 1203,
-    isFree: true,
-  },
-  {
-    id: "pop-6",
-    title: "Digital Art Exhibition",
-    image: "https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?w=600",
-    startDate: new Date(Date.now() + 7 * 86400000).toISOString(),
-    startTime: "11:00",
-    venue: "Nairobi National Museum",
-    location: "Nairobi, Kenya",
-    registrations: 298,
-    isFree: false,
-    price: 800,
-    currency: "KES",
-  },
-];
-
-function PopularCard({ event, index }: { event: PopularEvent; index: number }) {
+function PopularCard({ event, index }: { event: EventData; index: number }) {
   const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-40px" });
@@ -116,7 +26,13 @@ function PopularCard({ event, index }: { event: PopularEvent; index: number }) {
     return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).toLowerCase();
   };
 
-  const priceStr = event.isFree ? "Free" : `${event.currency || "KES"} ${event.price}`;
+  const isFree = event.isFree || event.priceDisplay === 0;
+  const hasNumericPrice = typeof event.priceDisplay === "number" && event.priceDisplay > 0;
+  const priceStr = isFree
+    ? "Free"
+    : hasNumericPrice
+      ? `${event.currency || "KES"} ${event.priceDisplay}`
+      : "See tickets";
 
   const handleAddToCalendar = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -155,20 +71,22 @@ function PopularCard({ event, index }: { event: PopularEvent; index: number }) {
         {/* Image */}
         <div className="relative h-48 overflow-hidden">
           <EventImage
-            src={event.image}
+            src={event.image || ""}
             alt={event.title}
             className="w-full h-full transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute bottom-0 inset-x-0 h-12 bg-gradient-to-t from-black/20 to-transparent" />
 
           {/* Registration count badge */}
-          <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium">
-            <TrendingUp className="w-3 h-3" />
-            {event.registrations.toLocaleString()} going
-          </div>
+          {typeof event.registrationCount === "number" && event.registrationCount > 0 && (
+            <div className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/50 backdrop-blur-sm text-white text-[10px] font-medium">
+              <TrendingUp className="w-3 h-3" />
+              {event.registrationCount.toLocaleString()} going
+            </div>
+          )}
 
           {/* Free ribbon */}
-          {event.isFree && (
+          {isFree && (
             <div className="absolute top-0 right-0 w-16 h-16 overflow-hidden z-10">
               <div className="absolute top-[8px] -right-[18px] w-[80px] rotate-45 bg-emerald-500 text-white text-[9px] font-bold text-center py-0.5 shadow-sm">
                 FREE
@@ -197,16 +115,38 @@ function PopularCard({ event, index }: { event: PopularEvent; index: number }) {
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-foreground line-clamp-1">{event.title}</h3>
             <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-              {event.venue}, {event.location}
+              {event.venue ? `${event.venue}, ${event.location}` : event.location}
               {event.startTime && <span> &middot; {formatTime(event.startTime)}</span>}
             </p>
-            <p className={`text-xs font-bold mt-1 ${event.isFree ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400"}`}>
+            <p className={`text-xs font-bold mt-1 ${isFree ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400"}`}>
               {priceStr}
             </p>
           </div>
         </div>
       </div>
     </motion.div>
+  );
+}
+
+function PopularCardSkeleton() {
+  return (
+    <div className="shrink-0 w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-3rem)/4)]">
+      <div className="rounded-2xl overflow-hidden border border-border/40 bg-card">
+        <div className="h-[2px] bg-gradient-to-r from-muted-foreground/10 via-muted-foreground/5 to-transparent" />
+        <div className="relative h-48 bg-muted animate-pulse" />
+        <div className="flex gap-3 p-3">
+          <div className="shrink-0 w-10 space-y-1">
+            <div className="h-5 rounded bg-muted-foreground/10 animate-pulse" />
+            <div className="h-3 rounded bg-muted-foreground/8 animate-pulse" />
+          </div>
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3.5 rounded bg-muted-foreground/10 animate-pulse w-4/5" />
+            <div className="h-3 rounded bg-muted-foreground/8 animate-pulse w-3/5" />
+            <div className="h-3 rounded bg-orange-500/10 animate-pulse w-1/3" />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -220,6 +160,30 @@ export function PopularThisWeek({ onSeeAll }: PopularThisWeekProps) {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
+  const { events: fetchedEvents, isLoading, fetchEvents } = useEvents();
+
+  useEffect(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() + (6 - today.getDay()));
+    endOfWeek.setHours(23, 59, 59, 999);
+
+    fetchEvents({
+      status: EventStatus.APPROVED,
+      type: EventType.PUBLIC,
+      dateFrom: today.toISOString(),
+      dateTo: endOfWeek.toISOString(),
+      limit: 12,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sort by registration count descending to surface most popular first
+  const events = [...(fetchedEvents ?? [])].sort(
+    (a, b) => (b.registrationCount ?? 0) - (a.registrationCount ?? 0)
+  );
+
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -227,17 +191,14 @@ export function PopularThisWeek({ onSeeAll }: PopularThisWeekProps) {
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
   }, []);
 
-  const scrollBy = useCallback((dir: 'left' | 'right') => {
+  const scrollBy = useCallback((dir: "left" | "right") => {
     const el = scrollRef.current;
     if (!el) return;
     const cardWidth = (el.firstElementChild as HTMLElement)?.offsetWidth ?? 280;
-    el.scrollBy({ left: dir === 'left' ? -(cardWidth + 16) : (cardWidth + 16), behavior: 'smooth' });
+    el.scrollBy({ left: dir === "left" ? -(cardWidth + 16) : cardWidth + 16, behavior: "smooth" });
   }, []);
 
-  // Replace with real API data when ready
-  const events = DUMMY_POPULAR;
-
-  if (events.length === 0) return null;
+  if (!isLoading && events.length === 0) return null;
 
   return (
     <section className="py-6 bg-background group/popular">
@@ -249,7 +210,7 @@ export function PopularThisWeek({ onSeeAll }: PopularThisWeekProps) {
               <h2 className="text-lg sm:text-xl font-bold text-foreground">Popular this week</h2>
             </div>
             <button
-              onClick={onSeeAll ?? (() => navigate('/events'))}
+              onClick={onSeeAll ?? (() => navigate("/events"))}
               className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               See all <ArrowRight className="w-3.5 h-3.5" />
@@ -261,8 +222,8 @@ export function PopularThisWeek({ onSeeAll }: PopularThisWeekProps) {
         <div className="relative">
           {/* Left arrow */}
           <button
-            onClick={() => scrollBy('left')}
-            className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-9 h-9 rounded-full bg-background border border-border shadow-md flex items-center justify-center transition-all duration-200 opacity-0 group-hover/popular:opacity-100 hover:bg-muted ${canScrollLeft ? 'pointer-events-auto' : 'pointer-events-none opacity-0!'}`}
+            onClick={() => scrollBy("left")}
+            className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-9 h-9 rounded-full bg-background border border-border shadow-md flex items-center justify-center transition-all duration-200 opacity-0 group-hover/popular:opacity-100 hover:bg-muted ${canScrollLeft ? "pointer-events-auto" : "pointer-events-none opacity-0!"}`}
             aria-label="Scroll left"
           >
             <ChevronLeft className="w-4 h-4 text-foreground" />
@@ -270,8 +231,8 @@ export function PopularThisWeek({ onSeeAll }: PopularThisWeekProps) {
 
           {/* Right arrow */}
           <button
-            onClick={() => scrollBy('right')}
-            className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-9 h-9 rounded-full bg-background border border-border shadow-md flex items-center justify-center transition-all duration-200 opacity-0 group-hover/popular:opacity-100 hover:bg-muted ${canScrollRight ? 'pointer-events-auto' : 'pointer-events-none opacity-0!'}`}
+            onClick={() => scrollBy("right")}
+            className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-9 h-9 rounded-full bg-background border border-border shadow-md flex items-center justify-center transition-all duration-200 opacity-0 group-hover/popular:opacity-100 hover:bg-muted ${canScrollRight ? "pointer-events-auto" : "pointer-events-none opacity-0!"}`}
             aria-label="Scroll right"
           >
             <ChevronRight className="w-4 h-4 text-foreground" />
@@ -282,9 +243,11 @@ export function PopularThisWeek({ onSeeAll }: PopularThisWeekProps) {
             onScroll={updateScrollState}
             className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory"
           >
-            {events.map((event, i) => (
-              <PopularCard key={event.id} event={event} index={i} />
-            ))}
+            {isLoading
+              ? Array.from({ length: 4 }).map((_, i) => <PopularCardSkeleton key={i} />)
+              : events.map((event, i) => (
+                  <PopularCard key={event.id} event={event} index={i} />
+                ))}
           </div>
         </div>
       </div>
