@@ -9,7 +9,6 @@ import * as eventApi from "@/lib/event-api";
 import { EventStatus, EventType } from "@/lib/event-api";
 import { getFocalPointStyle } from "@/lib/image-utils";
 import { HeroSkeleton } from "./HeroSkeleton";
-import heroConferenceImg from "@/assets/about/hero-conference.jpg";
 import { AmbientGlow } from "@/components/ui/AmbientGlow";
 import { EASE } from "@/lib/animation-constants";
 
@@ -405,128 +404,40 @@ export const Hero = () => {
   );
 };
 
-const BRAND_CHIPS = [
-  "Offline QR Scanning",
-  "Instant QR Tickets",
-  "Free to Browse",
-  "Secure Checkout",
-];
-
 /** Static brand hero — shown when no events exist at all */
 function BrandHero() {
   const navigate = useNavigate();
 
   return (
-    <section className="relative h-[480px] sm:h-[500px] lg:h-[560px]" style={{ clipPath: "inset(0)" }}>
-      {/* Photo background — fixed, clipped by parent, same treatment as event carousel */}
-      <div className="fixed top-0 left-0 right-0 h-[480px] sm:h-[500px] lg:h-[560px] z-0">
-        <img
-          src={heroConferenceImg}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        {/* Gradient overlays matching event carousel */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/20 z-[1]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent z-[1]" />
-        <AmbientGlow className="w-[400px] h-[400px] bg-primary/15 -top-32 -left-24 z-[2]" duration={30} />
-        <AmbientGlow className="w-[300px] h-[300px] bg-orange-500/10 -bottom-20 -right-16 z-[2]" duration={35} delay={5} />
-      </div>
+    <section className="relative">
+      <div className="relative overflow-hidden h-[480px] sm:h-[500px] lg:h-[560px] bg-gradient-to-br from-primary/10 via-background to-orange-500/5 flex items-center">
+        <AmbientGlow className="w-[500px] h-[500px] bg-primary/10 -top-40 -left-32 z-0" duration={30} />
+        <AmbientGlow className="w-[400px] h-[400px] bg-orange-500/8 -bottom-32 -right-24 z-0" duration={35} delay={5} />
 
-      {/* Content — bottom-anchored, matching event carousel layout */}
-      <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8 z-10">
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+        <div className="relative z-10 px-8 lg:px-16 max-w-2xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }} className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium text-primary uppercase tracking-wider">EventKnit</span>
+          </motion.div>
 
-          {/* Left: headline + description */}
-          <div className="flex-1 max-w-2xl space-y-4">
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: EASE }}
-              className="flex items-center gap-2"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-primary" />
-              <span className="text-xs font-medium text-white/70 uppercase tracking-wider">EventKnit</span>
-            </motion.div>
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.1 }} className="text-3xl lg:text-5xl font-bold text-foreground tracking-tight">
+            Find your next{" "}
+            <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">experience</span>
+          </motion.h1>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: EASE, delay: 0.1 }}
-              className="text-2xl lg:text-4xl font-bold text-white tracking-tight"
-            >
-              Find your next{" "}
-              <span className="bg-gradient-to-r from-primary to-orange-400 bg-clip-text text-transparent">
-                experience
-              </span>
-            </motion.h1>
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.2 }} className="mt-4 text-muted-foreground max-w-lg">
+            Discover events happening around you. From conferences to concerts, workshops to wellness retreats.
+          </motion.p>
 
-            <motion.p
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: EASE, delay: 0.2 }}
-              className="text-white/75 text-sm lg:text-base max-w-lg"
-            >
-              Discover events happening around you — conferences, concerts, workshops, and more.
-            </motion.p>
-          </div>
-
-          {/* Right: CTAs */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: EASE, delay: 0.35 }}
-            className="flex items-center gap-2.5"
-          >
-            <Button
-              size="default"
-              onClick={() => document.getElementById("search-section")?.scrollIntoView({ behavior: "smooth" })}
-              className="shadow-md"
-            >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.3 }} className="mt-6 flex gap-3">
+            <Button size="lg" onClick={() => document.getElementById("search-section")?.scrollIntoView({ behavior: "smooth" })}>
               Browse Events
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-            <Button
-              size="default"
-              variant="outline"
-              onClick={() => navigate("/auth/register/organizer")}
-              className="border-white/20 text-white bg-black/50 backdrop-blur-sm hover:bg-black/70 hover:border-white/40 shadow-md"
-            >
+            <Button size="lg" variant="outline" onClick={() => navigate("/auth/register/organizer")}>
               Create Event
             </Button>
           </motion.div>
-        </div>
-
-        {/* Stats row + scroll hint */}
-        <div className="flex items-center justify-between mt-6">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: EASE, delay: 0.5 }}
-            className="flex items-center flex-wrap gap-2"
-          >
-            {BRAND_CHIPS.map((chip, i) => (
-              <motion.span
-                key={chip}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.35, ease: EASE, delay: 0.55 + i * 0.07 }}
-                className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 backdrop-blur-sm text-white/80 border border-white/15"
-              >
-                {chip}
-              </motion.span>
-            ))}
-          </motion.div>
-
-          <motion.button
-            onClick={() => document.getElementById("search-section")?.scrollIntoView({ behavior: "smooth" })}
-            animate={{ y: [0, 6, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="text-white/50 hover:text-white/80 transition-colors"
-            aria-label="Scroll to events"
-          >
-            <ChevronDown className="w-5 h-5" />
-          </motion.button>
         </div>
       </div>
     </section>
