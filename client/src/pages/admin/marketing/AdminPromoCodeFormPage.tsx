@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,12 @@ import {
   ArrowLeft,
   Plus,
   X,
+  RefreshCw,
+  AlertCircle,
+  User,
+  Mail,
+  Calendar,
+  MessageSquare,
 } from "lucide-react";
 import { Loader } from "@/components/ui/loader";
 import { useToast } from "@/hooks/useToast";
@@ -24,21 +30,46 @@ import {
   getAdminPromoCodeById,
   createAdminPromoCode,
   updateAdminPromoCode,
+  checkCodeAvailability,
+  generatePromoCode,
   type PromoCodeScope,
   type DiscountType,
   type CreateAdminPromoCodeData,
 } from "@/lib/admin-promo-code-api";
 import { getEvents, EventStatus } from "@/lib/event-api";
+import {
+  approvePromoCodeRequest,
+  getPromoCodeRequestById,
+  type PromoCodeRequest,
+} from "@/lib/promo-code-request-api";
+
+// ── Code availability status ──
+type CodeStatus = "idle" | "checking" | "available" | "taken" | "too-short";
 
 const AdminPromoCodeFormPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isEditing = Boolean(id);
   const { toast } = useToast();
 
-  const [loading, setLoading] = useState(isEditing);
+  // Request context from URL params
+  const requestId = searchParams.get("requestId");
+  const requestOrganizerId = searchParams.get("organizerId");
+  const requestEventId = searchParams.get("eventId");
+
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [events, setEvents] = useState<Array<{ id: string; title: string }>>([]);
+
+  // Request context data (fetched when requestId is present)
+  const [requestData, setRequestData] = useState<PromoCodeRequest | null>(null);
+
+  // Code validation state
+  const [codeStatus, setCodeStatus] = useState<CodeStatus>("idle");
+  const [generatingCode, setGeneratingCode] = useState(false);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastCheckedCodeRef = useRef<string>("");
 
   const [formData, setFormData] = useState<CreateAdminPromoCodeData>({
     code: "",
@@ -58,7 +89,71 @@ const AdminPromoCodeFormPage = () => {
     discountTiers: [],
   });
 
+  // ── Code validation with debounce ──
+  const checkCode = useCallback(async (code: string) => {
+    if (code.length < 3) {
+      setCodeStatus("too-short");
+      return;
+    }
+
+    // Don't re-check the same code
+    if (code === lastCheckedCodeRef.current) return;
+
+    setCodeStatus("checking");
+    const response = await checkCodeAvailability(code);
+
+    if (response.success && response.data) {
+      lastCheckedCodeRef.current = code;
+      setCodeStatus(response.data.available ? "available" : "taken");
+    } else {
+      setCodeStatus("idle");
+    }
+  }, []);
+
+  const handleCodeChange = useCallback((newCode: string) => {
+    const uppercased = newCode.toUpperCase();
+    setFormData((prev) => ({ ...prev, code: uppercased }));
+
+    // Reset last checked so we re-check
+    if (uppercased !== lastCheckedCodeRef.current) {
+      setCodeStatus(uppercased.length < 3 ? "too-short" : "idle");
+    }
+
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    if (uppercased.length < 3) {
+      setCodeStatus("too-short");
+      return;
+    }
+
+    // Debounce 500ms
+    debounceTimerRef.current = setTimeout(() => {
+      checkCode(uppercased);
+    }, 500);
+  }, [checkCode]);
+
+  // ── Auto-generate code ──
+  const handleGenerateCode = useCallback(async () => {
+    setGeneratingCode(true);
+    const response = await generatePromoCode();
+
+    if (response.success && response.data) {
+      const code = response.data.code;
+      setFormData((prev) => ({ ...prev, code }));
+      lastCheckedCodeRef.current = code;
+      setCodeStatus("available");
+    } else {
+      toast({ title: "Error", description: "Failed to generate code", variant: "destructive" });
+    }
+
+    setGeneratingCode(false);
+  }, [toast]);
+
   const loadData = useCallback(async () => {
+    setLoading(true);
     try {
       const eventsRes = await getEvents({ status: EventStatus.APPROVED, limit: 100 });
       if (eventsRes.success && eventsRes.data?.events) {
@@ -66,7 +161,6 @@ const AdminPromoCodeFormPage = () => {
       }
 
       if (isEditing && id) {
-        setLoading(true);
         const res = await getAdminPromoCodeById(id);
         if (res.success && res.data) {
           const code = res.data;
@@ -93,9 +187,41 @@ const AdminPromoCodeFormPage = () => {
             isTiered: code.isTiered,
             discountTiers: code.discountTiers || [],
           });
+          lastCheckedCodeRef.current = code.code;
+          setCodeStatus("available");
         } else {
           toast({ title: "Error", description: "Promo code not found", variant: "destructive" });
           navigate("/admin/marketing/promo-codes");
+        }
+      } else if (requestId) {
+        // Fetch full request data for context card
+        const reqRes = await getPromoCodeRequestById(requestId);
+        if (reqRes.success && reqRes.data) {
+          setRequestData(reqRes.data);
+        }
+
+        // Pre-fill form from request context
+        setFormData((prev) => ({
+          ...prev,
+          scope: requestEventId ? "EVENT" as PromoCodeScope : "PLATFORM" as PromoCodeScope,
+          eventId: requestEventId || undefined,
+          organizerId: requestOrganizerId || undefined,
+        }));
+
+        // Auto-generate a code
+        const codeRes = await generatePromoCode();
+        if (codeRes.success && codeRes.data) {
+          setFormData((prev) => ({ ...prev, code: codeRes.data!.code }));
+          lastCheckedCodeRef.current = codeRes.data.code;
+          setCodeStatus("available");
+        }
+      } else {
+        // Normal create mode — auto-generate a code
+        const codeRes = await generatePromoCode();
+        if (codeRes.success && codeRes.data) {
+          setFormData((prev) => ({ ...prev, code: codeRes.data!.code }));
+          lastCheckedCodeRef.current = codeRes.data.code;
+          setCodeStatus("available");
         }
       }
     } catch (err: unknown) {
@@ -104,17 +230,29 @@ const AdminPromoCodeFormPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, isEditing, navigate, toast]);
+  }, [id, isEditing, navigate, toast, requestId, requestEventId, requestOrganizerId]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Cleanup debounce timer
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.code) {
       toast({ title: "Error", description: "Code is required", variant: "destructive" });
+      return;
+    }
+
+    if (codeStatus === "taken") {
+      toast({ title: "Error", description: "This code is already taken. Please choose a different one.", variant: "destructive" });
       return;
     }
 
@@ -145,8 +283,19 @@ const AdminPromoCodeFormPage = () => {
         : await createAdminPromoCode(formData);
 
       if (response.success) {
-        toast({ title: "Success", description: isEditing ? "Promo code updated" : "Promo code created" });
-        navigate("/admin/marketing/promo-codes");
+        // If creating from a request, approve the request with the new promo code ID
+        if (requestId && !isEditing && response.data?.id) {
+          const approveRes = await approvePromoCodeRequest(requestId, response.data.id);
+          if (approveRes.success) {
+            toast({ title: "Success", description: "Promo code created and request approved" });
+          } else {
+            toast({ title: "Partial Success", description: "Promo code created but failed to approve request. Please approve manually.", variant: "destructive" });
+          }
+          navigate("/admin/marketing/promo-codes?tab=requests");
+        } else {
+          toast({ title: "Success", description: isEditing ? "Promo code updated" : "Promo code created" });
+          navigate("/admin/marketing/promo-codes");
+        }
       } else {
         toast({ title: "Error", description: response.message || "Failed to save", variant: "destructive" });
       }
@@ -154,6 +303,18 @@ const AdminPromoCodeFormPage = () => {
       toast({ title: "Error", description: "Failed to save promo code", variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── Code field border color ──
+  const getCodeInputClass = () => {
+    switch (codeStatus) {
+      case "available":
+        return "border-emerald-500 focus-visible:ring-emerald-500/30";
+      case "taken":
+        return "border-red-500 focus-visible:ring-red-500/30";
+      default:
+        return "";
     }
   };
 
@@ -168,6 +329,59 @@ const AdminPromoCodeFormPage = () => {
 
   return (
       <div className="space-y-6">
+        {/* Request Context Card */}
+        {requestId && !isEditing && requestData && (
+          <Card className="border border-border/60 bg-card">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground mb-2">
+                    Promo Code Request
+                  </p>
+                  <div className="space-y-1.5 text-sm">
+                    {requestData.organizer && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <User className="h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          <span className="text-foreground font-medium">
+                            {requestData.organizer.firstName} {requestData.organizer.lastName}
+                          </span>
+                          {requestData.organizer.organizationName && (
+                            <span className="text-muted-foreground"> ({requestData.organizer.organizationName})</span>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                    {requestData.organizer && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                        <span>{requestData.organizer.email}</span>
+                      </div>
+                    )}
+                    {requestData.event && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Calendar className="h-3.5 w-3.5 shrink-0" />
+                        <span>Event: <span className="text-foreground font-medium">{requestData.event.title}</span></span>
+                      </div>
+                    )}
+                  </div>
+                  {requestData.message && (
+                    <div className="mt-3 px-3 py-2.5 bg-muted/50 rounded-lg border-l-2 border-muted-foreground/20">
+                      <p className="text-sm text-foreground italic">"{requestData.message}"</p>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    The request will be automatically approved when you create this code.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -175,7 +389,7 @@ const AdminPromoCodeFormPage = () => {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/admin/marketing/promo-codes")}
+              onClick={() => requestId ? navigate("/admin/marketing/promo-codes?tab=requests") : navigate("/admin/marketing/promo-codes")}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
@@ -193,7 +407,7 @@ const AdminPromoCodeFormPage = () => {
             <Button type="button" variant="outline" onClick={() => navigate("/admin/marketing/promo-codes")}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={saving}>
+            <Button onClick={handleSubmit} disabled={saving || codeStatus === "taken" || codeStatus === "checking"}>
               {saving && <Loader size="sm" className="mr-2" />}
               {isEditing ? "Update" : "Create"}
             </Button>
@@ -201,18 +415,121 @@ const AdminPromoCodeFormPage = () => {
         </div>
 
         {/* Basic Info */}
-        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm">
+        <Card className="border-0 bg-card-surface rounded-2xl shadow-sm overflow-hidden relative">
+          {/* Progress bar at top of card */}
+          {codeStatus === "checking" && (
+            <div className="absolute top-0 left-0 right-0 h-[2px] overflow-hidden">
+              <div className="h-full w-full bg-primary/20">
+                <div
+                  className="h-full bg-primary"
+                  style={{
+                    animation: "indeterminate 1.5s ease-in-out infinite",
+                    width: "40%",
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          <style>{`
+            @keyframes indeterminate {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(350%); }
+            }
+            @keyframes checkmark-draw {
+              0% { stroke-dashoffset: 24; }
+              100% { stroke-dashoffset: 0; }
+            }
+            @keyframes scale-in {
+              0% { transform: scale(0); opacity: 0; }
+              60% { transform: scale(1.15); }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes shake {
+              0%, 100% { transform: translateX(0); }
+              25% { transform: translateX(-4px); }
+              75% { transform: translateX(4px); }
+            }
+          `}</style>
+
           <CardContent className="p-6">
             <h3 className="text-sm font-semibold text-foreground mb-4">Basic Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Code *</Label>
-                <Input
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  placeholder="e.g., SUMMER20"
-                  disabled={isEditing}
-                />
+                <div className="relative">
+                  <Input
+                    value={formData.code}
+                    onChange={(e) => handleCodeChange(e.target.value)}
+                    placeholder="e.g., SUMMER20"
+                    disabled={isEditing}
+                    className={`pr-20 font-mono tracking-wider ${getCodeInputClass()}`}
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    {/* Status indicator */}
+                    {codeStatus === "checking" && (
+                      <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30 border-t-primary animate-spin" />
+                    )}
+                    {codeStatus === "available" && !isEditing && (
+                      <div
+                        className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center"
+                        style={{ animation: "scale-in 0.3s ease-out" }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          <path
+                            d="M2 6.5L4.5 9L10 3"
+                            stroke="white"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{
+                              strokeDasharray: 24,
+                              strokeDashoffset: 0,
+                              animation: "checkmark-draw 0.3s ease-out",
+                            }}
+                          />
+                        </svg>
+                      </div>
+                    )}
+                    {codeStatus === "taken" && (
+                      <AlertCircle
+                        className="w-5 h-5 text-red-500"
+                        style={{ animation: "shake 0.3s ease-out" }}
+                      />
+                    )}
+
+                    {/* Generate button */}
+                    {!isEditing && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                        onClick={handleGenerateCode}
+                        disabled={generatingCode}
+                        title="Generate new code"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${generatingCode ? "animate-spin" : ""}`} />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                {/* Status messages below field */}
+                <div className="h-5">
+                  {codeStatus === "too-short" && formData.code.length > 0 && (
+                    <p className="text-xs text-muted-foreground">Minimum 3 characters</p>
+                  )}
+                  {codeStatus === "available" && !isEditing && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">Code is available</p>
+                  )}
+                  {codeStatus === "taken" && (
+                    <p
+                      className="text-xs text-red-600 dark:text-red-400 font-medium"
+                      style={{ animation: "shake 0.3s ease-out" }}
+                    >
+                      This code is already in use
+                    </p>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Scope *</Label>
@@ -488,7 +805,7 @@ const AdminPromoCodeFormPage = () => {
                       min="0"
                       className="w-20 h-8"
                       value={tier.maxUsage === null ? "" : tier.maxUsage}
-                      placeholder="∞"
+                      placeholder="\u221E"
                       onChange={(e) => {
                         const tiers = [...(formData.discountTiers || [])];
                         tiers[index] = { ...tier, maxUsage: e.target.value === "" ? null : parseInt(e.target.value) };

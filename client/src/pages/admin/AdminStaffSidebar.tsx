@@ -49,8 +49,6 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
       icon: Calendar,
       group: 'main',
       children: [
-        { name: 'Assigned Events', href: '/admin/events/assigned' },
-        { name: 'Today\'s Events', href: '/admin/events/today' },
         { name: 'Upcoming Events', href: '/admin/events/upcoming' },
       ],
     },
@@ -85,7 +83,6 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
             group: 'main',
             children: [
               { name: 'Event Performance', href: '/admin/analytics/events' },
-              { name: 'Campaign Analytics', href: '/admin/analytics/campaigns' },
             ],
           },
         ];
@@ -99,7 +96,6 @@ const AdminStaffSidebar: React.FC<AdminStaffSidebarProps> = ({
             group: 'main',
             children: [
               { name: 'Support Inbox', href: '/admin/support' },
-              { name: 'Recent Queries', href: '/admin/support/queries' },
             ],
           },
         ];

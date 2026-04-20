@@ -4,9 +4,11 @@ import { EventStaffController } from '../controllers/event-staff.controller.js';
 import { StaffPerformanceController } from '../controllers/staff-performance.controller.js';
 import { InvoiceController } from '../controllers/invoice.controller.js';
 import { WhiteLabelController } from '../controllers/white-label.controller.js';
+import { RefundService } from '../services/refund.service.js';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { canManageStaff } from '../utils/privileges.js';
-import { AuthorizationError } from '../utils/errors.js';
+import { AuthorizationError, NotFoundError } from '../utils/errors.js';
+import { prisma } from '../config/database.js';
 import { validate, validateParams, validateQuery } from '../middleware/validation.middleware.js';
 import {
   createBrandingSchema,
@@ -257,6 +259,82 @@ router.put('/custom-domains/:domainId', validate(updateCustomDomainSchema), Whit
  * @access  Private (ORGANIZER+)
  */
 router.delete('/custom-domains/:domainId', WhiteLabelController.deleteCustomDomain);
+
+// ========== Event Refunds ==========
+
+/** Typed request with eventId route parameter */
+type EventIdRequest = AuthenticatedRequest & { params: { eventId: string } };
+
+/**
+ * Middleware to verify organizer owns the event
+ */
+const verifyEventOwner = async (req: EventIdRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { eventId } = req.params;
+    if (!req.user) {
+      throw new AuthorizationError('Authentication required');
+    }
+
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      select: { organizerId: true },
+    });
+
+    if (!event) {
+      throw new NotFoundError('Event not found');
+    }
+
+    if (event.organizerId !== req.user.id) {
+      throw new AuthorizationError('You do not have permission to manage this event');
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @route   GET /api/v1/organizer/events/:eventId/refunds
+ * @desc    Get refunds for an organizer's event
+ * @access  Private (ORGANIZER - own events only)
+ */
+router.get(
+  '/events/:eventId/refunds',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  validateQuery(Joi.object({ status: Joi.string().optional() })),
+  verifyEventOwner,
+  async (req: EventIdRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { eventId } = req.params;
+      const status = typeof req.query.status === 'string' ? req.query.status : undefined;
+      const refunds = await RefundService.getEventRefunds(eventId, { status });
+      res.status(200).json({ success: true, data: refunds });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+/**
+ * @route   GET /api/v1/organizer/events/:eventId/refunds/summary
+ * @desc    Get refund summary for an organizer's event
+ * @access  Private (ORGANIZER - own events only)
+ */
+router.get(
+  '/events/:eventId/refunds/summary',
+  validateParams(Joi.object({ eventId: Joi.string().uuid().required() })),
+  verifyEventOwner,
+  async (req: EventIdRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { eventId } = req.params;
+      const summary = await RefundService.getEventRefundSummary(eventId);
+      res.status(200).json({ success: true, data: summary });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 export default router;
 

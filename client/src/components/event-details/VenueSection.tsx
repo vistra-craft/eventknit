@@ -6,12 +6,13 @@ import { getVenueType } from "@/types/event";
 interface VenueSectionProps {
   venue?: string | null;
   location: string;
+  address?: string | null;
   coordinates?: { lat: number; lng: number } | null;
   isOnline?: boolean;
   onlineLink?: string | null;
 }
 
-export const VenueSection = ({ venue, location, coordinates, isOnline, onlineLink }: VenueSectionProps) => {
+export const VenueSection = ({ venue, location, address, coordinates, isOnline, onlineLink }: VenueSectionProps) => {
   const venueType = getVenueType({ isOnline, venue, onlineLink });
 
   const handleGetDirections = () => {
@@ -23,14 +24,14 @@ export const VenueSection = ({ venue, location, coordinates, isOnline, onlineLin
   if (venueType === 'online') {
     return (
       <section>
-        <h2 className="text-3xl font-bold mb-4">Event Access</h2>
+        <h2 className="text-page-title mb-4">Event Access</h2>
         <div className="overflow-hidden rounded-2xl border border-border p-6">
           <div className="flex items-start gap-4">
             <div className="p-3 rounded-lg bg-primary/10">
               <Globe className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h3 className="text-xl font-bold mb-2">Online Event</h3>
+              <h3 className="text-section-header mb-2">Online Event</h3>
               <p className="text-sm text-muted-foreground">
                 The event link will be shared with registered attendees via email and in your ticket.
               </p>
@@ -44,7 +45,7 @@ export const VenueSection = ({ venue, location, coordinates, isOnline, onlineLin
   // In-person and hybrid: show map + venue
   return (
     <section>
-      <h2 className="text-3xl font-bold mb-4">Venue Information</h2>
+      <h2 className="text-page-title mb-4">Venue Information</h2>
 
       <div className="overflow-hidden rounded-2xl">
         {/* Map */}
@@ -67,10 +68,13 @@ export const VenueSection = ({ venue, location, coordinates, isOnline, onlineLin
 
         {/* Venue Details */}
         <div className="p-6">
-          <h3 className="text-xl font-bold mb-2">{venue || 'Event Location'}</h3>
+          <h3 className="text-section-header mb-2">{venue || 'Event Location'}</h3>
           <div className="flex items-start gap-2 text-muted-foreground">
             <MapPin className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <p className="text-sm">{location}</p>
+            <div>
+              <p className="text-sm">{location}</p>
+              {address && <p className="text-sm mt-1">{address}</p>}
+            </div>
           </div>
         </div>
       </div>

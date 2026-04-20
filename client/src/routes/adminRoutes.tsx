@@ -107,6 +107,11 @@ const PlatformFeeConfigPage = lazy(() => import('../pages/admin/finance/Platform
 // Company Documents
 const AdminCompanyDocumentsPage = lazy(() => import('../pages/admin/documents/AdminCompanyDocumentsPage'));
 
+// KYC Review
+const KYCReviewDashboard = lazy(() => import('../pages/admin/kyc/KYCReviewDashboard'));
+const KYCOrganizerReviewPage = lazy(() => import('../pages/admin/kyc/KYCOrganizerReviewPage'));
+const KYCEntityManagement = lazy(() => import('../pages/admin/kyc/KYCEntityManagement'));
+
 // Service Point
 const ServicePointEvents = lazy(() => import('../pages/admin/service-point/ServicePointEvents'));
 const ServicePointEventDashboard = lazy(() => import('../pages/admin/service-point/ServicePointEventDashboard'));
@@ -598,5 +603,22 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     path: 'service-point/history',
     element: createElement(ServicePointHistory),
     allowedRoles: TELLER_ROLES,
+  },
+
+  // KYC Review
+  {
+    path: 'kyc',
+    element: createElement(KYCReviewDashboard),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'kyc/review/:userId',
+    element: createElement(KYCOrganizerReviewPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'kyc/entity-management',
+    element: createElement(KYCEntityManagement),
+    allowedRoles: [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF], // Restricted to SUPERADMIN/ADMIN_STAFF only
   },
 ];

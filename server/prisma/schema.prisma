@@ -24,6 +24,7 @@ enum UserStatus {
   ACTIVE // User account is active and can use the platform fully
   SUSPENDED // Admin action: User is banned (punitive) - cannot login or use platform
   DEACTIVATED // User self-deactivated or admin soft-deleted (non-punitive) - can login but cannot perform actions, can be reactivated
+  PENDING_APPROVAL // Organizer registered but awaiting admin approval - can login with limited access
 }
 
 enum KYCStatus {
@@ -159,6 +160,12 @@ enum PromoCodeScope {
   MULTI_EVENT // Works on selected multiple events
 }
 
+enum PromoCodeRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum DataAccessLevel {
   RESTRICTED // Summary cards only (total attendees, total revenue)
   STANDARD // Attendee list + payment summaries (no transaction IDs)
@@ -249,6 +256,8 @@ model User {
   // Onboarding fields (for organizers)
   onboardingCompleted   Boolean   @default(false)
   onboardingCompletedAt DateTime?
+  profileCompleted      Boolean   @default(false)
+  profileCompletedAt    DateTime?
   eventPreferences      Json? // Store event types, organization type, events per year, etc.
 
   // Audit fields
@@ -278,6 +287,8 @@ model User {
   promoCodesCreated                 PromoCode[]                  @relation("PromoCodeOrganizer")
   referralCodes                     PromoCode[]                  @relation("PromoCodeReferrer")
   promoCodeRedemptions              PromoCodeRedemption[]        @relation("PromoCodeUser")
+  promoCodeRequests                 PromoCodeRequest[]           @relation("PromoCodeRequestOrganizer")
+  promoCodeRequestsReviewed         PromoCodeRequest[]           @relation("PromoCodeRequestReviewer")
   eventAssignments                  EventStaff[]                 @relation("EventStaff")
   checkpointStaffAssignments        CheckpointStaff[]            @relation("CheckpointStaffAssignment")
   // Event Payment Relations
@@ -377,6 +388,7 @@ model User {
   voucherRedemptions VoucherRedemption[] @relation("VoucherRedemptions")
   emailDigestQueue   EmailDigestQueue[]  @relation("UserDigestQueue")
   uploadedDocuments  CompanyDocument[]   @relation("UploadedDocuments")
+  eventReports       EventReport[]       @relation("EventReports")
 
   @@index([email])
   @@index([role])
@@ -434,6 +446,7 @@ model OrganizerProfile {
   // Business Info
   website          String?
   description      String? @db.Text
+  socialLinks      Json?   // {facebook, twitter, instagram, linkedin, youtube, tiktok}
   businessLicense  String?
   taxId            String?
   bankAccountLast4 String? // Store only last 4 digits for display
@@ -616,6 +629,22 @@ model OrganizerDirector {
   @@index([userId, isTopFive])
 }
 
+model EntityRequirement {
+  id                 String                @id @default(uuid())
+  entityType         OrganizerEntityType
+  documentType       String // e.g., "PP_NEW_CONTRACT", "NATIONAL_ID", etc.
+  description        String? // Human-readable description (e.g., "Valid national ID card")
+  isRequired         Boolean               @default(true) // Required vs optional
+  displayOrder       Int                   @default(0) // For UI ordering
+  validityPeriodDays Int? // Document validity period in days
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([entityType, documentType]) // Each entity type can only have one requirement per document type
+  @@index([entityType])
+}
+
 model AuditLog {
   id          String   @id @default(uuid())
   userId      String?
@@ -760,6 +789,7 @@ model Event {
   ticketTemplates        TicketTemplate[]
   featuredEvents         FeaturedEvent[]
   promoCodes             PromoCode[]               @relation("PromoCodeEvent")
+  promoCodeRequests      PromoCodeRequest[]        @relation("PromoCodeRequestEvent")
   ticketScans            TicketScan[]
   checkpoints            Checkpoint[]              @relation("EventCheckpoints")
   checkpointScans        CheckpointScan[]          @relation("EventCheckpointScans")
@@ -823,6 +853,11 @@ model Event {
   attendeeImports        AttendeeImport[]          @relation("EventAttendeeImports")
   // Cart Reservation System
   cartItems              CartItem[]                @relation("CartEvents")
+  // Event Reports
+  reports                EventReport[]             @relation("EventReports")
+
+  // Resale settings
+  allowResale            Boolean                   @default(true)
 
   @@index([organizerId])
   @@index([status])
@@ -1233,6 +1268,7 @@ model PromoCode {
   referrer    User?                 @relation("PromoCodeReferrer", fields: [referrerUserId], references: [id], onDelete: SetNull)
   redemptions PromoCodeRedemption[]
   variants    PromoCodeVariant[]    @relation("PromoCodeVariants")
+  request     PromoCodeRequest?     @relation("PromoCodeFromRequest")
 
   @@index([code])
   @@index([organizerId])
@@ -3242,9 +3278,12 @@ model TicketResale {
   currency      String  @default("NGN")
 
   // Status
-  status   String    @default("LISTED") // LISTED, SOLD, CANCELLED, EXPIRED
-  listedAt DateTime  @default(now())
-  soldAt   DateTime?
+  status           String    @default("LISTED") // LISTED, RESERVED, SOLD, CANCELLED, EXPIRED
+  listedAt         DateTime  @default(now())
+  soldAt           DateTime?
+  reservedAt       DateTime? // When a buyer reserved the listing
+  paymentReference String?   // Payment gateway reference
+  paymentStatus    String?   // PENDING, COMPLETED, FAILED
 
   // Buyer (if sold)
   buyerId String?
@@ -3265,6 +3304,34 @@ model TicketResale {
   @@index([status])
   @@index([listedAt])
   @@index([expiresAt])
+}
+
+// Event Report (user-submitted reports about events)
+model EventReport {
+  id          String   @id @default(uuid())
+  eventId     String
+  event       Event    @relation("EventReports", fields: [eventId], references: [id], onDelete: Cascade)
+  reportedBy  String
+  reporter    User     @relation("EventReports", fields: [reportedBy], references: [id], onDelete: Cascade)
+
+  category    String   // e.g. SPAM, FRAUD, INAPPROPRIATE, OTHER
+  description String?
+  status      String   @default("PENDING") // PENDING, INVESTIGATING, RESOLVED, DISMISSED
+  submittedIp String?
+  userAgent   String?
+
+  reviewNotes String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, reportedBy])
+  @@index([eventId])
+  @@index([reportedBy])
+  @@index([status])
+  @@index([category])
 }
 
 // User Credit Balance
@@ -3891,6 +3958,32 @@ model PromoCodeVariant {
 
   @@unique([promoCodeId, code])
   @@index([promoCodeId])
+}
+
+model PromoCodeRequest {
+  id          String                 @id @default(uuid())
+  organizerId String
+  organizer   User                   @relation("PromoCodeRequestOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  // Request details
+  eventId     String?
+  event       Event?                 @relation("PromoCodeRequestEvent", fields: [eventId], references: [id], onDelete: SetNull)
+  message     String?
+
+  // Admin handling
+  status      PromoCodeRequestStatus @default(PENDING)
+  reviewedBy  String?
+  reviewer    User?                  @relation("PromoCodeRequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  reviewedAt  DateTime?
+  rejectionReason String?
+  promoCodeId String?                @unique
+  promoCode   PromoCode?             @relation("PromoCodeFromRequest", fields: [promoCodeId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([organizerId])
+  @@index([status])
 }
 
 // Event Expenses

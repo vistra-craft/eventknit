@@ -28,6 +28,14 @@ jest.mock('../../../src/config/database.js', () => ({
       delete: jest.fn(),
       count: jest.fn(),
     },
+    entityRequirement: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      aggregate: jest.fn(),
+    },
   },
 }));
 jest.mock('../../../src/utils/logger.js');
@@ -842,6 +850,224 @@ describe('KYCService', () => {
       await expect(KYCService.deleteDirector('dir-1', 'user-2')).rejects.toThrow(
         'You do not have permission to delete this director',
       );
+    });
+  });
+
+  describe('getEntityRequirements', () => {
+    it('should get stored requirements when they exist', async () => {
+      // Arrange
+      const entityType = OrganizerEntityType.SOLE_PROPRIETOR;
+      const mockRequirements = [
+        {
+          id: 'req-1',
+          entityType,
+          documentType: 'PP_NEW_CONTRACT',
+          description: 'PP New Contract',
+          isRequired: true,
+          displayOrder: 0,
+          validityPeriodDays: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'req-2',
+          entityType,
+          documentType: 'NATIONAL_ID',
+          description: 'National ID',
+          isRequired: true,
+          displayOrder: 1,
+          validityPeriodDays: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      (prisma.entityRequirement.findMany as jest.Mock).mockResolvedValue(mockRequirements);
+
+      // Act
+      const result = await KYCService.getEntityRequirements(entityType);
+
+      // Assert
+      expect(result).toEqual(mockRequirements);
+      expect(prisma.entityRequirement.findMany).toHaveBeenCalledWith({
+        where: { entityType },
+        orderBy: [{ displayOrder: 'asc' }, { documentType: 'asc' }],
+      });
+    });
+
+    it('should create default requirements when none exist', async () => {
+      // Arrange
+      const entityType = OrganizerEntityType.INDIVIDUAL;
+      (prisma.entityRequirement.findMany as jest.Mock).mockResolvedValue([]);
+
+      const defaultReqs = [
+        {
+          id: 'req-1',
+          entityType,
+          documentType: 'NATIONAL_ID',
+          description: 'National ID, Passport, Alien ID, or Military ID',
+          isRequired: true,
+          displayOrder: 0,
+          validityPeriodDays: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      (prisma.entityRequirement.create as jest.Mock)
+        .mockResolvedValueOnce(defaultReqs[0]);
+
+      // Act
+      const result = await KYCService.getEntityRequirements(entityType);
+
+      // Assert
+      expect(result.length).toBeGreaterThan(0);
+      expect(logger.info).toHaveBeenCalledWith(`Creating default requirements for ${entityType}`);
+    });
+  });
+
+  describe('addEntityRequirement', () => {
+    it('should add new requirement successfully', async () => {
+      // Arrange
+      const entityType = OrganizerEntityType.PARTNERSHIP;
+      const documentType = 'NATIONAL_ID';
+      const description = 'Valid national ID';
+
+      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.entityRequirement.aggregate as jest.Mock).mockResolvedValue({
+        _max: { displayOrder: 2 },
+      });
+
+      const mockNewReq = {
+        id: 'req-123',
+        entityType,
+        documentType,
+        description,
+        isRequired: true,
+        displayOrder: 3,
+        validityPeriodDays: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      (prisma.entityRequirement.create as jest.Mock).mockResolvedValue(mockNewReq);
+
+      // Act
+      const result = await KYCService.addEntityRequirement(entityType, documentType, description, true);
+
+      // Assert
+      expect(result).toEqual(mockNewReq);
+      expect(prisma.entityRequirement.create).toHaveBeenCalledWith({
+        data: {
+          entityType,
+          documentType,
+          description,
+          isRequired: true,
+          displayOrder: 3,
+        },
+      });
+      expect(logger.info).toHaveBeenCalledWith(`Added requirement ${documentType} for ${entityType}`);
+    });
+
+    it('should throw ValidationError if requirement already exists', async () => {
+      // Arrange
+      const entityType = OrganizerEntityType.LIMITED_LIABILITY_COMPANY;
+      const documentType = 'CERTIFICATE_OF_INCORPORATION';
+
+      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue({
+        id: 'existing-req',
+        entityType,
+        documentType,
+      });
+
+      // Act & Assert
+      await expect(
+        KYCService.addEntityRequirement(entityType, documentType, 'Description', true),
+      ).rejects.toThrow(ValidationError);
+    });
+  });
+
+  describe('updateEntityRequirement', () => {
+    it('should update requirement successfully', async () => {
+      // Arrange
+      const requirementId = 'req-1';
+      const newDescription = 'Updated description';
+
+      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue({
+        id: requirementId,
+        entityType: OrganizerEntityType.SOLE_PROPRIETOR,
+      });
+
+      const mockUpdated = {
+        id: requirementId,
+        entityType: OrganizerEntityType.SOLE_PROPRIETOR,
+        documentType: 'NATIONAL_ID',
+        description: newDescription,
+        isRequired: false,
+        displayOrder: 0,
+        validityPeriodDays: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      (prisma.entityRequirement.update as jest.Mock).mockResolvedValue(mockUpdated);
+
+      // Act
+      const result = await KYCService.updateEntityRequirement(requirementId, newDescription, false);
+
+      // Assert
+      expect(result).toEqual(mockUpdated);
+      expect(prisma.entityRequirement.update).toHaveBeenCalledWith({
+        where: { id: requirementId },
+        data: {
+          description: newDescription,
+          isRequired: false,
+        },
+      });
+      expect(logger.info).toHaveBeenCalledWith(`Updated requirement ${requirementId}`);
+    });
+
+    it('should throw NotFoundError if requirement does not exist', async () => {
+      // Arrange
+      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        KYCService.updateEntityRequirement('nonexistent', 'New desc', true),
+      ).rejects.toThrow(NotFoundError);
+    });
+  });
+
+  describe('deleteEntityRequirement', () => {
+    it('should delete requirement successfully', async () => {
+      // Arrange
+      const requirementId = 'req-1';
+
+      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue({
+        id: requirementId,
+        entityType: OrganizerEntityType.INDIVIDUAL,
+      });
+
+      (prisma.entityRequirement.delete as jest.Mock).mockResolvedValue({
+        id: requirementId,
+      });
+
+      // Act
+      await KYCService.deleteEntityRequirement(requirementId);
+
+      // Assert
+      expect(prisma.entityRequirement.delete).toHaveBeenCalledWith({
+        where: { id: requirementId },
+      });
+      expect(logger.info).toHaveBeenCalledWith(`Deleted requirement ${requirementId}`);
+    });
+
+    it('should throw NotFoundError if requirement does not exist', async () => {
+      // Arrange
+      (prisma.entityRequirement.findUnique as jest.Mock).mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(KYCService.deleteEntityRequirement('nonexistent')).rejects.toThrow(NotFoundError);
     });
   });
 });

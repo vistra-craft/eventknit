@@ -1319,3 +1319,64 @@ export const getEventConsentStats = async (eventId: string): Promise<{ success: 
   return apiGet(`/organizer-dashboard/events/${eventId}/consent-stats`);
 };
 
+// ========== Event Refunds ==========
+
+export interface OrganizerRefund {
+  id: string;
+  refundNumber: string;
+  refundAmount: number;
+  currency: string;
+  refundReason: string;
+  refundType: 'full' | 'partial';
+  status: string;
+  requestedAt: string;
+  processedAt: string | null;
+  completedAt: string | null;
+  transaction?: {
+    id: string;
+    transactionNumber: string;
+    amount: number;
+    paymentDate: string | null;
+    attendeeName: string | null;
+  };
+  requester?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+export interface OrganizerRefundSummary {
+  totalRefunded: number;
+  totalPlatformFeeRefunded: number;
+  totalCount: number;
+  completedCount: number;
+  pendingCount: number;
+  processingCount: number;
+  fullRefunds: number;
+  partialRefunds: number;
+}
+
+/**
+ * Get refunds for an organizer's event
+ */
+export const getEventRefunds = async (
+  eventId: string,
+  filters?: { status?: string },
+): Promise<{ success: boolean; data: OrganizerRefund[] }> => {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  const qs = params.toString();
+  return apiGet(`/organizer/events/${eventId}/refunds${qs ? `?${qs}` : ''}`);
+};
+
+/**
+ * Get refund summary for an organizer's event
+ */
+export const getEventRefundSummary = async (
+  eventId: string,
+): Promise<{ success: boolean; data: OrganizerRefundSummary }> => {
+  return apiGet(`/organizer/events/${eventId}/refunds/summary`);
+};
+

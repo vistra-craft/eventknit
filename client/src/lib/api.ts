@@ -176,7 +176,7 @@ const apiRequestInternal = async <T>(
     if (error instanceof Error && error.message.includes('timeout')) {
       throw {
         success: false,
-        message: 'Request timed out. The server is taking too long to respond. Please try again.',
+        message: 'The request is taking longer than expected. Please check your internet connection and try again.',
       } as ApiError;
     }
 
@@ -184,7 +184,7 @@ const apiRequestInternal = async <T>(
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw {
         success: false,
-        message: 'Network error. Please check your connection.',
+        message: 'Unable to connect to the server. Please check your internet connection and try again.',
       } as ApiError;
     }
     throw error;
@@ -345,6 +345,43 @@ export const apiPatch = <T>(endpoint: string, body?: unknown): Promise<T> => {
  */
 export const apiDelete = <T>(endpoint: string): Promise<T> => {
   return apiRequest<T>(endpoint, { method: 'DELETE' });
+};
+
+/**
+ * Authenticated raw fetch — for blob/text downloads that cannot use the JSON wrapper.
+ * Handles 401 the same way as apiRequest: clears token and calls the logout callback.
+ * Returns the raw Response so callers can read .blob(), .text(), etc.
+ */
+export const apiFetch = async (endpoint: string, options: RequestInit = {}): Promise<Response> => {
+  const token = getAccessToken();
+  const url = `${API_BASE_URL}${endpoint}`;
+
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
+
+  if (response.status === 401) {
+    removeAccessToken();
+    if (onLogoutCallback) {
+      onLogoutCallback();
+    }
+    throw Object.assign(
+      new Error('Your session has expired. Please sign in again.'),
+      { status: 401 },
+    );
+  }
+
+  return response;
 };
 
 /**

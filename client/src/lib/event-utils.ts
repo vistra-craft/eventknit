@@ -119,7 +119,7 @@ export interface BackendEvent {
     id: string;
     name: string;
     label: string;
-    type: string;
+    type: 'text' | 'email' | 'phone' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'date' | 'number';
     required: boolean;
     placeholder?: string;
     options?: string[];
@@ -134,6 +134,13 @@ export interface BackendEvent {
   _count?: {
     registrations?: number;
   };
+  seatMap?: { id: string } | null;
+  // Refund policy
+  refundPolicy?: string | null;
+  refundSLA?: number | null; // Backend DB field name for deadline days
+  refundDeadlineDays?: number | null; // Alias
+  refundPolicyText?: string | null;
+  autoRefundEnabled?: boolean;
   // Rejection info
   rejectedBy?: string | null;
   rejectedAt?: string | null;
@@ -244,7 +251,7 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
           id: string;
           name: string;
           label: string;
-          type: 'text' | 'email' | 'tel' | 'select' | 'radio' | 'checkbox' | 'textarea';
+          type: 'text' | 'email' | 'phone' | 'select' | 'radio' | 'checkbox' | 'textarea' | 'date' | 'number';
           required: boolean;
           placeholder?: string;
           options?: string[];
@@ -253,6 +260,10 @@ export const transformEventData = (backendEvent: BackendEvent): EventData => {
       : null,
     // Registration count from _count
     registrationCount: backendEvent._count?.registrations || 0,
+    // Seat map availability from included relation
+    hasSeatMap: !!backendEvent.seatMap,
+    // Map refundSLA (backend DB name) to refundDeadlineDays (frontend name)
+    refundDeadlineDays: backendEvent.refundDeadlineDays ?? backendEvent.refundSLA ?? null,
   };
 };
 

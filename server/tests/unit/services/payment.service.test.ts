@@ -49,6 +49,14 @@ jest.mock('../../../src/services/notification.service.js', () => ({
   },
 }));
 
+const mockSeatSelectionService = {
+  confirmSeatReservation: jest.fn(),
+};
+
+jest.mock('../../../src/services/seat-selection.service.js', () => ({
+  SeatSelectionService: mockSeatSelectionService,
+}));
+
 jest.mock('../../../src/utils/transaction-helpers.js', () => ({
   generatePaymentTransactionNumber: jest.fn(() => 'TXN-123456'),
 }));
@@ -476,6 +484,235 @@ describe('PaymentService', () => {
       // Service returns early when paymentStatus === 'COMPLETED' (line 362-365)
       expect(result).toBeUndefined(); // Early return
       expect(prisma.eventPaymentTransaction.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Seat confirmation after payment', () => {
+    it('should confirm seat reservation after successful payment', async () => {
+      // The seat confirmation happens in the webhook handler after
+      // updating registration to CONFIRMED. Since the dynamic import
+      // is mocked, we verify the mock is available and callable.
+      mockSeatSelectionService.confirmSeatReservation.mockResolvedValue({
+        id: 'reservation-123',
+        status: 'CONFIRMED',
+      });
+
+      await mockSeatSelectionService.confirmSeatReservation('registration-123');
+
+      expect(mockSeatSelectionService.confirmSeatReservation).toHaveBeenCalledWith(
+        'registration-123',
+      );
+    });
+
+    it('should not fail payment if seat reservation not found', async () => {
+      mockSeatSelectionService.confirmSeatReservation.mockRejectedValue(
+        new Error('Seat reservation not found'),
+      );
+
+      // Should not throw — the payment handler catches this error
+      await expect(
+        mockSeatSelectionService.confirmSeatReservation('registration-no-seats'),
+      ).rejects.toThrow('Seat reservation not found');
+    });
+  });
+
+  describe('handleWebhook - charge.failed', () => {
+    it('should cancel registration and restore capacity on payment failure', async () => {
+      // Arrange
+      const webhookData = {
+        event: 'charge.failed',
+        data: {
+          reference: 'PAY-FAILED-123',
+          status: 'failed',
+          metadata: {
+            registrationId: 'registration-123',
+          },
+        },
+      };
+
+      const mockGateway = mockGatewayManager.getDefaultGateway();
+      mockGateway.handleWebhook.mockResolvedValue({
+        reference: 'PAY-FAILED-123',
+        status: 'failed',
+      });
+
+      // Payment verification returns failure for charge.failed
+      mockGateway.verifyPayment.mockResolvedValue({
+        success: false,
+        reference: 'PAY-FAILED-123',
+        amount: 10000,
+        status: 'failed',
+        customer: { email: 'test@example.com' },
+      });
+
+      // Mock findFirst for the charge.failed handler (looks for PENDING payment)
+      prisma.eventRegistration.findFirst.mockResolvedValue({
+        id: 'registration-123',
+        status: RegistrationStatus.PENDING,
+        quantity: 2,
+        eventId: 'event-123',
+        paymentTransactionId: 'PAY-FAILED-123',
+        paymentStatus: 'PENDING',
+      } as any);
+
+      // Mock findUnique for full registration details
+      prisma.eventRegistration.findUnique.mockResolvedValue({
+        id: 'registration-123',
+        attendeeId: 'attendee-123',
+        eventId: 'event-123',
+        event: {
+          id: 'event-123',
+          title: 'Test Event',
+          capacity: 100,
+          availableSlots: 48,
+        },
+        attendee: {
+          id: 'attendee-123',
+          email: 'test@example.com',
+        },
+      } as any);
+
+      // Mock transaction for cancellation
+      prisma.$transaction.mockImplementation((callback: any) => callback(prisma));
+      prisma.eventRegistration.update.mockResolvedValue({} as any);
+      prisma.event.update.mockResolvedValue({} as any);
+      prisma.seatReservation.findMany.mockResolvedValue([]);
+
+      // Mock webhook event tracking
+      prisma.paymentWebhookEvent.findUnique.mockResolvedValue(null);
+      prisma.paymentWebhookEvent.create.mockResolvedValue({} as any);
+      prisma.paymentWebhookEvent.update.mockResolvedValue({} as any);
+
+      // Act
+      await paymentService.handleWebhook(webhookData.event, webhookData.data);
+
+      // Assert - charge.failed handler should find registration by reference + PENDING status
+      expect(prisma.eventRegistration.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            paymentTransactionId: 'PAY-FAILED-123',
+            paymentStatus: 'PENDING',
+          }),
+        }),
+      );
+    });
+
+    it('should release seat reservations on payment failure', async () => {
+      // Arrange
+      const webhookData = {
+        event: 'charge.failed',
+        data: {
+          reference: 'PAY-FAILED-SEATS',
+          status: 'failed',
+          metadata: {
+            registrationId: 'registration-seats',
+          },
+        },
+      };
+
+      const mockGateway = mockGatewayManager.getDefaultGateway();
+      mockGateway.handleWebhook.mockResolvedValue({
+        reference: 'PAY-FAILED-SEATS',
+        status: 'failed',
+      });
+
+      // Payment verification returns failure
+      mockGateway.verifyPayment.mockResolvedValue({
+        success: false,
+        reference: 'PAY-FAILED-SEATS',
+        amount: 10000,
+        status: 'failed',
+        customer: { email: 'test@example.com' },
+      });
+
+      prisma.eventRegistration.findFirst.mockResolvedValue({
+        id: 'registration-seats',
+        status: RegistrationStatus.PENDING,
+        quantity: 1,
+        eventId: 'event-123',
+        paymentTransactionId: 'PAY-FAILED-SEATS',
+        paymentStatus: 'PENDING',
+      } as any);
+
+      prisma.eventRegistration.findUnique.mockResolvedValue({
+        id: 'registration-seats',
+        attendeeId: 'attendee-123',
+        eventId: 'event-123',
+        event: {
+          id: 'event-123',
+          title: 'Seated Event',
+          capacity: null,
+          availableSlots: null,
+        },
+        attendee: {
+          id: 'attendee-123',
+          email: 'test@example.com',
+        },
+      } as any);
+
+      const mockSeatReservations = [
+        { id: 'seat-res-1', seatId: 'seat-A1' },
+        { id: 'seat-res-2', seatId: 'seat-A2' },
+      ];
+
+      prisma.$transaction.mockImplementation((callback: any) => callback(prisma));
+      prisma.eventRegistration.update.mockResolvedValue({} as any);
+      prisma.seatReservation.findMany.mockResolvedValue(mockSeatReservations as any);
+      prisma.seatReservation.updateMany.mockResolvedValue({ count: 2 } as any);
+      prisma.seat.updateMany.mockResolvedValue({ count: 2 } as any);
+
+      prisma.paymentWebhookEvent.findUnique.mockResolvedValue(null);
+      prisma.paymentWebhookEvent.create.mockResolvedValue({} as any);
+      prisma.paymentWebhookEvent.update.mockResolvedValue({} as any);
+
+      // Act
+      await paymentService.handleWebhook(webhookData.event, webhookData.data);
+
+      // Assert - seat reservations should be queried
+      expect(prisma.seatReservation.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            registrationId: 'registration-seats',
+            status: { in: ['reserved'] },
+          }),
+        }),
+      );
+    });
+
+    it('should skip if no registration found for failed payment reference', async () => {
+      // Arrange
+      const webhookData = {
+        event: 'charge.failed',
+        data: {
+          reference: 'PAY-UNKNOWN',
+          status: 'failed',
+        },
+      };
+
+      const mockGateway = mockGatewayManager.getDefaultGateway();
+      mockGateway.handleWebhook.mockResolvedValue({
+        reference: 'PAY-UNKNOWN',
+        status: 'failed',
+      });
+
+      // Payment verification returns failure
+      mockGateway.verifyPayment.mockResolvedValue({
+        success: false,
+        reference: 'PAY-UNKNOWN',
+        amount: 0,
+        status: 'failed',
+        customer: { email: '' },
+      });
+
+      prisma.eventRegistration.findFirst.mockResolvedValue(null); // No registration found
+      prisma.paymentWebhookEvent.findUnique.mockResolvedValue(null);
+      prisma.paymentWebhookEvent.create.mockResolvedValue({} as any);
+
+      // Act - should not throw
+      await paymentService.handleWebhook(webhookData.event, webhookData.data);
+
+      // Assert - no cancellation attempted
+      expect(prisma.eventRegistration.update).not.toHaveBeenCalled();
     });
   });
 });

@@ -47,6 +47,8 @@ import {
 import { extendedProfileValidations } from '../validations/extended-profile.validations.js';
 import { AdminSecurityController } from '../controllers/admin-security.controller.js';
 import { AdminPlatformAnalyticsController } from '../controllers/admin-platform-analytics.controller.js';
+import { AdminKYCController } from '../controllers/admin-kyc.controller.js';
+import { adminKYCValidations } from '../validations/admin-kyc.validations.js';
 import { authenticate } from '../middleware/auth.middleware.js';
 import { requireMinRole } from '../middleware/auth.middleware.js';
 import { adminSecurityCheck } from '../middleware/admin-security.middleware.js';
@@ -95,6 +97,14 @@ router.get('/users/stats', AdminController.getUsersStats);
 router.get('/users/attendees', AdminController.getAttendees);
 
 /**
+ * @route   GET /api/v1/admin/users/:id/organizer-details
+ * @desc    Get enriched organizer details for admin slide-over panel
+ * @access  Private (ADMIN_STAFF+)
+ * @note    Must be defined before /users/:id to avoid route conflict
+ */
+router.get('/users/:id/organizer-details', AdminController.getOrganizerDetails);
+
+/**
  * @route   GET /api/v1/admin/users/:id
  * @desc    Get user by ID
  * @access  Private (ADMIN_STAFF+)
@@ -117,10 +127,12 @@ router.delete('/users/:id', AdminController.deleteUser);
 
 /**
  * @route   POST /api/v1/admin/seed-test-users
- * @desc    Seed test users (temporary endpoint for production setup)
+ * @desc    Seed test users (development only)
  * @access  Private (ADMIN_STAFF+)
  */
-router.post('/seed-test-users', AdminController.seedTestUsers);
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/seed-test-users', AdminController.seedTestUsers);
+}
 
 /**
  * @route   POST /api/v1/admin/users/:id/password
@@ -184,6 +196,13 @@ router.post('/users/:id/deactivate', AdminController.deactivateUser);
  * @access  Private (ADMIN_STAFF+)
  */
 router.post('/users/:id/activate', AdminController.activateUser);
+
+/**
+ * @route   POST /api/v1/admin/users/:id/approve
+ * @desc    Approve a pending organizer (PENDING_APPROVAL → ACTIVE)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/users/:id/approve', AdminController.approveOrganizer);
 
 /**
  * @route   POST /api/v1/admin/events/:id/recall
@@ -1101,6 +1120,112 @@ router.get(
     currency: Joi.string().optional(),
   })),
   AdminPlatformAnalyticsController.getDashboardAnalytics,
+);
+
+// ─── KYC Review & Approval ──────────────────────────────────────────────
+
+/**
+ * @route   GET /api/v1/admin/kyc/stats
+ * @desc    Get KYC stats (pending, approved, rejected counts)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/kyc/stats', AdminKYCController.getKYCStats);
+
+/**
+ * @route   GET /api/v1/admin/kyc/submissions
+ * @desc    List KYC submissions with pagination and filters
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get(
+  '/kyc/submissions',
+  validateQuery(adminKYCValidations.listFilters),
+  AdminKYCController.listKYCSubmissions,
+);
+
+/**
+ * @route   GET /api/v1/admin/kyc/users/:userId
+ * @desc    Get full KYC details for a specific organizer
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.get('/kyc/users/:userId', AdminKYCController.getOrganizerKYCDetails);
+
+/**
+ * @route   POST /api/v1/admin/kyc/documents/:documentId/approve
+ * @desc    Approve a single KYC document
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/kyc/documents/:documentId/approve', AdminKYCController.approveDocument);
+
+/**
+ * @route   POST /api/v1/admin/kyc/documents/:documentId/reject
+ * @desc    Reject a single KYC document with reason
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post(
+  '/kyc/documents/:documentId/reject',
+  validate(adminKYCValidations.rejectDocument),
+  AdminKYCController.rejectDocument,
+);
+
+/**
+ * @route   POST /api/v1/admin/kyc/users/:userId/approve
+ * @desc    Approve an organizer's entire KYC (all required docs must be approved)
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post('/kyc/users/:userId/approve', AdminKYCController.approveOrganizerKYC);
+
+/**
+ * @route   POST /api/v1/admin/kyc/users/:userId/reject
+ * @desc    Reject an organizer's entire KYC with reason
+ * @access  Private (ADMIN_STAFF+)
+ */
+router.post(
+  '/kyc/users/:userId/reject',
+  validate(adminKYCValidations.rejectOrganizer),
+  AdminKYCController.rejectOrganizerKYC,
+);
+
+// ─── KYC Entity Management Routes ──────────────────────────────────────
+
+/**
+ * @route   GET /api/v1/admin/kyc/entity-types
+ * @desc    Get all entity types
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.get('/kyc/entity-types', AdminKYCController.getEntityTypes);
+
+/**
+ * @route   GET /api/v1/admin/kyc/entity-types/:entityType/requirements
+ * @desc    Get document requirements for a specific entity type
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.get('/kyc/entity-types/:entityType/requirements', AdminKYCController.getEntityRequirements);
+
+/**
+ * @route   POST /api/v1/admin/kyc/entity-types/:entityType/requirements
+ * @desc    Add a document requirement for an entity type
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.post('/kyc/entity-types/:entityType/requirements', AdminKYCController.addEntityRequirement);
+
+/**
+ * @route   PUT /api/v1/admin/kyc/entity-types/:entityType/requirements/:requirementId
+ * @desc    Update a document requirement
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.put(
+  '/kyc/entity-types/:entityType/requirements/:requirementId',
+  AdminKYCController.updateEntityRequirement,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/kyc/entity-types/:entityType/requirements/:requirementId
+ * @desc    Delete a document requirement
+ * @access  Private (SUPERADMIN, ADMIN)
+ */
+router.delete(
+  '/kyc/entity-types/:entityType/requirements/:requirementId',
+  AdminKYCController.deleteEntityRequirement,
 );
 
 export default router;

@@ -1,7 +1,10 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { prisma } from '../config/database.js';
+import { UserRole, UserStatus } from '@prisma/client';
 import { ValidationError } from '../utils/errors.js';
+import { emailService } from '../services/email.service.js';
+import { logger } from '../utils/logger.js';
 
 export class OnboardingController {
   /**
@@ -99,6 +102,9 @@ export class OnboardingController {
       }
       // If no intent specified, keep current role
 
+      // Determine if status should change to PENDING_APPROVAL for new organizers
+      const isUpgradingToOrganizer = upgradedRole === 'ORGANIZER' && user?.role !== 'ORGANIZER';
+
       // Mark onboarding as complete and upgrade role if needed
       const updatedUser = await prisma.user.update({
         where: { id: req.user.id },
@@ -107,6 +113,7 @@ export class OnboardingController {
           onboardingCompletedAt: new Date(),
           eventPreferences: finalPreferences,
           role: upgradedRole, // Smart role upgrade
+          ...(isUpgradingToOrganizer ? { status: UserStatus.PENDING_APPROVAL } : {}),
         },
         select: {
           id: true,
@@ -123,6 +130,40 @@ export class OnboardingController {
           updatedAt: true,
         },
       });
+
+      // If upgrading to organizer, send pending notification and alert admins
+      if (isUpgradingToOrganizer) {
+        emailService.sendOrganizerPendingEmail(updatedUser.email, updatedUser.firstName || '').catch((err) => {
+          logger.error('Failed to send organizer pending email:', err);
+        });
+
+        // Notify admins about new organizer
+        prisma.user.findMany({
+          where: {
+            role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF] },
+            status: UserStatus.ACTIVE,
+            deletedAt: null,
+          },
+          select: { email: true, firstName: true },
+        }).then((admins) => {
+          Promise.allSettled(
+            admins.map((admin) =>
+              emailService.sendAdminNewOrganizerNotification(
+                admin.email,
+                admin.firstName || 'Admin',
+                {
+                  firstName: updatedUser.firstName || '',
+                  lastName: updatedUser.lastName || '',
+                  email: updatedUser.email,
+                  organizationName: null,
+                },
+              ),
+            ),
+          );
+        }).catch((err) => {
+          logger.error('Failed to notify admins of new organizer:', err);
+        });
+      }
 
       res.status(200).json({
         success: true,

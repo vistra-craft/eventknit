@@ -131,8 +131,8 @@ export const NotificationsScreen = () => {
                       <Icon className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-medium">{pref.label}</h3>
-                      <p className="text-sm text-muted-foreground">
+                      <h3 className="text-card-title">{pref.label}</h3>
+                      <p className="text-card-description">
                         {pref.description}
                       </p>
                     </div>

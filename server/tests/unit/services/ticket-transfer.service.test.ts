@@ -455,6 +455,114 @@ describe('TicketTransferService', () => {
       ).rejects.toThrow('You are not the recipient of this transfer');
     });
 
+    it('should verify email match for null-recipient transfers (toEmail only)', async () => {
+      // Arrange - Transfer sent to email, no toUserId (guest scenario)
+      const emailOnlyTransfer = {
+        ...mockTransfer,
+        toUserId: null,
+        toEmail: 'recipient@example.com',
+      };
+      prismaMock.ticketTransfer.findUnique.mockResolvedValue(emailOnlyTransfer as any);
+      prismaMock.user.findUnique.mockResolvedValue({
+        email: 'recipient@example.com',
+      } as any);
+      prismaMock.$transaction.mockImplementation((callback: any) => callback(prismaMock));
+      prismaMock.eventRegistration.create.mockResolvedValue({
+        id: 'new-registration-123',
+        attendeeId: mockRecipient.id,
+      } as any);
+      prismaMock.ticketLineItem.createMany.mockResolvedValue({ count: 1 });
+      prismaMock.eventRegistration.update.mockResolvedValue(mockRegistration as any);
+      prismaMock.ticketTransfer.update.mockResolvedValue({
+        ...emailOnlyTransfer,
+        status: 'ACCEPTED',
+      } as any);
+      prismaMock.digitalWallet.findUnique.mockResolvedValue(null);
+
+      // Act
+      const result = await TicketTransferService.acceptTransfer('token-123', mockRecipient.id);
+
+      // Assert
+      expect(result.success).toBe(true);
+      expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+        where: { id: mockRecipient.id },
+        select: { email: true },
+      });
+    });
+
+    it('should reject email-only transfer if accepting user email does not match', async () => {
+      // Arrange - Transfer sent to specific email, different user tries to accept
+      const emailOnlyTransfer = {
+        ...mockTransfer,
+        toUserId: null,
+        toEmail: 'intended@example.com',
+      };
+      prismaMock.ticketTransfer.findUnique.mockResolvedValue(emailOnlyTransfer as any);
+      prismaMock.user.findUnique.mockResolvedValue({
+        email: 'different@example.com', // Mismatching email
+      } as any);
+
+      // Act & Assert
+      await expect(
+        TicketTransferService.acceptTransfer('token-123', 'some-user-id'),
+      ).rejects.toThrow(ValidationError);
+
+      await expect(
+        TicketTransferService.acceptTransfer('token-123', 'some-user-id'),
+      ).rejects.toThrow('You are not the recipient of this transfer');
+    });
+
+    it('should reject email-only transfer if accepting user not found', async () => {
+      // Arrange
+      const emailOnlyTransfer = {
+        ...mockTransfer,
+        toUserId: null,
+        toEmail: 'intended@example.com',
+      };
+      prismaMock.ticketTransfer.findUnique.mockResolvedValue(emailOnlyTransfer as any);
+      prismaMock.user.findUnique.mockResolvedValue(null); // User not found
+
+      // Act & Assert
+      await expect(
+        TicketTransferService.acceptTransfer('token-123', 'nonexistent-user'),
+      ).rejects.toThrow(ValidationError);
+
+      await expect(
+        TicketTransferService.acceptTransfer('token-123', 'nonexistent-user'),
+      ).rejects.toThrow('You are not the recipient of this transfer');
+    });
+
+    it('should verify email match case-insensitively for email-only transfers', async () => {
+      // Arrange - Email matches but with different case
+      const emailOnlyTransfer = {
+        ...mockTransfer,
+        toUserId: null,
+        toEmail: 'Recipient@Example.COM',
+      };
+      prismaMock.ticketTransfer.findUnique.mockResolvedValue(emailOnlyTransfer as any);
+      prismaMock.user.findUnique.mockResolvedValue({
+        email: 'recipient@example.com', // Same email, different case
+      } as any);
+      prismaMock.$transaction.mockImplementation((callback: any) => callback(prismaMock));
+      prismaMock.eventRegistration.create.mockResolvedValue({
+        id: 'new-registration-123',
+        attendeeId: mockRecipient.id,
+      } as any);
+      prismaMock.ticketLineItem.createMany.mockResolvedValue({ count: 1 });
+      prismaMock.eventRegistration.update.mockResolvedValue(mockRegistration as any);
+      prismaMock.ticketTransfer.update.mockResolvedValue({
+        ...emailOnlyTransfer,
+        status: 'ACCEPTED',
+      } as any);
+      prismaMock.digitalWallet.findUnique.mockResolvedValue(null);
+
+      // Act - should not throw
+      const result = await TicketTransferService.acceptTransfer('token-123', mockRecipient.id);
+
+      // Assert
+      expect(result.success).toBe(true);
+    });
+
     it('should void old registration when accepting transfer', async () => {
       // Arrange
       prismaMock.ticketTransfer.findUnique.mockResolvedValue(mockTransfer as any);

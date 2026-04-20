@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -472,7 +473,7 @@ const BrandingTab = ({ onEditBranding, refreshKey }: BrandingTabProps) => {
                     {selectedBranding.emailSignature && (
                       <div
                         className="text-xs bg-muted p-2 rounded"
-                        dangerouslySetInnerHTML={{ __html: selectedBranding.emailSignature }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(selectedBranding.emailSignature) }}
                       />
                     )}
                   </div>

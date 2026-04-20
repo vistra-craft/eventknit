@@ -110,6 +110,7 @@ const StaffManagementContent = () => {
       ACTIVE: "ACTIVE",
       SUSPENDED: "SUSPENDED",
       DEACTIVATED: "DEACTIVATED",
+      PENDING_APPROVAL: "PENDING_APPROVAL",
     };
     const mappedStatus = statusMap[status] || status;
     return getEventStatusBadgeClass(mappedStatus);

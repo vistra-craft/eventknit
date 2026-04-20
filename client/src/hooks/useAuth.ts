@@ -5,7 +5,8 @@
 import { useCallback, useEffect } from 'react';
 import { useAuthContext } from './useAuthContext';
 import * as authApi from '../lib/auth-api';
-import { setAccessToken, removeAccessToken, setLogoutCallback } from '../lib/api';
+import { setAccessToken, removeAccessToken, getAccessToken, setLogoutCallback } from '../lib/api';
+import { queryClient } from '../lib/queryClient';
 import { UserRole } from '../types/auth';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,13 +27,15 @@ export const useAuth = () => {
       case UserRole.SUPPORT:
       case UserRole.TELLER:
         return '/admin/dashboard';
-      // All non-admin users go to unified dashboard
+      // Organizer roles - redirect to organizer dashboard
       case UserRole.ORGANIZER:
       case UserRole.ORGANIZER_STAFF:
       case UserRole.ORGANIZER_TELLER:
+        return '/organizer/dashboard';
+      // Attendees and default - unified dashboard
       case UserRole.ATTENDEE:
       default:
-        return '/dashboard';  // Unified dashboard for everyone
+        return '/dashboard';
     }
   }, []);
 
@@ -64,8 +67,26 @@ export const useAuth = () => {
             !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
           );
 
-          if (needsOnboarding) {
-            // New unified onboarding for ALL users
+          const isOrganizerRole =
+            role === 'ORGANIZER' ||
+            role === 'ORGANIZER_STAFF' ||
+            role === 'ORGANIZER_TELLER';
+
+          // Check for returnTo query param (e.g., from transfer accept page)
+          const searchParams = new URLSearchParams(window.location.search);
+          const returnTo = searchParams.get('returnTo');
+
+          if (returnTo && returnTo.startsWith('/')) {
+            navigate(returnTo);
+          } else if (response.data.user.status === 'PENDING_APPROVAL') {
+            // Pending organizers go to user dashboard (limited access, shows pending banner)
+            navigate('/user/dashboard');
+          } else if (isOrganizerRole) {
+            // Active organizers go straight to organizer dashboard
+            // ProtectedRoute handles organizer-specific onboarding if needed
+            navigate('/organizer/dashboard');
+          } else if (needsOnboarding) {
+            // Non-organizer users go through unified onboarding
             navigate('/onboarding/welcome');
           } else {
             // Redirect to appropriate dashboard
@@ -115,7 +136,10 @@ export const useAuth = () => {
             !(response.data.user as { onboardingCompleted?: boolean }).onboardingCompleted
           );
 
-          if (needsOnboarding) {
+          if (response.data.user.status === 'PENDING_APPROVAL') {
+            // Pending organizers go to user dashboard (limited access, shows pending banner)
+            navigate('/user/dashboard');
+          } else if (needsOnboarding) {
             // New unified onboarding for ALL users
             navigate('/onboarding/welcome');
           } else {
@@ -140,34 +164,45 @@ export const useAuth = () => {
 
   /**
    * Logout user
-   * Hybrid approach: Immediate client-side logout + optional server-side invalidation
-   * Following pos/vf-ticket pattern for immediate UX, with optional security enhancement
+   * Captures token before clearing, fires server logout with it, then cleans up client state.
    */
   const logout = useCallback(() => {
-    // 1. Clear token immediately (prevents any API calls from using it)
+    // 1. Capture the current access token BEFORE removing it (needed for server call)
+    const currentToken = getAccessToken();
+
+    // 2. Clear client-side state immediately for instant UX
     removeAccessToken();
-
-    // 2. Clear role view from localStorage
     localStorage.removeItem('activeViewRole');
+    // Note: We keep rememberedEmail so "Remember me" persists across sessions
 
-    // 3. Note: We keep rememberedEmail in localStorage so "Remember me" persists across sessions
-    // User can uncheck "Remember me" on next login to clear it
-
-    // 4. Dispatch logout immediately to clear state (synchronous)
+    // 3. Dispatch logout to clear React auth state
     dispatch({ type: 'AUTH_LOGOUT' });
 
-    // 5. Dispatch custom event to notify components immediately
+    // 4. Clear React Query cache to prevent stale data leaking to next session
+    queryClient.clear();
+
+    // 5. Notify components of token change
     window.dispatchEvent(new Event('tokenChange'));
 
-    // 6. Navigate immediately (no setTimeout delay - like pos/vf-ticket)
+    // 6. Navigate immediately
     navigate('/', { replace: true });
 
-    // 7. Fire-and-forget server-side token invalidation (optional security enhancement)
-    // Don't wait for this - it's non-blocking for better UX
-    authApi.logout().catch((error) => {
-      // Silently fail - client is already logged out
-      console.error('Logout API error (non-blocking):', error);
-    });
+    // 7. Fire-and-forget server-side token revocation using the captured token
+    // Uses raw fetch to bypass apiRequest's 401-refresh logic (we're already logged out)
+    if (currentToken) {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL ||
+        (import.meta.env.DEV ? '/api/v1' : 'https://eventknit.onrender.com/api/v1');
+      fetch(`${baseUrl}/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentToken}`,
+        },
+        credentials: 'include', // Include cookies so server can clear refresh token
+      }).catch(() => {
+        // Silently fail - client is already logged out
+      });
+    }
   }, [dispatch, navigate]);
 
   /**
@@ -175,8 +210,9 @@ export const useAuth = () => {
    */
   const refreshProfile = useCallback(async () => {
     try {
-      dispatch({ type: 'AUTH_START' });
-
+      // Don't dispatch AUTH_START here — it sets isLoading: true which
+      // causes ProtectedRoute to unmount the layout (losing modal state).
+      // UPDATE_USER already handles setting the new user data.
       const response = await authApi.getProfile();
 
       if (response.success && response.data) {
@@ -185,11 +221,6 @@ export const useAuth = () => {
         throw new Error('Failed to fetch profile');
       }
     } catch (error: unknown) {
-      const errorMessage =
-        error && typeof error === 'object' && 'message' in error
-          ? (error.message as string)
-          : 'Failed to refresh profile';
-      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
       // If unauthorized, logout
       if (error && typeof error === 'object' && 'message' in error) {
         const msg = error.message as string;
@@ -248,6 +279,7 @@ export const useAuth = () => {
       removeAccessToken();
       localStorage.removeItem('activeViewRole');
       dispatch({ type: 'AUTH_LOGOUT' });
+      queryClient.clear();
       // Use requestAnimationFrame to ensure state update propagates
       requestAnimationFrame(() => {
         navigate('/auth/signin');

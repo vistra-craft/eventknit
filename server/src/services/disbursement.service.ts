@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError, AuthorizationError } from '../utils/errors.js';
 import { generateDisbursementNumber } from '../utils/transaction-helpers.js';
@@ -533,7 +534,7 @@ export class DisbursementService {
           },
         });
 
-        const dashboardUrl = `${process.env.CLIENT_URL || 'https://eventknit.com'}/organizer/payouts`;
+        const dashboardUrl = `${config.frontend.url}/organizer/payouts`;
         await emailService.sendPayoutCompletedEmail(organizer.email, {
           organizerName,
           eventTitle: disbursement.event.title,

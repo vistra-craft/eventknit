@@ -94,14 +94,14 @@ RUN chown -R nodejs:nodejs /app
 USER nodejs
 
 # Expose the application's port
-EXPOSE 3001
+EXPOSE 3010
 
 # Health check with better error handling
 HEALTHCHECK --interval=30s \
   --timeout=10s \
   --start-period=40s \
   --retries=3 \
-  CMD curl -f http://localhost:3001/health || exit 1
+  CMD curl -f http://localhost:3010/health || exit 1
 
 # Use exec form for better signal handling
 CMD ["node", "dist/src/server.js"]

@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
@@ -246,7 +247,7 @@ export class AffiliateProgramService {
       }
 
       // Generate affiliate link
-      const affiliateLink = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/events?ref=${affiliate.affiliateCode}`;
+      const affiliateLink = `${config.frontend.url}/events?ref=${affiliate.affiliateCode}`;
 
       return {
         affiliate,

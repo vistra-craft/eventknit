@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Download, Lock, AlertCircle, Mail, BarChart3, Users, TrendingUp } from 'lucide-react';
 import { Loader } from "@/components/ui/loader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,6 +63,7 @@ export const ConsentStatisticsCard: React.FC<ConsentStatisticsCardProps> = ({
   onExport,
   className,
 }) => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<ConsentStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -254,7 +256,7 @@ export const ConsentStatisticsCard: React.FC<ConsentStatisticsCardProps> = ({
                 variant="link"
                 size="sm"
                 className="ml-2 h-auto p-0 text-muted-foreground"
-                onClick={() => window.location.href = '/organizer/subscription'}
+                onClick={() => navigate('/organizer/subscription')}
               >
                 View Plans
               </Button>

@@ -1,22 +1,41 @@
-import { Minus, Plus, Ticket, AlertCircle, Clock, CheckCircle, Crown } from 'lucide-react';
+import { useState } from 'react';
+import { Minus, Plus, Ticket, AlertCircle, Clock, CheckCircle, Crown, Tag, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import type { EventData } from '@/types/event';
-import type { TicketSelection } from '../UnifiedRegistrationModal';
-import { 
-  isVIPTicket, 
-  hasDiscount, 
-  calculateDiscountPercentage, 
-  calculateTimeRemaining, 
-  isTicketTypeAvailable 
+import type { TicketSelection, PromoDiscount } from '../UnifiedRegistrationModal';
+import {
+  isVIPTicket,
+  hasDiscount,
+  calculateDiscountPercentage,
+  calculateTimeRemaining,
+  isTicketTypeAvailable
 } from '@/utils/ticket-helpers';
+import { apiPost } from '@/lib/api';
+
+interface PromoValidationResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    valid: boolean;
+    discountAmount: number;
+    promoCode: {
+      id: string;
+      code: string;
+      discountType: 'PERCENTAGE' | 'FIXED_AMOUNT';
+      discountValue: number;
+    };
+  };
+}
 
 interface TicketSelectionStepProps {
   event: EventData;
   selectedTickets: TicketSelection;
   onTicketsChange: (tickets: TicketSelection) => void;
   onContinue: (tickets: TicketSelection) => void;
+  promoDiscount: PromoDiscount | null;
+  onPromoChange: (promo: PromoDiscount | null) => void;
 }
 
 export const TicketSelectionStep = ({
@@ -24,8 +43,13 @@ export const TicketSelectionStep = ({
   selectedTickets,
   onTicketsChange,
   onContinue,
+  promoDiscount,
+  onPromoChange,
 }: TicketSelectionStepProps) => {
   const currency = event.currency || '$';
+  const [promoInput, setPromoInput] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   const updateQuantity = (ticketName: string, change: number) => {
     const newQuantities = {
@@ -35,25 +59,63 @@ export const TicketSelectionStep = ({
     onTicketsChange(newQuantities);
   };
 
-  const totalPrice = event.ticketTypes?.reduce(
+  const subtotal = event.ticketTypes?.reduce(
     (sum, ticket) => sum + (ticket.price || 0) * (selectedTickets[ticket.name] || 0),
     0
   ) || 0;
 
+  const discountAmount = promoDiscount?.discountAmount || 0;
+  const totalPrice = Math.max(0, subtotal - discountAmount);
+
   const totalTickets = Object.values(selectedTickets).reduce((sum, qty) => sum + qty, 0);
+
+  const handleApplyPromo = async () => {
+    const code = promoInput.trim().toUpperCase();
+    if (!code) return;
+
+    setPromoLoading(true);
+    setPromoError(null);
+    try {
+      const response = await apiPost<PromoValidationResponse>('/promo-codes/validate', {
+        code,
+        eventId: event.id,
+        totalAmount: subtotal,
+      });
+      if (response.success && response.data) {
+        onPromoChange({
+          code: response.data.promoCode.code,
+          discountAmount: response.data.discountAmount,
+          discountType: response.data.promoCode.discountType,
+          discountValue: response.data.promoCode.discountValue,
+        });
+        setPromoInput('');
+      } else {
+        setPromoError((response as { message?: string }).message || 'Invalid promo code');
+      }
+    } catch (err) {
+      setPromoError(err instanceof Error ? err.message : 'Invalid promo code');
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    onPromoChange(null);
+    setPromoError(null);
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold mb-2">Select Your Tickets</h3>
-        <p className="text-sm text-muted-foreground">
+        <h3 className="text-section-header mb-2">Select Your Tickets</h3>
+        <p className="text-card-description">
           Choose the ticket type and quantity you'd like to purchase
         </p>
       </div>
 
       {/* Ticket Types */}
       <div className="space-y-3">
-        {event.ticketTypes?.map((ticket, index) => {
+        {event.ticketTypes?.filter(t => !t.requiresInvitation).map((ticket, index) => {
           const quantity = selectedTickets[ticket.name] || 0;
           const isVip = isVIPTicket(ticket.name);
           const availability = isTicketTypeAvailable({
@@ -78,7 +140,7 @@ export const TicketSelectionStep = ({
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1 pr-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-base">{ticket.name}</h4>
+                    <h4 className="text-card-title">{ticket.name}</h4>
                     {isVip && (
                       <Badge
                         variant="secondary"
@@ -181,22 +243,71 @@ export const TicketSelectionStep = ({
         })}
       </div>
 
-      {/* Promo Code (Optional) */}
+      {/* Promo Code */}
       <div className="border rounded-lg p-4 bg-muted/30">
         <label className="text-sm font-medium mb-2 block">Have a promo code?</label>
-        <div className="flex gap-2">
-          <Input placeholder="Enter promo code" className="flex-1" />
-          <Button variant="outline">Apply</Button>
-        </div>
+        {promoDiscount ? (
+          <div className="flex items-center justify-between bg-success/10 border border-success/30 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Tag className="w-4 h-4 text-success" />
+              <span className="text-sm font-medium text-success">{promoDiscount.code}</span>
+              <Badge variant="secondary" className="text-xs">
+                {promoDiscount.discountType === 'PERCENTAGE'
+                  ? `${promoDiscount.discountValue}% off`
+                  : `${currency} ${promoDiscount.discountValue} off`}
+              </Badge>
+            </div>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleRemovePromo}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter promo code"
+                className="flex-1"
+                value={promoInput}
+                onChange={(e) => { setPromoInput(e.target.value); setPromoError(null); }}
+                onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
+                disabled={promoLoading}
+              />
+              <Button
+                variant="outline"
+                onClick={handleApplyPromo}
+                disabled={promoLoading || !promoInput.trim()}
+              >
+                {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
+              </Button>
+            </div>
+            {promoError && (
+              <p className="text-xs text-destructive mt-2">{promoError}</p>
+            )}
+          </>
+        )}
       </div>
 
       {/* Total & Continue */}
       <div className="border-t pt-4">
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-lg font-semibold">Total</span>
-          <span className="text-2xl font-bold text-primary">
-            {currency} {totalPrice.toFixed(2)}
-          </span>
+        <div className="space-y-2 mb-4">
+          {promoDiscount && (
+            <>
+              <div className="flex justify-between items-center text-sm text-muted-foreground">
+                <span>Subtotal</span>
+                <span>{currency} {subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm text-success">
+                <span>Discount ({promoDiscount.code})</span>
+                <span>-{currency} {discountAmount.toFixed(2)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-semibold">Total</span>
+            <span className="text-2xl font-bold text-primary">
+              {currency} {totalPrice.toFixed(2)}
+            </span>
+          </div>
         </div>
 
         <Button

@@ -16,6 +16,7 @@ export interface StaffProfileData {
 export interface OrganizerProfileData {
   website?: string;
   description?: string;
+  socialLinks?: Record<string, string>;
   businessLicense?: string;
   taxId?: string;
   bankAccountLast4?: string;
@@ -23,6 +24,7 @@ export interface OrganizerProfileData {
   totalEvents?: number;
   totalRevenue?: number;
   rating?: number;
+  markComplete?: boolean;
 }
 
 export interface EmergencyContactData {
@@ -190,6 +192,7 @@ export class ExtendedProfileService {
         userId,
         website: data.website,
         description: data.description,
+        socialLinks: data.socialLinks || undefined,
         businessLicense: data.businessLicense,
         taxId: data.taxId,
         bankAccountLast4: data.bankAccountLast4,
@@ -201,6 +204,7 @@ export class ExtendedProfileService {
       update: {
         website: data.website,
         description: data.description,
+        socialLinks: data.socialLinks,
         businessLicense: data.businessLicense,
         taxId: data.taxId,
         bankAccountLast4: data.bankAccountLast4,
@@ -223,6 +227,14 @@ export class ExtendedProfileService {
         },
       },
     });
+
+    // If markComplete flag is set, update user's profileCompleted status
+    if (data.markComplete) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { profileCompleted: true, profileCompletedAt: new Date() },
+      });
+    }
 
     return profile;
   }

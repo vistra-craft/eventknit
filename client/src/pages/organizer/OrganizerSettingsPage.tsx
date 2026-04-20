@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   User,
   Bell,
@@ -13,6 +13,9 @@ import {
   EyeOff,
   Key,
   Mail,
+  Globe,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,7 +25,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import * as authApi from "@/lib/auth-api";
-import RoleSwitcher from "@/components/RoleSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { UserStatus, UserRole } from "@/types/auth";
 import { useTheme } from "@/hooks/useTheme";
@@ -34,9 +36,24 @@ import {
   type UserPreferences as UserPreferencesType,
 } from "@/lib/user-preferences-api";
 import { SettingsSection, ThemeSelector } from "@/components/settings";
-import VerificationForm from "@/components/verification/VerificationForm";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { useUploadAvatar } from "@/hooks/useUploadAvatar";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
+import { getMyOrganizerProfile, updateMyOrganizerProfile } from "@/lib/organizer-profile-api";
+
+const SOCIAL_PLATFORMS = [
+  { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/yourpage' },
+  { key: 'twitter', label: 'X (Twitter)', placeholder: 'https://x.com/yourhandle' },
+  { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/yourhandle' },
+  { key: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/company/yourcompany' },
+  { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@yourchannel' },
+  { key: 'tiktok', label: 'TikTok', placeholder: 'https://tiktok.com/@yourhandle' },
+];
+
+const getTextLength = (html: string): number => {
+  const text = html.replace(/<[^>]*>/g, '').trim();
+  return text.length;
+};
 
 interface OrganizerSettingsData {
   // Profile Settings
@@ -51,6 +68,10 @@ interface OrganizerSettingsData {
   organizationName: string;
   businessEmail: string;
   kycStatus: string | null;
+  // Extended organizer profile
+  description: string;
+  website: string;
+  socialLinks: Record<string, string>;
   
   // Notification Settings
   emailNotifications: boolean;
@@ -72,6 +93,7 @@ interface OrganizerSettingsData {
 
 const OrganizerSettingsPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
   const uploadAvatarMutation = useUploadAvatar();
   const { theme: currentTheme, setTheme: setThemeContext } = useTheme();
@@ -95,6 +117,7 @@ const OrganizerSettingsPage = () => {
   // Avatar upload state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [showSocialLinks, setShowSocialLinks] = useState(false);
   
   // Determine active tab from URL
   const getActiveTabFromUrl = useCallback(() => {
@@ -129,8 +152,10 @@ const OrganizerSettingsPage = () => {
           const prefs = response.data.preferences;
           setSettings(prev => ({
             ...prev,
-            // Appearance
-            theme: prefs.theme || "system",
+            // Appearance — use current ThemeContext value, not API value.
+            // ThemeContext (backed by localStorage) is the active source of truth.
+            // Only explicit user actions (ThemeSelector) should change the theme.
+            theme: currentTheme,
             // Security
             twoFactorAuth: prefs.twoFactorAuth ?? false,
             sessionTimeout: prefs.sessionTimeout || 30,
@@ -143,11 +168,6 @@ const OrganizerSettingsPage = () => {
             marketingEmails: prefs.marketingEmails ?? false,
             weeklyDigest: prefs.weeklyDigest ?? true,
           }));
-
-          // Sync theme with ThemeContext
-          if (prefs.theme && prefs.theme !== currentTheme) {
-            setThemeContext(prefs.theme);
-          }
         }
       } catch (error) {
         console.error("Failed to load preferences:", error);
@@ -183,7 +203,7 @@ const OrganizerSettingsPage = () => {
             otherName: userData.otherName || "",
             email: userData.email || "",
             phone: userData.phoneNumber || "",
-            companyAffiliation: "", // Not in User interface yet
+            companyAffiliation: userData.companyAffiliation || "",
             organizationName: userData.organizationName || "",
             businessEmail: userData.businessEmail || "",
             avatar: userData.avatar || "",
@@ -214,7 +234,32 @@ const OrganizerSettingsPage = () => {
 
     loadProfile();
   }, [user]);
-  
+
+  // Load organizer profile (description, website, socialLinks)
+  useEffect(() => {
+    const loadOrganizerProfile = async () => {
+      try {
+        const response = await getMyOrganizerProfile();
+        if (response.success && response.data?.organizerProfile) {
+          const profile = response.data.organizerProfile;
+          setSettings(prev => ({
+            ...prev,
+            description: profile.description || '',
+            website: profile.website || '',
+            socialLinks: (profile.socialLinks as Record<string, string>) || {},
+          }));
+          // Auto-expand social links if any exist
+          if (profile.socialLinks && Object.values(profile.socialLinks as Record<string, string>).some(v => v?.trim())) {
+            setShowSocialLinks(true);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load organizer profile:', error);
+      }
+    };
+    if (user) loadOrganizerProfile();
+  }, [user]);
+
   // Account info (read-only)
   const [accountInfo, setAccountInfo] = useState({
     role: "" as UserRole | "",
@@ -241,6 +286,9 @@ const OrganizerSettingsPage = () => {
     organizationName: "",
     businessEmail: "",
     kycStatus: null,
+    description: "",
+    website: "",
+    socialLinks: {},
     emailNotifications: true,
     eventUpdates: true,
     attendeeRegistrations: true,
@@ -346,7 +394,7 @@ const OrganizerSettingsPage = () => {
 
     try {
       if (activeTab === "profile") {
-        // If avatar file is selected, use FormData; otherwise use JSON
+        // 1. Save user profile (auth fields)
         if (avatarFile) {
           const formData = new FormData();
           formData.append('image', avatarFile);
@@ -359,19 +407,13 @@ const OrganizerSettingsPage = () => {
           if (settings.businessEmail) formData.append('businessEmail', settings.businessEmail);
 
           const response = await authApi.updateProfile(formData);
-          
+
           if (response.success) {
-            // Clear avatar upload state
             setAvatarFile(null);
-            // Refresh user profile in context
-            await refreshProfile();
-            setSaveStatus("success");
-            setSaveMessage("Profile updated successfully");
           } else {
             throw new Error("Failed to update profile");
           }
         } else {
-          // Update profile without avatar
           const profileData: Partial<authApi.RegisterData> = {
             firstName: settings.firstName,
             lastName: settings.lastName,
@@ -383,16 +425,30 @@ const OrganizerSettingsPage = () => {
           };
 
           const response = await authApi.updateProfile(profileData);
-          
-          if (response.success) {
-            // Refresh user profile in context
-            await refreshProfile();
-            setSaveStatus("success");
-            setSaveMessage("Profile updated successfully");
-          } else {
+
+          if (!response.success) {
             throw new Error("Failed to update profile");
           }
         }
+
+        // 2. Save organizer profile (description, website, socialLinks)
+        const filteredSocialLinks = Object.fromEntries(
+          Object.entries(settings.socialLinks).filter(([, v]) => v && v.trim())
+        );
+        await updateMyOrganizerProfile({
+          description: settings.description || undefined,
+          website: settings.website || undefined,
+          socialLinks: Object.keys(filteredSocialLinks).length > 0 ? filteredSocialLinks : undefined,
+        });
+
+        // 3. Refresh auth context
+        await refreshProfile();
+        setSaveStatus("success");
+        setSaveMessage("Profile updated successfully");
+        toast({
+          title: "Success",
+          description: "Your profile has been updated successfully.",
+        });
       } else if (activeTab === "appearance" || activeTab === "security") {
         // Save appearance and security preferences
         const preferencesToUpdate: Partial<UserPreferencesType> = {};
@@ -414,6 +470,10 @@ const OrganizerSettingsPage = () => {
           }
           setSaveStatus("success");
           setSaveMessage("Settings saved successfully");
+          toast({
+            title: "Success",
+            description: activeTab === "appearance" ? "Appearance settings saved." : "Security settings saved.",
+          });
         } else {
           throw new Error("Failed to update preferences");
         }
@@ -433,6 +493,10 @@ const OrganizerSettingsPage = () => {
         if (response.success) {
           setSaveStatus("success");
           setSaveMessage("Settings saved successfully");
+          toast({
+            title: "Success",
+            description: "Notification preferences saved successfully.",
+          });
         } else {
           throw new Error("Failed to update preferences");
         }
@@ -448,6 +512,11 @@ const OrganizerSettingsPage = () => {
         : 'Failed to save settings';
       setSaveStatus("error");
       setSaveMessage(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
       setTimeout(() => {
         setSaveStatus("idle");
         setSaveMessage("");
@@ -632,8 +701,76 @@ const OrganizerSettingsPage = () => {
         </div>
 
         <div className="mt-4">
-          <Label>KYC Status</Label>
+          <Label htmlFor="description">About Your Organization</Label>
           <div className="mt-1">
+            <RichTextEditor
+              content={settings.description}
+              onChange={(value) => updateSetting("description", value)}
+              placeholder="Tell attendees about your organization, what events you host, and what makes them special..."
+              minHeight="120px"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {getTextLength(settings.description)}/2000 characters. This will appear on your event pages.
+          </p>
+        </div>
+
+        <div className="mt-4">
+          <Label htmlFor="website">Website</Label>
+          <div className="relative mt-1">
+            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="website"
+              type="url"
+              value={settings.website}
+              onChange={(e) => updateSetting("website", e.target.value)}
+              placeholder="https://yourwebsite.com"
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setShowSocialLinks(!showSocialLinks)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showSocialLinks ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            Social Media Links
+            {Object.values(settings.socialLinks).filter(v => v?.trim()).length > 0 && (
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                {Object.values(settings.socialLinks).filter(v => v?.trim()).length} added
+              </span>
+            )}
+          </button>
+
+          {showSocialLinks && (
+            <div className="space-y-3 mt-3">
+              {SOCIAL_PLATFORMS.map(platform => (
+                <div key={platform.key} className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground w-24 shrink-0">{platform.label}</span>
+                  <Input
+                    value={settings.socialLinks[platform.key] || ''}
+                    onChange={(e) => setSettings(prev => ({
+                      ...prev,
+                      socialLinks: {
+                        ...prev.socialLinks,
+                        [platform.key]: e.target.value,
+                      },
+                    }))}
+                    placeholder={platform.placeholder}
+                    className="flex-1"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4">
+          <Label>KYC Status</Label>
+          <div className="mt-1 flex items-center justify-between">
             {accountInfo.kycStatus ? (
               <Badge variant={
                 accountInfo.kycStatus === 'APPROVED' ? 'default' :
@@ -644,6 +781,20 @@ const OrganizerSettingsPage = () => {
               </Badge>
             ) : (
               <span className="text-sm text-muted-foreground">Not submitted</span>
+            )}
+            {!accountInfo.kycStatus && (
+              <Button 
+                size="sm"
+                onClick={() => {
+                  setActiveTab('verification');
+                  // Update URL without navigation
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('tab', 'verification');
+                  window.history.pushState({}, '', url);
+                }}
+              >
+                Submit KYC
+              </Button>
             )}
           </div>
         </div>
@@ -718,6 +869,18 @@ const OrganizerSettingsPage = () => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Save Button at Bottom */}
+      <div className="border-t pt-6 mt-6 flex justify-end">
+        <Button onClick={handleSave} disabled={isSaving || isLoading}>
+          {isSaving ? (
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Button>
       </div>
     </div>
   );
@@ -1010,9 +1173,12 @@ const OrganizerSettingsPage = () => {
   );
 
   const renderVerificationSettings = () => {
-    // Check if user came from event creation page (via location state)
+    // Redirect to dedicated verification page for unified experience
     const redirectPath = (location.state as { redirectAfterVerification?: string } | null)?.redirectAfterVerification;
-    return <VerificationForm redirectAfterBusinessVerification={redirectPath} />;
+    navigate('/organizer/verification', {
+      state: { redirectAfterVerification: redirectPath || '/organizer/settings?tab=verification' }
+    });
+    return null;
   };
 
   const renderTabContent = () => {
@@ -1037,21 +1203,11 @@ const OrganizerSettingsPage = () => {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            {activeTab !== "security" && (
-              <>
-                <Button variant="outline" onClick={handleReset}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reset
-                </Button>
-                <Button onClick={handleSave} disabled={isSaving || isLoading}>
-                  {isSaving ? (
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
-              </>
+            {activeTab === "security" && (
+              <Button variant="outline" onClick={handleReset}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reset
+              </Button>
             )}
           </div>
         </div>
@@ -1135,8 +1291,6 @@ const OrganizerSettingsPage = () => {
                 </nav>
               </CardContent>
             </Card>
-            
-            {activeTab === "profile" && <RoleSwitcher />}
           </div>
         </div>
       </div>

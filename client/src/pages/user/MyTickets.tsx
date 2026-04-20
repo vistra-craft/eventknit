@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Calendar, MapPin, Download, Share2, QrCode } from "lucide-react";
+import { Calendar, MapPin, Download, Share2, QrCode, Send, DollarSign } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Loader } from "../../components/ui/loader";
@@ -36,11 +36,11 @@ const MyTickets: React.FC = () => {
         setLoading(true);
         const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
         if (response.success && response.data) {
-          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; status?: string; backupCode?: string; registrationId?: string; image?: string }) => ({
+          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string }) => ({
             id: event.id,
             title: event.title,
             date: event.date || "",
-            location: event.location || "",
+            location: event.venue ? `${event.venue}, ${event.location || ""}` : (event.location || ""),
             status: (event.status as 'upcoming' | 'completed') || 'upcoming',
             ticketId: event.backupCode || `TKT-${event.id.slice(0, 8).toUpperCase()}`,
             registrationId: event.registrationId,
@@ -180,6 +180,28 @@ const MyTickets: React.FC = () => {
                     <Share2 className="w-3.5 h-3.5 mr-1" />
                     Share
                   </Button>
+                  {ticket.status === 'upcoming' && ticket.registrationId && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={(e) => { e.stopPropagation(); navigate('/user/ticket-transfer', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
+                      >
+                        <Send className="w-3.5 h-3.5 mr-1" />
+                        Transfer
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={(e) => { e.stopPropagation(); navigate('/user/ticket-resale', { state: { registrationId: ticket.registrationId, eventTitle: ticket.title } }); }}
+                      >
+                        <DollarSign className="w-3.5 h-3.5 mr-1" />
+                        Resell
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

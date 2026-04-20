@@ -680,15 +680,7 @@ const EventDetailsPage = () => {
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Description</label>
                       <RichTextContent
-                        content={eventData.description || '<p>No description available.</p>'}
-                        className="text-sm mt-1"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Full Description</label>
-                      <RichTextContent
-                        content={eventData.fullDescription || '<p>No full description available.</p>'}
+                        content={eventData.fullDescription || eventData.description || '<p>No description available.</p>'}
                         className="text-sm mt-1"
                       />
                     </div>

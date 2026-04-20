@@ -170,7 +170,7 @@ export const config = {
       ? process.env.ADMIN_ALLOWED_ORIGINS.includes(',')
         ? process.env.ADMIN_ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
         : [process.env.ADMIN_ALLOWED_ORIGINS]
-      : ['http://localhost:5173', 'http://localhost:3001'], // Default for development
+      : ['http://localhost:5173', 'http://localhost:3010'], // Default for development
 
     // IP whitelist for admin access
     allowedIPs: process.env.ADMIN_ALLOWED_IPS

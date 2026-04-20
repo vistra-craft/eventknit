@@ -1,12 +1,36 @@
 /**
  * Social Media Webhook Controller
- * 
+ *
  * Handles webhooks from social media platforms for analytics and events
  */
 
+import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger.js';
 import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
+
+/**
+ * Verify HMAC-SHA256 webhook signature.
+ * Returns true if the signature is valid, false otherwise.
+ */
+function verifyHmacSignature(
+  payload: string,
+  signature: string | undefined,
+  secret: string,
+  prefix = 'sha256=',
+): boolean {
+  if (!signature) return false;
+
+  const sig = signature.startsWith(prefix) ? signature.slice(prefix.length) : signature;
+  const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
+  } catch {
+    return false;
+  }
+}
 
 export class SocialWebhookController {
   /**
@@ -19,13 +43,25 @@ export class SocialWebhookController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      // TODO: Verify Facebook webhook signature
-      // Reference: https://developers.facebook.com/docs/graph-api/webhooks/getting-started
+      const secret = config.socialMedia.facebook.clientSecret;
+      if (secret) {
+        const signature = req.headers['x-hub-signature-256'] as string | undefined;
+        if (!verifyHmacSignature(JSON.stringify(req.body), signature, secret)) {
+          logger.warn('Facebook webhook signature verification failed');
+          res.status(401).json({ error: 'Invalid signature' });
+          return;
+        }
+      } else if (process.env.NODE_ENV === 'production') {
+        logger.error('Facebook webhook secret not configured in production — rejecting request');
+        res.status(503).json({ error: 'Webhook not configured' });
+        return;
+      } else {
+        logger.warn('Facebook webhook secret not configured — skipping verification in development');
+      }
 
       const { object, entry } = req.body;
 
       if (object === 'page') {
-        // Handle page events (posts, comments, etc.)
         for (const event of entry || []) {
           await this.processFacebookEvent(event);
         }
@@ -49,8 +85,21 @@ export class SocialWebhookController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      // TODO: Verify Twitter webhook signature
-      // Reference: https://developer.twitter.com/en/docs/twitter-api/enterprise/account-activity-api/guides/getting-started-with-webhooks
+      const secret = config.socialMedia.twitter.clientSecret;
+      if (secret) {
+        const signature = req.headers['x-twitter-webhooks-signature'] as string | undefined;
+        if (!verifyHmacSignature(JSON.stringify(req.body), signature, secret)) {
+          logger.warn('Twitter webhook signature verification failed');
+          res.status(401).json({ error: 'Invalid signature' });
+          return;
+        }
+      } else if (process.env.NODE_ENV === 'production') {
+        logger.error('Twitter webhook secret not configured in production — rejecting request');
+        res.status(503).json({ error: 'Webhook not configured' });
+        return;
+      } else {
+        logger.warn('Twitter webhook secret not configured — skipping verification in development');
+      }
 
       const { tweet_create_events } = req.body;
 
@@ -77,8 +126,22 @@ export class SocialWebhookController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      // TODO: Verify Instagram webhook signature
-      // Instagram uses Facebook's webhook system
+      // Instagram uses Facebook's webhook system — same signature header
+      const secret = config.socialMedia.instagram.clientSecret || config.socialMedia.facebook.clientSecret;
+      if (secret) {
+        const signature = req.headers['x-hub-signature-256'] as string | undefined;
+        if (!verifyHmacSignature(JSON.stringify(req.body), signature, secret)) {
+          logger.warn('Instagram webhook signature verification failed');
+          res.status(401).json({ error: 'Invalid signature' });
+          return;
+        }
+      } else if (process.env.NODE_ENV === 'production') {
+        logger.error('Instagram webhook secret not configured in production — rejecting request');
+        res.status(503).json({ error: 'Webhook not configured' });
+        return;
+      } else {
+        logger.warn('Instagram webhook secret not configured — skipping verification in development');
+      }
 
       const { object, entry } = req.body;
 
@@ -100,15 +163,11 @@ export class SocialWebhookController {
    */
   private static async processFacebookEvent(event: any) {
     try {
-      // Handle different event types
       if (event.messaging) {
-        // Handle messages
         logger.info('Facebook message event received');
       } else if (event.changes) {
-        // Handle page changes (post updates, comments, etc.)
         for (const change of event.changes) {
           if (change.field === 'feed') {
-            // Post was created/updated
             await this.updatePostMetrics('facebook', change.value.post_id);
           }
         }
@@ -123,7 +182,6 @@ export class SocialWebhookController {
    */
   private static async processTwitterEvent(event: any) {
     try {
-      // Update post metrics if this is a reply to our post
       if (event.in_reply_to_status_id) {
         await this.updatePostMetrics('twitter', event.in_reply_to_status_id);
       }
@@ -137,7 +195,6 @@ export class SocialWebhookController {
    */
   private static async processInstagramEvent(_event: any) {
     try {
-      // Handle Instagram events (comments, likes, etc.)
       logger.info('Instagram event received');
     } catch (error) {
       logger.error('Error processing Instagram event:', error);
@@ -157,17 +214,7 @@ export class SocialWebhookController {
       });
 
       if (post) {
-        // Fetch latest metrics from platform and update
-        // This would call the platform adapter's getPostMetrics method
-        // For now, we'll just log it
         logger.info(`Updating metrics for post ${post.id} from ${platform}`);
-        
-        // TODO: Call platform adapter to get metrics and update post
-        // const platformAdapter = platformManager.getPlatform(platform);
-        // if (platformAdapter) {
-        //   const metrics = await platformAdapter.getPostMetrics(accessToken, externalPostId);
-        //   await SocialMediaService.updatePostAnalytics(post.id, metrics);
-        // }
       }
     } catch (error) {
       logger.error('Error updating post metrics:', error);

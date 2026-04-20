@@ -24,7 +24,7 @@ export class LockService {
       return;
     }
 
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6380';
 
     try {
       this.redisClient = new Redis(redisUrl, {

@@ -26,6 +26,17 @@ router.get('/', EventController.getEvents);
 router.get('/:id', EventController.getEventById);
 
 /**
+ * @route   GET /api/v1/events/:id/related
+ * @desc    Get related events scored by relevance (public)
+ * @access  Public
+ */
+router.get(
+  '/:id/related',
+  validateParams(Joi.object({ id: Joi.string().uuid().required() })),
+  EventController.getRelatedEvents,
+);
+
+/**
  * @route   POST /api/v1/events/:id/register-guest
  * @desc    Register for an event as guest (public - no auth required)
  * @access  Public

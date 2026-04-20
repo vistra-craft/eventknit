@@ -44,10 +44,10 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
   return (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-2">
+        <h2 className="text-page-title mb-2">
           Let's get to know you first!
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-page-subtitle">
           Tell us what kind of events you want to host and we'll help make it happen.
         </p>
       </div>

@@ -166,8 +166,13 @@ export class AuthController {
         await AuthService.logout(refreshToken);
       }
 
-      // Clear refresh token cookie
-      res.clearCookie('refreshToken');
+      // Clear refresh token cookie (options must match how cookie was set, minus maxAge)
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+      });
 
       res.status(200).json({
         success: true,
@@ -264,10 +269,13 @@ export class AuthController {
           status: true,
           isEmailVerified: true,
           emailVerifiedAt: true,
+          avatar: true,
+          otherName: true,
           organizationName: true,
           businessEmail: true,
           kycStatus: true,
           onboardingCompleted: true,
+          profileCompleted: true,
           lastLoginAt: true,
           createdAt: true,
           updatedAt: true,

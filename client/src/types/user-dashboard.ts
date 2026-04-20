@@ -263,7 +263,7 @@ export interface SharePlatformStats {
 
 // ========== Ticket Resale ==========
 
-export type ResaleStatus = 'ACTIVE' | 'SOLD' | 'CANCELLED' | 'EXPIRED';
+export type ResaleStatus = 'LISTED' | 'RESERVED' | 'SOLD' | 'CANCELLED' | 'EXPIRED';
 
 export interface TicketResale {
   id: string;

@@ -304,7 +304,7 @@ const EventRegistration = () => {
           }
           
           // Phone number
-          if (field.type === 'tel' && value && !phoneNumber) {
+          if (field.type === 'phone' && value && !phoneNumber) {
             phoneNumber = value;
           }
         }
@@ -534,12 +534,12 @@ const EventRegistration = () => {
     const value = formData[field.id] || '';
     const fieldId = `field-${field.id}`;
 
-    const fieldType = field.type as 'text' | 'email' | 'tel' | 'textarea' | 'select' | 'radio' | 'checkbox';
+    const fieldType = field.type as 'text' | 'email' | 'phone' | 'textarea' | 'select' | 'radio' | 'checkbox';
     
     switch (fieldType) {
       case "text":
       case "email":
-      case "tel":
+      case "phone":
         return (
           <div key={field.id} className="space-y-2">
             <Label htmlFor={fieldId} className="mb-1">
@@ -883,8 +883,10 @@ const EventRegistration = () => {
                         const availability = isTicketTypeAvailable({
                           availableFrom: ticket.availableFrom || undefined,
                           availableUntil: ticket.availableUntil || undefined,
+                          isSoldOut: ticket.isSoldOut,
                         });
                         const isAvailable = availability.available;
+                        const isSoldOut = availability.isSoldOut || false;
                         const discounted = hasDiscount({
                           originalPrice: ticket.originalPrice || undefined,
                           price: ticket.price,
@@ -895,16 +897,26 @@ const EventRegistration = () => {
                           <div
                             key={index}
                             className={`border rounded-xl p-4 transition-all duration-200 ${
-                              quantity > 0
+                              isSoldOut
+                                ? "border-red-200 bg-red-50/50 opacity-70"
+                                : quantity > 0
                                 ? "border-primary ring-2 ring-primary/20 bg-primary/5"
                                 : "border-border hover:border-primary/50"
-                            } ${!isAvailable ? 'opacity-60' : ''}`}
+                            } ${!isAvailable && !isSoldOut ? 'opacity-60' : ''}`}
                           >
                             <div className="flex justify-between items-start mb-3">
                               <div className="flex-1 pr-4">
                                 <div className="flex items-center gap-2 mb-1">
                                   <h4 className="font-semibold text-base">{ticket.name}</h4>
-                                  {isVip && (
+                                  {isSoldOut && (
+                                    <Badge
+                                      variant="destructive"
+                                      className="bg-red-600 text-white hover:bg-red-700 text-[10px] px-2 h-5 font-semibold"
+                                    >
+                                      SOLD OUT
+                                    </Badge>
+                                  )}
+                                  {!isSoldOut && isVip && (
                                     <Badge
                                       variant="secondary"
                                       className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200 text-[10px] px-1.5 h-5"
@@ -939,28 +951,26 @@ const EventRegistration = () => {
 
                             {/* Badges */}
                             <div className="flex flex-wrap gap-2 mb-3">
-                              {discounted && ticket.originalPrice && (
+                              {!isSoldOut && discounted && ticket.originalPrice && (
                                 <Badge variant="destructive" className="text-[10px] h-5">
                                   {calculateDiscountPercentage(ticket.originalPrice, ticket.price)}% OFF
                                 </Badge>
                               )}
-                              {ticket.availableUntil && new Date(ticket.availableUntil) > new Date() && (
+                              {!isSoldOut && ticket.availableUntil && new Date(ticket.availableUntil) > new Date() && (
                                 <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
                                   <Clock className="w-3 h-3" />
                                   <span>Ends in {calculateTimeRemaining(ticket.availableUntil)}</span>
-                                </div>
-                              )}
-                              {ticket.quantity && ticket.quantity < 50 && (
-                                <div className="flex items-center gap-1 text-[10px] text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
-                                  <AlertCircle className="w-3 h-3" />
-                                  <span>Only {ticket.quantity} left</span>
                                 </div>
                               )}
                             </div>
 
                             <div className="flex items-center justify-between pt-3 border-t">
                               <span className="text-sm">
-                                {!isAvailable ? (
+                                {isSoldOut ? (
+                                  <span className="text-red-600 font-semibold flex items-center gap-1">
+                                    <X className="w-4 h-4" /> SOLD OUT
+                                  </span>
+                                ) : !isAvailable ? (
                                   <span className="text-destructive flex items-center gap-1">
                                     <AlertCircle className="w-3 h-3" /> {availability.reason}
                                   </span>
@@ -979,11 +989,11 @@ const EventRegistration = () => {
                                       size="icon"
                                   className="h-8 w-8"
                                   onClick={() => updateTicketQuantity(ticket.name, -1)}
-                                  disabled={quantity === 0 || !isAvailable}
+                                  disabled={quantity === 0 || !isAvailable || isSoldOut}
                                     >
                                   <Minus className="h-4 w-4" />
                                     </Button>
-                                <span className="w-8 text-center font-medium text-sm">
+                                <span className={`w-8 text-center font-medium text-sm ${isSoldOut ? 'text-muted-foreground' : ''}`}>
                                   {quantity}
                                 </span>
                                     <Button
@@ -992,7 +1002,7 @@ const EventRegistration = () => {
                                       size="icon"
                                   className="h-8 w-8"
                                   onClick={() => updateTicketQuantity(ticket.name, 1)}
-                                  disabled={!isAvailable || (ticket.quantity !== null && ticket.quantity !== undefined && quantity >= ticket.quantity)}
+                                  disabled={!isAvailable || isSoldOut || (ticket.quantity !== null && ticket.quantity !== undefined && quantity >= ticket.quantity)}
                                     >
                                   <Plus className="h-4 w-4" />
                                     </Button>
@@ -1239,7 +1249,7 @@ const EventRegistration = () => {
                                 We'll never share your email.
                               </p>
                             )}
-                            {field.type === "tel" && (
+                            {field.type === "phone" && (
                               <p className="text-xs text-muted-foreground">
                                 Format: +1 (555) 123-4567
                               </p>

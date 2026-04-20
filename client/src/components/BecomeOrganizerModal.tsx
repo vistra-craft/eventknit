@@ -1,11 +1,9 @@
 /**
  * Become Organizer Modal
- * Prompts attendees to upgrade to organizer role
- * Explains benefits and handles the upgrade flow
+ * Informational modal that explains organizer benefits
+ * and navigates to the event creation form where the upgrade happens
  */
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Calendar, Users, BarChart3, DollarSign, CheckCircle, Sparkles } from 'lucide-react';
 import {
   Dialog,
@@ -16,10 +14,6 @@ import {
   DialogTitle,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { ButtonLoader } from './ui/loader';
-import { becomeOrganizer } from '../lib/role-api';
-import { useToast } from '../hooks/useToast';
-import { useAuth } from '../hooks/useAuth';
 
 interface BecomeOrganizerModalProps {
   isOpen: boolean;
@@ -32,11 +26,6 @@ export const BecomeOrganizerModal = ({
   onClose,
   onSuccess,
 }: BecomeOrganizerModalProps) => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { refreshProfile } = useAuth();
-  const [isUpgrading, setIsUpgrading] = useState(false);
-
   const benefits = [
     {
       icon: Calendar,
@@ -60,45 +49,10 @@ export const BecomeOrganizerModal = ({
     },
   ];
 
-  const handleUpgrade = async () => {
-    try {
-      setIsUpgrading(true);
-
-      // Call the API to upgrade role
-      const response = await becomeOrganizer();
-
-      if (response.success) {
-        // Refresh user profile to get updated role
-        await refreshProfile();
-
-        // Show success message
-        toast({
-          title: 'Welcome, Event Organizer! 🎉',
-          description: 'You can now create and manage events.',
-        });
-
-        // Close modal
-        onClose();
-
-        // Call success callback if provided
-        if (onSuccess) {
-          onSuccess();
-        } else {
-          // Navigate to event creation (unified dashboard)
-          navigate('/user/create-event');
-        }
-      } else {
-        throw new Error(response.message || 'Failed to upgrade to organizer');
-      }
-    } catch (error) {
-      console.error('Error becoming organizer:', error);
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to upgrade to organizer. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsUpgrading(false);
+  const handleContinue = () => {
+    onClose();
+    if (onSuccess) {
+      onSuccess();
     }
   };
 
@@ -119,14 +73,13 @@ export const BecomeOrganizerModal = ({
 
         {/* Benefits */}
         <div className="space-y-3 py-4">
-          {benefits.map((benefit, index) => (
+          {benefits.map((benefit) => (
             <div
               key={benefit.title}
-              className="flex gap-3 animate-in fade-in-0 slide-in-from-left-3"
-              style={{ animationDelay: `${index * 100}ms` }}
+              className="flex gap-3"
             >
               <div className="flex-shrink-0">
-                <div className="p-2 rounded-lg bg-primary/10 transition-transform duration-200 hover:scale-110">
+                <div className="p-2 rounded-lg bg-primary/10">
                   <benefit.icon className="h-4 w-4 text-primary" />
                 </div>
               </div>
@@ -143,9 +96,9 @@ export const BecomeOrganizerModal = ({
         </div>
 
         {/* What you get */}
-        <div className="bg-muted/50 rounded-lg p-4 space-y-2 animate-in fade-in-0 zoom-in-95 duration-500 delay-500">
+        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
           <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-primary animate-in spin-in-0 duration-700 delay-600" />
+            <CheckCircle className="h-4 w-4 text-primary" />
             What you get:
           </h4>
           <ul className="text-sm text-muted-foreground space-y-1 ml-6">
@@ -155,12 +108,8 @@ export const BecomeOrganizerModal = ({
               'Attendee communication tools',
               'Detailed analytics and reports',
               'Ticket sales and revenue tracking'
-            ].map((item, index) => (
-              <li
-                key={item}
-                className="animate-in fade-in-0 slide-in-from-left-2"
-                style={{ animationDelay: `${700 + index * 100}ms` }}
-              >
+            ].map((item) => (
+              <li key={item}>
                 • {item}
               </li>
             ))}
@@ -171,26 +120,15 @@ export const BecomeOrganizerModal = ({
           <Button
             variant="outline"
             onClick={onClose}
-            disabled={isUpgrading}
           >
             Maybe Later
           </Button>
           <Button
-            onClick={handleUpgrade}
-            disabled={isUpgrading}
+            onClick={handleContinue}
             className="gap-2"
           >
-            {isUpgrading ? (
-              <>
-                <ButtonLoader />
-                Upgrading...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Become an Organizer
-              </>
-            )}
+            <Sparkles className="h-4 w-4" />
+            Become an Organizer
           </Button>
         </DialogFooter>
       </DialogContent>

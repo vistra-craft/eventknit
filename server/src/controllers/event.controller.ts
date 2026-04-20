@@ -119,11 +119,36 @@ export class EventController {
    */
   static async getEventById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const event = await EventService.getEventById((req.params.id as string));
+      const eventId = req.params.id as string;
+      const userId = (req as any).user?.id;
+      logger.info(`[EventController.getEventById] Fetching event ${eventId} for user ${userId}`);
+      
+      const event = await EventService.getEventById(eventId, userId);
 
+      logger.info(`[EventController.getEventById] Successfully fetched event ${eventId}`);
       res.status(200).json({
         success: true,
         data: { event },
+      });
+    } catch (error) {
+      logger.error('[EventController.getEventById] Error:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Get related events
+   */
+  static async getRelatedEvents(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const eventId = req.params.id as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 8;
+
+      const result = await EventService.getRelatedEvents(eventId, limit);
+
+      res.status(200).json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);

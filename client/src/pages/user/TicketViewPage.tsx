@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Download, Calendar, MapPin, Globe, Ticket as TicketIcon, CheckCircle2 } from "lucide-react";
+import { Download, Calendar, MapPin, Globe, Ticket as TicketIcon, CheckCircle2, RotateCcw, AlertTriangle, Clock, ShieldCheck } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +10,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
-import { getTicket, getTicketPublic, downloadTicketPDF } from "@/lib/ticket-api";
-import type { TicketData } from "@/lib/ticket-api";
+import { getTicket, getTicketPublic, downloadTicketPDF, checkRefundEligibility, requestRefund } from "@/lib/ticket-api";
+import type { TicketData, RefundEligibility } from "@/lib/ticket-api";
+import { Textarea } from "@/components/ui/textarea";
 import { getEventById } from "@/lib/event-api";
 import { useLocation, useSearchParams } from "react-router-dom";
 
@@ -42,6 +43,13 @@ const TicketViewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  // Refund state
+  const [refundEligibility, setRefundEligibility] = useState<RefundEligibility | null>(null);
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [showRefundForm, setShowRefundForm] = useState(false);
+  const [refundReason, setRefundReason] = useState("");
+  const [refundSubmitting, setRefundSubmitting] = useState(false);
+  const [refundSubmitted, setRefundSubmitted] = useState(false);
 
   useEffect(() => {
     const fetchTicket = async () => {
@@ -100,6 +108,8 @@ const TicketViewPage: React.FC = () => {
 
           type TicketResponseWithRegistration = {
             registration: RegistrationPayload;
+            ticketLineItems?: Array<{ ticketType: string; quantity: number; unitPrice: number; totalPrice: number }>;
+            currency?: string;
             qrCode?: string | null;
           };
 
@@ -110,7 +120,8 @@ const TicketViewPage: React.FC = () => {
               "registration" in data &&
               (data as TicketResponseWithRegistration).registration
             ) {
-              const reg = (data as TicketResponseWithRegistration).registration;
+              const resp = data as TicketResponseWithRegistration;
+              const reg = resp.registration;
               return {
                 id: reg.id,
                 registrationId: reg.id,
@@ -122,7 +133,9 @@ const TicketViewPage: React.FC = () => {
                   "",
                 attendeeEmail: reg.attendee?.email || "",
                 ticketType: reg.ticketType || undefined,
-                qrCode: (data as TicketResponseWithRegistration).qrCode || undefined,
+                ticketLineItems: resp.ticketLineItems,
+                currency: resp.currency,
+                qrCode: resp.qrCode || undefined,
                 backupCode: reg.backupCode || undefined,
                 createdAt: reg.createdAt || new Date().toISOString(),
               };
@@ -157,6 +170,58 @@ const TicketViewPage: React.FC = () => {
 
     fetchTicket();
   }, [registrationId, isAuthenticated, location.state, user?.email, toast, searchParams]);
+
+  // Fetch refund eligibility when ticket loads (only for authenticated users)
+  useEffect(() => {
+    const fetchRefundEligibility = async () => {
+      if (!registrationId || !isAuthenticated || !ticket) return;
+      try {
+        setRefundLoading(true);
+        const response = await checkRefundEligibility(registrationId);
+        if (response.success && response.data) {
+          setRefundEligibility(response.data);
+        }
+      } catch {
+        // Silently fail — refund section just won't show
+      } finally {
+        setRefundLoading(false);
+      }
+    };
+    fetchRefundEligibility();
+  }, [registrationId, isAuthenticated, ticket]);
+
+  const handleRefundRequest = async () => {
+    if (!registrationId || refundReason.trim().length < 10) {
+      toast({
+        title: "Invalid reason",
+        description: "Please provide a reason with at least 10 characters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setRefundSubmitting(true);
+      const response = await requestRefund(registrationId, refundReason.trim());
+      if (response.success) {
+        setRefundSubmitted(true);
+        setShowRefundForm(false);
+        toast({
+          title: "Refund requested",
+          description: "Your refund request has been submitted. You'll be notified once it's processed.",
+        });
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to request refund";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setRefundSubmitting(false);
+    }
+  };
 
   const handleDownload = async () => {
     if (!registrationId) return;
@@ -299,13 +364,27 @@ const TicketViewPage: React.FC = () => {
               <p className="text-sm text-muted-foreground">{ticket.attendeeEmail}</p>
             </div>
 
-            {/* Ticket Type */}
-            {ticket.ticketType && (
+            {/* Ticket Details */}
+            {ticket.ticketLineItems && ticket.ticketLineItems.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Tickets</p>
+                <div className="space-y-1">
+                  {ticket.ticketLineItems.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{item.ticketType} x{item.quantity}</span>
+                      {item.totalPrice > 0 && (
+                        <span className="font-medium">{ticket.currency || 'USD'} {item.totalPrice.toFixed(2)}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : ticket.ticketType ? (
               <div className="space-y-2">
                 <p className="text-sm font-medium">Ticket Type</p>
                 <p className="text-sm text-muted-foreground">{ticket.ticketType}</p>
               </div>
-            )}
+            ) : null}
 
             {/* QR Code */}
             {ticket.qrCode && (
@@ -347,6 +426,117 @@ const TicketViewPage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Refund Section */}
+        {isAuthenticated && !refundLoading && refundEligibility && !refundSubmitted && (
+          <Card className="mb-6 border-border/40">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                  refundEligibility.eligible
+                    ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400'
+                    : 'bg-muted text-muted-foreground'
+                }`}>
+                  {refundEligibility.eligible ? (
+                    <RotateCcw className="w-4 h-4" />
+                  ) : (
+                    <ShieldCheck className="w-4 h-4" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold mb-1">Refund Policy</h3>
+                  <p className="text-sm text-muted-foreground">{refundEligibility.message}</p>
+
+                  {refundEligibility.eligible && refundEligibility.deadline && (
+                    <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      <span>
+                        Deadline: {new Date(refundEligibility.deadline).toLocaleDateString("en-US", {
+                          month: "short", day: "numeric", year: "numeric",
+                        })}
+                        {" "}({refundEligibility.daysUntilEvent} days before event)
+                      </span>
+                    </div>
+                  )}
+
+                  {refundEligibility.eligible && refundEligibility.refundAmount > 0 && (
+                    <p className="text-sm font-medium mt-2">
+                      Refund amount: {refundEligibility.currency} {refundEligibility.refundAmount.toFixed(2)}
+                      {refundEligibility.refundPercentage < 100 && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          ({refundEligibility.refundPercentage}% of purchase)
+                        </span>
+                      )}
+                    </p>
+                  )}
+
+                  {refundEligibility.policyText && (
+                    <p className="text-xs text-muted-foreground mt-2 italic">{refundEligibility.policyText}</p>
+                  )}
+
+                  {refundEligibility.eligible && !showRefundForm && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                      onClick={() => setShowRefundForm(true)}
+                    >
+                      <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                      Request Refund
+                    </Button>
+                  )}
+
+                  {showRefundForm && (
+                    <div className="mt-3 space-y-3">
+                      <div className="p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
+                        <div className="flex items-start gap-2 mb-2">
+                          <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                          <p className="text-xs text-amber-700 dark:text-amber-300">
+                            This action cannot be undone. Your ticket will be cancelled and the refund will be processed according to the event's refund policy.
+                          </p>
+                        </div>
+                      </div>
+                      <Textarea
+                        placeholder="Please tell us why you'd like a refund (minimum 10 characters)..."
+                        value={refundReason}
+                        onChange={(e) => setRefundReason(e.target.value)}
+                        className="min-h-[80px] resize-none text-sm"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={refundSubmitting || refundReason.trim().length < 10}
+                          onClick={handleRefundRequest}
+                        >
+                          {refundSubmitting ? "Submitting..." : "Confirm Refund Request"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => { setShowRefundForm(false); setRefundReason(""); }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Refund Submitted Confirmation */}
+        {refundSubmitted && (
+          <Alert className="mb-6 border-success/20 bg-success/5">
+            <CheckCircle2 className="w-4 h-4 text-success" />
+            <AlertTitle className="text-success">Refund Requested</AlertTitle>
+            <AlertDescription>
+              Your refund request has been submitted and is being reviewed. You'll receive an email notification once it's processed.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4">

@@ -331,7 +331,7 @@ export class AutoPayoutJob {
     });
 
     // Email notification
-    const dashboardUrl = `${process.env.CLIENT_URL || 'https://eventknit.com'}/organizer/payouts`;
+    const dashboardUrl = `${config.frontend.url}/organizer/payouts`;
     await emailService.sendPayoutInitiatedEmail(event.organizer.email, {
       organizerName,
       eventTitle: event.title,

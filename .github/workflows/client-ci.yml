@@ -29,12 +29,14 @@ jobs:
 
       - name: Setup test environment
         run: |
-          echo "VITE_API_URL=http://localhost:3001" >> $GITHUB_ENV
+          echo "VITE_API_URL=http://localhost:3010" >> $GITHUB_ENV
           echo "VITE_NODE_ENV=test" >> $GITHUB_ENV
 
       - name: Install client dependencies
         working-directory: ./client
         run: npm ci
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Run client linter
         working-directory: ./client
@@ -51,6 +53,8 @@ jobs:
       - name: Build client
         working-directory: ./client
         run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
 
       - name: Upload client build artifacts
         uses: actions/upload-artifact@v4

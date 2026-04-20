@@ -90,6 +90,49 @@ export class ExtendedProfileController {
   }
 
   /**
+   * Get current user's organizer profile (from auth token)
+   */
+  static async getMyOrganizerProfile(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const result = await ExtendedProfileService.getOrganizerProfile(userId);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update current user's organizer profile (from auth token)
+   */
+  static async updateMyOrganizerProfile(
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const userId = req.user!.id;
+      const profile = await ExtendedProfileService.upsertOrganizerProfile(userId, req.body);
+
+      res.status(200).json({
+        success: true,
+        message: 'Organizer profile updated successfully',
+        data: { organizerProfile: profile },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get emergency contact
    */
   static async getEmergencyContact(

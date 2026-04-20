@@ -6,22 +6,15 @@ interface EventTagsProps {
 }
 
 export const EventTags = ({ tags, category }: EventTagsProps) => {
-  // Combine tags and category for display
   const allTags: string[] = [];
-  
-  // Add category first if it exists
-  if (category) {
-    allTags.push(category);
-  }
-  
-  // Add tags if they exist
-  if (tags && tags.length > 0) {
-    allTags.push(...tags);
-  }
-  
+  if (category) allTags.push(category);
+  if (tags && tags.length > 0) allTags.push(...tags);
+
+  if (allTags.length === 0) return null;
+
   return (
     <section>
-      <h3 className="text-xl font-bold mb-3">Tags & Categories</h3>
+      <h3 className="text-section-header mb-3">Tags & Categories</h3>
       <div className="flex flex-wrap gap-2">
         {allTags.length > 0 ? (
           allTags.map((tag, index) => (

@@ -306,9 +306,9 @@ export class AuthService {
       throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
     }
 
-    // Auto-approve registration (no manual approval needed)
-    // Users are ACTIVE immediately, but must verify email before full access
-    // Admins can later suspend or deactivate users if needed
+    // Organizers require admin approval; all other roles are auto-approved
+    const userStatus = userRole === UserRole.ORGANIZER ? UserStatus.PENDING_APPROVAL : UserStatus.ACTIVE;
+
     const user = await prisma.user.create({
       data: {
         email: data.email,
@@ -319,12 +319,25 @@ export class AuthService {
         phoneNumber: data.phoneNumber,
         companyAffiliation: data.companyAffiliation,
         role: userRole,
-        status: UserStatus.ACTIVE, // Auto-approved - no manual approval needed
+        status: userStatus,
         isEmailVerified: false, // Email verification still required
         organizationName: data.organizationName,
         businessEmail: data.businessEmail,
       },
     });
+
+    // If organizer, send pending notification and alert admins
+    if (userRole === UserRole.ORGANIZER) {
+      // Fire-and-forget: notify organizer their application is under review
+      emailService.sendOrganizerPendingEmail(user.email, user.firstName || '').catch((err) => {
+        logger.error('Failed to send organizer pending email:', err);
+      });
+
+      // Fire-and-forget: notify admins about new organizer
+      this.notifyAdminsOfNewOrganizer(user).catch((err) => {
+        logger.error('Failed to notify admins of new organizer:', err);
+      });
+    }
 
     // Generate email verification token
     await this.generateEmailVerificationToken(user.id);
@@ -348,6 +361,45 @@ export class AuthService {
       },
       ...tokens,
     };
+  }
+
+  /**
+   * Notify all active admins (SUPERADMIN + ADMIN_STAFF) about a new organizer registration
+   */
+  private static async notifyAdminsOfNewOrganizer(organizer: {
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    organizationName: string | null;
+  }): Promise<void> {
+    const admins = await prisma.user.findMany({
+      where: {
+        role: { in: [UserRole.SUPERADMIN, UserRole.ADMIN_STAFF] },
+        status: UserStatus.ACTIVE,
+        deletedAt: null,
+      },
+      select: { email: true, firstName: true },
+    });
+
+    if (admins.length === 0) {
+      logger.warn('No active admins found to notify about new organizer registration');
+      return;
+    }
+
+    await Promise.allSettled(
+      admins.map((admin) =>
+        emailService.sendAdminNewOrganizerNotification(
+          admin.email,
+          admin.firstName || 'Admin',
+          {
+            firstName: organizer.firstName || '',
+            lastName: organizer.lastName || '',
+            email: organizer.email,
+            organizationName: organizer.organizationName,
+          },
+        ),
+      ),
+    );
   }
 
   /**

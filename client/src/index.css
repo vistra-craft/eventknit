@@ -877,4 +877,25 @@
     font-style: italic;
     opacity: 0.9;
   }
+
+  /* ============================================================================
+   * Event Details Page — Hero pattern & utilities
+   * ============================================================================ */
+
+  /* Subtle pattern for hero fallback (no image) */
+  .hero-pattern {
+    background-image: radial-gradient(circle at 25% 50%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+                      radial-gradient(circle at 75% 50%, hsl(var(--primary) / 0.05) 0%, transparent 50%);
+  }
+
+  /* Gradient fade overlay for "Read More" truncation */
+  .read-more-fade {
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  }
+
+  /* Safe area bottom padding for mobile action bar */
+  .safe-area-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
 }

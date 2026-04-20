@@ -5,7 +5,7 @@
 
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { UserRole } from '@/types/auth';
+import { UserRole, UserStatus } from '@/types/auth';
 import { SkeletonPageHeader, SkeletonMetricCard, SkeletonGroup } from '@/components/ui/Skeleton';
 
 interface ProtectedRouteProps {
@@ -69,7 +69,45 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={dashboardRoute} replace />;
   }
 
+  // Gate: PENDING_APPROVAL organizers cannot access organizer routes
+  if (
+    user.role === UserRole.ORGANIZER &&
+    user.status === UserStatus.PENDING_APPROVAL &&
+    location.pathname.startsWith('/organizer')
+  ) {
+    return <Navigate to="/user/dashboard" replace />;
+  }
+
+  // Gate: PENDING_APPROVAL organizers cannot create additional events
+  if (
+    user.role === UserRole.ORGANIZER &&
+    user.status === UserStatus.PENDING_APPROVAL &&
+    location.pathname.includes('create-event')
+  ) {
+    return (
+      <Navigate
+        to="/user/dashboard"
+        state={{ message: 'Your organizer account is pending approval. You cannot create additional events until approved.' }}
+        replace
+      />
+    );
+  }
+
+  // Gate: ACTIVE organizers belong on the organizer dashboard, not /user/*
+  // Exception: allow them to stay on /user/* while the approval modal is pending
+  // (so UserLayout can display the "You're Approved!" modal before redirecting)
+  const hasPendingApprovalModal = sessionStorage.getItem('organizer_approval_pending') === '1';
+  if (
+    user.role === UserRole.ORGANIZER &&
+    user.status === UserStatus.ACTIVE &&
+    location.pathname.startsWith('/user') &&
+    !hasPendingApprovalModal
+  ) {
+    return <Navigate to="/organizer/dashboard" replace />;
+  }
+
   // Check onboarding status for organizers (except on onboarding page itself)
+  // Skip for PENDING_APPROVAL organizers — they stay on /user/dashboard until approved
   const isOrganizer = [
     UserRole.ORGANIZER,
     UserRole.ORGANIZER_STAFF,
@@ -77,8 +115,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   ].includes(user.role);
 
   const isOnboardingPage = location.pathname === '/organizer/onboarding';
+  const isPendingApproval = user.status === UserStatus.PENDING_APPROVAL;
 
-  if (isOrganizer && !isOnboardingPage && user.role === UserRole.ORGANIZER && !user.onboardingCompleted) {
+  if (isOrganizer && !isOnboardingPage && !isPendingApproval && user.role === UserRole.ORGANIZER && !user.onboardingCompleted) {
     // Redirect to onboarding if organizer hasn't completed onboarding
     return <Navigate to="/organizer/onboarding" replace />;
   }

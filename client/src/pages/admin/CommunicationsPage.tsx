@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { MessageSquare, Send, Mail, Bell, Search, Eye, Edit, Trash2, Plus, CheckCircle, AlertTriangle, X, Paperclip, Smile, Save, Clock, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1570,7 +1571,7 @@ const CommunicationsPage = () => {
                   <h4 className="font-medium mb-2">Email Content Preview:</h4>
                   <div
                     className="border rounded p-4 max-h-96 overflow-y-auto text-sm bg-background"
-                    dangerouslySetInnerHTML={{ __html: viewingTemplate.htmlContent }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(viewingTemplate.htmlContent) }}
                   />
                 </div>
                 <div className="text-sm text-muted-foreground">

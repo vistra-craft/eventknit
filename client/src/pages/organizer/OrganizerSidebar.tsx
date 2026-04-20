@@ -5,14 +5,14 @@ import {
   Settings,
   Home,
   Menu,
-  UserPlus,
   TrendingUp,
   ChevronDown,
   ChevronRight,
   LogOut,
-  Crown,
   Megaphone,
-  Wallet,
+  Ticket,
+  DollarSign,
+  Paintbrush,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -35,33 +35,42 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
                            userRole === UserRole.ORGANIZER_TELLER;
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
-    // Auto-expand events section if on events pages
-    events: location.pathname.startsWith('/organizer/events'),
-    // Auto-expand settings section if on settings pages
-    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
+    analytics: location.pathname.startsWith('/organizer/analytics'),
+    marketing: location.pathname.startsWith('/organizer/marketing'),
+    finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
+    settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
   });
 
   const navigationItems = [
-    { 
-      id: "dashboard", 
-      label: "Dashboard", 
-      href: "/organizer/dashboard", 
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      href: "/organizer/dashboard",
       icon: Home,
       group: "main"
     },
-    { 
-      id: "events", 
-      label: "Events", 
+    {
+      id: "events",
+      label: "Events",
+      href: "/organizer/events",
       icon: Calendar,
       group: "main",
+    },
+    {
+      id: "attending",
+      label: "Attending",
+      href: "/organizer/attending",
+      icon: Ticket,
+      group: "main",
+    },
+    {
+      id: "marketing",
+      label: "Marketing",
+      icon: Megaphone,
+      group: "main",
       children: [
-        { name: "All Events", href: "/organizer/events" },
-        { name: "Upcoming", href: "/organizer/events/upcoming" },
-        { name: "Past Events", href: "/organizer/events/past" },
-        { name: "Cancelled Events", href: "/organizer/events/cancelled" },
-        { name: "Create New", href: "/organizer/events/create" },
-        { name: "Event Templates", href: "/organizer/events/templates-management" },
-        { name: "Event Drafts", href: "/organizer/events/drafts" },
+        { name: "Promo Codes", href: "/organizer/marketing/promo-codes" },
+        { name: "Affiliate Program", href: "/organizer/marketing/affiliate" },
       ]
     },
     {
@@ -77,34 +86,21 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       ]
     },
     {
-      id: "marketing",
-      label: "Marketing",
-      icon: Megaphone,
-      group: "main",
-      children: [
-        { name: "Promo Codes", href: "/organizer/marketing/promo-codes" },
-      ]
-    },
-    {
       id: "finance",
       label: "Finance",
-      icon: Wallet,
+      icon: DollarSign,
       group: "main",
       children: [
-        { name: "Financial Management", href: "/organizer/financial-management" },
+        { name: "Overview", href: "/organizer/financial" },
         { name: "Payouts", href: "/organizer/payouts" },
       ]
     },
     {
-      id: "team",
-      label: "Team",
-      icon: UserPlus,
+      id: "branding",
+      label: "Branding",
+      href: "/organizer/branding",
+      icon: Paintbrush,
       group: "management",
-      children: [
-        { name: "Staff Management", href: "/organizer/team/staff" },
-        { name: "Roles & Permissions", href: "/organizer/team/roles" },
-        { name: "Team Calendar", href: "/organizer/team/calendar" },
-      ]
     },
     {
       id: "settings",
@@ -117,13 +113,6 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         { name: "Security", href: "/organizer/settings/security" },
         { name: "Appearance", href: "/organizer/settings/appearance" },
       ]
-    },
-    { 
-      id: "subscription", 
-      label: "Subscription", 
-      href: "/organizer/subscription", 
-      icon: Crown,
-      group: "management"
     },
   ];
 
@@ -139,9 +128,10 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
     if (!isOrganizerStaff) {
       setExpandedItems(prev => ({
         ...prev,
-        events: location.pathname.startsWith('/organizer/events'),
+        analytics: location.pathname.startsWith('/organizer/analytics'),
+        marketing: location.pathname.startsWith('/organizer/marketing'),
         finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
-        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile')
+        settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile'),
       }));
     }
   }, [location.pathname, isOrganizerStaff]);

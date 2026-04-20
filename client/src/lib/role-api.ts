@@ -30,11 +30,14 @@ export interface BecomeOrganizerResponse {
  * Upgrade user from ATTENDEE to ORGANIZER
  * Allows users to start creating and managing events
  */
-export const becomeOrganizer = async (): Promise<BecomeOrganizerResponse> => {
+export const becomeOrganizer = async (data: {
+  organizationName: string;
+  businessEmail?: string;
+}): Promise<BecomeOrganizerResponse> => {
   try {
     const response = await apiPost<BecomeOrganizerResponse>(
       '/user/role-switch/become-organizer',
-      {}
+      data
     );
     return response;
   } catch (error) {

@@ -3,6 +3,7 @@ import { EventStaffService } from '../services/event-staff.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { ValidationError } from '../utils/errors.js';
 import { EventStatus } from '@prisma/client';
+import { prisma } from '../config/database.js';
 
 export class EventStaffController {
   /**
@@ -457,8 +458,28 @@ export class EventStaffController {
         return;
       }
 
-      const staffId = (req.params.staffId as string) as string;
+      const staffId = req.params.staffId as string;
+      const requesterId = req.user.id;
+      const requesterRole = req.user.role;
       const { status, startDate, endDate } = req.query;
+
+      // IDOR protection: verify the requester can view this staff member's events
+      if (requesterRole !== 'SUPERADMIN' && requesterRole !== 'ADMIN_STAFF') {
+        if (staffId !== requesterId) {
+          const [staff, requester] = await Promise.all([
+            prisma.user.findUnique({ where: { id: staffId }, select: { organizationName: true } }),
+            prisma.user.findUnique({ where: { id: requesterId }, select: { organizationName: true } }),
+          ]);
+
+          if (!staff || !requester || staff.organizationName !== requester.organizationName) {
+            res.status(403).json({
+              success: false,
+              message: 'You do not have permission to view this staff member\'s events',
+            });
+            return;
+          }
+        }
+      }
 
       const filters: {
         status?: EventStatus;

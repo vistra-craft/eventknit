@@ -5,7 +5,6 @@ export interface RegistrationField {
   type:
   | 'text'
   | 'email'
-  | 'tel'
   | 'phone'
   | 'select'
   | 'radio'
@@ -65,6 +64,7 @@ export interface EventData {
     availableFrom?: string | null;
     availableUntil?: string | null;
     earlyBirdQuantity?: number | null;
+    isSoldOut?: boolean; // True when ticket quantity is exhausted
   }> | null;
 
   timezone?: string | null;
@@ -142,6 +142,15 @@ export interface EventData {
     businessEmail?: string | null;
     phoneNumber?: string | null;
   };
+
+  // Refund policy
+  refundPolicy?: string | null; // 'no_refunds' | 'full_refund' | 'partial_refund' | 'custom'
+  refundDeadlineDays?: number | null;
+  refundPolicyText?: string | null;
+  autoRefundEnabled?: boolean;
+
+  // Seating
+  hasSeatMap?: boolean; // Whether a seat map is configured for this event
 
   // Computed fields
   organizerName?: string; // Computed from organizer

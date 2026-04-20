@@ -260,6 +260,12 @@ export class TicketController {
         createdAt: registration.createdAt,
         backupCode: registration.backupCode,
         registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+        ticketLineItems: registration.ticketLineItems?.map(item => ({
+          ticketType: item.ticketType,
+          quantity: item.quantity,
+          unitPrice: Number(item.unitPrice),
+          totalPrice: Number(item.totalPrice),
+        })),
         event: registration.event,
         attendee: registration.attendee,
       });

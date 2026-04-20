@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,16 +16,21 @@ import { initiateTicketTransfer, getTransferHistory, cancelTicketTransfer } from
 import { useToast } from "@/hooks/useToast";
 
 const TicketTransfer: React.FC = () => {
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [transferring, setTransferring] = useState(false);
   const [userEvents, setUserEvents] = useState<any[]>([]);
   const [transferHistory, setTransferHistory] = useState<any[]>([]);
   const [, setSelectedEvent] = useState<any>(null);
+  const [preselectedDialogOpen, setPreselectedDialogOpen] = useState(false);
   const [transferData, setTransferData] = useState({
     toEmail: "",
     message: "",
   });
   const { toast } = useToast();
+
+  // Pre-select from location.state (e.g., from MyTickets page)
+  const preselectedRegistrationId = (location.state as any)?.registrationId;
 
   useEffect(() => {
     fetchData();
@@ -133,6 +139,17 @@ const TicketTransfer: React.FC = () => {
     );
   };
 
+  // Auto-open dialog for preselected ticket
+  useEffect(() => {
+    if (preselectedRegistrationId && !loading && userEvents.length > 0) {
+      const preselected = userEvents.find((e) => e.registrationId === preselectedRegistrationId);
+      if (preselected) {
+        setSelectedEvent(preselected);
+        setPreselectedDialogOpen(true);
+      }
+    }
+  }, [preselectedRegistrationId, loading, userEvents]);
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -144,7 +161,7 @@ const TicketTransfer: React.FC = () => {
   }
 
   const transferableEvents = userEvents.filter(
-    (event) => new Date(event.date) > new Date() && event.status === "confirmed"
+    (event) => new Date(event.date) > new Date() && (event.status === "upcoming" || event.status === "confirmed")
   );
 
   return (
@@ -313,6 +330,65 @@ const TicketTransfer: React.FC = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Pre-selected transfer dialog (opened from MyTickets) */}
+      {preselectedRegistrationId && (() => {
+        const preselectedEvent = userEvents.find((e) => e.registrationId === preselectedRegistrationId);
+        if (!preselectedEvent) return null;
+        return (
+          <Dialog open={preselectedDialogOpen} onOpenChange={setPreselectedDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Transfer Ticket</DialogTitle>
+                <DialogDescription>
+                  Transfer your ticket for "{preselectedEvent.title}" to another user
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="preToEmail">Recipient Email</Label>
+                  <Input
+                    id="preToEmail"
+                    type="email"
+                    placeholder="recipient@example.com"
+                    value={transferData.toEmail}
+                    onChange={(e) => setTransferData({ ...transferData, toEmail: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="preMessage">Message (Optional)</Label>
+                  <Textarea
+                    id="preMessage"
+                    placeholder="Add a personal message..."
+                    value={transferData.message}
+                    onChange={(e) => setTransferData({ ...transferData, message: e.target.value })}
+                  />
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => {
+                    handleTransfer(preselectedRegistrationId);
+                    setPreselectedDialogOpen(false);
+                  }}
+                  disabled={transferring}
+                >
+                  {transferring ? (
+                    <>
+                      <Loader size="sm" className="mr-2" />
+                      Transferring...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Initiate Transfer
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 };

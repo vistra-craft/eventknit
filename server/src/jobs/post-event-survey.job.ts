@@ -1,5 +1,6 @@
 import * as cron from 'node-cron';
 import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 import { EventStatus, NotificationType, NotificationPriority } from '@prisma/client';
 import { NotificationService } from '../services/notification.service.js';
@@ -128,7 +129,7 @@ export class PostEventSurveyJob {
           });
 
           // Generate a survey URL (placeholder - could be integrated with a survey service)
-          const surveyUrl = `${process.env.CLIENT_URL || 'https://eventknit.com'}/events/${event.id}/survey`;
+          const surveyUrl = `${config.frontend.url}/events/${event.id}/survey`;
 
           // Send survey to each attendee
           for (const registration of registrations) {

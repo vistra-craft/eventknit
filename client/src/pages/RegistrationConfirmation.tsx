@@ -144,11 +144,21 @@ const RegistrationConfirmation: React.FC = () => {
     return undefined;
   };
 
+  const getVenue = (): string => {
+    if (!event) return "";
+    if ("venue" in event && typeof event.venue === "string") return event.venue || "";
+    return "";
+  };
+
   const getLocation = (): string => {
     if (!event) return "";
-    if ("location" in event && typeof event.location === "string") return event.location || "";
-    if ("eventLocation" in event && typeof event.eventLocation === "string") return event.eventLocation || "";
-    return "";
+    const venue = getVenue();
+    const location = (() => {
+      if ("location" in event && typeof event.location === "string") return event.location || "";
+      if ("eventLocation" in event && typeof event.eventLocation === "string") return event.eventLocation || "";
+      return "";
+    })();
+    return venue ? `${venue}, ${location}` : location;
   };
 
   const getTitle = (): string => {

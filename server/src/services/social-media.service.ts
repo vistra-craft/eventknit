@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { platformManager } from './social-media/platform-manager.js';
@@ -558,7 +559,7 @@ export class SocialMediaService {
       const postData = {
         content: post.content,
         mediaUrls: post.mediaUrls || [],
-        link: post.eventId ? `${process.env.FRONTEND_URL || 'http://localhost:5173'}/events/${post.eventId}` : undefined,
+        link: post.eventId ? `${config.frontend.url}/events/${post.eventId}` : undefined,
       };
 
       // Create post via platform adapter

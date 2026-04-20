@@ -9,14 +9,10 @@ export const eventValidations = {
       'string.max': 'Event title must not exceed 200 characters',
       'any.required': 'Event title is required',
     }),
-    description: Joi.string().trim().min(10).max(5000).required().messages({
+    description: Joi.string().trim().min(10).max(10000).required().messages({
       'string.min': 'Event description must be at least 10 characters long',
-      'string.max': 'Event description must not exceed 5000 characters',
+      'string.max': 'Event description must not exceed 10000 characters',
       'any.required': 'Event description is required',
-    }),
-    fullDescription: Joi.string().trim().min(10).max(20000).optional().allow('', null).messages({
-      'string.min': 'Full description must be at least 10 characters long',
-      'string.max': 'Full description must not exceed 20000 characters',
     }),
     organizerDescription: Joi.string().trim().max(1000).optional().allow('', null).messages({
       'string.max': 'Organizer description must not exceed 1000 characters',
@@ -41,9 +37,12 @@ export const eventValidations = {
     endTime: Joi.string().trim().max(20).optional().allow('', null).messages({
       'string.max': 'End time must not exceed 20 characters',
     }),
-    registrationDeadline: Joi.date().iso().optional().allow(null).messages({
-      'date.base': 'Registration deadline must be a valid date',
-    }),
+    registrationDeadline: Joi.date().iso().optional().allow(null)
+      .less(Joi.ref('startDate'))
+      .messages({
+        'date.base': 'Registration deadline must be a valid date',
+        'date.less': 'Registration deadline must be before the event start date',
+      }),
     venue: Joi.string().trim().max(200).optional().allow('', null).messages({
       'string.max': 'Venue must not exceed 200 characters',
     }),
@@ -99,12 +98,18 @@ export const eventValidations = {
       'number.min': 'Capacity must be at least 1',
       'number.base': 'Capacity must be a valid number',
     }),
-    image: Joi.string().uri().optional().allow('', null).messages({
-      'string.uri': 'Image URL must be a valid URL',
-    }),
-    images: Joi.array().items(Joi.string().uri()).optional().messages({
-      'array.max': 'Images array is too large',
-    }),
+    // OPTIONAL: URL Upload Feature (Currently Disabled for Quality Control)
+    // To enable URL uploads, uncomment the line below and ensure frontend URL input is enabled.
+    // image: Joi.string().uri().optional().allow('', null).messages({
+    //   'string.uri': 'Image URL must be a valid URL',
+    // }),
+    image: Joi.string().optional().allow('', null), // Only file uploads allowed
+    imageFocalX: Joi.number().integer().min(0).max(100).optional().default(50),
+    imageFocalY: Joi.number().integer().min(0).max(100).optional().default(50),
+    // images: Joi.array().items(Joi.string().uri()).optional().messages({
+    //   'array.max': 'Images array is too large',
+    // }),
+    images: Joi.array().items(Joi.string()).optional(), // URL validation disabled
     type: Joi.string().valid(...EventTypeValues).optional().default('PUBLIC').messages({
       'any.only': `Event type must be one of: ${EventTypeValues.join(', ')}`,
     }),
@@ -122,14 +127,16 @@ export const eventValidations = {
         name: Joi.string().trim().min(1).max(200).required(),
         title: Joi.string().trim().max(200).optional().allow('', null),
         bio: Joi.string().trim().max(2000).optional().allow('', null),
-        image: Joi.string().uri().optional().allow('', null),
+        // image: Joi.string().uri().optional().allow('', null), // URL validation disabled
+        image: Joi.string().optional().allow('', null), // Only file uploads allowed
       }),
     ).optional(),
     sponsors: Joi.array().items(
       Joi.object({
         name: Joi.string().trim().min(1).max(200).required(),
         level: Joi.string().trim().max(50).optional().allow('', null),
-        logo: Joi.string().uri().optional().allow('', null),
+        // logo: Joi.string().uri().optional().allow('', null), // URL validation disabled
+        logo: Joi.string().optional().allow('', null), // Only file uploads allowed
       }),
     ).optional(),
     faqs: Joi.array().items(
@@ -143,7 +150,7 @@ export const eventValidations = {
         id: Joi.string().trim().min(1).max(100).required(),
         name: Joi.string().trim().min(1).max(100).required(),
         label: Joi.string().trim().min(1).max(200).required(),
-        type: Joi.string().valid('text', 'email', 'tel', 'select', 'radio', 'checkbox', 'textarea', 'date', 'number').required(),
+        type: Joi.string().valid('text', 'email', 'phone', 'select', 'radio', 'checkbox', 'textarea', 'date', 'number').required(),
         required: Joi.boolean().required(),
         placeholder: Joi.string().trim().max(200).optional().allow('', null),
         options: Joi.array().items(Joi.string().trim().max(200)).optional(),
@@ -164,13 +171,9 @@ export const eventValidations = {
       'string.min': 'Event title must be at least 3 characters long',
       'string.max': 'Event title must not exceed 200 characters',
     }),
-    description: Joi.string().trim().min(10).max(5000).optional().messages({
+    description: Joi.string().trim().min(10).max(10000).optional().messages({
       'string.min': 'Event description must be at least 10 characters long',
-      'string.max': 'Event description must not exceed 5000 characters',
-    }),
-    fullDescription: Joi.string().trim().min(10).max(20000).optional().allow('', null).messages({
-      'string.min': 'Full description must be at least 10 characters long',
-      'string.max': 'Full description must not exceed 20000 characters',
+      'string.max': 'Event description must not exceed 10000 characters',
     }),
     organizerDescription: Joi.string().trim().max(1000).optional().allow('', null).messages({
       'string.max': 'Organizer description must not exceed 1000 characters',
@@ -188,7 +191,13 @@ export const eventValidations = {
     }),
     startTime: Joi.string().trim().max(20).optional().allow('', null),
     endTime: Joi.string().trim().max(20).optional().allow('', null),
-    registrationDeadline: Joi.date().iso().optional().allow(null),
+    registrationDeadline: Joi.date().iso().optional().allow(null)
+      .when('startDate', {
+        is: Joi.exist(),
+        then: Joi.date().iso().less(Joi.ref('startDate')).optional().allow(null).messages({
+          'date.less': 'Registration deadline must be before the event start date',
+        }),
+      }),
     venue: Joi.string().trim().max(200).optional().allow('', null),
     location: Joi.string().trim().min(2).max(200).optional().messages({
       'string.min': 'Location must be at least 2 characters long',
@@ -253,10 +262,16 @@ export const eventValidations = {
       }, 'ticket type validation'),
     ).optional(),
     capacity: Joi.number().integer().min(1).optional().allow(null),
-    image: Joi.string().uri().optional().allow('', null).messages({
-      'string.uri': 'Image URL must be a valid URL',
-    }),
-    images: Joi.array().items(Joi.string().uri()).optional(),
+    // OPTIONAL: URL Upload Feature (Currently Disabled for Quality Control)
+    // To enable URL uploads, uncomment the line below and ensure frontend URL input is enabled.
+    // image: Joi.string().uri().optional().allow('', null).messages({
+    //   'string.uri': 'Image URL must be a valid URL',
+    // }),
+    image: Joi.string().optional().allow('', null), // Only file uploads allowed
+    imageFocalX: Joi.number().integer().min(0).max(100).optional(),
+    imageFocalY: Joi.number().integer().min(0).max(100).optional(),
+    // images: Joi.array().items(Joi.string().uri()).optional(),
+    images: Joi.array().items(Joi.string()).optional(), // URL validation disabled
     type: Joi.string().valid(...EventTypeValues).optional(),
     requirements: Joi.array().items(Joi.string().trim().max(500)).optional(),
     ageRestriction: Joi.string().trim().max(50).optional().allow('', null),
@@ -266,14 +281,16 @@ export const eventValidations = {
         name: Joi.string().trim().min(1).max(200).required(),
         title: Joi.string().trim().max(200).optional().allow('', null),
         bio: Joi.string().trim().max(2000).optional().allow('', null),
-        image: Joi.string().uri().optional().allow('', null),
+        // image: Joi.string().uri().optional().allow('', null), // URL validation disabled
+        image: Joi.string().optional().allow('', null), // Only file uploads allowed
       }),
     ).optional(),
     sponsors: Joi.array().items(
       Joi.object({
         name: Joi.string().trim().min(1).max(200).required(),
         level: Joi.string().trim().max(50).optional().allow('', null),
-        logo: Joi.string().uri().optional().allow('', null),
+        // logo: Joi.string().uri().optional().allow('', null), // URL validation disabled
+        logo: Joi.string().optional().allow('', null), // Only file uploads allowed
       }),
     ).optional(),
     faqs: Joi.array().items(
@@ -287,7 +304,7 @@ export const eventValidations = {
         id: Joi.string().trim().min(1).max(100).required(),
         name: Joi.string().trim().min(1).max(100).required(),
         label: Joi.string().trim().min(1).max(200).required(),
-        type: Joi.string().valid('text', 'email', 'tel', 'select', 'radio', 'checkbox', 'textarea', 'date', 'number').required(),
+        type: Joi.string().valid('text', 'email', 'phone', 'select', 'radio', 'checkbox', 'textarea', 'date', 'number').required(),
         required: Joi.boolean().required(),
         placeholder: Joi.string().trim().max(200).optional().allow('', null),
         options: Joi.array().items(Joi.string().trim().max(200)).optional(),
@@ -391,7 +408,6 @@ export const eventValidations = {
     }),
     copyFields: Joi.array().items(Joi.string().valid(
       'description',
-      'fullDescription',
       'organizerDescription',
       'category',
       'tags',

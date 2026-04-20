@@ -36,12 +36,8 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
     logout();
   };
 
-  // Mock notifications
-  const notifications = [
-    { id: 1, title: "New event created", time: "2 min ago", read: false },
-    { id: 2, title: "Organizer verified", time: "1 hour ago", read: false },
-    { id: 3, title: "Payment received", time: "3 hours ago", read: true },
-  ];
+  // Notifications - will be populated from real-time backend when notification system is implemented
+  const notifications: { id: number; title: string; time: string; read: boolean }[] = [];
   const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
@@ -91,35 +87,37 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
                 </button>
               </div>
               <div className="max-h-96 overflow-y-auto">
-                {notifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={cn(
-                      "flex gap-3 p-4 border-b border-border last:border-0 hover:bg-secondary/50 transition-colors cursor-pointer",
-                      !notification.read && "bg-primary/5"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "mt-1 h-2 w-2 rounded-full shrink-0",
-                        notification.read ? "bg-muted-foreground/30" : "bg-primary"
-                      )}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-popover-foreground">
-                        {notification.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {notification.time}
-                      </p>
-                    </div>
+                {notifications.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 px-4">
+                    <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                    <p className="text-sm text-muted-foreground">No notifications yet</p>
                   </div>
-                ))}
-              </div>
-              <div className="p-3 border-t border-border">
-                <button className="w-full py-2 text-sm text-center text-primary hover:underline">
-                  View all notifications
-                </button>
+                ) : (
+                  notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={cn(
+                        "flex gap-3 p-4 border-b border-border last:border-0 hover:bg-secondary/50 transition-colors cursor-pointer",
+                        !notification.read && "bg-primary/5"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "mt-1 h-2 w-2 rounded-full shrink-0",
+                          notification.read ? "bg-muted-foreground/30" : "bg-primary"
+                        )}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-popover-foreground">
+                          {notification.title}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {notification.time}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

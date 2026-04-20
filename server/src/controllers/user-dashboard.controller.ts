@@ -12,6 +12,48 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 
 export class UserDashboardController {
   /**
+   * Check if user is registered for an event
+   */
+  static async getRegistrationStatus(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+
+      const eventId = req.params.eventId as string;
+      const { prisma } = await import('../config/database.js');
+
+      const registration = await prisma.eventRegistration.findUnique({
+        where: {
+          eventId_attendeeId: {
+            eventId,
+            attendeeId: req.user.id,
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+          paymentStatus: true,
+        },
+      });
+
+      const isRegistered = registration !== null && registration.status !== 'CANCELLED';
+
+      res.status(200).json({
+        success: true,
+        data: {
+          isRegistered,
+          registrationId: isRegistered ? registration!.id : null,
+          status: isRegistered ? registration!.status : null,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get personalized event recommendations
    */
   static async getRecommendations(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
@@ -152,6 +194,23 @@ export class UserDashboardController {
       res.status(200).json({
         success: true,
         data: { review },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get transfer details by token (public, no auth required)
+   */
+  static async getTransferByToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const transferToken = req.params.transferToken as string;
+      const transfer = await TicketTransferService.getTransferByToken(transferToken);
+
+      res.status(200).json({
+        success: true,
+        data: { transfer },
       });
     } catch (error) {
       next(error);

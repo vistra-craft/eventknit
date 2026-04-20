@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Clock, MapPin, Mic, Users, Coffee, Calendar } from "lucide-react";
+import { Clock, MapPin, Mic, Users, Coffee, Calendar, Zap, Monitor, MessageCircle, Award, Music, PartyPopper } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,27 +11,46 @@ interface EventAgendaProps {
   user: User;
 }
 
-// Session type configuration
+// Session type configuration — covers all creation form types + fallback
 const sessionTypeConfig: Record<string, { icon: React.ElementType; color: string; bgColor: string }> = {
   keynote: { icon: Mic, color: 'text-purple-600', bgColor: 'bg-purple-100' },
   panel: { icon: Users, color: 'text-primary', bgColor: 'bg-primary/10' },
   workshop: { icon: Calendar, color: 'text-success', bgColor: 'bg-success/10' },
-  session: { icon: Calendar, color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
-  break: { icon: Coffee, color: 'text-amber-600', bgColor: 'bg-amber-100' },
+  breakout: { icon: Users, color: 'text-cyan-600', bgColor: 'bg-cyan-100' },
+  'fireside-chat': { icon: MessageCircle, color: 'text-orange-600', bgColor: 'bg-orange-100' },
+  'lightning-talk': { icon: Zap, color: 'text-yellow-600', bgColor: 'bg-yellow-100' },
+  demo: { icon: Monitor, color: 'text-blue-600', bgColor: 'bg-blue-100' },
+  qa: { icon: MessageCircle, color: 'text-violet-600', bgColor: 'bg-violet-100' },
+  roundtable: { icon: Users, color: 'text-teal-600', bgColor: 'bg-teal-100' },
+  tutorial: { icon: Calendar, color: 'text-emerald-600', bgColor: 'bg-emerald-100' },
+  'opening-ceremony': { icon: PartyPopper, color: 'text-pink-600', bgColor: 'bg-pink-100' },
+  'closing-ceremony': { icon: Award, color: 'text-pink-600', bgColor: 'bg-pink-100' },
+  awards: { icon: Award, color: 'text-amber-600', bgColor: 'bg-amber-100' },
+  entertainment: { icon: Music, color: 'text-fuchsia-600', bgColor: 'bg-fuchsia-100' },
+  social: { icon: Users, color: 'text-rose-600', bgColor: 'bg-rose-100' },
   networking: { icon: Users, color: 'text-pink-600', bgColor: 'bg-pink-100' },
+  break: { icon: Coffee, color: 'text-amber-600', bgColor: 'bg-amber-100' },
+  lunch: { icon: Coffee, color: 'text-orange-600', bgColor: 'bg-orange-100' },
+  registration: { icon: Calendar, color: 'text-slate-600', bgColor: 'bg-slate-100' },
+  session: { icon: Calendar, color: 'text-indigo-600', bgColor: 'bg-indigo-100' },
+  other: { icon: Calendar, color: 'text-gray-600', bgColor: 'bg-gray-100' },
 };
 
-// Infer session type from title/description
-const inferSessionType = (title: string, description?: string): string => {
-  const text = `${title} ${description || ''}`.toLowerCase();
+// Resolve session type: prefer explicit sessionType/type field, fall back to inference
+const resolveSessionType = (item: AgendaItem): string => {
+  // Use explicit sessionType from creation form first
+  const explicit = item.sessionType || item.type;
+  if (explicit && sessionTypeConfig[explicit]) return explicit;
+  if (explicit) return 'session'; // custom type — use generic session styling
 
+  // Fallback: infer from title/description
+  const text = `${item.title} ${item.description || ''}`.toLowerCase();
   if (text.includes('keynote') || text.includes('opening') || text.includes('closing')) return 'keynote';
   if (text.includes('panel') || text.includes('discussion')) return 'panel';
   if (text.includes('workshop') || text.includes('training')) return 'workshop';
   if (text.includes('break') || text.includes('coffee') || text.includes('tea')) return 'break';
-  if (text.includes('lunch') || text.includes('dinner') || text.includes('meal')) return 'break';
+  if (text.includes('lunch') || text.includes('dinner') || text.includes('meal')) return 'lunch';
   if (text.includes('networking') || text.includes('reception') || text.includes('social')) return 'networking';
-
   return 'session';
 };
 
@@ -215,7 +234,7 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
             {/* Sessions */}
             <div className="space-y-2 pl-3 border-l-2 border-muted ml-3">
               {items.map((item, idx) => {
-                const type = item.type || inferSessionType(item.title, item.description);
+                const type = resolveSessionType(item);
                 const config = sessionTypeConfig[type] || sessionTypeConfig.session;
                 const TypeIcon = config.icon;
                 const duration = calculateDuration(item.startTime, item.endTime);
@@ -245,7 +264,7 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
                             </div>
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                                {type.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
                               </Badge>
                               {duration && (
                                 <span className="text-[10px] text-muted-foreground">
@@ -261,10 +280,10 @@ export const EventAgenda: React.FC<EventAgendaProps> = ({ event }) => {
                             </p>
                           )}
 
-                          {item.location && (
+                          {(item.room || item.location) && (
                             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                               <MapPin className="w-2.5 h-2.5" />
-                              <span>{item.location}</span>
+                              <span>{item.room || item.location}</span>
                             </div>
                           )}
                         </div>

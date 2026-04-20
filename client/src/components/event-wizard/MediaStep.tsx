@@ -2,10 +2,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Camera, X, Plus, CheckCircle } from 'lucide-react';
+import { Upload, X, Plus, CheckCircle, ImageIcon } from 'lucide-react';
 import { Loader } from '@/components/ui/loader';
 import type { StepComponentProps } from './types';
 import { FocalPointPicker } from './FocalPointPicker';
@@ -66,39 +65,39 @@ export function MediaStep({
       {/* Event Image */}
       <div className="space-y-4">
         <Label>Event Image</Label>
-        <div className="space-y-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+        />
+
+        {imagePreview || eventData.image ? (
+          /* Unified preview + focal point picker */
+          <FocalPointPicker
+            imageUrl={imagePreview || eventData.image}
+            focalX={eventData.imageFocalX}
+            focalY={eventData.imageFocalY}
+            onFocalPointChange={(x, y) => {
+              onInputChange('imageFocalX', x);
+              onInputChange('imageFocalY', y);
+            }}
+            onReplace={() => fileInputRef.current?.click()}
+            onRemove={() => {
+              setImagePreview(null);
+              onInputChange('image', '');
+              if (fileInputRef.current) fileInputRef.current.value = '';
+            }}
           />
-          {imagePreview || eventData.image ? (
-            <div className="relative">
-              <img
-                src={imagePreview || eventData.image}
-                alt="Event preview"
-                className="w-full h-64 object-cover rounded-lg border"
-              />
-              <div className="absolute top-2 right-2 flex gap-2">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    setImagePreview(null);
-                    onInputChange('image', '');
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-              <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground mb-2">Upload an event image</p>
+        ) : (
+          /* Empty state — upload prompt */
+          <div className="space-y-3">
+            <div className="border-2 border-dashed border-border rounded-xl p-8 text-center">
+              <ImageIcon className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground mb-3">
+                Add a cover image for your event
+              </p>
               <Button
                 variant="outline"
                 size="sm"
@@ -120,33 +119,25 @@ export function MediaStep({
               </Button>
               <p className="text-xs text-muted-foreground mt-2">Max 5MB. JPG, PNG, or GIF</p>
             </div>
-          )}
-          {!imagePreview && !eventData.image && (
+
+            {/* OPTIONAL: URL Upload Feature (Currently Disabled for Quality Control)
+                To enable this feature, uncomment the code below and ensure backend URL validation is enabled.
+                See: src/validations/event.validations.ts for backend URL validation schema.
+            */}
+            {/*
             <div className="space-y-2">
               <Label htmlFor="imageUrl" className="text-sm">Or provide image URL</Label>
               <Input
                 id="imageUrl"
                 placeholder="https://example.com/image.jpg"
                 value={eventData.image}
-                className="h-12 border-border focus-visible:border-primary/30"
+                className="h-12"
                 onChange={(e) => onInputChange("image", e.target.value)}
               />
             </div>
-          )}
-
-          {/* Focal Point Picker - shown when image is uploaded */}
-          {(imagePreview || eventData.image) && (
-            <FocalPointPicker
-              imageUrl={imagePreview || eventData.image}
-              focalX={eventData.imageFocalX}
-              focalY={eventData.imageFocalY}
-              onFocalPointChange={(x, y) => {
-                onInputChange('imageFocalX', x);
-                onInputChange('imageFocalY', y);
-              }}
-            />
-          )}
-        </div>
+            */}
+          </div>
+        )}
       </div>
 
       {/* Tags */}
@@ -172,7 +163,7 @@ export function MediaStep({
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addTag()}
-            className="h-12 border-border focus-visible:border-primary/30"
+            className="h-12"
           />
           <Button onClick={addTag} disabled={!newTag.trim()}>
             Add
@@ -207,7 +198,7 @@ export function MediaStep({
             value={newRequirement}
             onChange={(e) => setNewRequirement(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addRequirement()}
-            className="h-12 border-border focus-visible:border-primary/30"
+            className="h-12"
           />
           <Button onClick={addRequirement} disabled={!newRequirement.trim()}>
             Add
@@ -251,47 +242,67 @@ export function MediaStep({
       {/* FAQs */}
       <div className="space-y-4">
         <Label>Frequently Asked Questions</Label>
-        {faqs.map((faq, index) => (
-          <Card key={index} className="border-0 bg-card-surface rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">FAQ {index + 1}</span>
-                  {faqs.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFaq(index)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
+        <p className="text-xs text-muted-foreground -mt-2">
+          Help attendees by answering common questions. Empty entries are automatically removed.
+        </p>
+        {faqs.map((faq, index) => {
+          const hasQuestion = faq.question.trim().length > 0;
+          const hasAnswer = faq.answer.trim().length > 0;
+          const needsAnswer = hasQuestion && !hasAnswer;
+          const needsQuestion = !hasQuestion && hasAnswer;
+
+          return (
+            <div key={index} className="relative rounded-xl border border-gray-200 dark:border-zinc-800 bg-card p-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-medium text-muted-foreground">FAQ {index + 1}</span>
+                {faqs.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFaq(index)}
+                    className="text-muted-foreground hover:text-destructive h-7 w-7 p-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                )}
+              </div>
+              <div className="space-y-1">
                 <Input
-                  placeholder="Question"
+                  placeholder="e.g. What should I bring to the event?"
                   value={faq.question}
                   onChange={(e) => handleFaqChange(index, 'question', e.target.value)}
-                  className="h-12 border-border focus-visible:border-primary/30"
+                  className={`h-11 ${needsQuestion ? 'border-destructive' : ''}`}
                 />
+                {needsQuestion && (
+                  <p className="text-xs text-destructive">Please provide a question for this answer.</p>
+                )}
+              </div>
+              <div className="space-y-1">
                 <Textarea
-                  placeholder="Answer"
+                  placeholder="Write your answer here..."
                   value={faq.answer}
                   onChange={(e) => handleFaqChange(index, 'answer', e.target.value)}
                   rows={2}
+                  className={needsAnswer ? 'border-destructive' : ''}
                 />
+                {needsAnswer && (
+                  <p className="text-xs text-destructive">Please provide an answer to this question.</p>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        ))}
-        <Button
-          variant="outline"
-          onClick={addFaq}
-          className="w-full border-dashed border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add FAQ
-        </Button>
+            </div>
+          );
+        })}
+        {/* "Add another" only when the last FAQ is fully complete (both fields) */}
+        {faqs.length > 0 && faqs[faqs.length - 1].question.trim() && faqs[faqs.length - 1].answer.trim() && (
+          <button
+            type="button"
+            onClick={addFaq}
+            className="w-full py-2.5 rounded-xl border border-dashed border-gray-300 dark:border-zinc-700 text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors flex items-center justify-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add another FAQ
+          </button>
+        )}
       </div>
     </div>
   );

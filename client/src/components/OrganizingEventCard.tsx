@@ -51,7 +51,7 @@ const OrganizingEventCardComponent = ({ event, onManage }: OrganizingEventCardPr
     if (onManage) {
       onManage(event.id);
     } else {
-      navigate(`/user/manage-events/${event.id}`);
+      navigate(`/organizer/event/${event.id}`);
     }
   };
 
@@ -168,7 +168,7 @@ const OrganizingEventCardComponent = ({ event, onManage }: OrganizingEventCardPr
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/user/manage-events/${event.id}?tab=analytics`)}
+            onClick={() => navigate(`/organizer/event/${event.id}?tab=analytics`)}
             className="px-2 hover:scale-105 active:scale-95 transition-transform duration-200"
             aria-label={`View analytics for ${event.title}`}
           >

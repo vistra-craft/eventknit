@@ -23,7 +23,7 @@ info:
     name: ISC
 
 servers:
-  - url: http://localhost:3001/api/v1
+  - url: http://localhost:3010/api/v1
     description: Development server
   - url: https://api.eventknit.com/api/v1
     description: Production server
@@ -65,6 +65,10 @@ tags:
     description: Organizer payout preferences, history, and scheduling
   - name: White Label
     description: White-label branding and custom domain management for organizers
+  - name: Promo Codes
+    description: Promo code management for organizers and checkout
+  - name: Invitations
+    description: Event invitation link management
 
 components:
   securitySchemes:
@@ -2169,6 +2173,129 @@ components:
           type: string
         ipAddress:
           type: string
+
+    PromoCode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: SUMMER20
+        scope:
+          type: string
+          enum: [PLATFORM, ORGANIZER, EVENT, MULTI_EVENT]
+        eventId:
+          type: string
+          format: uuid
+          nullable: true
+        discountType:
+          type: string
+          enum: [PERCENTAGE, FIXED_AMOUNT]
+        discountValue:
+          type: number
+          example: 20
+        minOrderAmount:
+          type: number
+          nullable: true
+        maxDiscount:
+          type: number
+          nullable: true
+        applicableTicketTypes:
+          type: array
+          items:
+            type: string
+          nullable: true
+        usageLimit:
+          type: integer
+          nullable: true
+        usedCount:
+          type: integer
+        maxUsesPerUser:
+          type: integer
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+        firstTimeOnly:
+          type: boolean
+        isStackable:
+          type: boolean
+        batchId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    EventInvitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        token:
+          type: string
+        inviteType:
+          type: string
+          enum: [ATTENDEE, SPEAKER, EXHIBITOR, GUEST, VIP, SPONSOR, MEDIA, VOLUNTEER, STAFF]
+        title:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        maxUses:
+          type: integer
+          nullable: true
+        usedCount:
+          type: integer
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        isActive:
+          type: boolean
+        eventId:
+          type: string
+          format: uuid
+        createdBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    RefundEligibility:
+      type: object
+      properties:
+        eligible:
+          type: boolean
+        refundPercentage:
+          type: number
+        refundAmount:
+          type: number
+        currency:
+          type: string
+        message:
+          type: string
+        policyType:
+          type: string
+          enum: [no_refunds, full_refund, partial_refund, tiered, custom]
+        policyText:
+          type: string
+          nullable: true
+        daysUntilEvent:
+          type: number
+        deadline:
+          type: string
+          format: date-time
+          nullable: true
 
   responses:
     UnauthorizedError:
@@ -11725,6 +11852,1458 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
         '404':
           $ref: '#/components/responses/NotFoundError'
+
+  # ==================== PROMO CODES ====================
+  /promo-codes/validate:
+    post:
+      tags:
+        - Promo Codes
+      summary: Validate a promo code
+      description: Validate a promo code for a specific event and order amount
+      operationId: validatePromoCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - eventId
+                - totalAmount
+              properties:
+                code:
+                  type: string
+                  example: SUMMER20
+                eventId:
+                  type: string
+                  format: uuid
+                ticketType:
+                  type: string
+                totalAmount:
+                  type: number
+                  example: 100
+      responses:
+        '200':
+          description: Promo code validated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      valid:
+                        type: boolean
+                      discountAmount:
+                        type: number
+                      promoCode:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          code:
+                            type: string
+                          discountType:
+                            type: string
+                            enum: [PERCENTAGE, FIXED_AMOUNT]
+                          discountValue:
+                            type: number
+        '400':
+          description: Invalid, expired, or usage limit exceeded promo code
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /promo-codes:
+    post:
+      tags:
+        - Promo Codes
+      summary: Create a promo code
+      description: Create a new promo code for an event (organizer access required)
+      operationId: createPromoCode
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - discountType
+                - discountValue
+                - validFrom
+                - validUntil
+              properties:
+                code:
+                  type: string
+                  example: SUMMER20
+                eventId:
+                  type: string
+                  format: uuid
+                discountType:
+                  type: string
+                  enum: [PERCENTAGE, FIXED_AMOUNT]
+                discountValue:
+                  type: number
+                  example: 20
+                minOrderAmount:
+                  type: number
+                maxDiscount:
+                  type: number
+                applicableTicketTypes:
+                  type: array
+                  items:
+                    type: string
+                usageLimit:
+                  type: integer
+                maxUsesPerUser:
+                  type: integer
+                validFrom:
+                  type: string
+                  format: date-time
+                validUntil:
+                  type: string
+                  format: date-time
+                isActive:
+                  type: boolean
+                firstTimeOnly:
+                  type: boolean
+                isStackable:
+                  type: boolean
+      responses:
+        '201':
+          description: Promo code created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Promo code created successfully
+                  data:
+                    type: object
+                    properties:
+                      promoCode:
+                        $ref: '#/components/schemas/PromoCode'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    get:
+      tags:
+        - Promo Codes
+      summary: List promo codes
+      description: Retrieve a list of promo codes for the authenticated organizer
+      operationId: listPromoCodes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Promo codes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      promoCodes:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PromoCode'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /promo-codes/{id}:
+    get:
+      tags:
+        - Promo Codes
+      summary: Get a promo code
+      description: Retrieve a single promo code by ID
+      operationId: getPromoCode
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Promo code retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      promoCode:
+                        $ref: '#/components/schemas/PromoCode'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Promo Codes
+      summary: Update a promo code
+      description: Update an existing promo code by ID
+      operationId: updatePromoCode
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                discountType:
+                  type: string
+                  enum: [PERCENTAGE, FIXED_AMOUNT]
+                discountValue:
+                  type: number
+                minOrderAmount:
+                  type: number
+                maxDiscount:
+                  type: number
+                applicableTicketTypes:
+                  type: array
+                  items:
+                    type: string
+                usageLimit:
+                  type: integer
+                maxUsesPerUser:
+                  type: integer
+                validFrom:
+                  type: string
+                  format: date-time
+                validUntil:
+                  type: string
+                  format: date-time
+                isActive:
+                  type: boolean
+                firstTimeOnly:
+                  type: boolean
+                isStackable:
+                  type: boolean
+      responses:
+        '200':
+          description: Promo code updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Promo code updated successfully
+                  data:
+                    type: object
+                    properties:
+                      promoCode:
+                        $ref: '#/components/schemas/PromoCode'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - Promo Codes
+      summary: Delete a promo code
+      description: Delete a promo code by ID
+      operationId: deletePromoCode
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Promo code deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Promo code deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== ADMIN PROMO CODES ====================
+  /admin/promo-codes:
+    get:
+      tags:
+        - Promo Codes
+      summary: List all promo codes (admin)
+      description: Retrieve all promo codes with filters (admin staff access required)
+      operationId: adminListPromoCodes
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [PLATFORM, ORGANIZER, EVENT, MULTI_EVENT]
+        - name: eventId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+        - name: batchId
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Promo codes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      promoCodes:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PromoCode'
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                          limit:
+                            type: integer
+                          total:
+                            type: integer
+                          totalPages:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    post:
+      tags:
+        - Promo Codes
+      summary: Create a promo code (admin)
+      description: Create a new promo code with full admin options including scope and organizerId
+      operationId: adminCreatePromoCode
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+                - scope
+                - discountType
+                - discountValue
+                - validFrom
+                - validUntil
+              properties:
+                code:
+                  type: string
+                  example: SUMMER20
+                scope:
+                  type: string
+                  enum: [PLATFORM, ORGANIZER, EVENT, MULTI_EVENT]
+                eventId:
+                  type: string
+                  format: uuid
+                organizerId:
+                  type: string
+                  format: uuid
+                discountType:
+                  type: string
+                  enum: [PERCENTAGE, FIXED_AMOUNT]
+                discountValue:
+                  type: number
+                  example: 20
+                minOrderAmount:
+                  type: number
+                maxDiscount:
+                  type: number
+                applicableTicketTypes:
+                  type: array
+                  items:
+                    type: string
+                usageLimit:
+                  type: integer
+                maxUsesPerUser:
+                  type: integer
+                validFrom:
+                  type: string
+                  format: date-time
+                validUntil:
+                  type: string
+                  format: date-time
+                isActive:
+                  type: boolean
+                firstTimeOnly:
+                  type: boolean
+                isStackable:
+                  type: boolean
+      responses:
+        '201':
+          description: Promo code created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Promo code created successfully
+                  data:
+                    type: object
+                    properties:
+                      promoCode:
+                        $ref: '#/components/schemas/PromoCode'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/promo-codes/stats:
+    get:
+      tags:
+        - Promo Codes
+      summary: Get promo code statistics (admin)
+      description: Retrieve overall promo code statistics
+      operationId: adminGetPromoCodeStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Promo code statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      totalCodes:
+                        type: integer
+                      activeCodes:
+                        type: integer
+                      inactiveCodes:
+                        type: integer
+                      totalRedemptions:
+                        type: integer
+                      totalDiscountGiven:
+                        type: number
+                      byScope:
+                        type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/promo-codes/check-availability:
+    get:
+      tags:
+        - Promo Codes
+      summary: Check promo code availability (admin)
+      description: Check if a promo code string is available for use
+      operationId: adminCheckPromoCodeAvailability
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The promo code string to check
+      responses:
+        '200':
+          description: Availability check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/promo-codes/generate-code:
+    get:
+      tags:
+        - Promo Codes
+      summary: Generate a promo code string (admin)
+      description: Generate a unique promo code string
+      operationId: adminGeneratePromoCode
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Promo code generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/promo-codes/bulk-generate:
+    post:
+      tags:
+        - Promo Codes
+      summary: Bulk generate promo codes (admin)
+      description: Generate multiple promo codes in a batch
+      operationId: adminBulkGeneratePromoCodes
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - count
+                - prefix
+                - scope
+                - discountType
+                - discountValue
+                - validFrom
+                - validUntil
+              properties:
+                count:
+                  type: integer
+                  example: 10
+                prefix:
+                  type: string
+                  example: BATCH
+                scope:
+                  type: string
+                  enum: [PLATFORM, ORGANIZER, EVENT, MULTI_EVENT]
+                discountType:
+                  type: string
+                  enum: [PERCENTAGE, FIXED_AMOUNT]
+                discountValue:
+                  type: number
+                  example: 15
+                validFrom:
+                  type: string
+                  format: date-time
+                validUntil:
+                  type: string
+                  format: date-time
+                eventId:
+                  type: string
+                  format: uuid
+                maxDiscount:
+                  type: number
+                usageLimit:
+                  type: integer
+                maxUsesPerUser:
+                  type: integer
+                firstTimeOnly:
+                  type: boolean
+      responses:
+        '201':
+          description: Promo codes generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      codes:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PromoCode'
+                      count:
+                        type: integer
+                      batchId:
+                        type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/promo-codes/batch/{batchId}:
+    get:
+      tags:
+        - Promo Codes
+      summary: Get promo codes by batch (admin)
+      description: Retrieve all promo codes belonging to a specific batch
+      operationId: adminGetPromoCodeBatch
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch promo codes retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      promoCodes:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PromoCode'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    delete:
+      tags:
+        - Promo Codes
+      summary: Delete promo codes by batch (admin)
+      description: Delete all promo codes belonging to a specific batch
+      operationId: adminDeletePromoCodeBatch
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: batchId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Batch promo codes deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      deleted:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /admin/promo-codes/{id}:
+    get:
+      tags:
+        - Promo Codes
+      summary: Get a promo code (admin)
+      description: Retrieve a single promo code by ID (admin access)
+      operationId: adminGetPromoCode
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Promo code retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      promoCode:
+                        $ref: '#/components/schemas/PromoCode'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+        - Promo Codes
+      summary: Update a promo code (admin)
+      description: Update an existing promo code by ID (admin access)
+      operationId: adminUpdatePromoCode
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                scope:
+                  type: string
+                  enum: [PLATFORM, ORGANIZER, EVENT, MULTI_EVENT]
+                discountType:
+                  type: string
+                  enum: [PERCENTAGE, FIXED_AMOUNT]
+                discountValue:
+                  type: number
+                minOrderAmount:
+                  type: number
+                maxDiscount:
+                  type: number
+                applicableTicketTypes:
+                  type: array
+                  items:
+                    type: string
+                usageLimit:
+                  type: integer
+                maxUsesPerUser:
+                  type: integer
+                validFrom:
+                  type: string
+                  format: date-time
+                validUntil:
+                  type: string
+                  format: date-time
+                isActive:
+                  type: boolean
+                firstTimeOnly:
+                  type: boolean
+                isStackable:
+                  type: boolean
+      responses:
+        '200':
+          description: Promo code updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Promo code updated successfully
+                  data:
+                    type: object
+                    properties:
+                      promoCode:
+                        $ref: '#/components/schemas/PromoCode'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - Promo Codes
+      summary: Delete a promo code (admin)
+      description: Delete a promo code by ID (admin access)
+      operationId: adminDeletePromoCode
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Promo code deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Promo code deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /admin/promo-codes/{id}/toggle:
+    patch:
+      tags:
+        - Promo Codes
+      summary: Toggle promo code active status (admin)
+      description: Toggle the isActive status of a promo code
+      operationId: adminTogglePromoCode
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Promo code toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      promoCode:
+                        $ref: '#/components/schemas/PromoCode'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== INVITATIONS ====================
+  /invitations/{token}:
+    get:
+      tags:
+        - Invitations
+      summary: Get invitation by token
+      description: Retrieve invitation details using the public invitation token
+      operationId: getInvitationByToken
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invitation retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      invitation:
+                        $ref: '#/components/schemas/EventInvitation'
+        '404':
+          description: Invalid invitation token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /invitations/{token}/register:
+    post:
+      tags:
+        - Invitations
+      summary: Register via invitation
+      description: Register for an event using an invitation token
+      operationId: registerViaInvitation
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - email
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                ticketType:
+                  type: string
+                quantity:
+                  type: integer
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      registration:
+                        type: object
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          description: Invalid invitation token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /invitations/events/{eventId}:
+    post:
+      tags:
+        - Invitations
+      summary: Create an invitation
+      description: Create a new invitation link for an event (organizer access required)
+      operationId: createInvitation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - inviteType
+              properties:
+                inviteType:
+                  type: string
+                  enum: [ATTENDEE, SPEAKER, EXHIBITOR, GUEST, VIP, SPONSOR, MEDIA, VOLUNTEER, STAFF]
+                title:
+                  type: string
+                description:
+                  type: string
+                expiresAt:
+                  type: string
+                  format: date-time
+                maxUses:
+                  type: integer
+      responses:
+        '201':
+          description: Invitation created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Invitation created successfully
+                  data:
+                    type: object
+                    properties:
+                      invitation:
+                        $ref: '#/components/schemas/EventInvitation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    get:
+      tags:
+        - Invitations
+      summary: List event invitations
+      description: Retrieve all invitations for an event (organizer access required)
+      operationId: listEventInvitations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      invitations:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EventInvitation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /invitations/{id}:
+    put:
+      tags:
+        - Invitations
+      summary: Update an invitation
+      description: Update an existing invitation (organizer access required)
+      operationId: updateInvitation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                expiresAt:
+                  type: string
+                  format: date-time
+                maxUses:
+                  type: integer
+                isActive:
+                  type: boolean
+      responses:
+        '200':
+          description: Invitation updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Invitation updated successfully
+                  data:
+                    type: object
+                    properties:
+                      invitation:
+                        $ref: '#/components/schemas/EventInvitation'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+        - Invitations
+      summary: Delete an invitation
+      description: Delete an invitation (organizer access required)
+      operationId: deleteInvitation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invitation deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Invitation deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /invitations/{id}/revoke:
+    post:
+      tags:
+        - Invitations
+      summary: Revoke an invitation
+      description: Revoke an active invitation (organizer access required)
+      operationId: revokeInvitation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Invitation revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Invitation revoked successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== ATTENDEE REFUNDS ====================
+  /tickets/{registrationId}/refund-eligibility:
+    get:
+      tags:
+        - Tickets
+      summary: Check refund eligibility
+      description: Check if a ticket registration is eligible for a refund
+      operationId: checkRefundEligibility
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Refund eligibility retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/RefundEligibility'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /tickets/{registrationId}/request-refund:
+    post:
+      tags:
+        - Tickets
+      summary: Request a refund
+      description: Submit a refund request for a ticket registration
+      operationId: requestRefund
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: registrationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refundReason
+              properties:
+                refundReason:
+                  type: string
+                  example: Unable to attend the event
+      responses:
+        '201':
+          description: Refund request submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Refund request submitted successfully
+                  data:
+                    type: object
+                    properties:
+                      refund:
+                        type: object
+                      eligibility:
+                        $ref: '#/components/schemas/RefundEligibility'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  # ==================== ORGANIZER REFUNDS ====================
+  /organizer/events/{eventId}/refunds:
+    get:
+      tags:
+        - Organizer
+      summary: List event refunds
+      description: Retrieve all refund requests for an event (organizer access required)
+      operationId: listEventRefunds
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Refunds retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /organizer/events/{eventId}/refunds/summary:
+    get:
+      tags:
+        - Organizer
+      summary: Get event refund summary
+      description: Retrieve a summary of refunds for an event (organizer access required)
+      operationId: getEventRefundSummary
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Refund summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      totalRefunded:
+                        type: number
+                      totalCount:
+                        type: integer
+                      completedCount:
+                        type: integer
+                      pendingCount:
+                        type: integer
+                      processingCount:
+                        type: integer
+                      fullRefunds:
+                        type: integer
+                      partialRefunds:
+                        type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 
 security:
   - BearerAuth: []

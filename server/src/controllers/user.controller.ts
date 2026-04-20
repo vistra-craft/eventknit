@@ -65,11 +65,11 @@ export class UserController {
         return;
       }
 
-      const { organizationName, businessEmail } = req.body;
+      const { organizationName, businessEmail, description } = req.body;
 
       const user = await UserService.becomeOrganizer(
         req.user.id,
-        { organizationName, businessEmail },
+        { organizationName, businessEmail, description },
         req.ip,
         req.headers['user-agent'],
       );
@@ -77,6 +77,35 @@ export class UserController {
       res.status(200).json({
         success: true,
         message: 'Successfully switched to Organizer role',
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Request organizer approval (sets status to PENDING_APPROVAL)
+   */
+  static async requestOrganizerApproval(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          message: 'Authentication required',
+        });
+        return;
+      }
+
+      const user = await UserService.requestOrganizerApproval(
+        req.user.id,
+        req.ip,
+        req.headers['user-agent'],
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Organizer approval requested successfully',
         data: { user },
       });
     } catch (error) {

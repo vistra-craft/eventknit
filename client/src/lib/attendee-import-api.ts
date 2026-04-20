@@ -2,7 +2,7 @@
  * Attendee Import API Functions
  */
 
-import { apiGet, apiPost } from './api';
+import { apiGet, apiPost, apiFetch } from './api';
 
 // Import row structure
 export interface ImportRow {
@@ -67,12 +67,7 @@ export interface ImportOptions {
  * Download CSV template for import
  */
 export const downloadImportTemplate = async (eventId: string): Promise<void> => {
-  const response = await fetch(`/api/v1/events/${eventId}/import/template`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
+  const response = await apiFetch(`/events/${eventId}/import/template`);
 
   if (!response.ok) {
     throw new Error('Failed to download template');
@@ -99,20 +94,10 @@ export const validateImportFile = async (
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`/api/v1/events/${eventId}/import/validate`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Validation failed');
-  }
-
-  const result = await response.json();
+  const result = await apiPost<{ success: boolean; data: ValidationResult }>(
+    `/events/${eventId}/import/validate`,
+    formData,
+  );
   return result.data;
 };
 
@@ -136,20 +121,10 @@ export const executeImport = async (
     formData.append('defaultTicketType', options.defaultTicketType);
   }
 
-  const response = await fetch(`/api/v1/events/${eventId}/import`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Import failed');
-  }
-
-  const result = await response.json();
+  const result = await apiPost<{ success: boolean; data: ImportResult }>(
+    `/events/${eventId}/import`,
+    formData,
+  );
   return result.data;
 };
 
@@ -236,12 +211,7 @@ export const quickRegisterAttendee = async (
  * Export attendees to CSV
  */
 export const exportAttendees = async (eventId: string): Promise<void> => {
-  const response = await fetch(`/api/v1/events/${eventId}/attendees/export`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-    },
-  });
+  const response = await apiFetch(`/events/${eventId}/attendees/export`);
 
   if (!response.ok) {
     throw new Error('Failed to export attendees');

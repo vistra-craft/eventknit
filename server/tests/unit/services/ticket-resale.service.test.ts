@@ -15,7 +15,7 @@ const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 
 describe('TicketResaleService', () => {
   const futureDate = new Date('2026-12-31');
-  const pastDate = new Date('2024-01-01');
+  const _pastDate = new Date('2024-01-01');
 
   const mockUser = {
     id: 'seller-123',
@@ -413,114 +413,15 @@ describe('TicketResaleService', () => {
     });
   });
 
-  describe('purchaseResaleTicket', () => {
-    const mockResale = {
-      id: 'resale-123',
-      registrationId: mockRegistration.id,
-      sellerId: mockUser.id,
-      status: 'LISTED',
-      expiresAt: futureDate,
-      resalePrice: new Decimal(120),
-      registration: mockRegistration,
-    };
-
-    it('should purchase resale ticket successfully', async () => {
-      // Arrange
-      prismaMock.ticketResale.findUnique.mockResolvedValue(mockResale as any);
-      prismaMock.$transaction.mockImplementation((callback: any) => callback(prismaMock));
-      prismaMock.eventRegistration.update.mockResolvedValue({
-        ...mockRegistration,
-        attendeeId: mockBuyer.id,
-      } as any);
-      prismaMock.ticketResale.update.mockResolvedValue({
-        ...mockResale,
-        status: 'SOLD',
-        buyerId: mockBuyer.id,
-      } as any);
-
-      // Act
-      const result = await TicketResaleService.purchaseResaleTicket(
-        mockBuyer.id,
-        mockResale.id,
-      );
-
-      // Assert
-      expect(result.success).toBe(true);
-      expect(prismaMock.eventRegistration.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: mockRegistration.id },
-          data: expect.objectContaining({
-            attendeeId: mockBuyer.id,
-          }),
-        }),
-      );
-      expect(prismaMock.ticketResale.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: mockResale.id },
-          data: expect.objectContaining({
-            status: 'SOLD',
-            buyerId: mockBuyer.id,
-          }),
-        }),
-      );
-    });
-
-    it('should throw error if resale not found', async () => {
-      // Arrange
-      prismaMock.ticketResale.findUnique.mockResolvedValue(null);
-
-      // Act & Assert
+  describe('purchaseResaleTicket (deprecated)', () => {
+    it('should throw ValidationError since direct purchase is deprecated', async () => {
       await expect(
-        TicketResaleService.purchaseResaleTicket(mockBuyer.id, 'invalid-id'),
-      ).rejects.toThrow(NotFoundError);
-
-      await expect(
-        TicketResaleService.purchaseResaleTicket(mockBuyer.id, 'invalid-id'),
-      ).rejects.toThrow('Resale listing not found');
-    });
-
-    it('should throw error if ticket is not listed', async () => {
-      // Arrange
-      const soldResale = { ...mockResale, status: 'SOLD' };
-      prismaMock.ticketResale.findUnique.mockResolvedValue(soldResale as any);
-
-      // Act & Assert
-      await expect(
-        TicketResaleService.purchaseResaleTicket(mockBuyer.id, mockResale.id),
+        TicketResaleService.purchaseResaleTicket('any-user', 'any-resale'),
       ).rejects.toThrow(ValidationError);
 
       await expect(
-        TicketResaleService.purchaseResaleTicket(mockBuyer.id, mockResale.id),
-      ).rejects.toThrow('Ticket is no longer available');
-    });
-
-    it('should throw error if buyer is seller', async () => {
-      // Arrange
-      prismaMock.ticketResale.findUnique.mockResolvedValue(mockResale as any);
-
-      // Act & Assert
-      await expect(
-        TicketResaleService.purchaseResaleTicket(mockUser.id, mockResale.id),
-      ).rejects.toThrow(ValidationError);
-
-      await expect(
-        TicketResaleService.purchaseResaleTicket(mockUser.id, mockResale.id),
-      ).rejects.toThrow('You cannot purchase your own ticket');
-    });
-
-    it('should throw error if listing has expired', async () => {
-      // Arrange
-      const expiredResale = { ...mockResale, expiresAt: pastDate };
-      prismaMock.ticketResale.findUnique.mockResolvedValue(expiredResale as any);
-
-      // Act & Assert
-      await expect(
-        TicketResaleService.purchaseResaleTicket(mockBuyer.id, mockResale.id),
-      ).rejects.toThrow(ValidationError);
-
-      await expect(
-        TicketResaleService.purchaseResaleTicket(mockBuyer.id, mockResale.id),
-      ).rejects.toThrow('This listing has expired');
+        TicketResaleService.purchaseResaleTicket('any-user', 'any-resale'),
+      ).rejects.toThrow('Direct purchase is no longer supported');
     });
   });
 

@@ -86,4 +86,11 @@ router.post('/role-switch/become-organizer', UserController.becomeOrganizer);
  */
 router.post('/role-switch/become-attendee', UserController.becomeAttendee);
 
+/**
+ * @route   POST /api/v1/user/role-switch/request-approval
+ * @desc    Request organizer approval (sets status to PENDING_APPROVAL)
+ * @access  Private (Organizers only)
+ */
+router.post('/role-switch/request-approval', UserController.requestOrganizerApproval);
+
 export default router;

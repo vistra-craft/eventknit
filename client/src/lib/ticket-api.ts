@@ -2,8 +2,15 @@
  * Ticket API Functions
  */
 
-import { API_BASE_URL, getAccessToken } from './api';
+import { apiGet, apiPost, apiFetch, API_BASE_URL } from './api';
 import type { ApiResponse } from './api';
+
+export interface TicketLineItem {
+  ticketType: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
 
 export interface TicketData {
   id: string;
@@ -13,6 +20,8 @@ export interface TicketData {
   attendeeName: string;
   attendeeEmail: string;
   ticketType?: string;
+  ticketLineItems?: TicketLineItem[];
+  currency?: string;
   qrCode?: string;
   backupCode?: string;
   createdAt: string;
@@ -22,25 +31,7 @@ export interface TicketData {
  * Get ticket by registration ID (authenticated)
  */
 export const getTicket = async (registrationId: string): Promise<ApiResponse<TicketData>> => {
-  const token = getAccessToken();
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/tickets/${registrationId}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to fetch ticket' }));
-    throw new Error(error.message || 'Failed to fetch ticket');
-  }
-
-  return response.json();
+  return apiGet<ApiResponse<TicketData>>(`/tickets/${registrationId}`);
 };
 
 /**
@@ -66,32 +57,17 @@ export const getTicketPublic = async (registrationId: string, email: string): Pr
  * Download ticket as PDF
  */
 export const downloadTicketPDF = async (registrationId: string): Promise<void> => {
-  const token = getAccessToken();
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/tickets/${registrationId}/download`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
+  const response = await apiFetch(`/tickets/${registrationId}/download`);
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Failed to download ticket' }));
     throw new Error(error.message || 'Failed to download ticket');
   }
 
-  // Get content type
   const contentType = response.headers.get('content-type') || '';
-  
-  // Check if it's HTML (fallback when puppeteer not available)
+
   if (contentType.includes('text/html')) {
-    // Get HTML content
     const html = await response.text();
-    
-    // Create a blob and download it, or open in new window for printing
     const blob = new Blob([html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -101,11 +77,8 @@ export const downloadTicketPDF = async (registrationId: string): Promise<void> =
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
-    // Also open in new window for better printing
     window.open(url, '_blank');
   } else {
-    // It's a PDF
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -119,28 +92,39 @@ export const downloadTicketPDF = async (registrationId: string): Promise<void> =
 };
 
 /**
+ * Refund eligibility response
+ */
+export interface RefundEligibility {
+  eligible: boolean;
+  refundPercentage: number;
+  refundAmount: number;
+  currency: string;
+  message: string;
+  policyType: string;
+  policyText?: string;
+  daysUntilEvent: number;
+  deadline?: string;
+}
+
+/**
+ * Check refund eligibility for a registration
+ */
+export const checkRefundEligibility = async (registrationId: string): Promise<ApiResponse<RefundEligibility>> => {
+  return apiGet<ApiResponse<RefundEligibility>>(`/tickets/${registrationId}/refund-eligibility`);
+};
+
+/**
+ * Request a refund for a registration
+ */
+export const requestRefund = async (registrationId: string, refundReason: string): Promise<ApiResponse<unknown>> => {
+  return apiPost<ApiResponse<unknown>>(`/tickets/${registrationId}/request-refund`, { refundReason });
+};
+
+/**
  * Resend ticket email
  */
 export const resendTicketEmail = async (registrationId: string): Promise<ApiResponse<void>> => {
-  const token = getAccessToken();
-  if (!token) {
-    throw new Error('Authentication required');
-  }
-
-  const response = await fetch(`${API_BASE_URL}/tickets/${registrationId}/resend`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to resend ticket email' }));
-    throw new Error(error.message || 'Failed to resend ticket email');
-  }
-
-  return response.json();
+  return apiPost<ApiResponse<void>>(`/tickets/${registrationId}/resend`);
 };
 
 

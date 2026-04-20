@@ -26,16 +26,26 @@ export const getVIPTicketBadge = (ticketName: string) => {
 };
 
 /**
- * Check if a ticket type is currently available based on availability dates
+ * Check if a ticket type is currently available based on availability dates and capacity
  */
 export const isTicketTypeAvailable = (
   ticketType: {
     availableFrom?: string;
     availableUntil?: string;
+    isSoldOut?: boolean;
   },
   currentDate: Date = new Date()
-): { available: boolean; reason?: string } => {
+): { available: boolean; reason?: string; isSoldOut?: boolean } => {
   const now = currentDate;
+
+  // Check sold-out status first (highest priority)
+  if (ticketType.isSoldOut) {
+    return {
+      available: false,
+      isSoldOut: true,
+      reason: 'SOLD OUT',
+    };
+  }
 
   if (ticketType.availableFrom) {
     const fromDate = new Date(ticketType.availableFrom);
