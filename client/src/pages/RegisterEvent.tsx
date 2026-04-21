@@ -376,15 +376,15 @@ const EventRegistration = () => {
 
           if (isFree) {
             // Free event - redirect to confirmation page
-            navigate(`/event/${eventId}/registration-confirmation`, {
+            navigate(`/event/${event.slug ?? eventId}/registration-confirmation`, {
               state: {
                 eventId: eventId,
                 eventTitle: event.title,
                 eventDate: event.startDate,
                 eventTime: event.startTime,
                 eventLocation: event.location || event.venue,
-                organizerName: event.organizerName || 
-                  (event.organizer 
+                organizerName: event.organizerName ||
+                  (event.organizer
                     ? event.organizer.organizationName ||
                       `${event.organizer.firstName} ${event.organizer.lastName}`
                     : "Event host"),
@@ -411,10 +411,11 @@ const EventRegistration = () => {
             const totalPrice = Number(registration.totalAmount ?? calculatedTotalPrice);
 
             // Paid event - navigate to payment page with registration ID
-            navigate(`/event/${eventId}/payment`, {
+            navigate(`/event/${event.slug ?? eventId}/payment`, {
               state: {
                 registrationId: registration.id,
                 eventId: eventId,
+                eventSlug: event.slug ?? undefined,
                 eventTitle: event.title,
                 tickets: event.ticketTypes?.map(t => ({
                   name: t.name,
@@ -451,15 +452,15 @@ const EventRegistration = () => {
 
         if (isFree) {
           // Free event - redirect to confirmation page
-          navigate(`/event/${eventId}/registration-confirmation`, {
+          navigate(`/event/${event.slug ?? eventId}/registration-confirmation`, {
             state: {
               eventId: eventId,
               eventTitle: event.title,
               eventDate: event.startDate,
               eventTime: event.startTime,
               eventLocation: event.location || event.venue,
-              organizerName: event.organizerName || 
-                (event.organizer 
+              organizerName: event.organizerName ||
+                (event.organizer
                   ? event.organizer.organizationName ||
                     `${event.organizer.firstName} ${event.organizer.lastName}`
                   : "Event host"),
@@ -487,10 +488,11 @@ const EventRegistration = () => {
           const totalPrice = Number(registration.totalAmount ?? calculatedTotalPrice);
 
           // Paid event - navigate to payment page with registration ID
-          navigate(`/event/${eventId}/payment`, {
+          navigate(`/event/${event.slug ?? eventId}/payment`, {
             state: {
               registrationId: registration.id,
               eventId: eventId,
+              eventSlug: event.slug ?? undefined,
               eventTitle: event.title,
               tickets: event.ticketTypes?.map(t => ({
                 name: t.name,

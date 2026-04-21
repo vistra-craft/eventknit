@@ -16,6 +16,7 @@ import {
   LogOut,
   Ticket,
   FileText,
+  ClipboardList,
   ShieldCheck,
   CreditCard,
   Server,
@@ -156,6 +157,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       label: "Company Documents",
       href: "/admin/documents",
       icon: FileText,
+      group: "main",
+    },
+    {
+      id: "forms",
+      label: "Forms",
+      href: "/admin/forms",
+      icon: ClipboardList,
       group: "main",
     },
     {

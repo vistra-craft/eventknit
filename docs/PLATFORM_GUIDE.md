@@ -52,8 +52,9 @@ This guide is designed to be read sequentially for a complete understanding, or 
 19. [Platform Feedback](#platform-feedback)
 20. [Analytics & Reporting](#analytics--reporting)
 21. [Company Documents](#company-documents)
-22. [API Reference](#api-reference)
-23. [Platform TODOs](#platform-todos)
+22. [Forms & Participants](#forms--participants)
+23. [API Reference](#api-reference)
+24. [Platform TODOs](#platform-todos)
 
 ---
 
@@ -2045,6 +2046,195 @@ Only admin-level users (`ADMIN_STAFF` and above) can access, upload, edit, or de
 | POST | /api/v1/admin/company-documents/upload | Upload a file document |
 | PATCH | /api/v1/admin/company-documents/:id | Update document metadata |
 | DELETE | /api/v1/admin/company-documents/:id | Delete document (and Cloudinary asset) |
+
+---
+
+## Forms & Participants
+
+EventKnit includes a built-in form and participant management system that lets organizers and admins collect structured information from speakers, sponsors, exhibitors, performers, volunteers, and general inquirers, then manage them through a review workflow.
+
+### Overview
+
+The system has two closely related concepts:
+
+| Concept | What it is |
+|---------|-----------|
+| **EventForm** | A configurable questionnaire created by an organizer or admin. Can be linked to a specific event or standalone. Accessible publicly via a share link. |
+| **FormResponse** | A single person's answers to an EventForm. Goes through a SUBMITTED > UNDER_REVIEW > APPROVED / REJECTED / WAITLISTED lifecycle. |
+| **EventParticipant** | A named participant in an event (speaker, sponsor, etc.). Created automatically when a response is approved, or added manually by an organizer/admin. |
+
+### Participant Types
+
+| Type | Description |
+|------|-------------|
+| `SPEAKER` | Keynote, panelist, or session presenter |
+| `SPONSOR` | Financial or in-kind sponsor |
+| `EXHIBITOR` | Company with a booth or display |
+| `PERFORMER` | Entertainer, musician, DJ, or artist |
+| `VOLUNTEER` | Unpaid helper at the event |
+| `CUSTOM` | Any other role (requires a custom label) |
+
+### Participant Statuses
+
+| Status | Meaning |
+|--------|---------|
+| `INVITED` | Form sent or participant manually added; awaiting action |
+| `SUBMITTED` | Form response received; pending review |
+| `UNDER_REVIEW` | Being evaluated by the organizer/admin |
+| `APPROVED` | Confirmed participant |
+| `REJECTED` | Application declined |
+| `WAITLISTED` | On hold; may be confirmed later |
+
+### Form Purposes
+
+Forms can be scoped to a specific purpose to make their intent clear and to determine which participant type a response creates on approval:
+
+| Purpose | Auto-created participant type |
+|---------|------------------------------|
+| `SPEAKER_APPLICATION` | `SPEAKER` |
+| `SPONSOR_APPLICATION` | `SPONSOR` |
+| `EXHIBITOR_APPLICATION` | `EXHIBITOR` |
+| `PERFORMER_APPLICATION` | `PERFORMER` |
+| `VOLUNTEER_APPLICATION` | `VOLUNTEER` |
+| `GENERAL_INQUIRY` | None |
+| `CUSTOM` | None (or manually linked) |
+
+### Question Types
+
+The form builder supports 14 question types:
+
+| Type | Description |
+|------|-------------|
+| `short_text` | Single-line text input |
+| `long_text` | Multi-line textarea |
+| `email` | Email address field (client-validated) |
+| `phone` | Phone number field |
+| `number` | Numeric input |
+| `url` | URL / link field |
+| `date` | Date picker |
+| `single_choice` | Radio buttons (pick one) |
+| `multiple_choice` | Checkboxes (pick many) |
+| `dropdown` | Select menu (pick one) |
+| `rating` | Star rating (configurable 1-N scale) |
+| `scale` | Linear scale with min/max labels |
+| `file_upload` | File attachment (reserved for future) |
+| `section_break` | Visual separator with optional title and description |
+
+### Form Lifecycle
+
+```
+DRAFT -> ACTIVE -> CLOSED -> ARCHIVED
+```
+
+- **DRAFT**: Being built; not accepting responses.
+- **ACTIVE**: Live; respondents can submit via share link.
+- **CLOSED**: No longer accepting responses; responses are preserved.
+- **ARCHIVED**: Hidden from default views; responses preserved.
+
+### Public Share Link
+
+Every form has a unique `shareToken` (UUID). When a form is set to `isPublic = true` and `status = ACTIVE`, it is accessible at:
+
+```
+https://eventknit.com/f/:shareToken
+```
+
+No login is required to view or submit the form. If a logged-in user submits, their account is linked to the response for tracking. The public page captures:
+- Respondent full name (required)
+- Respondent email (required, used for duplicate detection)
+- All custom question answers
+
+### Review Workflow
+
+```
+Form submitted -> SUBMITTED
+                     |
+              Organizer/Admin reviews
+                  /           \
+          UNDER_REVIEW       REJECTED
+               |
+         APPROVED / WAITLISTED
+               |
+    (if targetParticipantType set)
+               |
+       EventParticipant created automatically
+         with status = APPROVED
+```
+
+When a response is approved with `createParticipant = true` and the form has a `targetParticipantType`, an `EventParticipant` record is created automatically from the response data without requiring any manual entry.
+
+### Organizer / Admin Capabilities
+
+**Forms:**
+- Create forms with a drag-and-drop question builder supporting 14 question types
+- Link a form to a specific event or leave it standalone
+- Set purpose and target participant type
+- Toggle public access and control the share link
+- Set a close date or maximum response cap
+- Activate, close, or archive forms
+- Copy the share link with one click
+
+**Responses:**
+- View all submissions with respondent name, email, and answer preview
+- Filter by status (Submitted / Under Review / Approved / Rejected / Waitlisted)
+- Approve, reject, or waitlist individual responses
+- Mark responses as Under Review before making a final decision
+- On approval, optionally auto-create the participant record
+
+**Participants:**
+- View all participants for an event, grouped by type and status
+- Manually add participants (without requiring a form submission)
+- Edit participant profile: name, email, bio, company, social links, type-specific metadata
+- Change participant status through the same review workflow
+- Remove participants
+
+### Organizer Workflow (Speaker Application Example)
+
+1. Create a form: **Forms** > **New Form** > title "Speaker Application", purpose "Speaker Application", target type "Speaker".
+2. Add questions: "Talk title", "Abstract", "Bio", "LinkedIn URL", etc.
+3. Set status to **Active** and toggle **Public form** on.
+4. Copy the share link and distribute it to prospective speakers.
+5. As responses come in, review each one: mark **Under Review**, read the full submission, then **Approve** or **Reject**.
+6. On approval with "Create participant" checked, a Speaker participant record is created automatically for the event.
+7. The participants list under the event shows all confirmed speakers with their profile data.
+
+### Access Control
+
+| Action | Minimum Role |
+|--------|-------------|
+| Create / edit / delete forms | `ORGANIZER` (own events) or `ADMIN` |
+| View responses | `ORGANIZER` (own events) or `ADMIN` |
+| Review responses | `ORGANIZER` (own events) or `ADMIN` |
+| Manage participants | `ORGANIZER` (own events) or `ADMIN` |
+| Submit a public form | Anyone (no login required) |
+
+### API Endpoints
+
+**Forms:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/v1/forms | List forms (filterable by status, purpose, eventId) |
+| POST | /api/v1/forms | Create a new form |
+| GET | /api/v1/forms/:id | Get form by ID |
+| PATCH | /api/v1/forms/:id | Update form metadata or questions |
+| DELETE | /api/v1/forms/:id | Delete a form |
+| GET | /api/v1/forms/:id/responses | List responses for a form |
+| GET | /api/v1/forms/:id/responses/:responseId | Get a single response |
+| PATCH | /api/v1/forms/:id/responses/:responseId/review | Review a response |
+| GET | /api/v1/forms/public/:shareToken | Get public form (no auth) |
+| POST | /api/v1/forms/public/:shareToken/submit | Submit a response (no auth) |
+
+**Participants:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/v1/events/:eventId/participants | List participants (filterable by type, status, search) |
+| POST | /api/v1/events/:eventId/participants | Manually add a participant |
+| GET | /api/v1/events/:eventId/participants/:id | Get a single participant |
+| PATCH | /api/v1/events/:eventId/participants/:id | Update participant profile |
+| PATCH | /api/v1/events/:eventId/participants/:id/review | Change participant status |
+| DELETE | /api/v1/events/:eventId/participants/:id | Remove a participant |
 
 ---
 

@@ -120,6 +120,10 @@ const ResaleTransferReportingPage = lazy(() => import('../pages/admin/finance').
 // Company Documents
 const AdminCompanyDocumentsPage = lazy(() => import('../pages/admin/documents/AdminCompanyDocumentsPage'));
 
+// Forms
+const AdminFormsPage = lazy(() => import('../pages/admin/forms/AdminFormsPage'));
+const AdminFormDetailPage = lazy(() => import('../pages/admin/forms/AdminFormDetailPage'));
+
 // KYC Review
 const KYCReviewDashboard = lazy(() => import('../pages/admin/kyc/KYCReviewDashboard'));
 const KYCOrganizerReviewPage = lazy(() => import('../pages/admin/kyc/KYCOrganizerReviewPage'));
@@ -636,6 +640,18 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'documents',
     element: createElement(AdminCompanyDocumentsPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+
+  // Forms
+  {
+    path: 'forms',
+    element: createElement(AdminFormsPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'forms/:formId',
+    element: createElement(AdminFormDetailPage),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
 

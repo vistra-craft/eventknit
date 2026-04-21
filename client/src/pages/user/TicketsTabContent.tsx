@@ -133,7 +133,7 @@ const TicketsTabContent = () => {
       navigate(`/user/tickets/${ticket.registrationId}`);
     } else {
       // Fallback to event view if no registrationId
-      navigate(`/user/event/${ticket.id}`);
+      navigate(`/user/event/${ticket.slug ?? ticket.id}`);
     }
   };
 

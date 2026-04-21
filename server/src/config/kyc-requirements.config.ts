@@ -1711,6 +1711,32 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
       },
     ],
   },
+
+  [OrganizerEntityType.OTHER]: {
+    entityType: OrganizerEntityType.OTHER,
+    displayName: 'Other',
+    category: 'business',
+    requiresDirectors: false,
+    requiresShareholders: false,
+    documents: [
+      {
+        documentType: KYCDocumentType.NATIONAL_ID,
+        category: 'identity',
+        minQuantity: 1,
+        isRequired: true,
+        isConditional: false,
+        description: 'National ID, Passport, Alien ID, or Military ID',
+      },
+      {
+        documentType: KYCDocumentType.KRA_PIN,
+        category: 'registration',
+        minQuantity: 1,
+        isRequired: true,
+        isConditional: false,
+        description: 'KRA PIN Certificate',
+      },
+    ],
+  },
 };
 
 /**

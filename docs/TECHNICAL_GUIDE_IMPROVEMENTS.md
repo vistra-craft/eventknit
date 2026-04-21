@@ -45,6 +45,7 @@ This document provides a comprehensive analysis of potential improvements to the
 23. [Smart Notification Routing & Optimization](#23-smart-notification-routing--optimization)
 24. [Data Migration Strategy for Microservices](#24-data-migration-strategy-for-microservices)
 25. [Implementation Roadmap](#18-implementation-roadmap)
+26. [Actionable Code-Level Findings (April 2026 Audit)](#26-actionable-code-level-findings-april-2026-audit)
 
 ---
 
@@ -6389,3 +6390,417 @@ lib/presentation/workstation/widgets/conflict_resolution_dialog.dart
 
 
 Good luck building EventKnit 2.0! 🚀
+
+---
+
+## 26. Actionable Code-Level Findings (April 2026 Audit)
+
+**Context:** The items below are concrete issues discovered by auditing the live codebase in April 2026. Unlike the architectural recommendations in earlier sections, every item here references a specific file, line number, and a ready-to-apply fix. They are ordered by impact.
+
+---
+
+### 26.1 Backend: N+1 Query in Checkpoint Status Lookup
+
+**File:** `server/src/services/checkpoint.service.ts` (around line 841)
+**Severity:** Critical
+
+**Problem:** For every active checkpoint on an event, a separate `prisma.checkpointScan.findMany()` call is made. With 10+ checkpoints this becomes 10+ round-trips per request.
+
+```typescript
+// CURRENT (N+1):
+const checkpoints = await prisma.checkpoint.findMany({ where: { eventId, isActive: true } });
+const statusPromises = checkpoints.map(async (cp) => {
+  const scans = await prisma.checkpointScan.findMany({   // one query per checkpoint
+    where: { checkpointId: cp.id, registrationId, isValid: true },
+  });
+  ...
+});
+```
+
+**Fix:** Fetch all scans in a single query, then group in memory:
+
+```typescript
+const [checkpoints, allScans] = await Promise.all([
+  prisma.checkpoint.findMany({ where: { eventId, isActive: true } }),
+  prisma.checkpointScan.findMany({
+    where: { checkpoint: { eventId }, registrationId, isValid: true },
+  }),
+]);
+const scansByCheckpoint = allScans.reduce<Map<string, typeof allScans>>(
+  (map, scan) => {
+    const list = map.get(scan.checkpointId) ?? [];
+    list.push(scan);
+    return map.set(scan.checkpointId, list);
+  },
+  new Map(),
+);
+// Replace scans lookup with: scansByCheckpoint.get(cp.id) ?? []
+```
+
+---
+
+### 26.2 Backend: N+1 in Push Notification Broadcast
+
+**File:** `server/src/services/push-notification.service.ts` (around line 298)
+**Severity:** Critical
+
+**Problem:** `sendToMultipleUsers()` loops sequentially, calling `sendToUser()` per user. Each `sendToUser()` hits the database for that user's subscriptions. 100 recipients = 100 DB round-trips, serialized.
+
+```typescript
+// CURRENT (sequential, N DB queries):
+for (const userId of userIds) {
+  const result = await this.sendToUser(userId, payload);
+  totalSent += result.sent;
+}
+```
+
+**Fix:** Fetch all subscriptions in one query, then fan out in parallel:
+
+```typescript
+const subscriptions = await prisma.pushSubscription.findMany({
+  where: { userId: { in: userIds }, isActive: true, failCount: { lt: 5 } },
+});
+const results = await Promise.allSettled(
+  subscriptions.map(sub => this.sendToSubscription(sub, payload)),
+);
+const totalSent = results.filter(r => r.status === 'fulfilled' && r.value).length;
+```
+
+---
+
+### 26.3 Backend: Missing Compound Indexes on EventRegistration
+
+**File:** `server/prisma/schema.prisma`
+**Severity:** High
+
+**Problem:** Real-time check-in queries filter by `eventId + isCurrentlyInside` and `eventId + checkedInAt`, but only single-column indexes exist. Full table scans occur as attendance grows.
+
+**Fix:** Add compound indexes to the `EventRegistration` model:
+
+```prisma
+model EventRegistration {
+  // ...existing fields...
+
+  @@index([eventId, isCurrentlyInside])
+  @@index([eventId, checkedInAt])
+  @@index([eventId, ticketStatus])
+}
+```
+
+Run `npx prisma migrate dev --name add_registration_compound_indexes` after adding these.
+
+---
+
+### 26.4 Backend: Redundant DB Query in Inventory Service
+
+**File:** `server/src/services/inventory.service.ts` (around line 416)
+**Severity:** High
+
+**Problem:** After a Redis cache miss, the service fetches events from the DB and then re-checks for `stillMissing` IDs, potentially triggering a second identical DB query.
+
+```typescript
+// CURRENT (two DB queries possible):
+const events = await prisma.event.findMany({ where: { id: { in: missingIds } } });
+const stillMissing = eventIds.filter(id => !result.has(id));
+if (stillMissing.length > 0) {
+  const events = await prisma.event.findMany({ where: { id: { in: stillMissing } } });
+}
+```
+
+**Fix:** Populate the result map from the first fetch and skip the second query:
+
+```typescript
+const fetched = await prisma.event.findMany({ where: { id: { in: missingIds } } });
+fetched.forEach(e => {
+  result.set(e.id, e);
+  // also back-fill Redis cache here
+});
+// No second query needed
+```
+
+---
+
+### 26.5 Backend: Platform Analytics Not Cached
+
+**File:** `server/src/services/admin-platform-analytics.service.ts` (around line 88)
+**Severity:** High
+
+**Problem:** `getPlatformGMVAnalytics()` fetches and aggregates ALL payment transactions on every call with no Redis caching. Admin dashboard requests hammer the DB with expensive full-table aggregations.
+
+**Fix:** Wrap the result in a short-lived Redis cache (1 hour is appropriate for analytics):
+
+```typescript
+const cacheKey = `platform:gmv:${JSON.stringify(filters)}`;
+const cached = await redis.get(cacheKey);
+if (cached) return JSON.parse(cached);
+
+const result = /* ...existing aggregation logic... */;
+
+await redis.setex(cacheKey, 3600, JSON.stringify(result));
+return result;
+```
+
+The same pattern should be applied to all other aggregation methods in this service (`getRegistrationTrends`, `getRevenueByCategory`, etc.).
+
+---
+
+### 26.6 Backend: getEventById Over-fetches 17+ Relations
+
+**File:** `server/src/services/event.service.ts` (around line 672)
+**Severity:** Medium
+
+**Problem:** Every call to `getEventById` includes all relations (organizer, _count, seatMap, checkpoints, sessions, invitations, ticketTemplates, registrations, notifications, etc.) regardless of the calling context. This bloats response payloads for callers that only need basic event data.
+
+**Fix:** Introduce a lean summary query alongside the existing full query:
+
+```typescript
+// Use this for listings, search results, related events:
+async getEventSummary(id: string) {
+  return prisma.event.findUnique({
+    where: { id },
+    select: { id, slug, title, image, startDate, startTime, price, isFree, venue, location, category, status },
+  });
+}
+
+// Keep the existing full include for the event detail page:
+async getEventById(id: string) {
+  // ...existing implementation with all 17 includes...
+}
+```
+
+Update all list endpoints (`getAllEvents`, `getOrganizerEvents`, `searchEvents`) to use `getEventSummary`.
+
+---
+
+### 26.7 Backend: Payment Webhook Returns 200 on Processing Failure
+
+**File:** `server/src/controllers/payment.controller.ts` (webhook handler)
+**Severity:** Medium
+
+**Problem:** When webhook processing throws (DB error, email service down), the handler catches the error and still returns `200 OK`. Payment providers interpret 200 as "delivered successfully" and will not retry. This can leave payments in an inconsistent state.
+
+```typescript
+// CURRENT (swallows errors, no retry):
+try {
+  await processWebhookPayload(payload);
+} catch (error) {
+  logger.error('Webhook error', error);
+  res.status(200).json({ success: false }); // provider never retries
+}
+```
+
+**Fix:** Return 500 on transient failures so the provider retries:
+
+```typescript
+try {
+  await processWebhookPayload(payload);
+  res.status(200).json({ received: true });
+} catch (error) {
+  logger.error('Webhook processing failed, will retry', error);
+  res.status(500).json({ error: 'Processing failed' });
+}
+```
+
+Guard idempotency by storing processed webhook IDs in Redis before returning 200, so retried webhooks are deduplicated.
+
+---
+
+### 26.8 Frontend: Missing React Error Boundaries
+
+**File:** `client/src/App.tsx` and complex page components
+**Severity:** High
+
+**Problem:** A runtime error inside any component (e.g., accessing `.title` on undefined event data, a map over null) crashes the entire React tree with a blank white screen. There are no error boundaries wrapping routes or complex subtrees.
+
+**Fix:** Add boundaries at two levels:
+
+```tsx
+// 1. Route-level catch-all (App.tsx)
+<ErrorBoundary fallback={<FullPageError />}>
+  <RouterProvider router={router} />
+</ErrorBoundary>
+
+// 2. Granular boundaries around complex, data-heavy subtrees
+<ErrorBoundary fallback={<SectionError message="Could not load ticket details" />}>
+  <TicketSection registrationId={id} />
+</ErrorBoundary>
+```
+
+React 18+ supports the `react-error-boundary` package which is already compatible with Suspense. Consider pairing with Sentry's `withProfiler` for automatic error reporting.
+
+---
+
+### 26.9 Frontend: CreateEventStepwise Missing useMemo for Derived State
+
+**File:** `client/src/pages/CreateEventStepwise.tsx`
+**Severity:** Medium
+
+**Problem:** Computed values like `hasPaidTickets`, `isFormValid`, and `totalCapacity` are recalculated as plain functions on every render. The form has many `useState` slices, so any state change re-runs all computations regardless of whether the relevant slice changed.
+
+**Fix:** Wrap all derived state in `useMemo`:
+
+```tsx
+const hasPaidTickets = useMemo(
+  () => formData.ticketTypes?.some(t => t.price > 0) ?? false,
+  [formData.ticketTypes],
+);
+
+const totalCapacity = useMemo(
+  () => formData.ticketTypes?.reduce((sum, t) => sum + (t.capacity ?? 0), 0) ?? 0,
+  [formData.ticketTypes],
+);
+
+const isFormValid = useMemo(
+  () => Boolean(formData.title && formData.startDate && formData.venue),
+  [formData.title, formData.startDate, formData.venue],
+);
+```
+
+---
+
+### 26.10 Frontend: Rate Limiting Missing on Payment Initialization
+
+**File:** `server/src/routes/payment.routes.ts`
+**Severity:** Medium
+
+**Problem:** The global rate limiter (200 req / 15 min) is the only protection on `/payment/initialize`. An attacker can spam payment creation to probe card numbers, inflate platform fee calculations, or DoS the payment processor.
+
+**Fix:** Add a tighter endpoint-specific limiter:
+
+```typescript
+import rateLimit from 'express-rate-limit';
+
+const paymentInitLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,                   // 10 payment initiations per IP per hour
+  message: { success: false, message: 'Too many payment attempts. Please try again later.' },
+  keyGenerator: (req) => req.user?.id ?? req.ip, // per-user when authenticated
+});
+
+router.post('/initialize', authenticate, paymentInitLimiter, PaymentController.initializePayment);
+```
+
+---
+
+### 26.11 Mobile: Future.wait() Has No Error Recovery in Dashboard Controllers
+
+**Files:** `eventknit_mobile/lib/presentation/admin/controllers/` (multiple controllers)
+**Severity:** High
+
+**Problem:** Dashboard controllers call `await Future.wait([loadA(), loadB(), loadC()])` without error handling. If any single future throws, the entire `Future.wait` rejects, leaving all other data unloaded and the controller in an indeterminate error state.
+
+```dart
+// CURRENT (all-or-nothing):
+await Future.wait([
+  loadEvents(),
+  loadAnalytics(),
+  loadPendingApprovals(),
+]);
+```
+
+**Fix:** Allow partial success with per-future error handling:
+
+```dart
+await Future.wait([
+  loadEvents().catchError((e) {
+    logger.e('Failed to load events', error: e);
+    return <dynamic>[];
+  }),
+  loadAnalytics().catchError((e) {
+    logger.e('Failed to load analytics', error: e);
+    return null;
+  }),
+  loadPendingApprovals().catchError((e) {
+    logger.e('Failed to load pending approvals', error: e);
+    return <dynamic>[];
+  }),
+]);
+```
+
+This ensures sections of the dashboard that did load are shown rather than a full blank screen.
+
+---
+
+### 26.12 Mobile: No Network Connectivity Listener in Controllers
+
+**Files:** `eventknit_mobile/lib/controllers/` (all feature controllers)
+**Severity:** Medium
+
+**Problem:** Controllers have no awareness of network state changes. A user who goes offline mid-session gets cryptic API error messages rather than a clear "You are offline" message. Coming back online does not trigger a refresh.
+
+**Fix:** Add a connectivity listener to the base controller or `AppBindings`:
+
+```dart
+// In core/bindings/app_bindings.dart:
+Get.lazyPut(() => ConnectivityService(), fenix: true);
+
+// In a shared BaseController:
+abstract class BaseController extends GetxController {
+  @override
+  void onInit() {
+    super.onInit();
+    Get.find<ConnectivityService>().isConnected.listen((isOnline) {
+      if (isOnline) onReconnected();
+    });
+  }
+
+  void onReconnected() {} // override in subclasses to refresh data
+}
+```
+
+The `connectivity_plus` package is already listed as a dependency in the mobile project.
+
+---
+
+### 26.13 Mobile: Ticket Cache Errors Are Silently Swallowed
+
+**File:** `eventknit_mobile/lib/controllers/tickets_controller.dart` (around line 173)
+**Severity:** Medium
+
+**Problem:** `_cacheTicketsInBackground()` is fire-and-forget with no error callback. If the local SQLite database is corrupted or full, offline mode will silently fail and users will scan with stale or missing data.
+
+```dart
+// CURRENT (silent failure):
+unawaited(_offlineTicketService.cacheTickets(tickets, userId));
+```
+
+**Fix:**
+
+```dart
+unawaited(
+  _offlineTicketService.cacheTickets(tickets, userId).onError((e, st) {
+    logger.e('Failed to cache tickets for offline use', error: e, stackTrace: st);
+    // Surface a non-blocking warning so the organizer knows offline mode may be unreliable
+    Get.snackbar(
+      'Offline Cache Warning',
+      'Ticket data could not be saved for offline use.',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 4),
+    );
+  }),
+);
+```
+
+---
+
+### Summary: April 2026 Audit Findings
+
+| # | Severity | Area | File | Impact |
+|---|----------|------|------|--------|
+| 26.1 | Critical | Backend perf | `checkpoint.service.ts:841` | N+1 DB queries per request |
+| 26.2 | Critical | Backend perf | `push-notification.service.ts:298` | Sequential DB + send per recipient |
+| 26.3 | High | DB indexes | `schema.prisma` | Full table scans on check-in queries |
+| 26.4 | High | Backend perf | `inventory.service.ts:416` | Double DB query on cache miss |
+| 26.5 | High | Caching | `admin-platform-analytics.service.ts:88` | Uncached full-table aggregation |
+| 26.6 | Medium | API design | `event.service.ts:672` | Over-fetching on all event queries |
+| 26.7 | Medium | Resilience | `payment.controller.ts` | Webhooks never retried on failure |
+| 26.8 | High | Frontend | `App.tsx` | No error isolation, full app crashes |
+| 26.9 | Medium | Frontend perf | `CreateEventStepwise.tsx` | Derived state recalculated every render |
+| 26.10 | Medium | Security | `payment.routes.ts` | No per-endpoint payment rate limit |
+| 26.11 | High | Mobile | `admin/controllers/*.dart` | Dashboard blanks on any single API failure |
+| 26.12 | Medium | Mobile UX | `controllers/*.dart` | No offline/online state awareness |
+| 26.13 | Medium | Mobile resilience | `tickets_controller.dart:173` | Silent offline cache failures |
+
+**Quick wins (1-2 hours each):** 26.3, 26.5, 26.7, 26.10
+**Medium effort (half day each):** 26.1, 26.2, 26.4, 26.6, 26.8, 26.9
+**Requires coordination (mobile + backend):** 26.11, 26.12, 26.13

@@ -38,6 +38,7 @@ This technical documentation provides an in-depth look at the EventKnit ticketin
 19. [Performance Optimization](#performance-optimization)
 20. [Security Best Practices](#security-best-practices)
 21. [Company Documents](#company-documents)
+22. [Forms & Participants](#forms--participants)
 
 ---
 
@@ -2743,6 +2744,283 @@ Service tests are in `server/tests/company-documents.service.test.ts` (18 tests)
 | `uploadFile` | PDF uses `raw` resource_type, image uses `image` resource_type |
 | `update` | Updates metadata, throws NotFoundError, throws ValidationError for FILE + externalUrl |
 | `delete` | Cloudinary cleanup called, still deletes DB if Cloudinary fails, throws NotFoundError |
+
+---
+
+## Forms & Participants
+
+### Overview
+
+The Forms & Participants system provides a configurable data-collection engine for organizer and admin use. It has three primary models: `EventForm` (the questionnaire), `FormResponse` (a single submission), and `EventParticipant` (a confirmed event participant). A form response can automatically produce a participant record when approved, removing the need for manual data entry.
+
+### Database Schema
+
+```prisma
+enum ParticipantType  { SPEAKER SPONSOR EXHIBITOR PERFORMER VOLUNTEER CUSTOM }
+enum ParticipantStatus { INVITED SUBMITTED UNDER_REVIEW APPROVED REJECTED WAITLISTED }
+enum FormPurpose { SPEAKER_APPLICATION SPONSOR_APPLICATION EXHIBITOR_APPLICATION
+                   PERFORMER_APPLICATION VOLUNTEER_APPLICATION GENERAL_INQUIRY CUSTOM }
+enum FormStatus        { DRAFT ACTIVE CLOSED ARCHIVED }
+enum FormResponseStatus { SUBMITTED UNDER_REVIEW APPROVED REJECTED WAITLISTED }
+
+model EventParticipant {
+  id             String            @id @default(uuid())
+  eventId        String
+  event          Event             @relation("EventParticipants", ...)
+  userId         String?
+  user           User?             @relation("UserParticipants", ...)
+  type           ParticipantType
+  status         ParticipantStatus @default(INVITED)
+  name           String
+  email          String
+  phone          String?
+  company        String?
+  bio            String?           @db.Text
+  website        String?
+  linkedin       String?
+  twitter        String?
+  avatarUrl      String?
+  metadata       Json?             // Type-specific extras (speaker topics, sponsor tier, etc.)
+  customType     String?
+  formResponseId String?           @unique
+  formResponse   FormResponse?     @relation("ParticipantFormResponse", ...)
+  addedById      String?
+  reviewedById   String?
+  reviewedAt     DateTime?
+  reviewNotes    String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  // indexes: eventId, userId, type, status, email, createdAt
+}
+
+model EventForm {
+  id                    String           @id @default(uuid())
+  eventId               String?
+  event                 Event?           @relation("EventForms", ...)
+  createdById           String
+  title                 String
+  description           String?          @db.Text
+  purpose               FormPurpose      @default(CUSTOM)
+  customPurpose         String?
+  targetParticipantType ParticipantType?
+  status                FormStatus       @default(DRAFT)
+  questions             Json             @default("[]")  // FormQuestion[]
+  shareToken            String           @unique @default(uuid())
+  isPublic              Boolean          @default(false)
+  allowMultipleResponses Boolean         @default(false)
+  maxResponses          Int?
+  closesAt              DateTime?
+  notifyOnSubmission    Boolean          @default(true)
+  notificationEmail     String?
+  responses             FormResponse[]   @relation("FormResponses")
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  // indexes: eventId, createdById, status, purpose, shareToken
+}
+
+model FormResponse {
+  id              String             @id @default(uuid())
+  formId          String
+  form            EventForm          @relation("FormResponses", ...)
+  respondentId    String?
+  respondent      User?              @relation("UserFormResponses", ...)
+  respondentEmail String
+  respondentName  String?
+  status          FormResponseStatus @default(SUBMITTED)
+  answers         Json               @default("{}")  // Record<questionId, value>
+  reviewedById    String?
+  reviewedAt      DateTime?
+  reviewNotes     String?            @db.Text
+  participant     EventParticipant?  @relation("ParticipantFormResponse")
+  submittedAt     DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  // indexes: formId, respondentId, respondentEmail, status, submittedAt
+}
+```
+
+### Shared Question Type
+
+The `FormQuestion` type is defined in `server/src/types/form-question.types.ts` and shared by both the Forms system and the Survey system:
+
+```typescript
+export type FormQuestionType =
+  | 'short_text' | 'long_text' | 'email' | 'phone' | 'number' | 'date' | 'url'
+  | 'single_choice' | 'multiple_choice' | 'dropdown'
+  | 'rating' | 'scale' | 'file_upload' | 'section_break';
+
+export interface FormQuestion {
+  id: string;
+  type: FormQuestionType;
+  label: string;
+  helpText?: string;
+  placeholder?: string;
+  required: boolean;
+  order: number;
+  options?: { value: string; label: string }[];   // for choice types
+  minValue?: number; maxValue?: number;            // for rating/scale
+  minLabel?: string; maxLabel?: string;            // for scale
+  sectionTitle?: string; sectionDescription?: string; // for section_break
+}
+```
+
+Questions are stored as a `Json` array in the database. The order field is used to sort questions on render; it is re-indexed sequentially whenever the form builder moves, adds, or removes a question.
+
+### Architecture
+
+Follows the standard Route -> Controller -> Service pattern. Public endpoints skip the `authenticate` middleware; protected endpoints require `ORGANIZER` role minimum.
+
+```
+GET /api/v1/forms/public/:shareToken         (no auth)
+POST /api/v1/forms/public/:shareToken/submit (no auth; attaches user if token present)
+
+GET/POST/PATCH/DELETE /api/v1/forms/*
+  authenticate middleware
+  requireMinRole(ORGANIZER)
+  FormController -> FormService -> prisma
+
+GET/POST/PATCH/DELETE /api/v1/events/:eventId/participants/*
+  authenticate middleware
+  requireMinRole(ORGANIZER)
+  ParticipantController -> ParticipantService -> prisma
+```
+
+### Service Layer
+
+#### `FormService` (`server/src/services/form.service.ts`)
+
+| Method | Behaviour |
+|--------|-----------|
+| `listForms(opts)` | Paginated list with optional `status`, `purpose`, `eventId` filters |
+| `getFormById(id)` | Throws `NotFoundError` if not found |
+| `getFormByShareToken(token)` | Throws `NotFoundError` if token unknown; `ValidationError` if status is not `ACTIVE` or `closesAt` is past |
+| `createForm(data, userId)` | Validates event exists if `eventId` provided; requires `customPurpose` when `purpose = CUSTOM` |
+| `updateForm(id, data)` | Throws `ValidationError` if form is `ARCHIVED`; serialises `questions` as `InputJsonValue` |
+| `deleteForm(id)` | Cascades to responses via DB `onDelete: Cascade` |
+| `listResponses(formId, opts)` | Paginated; filterable by `status` |
+| `submitResponse(shareToken, data)` | Calls `getFormByShareToken` first (validates active + not closed); enforces `maxResponses` cap; enforces duplicate-email guard when `allowMultipleResponses = false` |
+| `reviewResponse(id, status, userId, notes?, createParticipant?)` | Updates status; if `APPROVED` and `createParticipant = true` and `targetParticipantType` is set and no participant record exists yet, auto-creates `EventParticipant` |
+
+#### `ParticipantService` (`server/src/services/participant.service.ts`)
+
+| Method | Behaviour |
+|--------|-----------|
+| `list(eventId, opts)` | Paginated; filterable by `type`, `status`, `search` (name/email/company) |
+| `getById(eventId, id)` | Scoped to event; throws `NotFoundError` |
+| `create(eventId, data, addedById)` | Verifies event exists; requires `customType` when `type = CUSTOM`; sets initial `status = INVITED` |
+| `update(eventId, id, data)` | Validates `customType` not empty if existing type is `CUSTOM` |
+| `review(eventId, id, status, userId, notes?)` | Accepts only `APPROVED`, `REJECTED`, `WAITLISTED`, `UNDER_REVIEW`; rejects `INVITED`, `SUBMITTED` |
+| `delete(eventId, id)` | Hard delete; related `FormResponse.participant` set to null via `SetNull` |
+
+### Auto-Participant Creation
+
+When a `FormResponse` is approved with `createParticipant = true`:
+
+```typescript
+if (
+  status === FormResponseStatus.APPROVED &&
+  createParticipant &&
+  response.form.targetParticipantType &&
+  response.form.eventId &&
+  !response.participant           // idempotency guard
+) {
+  await prisma.eventParticipant.create({
+    data: {
+      eventId: response.form.eventId,
+      type: response.form.targetParticipantType,
+      status: ParticipantStatus.APPROVED,
+      name: response.respondentName ?? answers['name'] ?? response.respondentEmail,
+      email: response.respondentEmail,
+      userId: response.respondentId,
+      formResponseId: response.id,
+      reviewedById,
+      reviewedAt: new Date(),
+    },
+  });
+}
+```
+
+The `formResponseId` unique constraint on `EventParticipant` guarantees at most one participant is ever created from a single response, even if the review endpoint is called concurrently.
+
+### Public Form Submission Flow
+
+```
+Browser: GET /f/:shareToken
+  -> PublicFormPage.tsx
+  -> getPublicForm(shareToken)      (GET /api/v1/forms/public/:shareToken)
+  <- { form: { title, description, questions, event } }
+
+User fills form and submits:
+  -> submitPublicForm(shareToken, { respondentEmail, respondentName, answers })
+     (POST /api/v1/forms/public/:shareToken/submit)
+  <- { response: { id, submittedAt } }
+```
+
+The backend optional-auth middleware on submit attempts to decode a JWT cookie if present. If valid, `respondentId` is set to link the response to an existing user account. If absent or invalid, the auth error is swallowed and the submission proceeds as anonymous.
+
+### Frontend Components
+
+| File | Purpose |
+|------|---------|
+| `client/src/components/forms/FormBuilder.tsx` | Drag-order question editor used by admin/organizer when creating or editing a form |
+| `client/src/components/forms/FormRenderer.tsx` | Renders live form questions for public submission; exports `validateFormAnswers()` |
+| `client/src/lib/form-api.ts` | All form and response API calls |
+| `client/src/lib/participant-api.ts` | All participant CRUD API calls |
+| `client/src/pages/admin/forms/AdminFormsPage.tsx` | Admin forms list with create/delete modals |
+| `client/src/pages/admin/forms/AdminFormDetailPage.tsx` | Edit questions, review responses, manage settings |
+| `client/src/pages/public/PublicFormPage.tsx` | Zero-auth public submission page at `/f/:shareToken` |
+
+### Route Registration
+
+```typescript
+// server/src/app.ts
+app.use('/api/v1/events/:eventId/participants', participantRoutes);
+app.use('/api/v1/forms', formRoutes);
+
+// server/src/routes/form.routes.ts
+router.get('/public/:shareToken',         FormController.getPublicForm);     // no auth
+router.post('/public/:shareToken/submit', optionalAuth, FormController.submitPublicForm);
+
+router.use(authenticate);
+router.use(requireMinRole(UserRole.ORGANIZER));
+router.get('/',                                    FormController.listForms);
+router.post('/',                                   FormController.createForm);
+router.get('/:id',                                 FormController.getFormById);
+router.patch('/:id',                               FormController.updateForm);
+router.delete('/:id',                              FormController.deleteForm);
+router.get('/:id/responses',                       FormController.listResponses);
+router.get('/:id/responses/:responseId',           FormController.getResponseById);
+router.patch('/:id/responses/:responseId/review',  FormController.reviewResponse);
+
+// server/src/routes/participant.routes.ts  (mergeParams: true)
+router.use(authenticate);
+router.use(requireMinRole(UserRole.ORGANIZER));
+router.get('/',                       ParticipantController.list);
+router.post('/',                      ParticipantController.create);
+router.get('/:participantId',         ParticipantController.getById);
+router.patch('/:participantId',       ParticipantController.update);
+router.patch('/:participantId/review', ParticipantController.review);
+router.delete('/:participantId',      ParticipantController.delete);
+```
+
+### Testing
+
+Unit tests use Vitest with all Prisma calls mocked via `vi.mock('../src/config/database', ...)`.
+
+| File | Tests | Coverage |
+|------|-------|---------|
+| `tests/participant.service.test.ts` | 22 | list (5), getById (2), create (4), update (3), review (5), delete (2) |
+| `tests/form.service.test.ts` | 33 | listForms (5), getFormById (2), getFormByShareToken (4), createForm (4), updateForm (4), deleteForm (2), listResponses (2), submitResponse (4), reviewResponse (6) |
+
+Key scenarios covered:
+
+- Pagination and all filter combinations
+- `NotFoundError` on missing resources
+- `ValidationError` for CUSTOM type without label, archived form edits, invalid review statuses
+- Duplicate-email guard respects `allowMultipleResponses` flag
+- `maxResponses` cap enforced before creating response
+- `closesAt` expiry check in `getFormByShareToken`
+- Auto-participant creation on approval (correct data, idempotency guard, skips when `createParticipant = false`)
+- `SUBMITTED` status rejected as a review action
 
 ---
 

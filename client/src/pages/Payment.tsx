@@ -26,6 +26,7 @@ interface TicketType {
 interface PaymentData {
   registrationId: string;
   eventId: string;
+  eventSlug?: string;
   eventTitle: string;
   eventDate?: string;
   eventLocation?: string;
@@ -170,7 +171,7 @@ const PaymentPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <CheckoutHeader backLink={`/event/${paymentData.eventId}/register`} backLabel="Back to Registration" eventTitle={eventTitle} />
+      <CheckoutHeader backLink={`/event/${paymentData.eventSlug ?? paymentData.eventId}/register`} backLabel="Back to Registration" eventTitle={eventTitle} />
 
       <main className="flex-1 pt-6 pb-10 bg-gradient-to-b from-primary/5 via-background to-muted/10">
         <div className="max-w-4xl mx-auto px-4">

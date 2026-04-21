@@ -22,6 +22,7 @@ const FALLBACK_LIMIT = 5;
  */
 function eventToFeatured(event: {
   id: string;
+  slug?: string | null;
   title: string;
   image?: string | null;
   imageFocalX?: number | null;
@@ -41,6 +42,7 @@ function eventToFeatured(event: {
     id: `auto-${event.id}`,
     type: "EVENT" as const,
     eventId: event.id,
+    slug: event.slug,
     title: event.title,
     image: event.image || "",
     imageFocalX: event.imageFocalX,
@@ -183,7 +185,7 @@ export const Hero = () => {
 
   const handleViewEvent = () => {
     if (currentEvent.type === "EVENT" && currentEvent.eventId) {
-      navigate(`/event/${currentEvent.eventId}`);
+      navigate(`/event/${currentEvent.slug ?? currentEvent.eventId}`);
     } else if (currentEvent.type === "IMAGE" && currentEvent.linkUrl) {
       if (currentEvent.linkUrl.startsWith("http")) {
         window.open(currentEvent.linkUrl, "_blank");

@@ -16,7 +16,7 @@ export interface EventReport {
   reviewNotes: string | null;
   createdAt: string;
   updatedAt: string;
-  event: { id: string; title: string; organizerId: string };
+  event: { id: string; slug?: string | null; title: string; organizerId: string };
   reporter: { id: string; firstName: string | null; lastName: string | null; email: string };
 }
 

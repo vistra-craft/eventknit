@@ -211,4 +211,8 @@ export const DEFAULT_KYC_REQUIREMENTS = {
     { documentType: 'PESAPAL_AUTHORIZATION', description: 'Letter Authorizing Entry into Business with Pesapal', isRequired: true },
     { documentType: 'BANK_STATEMENT', description: 'Copy of Cancelled Cheque or Certified Bank Statements or Certified Letter from Bank', isRequired: true },
   ],
+  OTHER: [
+    { documentType: 'NATIONAL_ID', description: 'National ID, Passport, Alien ID, or Military ID', isRequired: true },
+    { documentType: 'KRA_PIN', description: 'KRA PIN Certificate', isRequired: true },
+  ],
 };

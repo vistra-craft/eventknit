@@ -181,7 +181,7 @@ export default function EventReportsTab() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <a href={`/event/${report.eventId}`} target="_blank" rel="noopener noreferrer">
+                            <a href={`/event/${report.event.slug ?? report.eventId}`} target="_blank" rel="noopener noreferrer">
                               <ExternalLink className="h-4 w-4 mr-2" />
                               View Event
                             </a>

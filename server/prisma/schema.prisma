@@ -53,6 +53,7 @@ enum OrganizerEntityType {
   DENOMINATIONAL_CHURCH
   PARTNERSHIP_PROFESSIONAL
   TRUST
+  OTHER
 }
 
 enum KYCDocumentType {
@@ -267,6 +268,10 @@ model User {
   profileCompletedAt    DateTime?
   eventPreferences      Json? // Store event types, organization type, events per year, etc.
 
+  // Suspension tracking
+  suspendedAt      DateTime?
+  suspensionReason String?
+
   // Audit fields
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -408,6 +413,13 @@ model User {
   approvalMessages   EventApprovalMessage[] @relation("OrganizerApprovalMessages")
   // Managed events administered by this admin
   adminManagedEvents Event[]             @relation("AdminManagedEvents")
+  // Participants & Forms
+  participantsAsParticipant EventParticipant[] @relation("UserParticipants")
+  participantsAdded         EventParticipant[] @relation("AddedParticipants")
+  participantsReviewed      EventParticipant[] @relation("ReviewedParticipants")
+  formsCreated              EventForm[]        @relation("FormCreator")
+  formResponses             FormResponse[]     @relation("UserFormResponses")
+  formResponsesReviewed     FormResponse[]     @relation("ReviewedFormResponses")
 
   @@index([email])
   @@index([role])
@@ -930,6 +942,9 @@ model Event {
   reports                EventReport[]             @relation("EventReports")
   // Approval Messages
   approvalMessages       EventApprovalMessage[]    @relation("EventApprovalMessages")
+  // Participants & Forms
+  participants           EventParticipant[]        @relation("EventParticipants")
+  forms                  EventForm[]               @relation("EventForms")
 
   // Seating configuration
   hasSeatingMap  Boolean      @default(false) // Whether this event uses a seat map
@@ -5881,5 +5896,196 @@ model SurveyResponse {
   @@index([eventId])
   @@index([attendeeId])
   @@index([overallRating])
+  @@index([submittedAt])
+}
+
+// ============================================================================
+// Participants & Forms System
+// ============================================================================
+
+enum ParticipantType {
+  SPEAKER
+  SPONSOR
+  EXHIBITOR
+  PERFORMER
+  VOLUNTEER
+  CUSTOM
+}
+
+enum ParticipantStatus {
+  INVITED
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  WAITLISTED
+}
+
+enum FormPurpose {
+  SPEAKER_APPLICATION
+  SPONSOR_APPLICATION
+  EXHIBITOR_APPLICATION
+  PERFORMER_APPLICATION
+  VOLUNTEER_APPLICATION
+  GENERAL_INQUIRY
+  CUSTOM
+}
+
+enum FormStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum FormResponseStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  WAITLISTED
+}
+
+/// A named participant in an event (speaker, sponsor, exhibitor, performer, volunteer, or custom).
+/// Can be sourced manually by organizer/admin or via a submitted EventForm response.
+model EventParticipant {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation("EventParticipants", fields: [eventId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation("UserParticipants", fields: [userId], references: [id], onDelete: SetNull)
+
+  type   ParticipantType
+  status ParticipantStatus @default(INVITED)
+
+  // Core identity (always populated — denormalized for performance)
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  bio       String? @db.Text
+  website   String?
+  linkedin  String?
+  twitter   String?
+  avatarUrl String?
+
+  // Type-specific extra data
+  // Speaker: { title, sessionIds, topics }
+  // Sponsor:  { level, logoUrl }
+  // Exhibitor: { booth, category, logoUrl }
+  // Performer: { genre, setDuration, technicalRider }
+  // Volunteer: { skills, availability, shift }
+  metadata Json?
+
+  // Custom type label (when type = CUSTOM)
+  customType String?
+
+  // Linked form response that created this record (null if manually added)
+  formResponseId String?       @unique
+  formResponse   FormResponse? @relation("ParticipantFormResponse", fields: [formResponseId], references: [id], onDelete: SetNull)
+
+  // Who added/invited this participant
+  addedById String?
+  addedBy   User?   @relation("AddedParticipants", fields: [addedById], references: [id], onDelete: SetNull)
+
+  // Review
+  reviewedById String?
+  reviewedBy   User?     @relation("ReviewedParticipants", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  reviewNotes  String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+}
+
+/// A configurable form created by an organizer or admin to collect participant/respondent data.
+/// Forms can be linked to an event or standalone; public access is via /f/:shareToken.
+model EventForm {
+  id      String  @id @default(uuid())
+  eventId String?
+  event   Event?  @relation("EventForms", fields: [eventId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User   @relation("FormCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  title       String
+  description String? @db.Text
+
+  purpose       FormPurpose @default(CUSTOM)
+  customPurpose String?     // Free-text description when purpose = CUSTOM
+
+  targetParticipantType ParticipantType? // Which participant type this form targets
+
+  status FormStatus @default(DRAFT)
+
+  // Questions — JSON array of FormQuestion objects
+  // [{ id, type, label, required, options?, placeholder?, helpText?, order }]
+  questions Json @default("[]")
+
+  // Public URL token — /f/:shareToken
+  shareToken String  @unique @default(uuid())
+  isPublic   Boolean @default(false)
+
+  // Submission settings
+  allowMultipleResponses Boolean   @default(false)
+  maxResponses           Int?
+  closesAt               DateTime?
+
+  // Notifications
+  notifyOnSubmission Boolean @default(true)
+  notificationEmail  String? // Defaults to organizer email if null
+
+  responses FormResponse[] @relation("FormResponses")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([createdById])
+  @@index([status])
+  @@index([purpose])
+  @@index([shareToken])
+}
+
+/// A single respondent's submission to an EventForm.
+model FormResponse {
+  id     String    @id @default(uuid())
+  formId String
+  form   EventForm @relation("FormResponses", fields: [formId], references: [id], onDelete: Cascade)
+
+  respondentId    String?
+  respondent      User?   @relation("UserFormResponses", fields: [respondentId], references: [id], onDelete: SetNull)
+  respondentEmail String
+  respondentName  String?
+
+  status FormResponseStatus @default(SUBMITTED)
+
+  // Answers map: { "question-id": value | value[] }
+  answers Json @default("{}")
+
+  // Review
+  reviewedById String?
+  reviewedBy   User?     @relation("ReviewedFormResponses", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  reviewNotes  String?   @db.Text
+
+  // Participant record created from this response (after approval)
+  participant EventParticipant? @relation("ParticipantFormResponse")
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([formId])
+  @@index([respondentId])
+  @@index([respondentEmail])
+  @@index([status])
   @@index([submittedAt])
 }
