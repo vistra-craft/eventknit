@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Eye, EyeOff, ExternalLink, Copy, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Save, ExternalLink, Copy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,7 +27,7 @@ import {
   type FormResponseStatus,
   type FormQuestion,
 } from '@/lib/form-api';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/useToast';
 import { cn } from '@/lib/utils';
 
 const STATUS_COLORS: Record<FormResponseStatus, string> = {

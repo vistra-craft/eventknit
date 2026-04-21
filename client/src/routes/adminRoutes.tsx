@@ -165,6 +165,8 @@ const SUPPORT_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SUPPORT];
 
 const TELLER_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TELLER];
 
+const ADMIN_STAFF_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SUPPORT];
+
 /**
  * Admin route definitions
  * All routes require admin-related roles

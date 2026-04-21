@@ -232,6 +232,8 @@ export interface RegisterEventResponse {
       status: string;
       ticketType?: string;
       quantity?: number;
+      totalAmount?: number | string;
+      paymentStatus?: string | null;
       createdAt: string;
     };
   };

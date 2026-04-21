@@ -41,7 +41,7 @@ import {
   type FormPurpose,
   type FormQuestion,
 } from '@/lib/form-api';
-import { useToast } from '@/components/ui/toaster';
+import { useToast } from '@/hooks/useToast';
 
 const PURPOSE_LABELS: Record<FormPurpose, string> = {
   SPEAKER_APPLICATION: 'Speaker Application',

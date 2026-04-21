@@ -30,7 +30,6 @@ const TransferAccept = lazy(() => import('../pages/TransferAccept'));
 const TicketViewPage = lazy(() => import('../pages/user/TicketViewPage'));
 const EventSurveyPage = lazy(() => import('../pages/EventSurveyPage'));
 const PaymentCallback = lazy(() => import('../pages/PaymentCallback'));
-const Confirmation = lazy(() => import('../pages/Confirmation'));
 const NotFound = lazy(() => import('../pages/NotFound'));
 
 /**
