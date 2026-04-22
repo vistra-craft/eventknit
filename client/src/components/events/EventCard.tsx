@@ -78,7 +78,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   const timeStr = formatSingleTime(startTime);
 
   const isFree = price === "Free" || price === "0" || price === "0.00";
-  const imgHeight = isFeatured ? "h-72 sm:h-80" : "h-56 sm:h-64";
+  const imgHeight = isFeatured ? "h-72 sm:h-80" : "h-48 sm:h-56";
   const titleSize = isFeatured ? "text-base sm:text-lg" : "text-sm sm:text-base";
 
   const priceDisplay = isFree

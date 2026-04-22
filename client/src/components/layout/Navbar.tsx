@@ -10,6 +10,7 @@ import { useRoleView } from "@/contexts/RoleViewContext";
 import { UserRole } from "@/types/auth";
 import { useToast } from "@/hooks/useToast";
 import { EASE } from "@/lib/animation-constants";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 
 interface NavbarProps {
   transparent?: boolean;
@@ -39,7 +40,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   }, [isAuthenticated, isLoading, refreshProfile, user]);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    const handleScroll = () => setIsScrolled(window.scrollY > 400);
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
@@ -115,9 +116,13 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
 
   const isTransparentMode = transparent && !isScrolled;
 
-  const navBg = isTransparentMode
-    ? "bg-transparent border-transparent"
-    : "bg-background/95 backdrop-blur-xl border-border shadow-sm";
+  // Floating pill: gains margin + rounded corners after scrolling past the hero.
+  // Non-scrolled: full-width bar (transparent over hero, or solid on other pages).
+  const pillStyle = isScrolled
+    ? "mx-6 lg:mx-16 xl:mx-24 mt-3 rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-elevated"
+    : isTransparentMode
+      ? "border-b border-transparent bg-transparent"
+      : "border-b border-border bg-background/95 backdrop-blur-xl shadow-sm";
 
   const textColor = isTransparentMode
     ? "text-white/90 hover:text-white"
@@ -126,6 +131,10 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   const textColorHover = isTransparentMode
     ? "hover:bg-white/10"
     : "hover:bg-muted";
+
+  const mobileMenuStyle = isScrolled
+    ? "mx-6 lg:mx-16 xl:mx-24 rounded-b-2xl border border-t-0 border-border bg-background overflow-hidden"
+    : "border-t border-border bg-background overflow-hidden";
 
   // ── Mobile menu items ──────────────────────────────────────
 
@@ -140,21 +149,28 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
   }
 
   return (
-    <nav className={`fixed left-0 right-0 top-0 z-[9999] border-b transition-all duration-500 ${navBg}`}>
-      {/* Dark gradient scrim — ensures text reads on any hero image, including white */}
-      {isTransparentMode && (
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-transparent pointer-events-none" />
-      )}
-      <div className={`relative mx-auto px-6 lg:px-8 transition-all duration-500 ${isScrolled ? "container" : ""}`}>
+    <nav className="fixed left-0 right-0 top-0 z-[9999]">
+      {/* Pill / bar — this is the visual navbar surface */}
+      <div className={`relative overflow-hidden transition-all duration-500 ${pillStyle}`}>
+        {/* Dark gradient scrim — ensures text reads on any hero image */}
+        {isTransparentMode && (
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-transparent pointer-events-none" />
+        )}
+        <div className="relative px-6 lg:px-8">
         <div className="flex items-center h-[72px] justify-between">
 
           {/* Logo */}
+          {/* TODO: once the final logo asset is ready, verify it renders in white
+              when isTransparentMode is true — if it uses text-foreground or a dark
+              fill it will disappear over the dark hero image. May need a variant prop
+              or a CSS filter (invert) to force white in transparent mode. */}
           <div className="flex-shrink-0 cursor-pointer" onClick={() => navigate("/")}>
             <Logo to={undefined} size={isScrolled ? "sm" : "default"} />
           </div>
 
           {/* Desktop actions */}
           <div className="hidden md:flex items-center gap-2">
+            <ThemeToggle className={isTransparentMode ? "text-white/90 hover:bg-white/10" : ""} />
             <button
               onClick={handleCreateEvent}
               className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${textColor} ${textColorHover} hover:text-orange-500 dark:hover:text-orange-400`}
@@ -188,8 +204,9 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
             )}
           </div>
 
-          {/* Mobile menu toggle */}
-          <div className="md:hidden">
+          {/* Mobile: theme toggle + hamburger */}
+          <div className="md:hidden flex items-center gap-1">
+            <ThemeToggle className={isTransparentMode ? "text-white/90 hover:bg-white/10" : ""} />
             <Button
               variant="ghost"
               size="icon"
@@ -200,17 +217,18 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
             </Button>
           </div>
         </div>
+        </div>
+
+        {/* Scroll progress bar — inside pill so it respects rounded corners */}
+        {isScrolled && (
+          <motion.div
+            className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-primary to-orange-500"
+            style={{ width: progressWidth }}
+          />
+        )}
       </div>
 
-      {/* Scroll progress bar */}
-      {isScrolled && (
-        <motion.div
-          className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-primary to-orange-500"
-          style={{ width: progressWidth }}
-        />
-      )}
-
-      {/* Animated mobile menu */}
+      {/* Animated mobile menu — attaches below pill when floating */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -218,9 +236,9 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: EASE }}
-            className="md:hidden bg-background border-t border-border overflow-hidden"
+            className={`md:hidden ${mobileMenuStyle}`}
           >
-            <div className="container mx-auto px-6 lg:px-8 py-3 space-y-1">
+            <div className="px-6 lg:px-8 py-3 space-y-1">
               {mobileItems.map((item, i) => (
                 <motion.button
                   key={item.label}

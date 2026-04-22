@@ -26,6 +26,7 @@ const PublicEventForm = lazy(() => import('../pages/PublicEventForm'));
 const FeedbackPage = lazy(() => import('../pages/FeedbackPage'));
 const ExhibitorDetails = lazy(() => import('../pages/user/ExhibitorDetails'));
 const Support = lazy(() => import('../pages/Support'));
+const Contact = lazy(() => import('../pages/Contact'));
 const TransferAccept = lazy(() => import('../pages/TransferAccept'));
 const TicketViewPage = lazy(() => import('../pages/user/TicketViewPage'));
 const EventSurveyPage = lazy(() => import('../pages/EventSurveyPage'));
@@ -121,10 +122,16 @@ export const publicRoutes: RouteConfig[] = [
     element: createElement(ExhibitorDetails),
   },
 
-  // Support
+  // Support (legacy — keep for inbound links)
   {
     path: 'support',
     element: createElement(Support),
+  },
+
+  // Contact
+  {
+    path: 'contact',
+    element: createElement(Contact),
   },
 
   // Public ticket view (works with or without auth, uses email verification)
