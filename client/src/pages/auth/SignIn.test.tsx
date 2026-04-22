@@ -74,7 +74,8 @@ describe('SignIn', () => {
 
     const emailInput = screen.getByLabelText(/email/i);
     const passwordInput = screen.getByLabelText(/password/i);
-    const submitButton = screen.getByRole('button', { name: /log in/i });
+    const submitButton = screen.getAllByRole('button', { name: /sign in/i })
+      .find(btn => btn.getAttribute('type') === 'submit')!;
 
     await user.type(emailInput, 'test@example.com');
     await user.type(passwordInput, 'password123');

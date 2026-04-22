@@ -16,9 +16,6 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
-        configure: (proxy) => {
-          proxy.on('error', () => {}); // Suppress ECONNRESET noise during HMR
-        },
       },
       '/socket.io': {
         target: 'http://localhost:3001',
