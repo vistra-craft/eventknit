@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Lottie from 'lottie-react';
+import loginAnimation from '@/assets/lottie/login.json';
 import {
   ArrowRight,
   Ticket,
@@ -79,14 +80,6 @@ const ROLES = [
 // ─── Decorative right panel ──────────────────────────────────────────────────
 
 const RightPanel = () => {
-  const [lottieData, setLottieData] = useState<object | null>(null);
-
-  useEffect(() => {
-    fetch('/lottie/login.json')
-      .then((res) => res.json())
-      .then(setLottieData)
-      .catch(() => {});
-  }, []);
 
   return (
     <div className="hidden lg:flex lg:w-[46%] relative overflow-hidden bg-background border-l border-border items-center justify-center">
@@ -129,16 +122,14 @@ const RightPanel = () => {
 
       {/* Central content */}
       <div className="relative z-10 flex flex-col items-center px-10 text-center gap-6 w-full max-w-sm">
-        {lottieData && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.3 }}
-            className="w-full max-w-xs"
-          >
-            <Lottie animationData={lottieData} loop className="w-full" />
-          </motion.div>
-        )}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.3 }}
+          className="w-full max-w-xs"
+        >
+          <Lottie animationData={loginAnimation} loop className="w-full" />
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}

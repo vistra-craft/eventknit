@@ -20,6 +20,7 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { UserRole } from '@/types/auth';
 import Lottie from 'lottie-react';
+import loginAnimation from '@/assets/lottie/login.json';
 import PhoneInput from '@/components/ui/PhoneInput';
 import Logo from '@/components/layout/Logo';
 import { EASE } from '@/lib/animation-constants';
@@ -129,14 +130,6 @@ const OrganizerRegistration = () => {
   const otpExpiryRef = useRef(0); // stable ref for use in callbacks
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Load Lottie animation data at runtime
-  const [lottieData, setLottieData] = useState<object | null>(null);
-  useEffect(() => {
-    fetch('/lottie/login.json')
-      .then((res) => res.json())
-      .then(setLottieData)
-      .catch(() => {});
-  }, []);
 
   const { signUpWithGoogle, isLoading: isGoogleLoading } = useGoogleAuth({
     role: 'ORGANIZER',
@@ -973,7 +966,7 @@ const OrganizerRegistration = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            {lottieData && <Lottie animationData={lottieData} loop />}
+            <Lottie animationData={loginAnimation} loop />
           </motion.div>
 
           <motion.div
