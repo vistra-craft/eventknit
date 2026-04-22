@@ -4,7 +4,8 @@ import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FormRenderer, validateFormAnswers } from '@/components/forms/FormRenderer';
+import { FormRenderer } from '@/components/forms/FormRenderer';
+import { validateFormAnswers } from '@/components/forms/form-validation';
 import { getPublicForm, submitPublicForm, type FormQuestion } from '@/lib/form-api';
 import Logo from '@/components/layout/Logo';
 

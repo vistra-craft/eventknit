@@ -89,11 +89,12 @@ export const EventCard: React.FC<EventCardProps> = ({
 
   // Add to calendar
   const handleAddToCalendar = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // Don't navigate to event page
+    e.stopPropagation();
 
-    const year = startDateObj.getFullYear();
-    const month = String(startDateObj.getMonth() + 1).padStart(2, "0");
-    const day = String(startDateObj.getDate()).padStart(2, "0");
+    const d = new Date(startDate);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
     const [sH, sM] = (startTime || "00:00").split(":").map(Number);
     const dtStart = `${year}${month}${day}T${String(sH).padStart(2, "0")}${String(sM).padStart(2, "0")}00`;
     const eH = sH + 2;

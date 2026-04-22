@@ -164,7 +164,6 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
     return () => {
       if (loadMoreTimeoutRef.current) clearTimeout(loadMoreTimeoutRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sentinelInView]);
 
   // Client-side filters that backend doesn't support
