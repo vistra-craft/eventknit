@@ -2,7 +2,7 @@ name: Server CI Pipeline
 
 on:
   push:
-    branches: [development]
+    branches: [development, vin-development]
     paths:
       - "server/**"
       - ".github/workflows/server-ci.yml"
