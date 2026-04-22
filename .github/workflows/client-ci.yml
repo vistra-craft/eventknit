@@ -2,7 +2,7 @@ name: Client CI Pipeline
 
 on:
   push:
-    branches: [development, vin-development]
+    branches: [development]
     paths:
       - "client/**"
       - ".github/workflows/client-ci.yml"
