@@ -9,7 +9,7 @@
     "build:dev": "tsc -b && vite build --mode development",
     "build:staging": "tsc -b && vite build --mode staging",
     "build:prod": "tsc -b && vite build --mode production",
-    "lint": "eslint .",
+    "lint": "npx eslint .",
     "preview": "vite preview",
     "test": "vitest",
     "test:watch": "vitest --watch",
