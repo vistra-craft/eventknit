@@ -212,7 +212,9 @@ export const DEFAULT_KYC_REQUIREMENTS = {
     { documentType: 'BANK_STATEMENT', description: 'Copy of Cancelled Cheque or Certified Bank Statements or Certified Letter from Bank', isRequired: true },
   ],
   OTHER: [
-    { documentType: 'NATIONAL_ID', description: 'National ID, Passport, Alien ID, or Military ID', isRequired: true },
-    { documentType: 'KRA_PIN', description: 'KRA PIN Certificate', isRequired: true },
+    { documentType: 'NATIONAL_ID', description: 'National ID or Passport of the primary account holder / representative', isRequired: true },
+    { documentType: 'LETTER_OF_INTRODUCTION', description: 'A brief letter describing the nature of your organization or activity and the types of events you intend to run', isRequired: true },
+    { documentType: 'KRA_PIN', description: 'KRA PIN certificate of the primary account holder or organization', isRequired: true },
+    { documentType: 'BANK_STATEMENT', description: 'Cancelled cheque, certified bank statement, or bank letter confirming account details for payouts', isRequired: true },
   ],
 };

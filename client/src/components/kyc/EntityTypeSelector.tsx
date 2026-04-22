@@ -76,6 +76,13 @@ const ENTITY_GROUPS = {
       OrganizerEntityType.INSURANCE_REINSURANCE,
     ],
   },
+  other: {
+    label: 'Other',
+    icon: Briefcase,
+    types: [
+      OrganizerEntityType.OTHER,
+    ],
+  },
 };
 
 // Display names for entity types
@@ -101,6 +108,7 @@ const ENTITY_DISPLAY_NAMES: Record<OrganizerEntityType, string> = {
   [OrganizerEntityType.DENOMINATIONAL_CHURCH]: 'Denominational Church',
   [OrganizerEntityType.PARTNERSHIP_PROFESSIONAL]: 'Partnership (Professional)',
   [OrganizerEntityType.TRUST]: 'Trust',
+  [OrganizerEntityType.OTHER]: 'Other',
 };
 
 export const EntityTypeSelector: React.FC<EntityTypeSelectorProps> = ({

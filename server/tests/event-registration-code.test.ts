@@ -244,7 +244,7 @@ describe('EventService - Registration Code', () => {
     it('should auto-generate registration code when creating event', async () => {
       if (!dbConnected) return;
 
-      const event = await EventService.createEvent(
+      const { event } = await EventService.createEvent(
         {
           title: 'Auto Code Event',
           description: 'Test',
@@ -264,7 +264,7 @@ describe('EventService - Registration Code', () => {
     it('should not generate code if generateRegistrationCode is false', async () => {
       if (!dbConnected) return;
 
-      const event = await EventService.createEvent(
+      const { event } = await EventService.createEvent(
         {
           title: 'No Code Event',
           description: 'Test',

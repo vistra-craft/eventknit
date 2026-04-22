@@ -3041,7 +3041,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
                     Pending events will appear here once they're approved.
                   </p>
                   <p className="text-sm mt-2">
-                    You can edit your event while it's pending. <a href="/organizer/dashboard" className="underline font-semibold">Go back to dashboard</a>
+                    You can edit your event while it's pending. <Link to="/organizer/dashboard" className="underline font-semibold">Go back to dashboard</Link>
                   </p>
                 </div>
               )}

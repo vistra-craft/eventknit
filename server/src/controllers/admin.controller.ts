@@ -501,6 +501,38 @@ export class AdminController {
   }
 
   /**
+   * Suspend an organizer with a reason (manual review / rejection gate)
+   */
+  static async suspendOrganizerWithReason(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ success: false, message: 'Authentication required' });
+        return;
+      }
+      const { reason } = req.body as { reason: string };
+      if (!reason || !reason.trim()) {
+        res.status(400).json({ success: false, message: 'A reason is required when suspending an organizer' });
+        return;
+      }
+      const ipAddress = req.ip || req.socket.remoteAddress;
+      const userAgent = req.get('user-agent');
+
+      const user = await AdminService.suspendOrganizerWithReason(
+        req.params.id as string,
+        req.user.id,
+        req.user.role,
+        reason.trim(),
+        ipAddress,
+        userAgent,
+      );
+
+      res.status(200).json({ success: true, message: 'Organizer suspended successfully', data: { user } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get attendees
    */
   static async getAttendees(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {

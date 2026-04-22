@@ -28,6 +28,7 @@ import {
   Ban,
   RefreshCw,
   FileText,
+  X,
 } from 'lucide-react';
 import type { StepComponentProps, TicketType, CurrencyOption } from './types';
 import { CURRENCIES, DEFAULT_CURRENCY } from './types';
@@ -110,6 +111,57 @@ const REFUND_POLICY_TEMPLATES: {
     icon: FileText,
   },
 ];
+
+// Inline tag-style feature input for ticket perks
+function TicketFeaturesInput({ features, onChange }: { features: string[]; onChange: (f: string[]) => void }) {
+  const [input, setInput] = useState('');
+
+  const add = () => {
+    const trimmed = input.trim();
+    if (trimmed && !features.includes(trimmed)) {
+      onChange([...features, trimmed]);
+    }
+    setInput('');
+  };
+
+  const remove = (i: number) => onChange(features.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-muted-foreground">Perks / What's included</Label>
+      <p className="text-xs text-muted-foreground -mt-1">Add bullet points shown on the ticket card (e.g. "Free parking", "Lunch included")</p>
+      {features.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {features.map((f, i) => (
+            <span key={i} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-xs font-medium text-foreground">
+              {f}
+              <button type="button" onClick={() => remove(i)} className="text-muted-foreground hover:text-destructive transition-colors">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Input
+          placeholder="e.g. Free parking"
+          value={input}
+          className="h-9 text-sm"
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+        />
+        <button
+          type="button"
+          onClick={add}
+          disabled={!input.trim()}
+          className="px-3 h-9 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 disabled:opacity-40 transition-colors"
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  );
+}
 
 interface TicketsStepProps extends StepComponentProps {
   ticketTypes: TicketType[];
@@ -465,6 +517,12 @@ export const TicketsStep: React.FC<TicketsStepProps> = ({
                       onChange={(e) => updateTicket(index, { description: e.target.value })}
                     />
                   </div>
+
+                  {/* Features / perks */}
+                  <TicketFeaturesInput
+                    features={ticket.features || []}
+                    onChange={(features) => updateTicket(index, { features })}
+                  />
 
                   {/* Paid-ticket options */}
                   {ticket.type === 'paid' && (

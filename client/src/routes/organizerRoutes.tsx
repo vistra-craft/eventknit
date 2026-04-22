@@ -19,7 +19,6 @@ const ServicePointHistory = lazy(() => import('../pages/admin/service-point/Serv
 
 // Dashboard & Onboarding
 const OrganizerDashboard = lazy(() => import('../pages/organizer/OrganizerDashboard'));
-const OnboardingWizard = lazy(() => import('../pages/organizer/OnboardingWizard'));
 
 // Event Management
 const UnifiedEventsPage = lazy(() => import('../pages/organizer/events/UnifiedEventsPage'));
@@ -104,11 +103,6 @@ export const organizerRoutes: ProtectedRouteConfig[] = [
     path: 'dashboard',
     element: createElement(OrganizerDashboard),
     allowedRoles: ALL_ORGANIZER_ROLES,
-  },
-  {
-    path: 'onboarding',
-    element: createElement(OnboardingWizard),
-    allowedRoles: [UserRole.ORGANIZER, UserRole.ORGANIZER_ADMIN, UserRole.ORGANIZER_TELLER],
   },
   {
     path: 'profile-setup',

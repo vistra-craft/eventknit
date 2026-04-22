@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "npm run prisma:migrate:deploy && node dist/src/server.js",
-    "dev": "npx tsx src/server.ts",
-    "dev:watch": "npx tsx --watch src/server.ts",
+    "dev": "npx dotenv-cli -e .env.development -- npx tsx src/server.ts",
+    "dev:watch": "npx dotenv-cli -e .env.development -- npx tsx --watch src/server.ts",
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
     "test:watch": "vitest",

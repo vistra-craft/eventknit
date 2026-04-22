@@ -44,6 +44,7 @@ const CreateEventEntry = lazy(() => import('../pages/user/CreateEventEntry'));
 const CreateEventStepwise = lazy(() => import('../pages/CreateEventStepwise'));
 const VerificationPage = lazy(() => import('../pages/organizer/settings/VerificationPage'));
 const KYCVerificationPage = lazy(() => import('../pages/organizer/settings/KYCVerificationPage'));
+const OrganizerProfileSetup = lazy(() => import('../pages/organizer/settings/OrganizerProfileSetup'));
 
 /**
  * User route definitions
@@ -234,6 +235,12 @@ export const userRoutes: RouteConfig[] = [
   {
     path: 'kyc',
     element: createElement(KYCVerificationPage),
+  },
+
+  // Organizer profile setup for pending organizers (no organizer sidebar)
+  {
+    path: 'organizer-profile',
+    element: createElement(OrganizerProfileSetup),
   },
 
   // Financial

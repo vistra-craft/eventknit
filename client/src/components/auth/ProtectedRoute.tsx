@@ -85,38 +85,26 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={dashboardRoute} replace />;
   }
 
-  // Gate: PENDING_APPROVAL organizers cannot access organizer routes
-  // Exception: Allow access to settings and profile-setup so they can manage their own profile
-  const isPendingAllowedPath =
-    location.pathname.startsWith('/organizer/settings') ||
-    location.pathname.startsWith('/organizer/profile');
+  // Gate: PENDING_APPROVAL organizers cannot access any organizer routes.
+  // Profile setup is handled at /user/organizer-profile inside the user layout.
   if (
     user.role === UserRole.ORGANIZER &&
     user.status === UserStatus.PENDING_APPROVAL &&
-    location.pathname.startsWith('/organizer') &&
-    !isPendingAllowedPath
+    location.pathname.startsWith('/organizer')
   ) {
+    // If they try to reach settings or profile, send them to the user-layout equivalent
+    if (
+      location.pathname.startsWith('/organizer/settings') ||
+      location.pathname.startsWith('/organizer/profile')
+    ) {
+      return <Navigate to="/user/organizer-profile" replace />;
+    }
     return <Navigate to="/user/dashboard" replace />;
   }
 
-  // Gate: PENDING_APPROVAL organizers cannot create additional events
-  if (
-    user.role === UserRole.ORGANIZER &&
-    user.status === UserStatus.PENDING_APPROVAL &&
-    location.pathname.includes('create-event')
-  ) {
-    return (
-      <Navigate
-        to="/user/dashboard"
-        state={{ message: 'Your organizer account is pending approval. You cannot create additional events until approved.' }}
-        replace
-      />
-    );
-  }
-
-  // Gate: ACTIVE organizers belong on the organizer dashboard, not /user/*
-  // Exception: allow them to stay on /user/* while the approval modal is pending
-  // (so UserLayout can display the "You're Approved!" modal before redirecting)
+  // Gate: ACTIVE organizers belong on the organizer dashboard, not /user/*.
+  // Exception: allow them to stay on /user/* while the approval modal is still showing
+  // (so UserLayout can display the "You're Approved!" modal before redirecting).
   const hasPendingApprovalModal = sessionStorage.getItem('organizer_approval_pending') === '1';
   if (
     user.role === UserRole.ORGANIZER &&
@@ -125,22 +113,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     !hasPendingApprovalModal
   ) {
     return <Navigate to="/organizer/dashboard" replace />;
-  }
-
-  // Check onboarding status for organizers (except on onboarding page itself)
-  // Skip for PENDING_APPROVAL organizers — they stay on /user/dashboard until approved
-  const isOrganizer = [
-    UserRole.ORGANIZER,
-    UserRole.ORGANIZER_ADMIN,
-    UserRole.ORGANIZER_TELLER,
-  ].includes(user.role);
-
-  const isOnboardingPage = location.pathname === '/organizer/onboarding';
-  const isPendingApproval = user.status === UserStatus.PENDING_APPROVAL;
-
-  if (isOrganizer && !isOnboardingPage && !isPendingApproval && user.role === UserRole.ORGANIZER && !user.onboardingCompleted && !hasPendingApprovalModal) {
-    // Redirect to onboarding if organizer hasn't completed onboarding
-    return <Navigate to="/organizer/onboarding" replace />;
   }
 
   return <>{children}</>;

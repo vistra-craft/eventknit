@@ -258,10 +258,15 @@ export const apiRequest = async <T>(
 
     // Handle 401 errors (except for auth endpoints and public endpoints)
     if (apiError.status === 401) {
-      // Don't try to refresh token for auth endpoints or public endpoints
+      // Don't try to refresh token for public auth endpoints
       if (endpoint.includes('/auth/login') ||
         endpoint.includes('/auth/register') ||
         endpoint.includes('/auth/refresh') ||
+        endpoint.includes('/auth/verify-email') ||
+        endpoint.includes('/auth/email-oauth') ||
+        endpoint.includes('/auth/password/reset') ||
+        endpoint.includes('/auth/magic-link') ||
+        endpoint.includes('/auth/staff-invitation') ||
         endpoint.includes('/register-guest') ||
         endpoint.includes('/careers')) {
         throw error;

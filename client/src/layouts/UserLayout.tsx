@@ -108,14 +108,16 @@ const UserLayout = () => {
   const pathParts = location.pathname.split('/');
   const activeSection = pathParts[2] || 'dashboard';
 
+  // ACTIVE organizers have been approved — redirect them to their organizer dashboard.
+  // Exception: while the approval modal is showing, let them stay so the modal renders first.
   useEffect(() => {
     const isActiveOrganizer =
       authUser?.role === UserRole.ORGANIZER && authUser?.status === UserStatus.ACTIVE;
-
     if (isActiveOrganizer && location.pathname.startsWith('/user') && !showApprovalModal) {
       navigate('/organizer/dashboard', { replace: true });
     }
   }, [authUser?.role, authUser?.status, location.pathname, navigate, showApprovalModal]);
+
 
   return (
     <DashboardModeProvider>

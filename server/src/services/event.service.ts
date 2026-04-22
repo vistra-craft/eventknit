@@ -67,6 +67,7 @@ export interface CreateEventData {
   image?: string;
   imageFocalX?: number;
   imageFocalY?: number;
+  bannerImage?: string;
   images?: string[];
   type?: EventType;
   requirements?: string[];
@@ -305,6 +306,9 @@ export class EventService {
         verificationLevel: true,
         payoutLimit: true,
         kycStatus: true,
+        organizerEntityType: true,
+        email: true,
+        firstName: true,
       },
     });
 
@@ -319,27 +323,46 @@ export class EventService {
     if (organizer.status === UserStatus.SUSPENDED) {
       throw new AuthorizationError('Your account has been suspended. Please contact support.');
     }
+    // PENDING_APPROVAL organizers can create events — that is how they submit their
+    // first event + KYC for admin review, which is the approval trigger.
 
     // Verify organizer can create events (check actual role from database, not token).
-    // ATTENDEE users with PENDING_APPROVAL status are allowed — they went through
-    // becomeOrganizer() which keeps role as ATTENDEE until their first event is approved.
     const actualRole = organizer.role;
-    const isPendingAttendee = actualRole === UserRole.ATTENDEE &&
-      organizer.status === UserStatus.PENDING_APPROVAL;
-
-    if (!isPendingAttendee &&
+    if (
       actualRole !== UserRole.ORGANIZER &&
+      actualRole !== UserRole.ORGANIZER_ADMIN &&
+      actualRole !== UserRole.ORGANIZER_TELLER &&
       actualRole !== UserRole.SUPERADMIN &&
-      actualRole !== UserRole.ADMIN) {
+      actualRole !== UserRole.ADMIN
+    ) {
       throw new AuthorizationError('Only organizers and admins can create events');
     }
 
-    // Note: Eventbrite-style approach - no verification required to CREATE events
-    // Verification is only required to RECEIVE payouts (handled in disbursement service)
+    // First-event trust gate: organizers with fewer than 3 approved events always
+    // go through admin review. This applies to all event types (free and paid).
+    // Admins and superadmins bypass this gate.
+    const isAdminCreating = actualRole === UserRole.SUPERADMIN || actualRole === UserRole.ADMIN;
+    let isNewOrganizer = false;
+    if (!isAdminCreating) {
+      const approvedCount = await prisma.event.count({
+        where: { organizerId, status: EventStatus.APPROVED },
+      });
+      isNewOrganizer = approvedCount < 3;
+    }
 
     // Validate pricing
     if (!data.isFree && !data.price && (!data.ticketTypes || data.ticketTypes.length === 0)) {
       throw new ValidationError('Price or ticket types are required for paid events');
+    }
+
+    // Gate: paid events require KYC approval so payouts can be settled.
+    // Admins bypass this check since they create events on behalf of organizers.
+    if (!isAdminCreating && !data.isFree) {
+      if (!organizer.organizerEntityType || organizer.kycStatus !== 'APPROVED') {
+        throw new AuthorizationError(
+          'Identity verification is required to create paid events. Please complete KYC verification in your settings before proceeding.',
+        );
+      }
     }
 
     // Calculate available slots (initially same as capacity)
@@ -436,6 +459,7 @@ export class EventService {
         image: data.image?.trim(),
         imageFocalX: data.imageFocalX ?? 50,
         imageFocalY: data.imageFocalY ?? 50,
+        bannerImage: data.bannerImage?.trim() || null,
         images: data.images || [],
         timezone: data.timezone || null,
         type: data.type || EventType.PUBLIC,
@@ -492,6 +516,18 @@ export class EventService {
 
     logger.info(`Event created: ${event.id} by organizer: ${organizerId}`);
 
+    // For paid events where organizer has not yet set their entity type, send the
+    // combined "event under review + KYC required" email rather than a separate KYC email.
+    if (!event.isFree && !organizer.organizerEntityType) {
+      emailService.sendOrganizerPendingEmail(
+        organizer.email,
+        organizer.firstName || 'there',
+        { eventTitle: event.title, isPaidEvent: true },
+      ).catch((err) => {
+        logger.error('Failed to send event pending + KYC email:', err);
+      });
+    }
+
     // Auto-generate default invitation links for the event
     try {
       const { InvitationService } = await import('./invitation.service.js');
@@ -522,7 +558,7 @@ export class EventService {
       logger.warn(`Failed to create default invitations for event ${event.id}:`, error);
     }
 
-    return event;
+    return { event, isNewOrganizer };
   }
 
   /**
@@ -573,6 +609,18 @@ export class EventService {
       where.recalledAt = { not: null };
     } else if (filters.status) {
       where.status = filters.status;
+
+      // For admin PENDING queue (no organizerId filter = admin listing all pending events):
+      // Hide paid events only when the organizer is still PENDING_APPROVAL and has not
+      // started KYC (organizerEntityType not set). ACTIVE organizers' events are always
+      // visible — KYC is enforced at the approval step, not at visibility.
+      if (filters.status === EventStatus.PENDING && !filters.organizerId) {
+        where.OR = [
+          { isFree: true },
+          { organizer: { status: { not: UserStatus.PENDING_APPROVAL } } },
+          { organizer: { organizerEntityType: { not: null } } },
+        ];
+      }
     }
 
     if (filters.category) {
@@ -631,6 +679,10 @@ export class EventService {
               firstName: true,
               lastName: true,
               organizationName: true,
+              isIdentityVerified: true,
+              verificationLevel: true,
+              kycStatus: true,
+              organizerEntityType: true,
             },
           },
           _count: {
@@ -1075,6 +1127,7 @@ export class EventService {
     if (data.images !== undefined) updateData.images = data.images;
     if (data.imageFocalX !== undefined) updateData.imageFocalX = data.imageFocalX;
     if (data.imageFocalY !== undefined) updateData.imageFocalY = data.imageFocalY;
+    if (data.bannerImage !== undefined) updateData.bannerImage = data.bannerImage?.trim() || null;
     if (data.timezone !== undefined) updateData.timezone = data.timezone;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.requirements !== undefined) updateData.requirements = data.requirements;
@@ -2345,27 +2398,24 @@ export class EventService {
         );
         logger.debug(`[registerForEvent] Authenticated user - confirmation email sent, ticket delivery queued for registration ${registration.id}`);
 
-        // Send in-app notification (separate try-catch to ensure it's sent even if email fails)
-        try {
-          await NotificationService.sendNotification({
-            userId: attendeeId,
-            type: NotificationType.REGISTRATION_CONFIRMED,
-            title: `Registration Confirmed: ${event.title}`,
-            message: `Your registration for "${event.title}" has been confirmed! Your ticket has been sent to your email.`,
-            priority: NotificationPriority.HIGH,
-            eventId: event.id,
-            registrationId: registration.id,
-            data: {
-              eventDate: registration.event.startDate,
-              eventTime: registration.event.startTime || null,
-              venue: registration.event.venue || null,
-              location: registration.event.location,
-            },
-          });
-        } catch (error) {
+        // Send in-app notification — fire-and-forget, does not block response
+        NotificationService.sendNotification({
+          userId: attendeeId,
+          type: NotificationType.REGISTRATION_CONFIRMED,
+          title: `Registration Confirmed: ${event.title}`,
+          message: `Your registration for "${event.title}" has been confirmed! Your ticket has been sent to your email.`,
+          priority: NotificationPriority.HIGH,
+          eventId: event.id,
+          registrationId: registration.id,
+          data: {
+            eventDate: registration.event.startDate,
+            eventTime: registration.event.startTime || null,
+            venue: registration.event.venue || null,
+            location: registration.event.location,
+          },
+        }).catch((error) => {
           logger.error('Failed to send registration confirmed notification:', error);
-          // Don't fail registration if notification fails
-        }
+        });
       } catch (error) {
         // Log error but don't fail registration - email/notification can be sent later
         logger.error('[registerForEvent] Authenticated user - error in ticket email/notification flow:', {
@@ -4600,57 +4650,48 @@ export class EventService {
         );
         logger.debug(`[registerAsGuest] Confirmation email sent, ticket delivery queued for registration ${registration.id}`);
 
-        // Send registration confirmed notification for free events
-        try {
-          await NotificationService.sendNotification({
-            userId: user.id,
-            type: NotificationType.REGISTRATION_CONFIRMED,
-            title: `Registration Confirmed: ${event.title}`,
-            message: `Your registration for "${event.title}" has been confirmed! Your ticket has been sent to your email.`,
-            priority: NotificationPriority.HIGH,
-            eventId: event.id,
-            registrationId: registration.id,
-            data: {
-              eventDate: registration.event.startDate,
-              eventTime: registration.event.startTime,
-              venue: registration.event.venue,
-              location: registration.event.location,
-            },
-          });
-        } catch (error) {
+        // Send registration confirmed notification for free events — fire-and-forget
+        NotificationService.sendNotification({
+          userId: user.id,
+          type: NotificationType.REGISTRATION_CONFIRMED,
+          title: `Registration Confirmed: ${event.title}`,
+          message: `Your registration for "${event.title}" has been confirmed! Your ticket has been sent to your email.`,
+          priority: NotificationPriority.HIGH,
+          eventId: event.id,
+          registrationId: registration.id,
+          data: {
+            eventDate: registration.event.startDate,
+            eventTime: registration.event.startTime,
+            venue: registration.event.venue,
+            location: registration.event.location,
+          },
+        }).catch((error) => {
           logger.error('Failed to send registration confirmed notification:', error);
-          // Don't fail registration if notification fails
-        }
+        });
       } else {
-        // Paid event - send payment pending email
-        logger.debug('[registerForEvent] Processing paid event - preparing payment pending email');
-        // Note: Payment URL will be generated by frontend, so we don't include it here
-        try {
-          logger.debug(`[registerForEvent] Calling TicketService.sendPaymentPendingEmail for registration ${registration.id}`);
-          await TicketService.sendPaymentPendingEmail({
-            id: registration.id,
-            ticketType: registration.ticketType,
-            quantity: registration.quantity,
-            totalAmount: registration.totalAmount,
-            createdAt: registration.createdAt,
-            backupCode: registration.backupCode,
-            registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
-            accountInvitationToken, // Consolidated: Include setup link in payment pending if available
-            event: registration.event,
-            attendee: registration.attendee,
-          });
-          logger.info(`[registerForEvent] Payment pending email sent successfully to: ${user.email} for paid event: ${eventId}`);
-        } catch (emailError) {
-          // Log email error but don't fail registration - email can be resent later
-          logger.error(`[registerForEvent] Failed to send payment pending email to ${user.email} for event ${eventId}:`, {
+        // Paid event — send payment pending email fire-and-forget so the response
+        // is not held hostage by SMTP latency. Registration is already committed.
+        TicketService.sendPaymentPendingEmail({
+          id: registration.id,
+          ticketType: registration.ticketType,
+          quantity: registration.quantity,
+          totalAmount: registration.totalAmount,
+          createdAt: registration.createdAt,
+          backupCode: registration.backupCode,
+          registrationData: registration.registrationData as Record<string, unknown> | null | undefined,
+          accountInvitationToken,
+          event: registration.event,
+          attendee: registration.attendee,
+        }).then(() => {
+          logger.info(`[registerAsGuest] Payment pending email sent to: ${user.email} for paid event: ${eventId}`);
+        }).catch((emailError) => {
+          logger.error(`[registerAsGuest] Failed to send payment pending email to ${user.email} for event ${eventId}:`, {
             error: emailError instanceof Error ? emailError.message : String(emailError),
-            stack: emailError instanceof Error ? emailError.stack : undefined,
             registrationId: registration.id,
             eventId,
             userEmail: user.email,
           });
-          // Registration still succeeds even if email fails
-        }
+        });
       }
     } catch (error) {
       // Log error but don't fail registration

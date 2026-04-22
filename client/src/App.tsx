@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import ScrollToTop from "./components/ScrollToTop";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "./lib/queryClient";
@@ -34,6 +35,9 @@ const AdminLayout = lazyWithReload(() => import("./layouts/AdminLayout"));
 const PublicFormPage = lazyWithReload(() => import("./pages/public/PublicFormPage"));
 // All routes are now defined in client/src/routes/ and rendered by layouts
 
+const GetStarted = lazyWithReload(() => import("./pages/GetStarted"));
+const OrganizerOnboarding = lazyWithReload(() => import("./pages/organizer/OnboardingWizard"));
+
 // Lazy load onboarding screens
 const WelcomeScreen = lazyWithReload(() => import("./pages/onboarding/WelcomeScreen"));
 const InterestsScreen = lazyWithReload(() => import("./pages/onboarding/InterestsScreen"));
@@ -60,6 +64,7 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <RoleViewWrapper>
             <Routes>
               {/* Dashboard Redirect - Unified dashboard for all non-admin users */}
@@ -73,6 +78,15 @@ const App = () => (
           </Suspense>
         </ProtectedRoute>
       } />
+      {/* Organizer Onboarding — standalone (no sidebar) */}
+      <Route path="/organizer/onboarding" element={
+        <ProtectedRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <OrganizerOnboarding />
+          </Suspense>
+        </ProtectedRoute>
+      } />
+
       {/* Organizer Routes */}
       <Route path="/organizer/*" element={
         <ProtectedRoute>
@@ -138,6 +152,14 @@ const App = () => (
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <PublicFormPage />
         </Suspense>
+      } />
+      {/* Get Started — role selection (guest only) */}
+      <Route path="/get-started" element={
+        <GuestRoute>
+          <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <GetStarted />
+          </Suspense>
+        </GuestRoute>
       } />
       {/* Public Routes - Catch-all */}
       <Route path="/*" element={

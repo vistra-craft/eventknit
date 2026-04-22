@@ -246,6 +246,12 @@ export class AuthService {
     // Use role from verification record, default to ATTENDEE if not set
     const userRole = verification.role || UserRole.ATTENDEE;
 
+    // Organizers start as PENDING_APPROVAL — they must create their first event,
+    // complete KYC, and receive admin approval before gaining organizer dashboard access.
+    const userStatus = userRole === UserRole.ORGANIZER
+      ? UserStatus.PENDING_APPROVAL
+      : UserStatus.ACTIVE;
+
     // Create new user account with selected role and password
     const user = await prisma.user.create({
       data: {
@@ -254,7 +260,7 @@ export class AuthService {
         firstName,
         lastName,
         role: userRole,
-        status: UserStatus.ACTIVE,
+        status: userStatus,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
         // Set onboardingCompleted to false for ALL new users (unified onboarding)
@@ -323,8 +329,12 @@ export class AuthService {
       throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
     }
 
-    // Organizers require admin approval; all other roles are auto-approved
-    const userStatus = userRole === UserRole.ORGANIZER ? UserStatus.PENDING_APPROVAL : UserStatus.ACTIVE;
+    // Organizers start as PENDING_APPROVAL — they must submit their first event with
+    // KYC and receive admin approval before gaining organizer dashboard access.
+    // All other roles (ATTENDEE) are immediately ACTIVE after email verification.
+    const userStatus = userRole === UserRole.ORGANIZER
+      ? UserStatus.PENDING_APPROVAL
+      : UserStatus.ACTIVE;
 
     const user = await prisma.user.create({
       data: {
@@ -337,22 +347,16 @@ export class AuthService {
         companyAffiliation: data.companyAffiliation,
         role: userRole,
         status: userStatus,
-        isEmailVerified: false, // Email verification still required
+        isEmailVerified: false,
         organizationName: data.organizationName,
         businessEmail: data.businessEmail,
       },
     });
 
-    // If organizer, send pending notification and alert admins
+    // Send welcome email to new organizers
     if (userRole === UserRole.ORGANIZER) {
-      // Fire-and-forget: notify organizer their application is under review
-      emailService.sendOrganizerPendingEmail(user.email, user.firstName || '').catch((err) => {
-        logger.error('Failed to send organizer pending email:', err);
-      });
-
-      // Fire-and-forget: notify admins about new organizer
-      this.notifyAdminsOfNewOrganizer(user).catch((err) => {
-        logger.error('Failed to notify admins of new organizer:', err);
+      emailService.sendOrganizerWelcomeEmail(user.email, user.firstName || '').catch((err) => {
+        logger.error('Failed to send organizer welcome email:', err);
       });
     }
 
@@ -1628,6 +1632,26 @@ export class AuthService {
   /**
    * Verify email with code (alternative to token-based)
    */
+  /**
+   * Check-only: validate OTP code without marking it used or requiring user to exist.
+   * Used during registration to give immediate feedback at the OTP step before account creation.
+   */
+  static async checkEmailVerificationCode(email: string, code: string): Promise<void> {
+    const verification = await prisma.emailVerification.findFirst({
+      where: { email, code, verified: false },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!verification) {
+      throw new ValidationError('The verification code you entered is incorrect. Please check and try again.');
+    }
+
+    if (verification.expiresAt < new Date()) {
+      throw new ValidationError('This verification code has expired. Please request a new one.');
+    }
+    // No DB writes — just confirms the code is valid and not yet expired
+  }
+
   static async verifyEmailWithCode(email: string, code: string): Promise<void> {
     const user = await prisma.user.findUnique({
       where: { email },

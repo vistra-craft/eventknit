@@ -101,6 +101,7 @@ export interface CreateEventData {
   image?: string;
   imageFocalX?: number;
   imageFocalY?: number;
+  bannerImage?: string;
   images?: string[];
   type?: EventType;
   requirements?: string[] | string;

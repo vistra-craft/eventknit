@@ -162,6 +162,7 @@ export default function CreateEventStepwise() {
   const [loadingVerification, setLoadingVerification] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus | null>(null);
   const [kycBannerDismissed, setKycBannerDismissed] = useState(false);
+  const [showKYCRequiredDialog, setShowKYCRequiredDialog] = useState(false);
 
   useEffect(() => {
     const fetchVerification = async () => {
@@ -413,6 +414,9 @@ export default function CreateEventStepwise() {
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([
@@ -1273,6 +1277,25 @@ export default function CreateEventStepwise() {
     }
   };
 
+  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setError('Please select an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { setError('Image size must be less than 5MB'); return; }
+    setIsUploadingBanner(true);
+    setError(null);
+    try {
+      const url = await uploadImage(file, 'events');
+      setBannerPreview(url);
+      setEventData(prev => ({ ...prev, bannerImage: url }));
+    } catch {
+      setError('Failed to upload banner image. Please try again.');
+    } finally {
+      setIsUploadingBanner(false);
+      if (bannerInputRef.current) bannerInputRef.current.value = '';
+    }
+  };
+
   // Format date with timezone
   const formatDateWithTimezone = (date: string, time: string) => {
     if (!date || !time) return '';
@@ -1507,7 +1530,7 @@ export default function CreateEventStepwise() {
       quantity: ticket.quantity ? parseInt(ticket.quantity, 10) : undefined,
       maxPerPerson: ticket.maxPerPerson || undefined,
       minPerOrder: ticket.minPerOrder || undefined,
-      features: [],
+      features: ticket.features?.filter(f => f.trim()) || [],
       isComplementary: ticket.isComplementary || false,
       requiresInvitation: ticket.requiresInvitation || false,
       availableFrom: ticket.availableFrom || undefined,
@@ -1658,6 +1681,8 @@ export default function CreateEventStepwise() {
       refundPolicy: eventData.refundPolicy || undefined,
       refundDeadlineDays: eventData.refundDeadlineDays || undefined,
       refundPolicyText: eventData.refundPolicyText?.trim() || undefined,
+      duration: eventData.duration?.trim() || undefined,
+      bannerImage: eventData.bannerImage?.trim() || undefined,
     };
 
     return apiData;
@@ -1694,6 +1719,18 @@ export default function CreateEventStepwise() {
     if (wasAttendee && !orgNameInput.trim()) {
       setShowOrgNameDialog(true);
       return;
+    }
+
+    // Gate: paid events require KYC approval before submission
+    // Admins bypass this gate; attendee-becoming-organizer gets guided post-creation
+    if (!wasAttendee && !isAdminRole) {
+      const apiData = transformFormDataToAPI();
+      if (!apiData.isFree) {
+        if (!user?.organizerEntityType || verificationStatus?.kycStatus !== 'APPROVED') {
+          setShowKYCRequiredDialog(true);
+          return;
+        }
+      }
     }
 
     // Show loading state from the start — covers both the upgrade and create steps
@@ -1813,6 +1850,8 @@ export default function CreateEventStepwise() {
                 state: {
                   message: 'Event created successfully! It is pending admin approval.',
                   fromEventCreation: true,
+                  showKYCPrompt: !apiData.isFree && !user?.organizerEntityType,
+                  eventTitle: response.data.event?.title,
                 }
               });
             }
@@ -1845,7 +1884,7 @@ export default function CreateEventStepwise() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, saveDraft, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput, orgDescInput, eventData]);
+  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, saveDraft, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput, orgDescInput, eventData, verificationStatus]);
 
   const handleNext = useCallback(() => {
     if (currentStep < 6) {
@@ -2458,6 +2497,11 @@ export default function CreateEventStepwise() {
                 setIsUploadingImage={setIsUploadingImage}
                 fileInputRef={fileInputRef}
                 handleImageUpload={handleImageUpload}
+                bannerPreview={bannerPreview}
+                setBannerPreview={setBannerPreview}
+                isUploadingBanner={isUploadingBanner}
+                bannerInputRef={bannerInputRef}
+                handleBannerUpload={handleBannerUpload}
                 tags={tags}
                 newTag={newTag}
                 setNewTag={setNewTag}
@@ -2761,6 +2805,43 @@ export default function CreateEventStepwise() {
                 disabled={orgNameInput.trim().length < 2}
               >
                 Publish event
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* KYC required dialog — shown when organizer tries to publish a paid event without approved KYC */}
+      <Dialog open={showKYCRequiredDialog} onOpenChange={setShowKYCRequiredDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-amber-500" />
+              Identity Verification Required
+            </DialogTitle>
+            <DialogDescription>
+              Paid events require verified identity before publishing. This protects your attendees and ensures timely payouts to you.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-4 text-sm text-amber-800 dark:text-amber-300">
+              Identity verification is required to publish paid events. Complete your KYC in Settings to get started.
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Your event draft is saved. You can complete verification and return to publish.
+            </p>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setShowKYCRequiredDialog(false)}>
+                Back to Event
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowKYCRequiredDialog(false);
+                  navigate('/organizer/settings/kyc');
+                }}
+              >
+                Complete Verification
+                <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </div>
           </div>

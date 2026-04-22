@@ -1571,32 +1571,74 @@ class EmailService {
     });
   }
   /**
-   * Send notification to organizer that their application is under review
+   * Send notification to organizer that their event / account is under review.
+   * Pass isPaidEvent=true to include a KYC verification callout.
    */
-  async sendOrganizerPendingEmail(email: string, firstName: string): Promise<void> {
+  async sendOrganizerPendingEmail(
+    email: string,
+    firstName: string,
+    options?: { eventTitle?: string; isPaidEvent?: boolean },
+  ): Promise<void> {
+    const kycUrl = `${config.frontend.url}/user/organizer-profile`;
+    const dashboardUrl = `${config.frontend.url}/user/dashboard`;
+    const { eventTitle, isPaidEvent } = options ?? {};
+
+    const kycSection = isPaidEvent
+      ? `
+        <div style="margin: 28px 0; padding: 16px 20px; border-left: 3px solid #f59e0b; background-color: #fffbeb;">
+          <p style="margin: 0 0 8px; font-size: 15px; font-weight: 600; color: #1a1a1a;">Action required: complete KYC verification</p>
+          <p style="margin: 0 0 12px; font-size: 14px; color: #555;">
+            Because <strong>${eventTitle ? `"${eventTitle}"` : 'your event'}</strong> charges for tickets, our review team needs your identity verified before they can approve it.
+            This also enables payouts once tickets start selling.
+          </p>
+          <a href="${kycUrl}" style="display: inline-block; padding: 10px 20px; background-color: #1a1a1a; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
+            Complete KYC →
+          </a>
+        </div>`
+      : '';
+
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
         <head>
           <meta charset="utf-8">
-          <title>Event Submitted for Review</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Your event is under review</title>
         </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-          <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #4a6cf7;">Your Event is Under Review, ${firstName}!</h1>
-            <p>Thank you for creating your event on EventKnit.</p>
-            <p>Your event is currently <strong>under review</strong> by our team. This process ensures the quality and safety of events on our platform.</p>
-            <div style="background-color: #f5f5f5; border-left: 4px solid #4a6cf7; padding: 15px; margin: 20px 0; border-radius: 0 4px 4px 0;">
-              <p style="margin: 0;"><strong>What happens next?</strong></p>
-              <ul style="margin: 10px 0 0 0; padding-left: 20px;">
-                <li>Our team will review your event within 24-48 hours</li>
-                <li>You'll receive an email once your event is approved and goes live</li>
-                <li>You can continue browsing and attending other events while you wait</li>
-              </ul>
+        <body style="margin: 0; padding: 0; background-color: #f9fafb;">
+          <div style="max-width: 560px; margin: 40px auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
+            <div style="padding: 32px 40px 24px;">
+              <p style="margin: 0 0 24px; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; color: #6b7280; text-transform: uppercase;">EventKnit</p>
+
+              <h1 style="margin: 0 0 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 22px; font-weight: 700; color: #1a1a1a; line-height: 1.3;">
+                Your event is under review, ${firstName}
+              </h1>
+              <p style="margin: 0 0 24px; font-size: 15px; color: #555; line-height: 1.6;">
+                ${eventTitle ? `<strong>"${eventTitle}"</strong> has been submitted` : 'Your event has been submitted'} and is now in our review queue. We check every event to make sure it meets our community standards.
+              </p>
+
+              <div style="margin: 0 0 28px; padding: 16px 20px; border-left: 3px solid #1a1a1a; background-color: #f9fafb;">
+                <p style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #1a1a1a;">What happens next</p>
+                <ol style="margin: 0; padding-left: 18px; font-size: 14px; color: #555; line-height: 1.8;">
+                  <li>Our team reviews your event — usually within 24 hours</li>
+                  <li>You'll get an email the moment it's approved and live</li>
+                  <li>Attendees can then discover and register for your event</li>
+                </ol>
+              </div>
+
+              ${kycSection}
+
+              <a href="${dashboardUrl}" style="display: inline-block; padding: 11px 22px; background-color: #1a1a1a; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
+                Go to your dashboard →
+              </a>
             </div>
-            <p>If you have any questions about your event submission, please don't hesitate to contact our support team.</p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-            <p style="font-size: 12px; color: #666;">This is an automated message from EventKnit. Please do not reply.</p>
+
+            <div style="padding: 20px 40px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
+              <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.5;">
+                — The EventKnit Team<br>
+                Questions? Reply to this email or visit our support centre.
+              </p>
+            </div>
           </div>
         </body>
       </html>
@@ -1604,7 +1646,9 @@ class EmailService {
 
     const result = await this.sendEmail({
       to: email,
-      subject: 'Your EventKnit Organizer Application is Under Review',
+      subject: eventTitle
+        ? `Your event "${eventTitle}" is under review`
+        : 'Your EventKnit event is under review',
       html,
     });
 
@@ -1665,6 +1709,78 @@ class EmailService {
   /**
    * Send notification to organizer that their account has been approved
    */
+  async sendOrganizerWelcomeEmail(email: string, firstName: string): Promise<void> {
+    const dashboardUrl = `${config.frontend.url}/organizer/dashboard`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"><title>Welcome to EventKnit</title></head>
+        <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;color:#1a1a1a;margin:0;padding:0;background:#f9fafb;">
+          <div style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+            <div style="background:linear-gradient(135deg,#1d9bf0 0%,#1a7fd4 100%);padding:32px 40px;">
+              <p style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">Welcome to EventKnit, ${firstName}!</p>
+              <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.85);">Your organizer account is live and ready.</p>
+            </div>
+            <div style="padding:32px 40px;">
+              <p style="margin:0 0 16px;font-size:15px;color:#374151;">Your organizer account has been created. You can start creating events right away. Your first event will go through a quick review before it goes live.</p>
+              <div style="background:#f0f9ff;border-left:3px solid #1d9bf0;padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0;">
+                <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">What happens next</p>
+                <ul style="margin:0;padding-left:18px;color:#374151;font-size:14px;line-height:1.8;">
+                  <li>Complete your organizer profile</li>
+                  <li>Create your first event</li>
+                  <li>For paid events, complete KYC to enable payouts</li>
+                  <li>Your first few events go through a brief review before going live</li>
+                </ul>
+              </div>
+              <div style="text-align:center;margin:28px 0;">
+                <a href="${dashboardUrl}" style="display:inline-block;background:#1d9bf0;color:#ffffff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Go to Dashboard</a>
+              </div>
+            </div>
+            <div style="padding:20px 40px;border-top:1px solid #f3f4f6;background:#f9fafb;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">EventKnit - This is an automated message, please do not reply.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    const result = await this.sendEmail({ to: email, subject: 'Welcome to EventKnit - Your organizer account is ready', html });
+    if (!result.success) logger.error(`Failed to send organizer welcome email to ${email}: ${result.error?.message}`);
+  }
+
+  async sendOrganizerSuspendedEmail(email: string, firstName: string, reason: string): Promise<void> {
+    const supportUrl = `${config.frontend.url}/support`;
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><meta charset="utf-8"><title>Account Under Review</title></head>
+        <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;color:#1a1a1a;margin:0;padding:0;background:#f9fafb;">
+          <div style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+            <div style="background:#dc2626;padding:32px 40px;">
+              <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">Account Suspended</p>
+              <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.85);">Action required on your EventKnit organizer account.</p>
+            </div>
+            <div style="padding:32px 40px;">
+              <p style="margin:0 0 16px;font-size:15px;color:#374151;">Hi ${firstName}, your organizer account has been suspended by our team.</p>
+              <div style="background:#fef2f2;border-left:3px solid #dc2626;padding:16px 20px;border-radius:0 8px 8px 0;margin:24px 0;">
+                <p style="margin:0 0 6px;font-size:13px;font-weight:600;color:#991b1b;text-transform:uppercase;letter-spacing:0.5px;">Reason</p>
+                <p style="margin:0;font-size:14px;color:#374151;">${reason}</p>
+              </div>
+              <p style="font-size:14px;color:#6b7280;">If you believe this is an error or would like to appeal, please contact our support team. We aim to respond within 2 business days.</p>
+              <div style="text-align:center;margin:28px 0;">
+                <a href="${supportUrl}" style="display:inline-block;background:#1d9bf0;color:#ffffff;padding:13px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">Contact Support</a>
+              </div>
+            </div>
+            <div style="padding:20px 40px;border-top:1px solid #f3f4f6;background:#f9fafb;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">EventKnit - This is an automated message, please do not reply.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    const result = await this.sendEmail({ to: email, subject: 'Your EventKnit organizer account has been suspended', html });
+    if (!result.success) logger.error(`Failed to send organizer suspended email to ${email}: ${result.error?.message}`);
+  }
+
   async sendOrganizerApprovedEmail(email: string, firstName: string): Promise<void> {
     const loginUrl = `${config.frontend.url}/auth/signin`;
 
@@ -2290,6 +2406,59 @@ class EmailService {
 
     if (!result.success) {
       logger.error(`Failed to send KYC rejection email to ${email}: ${result.error?.message}`);
+    }
+  }
+
+  /**
+   * Send notification to organizer that their paid event requires KYC before admin review
+   */
+  async sendEventKYCRequiredEmail(
+    email: string,
+    firstName: string,
+    eventTitle: string,
+  ): Promise<void> {
+    const kycUrl = `${config.frontend.url}/organizer/settings/kyc`;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Action Required: Complete Verification to List Your Event</title>
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; background-color: #ffffff; margin: 0; padding: 0;">
+          <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
+            <p style="font-size: 16px; margin-bottom: 24px;">Hi ${firstName},</p>
+            <p style="font-size: 15px; color: #333;">Your event <strong>${eventTitle}</strong> has been submitted successfully.</p>
+            <p style="font-size: 15px; color: #333;">Because this is a paid event, our team cannot begin reviewing it until you complete your organizer verification (KYC).</p>
+            <div style="border-left: 3px solid #1a1a1a; padding: 12px 16px; margin: 24px 0; background-color: #fafafa;">
+              <p style="font-size: 14px; color: #333; margin: 0 0 8px;"><strong>What you need to do:</strong></p>
+              <ol style="font-size: 14px; color: #555; margin: 0; padding-left: 18px;">
+                <li style="margin-bottom: 4px;">Select your entity type (Individual, Business, NGO, etc.)</li>
+                <li style="margin-bottom: 4px;">Upload the required verification documents</li>
+                <li>Submit for review — takes 1–3 business days</li>
+              </ol>
+            </div>
+            <p style="font-size: 15px; color: #333; margin-top: 28px;">
+              <a href="${kycUrl}" style="color: #1a1a1a; font-weight: 600; text-decoration: underline;">Complete your verification →</a>
+            </p>
+            <p style="font-size: 15px; color: #333; margin-top: 16px;">Once your verification is approved, your event will move to admin review immediately.</p>
+            <p style="font-size: 15px; color: #555; margin-top: 32px;">— The EventKnit Team</p>
+            <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 32px 0 16px;">
+            <p style="font-size: 12px; color: #999;">This is an automated message from EventKnit. Please do not reply.</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.sendEmail({
+      to: email,
+      subject: `Action required: Verify your account to list "${eventTitle}"`,
+      html,
+    });
+
+    if (!result.success) {
+      logger.error(`Failed to send event KYC required email to ${email}: ${result.error?.message}`);
     }
   }
 

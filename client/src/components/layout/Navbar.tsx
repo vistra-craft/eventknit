@@ -138,15 +138,9 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
 
   // ── Mobile menu items ──────────────────────────────────────
 
-  const mobileItems = [
-    { label: "Create Event", onClick: () => { handleCreateEvent(); setIsMobileMenuOpen(false); } },
-  ];
-
-  if (!isAuthenticated) {
-    mobileItems.push(
-      { label: "Login", onClick: () => { navigate("/auth/signin"); setIsMobileMenuOpen(false); } },
-    );
-  }
+  const mobileItems = isAuthenticated
+    ? [{ label: "Create Event", onClick: () => { handleCreateEvent(); setIsMobileMenuOpen(false); } }]
+    : [{ label: "Sign in", onClick: () => { navigate("/auth/signin"); setIsMobileMenuOpen(false); } }];
 
   return (
     <nav className="fixed left-0 right-0 top-0 z-[9999]">
@@ -171,12 +165,15 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
           {/* Desktop actions */}
           <div className="hidden md:flex items-center gap-2">
             <ThemeToggle className={isTransparentMode ? "text-white/90 hover:bg-white/10" : ""} />
-            <button
-              onClick={handleCreateEvent}
-              className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${textColor} ${textColorHover} hover:text-orange-500 dark:hover:text-orange-400`}
-            >
-              Create Event
-            </button>
+
+            {isAuthenticated && (
+              <button
+                onClick={handleCreateEvent}
+                className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${textColor} ${textColorHover} hover:text-orange-500 dark:hover:text-orange-400`}
+              >
+                Create Event
+              </button>
+            )}
 
             {!isAuthenticated && (
               <>
@@ -184,17 +181,13 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                   onClick={() => navigate("/auth/signin")}
                   className={`text-sm font-medium px-3 py-2 rounded-lg transition-colors ${textColor} ${textColorHover}`}
                 >
-                  Login
+                  Sign in
                 </button>
                 <button
-                  onClick={() => navigate("/auth/signup")}
-                  className={`text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
-                    isTransparentMode
-                      ? "border border-white/30 text-white hover:bg-white/10"
-                      : "bg-primary text-primary-foreground hover:bg-primary/90"
-                  }`}
+                  onClick={() => navigate("/get-started")}
+                  className="text-sm font-medium px-4 py-2 rounded-lg transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
                 >
-                  Sign Up
+                  Get Started
                 </button>
               </>
             )}
@@ -257,10 +250,10 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, ease: EASE, delay: mobileItems.length * 0.04 }}
-                  onClick={() => { navigate("/auth/signup"); setIsMobileMenuOpen(false); }}
+                  onClick={() => { navigate("/get-started"); setIsMobileMenuOpen(false); }}
                   className="block w-full text-center px-3 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors mt-2"
                 >
-                  Sign Up
+                  Get Started
                 </motion.button>
               )}
 

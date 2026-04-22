@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Flag, CheckCircle, AlertCircle, ShieldCheck, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -179,9 +180,9 @@ export function ReportEventSection({ eventId }: ReportEventSectionProps) {
               <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
               <p className="text-xs text-muted-foreground">
                 By submitting, you agree to our{' '}
-                <a href="/terms" target="_blank" className="text-primary hover:underline">Terms of Service</a>
+                <Link to="/terms" target="_blank" className="text-primary hover:underline">Terms of Service</Link>
                 {' '}and{' '}
-                <a href="/community-guidelines" target="_blank" className="text-primary hover:underline">Community Guidelines</a>.
+                <Link to="/community-guidelines" target="_blank" className="text-primary hover:underline">Community Guidelines</Link>.
               </p>
             </div>
           </div>

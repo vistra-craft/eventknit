@@ -650,6 +650,15 @@ export class AuthController {
   /**
    * Confirm email verification with code
    */
+  static async checkEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await AuthService.checkEmailVerificationCode(req.body.email, req.body.code);
+      res.status(200).json({ success: true, message: 'Code is valid' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async confirmEmailVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       // For now, this will throw an error since code-based verification isn't fully implemented

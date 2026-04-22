@@ -26,7 +26,7 @@ export const useAuth = () => {
       case UserRole.SUPPORT:
       case UserRole.TELLER:
         return '/admin/dashboard';
-      // Organizer roles - redirect to organizer dashboard
+      // Organizer roles - organizer dashboard (PENDING_APPROVAL is handled upstream in login())
       case UserRole.ORGANIZER:
       case UserRole.ORGANIZER_ADMIN:
       case UserRole.ORGANIZER_TELLER:
@@ -316,7 +316,8 @@ export const useAuth = () => {
 
       const token = localStorage.getItem('accessToken');
       if (token) {
-        // Try to fetch profile to verify token
+        // Signal that we're verifying — GuestRoute will hold the page blank until done
+        dispatch({ type: 'AUTH_START' });
         try {
           await refreshProfile();
         } catch {

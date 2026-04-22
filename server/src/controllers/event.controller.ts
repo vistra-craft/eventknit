@@ -21,7 +21,7 @@ export class EventController {
       const ipAddress = req.ip || req.socket.remoteAddress;
       const userAgent = req.get('user-agent');
 
-      const event = await EventService.createEvent(
+      const { event, isNewOrganizer } = await EventService.createEvent(
         req.body,
         req.user.id,
         req.user.role,
@@ -29,10 +29,14 @@ export class EventController {
         userAgent,
       );
 
+      const message = isNewOrganizer
+        ? 'Event submitted for review. All events from new organizers are reviewed before going live.'
+        : 'Event created successfully. Waiting for admin approval.';
+
       res.status(201).json({
         success: true,
-        message: 'Event created successfully. Waiting for admin approval.',
-        data: { event },
+        message,
+        data: { event, isNewOrganizer },
       });
     } catch (error) {
       next(error);

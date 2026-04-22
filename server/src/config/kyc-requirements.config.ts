@@ -1712,10 +1712,13 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
     ],
   },
 
+  // Generic requirements for organizers who select OTHER as their entity type.
+  // Covers community groups, informal associations, government bodies, clubs,
+  // individual creators, and any entity that does not fit the defined categories.
   [OrganizerEntityType.OTHER]: {
     entityType: OrganizerEntityType.OTHER,
     displayName: 'Other',
-    category: 'business',
+    category: 'organization',
     requiresDirectors: false,
     requiresShareholders: false,
     documents: [
@@ -1725,15 +1728,31 @@ export const KYC_REQUIREMENTS: Record<OrganizerEntityType, EntityTypeRequirement
         minQuantity: 1,
         isRequired: true,
         isConditional: false,
-        description: 'National ID, Passport, Alien ID, or Military ID',
+        description: 'National ID or Passport of the primary account holder / representative',
       },
       {
-        documentType: KYCDocumentType.KRA_PIN,
-        category: 'registration',
+        documentType: KYCDocumentType.LETTER_OF_INTRODUCTION,
+        category: 'organization',
         minQuantity: 1,
         isRequired: true,
         isConditional: false,
-        description: 'KRA PIN Certificate',
+        description: 'A brief letter (1 page) describing the nature of your organization or activity and the types of events you intend to run',
+      },
+      {
+        documentType: KYCDocumentType.KRA_PIN,
+        category: 'financial',
+        minQuantity: 1,
+        isRequired: true,
+        isConditional: false,
+        description: 'KRA PIN certificate of the primary account holder or organization',
+      },
+      {
+        documentType: KYCDocumentType.BANK_STATEMENT,
+        category: 'financial',
+        minQuantity: 1,
+        isRequired: true,
+        isConditional: false,
+        description: 'Cancelled cheque, certified bank statement, or bank letter confirming account details for payouts',
       },
     ],
   },

@@ -1,68 +1,55 @@
-import { Calendar, CheckCircle2, BarChart3 } from 'lucide-react';
+import { Calendar, ShieldCheck, LayoutDashboard } from 'lucide-react';
 
-export const ProcessOverview = () => {
-  const steps = [
-    {
-      number: 1,
-      icon: Calendar,
-      title: 'Create Event',
-      description: 'Fill out your event details and submit for review',
-    },
-    {
-      number: 2,
-      icon: CheckCircle2,
-      title: 'Get Approved',
-      description: 'Our team reviews your event (usually within 24-48 hours)',
-    },
-    {
-      number: 3,
-      icon: BarChart3,
-      title: 'Manage Dashboard',
-      description: 'Once approved, access your dashboard to manage registrations, track sales, and view analytics',
-    },
-  ];
+const STEPS = [
+  {
+    icon: Calendar,
+    title: 'Create your event',
+    description: 'Fill out your event details and submit for review. Your first events go through a quick one-time check.',
+    color: 'text-primary bg-primary/10',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Quick review',
+    description: 'Our team reviews new organizers within 24-48 hours. After 3 approved events you get instant publishing.',
+    color: 'text-emerald-600 bg-emerald-500/10',
+  },
+  {
+    icon: LayoutDashboard,
+    title: 'Manage everything',
+    description: 'Track registrations, monitor ticket sales, view analytics, and manage attendees from your dashboard.',
+    color: 'text-violet-600 bg-violet-500/10',
+  },
+];
 
-  return (
-    <div className="space-y-8">
-      <div className="text-center mb-8">
-        <h2 className="text-page-title mb-2">
-          How It Works
-        </h2>
-        <p className="text-page-subtitle">
-          Here's what happens after you sign up
-        </p>
-      </div>
+export const ProcessOverview = () => (
+  <div className="space-y-6">
+    <div>
+      <h2 className="text-xl font-semibold text-foreground mb-1">Here's how it works</h2>
+      <p className="text-sm text-muted-foreground">
+        Simple three-step process to get your events in front of attendees.
+      </p>
+    </div>
 
-      <div className="space-y-6">
-        {steps.map((step, index) => {
-          const Icon = step.icon;
-          return (
-            <div key={step.number} className="relative flex items-start gap-4">
-              {/* Step Number & Icon */}
-              <div className="flex-shrink-0 relative z-10">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Icon className="w-6 h-6 text-primary" />
-                </div>
+    <div className="space-y-4">
+      {STEPS.map((step, i) => {
+        const Icon = step.icon;
+        return (
+          <div key={step.title} className="flex gap-4">
+            <div className="flex flex-col items-center">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${step.color}`}>
+                <Icon className="w-5 h-5" />
               </div>
-
-              {/* Step Content */}
-              <div className="flex-1 pt-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-muted-foreground">Step {step.number}</span>
-                  <h3 className="text-section-header">{step.title}</h3>
-                </div>
-                <p className="text-card-description">{step.description}</p>
-              </div>
-
-              {/* Connector Line */}
-              {index < steps.length - 1 && (
-                <div className="absolute left-6 top-12 w-0.5 h-16 bg-border" />
+              {i < STEPS.length - 1 && (
+                <div className="w-px flex-1 bg-border mt-2" />
               )}
             </div>
-          );
-        })}
-      </div>
+            <div className="pb-6">
+              <p className="text-sm font-semibold text-foreground mb-0.5">{step.title}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+            </div>
+          </div>
+        );
+      })}
     </div>
-  );
-};
-
+  </div>
+);

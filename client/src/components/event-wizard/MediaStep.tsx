@@ -21,6 +21,11 @@ interface MediaStepProps extends StepComponentProps {
   setIsUploadingImage: (v: boolean) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  bannerPreview: string | null;
+  setBannerPreview: (url: string | null) => void;
+  isUploadingBanner: boolean;
+  bannerInputRef: React.RefObject<HTMLInputElement | null>;
+  handleBannerUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   tags: string[];
   newTag: string;
   setNewTag: (tag: string) => void;
@@ -45,6 +50,11 @@ export function MediaStep({
   isUploadingImage,
   fileInputRef,
   handleImageUpload,
+  bannerPreview,
+  setBannerPreview,
+  isUploadingBanner,
+  bannerInputRef,
+  handleBannerUpload,
   tags,
   newTag,
   setNewTag,
@@ -136,6 +146,64 @@ export function MediaStep({
               />
             </div>
             */}
+          </div>
+        )}
+      </div>
+
+      {/* Banner Image */}
+      <div className="space-y-4">
+        <div>
+          <Label>Banner Image <span className="text-muted-foreground font-normal">(optional)</span></Label>
+          <p className="text-xs text-muted-foreground mt-1">Wide image shown at the top of the event detail page (recommended: 1600×400px)</p>
+        </div>
+        <input
+          ref={bannerInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleBannerUpload}
+          className="hidden"
+        />
+        {bannerPreview || eventData.bannerImage ? (
+          <div className="relative rounded-xl overflow-hidden border border-border">
+            <img
+              src={bannerPreview || eventData.bannerImage}
+              alt="Banner preview"
+              className="w-full h-32 object-cover"
+            />
+            <div className="absolute top-2 right-2 flex gap-1.5">
+              <button
+                type="button"
+                onClick={() => bannerInputRef.current?.click()}
+                className="px-2.5 py-1 rounded-md bg-black/60 text-white text-xs hover:bg-black/80 transition-colors"
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                onClick={() => { setBannerPreview(null); onInputChange('bannerImage', ''); }}
+                className="px-2.5 py-1 rounded-md bg-black/60 text-white text-xs hover:bg-destructive transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="border-2 border-dashed border-border rounded-xl p-6 text-center">
+            <ImageIcon className="w-7 h-7 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-3">Add a banner image for your event page header</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => bannerInputRef.current?.click()}
+              disabled={isUploadingBanner}
+            >
+              {isUploadingBanner ? (
+                <><Loader size="sm" className="mr-2" />Uploading...</>
+              ) : (
+                <><Upload className="w-4 h-4 mr-2" />Choose Banner</>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">Max 5MB. JPG, PNG, or GIF</p>
           </div>
         )}
       </div>
