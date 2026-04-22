@@ -18,21 +18,21 @@ import Logo from '@/components/layout/Logo';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
-  show: (delay = 0) => ({
+  show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94], delay },
-  }),
+    transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
+  },
 };
 
 const cardVariants = {
   hidden: { opacity: 0, y: 32, scale: 0.97 },
-  show: (delay = 0) => ({
+  show: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94], delay },
-  }),
+    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
+  },
 };
 
 // ─── Role cards config ───────────────────────────────────────────────────────

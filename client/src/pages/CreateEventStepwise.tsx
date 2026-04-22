@@ -1851,7 +1851,7 @@ export default function CreateEventStepwise() {
                   message: 'Event created successfully! It is pending admin approval.',
                   fromEventCreation: true,
                   showKYCPrompt: !apiData.isFree && !user?.organizerEntityType,
-                  eventTitle: response.data.title,
+                  eventTitle: response.data.event?.title,
                 }
               });
             }

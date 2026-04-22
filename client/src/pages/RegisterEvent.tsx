@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
-import { Calendar, MapPin, AlertCircle, Check, RefreshCw, User, Ticket, Minus, Plus, Crown, Clock, CheckCircle, X, ShieldCheck, Tag } from "lucide-react";
+import { Calendar, MapPin, AlertCircle, Check, RefreshCw, User, Minus, Plus, CheckCircle, X, ShieldCheck, Tag } from "lucide-react";
 import { Loader, LoadingText } from "@/components/ui/loader";
 
 // UI Components
@@ -22,7 +22,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { registerForEvent, registerAsGuest } from "@/lib/event-api";
 import { validatePromoCode } from "@/lib/promo-code-api";
 import type { RegistrationField } from "@/types/event";
-import { Badge } from "@/components/ui/badge";
 import { isVIPTicket, hasDiscount, calculateDiscountPercentage, calculateTimeRemaining, isTicketTypeAvailable } from "@/utils/ticket-helpers";
 
 interface FormData {
@@ -332,33 +331,7 @@ const EventRegistration = () => {
             });
           }
         } else {
-          const subtotal = event.ticketTypes?.reduce((sum, ticket) => {
-            const qty = selectedTickets[ticket.name] || 0;
-            return sum + (ticket.price * qty);
-          }, 0) || 0;
-          const discount = appliedDiscount?.amount || 0;
-          const calculatedTotalPrice = subtotal - discount;
-          const totalPrice = Number(registration.totalAmount ?? calculatedTotalPrice);
-
-          navigate(`/event/${eventId}/payment`, {
-            state: {
-              registrationId: registration.id,
-              eventId: eventId,
-              eventTitle: event.title,
-              tickets: event.ticketTypes?.map(t => ({
-                name: t.name,
-                quantity: selectedTickets[t.name] || 0,
-                price: t.price
-              })).filter(t => t.quantity > 0) || [],
-              totalPrice: totalPrice,
-              discount: discount,
-              promoCode: appliedDiscount ? promoCode : undefined,
-              userEmail: authUser?.email,
-            }
-          });
-        }
-      } else {
-        throw new Error(response.message || 'Registration failed. Please try again.');
+          throw new Error(response.message || 'Registration failed. Please try again.');
         }
       }
     } catch (err: unknown) {

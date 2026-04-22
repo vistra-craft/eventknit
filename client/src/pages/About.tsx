@@ -15,7 +15,6 @@ import { useNavigate } from "react-router-dom";
 
 // Images
 import heroImg from "@/assets/about/hero-conference.jpg";
-import energyImg from "@/assets/about/event-energy.jpg";
 import buildSomethingImg from "@/assets/about/build_something.jpg";
 import africaMapImg from "@/assets/about/africa-dotted.png";
 
