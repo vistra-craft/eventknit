@@ -106,6 +106,7 @@ describe('PaymentService', () => {
       processWebhook: vi.fn(),
       getDefaultGateway: vi.fn().mockReturnValue(mockGateway),
       getGateway: vi.fn().mockReturnValue(mockGateway),
+      resolveGatewayForCurrency: vi.fn().mockReturnValue('PAYSTACK'),
     };
     (paymentGatewayManager.getPaymentGatewayManager as vi.Mock).mockReturnValue(mockGatewayManager);
   });

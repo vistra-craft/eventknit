@@ -62,22 +62,25 @@ describe('PaymentController.handleWebhook', () => {
     });
 
     it('should detect Paystack via x-paystack-signature header', async () => {
-      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
       (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
+      const body = { event: 'charge.success', data: { id: 'evt_001', reference: 'ref_001' } };
       const req = makeReq({
         headers: { 'x-paystack-signature': 'valid-paystack-sig' },
-        body: { event: 'charge.success', data: { id: 'evt_001', reference: 'ref_001' } },
+        body,
       });
       const res = makeRes();
 
       await PaymentController.handleWebhook(req, res, mockNext);
 
-      // verifyWebhookSignature called without 'STRIPE' argument (defaults to Paystack)
-      expect(paymentService.verifyWebhookSignature).toHaveBeenCalledWith(
-        expect.any(String),
+      // Paystack: controller delegates signature verification to gateway via handleWebhook
+      expect(paymentService.verifyWebhookSignature).not.toHaveBeenCalled();
+      expect(paymentService.handleWebhook).toHaveBeenCalledWith(
+        'charge.success',
+        body.data,
+        'PAYSTACK',
         'valid-paystack-sig',
-        // no third argument — Paystack path
+        expect.any(String),
       );
       expect(res.status).toHaveBeenCalledWith(200);
     });
@@ -110,8 +113,11 @@ describe('PaymentController.handleWebhook', () => {
   });
 
   describe('Paystack webhook', () => {
-    it('should return 401 for invalid Paystack signature', async () => {
-      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(false);
+    it('should return 200 with success:false when Paystack gateway rejects signature', async () => {
+      // Paystack signature verification is delegated to the gateway inside handleWebhook.
+      // An invalid signature causes the gateway to throw, which the controller catches and
+      // returns 200 (so the provider stops retrying) with success: false.
+      (paymentService.handleWebhook as vi.Mock).mockRejectedValue(new Error('Invalid signature'));
 
       const req = makeReq({
         headers: { 'x-paystack-signature': 'bad-sig' },
@@ -121,15 +127,13 @@ describe('PaymentController.handleWebhook', () => {
 
       await PaymentController.handleWebhook(req, res, mockNext);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ success: false, message: 'Invalid signature' }),
+        expect.objectContaining({ success: false }),
       );
-      expect(paymentService.handleWebhook).not.toHaveBeenCalled();
     });
 
     it('should process Paystack event and return 200 on valid signature', async () => {
-      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
       (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const paystackBody = {
@@ -145,10 +149,12 @@ describe('PaymentController.handleWebhook', () => {
 
       await PaymentController.handleWebhook(req, res, mockNext);
 
-      // Should call handleWebhook with Paystack event name and data (no gateway arg)
       expect(paymentService.handleWebhook).toHaveBeenCalledWith(
         'charge.success',
         paystackBody.data,
+        'PAYSTACK',
+        'valid-sig',
+        expect.any(String),
       );
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
@@ -157,7 +163,6 @@ describe('PaymentController.handleWebhook', () => {
     });
 
     it('should use rawBody over JSON.stringify for HMAC verification', async () => {
-      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
       (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const rawBody = '{"event":"charge.success","data":{"id":"evt_001"}}';
@@ -170,15 +175,17 @@ describe('PaymentController.handleWebhook', () => {
 
       await PaymentController.handleWebhook(req, res, mockNext);
 
-      // Must use rawBody, not JSON.stringify of parsed body
-      expect(paymentService.verifyWebhookSignature).toHaveBeenCalledWith(
-        rawBody,
+      // rawBody is passed as 5th arg to handleWebhook for gateway-level HMAC verification
+      expect(paymentService.handleWebhook).toHaveBeenCalledWith(
+        'charge.success',
+        { id: 'evt_001' },
+        'PAYSTACK',
         'valid-sig',
+        rawBody,
       );
     });
 
     it('should fall back to JSON.stringify when rawBody is absent', async () => {
-      (paymentService.verifyWebhookSignature as vi.Mock).mockReturnValue(true);
       (paymentService.handleWebhook as vi.Mock).mockResolvedValue({ status: 'OK' });
 
       const body = { event: 'charge.success', data: { id: 'evt_001' } };
@@ -191,9 +198,13 @@ describe('PaymentController.handleWebhook', () => {
 
       await PaymentController.handleWebhook(req, res, mockNext);
 
-      expect(paymentService.verifyWebhookSignature).toHaveBeenCalledWith(
-        JSON.stringify(body),
+      // Falls back to JSON.stringify(body) as 5th arg when rawBody is absent
+      expect(paymentService.handleWebhook).toHaveBeenCalledWith(
+        'charge.success',
+        body.data,
+        'PAYSTACK',
         'valid-sig',
+        JSON.stringify(body),
       );
     });
   });
@@ -240,7 +251,7 @@ describe('PaymentController.handleWebhook', () => {
 
       await PaymentController.handleWebhook(req, res, mockNext);
 
-      // handleWebhook called with (eventType, { ...data.object, id: evt_id }, 'STRIPE')
+      // handleWebhook called with (eventType, { ...data.object, id: evt_id }, 'STRIPE', sig)
       expect(paymentService.handleWebhook).toHaveBeenCalledWith(
         'payment_intent.succeeded',
         {
@@ -250,6 +261,7 @@ describe('PaymentController.handleWebhook', () => {
           metadata: { registrationId: 'reg_001' },
         },
         'STRIPE',
+        'valid-stripe-sig',
       );
       expect(res.status).toHaveBeenCalledWith(200);
     });
