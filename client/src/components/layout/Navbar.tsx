@@ -15,6 +15,7 @@ interface NavbarProps {
   transparent?: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const Navbar: React.FC<NavbarProps> = ({ transparent: _transparent = false }) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout, isLoading, refreshProfile } = useAuth();

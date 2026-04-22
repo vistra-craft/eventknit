@@ -93,6 +93,7 @@ describe('EventService - Event Creation', () => {
   const mockOrganizer = {
     id: 'organizer-123',
     email: 'organizer@test.com',
+    firstName: 'Test',
     role: UserRole.ORGANIZER,
     status: UserStatus.ACTIVE,
     profileCompleted: true,
@@ -100,6 +101,7 @@ describe('EventService - Event Creation', () => {
     verificationLevel: 2,
     payoutLimit: null,
     kycStatus: 'APPROVED',
+    organizerEntityType: 'INDIVIDUAL',
   };
 
   const baseEventData: CreateEventData = {
@@ -151,6 +153,9 @@ describe('EventService - Event Creation', () => {
             verificationLevel: true,
             payoutLimit: true,
             kycStatus: true,
+            organizerEntityType: true,
+            email: true,
+            firstName: true,
           },
         });
         expect(prisma.event.create).toHaveBeenCalled();
@@ -315,7 +320,7 @@ describe('EventService - Event Creation', () => {
         );
 
         // Assert
-        expect(result).toEqual(createdEvent);
+        expect(result.event).toEqual(createdEvent);
         expect(prisma.event.create).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({

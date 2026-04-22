@@ -14,6 +14,7 @@ interface Country {
 }
 
 // East Africa first, then rest of Africa, then global (alphabetical within regions)
+// eslint-disable-next-line react-refresh/only-export-components
 export const COUNTRIES: Country[] = [
   // ── East Africa (priority) ────────────────────────────────────────────────
   { name: 'Kenya',                    dialCode: '+254', flag: '🇰🇪' },
