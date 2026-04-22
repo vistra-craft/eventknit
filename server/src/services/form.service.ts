@@ -302,6 +302,7 @@ export const FormService = {
           email: response.respondentEmail,
           userId: response.respondentId,
           formResponseId: response.id,
+          addedById: reviewedById,
           reviewedById,
           reviewedAt: new Date(),
         },

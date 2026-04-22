@@ -8,7 +8,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import {
   Share2,
   Instagram,
-  Twitter,
   Facebook,
   Youtube,
   Linkedin,
@@ -26,6 +25,7 @@ import {
   Filter,
   Trash2
 } from "lucide-react";
+import { SiWhatsapp, SiX, SiTiktok } from "react-icons/si";
 import { showErrorToast } from "@/lib/utils/error";
 import {
   getSocialAccounts,
@@ -58,6 +58,7 @@ interface SocialPost {
 interface SocialAccount {
   platform: string;
   name: string;
+  handle: string;
   followers: number;
   engagement: number;
   status: 'connected' | 'disconnected';
@@ -165,8 +166,29 @@ const AdminSocialMediaPage = () => {
   // Mock social accounts (used as fallback when API returns empty)
   const mockSocialAccounts: SocialAccount[] = [
     {
+      platform: "whatsapp",
+      name: "FestHub Events",
+      handle: "@festhubevents",
+      followers: 9800,
+      engagement: 7.1,
+      status: "connected",
+      icon: SiWhatsapp,
+      color: "bg-[#25D366]"
+    },
+    {
+      platform: "x",
+      name: "FestHub Events",
+      handle: "@festhubevents",
+      followers: 8900,
+      engagement: 6.8,
+      status: "connected",
+      icon: SiX,
+      color: "bg-foreground"
+    },
+    {
       platform: "facebook",
-      name: "EventKnit Official",
+      name: "FestHub Events",
+      handle: "@festhubevents",
       followers: 12500,
       engagement: 4.2,
       status: "connected",
@@ -174,17 +196,9 @@ const AdminSocialMediaPage = () => {
       color: "bg-primary"
     },
     {
-      platform: "twitter",
-      name: "@eventknit",
-      followers: 8900,
-      engagement: 6.8,
-      status: "connected",
-      icon: Twitter,
-      color: "bg-primary"
-    },
-    {
       platform: "instagram",
-      name: "@eventknit",
+      name: "FestHub Events",
+      handle: "@festhubevents",
       followers: 15600,
       engagement: 8.5,
       status: "connected",
@@ -192,22 +206,34 @@ const AdminSocialMediaPage = () => {
       color: "bg-primary"
     },
     {
+      platform: "youtube",
+      name: "FestHub Events",
+      handle: "@festhubevents",
+      followers: 2100,
+      engagement: 12.3,
+      status: "connected",
+      icon: Youtube,
+      color: "bg-destructive"
+    },
+    {
+      platform: "tiktok",
+      name: "FestHub Events",
+      handle: "@festhubevents",
+      followers: 5400,
+      engagement: 9.6,
+      status: "connected",
+      icon: SiTiktok,
+      color: "bg-foreground"
+    },
+    {
       platform: "linkedin",
-      name: "EventKnit",
+      name: "FestHub Events",
+      handle: "@festhubevents",
       followers: 3200,
       engagement: 3.1,
       status: "connected",
       icon: Linkedin,
       color: "bg-primary"
-    },
-    {
-      platform: "youtube",
-      name: "EventKnit Channel",
-      followers: 2100,
-      engagement: 12.3,
-      status: "disconnected",
-      icon: Youtube,
-      color: "bg-destructive"
     }
   ];
 
@@ -215,7 +241,8 @@ const AdminSocialMediaPage = () => {
   const socialAccounts: SocialAccount[] = apiAccounts.length > 0
     ? apiAccounts.map(acc => ({
         platform: acc.platform.toLowerCase(),
-        name: acc.accountName,
+        name: "FestHub Events",
+        handle: "@festhubevents",
         followers: acc.followers || 0,
         engagement: 0, // Calculate from metrics if available
         status: acc.isActive ? "connected" as const : "disconnected" as const,
@@ -311,11 +338,14 @@ const AdminSocialMediaPage = () => {
   // Helper to get platform icon component
   function getPlatformIconComponent(platform: string): React.ComponentType<{ className?: string }> {
     switch (platform) {
+      case 'whatsapp': return SiWhatsapp;
+      case 'x': return SiX;
       case 'facebook': return Facebook;
-      case 'twitter': return Twitter;
+      case 'twitter': return SiX;
       case 'instagram': return Instagram;
       case 'linkedin': return Linkedin;
       case 'youtube': return Youtube;
+      case 'tiktok': return SiTiktok;
       default: return Share2;
     }
   }
@@ -323,33 +353,42 @@ const AdminSocialMediaPage = () => {
   // Helper to get platform color class
   function getPlatformColorClass(platform: string): string {
     switch (platform) {
+      case 'whatsapp': return "bg-[#25D366]";
+      case 'x': return "bg-foreground";
       case 'facebook': return "bg-primary";
       case 'twitter': return "bg-primary";
       case 'instagram': return "bg-primary";
       case 'linkedin': return "bg-primary";
       case 'youtube': return "bg-destructive";
+      case 'tiktok': return "bg-foreground";
       default: return "bg-muted";
     }
   }
 
   const getPlatformIcon = (platform: string) => {
     switch (platform) {
+      case 'whatsapp': return <SiWhatsapp className="h-4 w-4" />;
+      case 'x': return <SiX className="h-4 w-4" />;
       case 'facebook': return <Facebook className="h-4 w-4" />;
-      case 'twitter': return <Twitter className="h-4 w-4" />;
+      case 'twitter': return <SiX className="h-4 w-4" />;
       case 'instagram': return <Instagram className="h-4 w-4" />;
       case 'linkedin': return <Linkedin className="h-4 w-4" />;
       case 'youtube': return <Youtube className="h-4 w-4" />;
+      case 'tiktok': return <SiTiktok className="h-4 w-4" />;
       default: return <Share2 className="h-4 w-4" />;
     }
   };
 
   const getPlatformColor = (platform: string) => {
     switch (platform) {
+      case 'whatsapp': return "bg-[#25D366]";
+      case 'x': return "bg-foreground";
       case 'facebook': return "bg-primary";
       case 'twitter': return "bg-primary";
       case 'instagram': return "bg-primary";
       case 'linkedin': return "bg-primary";
       case 'youtube': return "bg-destructive";
+      case 'tiktok': return "bg-foreground";
       default: return "bg-muted";
     }
   };
@@ -515,6 +554,7 @@ const AdminSocialMediaPage = () => {
                       </Badge>
                     </div>
                     <h3 className="text-lg font-semibold text-foreground mb-1">{account.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-2">{account.handle}</p>
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span>{account.followers.toLocaleString()} followers</span>
                       <span>{account.engagement}% engagement</span>
@@ -593,11 +633,14 @@ const AdminSocialMediaPage = () => {
                   className="px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                 >
                   <option value="all">All Platforms</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="x">X</option>
                   <option value="facebook">Facebook</option>
-                  <option value="twitter">Twitter</option>
+                  <option value="twitter">X (Twitter)</option>
                   <option value="instagram">Instagram</option>
                   <option value="linkedin">LinkedIn</option>
                   <option value="youtube">YouTube</option>
+                  <option value="tiktok">TikTok</option>
                 </select>
                 <Button variant="outline" size="sm">
                   <Filter className="h-4 w-4 mr-2" />
@@ -702,6 +745,7 @@ const AdminSocialMediaPage = () => {
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-foreground">{account.name}</h3>
+                      <p className="text-sm text-muted-foreground">{account.handle}</p>
                       <p className="text-sm text-muted-foreground">
                         {account.followers.toLocaleString()} followers • {account.engagement}% engagement
                       </p>
