@@ -6,6 +6,7 @@ import TicketViewPage from '../TicketViewPage';
 import * as ticketApi from '@/lib/ticket-api';
 import * as eventApi from '@/lib/event-api';
 import { useAuth } from '@/hooks/useAuth';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 // Mock dependencies
 vi.mock('@/lib/ticket-api');
@@ -43,9 +44,11 @@ const mockGetEventById = eventApi.getEventById as ReturnType<typeof vi.fn>;
 
 const renderWithRouter = (component: React.ReactElement) => {
   return render(
-    <BrowserRouter>
-      {component}
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        {component}
+      </BrowserRouter>
+    </ThemeProvider>
   );
 };
 

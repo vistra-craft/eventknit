@@ -156,8 +156,6 @@ export class PaymentController {
         return;
       }
 
-      // Use the raw body for HMAC verification (Stripe requires exact bytes sent).
-      // Fall back to JSON.stringify if rawBody wasn't captured (e.g. in tests).
       const payload = req.rawBody ?? JSON.stringify(req.body);
 
       if (isStripe) {
@@ -175,16 +173,10 @@ export class PaymentController {
           data: { object: Record<string, unknown> };
         };
         const stripeData = { ...stripeBody.data.object, id: stripeBody.id };
-        await paymentService.handleWebhook(stripeBody.type, stripeData, 'STRIPE');
+        await paymentService.handleWebhook(stripeBody.type, stripeData, 'STRIPE', stripeSig!);
       } else {
-        const isValid = paymentService.verifyWebhookSignature(payload, paystackSig!);
-        if (!isValid) {
-          logger.warn('Invalid Paystack webhook signature');
-          res.status(401).json({ success: false, message: 'Invalid signature' });
-          return;
-        }
-
-        await paymentService.handleWebhook(req.body.event, req.body.data);
+        // Paystack: delegate signature verification to gateway inside handleWebhook
+        await paymentService.handleWebhook(req.body.event, req.body.data, 'PAYSTACK', paystackSig!, payload);
       }
 
       // Always return 200 so the payment provider stops retrying
