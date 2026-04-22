@@ -175,11 +175,16 @@ export class PaymentController {
           data: { object: Record<string, unknown> };
         };
         const stripeData = { ...stripeBody.data.object, id: stripeBody.id };
-        await paymentService.handleWebhook(stripeBody.type, stripeData, 'STRIPE', stripeSig);
+        await paymentService.handleWebhook(stripeBody.type, stripeData, 'STRIPE');
       } else {
-        // For Paystack, pass raw payload and signature to service for gateway-level verification
-        // The gateway will perform its own HMAC-SHA512 validation per Paystack documentation
-        await paymentService.handleWebhook(req.body.event, req.body.data, 'PAYSTACK', paystackSig, payload);
+        const isValid = paymentService.verifyWebhookSignature(payload, paystackSig!);
+        if (!isValid) {
+          logger.warn('Invalid Paystack webhook signature');
+          res.status(401).json({ success: false, message: 'Invalid signature' });
+          return;
+        }
+
+        await paymentService.handleWebhook(req.body.event, req.body.data);
       }
 
       // Always return 200 so the payment provider stops retrying
