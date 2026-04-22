@@ -11,7 +11,7 @@ const sections: LegalSection[] = [
 
 You must be at least 18 years of age, or the age of legal majority in your jurisdiction, to create an account or use our Services. If you are between 13 and 18 years of age, you may only use the Services with the consent and supervision of a parent or legal guardian who agrees to be bound by these Terms. We do not knowingly allow individuals under 13 to use the Services.
 
-If you do not agree to these Terms, you must discontinue use of the Services immediately. Your continued use of EventKnit after any modifications to these Terms constitutes your acceptance of those changes.`,
+If you do not agree to these Terms, you must discontinue use of the Services immediately. For material changes, we will provide at least fourteen (14) days' prior notice (unless a shorter period is required for legal, security, or abuse-prevention reasons). Your continued use of EventKnit after the effective date of revised Terms constitutes acceptance of those revisions.`,
   },
   {
     id: 'services',
@@ -20,7 +20,7 @@ If you do not agree to these Terms, you must discontinue use of the Services imm
 
 EventKnit acts as an intermediary platform and marketplace. We are not the organizer, host, or producer of any event listed on our platform unless explicitly stated otherwise. The contractual relationship for event attendance is between you and the Organizer. EventKnit facilitates this relationship by providing technology infrastructure, payment processing, and communication tools, but we do not control and are not responsible for the actions, omissions, quality, safety, legality, or any other aspect of events listed on the platform.
 
-We reserve the right to modify, suspend, or discontinue any part of the Services at any time, with or without notice. We will make reasonable efforts to notify users of significant changes that affect their use of the platform.`,
+We reserve the right to modify, suspend, or discontinue any part of the Services at any time. Where reasonably practicable, we will provide advance notice of significant changes that affect your use of the platform.`,
   },
   {
     id: 'accounts',
@@ -56,7 +56,7 @@ You agree to comply with all venue rules, event guidelines, and applicable laws 
     title: '6. Payments, Fees, and Pricing',
     content: `EventKnit processes payments securely through trusted third-party payment processors, including Stripe and other providers we may use from time to time. By making a purchase on our platform, you agree to the terms of the applicable payment processor in addition to these Terms.
 
-All prices displayed on the platform are set by Organizers and are shown in the applicable currency. EventKnit may charge service fees on ticket purchases, which will be clearly displayed before you complete your transaction. These service fees compensate EventKnit for providing the platform, payment processing, and related services, and are generally non-refundable unless the event is cancelled.
+All prices displayed on the platform are set by Organizers and are shown in the applicable currency. EventKnit may charge service fees on ticket purchases, which will be clearly displayed before you complete your transaction. These service fees compensate EventKnit for providing the platform, payment processing, and related services and are non-refundable except where required by applicable law or where EventKnit determines a refund is necessary due to a platform error.
 
 Organizers are responsible for determining ticket prices, applicable taxes, and any additional fees. EventKnit does not control pricing decisions made by Organizers and is not responsible for errors in pricing set by Organizers. If you believe you have been charged incorrectly, please contact us at support@eventknit.com.
 
@@ -65,13 +65,13 @@ For Organizers receiving payouts, EventKnit will transfer funds in accordance wi
   {
     id: 'refunds',
     title: '7. Refunds and Cancellations',
-    content: `Refund policies for events are set by individual Organizers and are displayed on the event page before registration. EventKnit supports several refund configurations, including full refunds, partial refunds, custom policies, and no-refund policies. You should review the applicable refund policy before completing your purchase.
+    content: `Refund policies are set by individual Organizers and are displayed on each event page before registration. EventKnit provides the technical infrastructure for ticketing and payment facilitation, but the Organizer is primarily responsible for defining and honoring their event refund policy. You should review the applicable refund policy before completing your purchase.
 
-If an Organizer cancels an event, you are entitled to a full refund of the ticket price. EventKnit will process such refunds within 5 to 10 business days of the cancellation announcement. Service fees may or may not be refunded in the case of Organizer-initiated cancellations, depending on the circumstances.
+  If an Organizer cancels an event, the Organizer is responsible for initiating attendee refunds in accordance with their policy and applicable law. Once authorized by the Organizer (or otherwise required by law), EventKnit and its payment partners will facilitate technical refund processing. Processing timelines may vary by payment method, bank, and region.
 
-If an event is postponed rather than cancelled, the Organizer may offer to honor existing tickets for the new date. If you are unable to attend the rescheduled event, your eligibility for a refund will depend on the Organizer's refund policy.
+  If an event is postponed rather than cancelled, the Organizer may honor existing tickets for the new date. If you are unable to attend the rescheduled event, refund eligibility is determined by the Organizer's policy and applicable law.
 
-EventKnit reserves the right to issue refunds at its discretion in cases of platform errors, duplicate charges, or other exceptional circumstances. To request a refund, contact the Organizer directly through the platform or reach out to us at support@eventknit.com.`,
+  Service fees charged by EventKnit are non-refundable except where required by applicable law or where EventKnit determines a refund is necessary due to platform error, duplicate charge, fraud response, or other exceptional circumstances. For refund requests, contact the Organizer first through the platform. If your issue relates to a platform billing error, contact support@eventknit.com.`,
   },
   {
     id: 'transfers',
@@ -85,15 +85,19 @@ Transferred tickets may not be re-transferred unless the Organizer's policy expl
   {
     id: 'prohibited',
     title: '9. Prohibited Conduct',
-    content: `You agree not to use the Services for any purpose that is unlawful, harmful, or in violation of these Terms. Without limiting the foregoing, you specifically agree not to engage in any of the following activities:
-
-Creating events that are fraudulent, misleading, or designed to deceive attendees about the nature, quality, or existence of the event. Uploading content that infringes the intellectual property rights of any third party, or that is defamatory, obscene, threatening, or otherwise objectionable. Using automated tools, bots, scrapers, or other software to access the Services, purchase tickets in bulk, or circumvent any security or rate-limiting measures we employ.
-
-Engaging in ticket scalping, unauthorized resale above face value, or any scheme to artificially inflate ticket demand or prices. Attempting to gain unauthorized access to other users' accounts, our servers, or any systems connected to the Services. Harassing, threatening, or intimidating other users, Organizers, or EventKnit staff through the platform.
-
-Manipulating reviews, ratings, or feedback systems. Using the platform to distribute malware, spam, or phishing content. Circumventing or disabling any technological measures we use to protect the Services or enforce these Terms.
-
-We reserve the right to investigate and take appropriate action against anyone who violates these prohibitions, including removing content, suspending or terminating accounts, reporting activity to law enforcement, and pursuing legal remedies.`,
+    content: `You agree not to use the Services for any purpose that is unlawful, harmful, or in violation of these Terms. The following activities are specifically prohibited:`,
+    items: [
+      "Creating events that are fraudulent, misleading, or designed to deceive attendees about the nature, quality, or existence of the event.",
+      "Uploading content that infringes the intellectual property rights of any third party, or that is defamatory, obscene, threatening, or otherwise objectionable.",
+      "Using automated tools, bots, scrapers, or other software to access the Services, purchase tickets in bulk, or circumvent any security or rate-limiting measures we employ.",
+      "Engaging in ticket scalping, unauthorized resale above face value, or any scheme to artificially inflate ticket demand or prices.",
+      "Attempting to gain unauthorized access to other users' accounts, our servers, or any systems connected to the Services.",
+      "Harassing, threatening, or intimidating other users, Organizers, or EventKnit staff through the platform.",
+      "Manipulating reviews, ratings, or feedback systems.",
+      "Using the platform to distribute malware, spam, or phishing content.",
+      "Circumventing or disabling any technological measures we use to protect the Services or enforce these Terms.",
+    ],
+    note: 'We reserve the right to investigate and take appropriate action against violators, including removing content, suspending or terminating accounts, reporting activity to law enforcement, and pursuing legal remedies.',
   },
   {
     id: 'ip',
@@ -107,16 +111,24 @@ You represent and warrant that you have the right to grant this license for any 
   {
     id: 'indemnification',
     title: '11. Indemnification',
-    content: `You agree to indemnify, defend, and hold harmless EventKnit, its officers, directors, employees, agents, and affiliates from and against any and all claims, damages, losses, liabilities, costs, and expenses (including reasonable attorney fees) arising out of or related to: your use of the Services; your violation of these Terms; your violation of any applicable law or regulation; your breach of any representation or warranty made by you herein; any content you upload, publish, or transmit through the Services; any event you organize, host, or attend through the platform; or any dispute between you and any other user or third party.
-
-This indemnification obligation shall survive the termination of your account and these Terms.`,
+    content: `You agree to indemnify, defend, and hold harmless EventKnit, its officers, directors, employees, agents, and affiliates from and against any claims, damages, losses, liabilities, costs, and expenses (including reasonable attorney fees) arising out of or related to:`,
+    items: [
+      'Your use of the Services.',
+      'Your violation of these Terms.',
+      'Your violation of any applicable law or regulation.',
+      'Your breach of any representation or warranty made herein.',
+      'Any content you upload, publish, or transmit through the Services.',
+      'Any event you organize, host, or attend through the platform.',
+      'Any dispute between you and any other user or third party.',
+    ],
+    note: 'This indemnification obligation shall survive the termination of your account and these Terms.',
   },
   {
     id: 'liability',
     title: '12. Limitation of Liability',
     content: `TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, EVENTKNIT AND ITS OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, AND AFFILIATES SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING OUT OF OR IN CONNECTION WITH YOUR USE OF THE SERVICES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, GOODWILL, OR OTHER INTANGIBLE LOSSES, EVEN IF WE HAVE BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
 
-IN NO EVENT SHALL EVENTKNIT'S TOTAL AGGREGATE LIABILITY TO YOU FOR ALL CLAIMS ARISING OUT OF OR RELATED TO THESE TERMS OR THE SERVICES EXCEED THE GREATER OF (A) THE AMOUNTS YOU HAVE PAID TO EVENTKNIT IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM, OR (B) ONE HUNDRED US DOLLARS (USD $100).
+IN NO EVENT SHALL EVENTKNIT'S TOTAL AGGREGATE LIABILITY TO YOU FOR ALL CLAIMS ARISING OUT OF OR RELATED TO THESE TERMS OR THE SERVICES EXCEED THE GREATER OF (A) THE AMOUNTS YOU HAVE PAID TO EVENTKNIT IN THE TWELVE (12) MONTHS PRECEDING THE CLAIM, (B) ONE HUNDRED US DOLLARS (USD $100), OR (C) ANY MINIMUM AMOUNT REQUIRED BY APPLICABLE LAW.
 
 SOME JURISDICTIONS DO NOT ALLOW THE EXCLUSION OR LIMITATION OF CERTAIN DAMAGES. IF THESE LAWS APPLY TO YOU, SOME OR ALL OF THE ABOVE EXCLUSIONS OR LIMITATIONS MAY NOT APPLY, AND YOU MAY HAVE ADDITIONAL RIGHTS.`,
   },
@@ -134,7 +146,7 @@ EventKnit does not endorse any event, Organizer, or Attendee on the platform. An
     title: '14. Dispute Resolution',
     content: `If you have a dispute arising out of or relating to these Terms or the Services, we encourage you to first contact us at support@eventknit.com to attempt an informal resolution. We will make a good-faith effort to resolve any dispute within thirty (30) days of receiving your written notice.
 
-If we are unable to resolve the dispute informally, both parties agree that any remaining dispute, controversy, or claim shall be resolved through binding arbitration in accordance with the Arbitration and Conciliation Act of Nigeria, rather than in court. Both parties waive the right to a jury trial and the right to participate in a class action or representative proceeding.
+If we are unable to resolve the dispute informally, both parties agree that any remaining dispute, controversy, or claim shall be resolved through binding arbitration in accordance with the Arbitration and Mediation Act 2023 of Nigeria (as amended or replaced from time to time), rather than in court. To the extent permitted by applicable law, both parties waive any right to a jury trial and any right to participate in a class, collective, or representative proceeding.
 
 The arbitration shall be conducted by a single arbitrator in Lagos, Nigeria, and the language of the arbitration shall be English. The arbitrator's decision shall be final and binding, and judgment on the award may be entered in any court of competent jurisdiction.
 
@@ -168,11 +180,13 @@ In the event of a force majeure occurrence, EventKnit will make reasonable effor
   {
     id: 'changes',
     title: '18. Changes to These Terms',
-    content: `We may update these Terms from time to time to reflect changes in our Services, legal requirements, or business practices. When we make material changes, we will notify you by posting the updated Terms on this page with a revised "Last updated" date, and where appropriate, by sending you an email notification or displaying a notice within the platform.
+    content: `We may update these Terms from time to time to reflect changes in our Services, legal requirements, or business practices. When we make material changes, we will post the updated Terms on this page with a revised "Last updated" date and provide notice by email and/or in-product notification where reasonably practicable.
 
-Your continued use of the Services after the effective date of any changes constitutes your acceptance of the revised Terms. If you do not agree with the updated Terms, you should discontinue your use of the Services and close your account.
+  Unless a shorter period is required for legal, security, or abuse-prevention reasons, material changes will become effective no earlier than fourteen (14) days after notice is provided. If you do not agree with the updated Terms, you should discontinue your use of the Services and close your account before the effective date.
 
-We encourage you to review these Terms periodically to stay informed of your rights and obligations.`,
+  Your continued use of the Services after the effective date of the updated Terms constitutes acceptance of those Terms.
+
+  We encourage you to review these Terms periodically to stay informed of your rights and obligations.`,
   },
   {
     id: 'severability',
@@ -186,11 +200,28 @@ You may not assign or transfer your rights or obligations under these Terms with
   {
     id: 'contact',
     title: '20. Contact Information',
-    content: `If you have questions, concerns, or feedback about these Terms of Service, please contact us through any of the following channels:
+    content: `If you have questions, concerns, or feedback about these Terms of Service, please reach us through any of the following channels:`,
+    items: [
+      'General inquiries & support: support@eventknit.com',
+      'Legal matters: legal@eventknit.com',
+      'Privacy-related concerns: privacy@eventknit.com',
+      'Support section: eventknit.com/support',
+    ],
+    note: 'We aim to respond to all inquiries within two (2) business days.',
+  },
+  {
+    id: 'third-party-links',
+    title: '21. Third-Party Links and Services',
+    content: `The Services may contain links to third-party websites, applications, venues, payment services, social media platforms, or other resources that are not owned or controlled by EventKnit. We provide these links for convenience only. EventKnit does not endorse and is not responsible for the content, terms, privacy practices, availability, or performance of any third-party services.
 
-For general inquiries and support: support@eventknit.com. For legal matters: hello@festhub.events. For privacy-related concerns: privacy@eventknit.com.
+Your interactions with third-party services are solely between you and the applicable third party and are governed by that third party's terms and policies.`,
+  },
+  {
+    id: 'electronic-communications',
+    title: '22. Electronic Communications',
+    content: `By creating an account or using the Services, you consent to receive communications from EventKnit electronically, including by email, in-product messages, SMS/WhatsApp where applicable, and notices posted on the platform. You agree that electronic communications satisfy any legal requirement that such communications be in writing, to the extent permitted by applicable law.
 
-You may also reach us through the support section of our platform at eventknit.com/support. We aim to respond to all inquiries within two (2) business days.`,
+You are responsible for keeping your contact details up to date. You may opt out of non-essential marketing messages at any time, but transactional and service-related communications remain necessary for platform operation.`,
   },
 ];
 
@@ -213,7 +244,7 @@ const TermsOfService = () => {
       title="Terms of Service"
       subtitle="These Terms of Service govern your use of the EventKnit platform. Please read them carefully before creating an account or using our services."
       lastUpdated="April 2026"
-      contactEmail="hello@festhub.events"
+      contactEmail="legal@eventknit.com"
       sections={sections}
     />
   );

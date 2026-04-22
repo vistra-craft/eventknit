@@ -78,7 +78,7 @@ async function backfillAttendeeToOrganizer() {
         data: { role: UserRole.ORGANIZER },
       });
 
-      console.log(`  ✅ Upgraded to ORGANIZER\n`);
+      console.log('  ✅ Upgraded to ORGANIZER\n');
       upgraded++;
     }
 

@@ -4749,3 +4749,65 @@ Now the same registration + amount always produces the same key, so rapid duplic
 ---
 
 *This document consolidates: TECHNICAL_GUIDE.md, TECHNICAL_GUIDE_IMPROVEMENTS.md, AUTHENTICATION_GUIDE.md, AUTHENTICATION_MIGRATION.md, TESTING_GUIDE.md, EVENT_CREATION_GUIDE.md, CHECKOUT_SYSTEM.md, PAYMENT_AND_DISBURSEMENT.md, WHITE_LABEL_BRANDING.md, PROMO_CODES.md, SEAT_ALLOCATION_COMPLETE.md, ADMIN_SECURITY.md, PORT_CONFIG.md, case_study.md, and 8 mobile docs (TECHNICAL_GUIDE.md, TICKET_SCANNING_FLOW.md, DRIFT_SETUP.md, DESIGN_SYSTEM.md, MOBILE_IMPLEMENTATION_GUIDE.md, MOBILE_VS_DESKTOP_FEATURES.md, TESTING_GUIDE.md, TODO_DISCOVERY_FEATURES.md) plus a full codebase audit (121 services, 68 controllers, 55 route files, 151 Prisma models, 250+ pages, Flutter mobile app) into a single comprehensive engineering reference.*
+
+---
+
+## 50. Homepage Event Discovery Architecture
+
+### Overview
+
+The homepage (`client/src/pages/index.tsx`) is the primary event discovery surface. It coordinates three sections — Hero, Popular This Week, and the full Event Grid — through a shared filter state that lives at the page level.
+
+### Filter State Ownership
+
+`SearchFilters` state is owned by `Index` and passed down:
+
+```
+Index (owns SearchFilters state)
+├── EventSearchFilter   ← reads + writes filters
+├── PopularThisWeek     ← receives onSeeAll callback
+└── EventGrid           ← reads filters, fetches from API
+```
+
+This means any section can trigger a filter change without owning state itself.
+
+### "See All" from Popular This Week
+
+Clicking "See All" on the Popular This Week carousel does **not** navigate to a separate page. It:
+
+1. Sets `dateRange: 'this-week'` on the shared filter state
+2. Scrolls to `#search-section` (the EventSearchFilter anchor)
+
+This pre-populates the filter bar and re-fetches the event grid — reusing all existing infrastructure. Implemented via an `onSeeAll` prop passed from `Index` to `PopularThisWeek`.
+
+### Carousel Arrow Navigation
+
+`PopularThisWeek` tracks scroll position via `onScroll` to conditionally show/hide left and right arrow buttons:
+
+- `canScrollLeft` / `canScrollRight` state derived from `scrollLeft`, `scrollWidth`, `clientWidth`
+- Arrows fade in on section hover (`group/popular` + `group-hover/popular:opacity-100`)
+- Scroll amount = one card width + gap (16px), smooth behavior
+
+### Location & Geographic Discovery
+
+**Current behaviour:** All approved public events are returned with no geographic filter. Client-side filtering accepts a free-text `location` string matched against `event.location` and `event.venue`.
+
+**Design decision — no IP geolocation auto-filter:**
+
+IP geolocation is not used as a default filter for the following reasons:
+- IP accuracy in East Africa is inconsistent (mobile data IPs frequently resolve to the wrong city or country)
+- Silent auto-filtering frustrates users who cannot see why events are missing
+- The platform's initial market (Kenya + East African countries) is compact enough that showing all events is not overwhelming
+
+**Planned implementation — explicit city selector:**
+
+A city/country chip filter will be added to `EventSearchFilter` with preset options matching the platform's primary markets:
+
+```
+Nairobi · Mombasa · Kampala · Dar es Salaam · Kigali · Addis Ababa · All Cities
+```
+
+Selection is persisted to `localStorage` (`eventknit-location-preference`) so it survives page refreshes. On first visit with no stored preference, all events are shown.
+
+**Optional first-visit hint:** IP geolocation may be used as a *suggestion only* — a dismissible banner ("Showing events near Nairobi — change?") — not as a silent filter. The user retains full control.
+

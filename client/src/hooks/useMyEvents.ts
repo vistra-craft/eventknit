@@ -187,7 +187,7 @@ export const useMyEvents = (): UseMyEventsReturn => {
     } finally {
       setOrganizingLoading(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch saved events
   const fetchSaved = useCallback(async () => {

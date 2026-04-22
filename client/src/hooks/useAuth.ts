@@ -279,8 +279,15 @@ export const useAuth = () => {
     } catch (error: unknown) {
       // If unauthorized, logout
       if (error && typeof error === 'object' && 'message' in error) {
-        const msg = error.message as string;
-        if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('token')) {
+        const msg = (error.message as string).toLowerCase();
+        const status = 'status' in error ? (error as { status?: number }).status : undefined;
+        const isAuthError = status === 401 ||
+          msg.includes('401') ||
+          msg.includes('unauthorized') ||
+          msg.includes('token') ||
+          msg.includes('session') ||
+          msg.includes('expired');
+        if (isAuthError) {
           removeAccessToken();
           dispatch({ type: 'AUTH_LOGOUT' });
         }

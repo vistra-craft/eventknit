@@ -412,6 +412,14 @@ model User {
   approvalMessages   EventApprovalMessage[] @relation("OrganizerApprovalMessages")
   // Managed events administered by this admin
   adminManagedEvents Event[]             @relation("AdminManagedEvents")
+  // Company Documents / Forms / Participants
+  uploadedCompanyDocuments  CompanyDocument[]    @relation("CompanyDocUploader")
+  createdForms              EventForm[]          @relation("FormCreator")
+  formResponses             FormResponse[]       @relation("FormRespondent")
+  reviewedFormResponses     FormResponse[]       @relation("FormResponseReviewer")
+  eventParticipantAccounts  EventParticipant[]   @relation("ParticipantUser")
+  addedParticipants         EventParticipant[]   @relation("ParticipantAdder")
+  reviewedParticipants      EventParticipant[]   @relation("ParticipantReviewer")
 
   @@index([email])
   @@index([role])
@@ -934,6 +942,9 @@ model Event {
   reports                EventReport[]             @relation("EventReports")
   // Approval Messages
   approvalMessages       EventApprovalMessage[]    @relation("EventApprovalMessages")
+  // Forms & Participants
+  eventForms             EventForm[]               @relation("EventForms")
+  eventParticipants      EventParticipant[]        @relation("EventParticipants")
 
   // Seating configuration
   hasSeatingMap  Boolean      @default(false) // Whether this event uses a seat map
@@ -5837,4 +5848,234 @@ model SurveyResponse {
   @@index([attendeeId])
   @@index([overallRating])
   @@index([submittedAt])
+}
+
+// ============================================
+// Company Documents
+// ============================================
+
+enum CompanyDocCategory {
+  LEGAL
+  FINANCIAL
+  OPERATIONS
+  COMPLIANCE
+  MARKETING
+  HR
+  CONTRACTS
+  POLICIES
+  OTHER
+}
+
+enum CompanyDocType {
+  FILE
+  GOOGLE_DOC
+  GOOGLE_SHEET
+  GOOGLE_SLIDES
+  EXTERNAL_LINK
+}
+
+model CompanyDocument {
+  id          String           @id @default(uuid())
+  name        String
+  description String?          @db.Text
+  category    CompanyDocCategory
+  type        CompanyDocType
+
+  // For link-type documents
+  externalUrl String?
+
+  // For file-type documents
+  fileUrl            String?
+  cloudinaryPublicId String?
+  fileName           String?
+  fileSize           Int?
+  mimeType           String?
+
+  uploadedById String
+  uploadedBy   User   @relation("CompanyDocUploader", fields: [uploadedById], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([uploadedById])
+  @@index([category])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ============================================
+// Event Forms & Responses
+// ============================================
+
+enum FormStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum FormPurpose {
+  SPEAKER_APPLICATION
+  EXHIBITOR_APPLICATION
+  SPONSORSHIP_APPLICATION
+  SPONSOR_APPLICATION
+  VOLUNTEER_APPLICATION
+  REGISTRATION
+  FEEDBACK
+  GENERAL_INQUIRY
+  CUSTOM
+}
+
+enum FormResponseStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  WAITLISTED
+}
+
+model EventForm {
+  id      String  @id @default(uuid())
+  title   String
+  description String? @db.Text
+
+  eventId String?
+  event   Event?  @relation("EventForms", fields: [eventId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User   @relation("FormCreator", fields: [createdById], references: [id], onDelete: Restrict)
+
+  status      FormStatus  @default(DRAFT)
+  purpose     FormPurpose @default(CUSTOM)
+  customPurpose String?
+
+  targetParticipantType ParticipantType?
+
+  // JSON array of FormQuestion objects
+  questions Json @default("[]")
+
+  isPublic               Boolean   @default(false)
+  allowMultipleResponses Boolean   @default(false)
+  maxResponses           Int?
+  closesAt               DateTime?
+  notifyOnSubmission     Boolean   @default(true)
+  notificationEmail      String?
+
+  // Token for public share link
+  shareToken String @unique @default(uuid())
+
+  responses FormResponse[] @relation("FormResponses")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([createdById])
+  @@index([status])
+  @@index([purpose])
+  @@index([shareToken])
+}
+
+model FormResponse {
+  id     String    @id @default(uuid())
+  formId String
+  form   EventForm @relation("FormResponses", fields: [formId], references: [id], onDelete: Cascade)
+
+  respondentEmail String
+  respondentName  String?
+  respondentId    String?
+  respondent      User?   @relation("FormRespondent", fields: [respondentId], references: [id], onDelete: SetNull)
+
+  // JSON object of question-id -> answer
+  answers Json
+
+  status      FormResponseStatus @default(SUBMITTED)
+  reviewedById String?
+  reviewedBy   User?  @relation("FormResponseReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  reviewNotes  String? @db.Text
+
+  // Auto-created participant when response is approved
+  participant EventParticipant? @relation("ParticipantFormResponse")
+
+  submittedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([formId])
+  @@index([respondentId])
+  @@index([respondentEmail])
+  @@index([status])
+  @@index([submittedAt])
+}
+
+// ============================================
+// Event Participants (Speakers, Exhibitors, etc.)
+// ============================================
+
+enum ParticipantType {
+  SPEAKER
+  EXHIBITOR
+  SPONSOR
+  VOLUNTEER
+  STAFF
+  VIP
+  MEDIA
+  CUSTOM
+}
+
+enum ParticipantStatus {
+  INVITED
+  PENDING
+  APPROVED
+  REJECTED
+  WAITLISTED
+  UNDER_REVIEW
+  CONFIRMED
+  DECLINED
+}
+
+model EventParticipant {
+  id      String @id @default(uuid())
+  eventId String
+  event   Event  @relation("EventParticipants", fields: [eventId], references: [id], onDelete: Cascade)
+
+  type   ParticipantType
+  status ParticipantStatus @default(INVITED)
+
+  name    String
+  email   String
+  phone   String?
+  company String?
+  bio     String? @db.Text
+  website String?
+  linkedin String?
+  twitter  String?
+  avatarUrl String?
+  metadata  Json?
+  customType String?
+
+  // Optional link to a registered user
+  userId String?
+  user   User?  @relation("ParticipantUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  // Optional link to the form response that created this participant
+  formResponseId String?      @unique
+  formResponse   FormResponse? @relation("ParticipantFormResponse", fields: [formResponseId], references: [id], onDelete: SetNull)
+
+  addedById String
+  addedBy   User   @relation("ParticipantAdder", fields: [addedById], references: [id], onDelete: Restrict)
+
+  reviewedById String?
+  reviewedBy   User?   @relation("ParticipantReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  reviewNotes  String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([type])
+  @@index([status])
+  @@index([email])
+  @@index([userId])
+  @@index([addedById])
 }

@@ -15,10 +15,10 @@ async function disableMailTrap() {
           mailTrap: {
             trap: false, // Disabled for production
             toAddress: [],
-            ccAddress: []
+            ccAddress: [],
           },
-          isSystemUnderMaintenance: false
-        }
+          isSystemUnderMaintenance: false,
+        },
       });
       console.log('✅ Configuration created with mail trap DISABLED (production mode)');
     } else {
@@ -32,9 +32,9 @@ async function disableMailTrap() {
             mailTrap: {
               trap: false,
               toAddress: [],
-              ccAddress: []
-            }
-          }
+              ccAddress: [],
+            },
+          },
         });
         console.log('✅ Mail trap DISABLED! Real users will now receive emails.');
       } else {

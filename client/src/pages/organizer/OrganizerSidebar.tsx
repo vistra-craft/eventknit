@@ -13,6 +13,7 @@ import {
   Ticket,
   DollarSign,
   MessageSquare,
+  ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -40,6 +41,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
     communications: location.pathname.startsWith('/organizer/communications') || location.pathname === '/organizer/notifications' || location.pathname.startsWith('/organizer/attendees/communication'),
     finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
     settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/branding') || location.pathname.startsWith('/organizer/verification') || location.pathname.startsWith('/organizer/kyc'),
+    forms: location.pathname.startsWith('/organizer/forms'),
   });
 
   const navigationItems = [
@@ -55,6 +57,13 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
       label: "Events",
       href: "/organizer/events",
       icon: Calendar,
+      group: "main",
+    },
+    {
+      id: "forms",
+      label: "Forms",
+      href: "/organizer/forms",
+      icon: ClipboardList,
       group: "main",
     },
     {
@@ -139,6 +148,7 @@ const OrganizerSidebar: React.FC<OrganizerSidebarProps> = ({ isOpen, onToggle, i
         communications: location.pathname.startsWith('/organizer/communications') || location.pathname === '/organizer/notifications' || location.pathname.startsWith('/organizer/attendees/communication'),
         finance: location.pathname.startsWith('/organizer/financial') || location.pathname.startsWith('/organizer/payouts'),
         settings: location.pathname.startsWith('/organizer/settings') || location.pathname.startsWith('/organizer/profile') || location.pathname.startsWith('/organizer/branding') || location.pathname.startsWith('/organizer/verification') || location.pathname.startsWith('/organizer/kyc'),
+        forms: location.pathname.startsWith('/organizer/forms'),
       }));
     }
   }, [location.pathname, isOrganizerStaff]);

@@ -9,8 +9,7 @@ type MulterInstance = {
   any(): RequestHandler;
 };
 
-// Configure storage
-const storage = multer.memoryStorage(); // Store files in memory for Cloudinary upload
+const storage = multer.memoryStorage();
 
 // Multer configuration
 export const upload: MulterInstance = multer({

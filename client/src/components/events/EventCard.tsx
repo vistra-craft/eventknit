@@ -78,7 +78,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   const timeStr = formatSingleTime(startTime);
 
   const isFree = price === "Free" || price === "0" || price === "0.00";
-  const imgHeight = isFeatured ? "h-72 sm:h-80" : "h-56 sm:h-64";
+  const imgHeight = isFeatured ? "h-72 sm:h-80" : "h-48 sm:h-56";
   const titleSize = isFeatured ? "text-base sm:text-lg" : "text-sm sm:text-base";
 
   const priceDisplay = isFree
@@ -89,11 +89,12 @@ export const EventCard: React.FC<EventCardProps> = ({
 
   // Add to calendar
   const handleAddToCalendar = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation(); // Don't navigate to event page
+    e.stopPropagation();
 
-    const year = startDateObj.getFullYear();
-    const month = String(startDateObj.getMonth() + 1).padStart(2, "0");
-    const day = String(startDateObj.getDate()).padStart(2, "0");
+    const d = new Date(startDate);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
     const [sH, sM] = (startTime || "00:00").split(":").map(Number);
     const dtStart = `${year}${month}${day}T${String(sH).padStart(2, "0")}${String(sM).padStart(2, "0")}00`;
     const eH = sH + 2;

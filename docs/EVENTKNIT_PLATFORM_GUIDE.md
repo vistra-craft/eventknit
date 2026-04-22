@@ -2032,3 +2032,35 @@ The platform runs several automated background jobs that operate without manual 
 ---
 
 *This document consolidates and verifies all platform capabilities against the EventKnit codebase (152 database models, 121 services, 68 controllers, 250+ pages). Last verified: April 2026.*
+
+---
+
+## 28. Event Discovery & Location Strategy
+
+### How Events Are Surfaced on the Homepage
+
+The homepage presents events through two complementary surfaces:
+
+**Popular This Week** — A horizontal carousel of trending events (ranked by registrations) scoped to the current week. Designed for quick scanning. Includes:
+- Arrow navigation (appears on hover)
+- "See All" link that pre-applies a "This Week" date filter to the main event grid and scrolls the user to it — no separate page required
+
+**Upcoming Events Grid** — The full browsable event catalogue with search, date range, category, price, and format filters. Paginated with infinite scroll.
+
+### Location & Geographic Filtering
+
+**Why EventKnit does not auto-detect your location:**
+
+IP-based geolocation is unreliable in East Africa — mobile data connections frequently resolve to the wrong city or country, causing legitimate events to silently disappear from a user's feed without explanation. This erodes trust and is difficult to diagnose.
+
+**What we do instead:**
+
+- By default, all approved public events are shown across all cities and countries
+- Users can explicitly select their city/region using a location filter chip (Nairobi, Kampala, Dar es Salaam, Kigali, Mombasa, etc.)
+- The selected preference is saved to the browser so it persists across visits
+- On first visit, if IP geolocation resolves with reasonable confidence, a non-intrusive suggestion banner may appear ("Showing events near Nairobi — change?") — but the default view is always all events
+
+**Why explicit selection works better for this market:**
+
+EventKnit's primary markets — Kenya, Uganda, Tanzania, Rwanda, Ethiopia — are geographically close and many attendees travel between cities for events. A Nairobi user may intentionally be looking for events in Kampala. Forcing a city filter by default removes that intent. The explicit selector respects the user's agency while still making location filtering fast and persistent.
+

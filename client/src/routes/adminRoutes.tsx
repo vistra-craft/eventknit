@@ -117,6 +117,13 @@ const EditWagePage = lazy(() => import('../pages/admin/finance').then(m => ({ de
 const PlatformFeeConfigPage = lazy(() => import('../pages/admin/finance/PlatformFeeConfigPage'));
 const ResaleTransferReportingPage = lazy(() => import('../pages/admin/finance').then(m => ({ default: m.ResaleTransferReportingPage })));
 
+// Company Documents
+const AdminCompanyDocumentsPage = lazy(() => import('../pages/admin/documents/AdminCompanyDocumentsPage'));
+
+// Forms
+const AdminFormsPage = lazy(() => import('../pages/admin/forms/AdminFormsPage'));
+const AdminFormDetailPage = lazy(() => import('../pages/admin/forms/AdminFormDetailPage'));
+
 // KYC Review
 const KYCReviewDashboard = lazy(() => import('../pages/admin/kyc/KYCReviewDashboard'));
 const KYCOrganizerReviewPage = lazy(() => import('../pages/admin/kyc/KYCOrganizerReviewPage'));
@@ -157,6 +164,8 @@ const MARKETING_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN];
 const SUPPORT_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SUPPORT];
 
 const TELLER_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.TELLER];
+
+const ADMIN_STAFF_ROLES = [UserRole.SUPERADMIN, UserRole.ADMIN, UserRole.SUPPORT];
 
 /**
  * Admin route definitions
@@ -627,6 +636,25 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     path: 'financial/payouts',
     element: createElement(FinancialManagement),
     allowedRoles: ADMIN_ROLES,
+  },
+
+  // Company Documents
+  {
+    path: 'documents',
+    element: createElement(AdminCompanyDocumentsPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+
+  // Forms
+  {
+    path: 'forms',
+    element: createElement(AdminFormsPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'forms/:formId',
+    element: createElement(AdminFormDetailPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
   },
 
   // Event Day Hub

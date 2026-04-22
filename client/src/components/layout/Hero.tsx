@@ -22,6 +22,7 @@ const FALLBACK_LIMIT = 5;
  */
 function eventToFeatured(event: {
   id: string;
+  slug?: string | null;
   title: string;
   image?: string | null;
   imageFocalX?: number | null;
@@ -41,6 +42,7 @@ function eventToFeatured(event: {
     id: `auto-${event.id}`,
     type: "EVENT" as const,
     eventId: event.id,
+    slug: event.slug,
     title: event.title,
     image: event.image || "",
     imageFocalX: event.imageFocalX,
@@ -183,7 +185,7 @@ export const Hero = () => {
 
   const handleViewEvent = () => {
     if (currentEvent.type === "EVENT" && currentEvent.eventId) {
-      navigate(`/event/${currentEvent.eventId}`);
+      navigate(`/event/${currentEvent.slug ?? currentEvent.eventId}`);
     } else if (currentEvent.type === "IMAGE" && currentEvent.linkUrl) {
       if (currentEvent.linkUrl.startsWith("http")) {
         window.open(currentEvent.linkUrl, "_blank");
@@ -411,34 +413,34 @@ function BrandHero() {
   return (
     <section className="relative">
       <div className="relative overflow-hidden h-[480px] sm:h-[500px] lg:h-[560px] bg-gradient-to-br from-primary/10 via-background to-orange-500/5 flex items-center">
-          <AmbientGlow className="w-[500px] h-[500px] bg-primary/10 -top-40 -left-32 z-0" duration={30} />
-          <AmbientGlow className="w-[400px] h-[400px] bg-orange-500/8 -bottom-32 -right-24 z-0" duration={35} delay={5} />
+        <AmbientGlow className="w-[500px] h-[500px] bg-primary/10 -top-40 -left-32 z-0" duration={30} />
+        <AmbientGlow className="w-[400px] h-[400px] bg-orange-500/8 -bottom-32 -right-24 z-0" duration={35} delay={5} />
 
-          <div className="relative z-10 px-8 lg:px-16 max-w-2xl">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }} className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-xs font-medium text-primary uppercase tracking-wider">EventKnit</span>
-            </motion.div>
+        <div className="relative z-10 px-8 lg:px-16 max-w-2xl">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE }} className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium text-primary uppercase tracking-wider">EventKnit</span>
+          </motion.div>
 
-            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.1 }} className="text-3xl lg:text-5xl font-bold text-foreground tracking-tight">
-              Find your next{" "}
-              <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">experience</span>
-            </motion.h1>
+          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.1 }} className="text-3xl lg:text-5xl font-bold text-foreground tracking-tight">
+            Find your next{" "}
+            <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent">experience</span>
+          </motion.h1>
 
-            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.2 }} className="mt-4 text-muted-foreground max-w-lg">
-              Discover events happening around you. From conferences to concerts, workshops to wellness retreats.
-            </motion.p>
+          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.2 }} className="mt-4 text-muted-foreground max-w-lg">
+            Discover events happening around you. From conferences to concerts, workshops to wellness retreats.
+          </motion.p>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.3 }} className="mt-6 flex gap-3">
-              <Button size="lg" onClick={() => document.getElementById("search-section")?.scrollIntoView({ behavior: "smooth" })}>
-                Browse Events
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate("/auth/register/organizer")}>
-                Create Event
-              </Button>
-            </motion.div>
-          </div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.3 }} className="mt-6 flex gap-3">
+            <Button size="lg" onClick={() => document.getElementById("search-section")?.scrollIntoView({ behavior: "smooth" })}>
+              Browse Events
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => navigate("/auth/register/organizer")}>
+              Create Event
+            </Button>
+          </motion.div>
+        </div>
       </div>
     </section>
   );

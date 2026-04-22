@@ -1884,7 +1884,7 @@ export default function CreateEventStepwise() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, saveDraft, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput, orgDescInput, eventData]);
+  }, [validateStep, user, navigate, isEditMode, eventId, transformFormDataToAPI, saveDraft, clearDraft, resetForm, location.pathname, refreshProfile, orgNameInput, orgDescInput, eventData, verificationStatus]);
 
   const handleNext = useCallback(() => {
     if (currentStep < 6) {

@@ -90,6 +90,7 @@ interface TicketType {
 interface PaymentData {
   registrationId: string;
   eventId: string;
+  eventSlug?: string;
   eventTitle: string;
   eventDate?: string;
   eventLocation?: string;
@@ -114,7 +115,6 @@ interface GuestForm {
 type GuestErrors = Partial<Record<keyof GuestForm, string>>;
 
 // ── Sanitization helpers ───────────────────────────────────────────────────
-// Applied on submit, NOT on every keystroke (avoid fighting the user's typing).
 
 const sanitizeName = (v: string) =>
   v.replace(/[^a-zA-Z\s''-]/g, "").replace(/\s{2,}/g, " ").trimStart().slice(0, 60);
@@ -162,7 +162,7 @@ const validateGuestForm = (form: GuestForm): GuestErrors => {
   return errors;
 };
 
-// ── Input field component (local, keeps JSX clean) ─────────────────────────
+// ── Input field component ──────────────────────────────────────────────────
 
 interface FieldProps {
   id: string;
@@ -232,7 +232,6 @@ const PaymentPage = () => {
 
   const showError = useCallback((msg: string) => {
     setError(msg);
-    // Let the DOM update before scrolling so the Alert is mounted
     setTimeout(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
   }, []);
 
@@ -278,7 +277,7 @@ const PaymentPage = () => {
     };
 
     if (reference || trxref) handleCallback();
-  }, [reference, trxref, paymentData, navigate]);
+  }, [reference, trxref, paymentData, navigate, showError]);
 
   useEffect(() => {
     if (!paymentData && !reference && !trxref) navigate("/");
@@ -330,7 +329,6 @@ const PaymentPage = () => {
       return;
     }
 
-    // Email is locked to the one used at registration — never ask the user to re-enter it.
     if (isGuest && !paymentData.userEmail) {
       showError("Session data is incomplete. Please go back and register again.");
       return;
@@ -638,7 +636,7 @@ const PaymentPage = () => {
                   ))}
                 </div>
 
-                {/* Pricing breakdown — border-foreground/12 gives a crisper line than border-border */}
+                {/* Pricing breakdown */}
                 <div className="space-y-2 pt-3 border-t border-foreground/12">
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Subtotal</span>
@@ -677,9 +675,9 @@ const PaymentPage = () => {
                 </div>
               </div>
 
-              {/* Back link */}
+              {/* Back link — uses slug when available */}
               <button
-                onClick={() => navigate(`/event/${paymentData.eventId}/register`)}
+                onClick={() => navigate(`/event/${paymentData.eventSlug ?? paymentData.eventId}/register`)}
                 disabled={loading}
                 className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1 disabled:opacity-40"
               >

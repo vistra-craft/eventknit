@@ -78,7 +78,7 @@ class EventReportService {
       prisma.eventReport.findMany({
         where,
         include: {
-          event: { select: { id: true, title: true, organizerId: true } },
+          event: { select: { id: true, slug: true, title: true, organizerId: true } },
           reporter: { select: { id: true, firstName: true, lastName: true, email: true } },
         },
         orderBy: { createdAt: 'desc' },

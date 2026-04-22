@@ -14,6 +14,7 @@ import { showErrorToast } from "../../lib/utils/error";
 
 interface Ticket {
   id: string;
+  slug?: string | null;
   title: string;
   date: string;
   location: string;
@@ -41,8 +42,9 @@ const MyTickets: React.FC = () => {
         setLoading(true);
         const response = await getUserRegisteredEvents({ page: 1, limit: 100 });
         if (response.success && response.data) {
-          setTickets(response.data.events.map((event: { id: string; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string; ticketEmailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null; ticketEmailSentAt?: string | null; ticketEmailError?: string | null }) => ({
+          setTickets(response.data.events.map((event: { id: string; slug?: string | null; title: string; date?: string; location?: string; venue?: string; status?: string; backupCode?: string; registrationId?: string; image?: string; ticketEmailStatus?: 'PENDING' | 'SUCCESS' | 'FAILED' | null; ticketEmailSentAt?: string | null; ticketEmailError?: string | null }) => ({
             id: event.id,
+            slug: event.slug,
             title: event.title,
             date: event.date || "",
             location: event.venue ? `${event.venue}, ${event.location || ""}` : (event.location || ""),
@@ -180,7 +182,7 @@ const MyTickets: React.FC = () => {
           {filteredTickets.map((ticket) => (
             <div
               key={ticket.id}
-              onClick={() => navigate(`/user/event/${ticket.id}`)}
+              onClick={() => navigate(`/user/event/${ticket.slug ?? ticket.id}`)}
               className="flex gap-4 p-4 bg-background border border-border rounded-lg hover:border-primary/30 transition-colors cursor-pointer group"
             >
               <img

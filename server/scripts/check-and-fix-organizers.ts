@@ -56,7 +56,7 @@ async function checkAndFixOrganizerRoles() {
       console.log(`  Approved Events: ${approvedEventCount}`);
       
       if (approvedEventCount === 0) {
-        console.log(`  ⚠️  Should be ATTENDEE (no approved events)`);
+        console.log('  ⚠️  Should be ATTENDEE (no approved events)');
         needsDowngrade++;
         
         // Downgrade to ATTENDEE
@@ -64,9 +64,9 @@ async function checkAndFixOrganizerRoles() {
           where: { id: user.id },
           data: { role: UserRole.ATTENDEE },
         });
-        console.log(`  ✅ Downgraded to ATTENDEE`);
+        console.log('  ✅ Downgraded to ATTENDEE');
       } else {
-        console.log(`  ✅ Correctly has ORGANIZER role`);
+        console.log('  ✅ Correctly has ORGANIZER role');
         hasApprovedEvents++;
       }
       console.log('');
@@ -92,7 +92,7 @@ async function checkAndFixOrganizerRoles() {
 
 // Run the script
 checkAndFixOrganizerRoles()
-  .then((result) => {
+  .then((_result) => {
     console.log('\n✅ Script complete!');
     process.exit(0);
   })

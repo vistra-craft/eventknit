@@ -32,6 +32,7 @@ const PublicLayout = lazyWithReload(() => import("./layouts/PublicLayout"));
 const UserLayout = lazyWithReload(() => import("./layouts/UserLayout"));
 const OrganizerLayout = lazyWithReload(() => import("./layouts/OrganizerLayout"));
 const AdminLayout = lazyWithReload(() => import("./layouts/AdminLayout"));
+const PublicFormPage = lazyWithReload(() => import("./pages/public/PublicFormPage"));
 // All routes are now defined in client/src/routes/ and rendered by layouts
 
 const GetStarted = lazyWithReload(() => import("./pages/GetStarted"));
@@ -146,6 +147,12 @@ const App = () => (
           </Suspense>
         </ProtectedRoute>
       } />
+      {/* Public form submission (no auth required) */}
+      <Route path="/f/:shareToken" element={
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
+          <PublicFormPage />
+        </Suspense>
+      } />
       {/* Get Started — role selection (guest only) */}
       <Route path="/get-started" element={
         <GuestRoute>
@@ -154,7 +161,6 @@ const App = () => (
           </Suspense>
         </GuestRoute>
       } />
-
       {/* Public Routes - Catch-all */}
       <Route path="/*" element={
         <Suspense fallback={<div className="min-h-screen bg-background" />}>

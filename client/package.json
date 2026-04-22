@@ -9,7 +9,7 @@
     "build:dev": "tsc -b && vite build --mode development",
     "build:staging": "tsc -b && vite build --mode staging",
     "build:prod": "tsc -b && vite build --mode production",
-    "lint": "eslint .",
+    "lint": "npx eslint .",
     "preview": "vite preview",
     "test": "vitest",
     "test:watch": "vitest --watch",
@@ -111,7 +111,7 @@
     "jsdom": "^27.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.9.3",
+    "typescript": "^5.8.3",
     "typescript-eslint": "^8.43.0",
     "vite": "^7.1.6",
     "vitest": "^3.2.4"

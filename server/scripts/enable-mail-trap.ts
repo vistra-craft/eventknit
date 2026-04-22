@@ -11,10 +11,10 @@ async function enableMailTrap() {
           mailTrap: {
             trap: true,
             toAddress: ['vistracraft@gmail.com'],
-            ccAddress: []
+            ccAddress: [],
           },
-          isSystemUnderMaintenance: false
-        }
+          isSystemUnderMaintenance: false,
+        },
       });
       console.log('✅ Configuration created with mail trap enabled!');
     } else {
@@ -24,19 +24,19 @@ async function enableMailTrap() {
           mailTrap: {
             trap: true,
             toAddress: ['vistracraft@gmail.com'],
-            ccAddress: []
-          }
-        }
+            ccAddress: [],
+          },
+        },
       });
       console.log('✅ Mail trap enabled! All emails will now be sent to vistracraft@gmail.com');
     }
     
     const updated = await prisma.configuration.findFirst();
     console.log('\nCurrent mailTrap configuration:');
-    console.log(JSON.stringify(updated.mailTrap, null, 2));
-    
+    console.log(JSON.stringify(updated?.mailTrap, null, 2));
+
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('❌ Error:', (error as Error).message);
     process.exit(1);
   } finally {
     await prisma.$disconnect();

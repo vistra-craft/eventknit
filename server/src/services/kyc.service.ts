@@ -964,7 +964,7 @@ export class KYCService {
 
     // If no requirements exist, create them from defaults
     if (requirements.length === 0) {
-      const defaults = DEFAULT_KYC_REQUIREMENTS[entityType];
+      const defaults = (DEFAULT_KYC_REQUIREMENTS as Record<string, { documentType: string; description: string; isRequired: boolean }[]>)[entityType];
       if (defaults && defaults.length > 0) {
         logger.info(`Creating default requirements for ${entityType}`);
         

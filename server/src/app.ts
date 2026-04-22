@@ -60,6 +60,9 @@ import gdprRoutes from './routes/gdpr.routes.js';
 import creditRoutes from './routes/credit.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import configurationRoutes from './routes/configuration.routes.js';
+import companyDocumentsRoutes from './routes/company-documents.routes.js';
+import participantRoutes from './routes/participant.routes.js';
+import formRoutes from './routes/form.routes.js';
 import eventReportAdminRoutes from './routes/event-report-admin.routes.js';
 import extendedProfileRoutes from './routes/extended-profile.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
@@ -247,6 +250,9 @@ app.use('/api/v1/gdpr', gdprRoutes); // GDPR data export and account deletion
 app.use('/api/v1/credits', creditRoutes); // Credit/Voucher system
 app.use('/api/v1/cart', cartRoutes); // Cart reservation system
 app.use('/api/v1/configuration', configurationRoutes); // System configuration (mailTrap, maintenance mode)
+app.use('/api/v1/admin/company-documents', companyDocumentsRoutes); // Company document management
+app.use('/api/v1/events/:eventId/participants', participantRoutes); // Event participants
+app.use('/api/v1/forms', formRoutes); // Forms (public + organizer/admin)
 app.use('/api/v1/profile', extendedProfileRoutes); // Extended profile (organizer profile, staff profile)
 app.use('/api/v1/uploads', uploadRoutes); // Generic image upload (Cloudinary)
 

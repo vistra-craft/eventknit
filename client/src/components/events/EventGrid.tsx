@@ -13,7 +13,7 @@ const PAGE_SIZE = 20;
 
 /** Skeleton that mirrors EventCard structure exactly */
 function EventCardSkeleton({ index = 0 }: { index?: number }) {
-  const imgHeight = "h-56 sm:h-64";
+  const imgHeight = "h-48 sm:h-56";
 
   return (
     <div
@@ -164,7 +164,6 @@ export const EventGrid = ({ filters = {} }: EventGridProps) => {
     return () => {
       if (loadMoreTimeoutRef.current) clearTimeout(loadMoreTimeoutRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sentinelInView]);
 
   // Client-side filters that backend doesn't support

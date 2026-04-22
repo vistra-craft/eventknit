@@ -15,6 +15,8 @@ import {
   Monitor,
   LogOut,
   Ticket,
+  FileText,
+  ClipboardList,
   ShieldCheck,
   CreditCard,
   Server,
@@ -36,72 +38,34 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
   const userRole = user?.role;
   const location = useLocation();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
+    analytics: location.pathname.startsWith('/admin/analytics'),
     events: location.pathname.startsWith('/admin/events'),
-    marketing: location.pathname.startsWith('/admin/marketing'),
-    finance: location.pathname.startsWith('/admin/finance'),
-    tickets: location.pathname.startsWith('/admin/tickets'),
-    subscriptions: location.pathname.startsWith('/admin/subscriptions'),
     users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
     kyc: location.pathname.startsWith('/admin/kyc'),
-    communications: location.pathname.startsWith('/admin/communications') || location.pathname === '/admin/notifications',
-    settings: location.pathname.startsWith('/admin/settings') || location.pathname === '/admin/notification-settings' || location.pathname === '/admin/white-label',
-    support: location.pathname.startsWith('/admin/support') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
+    finance: location.pathname.startsWith('/admin/finance'),
+    tickets: location.pathname.startsWith('/admin/tickets'),
     workstation: location.pathname.startsWith('/admin/event-day'),
+    communications: location.pathname.startsWith('/admin/communications') || location.pathname === '/admin/notifications',
+    marketing: location.pathname.startsWith('/admin/marketing'),
+    support: location.pathname.startsWith('/admin/support') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
+    settings: location.pathname.startsWith('/admin/settings') || location.pathname === '/admin/notification-settings' || location.pathname === '/admin/white-label',
     system: location.pathname.startsWith('/admin/system'),
   });
 
   const navigationItems = [
-    { 
-      id: "dashboard", 
-      label: "Dashboard", 
-      href: "/admin/dashboard", 
+    // ── Overview ──────────────────────────────────────────────
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      href: "/admin/dashboard",
       icon: Home,
-      group: "main"
-    },
-    {
-      id: "events",
-      label: "Events",
-      icon: Calendar,
-      group: "main",
-      children: [
-        { name: "All Events", href: "/admin/events" },
-        { name: "Pending Approval", href: "/admin/events/pending" },
-        { name: "Featured Events", href: "/admin/events/featured" },
-        { name: "Past Events", href: "/admin/events/past" },
-        { name: "Upcoming Events", href: "/admin/events/upcoming" },
-        { name: "Declined Events", href: "/admin/events/declined" },
-        { name: "Recalled Events", href: "/admin/events/recalled" },
-      ]
-    },
-    { 
-      id: "users", 
-      label: "Users", 
-      icon: Users,
-      group: "main",
-      children: [
-        { name: "All Users", href: "/admin/users" },
-        { name: "Staff", href: "/admin/users/staff" },
-        { name: "Staff Performance", href: "/admin/staff-performance" },
-        { name: "Organizers", href: "/admin/users/organizers" },
-        { name: "Attendees", href: "/admin/users/attendees" },
-        { name: "User Roles", href: "/admin/users/roles" },
-      ]
-    },
-    {
-      id: "kyc",
-      label: "KYC Review",
-      icon: ShieldCheck,
-      group: "main",
-      children: [
-        { name: "Submissions", href: "/admin/kyc" },
-        { name: "Entity Management", href: "/admin/kyc/entity-management" },
-      ]
+      group: "overview",
     },
     {
       id: "analytics",
       label: "Analytics",
       icon: TrendingUp,
-      group: "main",
+      group: "overview",
       children: [
         { name: "Platform Overview", href: "/admin/analytics" },
         { name: "Event Analytics", href: "/admin/analytics/events" },
@@ -110,11 +74,59 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "System Metrics", href: "/admin/analytics/system" },
       ]
     },
+    // ── Management ────────────────────────────────────────────
+    {
+      id: "events",
+      label: "Events",
+      icon: Calendar,
+      group: "management",
+      children: [
+        { name: "All Events", href: "/admin/events" },
+        { name: "Pending Approval", href: "/admin/events/pending" },
+        { name: "Featured Events", href: "/admin/events/featured" },
+        { name: "Upcoming Events", href: "/admin/events/upcoming" },
+        { name: "Past Events", href: "/admin/events/past" },
+        { name: "Declined Events", href: "/admin/events/declined" },
+        { name: "Recalled Events", href: "/admin/events/recalled" },
+      ]
+    },
+    {
+      id: "users",
+      label: "Users",
+      icon: Users,
+      group: "management",
+      children: [
+        { name: "All Users", href: "/admin/users" },
+        { name: "Organizers", href: "/admin/users/organizers" },
+        { name: "Attendees", href: "/admin/users/attendees" },
+        { name: "Staff", href: "/admin/users/staff" },
+        { name: "Staff Performance", href: "/admin/staff-performance" },
+        { name: "User Roles", href: "/admin/users/roles" },
+      ]
+    },
+    {
+      id: "kyc",
+      label: "KYC Review",
+      icon: ShieldCheck,
+      group: "management",
+      children: [
+        { name: "Submissions", href: "/admin/kyc" },
+        { name: "Entity Management", href: "/admin/kyc/entity-management" },
+      ]
+    },
+    {
+      id: "forms",
+      label: "Forms",
+      href: "/admin/forms",
+      icon: ClipboardList,
+      group: "management",
+    },
+    // ── Finance ───────────────────────────────────────────────
     {
       id: "finance",
       label: "Finance",
       icon: DollarSign,
-      group: "main",
+      group: "finance",
       children: [
         { name: "Overview", href: "/admin/finance" },
         { name: "Event Finance", href: "/admin/finance/events" },
@@ -135,13 +147,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       label: "Subscriptions",
       icon: CreditCard,
       href: "/admin/subscriptions",
-      group: "main",
+      group: "finance",
     },
     {
       id: "tickets",
       label: "Tickets",
       icon: Ticket,
-      group: "main",
+      group: "finance",
       children: [
         { name: "Advanced Ticket Types", href: "/admin/tickets/advanced" },
         { name: "Dynamic Pricing", href: "/admin/tickets/pricing" },
@@ -149,24 +161,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Promo Codes", href: "/admin/tickets/promo-codes" },
       ]
     },
-    // ── Marketing ──
-    {
-      id: "marketing",
-      label: "Marketing",
-      icon: Megaphone,
-      group: "marketing",
-      children: [
-        // TODO: Re-enable when backend is ready
-        // { name: "Overview", href: "/admin/marketing" },
-        // { name: "Campaigns", href: "/admin/marketing/campaigns" },
-        { name: "Social Media", href: "/admin/marketing/social" },
-        // { name: "Email Marketing", href: "/admin/marketing/email" },
-        // { name: "Promotions", href: "/admin/marketing/promotions" },
-        // { name: "Affiliate Program", href: "/admin/marketing/affiliate" },
-        // { name: "Partnerships", href: "/admin/marketing/partnerships" },
-      ]
-    },
-    // ── Operations ──
+    // ── Operations ────────────────────────────────────────────
     {
       id: "managed-events",
       label: "Managed Events",
@@ -198,6 +193,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       ]
     },
     {
+      id: "marketing",
+      label: "Marketing",
+      icon: Megaphone,
+      group: "operations",
+      children: [
+        { name: "Social Media", href: "/admin/marketing/social" },
+      ]
+    },
+    {
       id: "support",
       label: "Support",
       icon: HeadphonesIcon,
@@ -209,7 +213,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         { name: "Career Interest", href: "/admin/careers" },
       ]
     },
-    // ── System ──
+    // ── Resources ─────────────────────────────────────────────
+    {
+      id: "documents",
+      label: "Company Documents",
+      href: "/admin/documents",
+      icon: FileText,
+      group: "resources",
+    },
+    // ── System ────────────────────────────────────────────────
     {
       id: "settings",
       label: "Settings",
@@ -256,16 +268,17 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
   useEffect(() => {
     setExpandedItems(prev => ({
       ...prev,
+      analytics: location.pathname.startsWith('/admin/analytics'),
       events: location.pathname.startsWith('/admin/events'),
-      marketing: location.pathname.startsWith('/admin/marketing'),
+      users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
+      kyc: location.pathname.startsWith('/admin/kyc'),
       finance: location.pathname.startsWith('/admin/finance'),
       tickets: location.pathname.startsWith('/admin/tickets'),
-      subscriptions: location.pathname.startsWith('/admin/subscriptions'),
-      users: location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/staff-performance'),
-      communications: location.pathname.startsWith('/admin/communications') || location.pathname === '/admin/notifications',
-      settings: location.pathname.startsWith('/admin/settings') || location.pathname === '/admin/notification-settings' || location.pathname === '/admin/white-label',
-      support: location.pathname.startsWith('/admin/support') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
       workstation: location.pathname.startsWith('/admin/event-day'),
+      communications: location.pathname.startsWith('/admin/communications') || location.pathname === '/admin/notifications',
+      marketing: location.pathname.startsWith('/admin/marketing'),
+      support: location.pathname.startsWith('/admin/support') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
+      settings: location.pathname.startsWith('/admin/settings') || location.pathname === '/admin/notification-settings' || location.pathname === '/admin/white-label',
       system: location.pathname.startsWith('/admin/system'),
     }));
   }, [location.pathname]);
@@ -296,9 +309,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
   }, {} as Record<string, typeof navigationItems>);
 
   const groupLabels = {
-    main: "Main",
-    marketing: "Marketing",
+    overview: "Overview",
+    management: "Management",
+    finance: "Finance",
     operations: "Operations",
+    resources: "Resources",
     system: "System",
   };
 

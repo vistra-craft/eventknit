@@ -57,6 +57,7 @@
     "src/**/*",
     "tests/**/*",
     "prisma/**/*",
+    "scripts/**/*.ts",
     "vitest.config.ts"
   ],
   "exclude": [
