@@ -26,7 +26,7 @@ export const useAuth = () => {
       case UserRole.SUPPORT:
       case UserRole.TELLER:
         return '/admin/dashboard';
-      // Organizer roles - redirect to organizer dashboard
+      // Organizer roles - organizer dashboard (PENDING_APPROVAL is handled upstream in login())
       case UserRole.ORGANIZER:
       case UserRole.ORGANIZER_ADMIN:
       case UserRole.ORGANIZER_TELLER:

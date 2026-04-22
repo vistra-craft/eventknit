@@ -179,13 +179,17 @@ const SignIn = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
-  const redirectAfterLogin = (role: string) => {
+  const redirectAfterLogin = (role: string, status?: string) => {
+    const isOrganizerRole = role === 'ORGANIZER' || role === 'ORGANIZER_ADMIN' || role === 'ORGANIZER_TELLER';
+    const isPendingOrganizer = isOrganizerRole && status === 'PENDING_APPROVAL';
     const destination = returnTo
       ? returnTo
-      : role === 'ORGANIZER' || role === 'ORGANIZER_ADMIN' || role === 'ORGANIZER_TELLER'
-      ? '/organizer/dashboard'
       : role === 'SUPERADMIN' || role === 'ADMIN' || role === 'SUPPORT' || role === 'TELLER'
       ? '/admin/dashboard'
+      : isPendingOrganizer
+      ? '/user/dashboard'
+      : isOrganizerRole
+      ? '/organizer/dashboard'
       : '/user/dashboard';
 
     setTimeout(() => {
@@ -261,7 +265,7 @@ const SignIn = () => {
               dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
               setIsGoogleLoading(false);
               setIsSuccess(true);
-              redirectAfterLogin(result.data.user.role);
+              redirectAfterLogin(result.data.user.role, result.data.user.status);
             }
           } catch (error: unknown) {
             setIsGoogleLoading(false);
@@ -319,7 +323,7 @@ const SignIn = () => {
           dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
           setIsAppleLoading(false);
           setIsSuccess(true);
-          redirectAfterLogin(result.data.user.role);
+          redirectAfterLogin(result.data.user.role, result.data.user.status);
         }
       } catch (error: unknown) {
         setIsAppleLoading(false);
@@ -353,7 +357,7 @@ const SignIn = () => {
         setAccessToken(result.data.accessToken);
         dispatch({ type: 'AUTH_SUCCESS', payload: result.data.user });
         setIsSuccess(true);
-        redirectAfterLogin(result.data.user.role);
+        redirectAfterLogin(result.data.user.role, result.data.user.status);
       }
     } catch (error: unknown) {
       setLoginError(extractErrorMessage(error, 'Verification failed. Please check your code and try again.'));

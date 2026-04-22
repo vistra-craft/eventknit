@@ -323,11 +323,8 @@ export class EventService {
     if (organizer.status === UserStatus.SUSPENDED) {
       throw new AuthorizationError('Your account has been suspended. Please contact support.');
     }
-    // PENDING_APPROVAL is now a manual admin suspension state (not initial registration).
-    // Organizers in this state cannot create events until reinstated.
-    if (organizer.status === UserStatus.PENDING_APPROVAL) {
-      throw new AuthorizationError('Your account is currently under review. Please contact support.');
-    }
+    // PENDING_APPROVAL organizers can create events — that is how they submit their
+    // first event + KYC for admin review, which is the approval trigger.
 
     // Verify organizer can create events (check actual role from database, not token).
     const actualRole = organizer.role;
@@ -356,6 +353,16 @@ export class EventService {
     // Validate pricing
     if (!data.isFree && !data.price && (!data.ticketTypes || data.ticketTypes.length === 0)) {
       throw new ValidationError('Price or ticket types are required for paid events');
+    }
+
+    // Gate: paid events require KYC approval so payouts can be settled.
+    // Admins bypass this check since they create events on behalf of organizers.
+    if (!isAdminCreating && !data.isFree) {
+      if (!organizer.organizerEntityType || organizer.kycStatus !== 'APPROVED') {
+        throw new AuthorizationError(
+          'Identity verification is required to create paid events. Please complete KYC verification in your settings before proceeding.',
+        );
+      }
     }
 
     // Calculate available slots (initially same as capacity)

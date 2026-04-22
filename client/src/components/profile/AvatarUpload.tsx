@@ -16,6 +16,8 @@ interface AvatarUploadProps {
   hint?: string;
   /** When true, renders a rounded-lg square preview suitable for logos */
   isLogo?: boolean;
+  /** Controls the image dimensions. Defaults to 'md' (128px). */
+  size?: 'sm' | 'md';
 }
 
 /**
@@ -30,7 +32,9 @@ export function AvatarUpload({
   label = 'Profile Photo',
   hint = 'Your photo will be displayed on your profile and in event communications.',
   isLogo = false,
+  size = 'md',
 }: AvatarUploadProps) {
+  const sizeClass = size === 'sm' ? 'w-20 h-20' : 'w-32 h-32';
   const [preview, setPreview] = useState<string | null>(currentAvatar || null);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -79,8 +83,8 @@ export function AvatarUpload({
   };
 
   const containerClass = isLogo
-    ? 'relative w-32 h-32 rounded-xl overflow-hidden border-2 border-border bg-muted'
-    : 'relative w-32 h-32 rounded-full overflow-hidden border-4 border-border bg-muted';
+    ? `relative ${sizeClass} rounded-xl overflow-hidden border-2 border-border bg-muted`
+    : `relative ${sizeClass} rounded-full overflow-hidden border-4 border-border bg-muted`;
 
   const displayError = errorMsg || uploadError;
 

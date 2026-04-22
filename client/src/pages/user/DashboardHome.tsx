@@ -134,7 +134,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
     loadVerification();
   }, []);
 
-  // Only redirect active organizers — PENDING_APPROVAL stays here to see the pending banner
+  // ACTIVE organizers have been approved — send them to their organizer dashboard.
   if (authUser?.role === UserRole.ORGANIZER && authUser.status === UserStatus.ACTIVE) {
     return <Navigate to="/organizer/dashboard" replace />;
   }
@@ -235,7 +235,7 @@ const DashboardHome = ({ user: userProp }: DashboardHomeProps) => {
       })()}
 
       {/* ── Pending Organizer Profile Prompt ──────────────────────────── */}
-      {isPendingOrganizer && !profilePromptDismissed && (
+      {isPendingOrganizer && !profilePromptDismissed && !authUser?.profileCompleted && (
         <Alert className="mb-6 border-primary/20 bg-primary/5">
           <Building2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
           <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

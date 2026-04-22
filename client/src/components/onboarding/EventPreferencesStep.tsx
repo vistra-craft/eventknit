@@ -12,20 +12,21 @@ interface EventPreferencesStepProps {
   };
   onUpdate: (data: Partial<EventPreferencesStepProps['formData']>) => void;
   error?: string;
+  showHeader?: boolean;
 }
 
 const EVENT_TYPES = [
-  { label: 'Music', emoji: '🎵' },
-  { label: 'Comedy', emoji: '🎭' },
-  { label: 'Food & Drink', emoji: '🍽️' },
-  { label: 'Community & Culture', emoji: '🌍' },
-  { label: 'Hobbies & Special Interest', emoji: '🎨' },
-  { label: 'Performing & Visual Arts', emoji: '🎬' },
-  { label: 'Parties', emoji: '🎉' },
-  { label: 'Technology', emoji: '💻' },
-  { label: 'Business', emoji: '💼' },
-  { label: 'Sports', emoji: '⚽' },
-  { label: 'Education', emoji: '📚' },
+  'Music',
+  'Comedy',
+  'Food & Drink',
+  'Community & Culture',
+  'Hobbies & Special Interest',
+  'Performing & Visual Arts',
+  'Parties',
+  'Technology',
+  'Business',
+  'Sports',
+  'Education',
 ];
 
 const ORGANIZATION_TYPES = [
@@ -41,7 +42,7 @@ const ORGANIZATION_TYPES = [
   'Other',
 ];
 
-export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPreferencesStepProps) => {
+export const EventPreferencesStep = ({ formData, onUpdate, error, showHeader = true }: EventPreferencesStepProps) => {
   const toggle = (label: string) => {
     const next = formData.eventTypes.includes(label)
       ? formData.eventTypes.filter((t) => t !== label)
@@ -51,12 +52,14 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
 
   return (
     <div className="space-y-7">
-      <div>
-        <h2 className="text-xl font-semibold text-foreground mb-1">Tell us about your events</h2>
-        <p className="text-sm text-muted-foreground">
-          This helps us personalize your experience. You can always change it later.
-        </p>
-      </div>
+      {showHeader && (
+        <div>
+          <h2 className="text-xl font-semibold text-foreground mb-1">Tell us about your events</h2>
+          <p className="text-sm text-muted-foreground">
+            This helps us personalize your experience. You can always change it later.
+          </p>
+        </div>
+      )}
 
       {/* Event type chips */}
       <div className="space-y-3">
@@ -64,7 +67,7 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
           What type of events do you host? <span className="text-destructive">*</span>
         </Label>
         <div className="flex flex-wrap gap-2">
-          {EVENT_TYPES.map(({ label, emoji }) => {
+          {EVENT_TYPES.map((label) => {
             const selected = formData.eventTypes.includes(label);
             return (
               <button
@@ -74,12 +77,11 @@ export const EventPreferencesStep = ({ formData, onUpdate, error }: EventPrefere
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-all duration-150 ${
                   selected
                     ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                    : 'bg-background text-foreground border-border hover:border-primary/50 hover:bg-muted/50'
+                    : 'bg-transparent text-foreground border-border hover:border-primary/40 hover:bg-muted/40'
                 }`}
               >
-                <span>{emoji}</span>
                 {label}
-                {selected && <Check className="w-3.5 h-3.5 ml-0.5" />}
+                {selected && <Check className="w-3 h-3 shrink-0" />}
               </button>
             );
           })}

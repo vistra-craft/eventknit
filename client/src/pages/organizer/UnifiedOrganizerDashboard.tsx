@@ -28,6 +28,7 @@ import { UpgradePrompt } from "@/components/organizer/UpgradePrompt";
 import { DashboardSkeleton } from "@/components/loaders/DashboardSkeleton";
 import { Loader } from "@/components/ui/loader";
 import { OrganizerWelcomeScreen } from '@/components/organizer-ui/OrganizerWelcomeScreen';
+import { OrganizerSetupDialog } from '@/components/organizer-ui/OrganizerSetupDialog';
 import { useAuth } from "@/hooks/useAuth";
 import {
   useOrganizerDashboardStats,
@@ -52,6 +53,7 @@ const UnifiedOrganizerDashboard = () => {
   );
   const [showKYCPrompt, setShowKYCPrompt] = useState(false);
   const [kycPromptEventTitle, setKycPromptEventTitle] = useState<string | null>(null);
+  const [showSetupDialog, setShowSetupDialog] = useState(() => !user?.onboardingCompleted);
 
   // Infinite scroll state
   const [page, setPage] = useState(1);
@@ -200,6 +202,7 @@ const UnifiedOrganizerDashboard = () => {
 
   return (
     <div className="bg-gradient-to-br from-background via-background to-muted/20">
+      <OrganizerSetupDialog open={showSetupDialog} onClose={() => setShowSetupDialog(false)} />
       <div>
         {/* Success Message */}
         {successMessage && (

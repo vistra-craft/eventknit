@@ -302,7 +302,7 @@ const OrganizerRegistration = () => {
       setScreen('success');
       setTimeout(() => {
         dispatch({ type: 'AUTH_SUCCESS', payload: registeredUser });
-        navigate('/organizer/onboarding', { replace: true });
+        navigate('/user/dashboard', { replace: true });
       }, 2500);
     } catch (err: unknown) {
       dispatch({ type: 'AUTH_FAILURE', payload: 'Registration failed' });

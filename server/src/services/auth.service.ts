@@ -246,6 +246,12 @@ export class AuthService {
     // Use role from verification record, default to ATTENDEE if not set
     const userRole = verification.role || UserRole.ATTENDEE;
 
+    // Organizers start as PENDING_APPROVAL — they must create their first event,
+    // complete KYC, and receive admin approval before gaining organizer dashboard access.
+    const userStatus = userRole === UserRole.ORGANIZER
+      ? UserStatus.PENDING_APPROVAL
+      : UserStatus.ACTIVE;
+
     // Create new user account with selected role and password
     const user = await prisma.user.create({
       data: {
@@ -254,7 +260,7 @@ export class AuthService {
         firstName,
         lastName,
         role: userRole,
-        status: UserStatus.ACTIVE,
+        status: userStatus,
         isEmailVerified: true,
         emailVerifiedAt: new Date(),
         // Set onboardingCompleted to false for ALL new users (unified onboarding)
@@ -323,10 +329,12 @@ export class AuthService {
       throw new ValidationError('Invalid role. Only ATTENDEE or ORGANIZER roles are allowed during registration.');
     }
 
-    // All self-registered users (including organizers) are immediately ACTIVE.
-    // Email OTP already proves identity. PENDING_APPROVAL is a manual admin action
-    // used to suspend accounts under review, not an initial registration state.
-    const userStatus = UserStatus.ACTIVE;
+    // Organizers start as PENDING_APPROVAL — they must submit their first event with
+    // KYC and receive admin approval before gaining organizer dashboard access.
+    // All other roles (ATTENDEE) are immediately ACTIVE after email verification.
+    const userStatus = userRole === UserRole.ORGANIZER
+      ? UserStatus.PENDING_APPROVAL
+      : UserStatus.ACTIVE;
 
     const user = await prisma.user.create({
       data: {

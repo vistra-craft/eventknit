@@ -8,7 +8,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { getAccessToken } from '@/lib/api';
-import { UserRole } from '@/types/auth';
+import { UserRole, UserStatus } from '@/types/auth';
 
 interface GuestRouteProps {
   children: React.ReactNode;
@@ -39,11 +39,15 @@ export const GuestRoute: React.FC<GuestRouteProps> = ({ children }) => {
       UserRole.ORGANIZER_TELLER,
     ].includes(user.role);
 
+    // Pending organizers stay on user dashboard until admin approves them.
+    const isPendingOrganizer = isOrganizerRole && user.status === UserStatus.PENDING_APPROVAL;
     const dashboardRoute = isAdminRole
       ? '/admin/dashboard'
-      : isOrganizerRole
-        ? '/organizer/dashboard'
-        : '/user/dashboard';
+      : isPendingOrganizer
+        ? '/user/dashboard'
+        : isOrganizerRole
+          ? '/organizer/dashboard'
+          : '/user/dashboard';
 
     return <Navigate to={dashboardRoute} replace />;
   }

@@ -840,7 +840,7 @@ export const organizerDashboardValidations = {
         'INTERNATIONAL_EDUCATION_LLC', 'PUBLIC_EDUCATION',
         'COOPERATIVE_SOCIETY', 'INSURANCE_REINSURANCE',
         'NGO', 'EMBASSY_UN_WORLD_BANK', 'DENOMINATIONAL_CHURCH',
-        'PARTNERSHIP_PROFESSIONAL', 'TRUST',
+        'PARTNERSHIP_PROFESSIONAL', 'TRUST', 'OTHER',
       )
       .required()
       .messages({

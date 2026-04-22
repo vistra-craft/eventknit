@@ -2824,15 +2824,9 @@ export default function CreateEventStepwise() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            {!user?.organizerEntityType ? (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-4 text-sm text-amber-800 dark:text-amber-300">
-                You have not selected an organization type yet. Complete your KYC profile to publish paid events.
-              </div>
-            ) : (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-4 text-sm text-amber-800 dark:text-amber-300">
-                Your KYC verification is <strong>{verificationStatus?.kycStatus?.toLowerCase() ?? 'incomplete'}</strong>. You can publish paid events once your documents are approved.
-              </div>
-            )}
+            <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-4 text-sm text-amber-800 dark:text-amber-300">
+              Identity verification is required to publish paid events. Complete your KYC in Settings to get started.
+            </div>
             <p className="text-sm text-muted-foreground">
               Your event draft is saved. You can complete verification and return to publish.
             </p>
