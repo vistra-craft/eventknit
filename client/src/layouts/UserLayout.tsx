@@ -6,7 +6,7 @@
  */
 
 import { Routes, Route, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useOrganizerApproval } from '../hooks/useOrganizerApproval';
 import { userRoutes } from '../routes/userRoutes';
@@ -14,6 +14,7 @@ import UnifiedNavbar from '@/components/layout/UnifiedNavbar';
 import { DashboardModeProvider } from '../contexts/DashboardModeContext';
 import { Skeleton, SkeletonGroup } from '../components/ui/Skeleton';
 import OrganizerOnboardingModal from '@/components/organizer-ui/OrganizerOnboardingModal';
+import { ChatPanel, ChatPanelTrigger } from '@/components/chat/ChatPanel';
 import { Clock } from 'lucide-react';
 import { UserRole, UserStatus } from '../types/auth';
 
@@ -86,6 +87,15 @@ const UserLayout = () => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
   const { showApprovalModal, handleApprovalAcknowledged, isPendingOrganizer } = useOrganizerApproval();
+
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatUnread, setChatUnread] = useState(0);
+
+  useEffect(() => {
+    const handler = () => setChatOpen(true);
+    window.addEventListener('eventknit:open-chat', handler);
+    return () => window.removeEventListener('eventknit:open-chat', handler);
+  }, []);
 
   // Get user data from auth context
   const user = authUser ? {
@@ -162,6 +172,9 @@ const UserLayout = () => {
           </Suspense>
         </main>
       </div>
+      {/* Chat Panel — persists across all user pages */}
+      <ChatPanel open={chatOpen} onOpenChange={setChatOpen} onUnreadCountChange={setChatUnread} />
+      <ChatPanelTrigger unreadCount={chatUnread} onClick={() => setChatOpen(true)} />
     </DashboardModeProvider>
   );
 };

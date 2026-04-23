@@ -1,6 +1,8 @@
 import { Response, NextFunction } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { paymentService } from '../services/payment.service.js';
+
+type IdParam = { id: string };
 import { PlatformFeeService } from '../services/platform-fee.service.js';
 import { DisbursementService } from '../services/disbursement.service.js';
 import { RefundService } from '../services/refund.service.js';
@@ -348,7 +350,7 @@ export class FinancialController {
    * Get payment transaction by ID
    * @route GET /api/v1/admin/finance/payments/:id
    */
-  static async getPaymentTransaction(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async getPaymentTransaction(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -359,7 +361,7 @@ export class FinancialController {
       }
 
       const transaction = await prisma.eventPaymentTransaction.findUnique({
-        where: { id: (req.params.id as string) },
+        where: { id: req.params.id },
         include: {
           event: {
             select: {
@@ -575,7 +577,7 @@ export class FinancialController {
    * Get disbursement by ID
    * @route GET /api/v1/admin/finance/disbursements/:id
    */
-  static async getDisbursement(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async getDisbursement(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -586,7 +588,7 @@ export class FinancialController {
       }
 
       const organizerId = req.user.role === UserRole.ORGANIZER ? req.user.id : undefined;
-      const disbursement = await DisbursementService.getDisbursement((req.params.id as string), organizerId);
+      const disbursement = await DisbursementService.getDisbursement(req.params.id, organizerId);
 
       res.status(200).json({
         success: true,
@@ -601,7 +603,7 @@ export class FinancialController {
    * Process disbursement
    * @route POST /api/v1/admin/finance/disbursements/:id/process
    */
-  static async processDisbursement(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async processDisbursement(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -624,7 +626,7 @@ export class FinancialController {
       const userAgent = req.get('user-agent');
 
       const disbursement = await DisbursementService.processDisbursement(
-        (req.params.id as string),
+        req.params.id,
         req.body,
         req.user.id,
         ipAddress,
@@ -645,7 +647,7 @@ export class FinancialController {
    * Complete disbursement
    * @route POST /api/v1/admin/finance/disbursements/:id/complete
    */
-  static async completeDisbursement(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async completeDisbursement(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -678,7 +680,7 @@ export class FinancialController {
       const userAgent = req.get('user-agent');
 
       const disbursement = await DisbursementService.completeDisbursement(
-        (req.params.id as string),
+        req.params.id,
         paymentReference,
         req.user.id,
         ipAddress,
@@ -812,7 +814,7 @@ export class FinancialController {
    * Get refund by ID
    * @route GET /api/v1/admin/finance/refunds/:id
    */
-  static async getRefund(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async getRefund(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -822,7 +824,7 @@ export class FinancialController {
         return;
       }
 
-      const refund = await RefundService.getRefund((req.params.id as string), req.user.id);
+      const refund = await RefundService.getRefund(req.params.id, req.user.id);
 
       res.status(200).json({
         success: true,
@@ -837,7 +839,7 @@ export class FinancialController {
    * Process refund
    * @route POST /api/v1/admin/finance/refunds/:id/process
    */
-  static async processRefund(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async processRefund(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -860,7 +862,7 @@ export class FinancialController {
       const userAgent = req.get('user-agent');
 
       const refund = await RefundService.processRefund(
-        (req.params.id as string),
+        req.params.id,
         req.body,
         req.user.id,
         ipAddress,
@@ -881,7 +883,7 @@ export class FinancialController {
    * Complete refund
    * @route POST /api/v1/admin/finance/refunds/:id/complete
    */
-  static async completeRefund(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async completeRefund(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -914,7 +916,7 @@ export class FinancialController {
       const userAgent = req.get('user-agent');
 
       const refund = await RefundService.completeRefund(
-        (req.params.id as string),
+        req.params.id,
         refundReference,
         req.user.id,
         ipAddress,
@@ -1060,7 +1062,7 @@ export class FinancialController {
    * Get reconciliation by ID
    * @route GET /api/v1/admin/finance/reconciliations/:id
    */
-  static async getReconciliation(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async getReconciliation(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -1079,7 +1081,7 @@ export class FinancialController {
         return;
       }
 
-      const reconciliation = await ReconciliationService.getReconciliation((req.params.id as string));
+      const reconciliation = await ReconciliationService.getReconciliation(req.params.id);
 
       res.status(200).json({
         success: true,
@@ -1094,7 +1096,7 @@ export class FinancialController {
    * Auto-fix reconciliation discrepancies
    * @route POST /api/v1/admin/finance/reconciliations/:id/auto-fix
    */
-  static async autoFixReconciliation(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async autoFixReconciliation(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -1114,7 +1116,7 @@ export class FinancialController {
       }
 
       const reconciliation = await ReconciliationService.autoFixDiscrepancies(
-        (req.params.id as string),
+        req.params.id,
         req.user.id,
       );
 

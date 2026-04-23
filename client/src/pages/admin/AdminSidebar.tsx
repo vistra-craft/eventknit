@@ -83,6 +83,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
       children: [
         { name: "All Events", href: "/admin/events" },
         { name: "Pending Approval", href: "/admin/events/pending" },
+        { name: "Awaiting KYC", href: "/admin/events/awaiting-kyc" },
         { name: "Featured Events", href: "/admin/events/featured" },
         { name: "Upcoming Events", href: "/admin/events/upcoming" },
         { name: "Past Events", href: "/admin/events/past" },

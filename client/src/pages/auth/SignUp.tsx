@@ -234,7 +234,8 @@ const SignUp = () => {
   const stepNumber = step === 'email' ? 1 : 2;
 
   return (
-    <div className="min-h-screen w-full flex overflow-hidden bg-background">
+    <div className="min-h-screen bg-background">
+    <div className="mx-auto max-w-7xl min-h-screen flex overflow-hidden">
       {/* Left Side — clean ambient background */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-background">
         {/* Top-left diagonal strips */}
@@ -714,6 +715,7 @@ const SignUp = () => {
           </motion.p>
         </motion.div>
       </div>
+    </div>
     </div>
   );
 };

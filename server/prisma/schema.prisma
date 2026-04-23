@@ -324,6 +324,8 @@ model User {
   // Social Media & Support Relations
   assignedSupportQueries            SocialMessage[]              @relation("AssignedSupportQueries")
   supportResponses                  SupportResponse[]            @relation("SupportResponses")
+  assignedContactQueries            ContactQuery[]               @relation("AssignedContactQueries")
+  contactQueryResponses             ContactQueryResponse[]       @relation("ContactQueryResponses")
   // User Dashboard Features Relations
   eventReviews                      EventReview[]                @relation("UserReviews")
   eventFeedback                     EventFeedback[]              @relation("UserFeedback")
@@ -415,6 +417,7 @@ model User {
   // Company Documents / Forms / Participants
   uploadedCompanyDocuments  CompanyDocument[]    @relation("CompanyDocUploader")
   createdForms              EventForm[]          @relation("FormCreator")
+  createdFormTemplates      FormTemplate[]       @relation("TemplateCreator")
   formResponses             FormResponse[]       @relation("FormRespondent")
   reviewedFormResponses     FormResponse[]       @relation("FormResponseReviewer")
   eventParticipantAccounts  EventParticipant[]   @relation("ParticipantUser")
@@ -5863,6 +5866,7 @@ enum CompanyDocCategory {
   HR
   CONTRACTS
   POLICIES
+  MEETING_NOTES
   OTHER
 }
 
@@ -5916,9 +5920,12 @@ enum FormStatus {
 enum FormPurpose {
   SPEAKER_APPLICATION
   EXHIBITOR_APPLICATION
-  SPONSORSHIP_APPLICATION
   SPONSOR_APPLICATION
   VOLUNTEER_APPLICATION
+  PERFORMER_APPLICATION
+  VENDOR_APPLICATION
+  JUDGE_APPLICATION
+  MEDIA_APPLICATION
   REGISTRATION
   FEEDBACK
   GENERAL_INQUIRY
@@ -5962,6 +5969,9 @@ model EventForm {
 
   // Token for public share link
   shareToken String @unique @default(uuid())
+
+  // Theme customization: { accentColor: '#hex' }
+  theme Json?
 
   responses FormResponse[] @relation("FormResponses")
 
@@ -6007,6 +6017,27 @@ model FormResponse {
   @@index([submittedAt])
 }
 
+model FormTemplate {
+  id          String      @id @default(uuid())
+  name        String
+  description String?     @db.Text
+  purpose     FormPurpose
+  // JSON array of FormQuestion objects (same shape as EventForm.questions)
+  questions   Json        @default("[]")
+  // true = shipped with the platform, false = created by an admin
+  isBuiltIn   Boolean     @default(false)
+
+  createdById String?
+  createdBy   User?  @relation("TemplateCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([purpose])
+  @@index([createdById])
+  @@index([isBuiltIn])
+}
+
 // ============================================
 // Event Participants (Speakers, Exhibitors, etc.)
 // ============================================
@@ -6016,6 +6047,9 @@ enum ParticipantType {
   EXHIBITOR
   SPONSOR
   VOLUNTEER
+  PERFORMER
+  VENDOR
+  JUDGE
   STAFF
   VIP
   MEDIA
@@ -6078,4 +6112,43 @@ model EventParticipant {
   @@index([email])
   @@index([userId])
   @@index([addedById])
+}
+
+// Contact form submissions from the public website
+model ContactQuery {
+  id         String             @id @default(cuid())
+  name       String
+  email      String
+  subject    String
+  message    String             @db.Text
+  status     SupportQueryStatus @default(NEW)
+  priority   SupportPriority    @default(MEDIUM)
+  assignedTo String?
+  resolvedAt DateTime?
+
+  assignedAgent User?                  @relation("AssignedContactQueries", fields: [assignedTo], references: [id], onDelete: SetNull)
+  responses     ContactQueryResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([priority])
+  @@index([email])
+  @@index([createdAt])
+}
+
+model ContactQueryResponse {
+  id         String   @id @default(cuid())
+  queryId    String
+  response   String   @db.Text
+  sentBy     String
+  isInternal Boolean  @default(false)
+  sentAt     DateTime @default(now())
+
+  query ContactQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  agent User          @relation("ContactQueryResponses", fields: [sentBy], references: [id], onDelete: Restrict)
+
+  @@index([queryId])
+  @@index([sentBy])
 }

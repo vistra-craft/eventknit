@@ -11,6 +11,7 @@ export type CompanyDocCategory =
   | 'COMPLIANCE'
   | 'CONTRACTS'
   | 'POLICIES'
+  | 'MEETING_NOTES'
   | 'OTHER';
 
 export type CompanyDocType =
@@ -71,6 +72,7 @@ export const CATEGORY_LABELS: Record<CompanyDocCategory, string> = {
   COMPLIANCE: 'Compliance',
   CONTRACTS: 'Contracts',
   POLICIES: 'Policies',
+  MEETING_NOTES: 'Meeting Notes',
   OTHER: 'Other',
 };
 

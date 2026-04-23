@@ -45,6 +45,7 @@ export interface EventFilters {
   declinedOrRecalledCancelled?: boolean; // REJECTED or (CANCELLED + recalledAt)
   recalledCancelled?: boolean; // CANCELLED + recalledAt (recalled events only)
   recalledPending?: boolean; // PENDING + recalledAt
+  organizerKycSubmitted?: boolean; // true = organizer has submitted KYC; false = has not
 }
 
 /**
@@ -323,6 +324,7 @@ export const getEvents = async (filters?: EventFilters): Promise<EventsListRespo
   if (filters?.declinedOrRecalledCancelled) queryParams.append('declinedOrRecalledCancelled', 'true');
   if (filters?.recalledCancelled) queryParams.append('recalledCancelled', 'true');
   if (filters?.recalledPending) queryParams.append('recalledPending', 'true');
+  if (filters?.organizerKycSubmitted !== undefined) queryParams.append('organizerKycSubmitted', filters.organizerKycSubmitted.toString());
 
   const queryString = queryParams.toString();
   const endpoint = queryString ? `/events?${queryString}` : '/events';

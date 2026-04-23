@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FormBuilder } from '@/components/forms/FormBuilder';
+import { AccentColorPicker } from '@/components/forms/AccentColorPicker';
 import {
   getForm,
   updateForm,
@@ -55,6 +56,7 @@ export default function AdminFormDetailPage() {
   const [status, setStatus] = useState<FormStatus>('DRAFT');
   const [isPublic, setIsPublic] = useState(false);
   const [questions, setQuestions] = useState<FormQuestion[]>([]);
+  const [accentColor, setAccentColor] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
 
   // Responses
@@ -77,6 +79,7 @@ export default function AdminFormDetailPage() {
       setStatus(f.status);
       setIsPublic(f.isPublic);
       setQuestions(f.questions as FormQuestion[]);
+      setAccentColor(f.theme?.accentColor ?? undefined);
     } catch {
       toast({ title: 'Failed to load form', variant: 'destructive' });
     } finally {
@@ -109,7 +112,14 @@ export default function AdminFormDetailPage() {
     if (!formId) return;
     setSaving(true);
     try {
-      await updateForm(formId, { title, description: description || undefined, status, isPublic, questions });
+      await updateForm(formId, {
+        title,
+        description: description || undefined,
+        status,
+        isPublic,
+        questions,
+        theme: accentColor ? { accentColor } : null,
+      });
       toast({ title: 'Form saved' });
       void loadForm();
     } catch {
@@ -381,7 +391,7 @@ export default function AdminFormDetailPage() {
 
         {/* Settings tab */}
         <TabsContent value="settings" className="pt-4">
-          <div className="max-w-md space-y-4">
+          <div className="max-w-md space-y-6">
             <div className="space-y-1.5">
               <Label>Status</Label>
               <Select value={status} onValueChange={v => setStatus(v as FormStatus)}>
@@ -389,11 +399,23 @@ export default function AdminFormDetailPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(['DRAFT', 'ACTIVE', 'CLOSED', 'ARCHIVED'] as FormStatus[]).map(s => (
+                  {(['DRAFT', 'ACTIVE', 'ARCHIVED'] as FormStatus[]).map(s => (
                     <SelectItem key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Accent colour */}
+            <div className="space-y-2 border border-border/40 rounded-lg p-4">
+              <div>
+                <Label className="text-sm font-semibold">Accent Colour</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Applied to buttons and interactive elements on the public form page.
+                  This colour stays the same in both light and dark mode.
+                </p>
+              </div>
+              <AccentColorPicker value={accentColor} onChange={setAccentColor} />
             </div>
 
             <div className="flex items-center gap-3">

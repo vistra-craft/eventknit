@@ -116,6 +116,7 @@ const PendingApprovalPage = () => {
         setError(null);
         const filters: Record<string, unknown> = {
           status: EventStatus.PENDING,
+          organizerKycSubmitted: true,
           page,
           limit,
         };

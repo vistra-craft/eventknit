@@ -6,21 +6,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FormRenderer } from '@/components/forms/FormRenderer';
 import { validateFormAnswers } from '@/components/forms/form-validation';
-import { getPublicForm, submitPublicForm, type FormQuestion } from '@/lib/form-api';
+import { getPublicForm, submitPublicForm, type FormQuestion, type FormTheme } from '@/lib/form-api';
+import { useDirectUpload } from '@/hooks/useDirectUpload';
 import Logo from '@/components/layout/Logo';
 
 type AnswerValue = string | string[] | number | null;
 
+interface FormData {
+  id: string;
+  title: string;
+  description: string | null;
+  questions: FormQuestion[];
+  theme: FormTheme | null;
+  event: { title: string; image: string | null } | null;
+}
+
 export default function PublicFormPage() {
   const { shareToken } = useParams<{ shareToken: string }>();
+  const { upload } = useDirectUpload({ folder: 'general' });
 
-  const [form, setForm] = useState<{
-    id: string;
-    title: string;
-    description: string | null;
-    questions: FormQuestion[];
-    event: { title: string; image: string | null } | null;
-  } | null>(null);
+  const [form, setForm] = useState<FormData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,6 +48,7 @@ export default function PublicFormPage() {
           title: res.form.title,
           description: res.form.description,
           questions: res.form.questions as FormQuestion[],
+          theme: res.form.theme ?? null,
           event: res.form.event ? { title: res.form.event.title, image: null } : null,
         });
       } catch (e: unknown) {
@@ -57,7 +63,6 @@ export default function PublicFormPage() {
     e.preventDefault();
     if (!form || !shareToken) return;
 
-    // Validate
     const errors: Record<string, string> = {};
     if (!respondentName.trim()) errors['__name'] = 'Your name is required';
     if (!respondentEmail.trim()) errors['__email'] = 'Your email is required';
@@ -105,8 +110,14 @@ export default function PublicFormPage() {
   if (submitted) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
-        <div className="rounded-full bg-emerald-500/10 p-4 mb-4">
-          <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+        <div
+          className="rounded-full p-4 mb-4"
+          style={{ backgroundColor: form.theme?.accentColor ? `${form.theme.accentColor}1a` : undefined }}
+        >
+          <CheckCircle2
+            className="h-12 w-12"
+            style={{ color: form.theme?.accentColor ?? 'var(--color-emerald-500, #10b981)' }}
+          />
         </div>
         <h1 className="text-2xl font-bold mb-2">Response Submitted!</h1>
         <p className="text-muted-foreground max-w-md">
@@ -117,9 +128,22 @@ export default function PublicFormPage() {
     );
   }
 
+  const accentColor = form.theme?.accentColor;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen bg-background"
+      style={accentColor ? { '--form-accent': accentColor } as React.CSSProperties : undefined}
+    >
       <div className="max-w-2xl mx-auto px-4 py-12">
+        {/* Accent bar at the top */}
+        {accentColor && (
+          <div
+            className="h-1 rounded-full mb-8"
+            style={{ backgroundColor: accentColor }}
+          />
+        )}
+
         {/* Header */}
         <div className="mb-8">
           <Logo className="mb-8" />
@@ -175,6 +199,7 @@ export default function PublicFormPage() {
               onChange={setAnswers}
               errors={fieldErrors}
               disabled={submitting}
+              onUpload={upload}
             />
           </div>
 
@@ -185,7 +210,12 @@ export default function PublicFormPage() {
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={submitting}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={submitting}
+            style={accentColor ? { backgroundColor: accentColor, borderColor: accentColor } : undefined}
+          >
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

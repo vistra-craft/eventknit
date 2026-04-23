@@ -27,6 +27,7 @@ const AdminPastEventsPage = lazy(() => import('../pages/admin/events/PastEventsP
 const AdminUpcomingEventsPage = lazy(() => import('../pages/admin/events/UpcomingEventsPage'));
 const AdminDeclinedEventsPage = lazy(() => import('../pages/admin/events/DeclinedEventsPage'));
 const AdminRecalledEventsPage = lazy(() => import('../pages/admin/events/RecalledEventsPage'));
+const AdminAwaitingKycPage = lazy(() => import('../pages/admin/events/AwaitingKycPage'));
 const AdminCreateEventPage = lazy(() => import('../pages/admin/AdminCreateEventPage'));
 const EventPreviewPage = lazy(() => import('../pages/admin/events/EventPreviewPage'));
 const EventDetailsPage = lazy(() => import('../pages/admin/events/EventDetailsPage'));
@@ -122,6 +123,7 @@ const AdminCompanyDocumentsPage = lazy(() => import('../pages/admin/documents/Ad
 
 // Forms
 const AdminFormsPage = lazy(() => import('../pages/admin/forms/AdminFormsPage'));
+const AdminFormCreatePage = lazy(() => import('../pages/admin/forms/AdminFormCreatePage'));
 const AdminFormDetailPage = lazy(() => import('../pages/admin/forms/AdminFormDetailPage'));
 
 // KYC Review
@@ -235,6 +237,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
     path: 'events/upcoming',
     element: createElement(AdminUpcomingEventsPage),
     allowedRoles: MARKETING_ROLES,
+  },
+  {
+    path: 'events/awaiting-kyc',
+    element: createElement(AdminAwaitingKycPage),
+    allowedRoles: ADMIN_ROLES,
   },
   {
     path: 'events/declined',
@@ -649,6 +656,11 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'forms',
     element: createElement(AdminFormsPage),
+    allowedRoles: ADMIN_STAFF_ROLES,
+  },
+  {
+    path: 'forms/new',
+    element: createElement(AdminFormCreatePage),
     allowedRoles: ADMIN_STAFF_ROLES,
   },
   {

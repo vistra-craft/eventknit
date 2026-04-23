@@ -171,6 +171,8 @@ export const ParticipantService = {
       ParticipantStatus.REJECTED,
       ParticipantStatus.WAITLISTED,
       ParticipantStatus.UNDER_REVIEW,
+      ParticipantStatus.CONFIRMED,
+      ParticipantStatus.DECLINED,
     ];
     if (!allowed.includes(status)) {
       throw new ValidationError(`Invalid review status: ${status}`);

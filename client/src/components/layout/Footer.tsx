@@ -58,7 +58,7 @@ const EXPLORE_LINKS = [
 ];
 
 const ORGANIZERS_LINKS = [
-  { label: "Create Event", to: "/create-event" },
+  { label: "Create Event", to: "/get-started" },
   { label: "Become an Organizer", to: "/auth/register/organizer" },
 ];
 

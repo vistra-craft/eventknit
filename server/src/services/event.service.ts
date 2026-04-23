@@ -355,12 +355,13 @@ export class EventService {
       throw new ValidationError('Price or ticket types are required for paid events');
     }
 
-    // Gate: paid events require KYC approval so payouts can be settled.
-    // Admins bypass this check since they create events on behalf of organizers.
-    if (!isAdminCreating && !data.isFree) {
+    // All events require KYC approval. Admins bypass this check since they
+    // create events on behalf of organizers.
+    if (!isAdminCreating) {
       if (!organizer.organizerEntityType || organizer.kycStatus !== 'APPROVED') {
         throw new AuthorizationError(
-          'Identity verification is required to create paid events. Please complete KYC verification in your settings before proceeding.',
+          'Identity verification is required to create events. Please complete KYC verification in your settings before proceeding.',
+          'KYC_REQUIRED',
         );
       }
     }
@@ -516,13 +517,13 @@ export class EventService {
 
     logger.info(`Event created: ${event.id} by organizer: ${organizerId}`);
 
-    // For paid events where organizer has not yet set their entity type, send the
-    // combined "event under review + KYC required" email rather than a separate KYC email.
-    if (!event.isFree && !organizer.organizerEntityType) {
+    // When an admin creates an event for an organizer who hasn't set their entity
+    // type yet, send the combined "event under review + KYC required" email.
+    if (!organizer.organizerEntityType) {
       emailService.sendOrganizerPendingEmail(
         organizer.email,
         organizer.firstName || 'there',
-        { eventTitle: event.title, isPaidEvent: true },
+        { eventTitle: event.title, requiresKYC: true },
       ).catch((err) => {
         logger.error('Failed to send event pending + KYC email:', err);
       });
@@ -580,6 +581,7 @@ export class EventService {
     declinedOrRecalledCancelled?: boolean; // Filter for declined (REJECTED) or recalled-cancelled (CANCELLED + recalledAt)
     recalledCancelled?: boolean; // Filter for recalled-cancelled only (CANCELLED + recalledAt)
     recalledPending?: boolean; // Filter for recalled-pending (PENDING + recalledAt)
+    organizerKycSubmitted?: boolean; // true = organizer has submitted KYC; false = organizer has not submitted KYC
   } = {}) {
     const where: Prisma.EventWhereInput = {
       deletedAt: null,
@@ -609,18 +611,13 @@ export class EventService {
       where.recalledAt = { not: null };
     } else if (filters.status) {
       where.status = filters.status;
+    }
 
-      // For admin PENDING queue (no organizerId filter = admin listing all pending events):
-      // Hide paid events only when the organizer is still PENDING_APPROVAL and has not
-      // started KYC (organizerEntityType not set). ACTIVE organizers' events are always
-      // visible — KYC is enforced at the approval step, not at visibility.
-      if (filters.status === EventStatus.PENDING && !filters.organizerId) {
-        where.OR = [
-          { isFree: true },
-          { organizer: { status: { not: UserStatus.PENDING_APPROVAL } } },
-          { organizer: { organizerEntityType: { not: null } } },
-        ];
-      }
+    // KYC submission filter — used by admin views to separate events by organizer KYC state.
+    if (filters.organizerKycSubmitted === true) {
+      where.organizer = { kycStatus: { not: null } };
+    } else if (filters.organizerKycSubmitted === false) {
+      where.organizer = { kycStatus: null };
     }
 
     if (filters.category) {
@@ -2476,18 +2473,17 @@ export class EventService {
       throw new ValidationError('Cannot approve a rejected event. Organizer must resubmit.');
     }
 
-    // For paid events, verify organizer has completed KYC
-    if (!event.isFree) {
-      const organizer = await prisma.user.findUnique({
-        where: { id: event.organizerId },
-        select: { kycStatus: true, organizationName: true },
-      });
+    // All events require the organizer to have completed KYC before approval.
+    const organizer = await prisma.user.findUnique({
+      where: { id: event.organizerId },
+      select: { kycStatus: true, organizationName: true },
+    });
 
-      if (!organizer || organizer.kycStatus !== 'APPROVED') {
-        throw new ValidationError(
-          `Cannot approve a paid event: the organizer${organizer?.organizationName ? ` (${organizer.organizationName})` : ''} has not completed KYC verification. Please notify the organizer to complete their KYC before approving this event.`,
-        );
-      }
+    if (!organizer || organizer.kycStatus !== 'APPROVED') {
+      throw new ValidationError(
+        `Cannot approve this event: the organizer${organizer?.organizationName ? ` (${organizer.organizationName})` : ''} has not completed KYC verification. Please notify the organizer to complete their KYC before approving this event.`,
+        'KYC_REQUIRED',
+      );
     }
 
     // Approve event atomically — use updateMany with status condition to prevent race conditions

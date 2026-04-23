@@ -63,8 +63,10 @@ import configurationRoutes from './routes/configuration.routes.js';
 import companyDocumentsRoutes from './routes/company-documents.routes.js';
 import participantRoutes from './routes/participant.routes.js';
 import formRoutes from './routes/form.routes.js';
+import formTemplateRoutes from './routes/form-template.routes.js';
 import eventReportAdminRoutes from './routes/event-report-admin.routes.js';
 import extendedProfileRoutes from './routes/extended-profile.routes.js';
+import { publicContactRouter, adminContactRouter } from './routes/contact-query.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { rateLimiter } from './middleware/rateLimiter.middleware.js';
@@ -227,6 +229,8 @@ app.use('/api/v1/admin/communications/bulk-messages', bulkMessageRoutes);
 app.use('/api/v1/admin/social-media', socialMediaRoutes);
 app.use('/api/v1/webhooks/social-media', socialWebhookRoutes);
 app.use('/api/v1/admin/support', supportRoutes);
+app.use('/api/v1/contact', publicContactRouter);
+app.use('/api/v1/admin/support/contact-queries', adminContactRouter);
 app.use('/api/v1/admin/analytics', analyticsRoutes);
 app.use('/api/v1/admin/communications/email-templates', emailTemplateRoutes);
 app.use('/api/v1/admin/communications', unifiedMessagingRoutes);
@@ -252,7 +256,8 @@ app.use('/api/v1/cart', cartRoutes); // Cart reservation system
 app.use('/api/v1/configuration', configurationRoutes); // System configuration (mailTrap, maintenance mode)
 app.use('/api/v1/admin/company-documents', companyDocumentsRoutes); // Company document management
 app.use('/api/v1/events/:eventId/participants', participantRoutes); // Event participants
-app.use('/api/v1/forms', formRoutes); // Forms (public + organizer/admin)
+app.use('/api/v1/forms', formRoutes);           // Forms (public + organizer/admin)
+app.use('/api/v1/form-templates', formTemplateRoutes); // Form templates
 app.use('/api/v1/profile', extendedProfileRoutes); // Extended profile (organizer profile, staff profile)
 app.use('/api/v1/uploads', uploadRoutes); // Generic image upload (Cloudinary)
 

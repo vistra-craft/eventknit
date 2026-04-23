@@ -4,6 +4,8 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { uploadImageToCloudinary, extractPublicIdFromUrl, deleteImageFromCloudinary } from '../services/cloudinary.service.js';
 import { logger } from '../utils/logger.js';
 
+type IdParam = { id: string };
+
 export class FeaturedEventController {
   /**
    * Create a new featured event
@@ -187,7 +189,7 @@ export class FeaturedEventController {
   /**
    * Get featured event by ID
    */
-  static async getFeaturedEventById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async getFeaturedEventById(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -197,7 +199,7 @@ export class FeaturedEventController {
         return;
       }
 
-      const featuredEvent = await FeaturedEventService.getFeaturedEventById((req.params.id as string));
+      const featuredEvent = await FeaturedEventService.getFeaturedEventById(req.params.id);
 
       res.status(200).json({
         success: true,
@@ -211,7 +213,7 @@ export class FeaturedEventController {
   /**
    * Update featured event
    */
-  static async updateFeaturedEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async updateFeaturedEvent(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -225,7 +227,7 @@ export class FeaturedEventController {
       const userAgent = req.get('user-agent');
 
       // Get existing featured event to check for old image
-      const existingEvent = await FeaturedEventService.getFeaturedEventById((req.params.id as string));
+      const existingEvent = await FeaturedEventService.getFeaturedEventById(req.params.id);
       let oldImageUrl: string | null = null;
 
       // Handle file upload if present
@@ -289,7 +291,7 @@ export class FeaturedEventController {
       };
 
       const featuredEvent = await FeaturedEventService.updateFeaturedEvent(
-        (req.params.id as string),
+        req.params.id,
         data,
         req.user.id,
         req.user.role,
@@ -318,7 +320,7 @@ export class FeaturedEventController {
   /**
    * Delete featured event
    */
-  static async deleteFeaturedEvent(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async deleteFeaturedEvent(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -332,7 +334,7 @@ export class FeaturedEventController {
       const userAgent = req.get('user-agent');
 
       await FeaturedEventService.deleteFeaturedEvent(
-        (req.params.id as string),
+        req.params.id,
         req.user.id,
         req.user.role,
         ipAddress,

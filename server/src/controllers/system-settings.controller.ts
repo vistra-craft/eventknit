@@ -7,6 +7,8 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { AuthorizationError } from '../utils/errors.js';
 import { UserRole } from '@prisma/client';
 
+type KeyParam = { key: string };
+
 export class SystemSettingsController {
   /**
    * Get all settings (with optional category filter)
@@ -56,7 +58,7 @@ export class SystemSettingsController {
    * GET /api/v1/admin/settings/:key?environment=production
    */
   static async getSetting(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<KeyParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -77,7 +79,7 @@ export class SystemSettingsController {
         throw new AuthorizationError('Only admins can access system settings');
       }
 
-      const key = (req.params.key as string) as string;
+      const key = req.params.key;
       const environment = req.query.environment as string | undefined;
 
       const setting = await SystemSettingsService.getSetting(key, environment);
@@ -104,7 +106,7 @@ export class SystemSettingsController {
    * PUT /api/v1/admin/settings/:key
    */
   static async setSetting(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<KeyParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -125,7 +127,7 @@ export class SystemSettingsController {
         throw new AuthorizationError('Only admins can update system settings');
       }
 
-      const key = (req.params.key as string) as string;
+      const key = req.params.key;
       const {
         value,
         type,
@@ -227,7 +229,7 @@ export class SystemSettingsController {
    * DELETE /api/v1/admin/settings/:key
    */
   static async deleteSetting(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<KeyParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -248,7 +250,7 @@ export class SystemSettingsController {
         throw new AuthorizationError('Only admins can delete system settings');
       }
 
-      const key = (req.params.key as string) as string;
+      const key = req.params.key;
 
       await SystemSettingsService.deleteSetting(key, req.user.id);
 
@@ -266,7 +268,7 @@ export class SystemSettingsController {
    * GET /api/v1/admin/settings/:key/history?limit=50
    */
   static async getSettingsHistory(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<KeyParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -287,7 +289,7 @@ export class SystemSettingsController {
         throw new AuthorizationError('Only admins can access setting history');
       }
 
-      const key = (req.params.key as string) as string;
+      const key = req.params.key;
       const limit = req.query.limit
         ? parseInt(req.query.limit as string, 10)
         : 50;

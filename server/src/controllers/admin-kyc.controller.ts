@@ -6,6 +6,9 @@ import { prisma } from '../config/database.js';
 import { logger } from '../utils/logger.js';
 import { KYCStatus, OrganizerEntityType } from '@prisma/client';
 
+type DocumentIdParam = { documentId: string };
+type UserIdParam = { userId: string };
+
 // ─── Typed request shapes ───────────────────────────────────────────────
 
 interface _ListKYCQuery {
@@ -90,12 +93,12 @@ export class AdminKYCController {
    * Get full KYC details for a specific organizer
    */
   static async getOrganizerKYCDetails(
-    req: Request,
+    req: AuthenticatedRequest<UserIdParam>,
     res: Response,
     next: NextFunction,
   ) {
     try {
-      const userId = (req.params as Record<string, string>).userId;
+      const userId = req.params.userId;
       const result = await KYCService.getOrganizerKYCDetails(userId);
       res.json({ success: true, data: result });
     } catch (error) {
@@ -107,13 +110,13 @@ export class AdminKYCController {
    * Approve a single KYC document
    */
   static async approveDocument(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<DocumentIdParam>,
     res: Response,
     next: NextFunction,
   ) {
     try {
       const adminId = req.user!.id;
-      const documentId = req.params.documentId as string;
+      const documentId = req.params.documentId;
       const document = await KYCService.approveKYCDocument(documentId, adminId);
       res.json({ success: true, data: { document } });
     } catch (error) {
@@ -125,13 +128,13 @@ export class AdminKYCController {
    * Reject a single KYC document
    */
   static async rejectDocument(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<DocumentIdParam>,
     res: Response,
     next: NextFunction,
   ) {
     try {
       const adminId = req.user!.id;
-      const documentId = req.params.documentId as string;
+      const documentId = req.params.documentId;
       const { rejectionReason } = req.body as RejectDocumentBody;
       const document = await KYCService.rejectKYCDocument(documentId, adminId, rejectionReason);
       res.json({ success: true, data: { document } });
@@ -144,13 +147,13 @@ export class AdminKYCController {
    * Approve an organizer's entire KYC
    */
   static async approveOrganizerKYC(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<UserIdParam>,
     res: Response,
     next: NextFunction,
   ) {
     try {
       const adminId = req.user!.id;
-      const userId = req.params.userId as string;
+      const userId = req.params.userId;
       const result = await KYCService.approveOrganizerKYC(userId, adminId);
       res.json({ success: true, data: result });
     } catch (error) {
@@ -162,13 +165,13 @@ export class AdminKYCController {
    * Reject an organizer's entire KYC
    */
   static async rejectOrganizerKYC(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<UserIdParam>,
     res: Response,
     next: NextFunction,
   ) {
     try {
       const adminId = req.user!.id;
-      const userId = req.params.userId as string;
+      const userId = req.params.userId;
       const { reason } = req.body as RejectOrganizerBody;
       const result = await KYCService.rejectOrganizerKYC(userId, adminId, reason);
       res.json({ success: true, data: result });
@@ -272,12 +275,12 @@ export class AdminKYCController {
    * Send KYC verification reminder email to organizer
    */
   static async sendKYCReminder(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<UserIdParam>,
     res: Response,
     next: NextFunction,
   ) {
     try {
-      const userId = req.params.userId as string;
+      const userId = req.params.userId;
       const { eventTitle } = req.body as { eventTitle?: string };
 
       const organizer = await prisma.user.findUnique({

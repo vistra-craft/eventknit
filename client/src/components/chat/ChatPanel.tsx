@@ -49,6 +49,7 @@ type View = 'conversations' | 'chat' | 'compose';
 interface ChatPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUnreadCountChange?: (count: number) => void;
 }
 
 // ── Avatar ──────────────────────────────────────────────────────────────────
@@ -90,13 +91,13 @@ function UserAvatar({
 
 // ── Main Component ──────────────────────────────────────────────────────────
 
-export const ChatPanel = ({ open, onOpenChange }: ChatPanelProps) => {
+export const ChatPanel = ({ open, onOpenChange, onUnreadCountChange }: ChatPanelProps) => {
   const { user: authUser } = useAuth();
   const currentUserId = authUser?.id;
 
   const [view, setView] = useState<View>('conversations');
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [, setTotalUnread] = useState(0);
+  const [totalUnread, setTotalUnread] = useState(0);
   const [chatMessages, setChatMessages] = useState<DirectMessage[]>([]);
   const [activePartner, setActivePartner] = useState<Conversation['partner'] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -298,13 +299,26 @@ export const ChatPanel = ({ open, onOpenChange }: ChatPanelProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activePartner?.id]);
 
-  // ── Fetch on open ─────────────────────────────────────────────
+  // ── Initial fetch — populates badge before panel is opened ───
+
+  useEffect(() => {
+    void fetchConversations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Refresh on open ───────────────────────────────────────────
 
   useEffect(() => {
     if (open) {
       fetchConversations();
     }
   }, [open, fetchConversations]);
+
+  // ── Propagate unread count to parent (badge) ──────────────────
+
+  useEffect(() => {
+    onUnreadCountChange?.(totalUnread);
+  }, [totalUnread, onUnreadCountChange]);
 
   // ── Auto-scroll chat to bottom ────────────────────────────────
 

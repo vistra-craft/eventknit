@@ -175,8 +175,10 @@ const AllEventsPage = () => {
       try {
         setLoading(true);
         setError(null);
-        const filters: Record<string, unknown> = {};
-        
+        const filters: Record<string, unknown> = {
+          organizerKycSubmitted: true,
+        };
+
         // Map frontend status to backend status
         if (statusFilter !== "all") {
           if (statusFilter === "active") {

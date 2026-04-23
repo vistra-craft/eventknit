@@ -367,7 +367,8 @@ const SignIn = () => {
   const anyLoading = isLoading || isGoogleLoading || isAppleLoading;
 
   return (
-    <div className="min-h-screen w-full flex overflow-hidden bg-background">
+    <div className="min-h-screen bg-background">
+    <div className="mx-auto max-w-7xl min-h-screen flex overflow-hidden">
       {/* Left Side — clean ambient background */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-background">
         {/* Top-left diagonal strips */}
@@ -885,6 +886,7 @@ const SignIn = () => {
           </motion.p>
         </motion.div>
       </div>
+    </div>
     </div>
   );
 };

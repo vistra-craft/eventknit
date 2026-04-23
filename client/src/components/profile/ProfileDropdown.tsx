@@ -171,7 +171,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onClose }) => 
         )}
 
         {/* Messages */}
-        <DropdownMenuItem onClick={() => handleNavigate('/user/messages')}>
+        <DropdownMenuItem onClick={() => window.dispatchEvent(new CustomEvent('eventknit:open-chat'))}>
           <MessageSquare className="w-4 h-4 mr-2" />
           <span>Messages</span>
         </DropdownMenuItem>

@@ -143,6 +143,39 @@ describe('ParticipantService', () => {
 
       expect(result.totalPages).toBe(3);
     });
+
+    it.each([
+      ParticipantType.PERFORMER,
+      ParticipantType.VENDOR,
+      ParticipantType.JUDGE,
+      ParticipantType.MEDIA,
+      ParticipantType.STAFF,
+      ParticipantType.VIP,
+    ] as const)('should filter list by type %s', async (type) => {
+      db.eventParticipant.findMany.mockResolvedValue([]);
+      db.eventParticipant.count.mockResolvedValue(0);
+
+      await ParticipantService.list(EVENT_ID, { type });
+
+      expect(db.eventParticipant.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ type }) }),
+      );
+    });
+
+    it.each([
+      ParticipantStatus.PENDING,
+      ParticipantStatus.CONFIRMED,
+      ParticipantStatus.DECLINED,
+    ] as const)('should filter list by status %s', async (status) => {
+      db.eventParticipant.findMany.mockResolvedValue([]);
+      db.eventParticipant.count.mockResolvedValue(0);
+
+      await ParticipantService.list(EVENT_ID, { status });
+
+      expect(db.eventParticipant.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ status }) }),
+      );
+    });
   });
 
   // ─────────────────────────────────────────────────────────
@@ -226,6 +259,27 @@ describe('ParticipantService', () => {
 
       expect(db.eventParticipant.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ customType: 'DJ' }) }),
+      );
+      expect(result).toEqual(mock);
+    });
+
+    it.each([
+      [ParticipantType.PERFORMER, 'Amina Artist', 'amina@stage.com'],
+      [ParticipantType.VENDOR,    'Quick Bites',  'vendor@food.com'],
+      [ParticipantType.JUDGE,     'Prof. Osei',   'osei@uni.ac.ke'],
+      [ParticipantType.MEDIA,     'Daily Post',   'press@daily.co'],
+      [ParticipantType.STAFF,     'Gate Lead',    'staff@event.com'],
+      [ParticipantType.VIP,       'Hon. Wanjiku',  'vip@office.ke'],
+      [ParticipantType.MEDIA,     'Pulse Kenya',  'editor@pulse.co.ke'],
+    ] as const)('should create a %s participant', async (type, name, email) => {
+      db.event.findFirst.mockResolvedValue({ id: EVENT_ID });
+      const mock = makeParticipant({ type, name, email });
+      db.eventParticipant.create.mockResolvedValue(mock);
+
+      const result = await ParticipantService.create(EVENT_ID, { name, email, type }, ADDER_ID);
+
+      expect(db.eventParticipant.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ type, name, email }) }),
       );
       expect(result).toEqual(mock);
     });
@@ -317,6 +371,41 @@ describe('ParticipantService', () => {
       );
     });
 
+    it('should mark a participant as under review', async () => {
+      db.eventParticipant.findFirst.mockResolvedValue(makeParticipant({ status: ParticipantStatus.PENDING }));
+      db.eventParticipant.update.mockResolvedValue(makeParticipant({ status: ParticipantStatus.UNDER_REVIEW }));
+
+      await ParticipantService.review(EVENT_ID, 'p-1', ParticipantStatus.UNDER_REVIEW, 'admin-1');
+
+      expect(db.eventParticipant.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: ParticipantStatus.UNDER_REVIEW }) }),
+      );
+    });
+
+    it('should confirm a participant after approval', async () => {
+      db.eventParticipant.findFirst.mockResolvedValue(makeParticipant({ status: ParticipantStatus.APPROVED }));
+      db.eventParticipant.update.mockResolvedValue(makeParticipant({ status: ParticipantStatus.CONFIRMED }));
+
+      await ParticipantService.review(EVENT_ID, 'p-1', ParticipantStatus.CONFIRMED, 'admin-1');
+
+      expect(db.eventParticipant.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: ParticipantStatus.CONFIRMED }) }),
+      );
+    });
+
+    it('should mark a participant as declined', async () => {
+      db.eventParticipant.findFirst.mockResolvedValue(makeParticipant({ status: ParticipantStatus.APPROVED }));
+      db.eventParticipant.update.mockResolvedValue(makeParticipant({ status: ParticipantStatus.DECLINED }));
+
+      await ParticipantService.review(EVENT_ID, 'p-1', ParticipantStatus.DECLINED, 'admin-1', 'Unable to attend');
+
+      expect(db.eventParticipant.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: ParticipantStatus.DECLINED, reviewNotes: 'Unable to attend' }),
+        }),
+      );
+    });
+
     it('should throw NotFoundError when participant does not exist', async () => {
       db.eventParticipant.findFirst.mockResolvedValue(null);
 
@@ -330,6 +419,14 @@ describe('ParticipantService', () => {
 
       await expect(
         ParticipantService.review(EVENT_ID, 'p-1', ParticipantStatus.INVITED, 'admin-1'),
+      ).rejects.toThrow(ValidationError);
+    });
+
+    it('should throw ValidationError for invalid review status (PENDING)', async () => {
+      db.eventParticipant.findFirst.mockResolvedValue(makeParticipant());
+
+      await expect(
+        ParticipantService.review(EVENT_ID, 'p-1', ParticipantStatus.PENDING, 'admin-1'),
       ).rejects.toThrow(ValidationError);
     });
   });

@@ -46,6 +46,7 @@ This document provides a comprehensive analysis of potential improvements to the
 24. [Data Migration Strategy for Microservices](#24-data-migration-strategy-for-microservices)
 25. [Implementation Roadmap](#18-implementation-roadmap)
 26. [Actionable Code-Level Findings (April 2026 Audit)](#26-actionable-code-level-findings-april-2026-audit)
+27. [Live Polling & Real-Time Audience Engagement](#27-live-polling--real-time-audience-engagement)
 
 ---
 
@@ -6804,3 +6805,310 @@ unawaited(
 **Quick wins (1-2 hours each):** 26.3, 26.5, 26.7, 26.10
 **Medium effort (half day each):** 26.1, 26.2, 26.4, 26.6, 26.8, 26.9
 **Requires coordination (mobile + backend):** 26.11, 26.12, 26.13
+
+---
+
+## 27. Live Polling & Real-Time Audience Engagement
+
+### Overview
+
+Live polling lets organizers launch questions to attendees during an event and watch results update in real time. Attendees see the poll appear on their device, tap an answer, and the aggregated results are broadcast back instantly. It is a well-established engagement pattern at conferences, hackathons, and panel discussions.
+
+### Competitive Landscape
+
+| Platform | Live Polling | Notes |
+|----------|-------------|-------|
+| Slido (Cisco) | Yes | Dedicated product; deep conference integration |
+| Mentimeter | Yes | Core product; word clouds, rankings, open text |
+| Whova | Yes | Built into event app; Q&A + polls |
+| Hopin | Yes | Virtual + hybrid events |
+| Cvent | Yes | Enterprise; embedded in session management |
+| Eventbrite | No | Positions as ticketing only, not engagement |
+| Poll Everywhere | Yes | Dedicated polling; presenter-mode display |
+
+**Pattern:** Platforms targeting conferences and corporate events treat live polling as table stakes. Ticketing-first platforms skip it. EventKnit's direction determines priority.
+
+### Is It a Necessity Now?
+
+**No — but it is a clear Phase 2 feature.**
+
+The existing Forms system (purpose: `FEEDBACK`) handles post-event and pre-event data collection. Live polling is specifically about *during-event* engagement, which is a different use case. The priority depends on target market:
+
+- **Festivals and concerts:** Low urgency. Audience is there for the experience, not participation.
+- **Trade shows and exhibitions:** Moderate. Useful for product demos and session Q&A.
+- **Conferences and hackathons:** High value. Speakers actively use it; judges may use it for scoring demos.
+- **Corporate events:** High value. Standard expectation for town halls and training sessions.
+
+The key constraint is that attendees must be on an active session (web page or mobile app) to receive polls. Until EventKnit's mobile app has strong attendee adoption, the web surface is the primary delivery channel.
+
+### Infrastructure Readiness
+
+EventKnit already has the hardest pieces in place:
+
+| Requirement | Status |
+|-------------|--------|
+| WebSocket server (Socket.IO) | Exists (`server/src/server.ts`) |
+| Room-based event broadcasting | Exists (used for check-in updates) |
+| BullMQ job queues | Exists (for delayed/scheduled events) |
+| JWT-authenticated socket connections | Exists |
+| Mobile push notifications (FCM) | Exists in Flutter app |
+| Attendee/participant data model | Exists |
+
+What is missing is the poll data layer and the organizer control surface.
+
+### Data Model
+
+Three new Prisma models, all event-scoped:
+
+```prisma
+enum PollStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+}
+
+enum PollType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  OPEN_TEXT
+  RATING       // 1-5 or 1-10 scale
+  WORD_CLOUD   // open text aggregated into a word cloud
+}
+
+model Poll {
+  id          String     @id @default(cuid())
+  eventId     String
+  event       Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   User       @relation(fields: [createdById], references: [id])
+
+  question    String
+  type        PollType   @default(SINGLE_CHOICE)
+  status      PollStatus @default(DRAFT)
+  allowAnonymous Boolean @default(true)
+  showResults Boolean    @default(true)  // show results to attendees after voting
+
+  options     PollOption[]
+  responses   PollResponse[]
+
+  activatedAt DateTime?
+  closedAt    DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([eventId, status])
+}
+
+model PollOption {
+  id        String   @id @default(cuid())
+  pollId    String
+  poll      Poll     @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text      String
+  order     Int
+  responses PollResponse[]
+
+  @@index([pollId])
+}
+
+model PollResponse {
+  id               String       @id @default(cuid())
+  pollId           String
+  poll             Poll         @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  respondentId     String?      // null if anonymous
+  respondent       User?        @relation(fields: [respondentId], references: [id])
+  selectedOptions  PollOption[] @relation("ResponseOptions")
+  openText         String?      // for OPEN_TEXT and WORD_CLOUD types
+  createdAt        DateTime     @default(now())
+
+  @@unique([pollId, respondentId])  // one response per authenticated user per poll
+  @@index([pollId])
+}
+```
+
+### WebSocket Event Protocol
+
+All events are scoped to a Socket.IO room: `event:{eventId}`.
+
+**Organizer → Server:**
+```
+poll:activate   { pollId }              Start accepting responses; broadcast to room
+poll:close      { pollId }              Stop accepting; broadcast final results
+```
+
+**Server → All clients in room:**
+```
+poll:activated  { poll, options }       New poll is live; attendees render the UI
+poll:results    { pollId, results[] }   Broadcast after each response (debounced 500ms)
+poll:closed     { pollId, results[] }   Final results when poll ends
+```
+
+**Client (Attendee) → Server:**
+```
+poll:respond    { pollId, optionIds[], openText? }
+```
+
+**Result shape broadcast to clients:**
+```typescript
+interface PollResult {
+  pollId: string;
+  totalResponses: number;
+  options: Array<{
+    optionId: string;
+    text: string;
+    count: number;
+    percentage: number;
+  }>;
+}
+```
+
+Result broadcasts are debounced server-side (500ms window) to avoid flooding clients during a burst of simultaneous submissions.
+
+### Backend Implementation
+
+**New files:**
+```
+server/src/services/poll.service.ts
+server/src/controllers/poll.controller.ts
+server/src/routes/poll.routes.ts
+server/src/sockets/poll.socket.ts      ← WebSocket event handlers
+```
+
+**Route structure:**
+```
+POST   /api/v1/events/:eventId/polls          Create poll (organizer)
+GET    /api/v1/events/:eventId/polls          List polls for event
+PATCH  /api/v1/events/:eventId/polls/:id      Update draft poll
+DELETE /api/v1/events/:eventId/polls/:id      Delete draft poll
+POST   /api/v1/polls/:id/activate             Set ACTIVE + emit poll:activated
+POST   /api/v1/polls/:id/close                Set CLOSED + emit poll:closed
+POST   /api/v1/polls/:id/respond              Submit response (attendees)
+GET    /api/v1/polls/:id/results              Fetch aggregated results (REST fallback)
+```
+
+**Socket handler sketch (`poll.socket.ts`):**
+```typescript
+import { Server, Socket } from 'socket.io';
+import PollService from '../services/poll.service.js';
+
+export function registerPollHandlers(io: Server, socket: Socket) {
+  socket.on('poll:activate', async ({ pollId }: { pollId: string }) => {
+    const poll = await PollService.activate(pollId, socket.data.userId);
+    io.to(`event:${poll.eventId}`).emit('poll:activated', poll);
+  });
+
+  socket.on('poll:respond', async ({ pollId, optionIds, openText }) => {
+    await PollService.respond(pollId, socket.data.userId, { optionIds, openText });
+    const results = await PollService.getResults(pollId);
+    // Debounced broadcast — emit to room, not just sender
+    io.to(`event:${results.eventId}`).emit('poll:results', results);
+  });
+
+  socket.on('poll:close', async ({ pollId }: { pollId: string }) => {
+    const poll = await PollService.close(pollId, socket.data.userId);
+    const results = await PollService.getResults(pollId);
+    io.to(`event:${poll.eventId}`).emit('poll:closed', results);
+  });
+}
+```
+
+### Frontend Implementation
+
+**Organizer surface (2 views):**
+
+1. **Poll Builder** — pre-event or during event
+   - Question text input
+   - Type selector (single choice, multiple choice, open text, rating)
+   - Option list (add/remove/reorder)
+   - "Save as Draft" / "Launch Now" actions
+
+2. **Live Control Panel** — shown during an active event dashboard
+   - Queue of draft polls
+   - One-click "Launch" per poll
+   - Live bar chart updating via WebSocket `poll:results`
+   - "Close Poll" button
+   - Results can be projected (fullscreen mode for presentation display)
+
+**Attendee surface:**
+
+- When `poll:activated` fires on the WebSocket connection, a non-blocking sheet/drawer slides up from the bottom of the event page
+- Single-tap answer selection; submit fires `poll:respond`
+- Results bar chart revealed immediately after submitting (if `showResults: true`)
+- Sheet dismisses automatically when `poll:closed` is received
+- If the attendee is not on the page, a push notification (mobile) or browser notification (web, if permission granted) prompts them to open the poll
+
+**React state pattern:**
+```typescript
+// In EventPage or a persistent PollProvider
+const [activePoll, setActivePoll] = useState<ActivePoll | null>(null);
+const [pollResults, setPollResults] = useState<PollResult | null>(null);
+
+useEffect(() => {
+  socket.on('poll:activated', (poll) => setActivePoll(poll));
+  socket.on('poll:results',   (results) => setPollResults(results));
+  socket.on('poll:closed',    (results) => {
+    setPollResults(results);
+    // Auto-dismiss after showing final results for 5 seconds
+    setTimeout(() => setActivePoll(null), 5000);
+  });
+  return () => {
+    socket.off('poll:activated');
+    socket.off('poll:results');
+    socket.off('poll:closed');
+  };
+}, [socket]);
+```
+
+### Mobile (Flutter) Implementation
+
+The Flutter app already has:
+- FCM push notifications
+- Socket.IO-compatible WebSocket connection (via `socket_io_client`)
+- GetX state management
+
+What to add:
+- `PollController` (GetX) listening to `poll:activated` / `poll:results` / `poll:closed`
+- `PollResponseScreen` — bottom sheet with option list and submit button
+- FCM handler: when app is backgrounded, a notification opens the poll deep link
+
+### Phased Implementation Plan
+
+**Phase 1 — Backend + basic web (2 weeks)**
+- Prisma models + migration
+- Poll service (CRUD, activate, close, respond, aggregate results)
+- REST routes + WebSocket handlers
+- Organizer poll builder UI
+- Attendee poll response sheet on event page
+- Live results bar chart (organizer view)
+
+**Phase 2 — Polish + mobile (1 week)**
+- Attendee results view after voting
+- Fullscreen presenter mode for organizer
+- FCM notification when poll activates (mobile)
+- Flutter `PollController` + response screen
+
+**Phase 3 — Advanced types (future)**
+- Word cloud for open-text responses
+- Rating/scale polls
+- Anonymous vs. identified response toggle
+- Poll scheduling (auto-activate at a set time during the event)
+- Export results to CSV
+
+### Security Considerations
+
+- One response per authenticated user per poll enforced at the DB level (`@@unique([pollId, respondentId])`)
+- Anonymous responses are rate-limited by IP (Redis sliding window)
+- Only organizers/admins for the event can create, activate, and close polls
+- `poll:respond` socket events are authenticated; unauthenticated sockets can observe results but cannot submit
+- Poll results are read-only after `CLOSED` status
+
+### Estimated Effort
+
+| Phase | Effort | Risk |
+|-------|--------|------|
+| Backend (models, service, routes, sockets) | 4-5 days | Low — infrastructure exists |
+| Organizer web UI (builder + control panel) | 3-4 days | Low |
+| Attendee web UI (response sheet + results) | 2-3 days | Low |
+| Mobile (Flutter controller + screen + FCM) | 3-4 days | Medium — requires app release |
+| **Total** | **~2.5 weeks** | Low-Medium |
+
+The low risk rating reflects that Socket.IO, BullMQ, and the authentication layer are already in place. The main unknowns are mobile app distribution cadence and how quickly attendees adopt the app as their primary event companion.

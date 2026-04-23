@@ -8,6 +8,8 @@ import {
   SocialPlatform,
 } from '@prisma/client';
 
+type IdParam = { id: string };
+
 export class SupportController {
   /**
    * Get unified support inbox
@@ -85,7 +87,7 @@ export class SupportController {
    * GET /api/v1/admin/support/queries/:id
    */
   static async getQueryById(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<IdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -98,7 +100,7 @@ export class SupportController {
         return;
       }
 
-      const id = (req.params.id as string) as string;
+      const id = req.params.id;
       const { channel } = req.query;
 
       const query = await SupportService.getQueryById(
@@ -120,7 +122,7 @@ export class SupportController {
    * POST /api/v1/admin/support/queries/:id/assign
    */
   static async assignQuery(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<IdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -133,7 +135,7 @@ export class SupportController {
         return;
       }
 
-      const id = (req.params.id as string) as string;
+      const id = req.params.id;
       const { agentId, channel } = req.body;
 
       if (!agentId || typeof agentId !== 'string') {
@@ -161,7 +163,7 @@ export class SupportController {
    * PATCH /api/v1/admin/support/queries/:id/status
    */
   static async updateQueryStatus(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<IdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -174,7 +176,7 @@ export class SupportController {
         return;
       }
 
-      const id = (req.params.id as string) as string;
+      const id = req.params.id;
       const { status, channel } = req.body;
 
       if (!status || !Object.values(SupportQueryStatus).includes(status)) {
@@ -204,7 +206,7 @@ export class SupportController {
    * POST /api/v1/admin/support/queries/:id/responses
    */
   static async addResponse(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<IdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -217,7 +219,7 @@ export class SupportController {
         return;
       }
 
-      const id = (req.params.id as string) as string;
+      const id = req.params.id;
       const { response, isInternal, channel } = req.body;
 
       if (!response || typeof response !== 'string') {
@@ -290,7 +292,7 @@ export class SupportController {
    * GET /api/v1/admin/support/agents/:id/performance
    */
   static async getAgentPerformance(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<IdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -303,7 +305,7 @@ export class SupportController {
         return;
       }
 
-      const id = (req.params.id as string) as string;
+      const id = req.params.id;
       const { startDate, endDate } = req.query;
 
       const filters: {

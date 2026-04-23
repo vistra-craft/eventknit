@@ -39,6 +39,11 @@
 25. [Platform Pages and Legal](#25-platform-pages-and-legal)
 26. [Event Categories](#26-event-categories)
 27. [Glossary](#27-glossary)
+29. [Company Documents](#29-company-documents)
+30. [Forms & Participants](#30-forms--participants)
+31. [API Reference](#31-api-reference)
+32. [Appendix](#32-appendix)
+33. [Platform TODOs](#33-platform-todos)
 
 ---
 
@@ -1564,16 +1569,22 @@ The platform automatically generates invoices for all paid transactions:
 
 ## 18. Social Features and Networking
 
-### Direct Messaging
+### Direct Messaging (Sliding Chat Panel)
 
-Attendees can communicate with each other through an in-app messaging system:
+One-to-one messaging is handled by a persistent **ChatPanel** — a sliding Sheet that opens from the right edge of the screen, available on all three dashboards (Admin, Organizer, Attendee). This is the industry-standard WhatsApp-style pattern: the panel stays alive as you navigate and keeps your unread count accurate in real time.
 
-- Send messages to any platform user
-- Thread-based conversations with subject lines
-- Read receipts (tracks when messages are read)
-- Messages can be linked to specific events or registrations
-- Reply threads (parent-child message relationships)
-- Delete messages from personal view
+**Opening the panel:**
+- The floating message button (bottom-right of every page) shows an unread badge
+- "Messages" in the nav menu or profile dropdown opens the panel from anywhere
+- Organizers and admins can open it directly from a conversation thread
+
+**Features:**
+- Conversation list grouped by partner with unread count per thread
+- Full message thread view with real-time delivery via WebSocket (`message:new` event)
+- Read receipts per message (single check = sent, double check = read)
+- Compose new message to any user by email
+- Delete own messages
+- Unread badge updates automatically via `onUnreadCountChange` callback — no polling
 
 ### Attendee Networking
 
@@ -1669,6 +1680,28 @@ Messages received through connected social media accounts (Facebook, Instagram, 
 - View messages from all platforms in one place
 - Assign messages to specific support staff
 - Track resolution status and response times
+
+### Website Contact Form Queries
+
+Visitors who are not logged in can submit a query through the public **Contact Us** form in the site footer. These submissions are captured as a separate channel called **Website Queries** and are visible to admin staff without any platform account required from the sender.
+
+**How it works:**
+
+1. A visitor fills in name, email, subject, and message on the public `/contact` page — no login required
+2. The submission is stored as a `ContactQuery` record and appears in the admin Support Center under the **Website Queries** tab
+3. Admins can view the full message, the sender's email, current status, and the full reply thread
+4. Admins can reply via email directly from the dashboard — the reply is sent to the original sender's email address and the thread is saved internally
+5. Admins can also add **internal notes** (not emailed to the sender) for team collaboration
+6. Status can be updated at any point: `NEW` → `IN_PROGRESS` → `WAITING` → `RESOLVED` → `CLOSED`
+
+**Support Center UI:**
+
+The admin Support Center uses a tabbed layout with three tabs:
+- **Overview** — platform-wide metrics (new, in progress, resolved today, average response time)
+- **Social Media** — messages from connected social accounts
+- **Website Queries** — contact form submissions, with search and status filter
+
+**Priority levels:** LOW, MEDIUM (default), HIGH, URGENT — auto-assigned to MEDIUM on submission; admins can adjust.
 
 ---
 
@@ -2064,3 +2097,670 @@ IP-based geolocation is unreliable in East Africa — mobile data connections fr
 
 EventKnit's primary markets — Kenya, Uganda, Tanzania, Rwanda, Ethiopia — are geographically close and many attendees travel between cities for events. A Nairobi user may intentionally be looking for events in Kampala. Forcing a city filter by default removes that intent. The explicit selector respects the user's agency while still making location filtering fast and persistent.
 
+---
+
+## 29. Company Documents
+
+The Company Documents section gives admin staff a centralised repository for all internal organisational files, whether stored as uploaded files or external links to cloud services.
+
+### Document Types
+
+| Type | Description |
+|------|-------------|
+| `FILE` | Uploaded binary file (PDF, Word, Excel, PowerPoint, image, CSV) stored on Cloudinary |
+| `GOOGLE_DOC` | Link to a Google Docs document |
+| `GOOGLE_SHEET` | Link to a Google Sheets spreadsheet |
+| `GOOGLE_SLIDES` | Link to a Google Slides presentation |
+| `EXTERNAL_LINK` | Any other external URL (e.g. Notion page, SharePoint, Confluence) |
+
+### Document Categories
+
+| Category | Use Case |
+|----------|----------|
+| Legal | Contracts, NDAs, incorporation documents |
+| Financial | Budgets, invoices, financial statements |
+| HR | Job descriptions, employment policies, handbooks |
+| Operations | SOPs, runbooks, process guides |
+| Marketing | Brand assets, campaign briefs, style guides |
+| Compliance | Regulatory filings, audit reports, certifications |
+| Contracts | Vendor and client agreements |
+| Policies | Internal policies, codes of conduct |
+| Meeting Notes | Minutes, Google Meet / Zoom recordings, action-item logs |
+| Other | Miscellaneous documents |
+
+The UI uses a left-sidebar category browser: selecting a category filters the document table to that category and pre-selects it in the upload/link forms, reducing friction when filing multiple documents at once.
+
+### Access Control
+
+Only admin-level users (`ADMIN_STAFF` and above) can access, upload, edit, or delete company documents. All operations are authenticated and authorised via JWT with role enforcement in the API middleware.
+
+### Capabilities
+
+- **Upload files** up to 25 MB. Accepted formats: PDF, Word (.doc/.docx), Excel (.xls/.xlsx), PowerPoint (.ppt/.pptx), images (JPEG/PNG/GIF/WebP), and CSV.
+- **Save external links** to Google Docs, Google Sheets, Google Slides, or any URL without uploading a file.
+- **Search** documents by name or description.
+- **Filter** by category and document type.
+- **Edit** document name, description, category, or external URL.
+- **Delete** documents. Uploaded files are also removed from Cloudinary storage.
+- **Open / Download** documents directly from the dashboard.
+
+### Admin Workflow
+
+1. Navigate to **Company Documents** in the admin sidebar.
+2. To upload a file: click **Upload File**, drag-and-drop or select a file, fill in name, category, and optional description, then click **Upload**.
+3. To save a link: click **Add Link**, select the link type (Google Doc, Google Sheet, Google Slides, or External Link), paste the URL, fill in name, category, and optional description, then click **Save Link**.
+4. Use the search bar and category/type filters to find documents.
+5. Click **Open** to open a document in a new tab, or **Download** to download an uploaded file.
+6. Click the trash icon and confirm the deletion dialog to remove a document.
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/v1/admin/company-documents | List documents (paginated, filterable) |
+| GET | /api/v1/admin/company-documents/:id | Get a single document |
+| POST | /api/v1/admin/company-documents/link | Save an external link document |
+| POST | /api/v1/admin/company-documents/upload | Upload a file document |
+| PATCH | /api/v1/admin/company-documents/:id | Update document metadata |
+| DELETE | /api/v1/admin/company-documents/:id | Delete document (and Cloudinary asset) |
+
+---
+
+## 30. Forms & Participants
+
+EventKnit includes a built-in form and participant management system that lets organizers and admins collect structured information from speakers, sponsors, exhibitors, performers, volunteers, and general inquirers, then manage them through a review workflow.
+
+### Overview
+
+The system has two closely related concepts:
+
+| Concept | What it is |
+|---------|-----------|
+| **EventForm** | A configurable questionnaire created by an organizer or admin. Can be linked to a specific event or standalone. Accessible publicly via a share link. |
+| **FormResponse** | A single person's answers to an EventForm. Goes through a SUBMITTED > UNDER_REVIEW > APPROVED / REJECTED / WAITLISTED lifecycle. |
+| **EventParticipant** | A named participant in an event (speaker, sponsor, etc.). Created automatically when a response is approved, or added manually by an organizer/admin. |
+
+### Participant Types
+
+| Type | Description |
+|------|-------------|
+| `SPEAKER` | Keynote, panelist, or session presenter |
+| `SPONSOR` | Financial or in-kind sponsor |
+| `EXHIBITOR` | Company with a booth or display |
+| `PERFORMER` | Entertainer, musician, DJ, or artist |
+| `VENDOR` | Marketplace or stall operator selling goods or services |
+| `JUDGE` | Reviewer or evaluator for competitions or awards |
+| `VOLUNTEER` | Unpaid helper at the event |
+| `STAFF` | Paid or contracted event crew member |
+| `VIP` | Distinguished guest with elevated access |
+| `MEDIA` | Journalist, photographer, or accredited press |
+| `CUSTOM` | Any other role (requires a custom label) |
+
+### Participant Statuses
+
+| Status | Meaning |
+|--------|---------|
+| `INVITED` | Form sent or participant manually added; awaiting action |
+| `PENDING` | Invitation acknowledged; participant has not yet completed onboarding |
+| `UNDER_REVIEW` | Being evaluated by the organizer/admin |
+| `APPROVED` | Application accepted |
+| `REJECTED` | Application declined |
+| `WAITLISTED` | On hold; may be confirmed later |
+| `CONFIRMED` | Participant has accepted and confirmed attendance |
+| `DECLINED` | Participant declined the invitation or offer |
+
+### Form Purposes
+
+Forms can be scoped to a specific purpose to make their intent clear and to determine which participant type a response creates on approval:
+
+| Purpose | Auto-created participant type |
+|---------|------------------------------|
+| `SPEAKER_APPLICATION` | `SPEAKER` |
+| `EXHIBITOR_APPLICATION` | `EXHIBITOR` |
+| `SPONSOR_APPLICATION` | `SPONSOR` |
+| `VOLUNTEER_APPLICATION` | `VOLUNTEER` |
+| `PERFORMER_APPLICATION` | `PERFORMER` |
+| `VENDOR_APPLICATION` | `VENDOR` |
+| `JUDGE_APPLICATION` | `JUDGE` |
+| `MEDIA_APPLICATION` | `MEDIA` |
+| `REGISTRATION` | None (attendee registration) |
+| `FEEDBACK` | None (post-event feedback) |
+| `GENERAL_INQUIRY` | None |
+| `CUSTOM` | None (or manually linked) |
+
+### Question Types
+
+The form builder supports 14 question types:
+
+| Type | Description |
+|------|-------------|
+| `short_text` | Single-line text input |
+| `long_text` | Multi-line textarea |
+| `email` | Email address field (client-validated) |
+| `phone` | Phone number field |
+| `number` | Numeric input |
+| `url` | URL / link field |
+| `date` | Date picker |
+| `single_choice` | Radio buttons (pick one) |
+| `multiple_choice` | Checkboxes (pick many) |
+| `dropdown` | Select menu (pick one) |
+| `rating` | Star rating (configurable 1-N scale) |
+| `scale` | Linear scale with min/max labels |
+| `file_upload` | File attachment — supports `acceptedFileTypes` filter and `maxFileSizeMb` cap. Used in application templates for headshots and company logos. |
+| `section_break` | Visual separator with optional title and description |
+
+### Built-in Form Templates
+
+The system provides thirteen ready-to-use templates that organizers can browse and instantiate with one click from the Template Gallery. All person-facing application templates include optional profile photo and social URL fields.
+
+**Application templates** (purpose maps to a participant type on approval):
+
+| Template | Participant type created | Notable fields |
+|----------|--------------------------|----------------|
+| Speaker Application | `SPEAKER` | Talk title, abstract, bio, headshot upload, LinkedIn, website, Twitter/X, A/V requirements |
+| Exhibitor Application | `EXHIBITOR` | Company overview, booth size, logo upload, LinkedIn, Twitter/X, required facilities |
+| Sponsor Application | `SPONSOR` | Preferred tier, budget range, desired branding benefits, logo upload |
+| Volunteer Application | `VOLUNTEER` | Preferred roles, T-shirt size, commitment confirmation |
+| Performer / Artist Application | `PERFORMER` | Stage name, performance category, technical rider, portfolio/EPK links, soundcheck |
+| Vendor Application | `VENDOR` | Vendor category, stall size, food-safety certificate, utilities needed |
+| Judge / Reviewer Application | `JUDGE` | Expertise areas, judging experience, conflict-of-interest declaration |
+| Media / Press Application | `MEDIA` | Media type, outlet, audience reach, equipment, press-area access request |
+
+**General-purpose templates** (no automatic participant creation):
+
+| Template | Purpose | Use case |
+|----------|---------|----------|
+| Event Registration | `REGISTRATION` | Standard attendee sign-up |
+| Post-Event Feedback | `FEEDBACK` | Post-event ratings and open comments |
+| General Survey | `FEEDBACK` | Pre-event audience pulse |
+| Research Survey | `FEEDBACK` | Structured academic-style survey with Likert scales |
+| Event Survey | `FEEDBACK` | Mid/pre-event expectations and session interest |
+| Knowledge Quiz | `CUSTOM` | 5-question multiple-choice placeholder; organizer replaces content |
+
+### Form Lifecycle
+
+```
+DRAFT -> ACTIVE -> CLOSED -> ARCHIVED
+```
+
+- **DRAFT**: Being built; not accepting responses.
+- **ACTIVE**: Live; respondents can submit via share link.
+- **CLOSED**: No longer accepting responses; responses are preserved.
+- **ARCHIVED**: Hidden from default views; responses preserved.
+
+### Public Share Link
+
+Every form has a unique `shareToken` (UUID). When a form is set to `isPublic = true` and `status = ACTIVE`, it is accessible at:
+
+```
+https://eventknit.com/f/:shareToken
+```
+
+No login is required to view or submit the form. If a logged-in user submits, their account is linked to the response for tracking. The public page captures:
+- Respondent full name (required)
+- Respondent email (required, used for duplicate detection)
+- All custom question answers
+
+### Review Workflow
+
+```
+Form submitted -> SUBMITTED
+                     |
+              Organizer/Admin reviews
+                  /           \
+          UNDER_REVIEW       REJECTED
+               |
+         APPROVED / WAITLISTED
+               |
+    (if targetParticipantType set)
+               |
+       EventParticipant created automatically
+         with status = APPROVED
+               |
+    Participant later responds
+          /         \
+    CONFIRMED      DECLINED
+```
+
+When a response is approved with `createParticipant = true` and the form has a `targetParticipantType`, an `EventParticipant` record is created automatically from the response data without requiring any manual entry. After creation, organizers can advance the participant to `CONFIRMED` (attendance confirmed) or `DECLINED` (participant withdrew).
+
+### Organizer / Admin Capabilities
+
+**Forms:**
+- Create forms with a drag-and-drop question builder supporting 14 question types
+- Start from a built-in template (Speaker, Exhibitor, Performer, Vendor, Judge, Media, Registration, Feedback) or build from scratch
+- Link a form to a specific event or leave it standalone
+- Set purpose and target participant type
+- Toggle public access and control the share link
+- Set a close date or maximum response cap
+- Activate, close, or archive forms
+- Copy the share link with one click
+
+**Responses:**
+- View all submissions with respondent name, email, and answer preview
+- Filter by status (Submitted / Under Review / Approved / Rejected / Waitlisted)
+- Approve, reject, or waitlist individual responses
+- Mark responses as Under Review before making a final decision
+- On approval, optionally auto-create the participant record
+
+**Participants:**
+- View all participants for an event, grouped by type and status
+- Manually add participants (without requiring a form submission)
+- Edit participant profile: name, email, bio, company, social links, type-specific metadata
+- Advance status through the review workflow: APPROVED, REJECTED, WAITLISTED, UNDER_REVIEW, CONFIRMED, or DECLINED
+- Remove participants
+
+### Organizer Workflow (Speaker Application Example)
+
+1. Create a form: **Forms** > **New Form** > title "Speaker Application", purpose "Speaker Application", target type "Speaker".
+2. Add questions: "Talk title", "Abstract", "Bio", "LinkedIn URL", etc.
+3. Set status to **Active** and toggle **Public form** on.
+4. Copy the share link and distribute it to prospective speakers.
+5. As responses come in, review each one: mark **Under Review**, read the full submission, then **Approve** or **Reject**.
+6. On approval with "Create participant" checked, a Speaker participant record is created automatically for the event.
+7. The participants list under the event shows all confirmed speakers with their profile data.
+
+### Access Control
+
+| Action | Minimum Role |
+|--------|-------------|
+| Create / edit / delete forms | `ORGANIZER` (own events) or `ADMIN` |
+| View responses | `ORGANIZER` (own events) or `ADMIN` |
+| Review responses | `ORGANIZER` (own events) or `ADMIN` |
+| Manage participants | `ORGANIZER` (own events) or `ADMIN` |
+| Submit a public form | Anyone (no login required) |
+
+### API Endpoints
+
+**Forms:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/v1/forms | List forms (filterable by status, purpose, eventId) |
+| POST | /api/v1/forms | Create a new form |
+| GET | /api/v1/forms/:id | Get form by ID |
+| PATCH | /api/v1/forms/:id | Update form metadata or questions |
+| DELETE | /api/v1/forms/:id | Delete a form |
+| GET | /api/v1/forms/:id/responses | List responses for a form |
+| GET | /api/v1/forms/:id/responses/:responseId | Get a single response |
+| PATCH | /api/v1/forms/:id/responses/:responseId/review | Review a response |
+| GET | /api/v1/forms/public/:shareToken | Get public form (no auth) |
+| POST | /api/v1/forms/public/:shareToken/submit | Submit a response (no auth) |
+
+**Participants:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/v1/events/:eventId/participants | List participants (filterable by type, status, search) |
+| POST | /api/v1/events/:eventId/participants | Manually add a participant |
+| GET | /api/v1/events/:eventId/participants/:id | Get a single participant |
+| PATCH | /api/v1/events/:eventId/participants/:id | Update participant profile |
+| PATCH | /api/v1/events/:eventId/participants/:id/review | Change participant status |
+| DELETE | /api/v1/events/:eventId/participants/:id | Remove a participant |
+
+---
+
+## 31. API Reference
+
+### Base URL
+
+```
+Production: https://api.eventknit.com/api/v1
+Development: http://localhost:3001/api/v1
+```
+
+### Authentication
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Token Refresh:**
+```
+POST /auth/refresh
+Body: { "refreshToken": "<refresh_token>" }
+```
+
+### Key Endpoints
+
+#### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /auth/register | Register new user |
+| POST | /auth/register-code/request | Request registration verification code |
+| POST | /auth/register-code/verify | Verify code and complete registration |
+| POST | /auth/login | Login with email/password |
+| POST | /auth/google | Login/register with Google OAuth |
+| POST | /auth/facebook | Login/register with Facebook OAuth |
+| POST | /auth/email-oauth/request | Request passwordless login code |
+| POST | /auth/email-oauth/verify | Verify code and login |
+| POST | /auth/magic-link/request | Request magic link login |
+| GET | /auth/magic-link/verify | Verify magic link |
+| POST | /auth/password/reset-request | Request password reset |
+| POST | /auth/password/reset-confirm | Reset password with token |
+| POST | /auth/password/change | Change password (authenticated) |
+| POST | /auth/refresh | Refresh access token |
+| POST | /auth/logout | Logout |
+| GET | /auth/me | Get current user |
+| PUT | /auth/profile | Update user profile |
+
+#### Events
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /events | List events |
+| GET | /events/:id | Get event details |
+| POST | /events | Create event |
+| PUT | /events/:id | Update event |
+| DELETE | /events/:id | Delete event |
+| POST | /events/:id/register | Register for event |
+
+#### Tickets
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /tickets/:id | Get ticket |
+| GET | /tickets/:id/download | Download ticket PDF |
+| POST | /tickets/:id/resend | Resend ticket email |
+
+#### Payments
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /payments/initialize | Start payment |
+| GET | /payments/verify | Verify payment |
+| POST | /payments/webhook | Payment webhook |
+
+#### Transfers
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /user-dashboard/transfers/:registrationId | Initiate transfer |
+| POST | /user-dashboard/transfers/accept/:token | Accept transfer |
+| POST | /user-dashboard/transfers/:id/cancel | Cancel transfer |
+| GET | /user-dashboard/transfers | Get transfer history |
+
+#### Promo Codes
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /promo-codes/validate | Validate code |
+| POST | /promo-codes | Create code |
+| GET | /promo-codes | List codes |
+
+#### Workstation & Scanning
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /workstation/scan | Scan ticket (check-in) |
+| POST | /workstation/scan-out | Scan out (check-out) |
+| POST | /workstation/manual-check-in | Manual check-in by search |
+| POST | /workstation/manual-check-out | Manual check-out by search |
+| GET | /workstation/search | Search attendees |
+| GET | /workstation/tickets/:ticketId | Get ticket details |
+| GET | /workstation/events/:eventId | Get event with scan config |
+| GET | /workstation/events/:eventId/attendees | Get event attendees with scan status |
+| GET | /workstation/events/:eventId/scans | Get scan history for event |
+| GET | /workstation/events/:eventId/config | Get event scan configuration |
+| PUT | /workstation/events/:eventId/config | Update event scan configuration |
+
+#### Checkpoints
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /checkpoints | Create checkpoint |
+| GET | /checkpoints/:checkpointId | Get checkpoint by ID |
+| GET | /checkpoints/event/:eventId | Get checkpoints for event |
+| PUT | /checkpoints/:checkpointId | Update checkpoint |
+| DELETE | /checkpoints/:checkpointId | Delete checkpoint |
+| POST | /checkpoints/:checkpointId/duplicate | Duplicate checkpoint |
+| POST | /checkpoints/:checkpointId/scan | Scan at checkpoint |
+| GET | /checkpoints/:checkpointId/scans | Get checkpoint scans |
+| GET | /checkpoints/:checkpointId/stats | Get checkpoint statistics |
+| GET | /checkpoints/event/:eventId/summary | Get event checkpoint summary |
+| POST | /checkpoints/:checkpointId/staff | Assign staff to checkpoint |
+| DELETE | /checkpoints/:checkpointId/staff/:staffId | Remove staff from checkpoint |
+| GET | /checkpoints/:checkpointId/staff | Get checkpoint staff |
+| GET | /checkpoints/attendee/:registrationId | Get attendee checkpoint status |
+| GET | /checkpoints/:checkpointId/eligibility/:registrationId | Check attendee eligibility |
+
+#### Facilities (Service Points)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /events/:eventId/facilities | Create facility |
+| GET | /events/:eventId/facilities | Get all facilities for event |
+| GET | /events/:eventId/facilities/:id | Get single facility |
+| PUT | /events/:eventId/facilities/:id | Update facility |
+| DELETE | /events/:eventId/facilities/:id | Delete facility |
+| GET | /events/:eventId/facilities/:id/stats | Get facility statistics |
+| POST | /events/:eventId/facilities/reorder | Reorder facilities |
+| POST | /events/:eventId/facilities/create-default | Create default facility |
+| POST | /events/:eventId/facilities/ensure-default | Ensure default facility exists |
+
+#### Badge Templates
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /badge-templates | Create badge template |
+| GET | /badge-templates/:id | Get template by ID |
+| GET | /badge-templates | Get templates (with filters) |
+| PUT | /badge-templates/:id | Update template |
+| DELETE | /badge-templates/:id | Delete template |
+| POST | /badge-templates/:id/duplicate | Duplicate template |
+
+#### Seat Maps
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /organizer-dashboard/events/:eventId/seat-map | Create/update seat map |
+| GET | /organizer-dashboard/events/:eventId/seat-map | Get seat map for event |
+| GET | /organizer-dashboard/events/:eventId/seats/available | Get available seats |
+| DELETE | /organizer-dashboard/events/:eventId/seat-map | Delete seat map |
+| GET | /events/:eventId/seat-map | Get seat map availability (public) |
+| POST | /events/:eventId/seats/reserve | Reserve seats |
+
+#### Analytics
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /analytics/events/:eventId | Get event analytics |
+| GET | /analytics/organizer/:organizerId | Get organizer analytics |
+| GET | /analytics/platform | Get platform-wide analytics (admin) |
+
+#### Feedback
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /feedback | Submit feedback (authenticated) |
+| GET | /feedback/token/:token | Validate feedback token |
+| POST | /feedback/token/:token | Submit via email token |
+| GET | /admin/feedback | List all feedback (admin) |
+| GET | /admin/feedback/analytics | Get NPS analytics (admin) |
+| GET | /admin/feedback/:id | Get single feedback (admin) |
+| PATCH | /admin/feedback/:id/notes | Add admin notes (admin) |
+| POST | /admin/feedback/trigger/:eventId | Trigger feedback emails (admin) |
+| GET | /admin/feedback/event/:eventId | Get event feedback (admin) |
+
+#### User Dashboard
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /user-dashboard/events | Get user's registered events |
+| GET | /user-dashboard/tickets | Get user's tickets |
+| POST | /user-dashboard/transfers/:registrationId | Initiate ticket transfer |
+| POST | /user-dashboard/transfers/accept/:token | Accept ticket transfer |
+| POST | /user-dashboard/transfers/:id/cancel | Cancel ticket transfer |
+| GET | /user-dashboard/transfers | Get transfer history |
+
+#### Notifications
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /notifications | Get user notifications |
+| PUT | /notifications/:id/read | Mark notification as read |
+| PUT | /notifications/read-all | Mark all as read |
+| DELETE | /notifications/:id | Delete notification |
+
+### Rate Limiting
+
+| Endpoint Type | Limit |
+|---------------|-------|
+| Authentication | 10/minute |
+| General API | 100/minute |
+| Scanning | 200/minute |
+| Search | 30/minute |
+
+### Webhooks
+
+**Supported Events:**
+- `payment.success`
+- `payment.failed`
+- `registration.created`
+- `ticket.transferred`
+- `refund.processed`
+
+---
+
+## 32. Appendix
+
+### Event Categories
+
+- Music
+- Comedy
+- Sports
+- Arts & Culture
+- Business & Professional
+- Education
+- Technology
+- Food & Drink
+- Health & Wellness
+- Community
+- Film & Media
+- Science & Innovation
+- Travel & Outdoor
+- Family & Kids
+- Gaming
+- Fashion
+- Charity & Causes
+
+### Supported Currencies
+
+| Code | Currency |
+|------|----------|
+| USD | US Dollar |
+| KES | Kenyan Shilling |
+| NGN | Nigerian Naira |
+| GBP | British Pound |
+| EUR | Euro |
+| ZAR | South African Rand |
+
+### Date/Time Formats
+
+- Display: `Monday, January 15, 2024 at 2:00 PM`
+- API: ISO 8601 (`2024-01-15T14:00:00Z`)
+
+### File Size Limits
+
+| Upload Type | Max Size |
+|-------------|----------|
+| Event Image | 5 MB |
+| KYC Documents | 10 MB |
+| Profile Avatar | 2 MB |
+
+---
+
+## 33. Platform TODOs
+
+The following items are marked for future implementation or improvement:
+
+### Core Features
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Direct Messaging | Send notification to recipient when message received | High |
+| Event Details | Check if user is already registered for this event | Medium |
+| Saved Events | Replace mock data with actual API call | Medium |
+| Saved Events | Implement API call to remove from saved events | Medium |
+
+### Authentication & Security
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Social OAuth | Encrypt access tokens stored in database | High |
+| Email Entry | Check if email exists in database before proceeding | Medium |
+
+### Payment & Tickets
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Payment Step | Complete Paystack integration | High |
+| Confirmation Step | Implement ticket download functionality | Medium |
+| Confirmation Step | Implement share functionality | Medium |
+
+### Social Media Integration
+
+| Platform | Description | Priority |
+|----------|-------------|----------|
+| Instagram | Replace placeholders with actual Graph API calls | Medium |
+| LinkedIn | Replace placeholders with actual API calls | Medium |
+| Facebook | Replace placeholders with actual Graph API calls | Medium |
+| Twitter | Replace placeholders with actual API v2 calls | Medium |
+
+### User Experience
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Print Preview | Install react-to-pdf package for PDF export | Low |
+| Direct Messaging | Implement reply functionality | Medium |
+| Organizer Event Grid | Add date filter when backend supports it | Low |
+
+### Event Management
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Event Service | Send welcome email with password reset link | Medium |
+
+### Digital Wallet Integration
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Apple Wallet | Integrate Apple PassKit with Pass Type ID certificate | High |
+| Apple Wallet | Sign .pkpass files with Apple Developer certificate | High |
+| Apple Wallet | Generate actual downloadable .pkpass files | High |
+| Google Pay | Integrate Google Pay Passes API | High |
+| Google Pay | Obtain Google Pay API for Passes credentials | High |
+| Google Pay | Generate save-to-wallet links for Google Pay | High |
+
+**Requirements for Apple Wallet:**
+- Apple Developer account ($99/year)
+- Pass Type ID certificate from Apple Developer portal
+- Private key for signing passes
+- Server-side pkpass file generation (use `passkit-generator` npm package)
+
+**Requirements for Google Pay:**
+- Google Cloud Platform account
+- Google Pay API for Passes enabled
+- Service account with appropriate permissions
+- Issuer ID from Google Pay console
+
+### Admin Features (Mock Data)
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| System Health | Replace mock system metrics with real monitoring | Medium |
+| System Health | Integrate with actual server health endpoints | Medium |
+| Moderation | Replace mock reported content with real API | Medium |
+| Moderation | Implement content review workflow | Medium |
+
+### Marketing (Backend Required)
+
+| Area | Description | Priority |
+|------|-------------|----------|
+| Marketing Overview | Build dashboard with campaign stats, ROI metrics | Medium |
+| Campaigns | Create campaign management with targeting, scheduling | Medium |
+| Campaigns | Implement campaign analytics and performance tracking | Medium |
+| Email Marketing | Build email template editor with drag-and-drop | Medium |
+| Email Marketing | Implement email scheduling and automation | Medium |
+| Email Marketing | Add email analytics (opens, clicks, conversions) | Medium |
+| Promotions | Create platform-wide promotions management | Low |
+| Promotions | Implement promotion targeting rules | Low |
+| Affiliate Program | Build affiliate registration and approval workflow | Low |
+| Affiliate Program | Implement affiliate tracking and commission system | Low |
+| Affiliate Program | Create affiliate dashboard with earnings reports | Low |
+| Partnerships | Build partnership management interface | Low |
+| Partnerships | Implement partner revenue sharing configuration | Low |
+
+**Note:** Social Media and Promo Codes are currently active with backend support.
+
+---
+
+*Last updated: January 2026*

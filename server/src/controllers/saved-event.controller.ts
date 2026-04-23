@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import { SavedEventService } from '../services/saved-event.service.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ValidationError } from '../utils/errors.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+
+type EventIdParam = { eventId: string };
 
 export const savedEventController = {
   /**
@@ -36,13 +39,13 @@ export const savedEventController = {
   /**
    * Save an event
    */
-  saveEvent: asyncHandler(async (req: Request, res: Response) => {
+  saveEvent: asyncHandler(async (req: AuthenticatedRequest<EventIdParam>, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       throw new ValidationError('User not authenticated');
     }
 
-    const eventId = (req.params.eventId as string) as string;
+    const eventId = req.params.eventId;
     const { notes } = req.body;
 
     const savedEvent = await SavedEventService.saveEvent(userId, eventId, notes);
@@ -57,13 +60,13 @@ export const savedEventController = {
   /**
    * Unsave an event
    */
-  unsaveEvent: asyncHandler(async (req: Request, res: Response) => {
+  unsaveEvent: asyncHandler(async (req: AuthenticatedRequest<EventIdParam>, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       throw new ValidationError('User not authenticated');
     }
 
-    const eventId = (req.params.eventId as string) as string;
+    const eventId = req.params.eventId;
 
     await SavedEventService.unsaveEvent(userId, eventId);
 
@@ -76,13 +79,13 @@ export const savedEventController = {
   /**
    * Check if an event is saved
    */
-  isEventSaved: asyncHandler(async (req: Request, res: Response) => {
+  isEventSaved: asyncHandler(async (req: AuthenticatedRequest<EventIdParam>, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       throw new ValidationError('User not authenticated');
     }
 
-    const eventId = (req.params.eventId as string) as string;
+    const eventId = req.params.eventId;
 
     const isSaved = await SavedEventService.isEventSaved(userId, eventId);
 
@@ -122,13 +125,13 @@ export const savedEventController = {
   /**
    * Update notes for a saved event
    */
-  updateNotes: asyncHandler(async (req: Request, res: Response) => {
+  updateNotes: asyncHandler(async (req: AuthenticatedRequest<EventIdParam>, res: Response) => {
     const userId = req.user?.id;
     if (!userId) {
       throw new ValidationError('User not authenticated');
     }
 
-    const eventId = (req.params.eventId as string) as string;
+    const eventId = req.params.eventId;
     const { notes } = req.body;
 
     if (typeof notes !== 'string') {

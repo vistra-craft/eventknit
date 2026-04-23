@@ -1572,24 +1572,25 @@ class EmailService {
   }
   /**
    * Send notification to organizer that their event / account is under review.
-   * Pass isPaidEvent=true to include a KYC verification callout.
+   * Pass requiresKYC=true to include a KYC verification callout.
    */
   async sendOrganizerPendingEmail(
     email: string,
     firstName: string,
-    options?: { eventTitle?: string; isPaidEvent?: boolean },
+    options?: { eventTitle?: string; requiresKYC?: boolean },
   ): Promise<void> {
     const kycUrl = `${config.frontend.url}/user/organizer-profile`;
     const dashboardUrl = `${config.frontend.url}/user/dashboard`;
-    const { eventTitle, isPaidEvent } = options ?? {};
+    const { eventTitle, requiresKYC } = options ?? {};
 
-    const kycSection = isPaidEvent
+    const kycSection = requiresKYC
       ? `
         <div style="margin: 28px 0; padding: 16px 20px; border-left: 3px solid #f59e0b; background-color: #fffbeb;">
           <p style="margin: 0 0 8px; font-size: 15px; font-weight: 600; color: #1a1a1a;">Action required: complete KYC verification</p>
           <p style="margin: 0 0 12px; font-size: 14px; color: #555;">
-            Because <strong>${eventTitle ? `"${eventTitle}"` : 'your event'}</strong> charges for tickets, our review team needs your identity verified before they can approve it.
-            This also enables payouts once tickets start selling.
+            Our review team requires your identity to be verified before they can approve
+            ${eventTitle ? `<strong>"${eventTitle}"</strong>` : 'your event'}.
+            Complete your KYC verification to get your event live.
           </p>
           <a href="${kycUrl}" style="display: inline-block; padding: 10px 20px; background-color: #1a1a1a; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500;">
             Complete KYC →
@@ -2410,7 +2411,7 @@ class EmailService {
   }
 
   /**
-   * Send notification to organizer that their paid event requires KYC before admin review
+   * Send notification to organizer that their event requires KYC before admin review
    */
   async sendEventKYCRequiredEmail(
     email: string,
@@ -2430,7 +2431,7 @@ class EmailService {
           <div style="max-width: 560px; margin: 0 auto; padding: 40px 20px;">
             <p style="font-size: 16px; margin-bottom: 24px;">Hi ${firstName},</p>
             <p style="font-size: 15px; color: #333;">Your event <strong>${eventTitle}</strong> has been submitted successfully.</p>
-            <p style="font-size: 15px; color: #333;">Because this is a paid event, our team cannot begin reviewing it until you complete your organizer verification (KYC).</p>
+            <p style="font-size: 15px; color: #333;">Our team cannot begin reviewing your event until you complete your organizer verification (KYC).</p>
             <div style="border-left: 3px solid #1a1a1a; padding: 12px 16px; margin: 24px 0; background-color: #fafafa;">
               <p style="font-size: 14px; color: #333; margin: 0 0 8px;"><strong>What you need to do:</strong></p>
               <ol style="font-size: 14px; color: #555; margin: 0; padding-left: 18px;">

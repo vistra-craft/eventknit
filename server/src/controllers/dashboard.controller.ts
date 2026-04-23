@@ -3,19 +3,22 @@
  * Handles real-time dashboard metrics, analytics, and monitoring endpoints
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { DashboardAnalyticsService } from '../services/dashboard-analytics.service.js';
 import { logger } from '../utils/logger.js';
 import { ValidationError } from '../utils/errors.js';
+import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
+
+type EventIdParam = { eventId: string };
 
 export class DashboardController {
   /**
    * GET /api/v1/dashboard/events/:eventId/realtime-metrics
    * Get real-time metrics for event dashboard
    */
-  static async getRealtimeMetrics(req: Request, res: Response, next: NextFunction) {
+  static async getRealtimeMetrics(req: AuthenticatedRequest<EventIdParam>, res: Response, next: NextFunction) {
     try {
-      const eventId = req.params.eventId as string;
+      const eventId = req.params.eventId;
 
       const metrics = await DashboardAnalyticsService.getRealtimeMetrics(eventId);
 
@@ -33,9 +36,9 @@ export class DashboardController {
    * GET /api/v1/dashboard/events/:eventId/recent-scans?limit=100
    * Get recent scans with attendee details
    */
-  static async getRecentScans(req: Request, res: Response, next: NextFunction) {
+  static async getRecentScans(req: AuthenticatedRequest<EventIdParam>, res: Response, next: NextFunction) {
     try {
-      const eventId = req.params.eventId as string;
+      const eventId = req.params.eventId;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 100;
 
       if (limit < 1 || limit > 500) {
@@ -58,9 +61,9 @@ export class DashboardController {
    * GET /api/v1/dashboard/events/:eventId/heatmap?start=2026-01-01&end=2026-01-31
    * Get facility heatmap data
    */
-  static async getFacilityHeatmap(req: Request, res: Response, next: NextFunction) {
+  static async getFacilityHeatmap(req: AuthenticatedRequest<EventIdParam>, res: Response, next: NextFunction) {
     try {
-      const eventId = req.params.eventId as string;
+      const eventId = req.params.eventId;
       const { start, end } = req.query;
 
       if (!start || !end) {
@@ -98,9 +101,9 @@ export class DashboardController {
    * GET /api/v1/dashboard/events/:eventId/staff-metrics
    * Get staff performance metrics
    */
-  static async getStaffMetrics(req: Request, res: Response, next: NextFunction) {
+  static async getStaffMetrics(req: AuthenticatedRequest<EventIdParam>, res: Response, next: NextFunction) {
     try {
-      const eventId = req.params.eventId as string;
+      const eventId = req.params.eventId;
 
       const metrics = await DashboardAnalyticsService.getStaffMetrics(eventId);
 
@@ -118,9 +121,9 @@ export class DashboardController {
    * GET /api/v1/dashboard/events/:eventId/capacity-overview
    * Get capacity overview for all zones
    */
-  static async getCapacityOverview(req: Request, res: Response, next: NextFunction) {
+  static async getCapacityOverview(req: AuthenticatedRequest<EventIdParam>, res: Response, next: NextFunction) {
     try {
-      const eventId = req.params.eventId as string;
+      const eventId = req.params.eventId;
 
       const capacityStatuses = await DashboardAnalyticsService.getCapacityOverview(eventId);
 
@@ -138,9 +141,9 @@ export class DashboardController {
    * GET /api/v1/dashboard/events/:eventId/attendance-trend?interval=hourly
    * Get attendance trend data
    */
-  static async getAttendanceTrend(req: Request, res: Response, next: NextFunction) {
+  static async getAttendanceTrend(req: AuthenticatedRequest<EventIdParam>, res: Response, next: NextFunction) {
     try {
-      const eventId = req.params.eventId as string;
+      const eventId = req.params.eventId;
       const interval = (req.query.interval as 'hourly' | 'daily') || 'hourly';
 
       if (interval !== 'hourly' && interval !== 'daily') {

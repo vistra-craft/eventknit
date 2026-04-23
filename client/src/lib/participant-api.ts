@@ -4,19 +4,26 @@ import { apiGet, apiPost, apiPatch, apiDelete } from './api';
 
 export type ParticipantType =
   | 'SPEAKER'
-  | 'SPONSOR'
   | 'EXHIBITOR'
-  | 'PERFORMER'
+  | 'SPONSOR'
   | 'VOLUNTEER'
+  | 'PERFORMER'
+  | 'VENDOR'
+  | 'JUDGE'
+  | 'STAFF'
+  | 'VIP'
+  | 'MEDIA'
   | 'CUSTOM';
 
 export type ParticipantStatus =
   | 'INVITED'
-  | 'SUBMITTED'
+  | 'PENDING'
   | 'UNDER_REVIEW'
   | 'APPROVED'
   | 'REJECTED'
-  | 'WAITLISTED';
+  | 'WAITLISTED'
+  | 'CONFIRMED'
+  | 'DECLINED';
 
 export interface ParticipantUser {
   id: string;

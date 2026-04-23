@@ -10,12 +10,22 @@ import { prisma } from '../config/database.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import type { FormQuestion, FormAnswers } from '../types/form-question.types.js';
 
+// Prisma stores JSON columns as InputJsonValue. Our domain types (FormQuestion[], FormTheme, etc.)
+// are plain serialisable objects — the cast is safe and intentional at this DB boundary.
+function toJson(value: object | object[]): Prisma.InputJsonValue {
+  return value as Prisma.InputJsonValue;
+}
+
 export interface ListFormsOptions {
   page?: number;
   limit?: number;
   status?: FormStatus;
   purpose?: FormPurpose;
   eventId?: string;
+}
+
+export interface FormTheme {
+  accentColor?: string;
 }
 
 export interface CreateFormData {
@@ -32,6 +42,7 @@ export interface CreateFormData {
   closesAt?: Date;
   notifyOnSubmission?: boolean;
   notificationEmail?: string;
+  theme?: FormTheme;
 }
 
 export interface UpdateFormData {
@@ -48,6 +59,7 @@ export interface UpdateFormData {
   closesAt?: Date | null;
   notifyOnSubmission?: boolean;
   notificationEmail?: string;
+  theme?: FormTheme | null;
 }
 
 export interface SubmitFormData {
@@ -144,13 +156,14 @@ export const FormService = {
         purpose: data.purpose ?? FormPurpose.CUSTOM,
         customPurpose: data.customPurpose,
         targetParticipantType: data.targetParticipantType,
-        questions: (data.questions ?? []) as unknown as Prisma.InputJsonValue,
+        questions: toJson(data.questions ?? []),
         isPublic: data.isPublic ?? false,
         allowMultipleResponses: data.allowMultipleResponses ?? false,
         maxResponses: data.maxResponses,
         closesAt: data.closesAt,
         notifyOnSubmission: data.notifyOnSubmission ?? true,
         notificationEmail: data.notificationEmail,
+        theme: data.theme ? toJson(data.theme) : undefined,
         createdById,
         status: FormStatus.DRAFT,
       },
@@ -173,9 +186,21 @@ export const FormService = {
     return prisma.eventForm.update({
       where: { id: formId },
       data: {
-        ...data,
-        questions: data.questions !== undefined
-          ? (data.questions as unknown as Prisma.InputJsonValue)
+        title: data.title,
+        description: data.description,
+        purpose: data.purpose,
+        customPurpose: data.customPurpose,
+        targetParticipantType: data.targetParticipantType,
+        status: data.status,
+        isPublic: data.isPublic,
+        allowMultipleResponses: data.allowMultipleResponses,
+        maxResponses: data.maxResponses,
+        closesAt: data.closesAt,
+        notifyOnSubmission: data.notifyOnSubmission,
+        notificationEmail: data.notificationEmail,
+        questions: data.questions !== undefined ? toJson(data.questions) : undefined,
+        theme: data.theme !== undefined
+          ? (data.theme === null ? Prisma.JsonNull : toJson(data.theme))
           : undefined,
         updatedAt: new Date(),
       },
@@ -248,7 +273,7 @@ export const FormService = {
         respondentEmail: data.respondentEmail,
         respondentName: data.respondentName,
         respondentId: data.respondentId,
-        answers: data.answers as unknown as Prisma.InputJsonValue,
+        answers: toJson(data.answers),
         status: FormResponseStatus.SUBMITTED,
       },
       include: RESPONSE_INCLUDE,

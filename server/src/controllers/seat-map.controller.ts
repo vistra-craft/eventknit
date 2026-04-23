@@ -2,11 +2,14 @@
  * Seat Map Controller
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { SeatMapService } from '../services/seat-map.service.js';
 import { SeatSelectionService } from '../services/seat-selection.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { SeatType } from '@prisma/client';
+
+type EventIdParam = { eventId: string };
+type RegistrationIdParam = { registrationId: string };
 
 export class SeatMapController {
   /**
@@ -14,7 +17,7 @@ export class SeatMapController {
    * POST /api/v1/organizer-dashboard/events/:eventId/seat-map
    */
   static async upsertSeatMap(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<EventIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -27,7 +30,7 @@ export class SeatMapController {
         return;
       }
 
-      const eventId = (req.params.eventId as string) as string;
+      const eventId = req.params.eventId;
       const seatMap = await SeatMapService.upsertSeatMap(req.user.id, {
         ...req.body,
         eventId,
@@ -47,7 +50,7 @@ export class SeatMapController {
    * GET /api/v1/organizer-dashboard/events/:eventId/seat-map
    */
   static async getSeatMap(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<EventIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -60,7 +63,7 @@ export class SeatMapController {
         return;
       }
 
-      const eventId = (req.params.eventId as string) as string;
+      const eventId = req.params.eventId;
       const seatMap = await SeatMapService.getSeatMapByEventId(eventId, req.user.id);
       res.json({
         success: true,
@@ -76,7 +79,7 @@ export class SeatMapController {
    * GET /api/v1/organizer-dashboard/events/:eventId/seats/available
    */
   static async getAvailableSeats(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<EventIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -89,7 +92,7 @@ export class SeatMapController {
         return;
       }
 
-      const eventId = (req.params.eventId as string) as string;
+      const eventId = req.params.eventId;
       const { sectionId, seatType, minPrice, maxPrice } = req.query as Record<string, string | undefined>;
       const seats = await SeatMapService.getAvailableSeats(eventId, {
         sectionId,
@@ -111,7 +114,7 @@ export class SeatMapController {
    * DELETE /api/v1/organizer-dashboard/events/:eventId/seat-map
    */
   static async deleteSeatMap(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<EventIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -124,7 +127,7 @@ export class SeatMapController {
         return;
       }
 
-      const eventId = (req.params.eventId as string) as string;
+      const eventId = req.params.eventId;
       await SeatMapService.deleteSeatMap(eventId, req.user.id);
       res.json({
         success: true,
@@ -145,12 +148,12 @@ export class SeatSelectionController {
    * POST /api/v1/events/:eventId/seats/best-available
    */
   static async getBestAvailableSeats(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<EventIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
-      const eventId = req.params.eventId as string;
+      const eventId = req.params.eventId;
       const {
         quantity = 1,
         preferredSeatTypes,
@@ -185,12 +188,12 @@ export class SeatSelectionController {
    * GET /api/v1/events/:eventId/seats/recommendations
    */
   static async getSeatRecommendations(
-    req: Request,
+    req: AuthenticatedRequest<EventIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
-      const eventId = req.params.eventId as string;
+      const eventId = req.params.eventId;
       const budget = req.query.budget ? parseFloat(req.query.budget as string) : undefined;
       const quantity = req.query.quantity ? parseInt(req.query.quantity as string, 10) : 1;
 
@@ -210,12 +213,12 @@ export class SeatSelectionController {
    * GET /api/v1/events/:eventId/seat-map
    */
   static async getSeatMapAvailability(
-    req: Request,
+    req: AuthenticatedRequest<EventIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
     try {
-      const eventId = (req.params.eventId as string) as string;
+      const eventId = req.params.eventId;
       const seatMap = await SeatSelectionService.getSeatMapAvailability(eventId);
       res.json({
         success: true,
@@ -231,7 +234,7 @@ export class SeatSelectionController {
    * POST /api/v1/events/:eventId/seats/reserve
    */
   static async reserveSeats(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<EventIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -244,7 +247,7 @@ export class SeatSelectionController {
         return;
       }
 
-      const eventId = (req.params.eventId as string) as string;
+      const eventId = req.params.eventId;
       const { seatIds, registrationId, reservationTimeoutMinutes } = req.body;
 
       if (!seatIds || !Array.isArray(seatIds) || seatIds.length === 0) {
@@ -284,7 +287,7 @@ export class SeatSelectionController {
    * POST /api/v1/registrations/:registrationId/seats/confirm
    */
   static async confirmReservation(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<RegistrationIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -297,7 +300,7 @@ export class SeatSelectionController {
         return;
       }
 
-      const registrationId = (req.params.registrationId as string) as string;
+      const registrationId = req.params.registrationId;
       const reservation = await SeatSelectionService.confirmSeatReservation(registrationId);
       res.json({
         success: true,
@@ -313,7 +316,7 @@ export class SeatSelectionController {
    * DELETE /api/v1/registrations/:registrationId/seats
    */
   static async cancelReservation(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<RegistrationIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -326,7 +329,7 @@ export class SeatSelectionController {
         return;
       }
 
-      const registrationId = (req.params.registrationId as string) as string;
+      const registrationId = req.params.registrationId;
       await SeatSelectionService.cancelSeatReservation(registrationId);
       res.json({
         success: true,
@@ -342,7 +345,7 @@ export class SeatSelectionController {
    * GET /api/v1/registrations/:registrationId/seats
    */
   static async getSeatSelection(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<RegistrationIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -355,7 +358,7 @@ export class SeatSelectionController {
         return;
       }
 
-      const registrationId = (req.params.registrationId as string) as string;
+      const registrationId = req.params.registrationId;
       const selection = await SeatSelectionService.getSeatSelection(registrationId);
       res.json({
         success: true,

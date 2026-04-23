@@ -60,6 +60,9 @@ A comprehensive engineering guide to the EventKnit platform — architecture, de
 47. [Post-Event Survey System](#47-post-event-survey-system)
 48. [Financial Data Integrity Standards](#48-financial-data-integrity-standards)
 49. [Glossary](#49-glossary)
+51. [Company Documents](#51-company-documents)
+52. [Forms & Participants](#52-forms--participants)
+53. [Appendix](#53-appendix)
 
 ---
 
@@ -422,6 +425,8 @@ app.use('/api/v1/payments', paymentRoutes);
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/cart', cartRoutes);
 app.use('/api/v1/promo-codes', promoCodeRoutes);
+app.use('/api/v1/contact', publicContactRouter);                      // public — no auth required
+app.use('/api/v1/admin/support/contact-queries', adminContactRouter); // ADMIN+ only
 // ... 55+ route groups total
 ```
 
@@ -1248,7 +1253,45 @@ enum ManagedClientType {
   PLATFORM     // EventKnit's own events
   OTHER        // Any other client type
 }
+
+enum SupportQueryStatus { NEW, IN_PROGRESS, WAITING, RESOLVED, CLOSED }
+enum SupportPriority    { LOW, MEDIUM, HIGH, URGENT }
 ```
+
+### Contact Query Models
+
+```prisma
+// Captures public website contact-form submissions (no platform account required)
+model ContactQuery {
+  id         String             @id @default(cuid())
+  name       String
+  email      String
+  subject    String
+  message    String             @db.Text
+  status     SupportQueryStatus @default(NEW)
+  priority   SupportPriority    @default(MEDIUM)
+  assignedTo String?
+  resolvedAt DateTime?
+  assignedAgent User?                  @relation("AssignedContactQueries", fields: [assignedTo], references: [id], onDelete: SetNull)
+  responses     ContactQueryResponse[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Each reply or internal note on a ContactQuery
+model ContactQueryResponse {
+  id         String   @id @default(cuid())
+  queryId    String
+  response   String   @db.Text
+  sentBy     String
+  isInternal Boolean  @default(false)  // true = internal note, not emailed to sender
+  sentAt     DateTime @default(now())
+  query ContactQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  agent User          @relation("ContactQueryResponses", fields: [sentBy], references: [id])
+}
+```
+
+**Design note:** `ContactQuery` is intentionally separate from `SocialMessage` because social messages require a `socialAccountId` foreign key (a connected social account must exist). Website contact form submissions have no such dependency — the sender has no platform account.
 
 ### Index Strategy
 
@@ -1611,6 +1654,30 @@ router.post('/events',
   EventController.create     // Handler
 );
 ```
+
+### 7. Typed Route Params Pattern
+
+`@types/express-serve-static-core` types `req.params` as `{ [key: string]: string | string[] }`, which causes TypeScript errors when passing a param directly to a service method that expects `string`.
+
+**Wrong — suppresses the error with a cast:**
+```typescript
+static async getById(req: AuthenticatedRequest, ...) {
+  const id = req.params.id as string; // cast hides the type mismatch
+}
+```
+
+**Correct — use the generic on `AuthenticatedRequest`:**
+```typescript
+type IdParam = { id: string };
+
+static async getById(req: AuthenticatedRequest<IdParam>, ...) {
+  await SomeService.getById(req.params.id); // narrowed to string — no cast needed
+}
+```
+
+`AuthenticatedRequest<P = ParamsDictionary>` is designed for exactly this. Define a named type alias for the params shape at the top of the controller file and apply it to each method that reads `req.params`.
+
+**Tech debt note:** Many existing controllers pre-date this pattern and still use `as string` casts. The rule going forward: apply the generic on any new controller, and clean up existing controllers when a file is already being edited for a real feature — not as standalone churn.
 
 ---
 
@@ -3530,7 +3597,62 @@ Organizer Sidebar (Main group):
 
 Attendee (UnifiedNavbar):
 ├── NotificationBell in header → dropdown panel → "View all" → /user/notifications
+└── "Messages" menu item → dispatches 'eventknit:open-chat' (opens ChatPanel)
 ```
+
+### Sliding Chat Panel (Direct Messaging)
+
+The one-to-one messaging interface is a persistent `Sheet` (shadcn/ui slide-over) mounted at layout level, not as a routed page. This keeps the panel alive across navigation and matches the WhatsApp-style industry pattern.
+
+```typescript
+// client/src/components/chat/ChatPanel.tsx
+//
+// Props:
+//   open: boolean
+//   onOpenChange: (open: boolean) => void
+//   onUnreadCountChange?: (count: number) => void   ← parent badge sync
+//
+// Three views (internal state):
+//   'conversations' — list grouped by partner; unread badge per conversation
+//   'chat'          — full thread with a single partner; real-time via WebSocket
+//   'compose'       — new message form (recipientEmail, subject, content)
+//
+// WebSocket (Socket.IO):
+//   On mount: connects to VITE_API_URL, emits 'join:notifications'
+//   Events listened: 'message:new', 'message:read'
+//   Reconnects when activePartner changes
+//
+// Unread count flow:
+//   1. fetchConversations() on mount → sets totalUnread
+//   2. fetchConversations() again on open → refreshes
+//   3. useEffect fires onUnreadCountChange(totalUnread) on every change
+//   4. Layout stores the value in chatUnread state → drives ChatPanelTrigger badge
+
+// Mount points (each layout manages chatOpen + chatUnread independently):
+//   AdminLayout    → <ChatPanel onUnreadCountChange={setChatUnread} ... />
+//   OrganizerLayout→ <ChatPanel onUnreadCountChange={setChatUnread} ... />
+//   UserLayout     → <ChatPanel onUnreadCountChange={setChatUnread} ... />  ← added so it persists across /user/* routes
+
+// Opening the panel from anywhere (no prop-drilling needed):
+//   window.dispatchEvent(new CustomEvent('eventknit:open-chat'))
+//
+// Layouts listen:
+//   useEffect(() => {
+//     const handler = () => setChatOpen(true);
+//     window.addEventListener('eventknit:open-chat', handler);
+//     return () => window.removeEventListener('eventknit:open-chat', handler);
+//   }, []);
+//
+// Nav links that trigger it:
+//   UnifiedNavbar.tsx  — "Messages" menu item
+//   ProfileDropdown.tsx — "Messages" dropdown item
+
+// Floating trigger button:
+//   ChatPanelTrigger (same file) — fixed bottom-right button with unread badge
+//   Rendered in all three layouts alongside ChatPanel
+```
+
+**Why a custom event instead of context/props:** The layouts are at three different tree levels. A window event is the simplest decoupled approach — it avoids threading `openChat` through the entire component hierarchy and works from any depth.
 
 ### Real-Time Delivery (WebSocket)
 
@@ -3604,7 +3726,7 @@ All components live in `client/src/components/event-attendee/`.
 //   home, my-event, my-badge → always visible
 //
 // Header icons:
-//   Message icon → navigates to /user/messages (DirectMessaging page)
+//   Message icon → dispatches 'eventknit:open-chat' to open the sliding ChatPanel
 //   Bell icon → opens NotificationsPanel (inline slide-over)
 //   "See all" in panel → navigates to /user/notifications (NotificationsCenter)
 ```
@@ -4810,4 +4932,567 @@ Nairobi · Mombasa · Kampala · Dar es Salaam · Kigali · Addis Ababa · All C
 Selection is persisted to `localStorage` (`eventknit-location-preference`) so it survives page refreshes. On first visit with no stored preference, all events are shown.
 
 **Optional first-visit hint:** IP geolocation may be used as a *suggestion only* — a dismissible banner ("Showing events near Nairobi — change?") — not as a silent filter. The user retains full control.
+
+---
+
+## 51. Company Documents
+
+### Overview
+
+The Company Documents module provides admin staff with a centralised internal document repository. It supports two storage strategies: direct file uploads to Cloudinary and saved links to external services (Google Docs, Google Sheets, Google Slides, or arbitrary URLs).
+
+### Database Schema
+
+```prisma
+enum CompanyDocCategory {
+  LEGAL
+  FINANCIAL
+  HR
+  OPERATIONS
+  MARKETING
+  MEETING_NOTES  // Added: internal meeting minutes and Google Meet/Zoom recordings
+  COMPLIANCE
+  CONTRACTS
+  POLICIES
+  OTHER
+}
+
+enum CompanyDocType {
+  FILE
+  GOOGLE_DOC
+  GOOGLE_SHEET
+  GOOGLE_SLIDES
+  EXTERNAL_LINK
+}
+
+model CompanyDocument {
+  id                 String              @id @default(cuid())
+  name               String
+  description        String?
+  category           CompanyDocCategory
+  type               CompanyDocType
+  fileUrl            String?
+  cloudinaryPublicId String?
+  externalUrl        String?
+  fileName           String?
+  fileSize           Int?
+  mimeType           String?
+  uploadedById       String
+  uploadedBy         User                @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([category])
+  @@index([type])
+  @@index([uploadedById])
+}
+```
+
+### Architecture
+
+Follows the standard Route -> Controller -> Service pattern with auth enforced in middleware:
+
+```
+POST /api/v1/admin/company-documents/upload
+  authenticate middleware (JWT verification)
+  requireMinRole(ADMIN_STAFF) middleware
+  uploadSingleDocument middleware (Multer, 25 MB limit)
+  CompanyDocumentsController.uploadFile
+    CompanyDocumentsService.uploadFile
+      cloudinaryService.uploadBuffer (resource_type: 'raw' for non-image, 'image' for images)
+      prisma.companyDocument.create
+```
+
+### File Upload Implementation
+
+Multer is configured with `memoryStorage()` so files are held in memory as `Buffer` objects and piped directly to Cloudinary without touching disk:
+
+```typescript
+// server/src/utils/upload.ts
+const documentFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
+  const allowed = [
+    'image/', 'application/pdf',
+    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml',
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml',
+    'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml',
+    'text/plain', 'text/csv',
+  ];
+  const ok = allowed.some(prefix => file.mimetype.startsWith(prefix));
+  cb(null, ok);
+};
+
+export const documentUpload = multer({ storage: multer.memoryStorage(), fileFilter: documentFilter, limits: { fileSize: 25 * 1024 * 1024 } });
+export const uploadSingleDocument = documentUpload.single('file');
+```
+
+Cloudinary upload uses `resource_type: 'raw'` for non-image files so they are preserved without transcoding:
+
+```typescript
+const resourceType = file.mimetype.startsWith('image/') ? 'image' : 'raw';
+const result = await cloudinaryService.uploadBuffer(file.buffer, {
+  folder: 'eventknit/company-documents',
+  resource_type: resourceType,
+  public_id: `${Date.now()}-${path.parse(file.originalname).name}`,
+});
+```
+
+### Service Layer
+
+`CompanyDocumentsService` contains all business logic. Auth is intentionally absent from the service — roles are enforced at the route level via `requireMinRole`.
+
+Key behaviours:
+
+- **`list`**: Builds a Prisma `where` clause from `category`, `type`, and `search` filters. Returns paginated results with `totalPages`.
+- **`getById`**: Throws `NotFoundError` if the document does not exist.
+- **`createLink`**: Creates a record with `externalUrl` set and no file fields.
+- **`uploadFile`**: Uploads to Cloudinary first, then creates the DB record. If Cloudinary fails, no record is created (implicit rollback).
+- **`update`**: Throws `ValidationError` if `externalUrl` is being set on a `FILE` type document.
+- **`delete`**: Attempts Cloudinary deletion of the stored asset (failure is logged but non-fatal), then deletes the DB record.
+
+### Frontend API Client
+
+```typescript
+// client/src/lib/company-documents-api.ts
+getCompanyDocuments(params?)        // GET /admin/company-documents with query params
+getCompanyDocumentById(id)          // GET /admin/company-documents/:id
+createDocumentLink(data)            // POST /admin/company-documents/link
+uploadDocumentFile(data)            // POST /admin/company-documents/upload via FormData
+updateCompanyDocument(id, data)     // PATCH /admin/company-documents/:id
+deleteCompanyDocument(id)           // DELETE /admin/company-documents/:id
+```
+
+### Route Registration
+
+```typescript
+// server/src/app.ts
+app.use('/api/v1/admin/company-documents', companyDocumentsRoutes);
+
+// server/src/routes/company-documents.routes.ts
+router.use(authenticate);
+router.use(requireMinRole(UserRole.ADMIN_STAFF));
+router.get('/',        CompanyDocumentsController.list);
+router.get('/:id',     CompanyDocumentsController.getById);
+router.post('/link',   CompanyDocumentsController.createLink);
+router.post('/upload', uploadSingleDocument, CompanyDocumentsController.uploadFile);
+router.patch('/:id',   CompanyDocumentsController.update);
+router.delete('/:id',  CompanyDocumentsController.delete);
+```
+
+### Testing
+
+Service tests are in `server/tests/company-documents.service.test.ts` (18 tests). All Prisma and Cloudinary calls are mocked. Coverage:
+
+| Suite | Tests |
+|-------|-------|
+| `list` | Pagination, category filter, type filter, search filter, totalPages calculation |
+| `getById` | Returns document, throws NotFoundError |
+| `createLink` | Google Doc link, External link |
+| `uploadFile` | PDF uses `raw` resource_type, image uses `image` resource_type |
+| `update` | Updates metadata, throws NotFoundError, throws ValidationError for FILE + externalUrl |
+| `delete` | Cloudinary cleanup called, still deletes DB if Cloudinary fails, throws NotFoundError |
+
+---
+
+## 52. Forms & Participants
+
+### Overview
+
+The Forms & Participants system provides a configurable data-collection engine for organizer and admin use. It has three primary models: `EventForm` (the questionnaire), `FormResponse` (a single submission), and `EventParticipant` (a confirmed event participant). A form response can automatically produce a participant record when approved, removing the need for manual data entry.
+
+### Database Schema
+
+```prisma
+enum ParticipantType  { SPEAKER EXHIBITOR SPONSOR VOLUNTEER PERFORMER VENDOR JUDGE STAFF VIP MEDIA CUSTOM }
+enum ParticipantStatus { INVITED PENDING UNDER_REVIEW APPROVED REJECTED WAITLISTED CONFIRMED DECLINED }
+enum FormPurpose { SPEAKER_APPLICATION EXHIBITOR_APPLICATION SPONSOR_APPLICATION
+                   VOLUNTEER_APPLICATION PERFORMER_APPLICATION VENDOR_APPLICATION
+                   JUDGE_APPLICATION MEDIA_APPLICATION
+                   REGISTRATION FEEDBACK GENERAL_INQUIRY CUSTOM }
+enum FormStatus        { DRAFT ACTIVE CLOSED ARCHIVED }
+enum FormResponseStatus { SUBMITTED UNDER_REVIEW APPROVED REJECTED WAITLISTED }
+
+model EventParticipant {
+  id             String            @id @default(uuid())
+  eventId        String
+  event          Event             @relation("EventParticipants", ...)
+  userId         String?
+  user           User?             @relation("UserParticipants", ...)
+  type           ParticipantType
+  status         ParticipantStatus @default(INVITED)
+  name           String
+  email          String
+  phone          String?
+  company        String?
+  bio            String?           @db.Text
+  website        String?
+  linkedin       String?
+  twitter        String?
+  avatarUrl      String?
+  metadata       Json?             // Type-specific extras (speaker topics, sponsor tier, etc.)
+  customType     String?
+  formResponseId String?           @unique
+  formResponse   FormResponse?     @relation("ParticipantFormResponse", ...)
+  addedById      String?
+  reviewedById   String?
+  reviewedAt     DateTime?
+  reviewNotes    String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  // indexes: eventId, userId, type, status, email, createdAt
+}
+
+model EventForm {
+  id                    String           @id @default(uuid())
+  eventId               String?
+  event                 Event?           @relation("EventForms", ...)
+  createdById           String
+  title                 String
+  description           String?          @db.Text
+  purpose               FormPurpose      @default(CUSTOM)
+  customPurpose         String?
+  targetParticipantType ParticipantType?
+  status                FormStatus       @default(DRAFT)
+  questions             Json             @default("[]")  // FormQuestion[]
+  shareToken            String           @unique @default(uuid())
+  isPublic              Boolean          @default(false)
+  allowMultipleResponses Boolean         @default(false)
+  maxResponses          Int?
+  closesAt              DateTime?
+  notifyOnSubmission    Boolean          @default(true)
+  notificationEmail     String?
+  responses             FormResponse[]   @relation("FormResponses")
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  // indexes: eventId, createdById, status, purpose, shareToken
+}
+
+model FormResponse {
+  id              String             @id @default(uuid())
+  formId          String
+  form            EventForm          @relation("FormResponses", ...)
+  respondentId    String?
+  respondent      User?              @relation("UserFormResponses", ...)
+  respondentEmail String
+  respondentName  String?
+  status          FormResponseStatus @default(SUBMITTED)
+  answers         Json               @default("{}")  // Record<questionId, value>
+  reviewedById    String?
+  reviewedAt      DateTime?
+  reviewNotes     String?            @db.Text
+  participant     EventParticipant?  @relation("ParticipantFormResponse")
+  submittedAt     DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  // indexes: formId, respondentId, respondentEmail, status, submittedAt
+}
+```
+
+### Shared Question Type
+
+The `FormQuestion` type is defined in `server/src/types/form-question.types.ts` and shared by both the Forms system and the Survey system:
+
+```typescript
+export type FormQuestionType =
+  | 'short_text' | 'long_text' | 'email' | 'phone' | 'number' | 'date' | 'url'
+  | 'single_choice' | 'multiple_choice' | 'dropdown'
+  | 'rating' | 'scale' | 'file_upload' | 'section_break';
+
+export interface FormQuestion {
+  id: string;
+  type: FormQuestionType;
+  label: string;
+  helpText?: string;
+  placeholder?: string;
+  required: boolean;
+  order: number;
+  options?: { value: string; label: string }[];    // for choice types
+  minValue?: number; maxValue?: number;             // for rating/scale
+  minLabel?: string; maxLabel?: string;             // for scale
+  acceptedFileTypes?: string[];                     // for file_upload (e.g. ['image/jpeg', 'image/png'])
+  maxFileSizeMb?: number;                           // for file_upload (default: no limit)
+  sectionTitle?: string; sectionDescription?: string; // for section_break
+}
+```
+
+Questions are stored as a `Json` array in the database. The order field is used to sort questions on render; it is re-indexed sequentially whenever the form builder moves, adds, or removes a question.
+
+### Architecture
+
+Follows the standard Route -> Controller -> Service pattern. Public endpoints skip the `authenticate` middleware; protected endpoints require `ORGANIZER` role minimum.
+
+```
+GET /api/v1/forms/public/:shareToken         (no auth)
+POST /api/v1/forms/public/:shareToken/submit (no auth; attaches user if token present)
+
+GET/POST/PATCH/DELETE /api/v1/forms/*
+  authenticate middleware
+  requireMinRole(ORGANIZER)
+  FormController -> FormService -> prisma
+
+GET/POST/PATCH/DELETE /api/v1/events/:eventId/participants/*
+  authenticate middleware
+  requireMinRole(ORGANIZER)
+  ParticipantController -> ParticipantService -> prisma
+```
+
+### Service Layer
+
+#### `FormService` (`server/src/services/form.service.ts`)
+
+| Method | Behaviour |
+|--------|-----------|
+| `listForms(opts)` | Paginated list with optional `status`, `purpose`, `eventId` filters |
+| `getFormById(id)` | Throws `NotFoundError` if not found |
+| `getFormByShareToken(token)` | Throws `NotFoundError` if token unknown; `ValidationError` if status is not `ACTIVE` or `closesAt` is past |
+| `createForm(data, userId)` | Validates event exists if `eventId` provided; requires `customPurpose` when `purpose = CUSTOM` |
+| `updateForm(id, data)` | Throws `ValidationError` if form is `ARCHIVED`; serialises `questions` as `InputJsonValue` |
+| `deleteForm(id)` | Cascades to responses via DB `onDelete: Cascade` |
+| `listResponses(formId, opts)` | Paginated; filterable by `status` |
+| `submitResponse(shareToken, data)` | Calls `getFormByShareToken` first (validates active + not closed); enforces `maxResponses` cap; enforces duplicate-email guard when `allowMultipleResponses = false` |
+| `reviewResponse(id, status, userId, notes?, createParticipant?)` | Updates status; if `APPROVED` and `createParticipant = true` and `targetParticipantType` is set and no participant record exists yet, auto-creates `EventParticipant` |
+
+#### Built-in Form Templates (`server/src/config/form-templates.config.ts`)
+
+The system ships with thirteen ready-to-use `BuiltInTemplate` objects (name, description, purpose, pre-populated questions). Organizers can browse and instantiate them from the Template Gallery. All person-facing application templates include optional profile photo (`file_upload`) and social URL fields so responses can feed directly into event promotion materials.
+
+| Template | `FormPurpose` | Key fields |
+|----------|---------------|------------|
+| Event Registration | `REGISTRATION` | Name, email, phone, organisation, job title, dietary requirements, accessibility needs, T&C consent |
+| Post-Event Feedback | `FEEDBACK` | Ratings (overall, logistics, venue), open comments, would-attend-again |
+| General Survey | `FEEDBACK` | Demographics, topic interests, discovery source, open comments |
+| Speaker Application | `SPEAKER_APPLICATION` | Talk title, format, abstract, bio, LinkedIn, website, Twitter/X, **headshot upload**, speaking experience, A/V requirements |
+| Exhibitor Application | `EXHIBITOR_APPLICATION` | Company name, contact, website, LinkedIn, Twitter/X, **company logo upload**, description, booth size, required facilities |
+| Volunteer Application | `VOLUNTEER_APPLICATION` | Name, contact, age group, preferred roles, T-shirt size, experience, commitment confirmation |
+| Sponsor Application | `SPONSOR_APPLICATION` | Company name, contact, title, website, LinkedIn, **logo upload**, preferred tier, budget range, overview, desired branding benefits, products to promote |
+| Performer / Artist Application | `PERFORMER_APPLICATION` | Stage name, legal name, performance category, bio, performance description, duration, technical requirements, portfolio/EPK links, booking contact, soundcheck availability |
+| Vendor Application | `VENDOR_APPLICATION` | Business name, contact person, vendor category, products/services, stall size, required utilities, business registration, health certificate (food vendors), social link |
+| Judge / Reviewer Application | `JUDGE_APPLICATION` | Full name, title, organisation, areas of expertise, bio, judging experience, availability, LinkedIn, conflict-of-interest declaration |
+| Media / Press Application | `MEDIA_APPLICATION` | Name, outlet, media type, website, audience reach, intended coverage, equipment, press area request, accreditation, portfolio link |
+| Research Survey | `FEEDBACK` | Likert scales, demographic dropdowns, open-ended questions (structured academic format) |
+| Event Survey | `FEEDBACK` | Pre/mid-event pulse — discovery source, session interest, primary goal, expectations scale |
+| Knowledge Quiz | `CUSTOM` | Placeholder 5-question multiple-choice template; organizer replaces questions with event content |
+
+#### `ParticipantService` (`server/src/services/participant.service.ts`)
+
+| Method | Behaviour |
+|--------|-----------|
+| `list(eventId, opts)` | Paginated; filterable by `type`, `status`, `search` (name/email/company) |
+| `getById(eventId, id)` | Scoped to event; throws `NotFoundError` |
+| `create(eventId, data, addedById)` | Verifies event exists; requires `customType` when `type = CUSTOM`; sets initial `status = INVITED` |
+| `update(eventId, id, data)` | Validates `customType` not empty if existing type is `CUSTOM` |
+| `review(eventId, id, status, userId, notes?)` | Accepts `APPROVED`, `REJECTED`, `WAITLISTED`, `UNDER_REVIEW`, `CONFIRMED`, `DECLINED`; rejects `INVITED`, `PENDING` |
+| `delete(eventId, id)` | Hard delete; related `FormResponse.participant` set to null via `SetNull` |
+
+### Auto-Participant Creation
+
+When a `FormResponse` is approved with `createParticipant = true`:
+
+```typescript
+if (
+  status === FormResponseStatus.APPROVED &&
+  createParticipant &&
+  response.form.targetParticipantType &&
+  response.form.eventId &&
+  !response.participant           // idempotency guard
+) {
+  await prisma.eventParticipant.create({
+    data: {
+      eventId: response.form.eventId,
+      type: response.form.targetParticipantType,
+      status: ParticipantStatus.APPROVED,
+      name: response.respondentName ?? answers['name'] ?? response.respondentEmail,
+      email: response.respondentEmail,
+      userId: response.respondentId,
+      formResponseId: response.id,
+      reviewedById,
+      reviewedAt: new Date(),
+    },
+  });
+}
+```
+
+The `formResponseId` unique constraint on `EventParticipant` guarantees at most one participant is ever created from a single response, even if the review endpoint is called concurrently.
+
+### Public Form Submission Flow
+
+```
+Browser: GET /f/:shareToken
+  -> PublicFormPage.tsx
+  -> getPublicForm(shareToken)      (GET /api/v1/forms/public/:shareToken)
+  <- { form: { title, description, questions, event } }
+
+User fills form and submits:
+  -> submitPublicForm(shareToken, { respondentEmail, respondentName, answers })
+     (POST /api/v1/forms/public/:shareToken/submit)
+  <- { response: { id, submittedAt } }
+```
+
+The backend optional-auth middleware on submit attempts to decode a JWT cookie if present. If valid, `respondentId` is set to link the response to an existing user account. If absent or invalid, the auth error is swallowed and the submission proceeds as anonymous.
+
+### Frontend Components
+
+| File | Purpose |
+|------|---------|
+| `client/src/components/forms/FormBuilder.tsx` | Drag-order question editor used by admin/organizer when creating or editing a form |
+| `client/src/components/forms/FormRenderer.tsx` | Renders live form questions for public submission; exports `validateFormAnswers()` |
+| `client/src/components/forms/TemplateGallery.tsx` | Grid of all 13 built-in + custom templates with filter pills per purpose; used before form creation |
+| `client/src/components/forms/AccentColorPicker.tsx` | 12-preset + custom hex colour picker for form theme accent; stored in `EventForm.theme.accentColor` |
+| `client/src/lib/form-api.ts` | All form and response API calls; defines `FormPurpose`, `FormQuestion`, `EventForm` types |
+| `client/src/lib/form-template-api.ts` | Template API calls; exports `FORM_PURPOSE_LABELS` map for display names |
+| `client/src/lib/participant-api.ts` | All participant CRUD API calls; defines `ParticipantType` and `ParticipantStatus` types |
+| `client/src/pages/admin/forms/AdminFormsPage.tsx` | Admin forms list with template gallery on create |
+| `client/src/pages/admin/forms/AdminFormDetailPage.tsx` | Edit questions, review responses, accent-colour picker in Settings tab |
+| `client/src/pages/public/PublicFormPage.tsx` | Zero-auth public submission page at `/f/:shareToken`; applies `theme.accentColor` to submit button |
+
+### Route Registration
+
+```typescript
+// server/src/app.ts
+app.use('/api/v1/events/:eventId/participants', participantRoutes);
+app.use('/api/v1/forms', formRoutes);
+
+// server/src/routes/form.routes.ts
+router.get('/public/:shareToken',         FormController.getPublicForm);     // no auth
+router.post('/public/:shareToken/submit', optionalAuth, FormController.submitPublicForm);
+
+router.use(authenticate);
+router.use(requireMinRole(UserRole.ORGANIZER));
+router.get('/',                                    FormController.listForms);
+router.post('/',                                   FormController.createForm);
+router.get('/:id',                                 FormController.getFormById);
+router.patch('/:id',                               FormController.updateForm);
+router.delete('/:id',                              FormController.deleteForm);
+router.get('/:id/responses',                       FormController.listResponses);
+router.get('/:id/responses/:responseId',           FormController.getResponseById);
+router.patch('/:id/responses/:responseId/review',  FormController.reviewResponse);
+
+// server/src/routes/participant.routes.ts  (mergeParams: true)
+router.use(authenticate);
+router.use(requireMinRole(UserRole.ORGANIZER));
+router.get('/',                       ParticipantController.list);
+router.post('/',                      ParticipantController.create);
+router.get('/:participantId',         ParticipantController.getById);
+router.patch('/:participantId',       ParticipantController.update);
+router.patch('/:participantId/review', ParticipantController.review);
+router.delete('/:participantId',      ParticipantController.delete);
+```
+
+### Testing
+
+Unit tests use Vitest with all Prisma calls mocked via `vi.mock('../src/config/database', ...)`.
+
+| File | Tests | Coverage |
+|------|-------|---------|
+| `tests/participant.service.test.ts` | 22 | list (5), getById (2), create (4), update (3), review (5), delete (2) |
+| `tests/form.service.test.ts` | 33 | listForms (5), getFormById (2), getFormByShareToken (4), createForm (4), updateForm (4), deleteForm (2), listResponses (2), submitResponse (4), reviewResponse (6) |
+
+Key scenarios covered:
+
+- Pagination and all filter combinations
+- `NotFoundError` on missing resources
+- `ValidationError` for CUSTOM type without label, archived form edits, invalid review statuses
+- Duplicate-email guard respects `allowMultipleResponses` flag
+- `maxResponses` cap enforced before creating response
+- `closesAt` expiry check in `getFormByShareToken`
+- Auto-participant creation on approval (correct data, idempotency guard, skips when `createParticipant = false`)
+- `SUBMITTED` status rejected as a review action
+
+---
+
+## 53. Appendix
+
+### Environment Variables Template
+
+```env
+# Server
+NODE_ENV=development
+PORT=3001
+
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/eventknit
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# JWT
+JWT_ACCESS_SECRET=your-access-secret
+JWT_REFRESH_SECRET=your-refresh-secret
+
+# CORS
+CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# Paystack
+PAYSTACK_SECRET_KEY=
+PAYSTACK_PUBLIC_KEY=
+
+# Email
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+
+# Twilio
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_PHONE_NUMBER=
+
+# Firebase
+FIREBASE_PROJECT_ID=
+FIREBASE_PRIVATE_KEY=
+FIREBASE_CLIENT_EMAIL=
+
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Facebook OAuth
+FACEBOOK_APP_ID=
+FACEBOOK_APP_SECRET=
+```
+
+### Useful Commands
+
+```bash
+# Backend
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run test             # Run tests
+npm run lint             # Lint code
+npm run prisma:migrate   # Run database migrations
+npm run prisma:studio    # Open Prisma Studio
+
+# Frontend
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run preview          # Preview production build
+npm run test             # Run tests
+
+# Mobile
+flutter run              # Run app
+flutter build apk        # Build Android APK
+flutter build ios        # Build iOS app
+flutter test             # Run tests
+
+# Docker
+docker compose up        # Start all services
+docker compose down      # Stop all services
+docker compose logs      # View logs
+```
+
+---
+
+*Last Updated: January 2026*
+
+*Version: 1.0.0*
 

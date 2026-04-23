@@ -421,6 +421,107 @@ describe('EventService - Event Creation', () => {
       });
     });
 
+    describe('KYC Gate', () => {
+      it('should throw AuthorizationError when organizer has no entity type for free event', async () => {
+        // Arrange
+        prisma.user.findUnique.mockResolvedValue({
+          ...mockOrganizer,
+          kycStatus: null,
+          organizerEntityType: null,
+        } as any);
+
+        // Act & Assert
+        await expect(
+          EventService.createEvent(baseEventData, mockOrganizer.id, UserRole.ORGANIZER),
+        ).rejects.toThrow(AuthorizationError);
+
+        await expect(
+          EventService.createEvent(baseEventData, mockOrganizer.id, UserRole.ORGANIZER),
+        ).rejects.toThrow('Identity verification is required to create events');
+      });
+
+      it('should throw AuthorizationError when organizer KYC is pending for free event', async () => {
+        // Arrange
+        prisma.user.findUnique.mockResolvedValue({
+          ...mockOrganizer,
+          kycStatus: 'PENDING',
+          organizerEntityType: 'INDIVIDUAL',
+        } as any);
+
+        // Act & Assert
+        await expect(
+          EventService.createEvent(baseEventData, mockOrganizer.id, UserRole.ORGANIZER),
+        ).rejects.toThrow(AuthorizationError);
+      });
+
+      it('should throw AuthorizationError when organizer KYC is rejected for free event', async () => {
+        // Arrange
+        prisma.user.findUnique.mockResolvedValue({
+          ...mockOrganizer,
+          kycStatus: 'REJECTED',
+          organizerEntityType: 'INDIVIDUAL',
+        } as any);
+
+        // Act & Assert
+        await expect(
+          EventService.createEvent(baseEventData, mockOrganizer.id, UserRole.ORGANIZER),
+        ).rejects.toThrow(AuthorizationError);
+      });
+
+      it('should allow ADMIN to create free event bypassing KYC gate', async () => {
+        // Arrange
+        prisma.user.findUnique.mockResolvedValue({
+          ...mockOrganizer,
+          role: UserRole.ADMIN,
+          kycStatus: null,
+          organizerEntityType: null,
+        } as any);
+        prisma.event.create.mockResolvedValue({
+          id: 'event-123',
+          ...baseEventData,
+          organizerId: mockOrganizer.id,
+          status: EventStatus.PENDING,
+        } as any);
+
+        // Act
+        const result = await EventService.createEvent(
+          baseEventData,
+          mockOrganizer.id,
+          UserRole.ADMIN,
+        );
+
+        // Assert
+        expect(result).toBeDefined();
+        expect(prisma.event.create).toHaveBeenCalled();
+      });
+
+      it('should allow SUPERADMIN to create free event bypassing KYC gate', async () => {
+        // Arrange
+        prisma.user.findUnique.mockResolvedValue({
+          ...mockOrganizer,
+          role: UserRole.SUPERADMIN,
+          kycStatus: null,
+          organizerEntityType: null,
+        } as any);
+        prisma.event.create.mockResolvedValue({
+          id: 'event-123',
+          ...baseEventData,
+          organizerId: mockOrganizer.id,
+          status: EventStatus.PENDING,
+        } as any);
+
+        // Act
+        const result = await EventService.createEvent(
+          baseEventData,
+          mockOrganizer.id,
+          UserRole.SUPERADMIN,
+        );
+
+        // Assert
+        expect(result).toBeDefined();
+      });
+    });
+
     describe('Ticket Types', () => {
       it('should create event with multiple ticket types', async () => {
         // Arrange
@@ -835,6 +936,7 @@ describe('EventService - approveEvent', () => {
 
   it('should approve event and auto-activate pending organizer', async () => {
     prisma.event.findFirst.mockResolvedValue(mockPendingEvent as any);
+    prisma.user.findUnique.mockResolvedValue({ kycStatus: 'APPROVED', organizationName: 'Test Org' } as any);
     prisma.event.updateMany.mockResolvedValue({ count: 1 } as any);
     prisma.event.findUniqueOrThrow.mockResolvedValue({
       ...mockPendingEvent,
@@ -872,6 +974,7 @@ describe('EventService - approveEvent', () => {
 
   it('should not update organizer if already active', async () => {
     prisma.event.findFirst.mockResolvedValue(mockPendingEvent as any);
+    prisma.user.findUnique.mockResolvedValue({ kycStatus: 'APPROVED', organizationName: 'Test Org' } as any);
     prisma.event.updateMany.mockResolvedValue({ count: 1 } as any);
     prisma.event.findUniqueOrThrow.mockResolvedValue({
       ...mockPendingEvent,
@@ -917,6 +1020,32 @@ describe('EventService - approveEvent', () => {
       status: EventStatus.APPROVED,
     } as any);
 
+    await expect(
+      EventService.approveEvent('event-456', adminId, UserRole.SUPERADMIN),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it('should reject free event approval when organizer KYC is not approved', async () => {
+    // Arrange
+    prisma.event.findFirst.mockResolvedValue(mockPendingEvent as any);
+    prisma.user.findUnique.mockResolvedValue({ kycStatus: 'PENDING', organizationName: 'Test Org' } as any);
+
+    // Act & Assert
+    await expect(
+      EventService.approveEvent('event-456', adminId, UserRole.SUPERADMIN),
+    ).rejects.toThrow(ValidationError);
+
+    await expect(
+      EventService.approveEvent('event-456', adminId, UserRole.SUPERADMIN),
+    ).rejects.toThrow('Cannot approve this event');
+  });
+
+  it('should reject paid event approval when organizer KYC is not approved', async () => {
+    // Arrange
+    prisma.event.findFirst.mockResolvedValue({ ...mockPendingEvent, isFree: false } as any);
+    prisma.user.findUnique.mockResolvedValue({ kycStatus: null, organizationName: null } as any);
+
+    // Act & Assert
     await expect(
       EventService.approveEvent('event-456', adminId, UserRole.SUPERADMIN),
     ).rejects.toThrow(ValidationError);

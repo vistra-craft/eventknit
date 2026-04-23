@@ -8,6 +8,7 @@ import {
   FormResponseStatus,
   ParticipantType,
   ParticipantStatus,
+  Prisma,
 } from '@prisma/client';
 
 vi.mock('../src/config/database', () => ({
@@ -299,6 +300,32 @@ describe('FormService', () => {
         FormService.createForm({ title: 'X', eventId: 'bad-event' }, CREATOR_ID),
       ).rejects.toThrow(NotFoundError);
     });
+
+    it('should store theme when provided', async () => {
+      const mock = makeForm({ theme: { accentColor: '#6366f1' } });
+      db.eventForm.create.mockResolvedValue(mock);
+
+      await FormService.createForm(
+        { title: 'Branded Form', purpose: FormPurpose.GENERAL_INQUIRY, theme: { accentColor: '#6366f1' } },
+        CREATOR_ID,
+      );
+
+      expect(db.eventForm.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ theme: { accentColor: '#6366f1' } }),
+        }),
+      );
+    });
+
+    it('should omit theme from create when not provided', async () => {
+      const mock = makeForm();
+      db.eventForm.create.mockResolvedValue(mock);
+
+      await FormService.createForm({ title: 'Plain Form', purpose: FormPurpose.GENERAL_INQUIRY }, CREATOR_ID);
+
+      const callData = db.eventForm.create.mock.calls[0][0].data as Record<string, unknown>;
+      expect(callData.theme).toBeUndefined();
+    });
   });
 
   // ─────────────────────────────────────────────────────────
@@ -339,6 +366,48 @@ describe('FormService', () => {
       await expect(
         FormService.updateForm('form-1', { purpose: FormPurpose.CUSTOM, customPurpose: '' }),
       ).rejects.toThrow(ValidationError);
+    });
+
+    it('should persist a theme accentColor', async () => {
+      const existing = makeForm();
+      const updated = { ...existing, theme: { accentColor: '#1d4ed8' } };
+      db.eventForm.findUnique.mockResolvedValue(existing);
+      db.eventForm.update.mockResolvedValue(updated);
+
+      const result = await FormService.updateForm('form-1', { theme: { accentColor: '#1d4ed8' } });
+
+      expect(db.eventForm.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ theme: { accentColor: '#1d4ed8' } }),
+        }),
+      );
+      expect(result).toEqual(updated);
+    });
+
+    it('should clear theme when null is passed', async () => {
+      const existing = makeForm({ theme: { accentColor: '#1d4ed8' } });
+      const updated = { ...existing, theme: null };
+      db.eventForm.findUnique.mockResolvedValue(existing);
+      db.eventForm.update.mockResolvedValue(updated);
+
+      await FormService.updateForm('form-1', { theme: null });
+
+      expect(db.eventForm.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ theme: Prisma.JsonNull }),
+        }),
+      );
+    });
+
+    it('should leave theme unchanged when theme is not in the update payload', async () => {
+      const existing = makeForm({ theme: { accentColor: '#10b981' } });
+      db.eventForm.findUnique.mockResolvedValue(existing);
+      db.eventForm.update.mockResolvedValue({ ...existing, title: 'New Title' });
+
+      await FormService.updateForm('form-1', { title: 'New Title' });
+
+      const callData = db.eventForm.update.mock.calls[0][0].data as Record<string, unknown>;
+      expect(callData.theme).toBeUndefined();
     });
   });
 

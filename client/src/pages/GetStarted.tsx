@@ -170,7 +170,8 @@ export default function GetStarted() {
   };
 
   return (
-    <div className="min-h-screen flex overflow-hidden bg-background">
+    <div className="min-h-screen bg-background">
+    <div className="relative mx-auto max-w-7xl min-h-screen flex overflow-hidden">
 
       {/* Global diagonal strips - top-left corner, behind both panels */}
       <svg
@@ -345,6 +346,7 @@ export default function GetStarted() {
 
       {/* ── Right: Brand panel (desktop only) ──────────────────── */}
       <RightPanel />
+    </div>
     </div>
   );
 }

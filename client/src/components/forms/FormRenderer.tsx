@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Star } from 'lucide-react';
+import { Loader } from '@/components/ui/loader';
+import { Star, Upload, X, ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FormQuestion } from '@/lib/form-api';
 
@@ -24,6 +26,12 @@ interface FormRendererProps {
   onChange: (answers: Record<string, AnswerValue>) => void;
   errors?: Record<string, string>;
   disabled?: boolean;
+  /**
+   * Called when a file is dropped on a file_upload question.
+   * Should return the uploaded file URL, or null on failure.
+   * If omitted, file_upload questions render in a disabled/placeholder state.
+   */
+  onUpload?: (file: File) => Promise<string | null>;
 }
 
 function StarRating({
@@ -112,18 +120,155 @@ function LinearScale({
   );
 }
 
+function FileUploadQuestion({
+  question,
+  value,
+  onChange,
+  onUpload,
+  disabled,
+}: {
+  question: FormQuestion;
+  value: string;
+  onChange: (v: string) => void;
+  onUpload?: (file: File) => Promise<string | null>;
+  disabled?: boolean;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const accept = (question.acceptedFileTypes ?? ['image/jpeg', 'image/png', 'image/webp']).reduce(
+    (acc, mime) => { acc[mime] = []; return acc; },
+    {} as Record<string, string[]>,
+  );
+  const maxSize = (question.maxFileSizeMb ?? 5) * 1024 * 1024;
+
+  const handleFile = async (file: File) => {
+    if (!onUpload) return;
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const url = await onUpload(file);
+      if (url) onChange(url);
+      else setUploadError('Upload failed. Please try again.');
+    } catch {
+      setUploadError('Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept,
+    maxFiles: 1,
+    maxSize,
+    disabled: !onUpload || uploading || disabled,
+    onDropAccepted: ([file]) => handleFile(file),
+    onDropRejected: ([rejection]) => {
+      const code = rejection.errors[0]?.code;
+      if (code === 'file-too-large') setUploadError(`File too large. Max ${question.maxFileSizeMb ?? 5} MB.`);
+      else if (code === 'file-invalid-type') setUploadError('File type not accepted.');
+      else setUploadError('File rejected.');
+    },
+    noClick: !!value,
+  });
+
+  const typeHint = question.acceptedFileTypes
+    ? question.acceptedFileTypes.map(t => t.split('/')[1].toUpperCase()).join(', ')
+    : 'JPG, PNG, WEBP';
+
+  if (value) {
+    return (
+      <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/40">
+        <div className="h-12 w-12 rounded-md overflow-hidden border bg-background flex-shrink-0">
+          <img src={value} alt="Uploaded" className="h-full w-full object-cover" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground truncate">{value.split('/').pop()}</p>
+          <div {...getRootProps()} className="inline">
+            <input {...getInputProps()} />
+            <button
+              type="button"
+              disabled={disabled || uploading}
+              className="text-xs text-primary hover:underline mt-0.5"
+            >
+              Change
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => { onChange(''); setUploadError(null); }}
+          disabled={disabled}
+          className="p-1 rounded hover:bg-muted transition-colors"
+        >
+          <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+        </button>
+      </div>
+    );
+  }
+
+  if (!onUpload) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center opacity-50">
+        <ImageIcon className="h-5 w-5 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">File upload not available here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div
+        {...getRootProps()}
+        className={cn(
+          'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors',
+          isDragActive
+            ? 'border-primary bg-primary/5 text-primary'
+            : 'border-border hover:border-primary/50 hover:bg-muted/30',
+        )}
+      >
+        <input {...getInputProps()} />
+        {uploading ? (
+          <>
+            <Loader size="sm" className="text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Uploading…</p>
+          </>
+        ) : isDragActive ? (
+          <>
+            <Upload className="h-5 w-5" />
+            <p className="text-sm font-medium">Drop file here</p>
+          </>
+        ) : (
+          <>
+            <Upload className="h-5 w-5 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              Drag & drop or <span className="text-primary font-medium">browse</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {typeHint} · Max {question.maxFileSizeMb ?? 5} MB
+            </p>
+          </>
+        )}
+      </div>
+      {uploadError && <p className="text-xs text-destructive mt-1.5">{uploadError}</p>}
+    </div>
+  );
+}
+
 function QuestionField({
   question,
   value,
   onChange,
   error,
   disabled,
+  onUpload,
 }: {
   question: FormQuestion;
   value: AnswerValue;
   onChange: (v: AnswerValue) => void;
   error?: string;
   disabled?: boolean;
+  onUpload?: (file: File) => Promise<string | null>;
 }) {
   if (question.type === 'section_break') {
     return (
@@ -258,12 +403,22 @@ function QuestionField({
         />
       )}
 
+      {question.type === 'file_upload' && (
+        <FileUploadQuestion
+          question={question}
+          value={strVal}
+          onChange={v => onChange(v)}
+          onUpload={onUpload}
+          disabled={disabled}
+        />
+      )}
+
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
 
-export function FormRenderer({ questions, answers, onChange, errors = {}, disabled }: FormRendererProps) {
+export function FormRenderer({ questions, answers, onChange, errors = {}, disabled, onUpload }: FormRendererProps) {
   const handleChange = (questionId: string, value: AnswerValue) => {
     onChange({ ...answers, [questionId]: value });
   };
@@ -281,6 +436,7 @@ export function FormRenderer({ questions, answers, onChange, errors = {}, disabl
             onChange={v => handleChange(q.id, v)}
             error={errors[q.id]}
             disabled={disabled}
+            onUpload={onUpload}
           />
         ))}
     </div>

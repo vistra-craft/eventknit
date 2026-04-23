@@ -5,14 +5,23 @@ import type { ParticipantType } from './participant-api';
 
 export type FormPurpose =
   | 'SPEAKER_APPLICATION'
-  | 'SPONSOR_APPLICATION'
   | 'EXHIBITOR_APPLICATION'
-  | 'PERFORMER_APPLICATION'
+  | 'SPONSOR_APPLICATION'
   | 'VOLUNTEER_APPLICATION'
+  | 'PERFORMER_APPLICATION'
+  | 'VENDOR_APPLICATION'
+  | 'JUDGE_APPLICATION'
+  | 'MEDIA_APPLICATION'
+  | 'REGISTRATION'
+  | 'FEEDBACK'
   | 'GENERAL_INQUIRY'
   | 'CUSTOM';
 
-export type FormStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'ARCHIVED';
+export type FormStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
+
+export interface FormTheme {
+  accentColor?: string;
+}
 
 export type FormResponseStatus =
   | 'SUBMITTED'
@@ -81,6 +90,7 @@ export interface EventForm {
   closesAt: string | null;
   notifyOnSubmission: boolean;
   notificationEmail: string | null;
+  theme: FormTheme | null;
   _count: { responses: number };
   createdAt: string;
   updatedAt: string;
@@ -141,6 +151,7 @@ export async function createForm(data: {
   closesAt?: string;
   notifyOnSubmission?: boolean;
   notificationEmail?: string;
+  theme?: FormTheme;
 }): Promise<{ success: boolean; form: EventForm }> {
   return apiPost('/forms', data);
 }
@@ -161,6 +172,7 @@ export async function updateForm(
     closesAt: string | null;
     notifyOnSubmission: boolean;
     notificationEmail: string;
+    theme: FormTheme | null;
   }>,
 ): Promise<{ success: boolean; form: EventForm }> {
   return apiPatch(`/forms/${formId}`, data);

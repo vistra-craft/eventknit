@@ -4,6 +4,8 @@ import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { AuthorizationError, NotFoundError, ValidationError } from '../utils/errors.js';
 import { UserRole } from '@prisma/client';
 
+type StaffIdParam = { staffId: string };
+
 /**
  * Staff Performance Controller
  * Handles API requests for staff performance metrics and analytics
@@ -15,7 +17,7 @@ export class StaffPerformanceController {
    * GET /api/v1/organizer/staff-performance/:staffId
    */
   static async getStaffPerformance(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<StaffIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -24,7 +26,7 @@ export class StaffPerformanceController {
         throw new AuthorizationError('Authentication required');
       }
 
-      const staffId = (req.params.staffId as string) as string;
+      const staffId = req.params.staffId;
       const period = (req.query.period as PerformancePeriod) || 'all';
 
       if (!Object.values(['today', 'week', 'month', 'quarter', 'year', 'all']).includes(period)) {
@@ -164,7 +166,7 @@ export class StaffPerformanceController {
    * GET /api/v1/organizer/staff-performance/:staffId/trends
    */
   static async getPerformanceTrends(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<StaffIdParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -173,7 +175,7 @@ export class StaffPerformanceController {
         throw new AuthorizationError('Authentication required');
       }
 
-      const staffId = (req.params.staffId as string) as string;
+      const staffId = req.params.staffId;
       const period = (req.query.period as PerformancePeriod) || 'month';
 
       if (!Object.values(['today', 'week', 'month', 'quarter', 'year', 'all']).includes(period)) {

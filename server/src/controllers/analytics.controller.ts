@@ -3,6 +3,8 @@ import { AnalyticsService } from '../services/analytics.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { SocialPlatform } from '@prisma/client';
 
+type IdentifierParam = { identifier: string };
+
 export class AnalyticsController {
   /**
    * Get unified analytics dashboard
@@ -140,7 +142,7 @@ export class AnalyticsController {
    * GET /api/v1/admin/analytics/customer-journey/:identifier
    */
   static async getCustomerJourney(
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest<IdentifierParam>,
     res: Response,
     next: NextFunction,
   ): Promise<void> {
@@ -153,7 +155,7 @@ export class AnalyticsController {
         return;
       }
 
-      const identifier = (req.params.identifier as string) as string;
+      const identifier = req.params.identifier;
       const { startDate, endDate, platform } = req.query;
 
       const filters: {

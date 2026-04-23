@@ -27,7 +27,6 @@ const TicketTransfer = lazy(() => import('../pages/user/TicketTransfer'));
 const EventCollections = lazy(() => import('../pages/user/EventCollections'));
 const InterestManagement = lazy(() => import('../pages/user/InterestManagement'));
 const AdvancedSearch = lazy(() => import('../pages/user/AdvancedSearch'));
-const DirectMessaging = lazy(() => import('../pages/user/DirectMessaging'));
 const SocialNetworking = lazy(() => import('../pages/user/SocialNetworking'));
 const TicketResale = lazy(() => import('../pages/user/TicketResale'));
 const DigitalWallet = lazy(() => import('../pages/user/DigitalWallet'));
@@ -162,7 +161,7 @@ export const userRoutes: RouteConfig[] = [
   },
   {
     path: 'messages',
-    element: createElement(DirectMessaging),
+    element: createElement(Navigate, { to: '/user/dashboard', replace: true }),
   },
   {
     path: 'social',

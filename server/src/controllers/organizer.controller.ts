@@ -3,6 +3,8 @@ import { OrganizerService } from '../services/organizer.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
 import { prisma } from '../config/database.js';
 
+type IdParam = { id: string };
+
 export class OrganizerController {
   /**
    * Create staff member
@@ -65,7 +67,7 @@ export class OrganizerController {
   /**
    * Get staff member by ID
    */
-  static async getStaffById(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async getStaffById(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -76,7 +78,7 @@ export class OrganizerController {
       }
 
       const staff = await OrganizerService.getStaffById(
-        (req.params.id as string),
+        req.params.id,
         req.user.id,
         req.user.role,
       );
@@ -93,7 +95,7 @@ export class OrganizerController {
   /**
    * Update staff member
    */
-  static async updateStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async updateStaff(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -107,7 +109,7 @@ export class OrganizerController {
       const userAgent = req.get('user-agent');
 
       const staff = await OrganizerService.updateStaff(
-        (req.params.id as string),
+        req.params.id,
         req.body,
         req.user.id,
         req.user.role,
@@ -128,7 +130,7 @@ export class OrganizerController {
   /**
    * Change staff member's role
    */
-  static async changeStaffRole(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async changeStaffRole(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({ success: false, message: 'Authentication required' });
@@ -140,7 +142,7 @@ export class OrganizerController {
       const userAgent = req.get('user-agent');
 
       const staff = await OrganizerService.changeStaffRole(
-        req.params.id as string,
+        req.params.id,
         role,
         req.user.id,
         req.user.role,
@@ -161,7 +163,7 @@ export class OrganizerController {
   /**
    * Delete staff member
    */
-  static async deleteStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async deleteStaff(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -175,7 +177,7 @@ export class OrganizerController {
       const userAgent = req.get('user-agent');
 
       await OrganizerService.deleteStaff(
-        (req.params.id as string),
+        req.params.id,
         req.user.id,
         req.user.role,
         ipAddress,
@@ -194,7 +196,7 @@ export class OrganizerController {
   /**
    * Deactivate staff member
    */
-  static async deactivateStaff(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+  static async deactivateStaff(req: AuthenticatedRequest<IdParam>, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) {
         res.status(401).json({
@@ -208,7 +210,7 @@ export class OrganizerController {
       const userAgent = req.get('user-agent');
 
       await OrganizerService.deactivateStaff(
-        (req.params.id as string),
+        req.params.id,
         req.user.id,
         req.user.role,
         ipAddress,

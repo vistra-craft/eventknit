@@ -63,6 +63,7 @@ export class EventController {
         declinedOrRecalledCancelled?: boolean;
         recalledCancelled?: boolean;
         recalledPending?: boolean;
+        organizerKycSubmitted?: boolean;
       } = {};
 
       logger.debug('[EventController] Query params:', req.query);
@@ -110,6 +111,9 @@ export class EventController {
       }
       if (req.query.recalledCancelled !== undefined) {
         filters.recalledCancelled = req.query.recalledCancelled === 'true' || req.query.recalledCancelled === '1';
+      }
+      if (req.query.organizerKycSubmitted !== undefined) {
+        filters.organizerKycSubmitted = req.query.organizerKycSubmitted === 'true' || req.query.organizerKycSubmitted === '1';
       }
 
       logger.debug('[EventController] Parsed filters:', filters);

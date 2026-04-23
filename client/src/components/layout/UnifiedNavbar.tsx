@@ -102,7 +102,7 @@ const UnifiedNavbar = ({ user }: UnifiedNavbarProps) => {
       {
         label: 'Messages',
         icon: MessageSquare,
-        onClick: () => navigate('/user/messages'),
+        onClick: () => window.dispatchEvent(new CustomEvent('eventknit:open-chat')),
       },
       {
         label: 'Settings',
