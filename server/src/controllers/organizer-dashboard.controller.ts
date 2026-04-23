@@ -1349,7 +1349,8 @@ export class OrganizerDashboardController {
         isActive: req.query.isActive === 'true' ? true : req.query.isActive === 'false' ? false : undefined,
       };
 
-      const packages = await AdvancedTicketTypesService.getEventTicketPackages(req.user.id, eventId, filters);
+      const admin = isAdminRole(req.user.role);
+      const packages = await AdvancedTicketTypesService.getEventTicketPackages(req.user.id, eventId, filters, admin);
       res.status(200).json({ success: true, data: { packages } });
     } catch (error) {
       next(error);

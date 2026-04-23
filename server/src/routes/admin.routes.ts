@@ -224,6 +224,13 @@ router.post('/users/:id/approve', AdminController.approveOrganizer);
 router.post('/users/:id/suspend', AdminController.suspendOrganizerWithReason);
 
 /**
+ * @route   GET /api/v1/admin/events
+ * @desc    List all events with KYC-based filtering (awaiting_kyc | kyc_pending | ready_to_approve | all)
+ * @access  Private (ADMIN+)
+ */
+router.get('/events', AdminController.listEvents);
+
+/**
  * @route   GET /api/v1/admin/events/:id
  * @desc    Get event details (admin can view any event regardless of status)
  * @access  Private (ADMIN+)

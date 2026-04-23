@@ -3,7 +3,7 @@ import { AdminService } from '../services/admin.service.js';
 import { SubscriptionService } from '../services/subscription.service.js';
 import { TicketIssuanceService } from '../services/ticket-issuance.service.js';
 import { AuthenticatedRequest } from '../middleware/auth.middleware.js';
-import { UserRole, UserStatus, SubscriptionTier } from '@prisma/client';
+import { UserRole, UserStatus, SubscriptionTier, EventStatus, KYCStatus } from '@prisma/client';
 import { roleHierarchy, canCreateRole, canModifyUser, canDeleteUser } from '../utils/privileges.js';
 
 export class AdminController {
@@ -50,9 +50,16 @@ export class AdminController {
    */
   static async getUsers(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
     try {
+      const rawKycFilter = req.query.kycFilter as string | undefined;
+      const validKycFilters = [...Object.values(KYCStatus), 'none', 'pending_activation'] as const;
+      const kycFilter = rawKycFilter && validKycFilters.includes(rawKycFilter as typeof validKycFilters[number])
+        ? (rawKycFilter as KYCStatus | 'none' | 'pending_activation')
+        : undefined;
+
       const filters = {
         role: req.query.role ? (req.query.role as UserRole) : undefined,
         status: req.query.status ? (req.query.status as UserStatus) : undefined,
+        kycFilter,
         search: req.query.search as string | undefined,
         page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
         limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
@@ -299,6 +306,31 @@ export class AdminController {
         success: true,
         data: { events },
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * List all events with KYC-based filtering for admin events page
+   */
+  static async listEvents(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const rawKycFilter = req.query.kycFilter as string | undefined;
+      const validKycFilters = ['awaiting_kyc', 'kyc_pending', 'ready_to_approve', 'all'] as const;
+      const kycFilter = validKycFilters.includes(rawKycFilter as typeof validKycFilters[number])
+        ? (rawKycFilter as typeof validKycFilters[number])
+        : 'all';
+
+      const result = await AdminService.listEvents({
+        kycFilter,
+        status: req.query.status ? (req.query.status as EventStatus) : undefined,
+        search: req.query.search as string | undefined,
+        page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+        limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+      });
+
+      res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
     }
