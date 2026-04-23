@@ -63,6 +63,17 @@ const AdminLayout: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem('admin-sidebar-collapsed') === 'true',
+  );
+
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('admin-sidebar-collapsed', String(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     const handler = () => setChatOpen(true);
@@ -112,7 +123,12 @@ const AdminLayout: React.FC = () => {
       <div className="flex flex-1 min-h-0">
         {/* Desktop Sidebar - hidden on mobile */}
         <div className="hidden lg:block">
-          <AdminSidebar isOpen={true} onToggle={handleSidebarToggle} isMobile={false} />
+          <AdminSidebar
+            isOpen={!sidebarCollapsed}
+            onToggle={handleSidebarToggle}
+            onCollapseToggle={toggleSidebarCollapsed}
+            isMobile={false}
+          />
         </div>
 
         {/* Main content area */}

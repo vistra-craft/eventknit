@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Calendar,
   Settings,
@@ -21,6 +21,8 @@ import {
   CreditCard,
   Server,
   MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/types/auth";
@@ -30,13 +32,15 @@ import Logo from '@/components/layout/Logo';
 interface AdminSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
+  onCollapseToggle?: () => void;
   isMobile?: boolean;
 }
 
-const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile = false }) => {
+const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, onCollapseToggle, isMobile = false }) => {
   const { user, logout } = useAuth();
   const userRole = user?.role;
   const location = useLocation();
+  const navigate = useNavigate();
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({
     analytics: location.pathname.startsWith('/admin/analytics'),
     events: location.pathname.startsWith('/admin/events'),
@@ -373,7 +377,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
                       return (
                         <div key={item.id}>
                           <button
-                            onClick={() => toggleExpanded(item.id)}
+                            onClick={() => {
+                              if (!isOpen && item.children?.[0]) {
+                                navigate(item.children[0].href);
+                              } else {
+                                toggleExpanded(item.id);
+                              }
+                            }}
                             className={`w-full flex items-center ${isOpen ? 'space-x-3 px-3' : 'justify-center px-2'} py-2 rounded-lg transition-colors ${
                               isItemActive
                                 ? 'bg-primary text-primary-foreground'
@@ -442,8 +452,30 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, isMobile 
         </div>
       </div>
 
-      {/* Sign out button */}
-      <div className="p-4 border-t mt-2">
+      {/* Bottom actions */}
+      <div className="p-4 border-t mt-2 space-y-1">
+        {/* Collapse toggle — desktop only */}
+        {!isMobile && onCollapseToggle && (
+          <button
+            type="button"
+            onClick={onCollapseToggle}
+            className={`w-full flex items-center ${
+              isOpen ? 'space-x-3 px-3 justify-start' : 'justify-center px-2'
+            } py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors`}
+            title={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          >
+            {isOpen ? (
+              <>
+                <PanelLeftClose className="h-5 w-5 shrink-0" />
+                <span>Collapse</span>
+              </>
+            ) : (
+              <PanelLeftOpen className="h-6 w-6" />
+            )}
+          </button>
+        )}
+
+        {/* Sign out */}
         <button
           type="button"
           onClick={handleLogout}
