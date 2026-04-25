@@ -160,7 +160,7 @@ export const EventCard: React.FC<EventCardProps> = ({
               transition={{ duration: 0.4, ease: EASE, delay: 0.1 }}
               className="relative shrink-0 w-12 text-center group/date"
             >
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-orange-500 dark:text-orange-400">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 dark:text-blue-400">
                 {weekday}
               </div>
               <div className="text-xl font-bold text-foreground">
@@ -210,7 +210,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                 initial={{ opacity: 0, y: 8 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.4, ease: EASE, delay: 0.29 }}
-                className={`text-sm font-bold mt-1.5 ${isFree ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400"}`}
+                className={`text-sm font-bold mt-1.5 ${isFree ? "text-emerald-600 dark:text-emerald-400" : "text-blue-600 dark:text-blue-400"}`}
               >
                 {priceDisplay}
               </motion.p>

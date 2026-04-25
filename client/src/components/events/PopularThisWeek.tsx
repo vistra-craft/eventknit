@@ -100,7 +100,7 @@ function PopularCard({ event, index }: { event: EventData; index: number }) {
           {/* Date block */}
           <div className="relative shrink-0 w-10 text-center group/date">
             <div className="text-lg font-bold text-foreground">{dayNum}</div>
-            <div className="text-[9px] font-semibold uppercase tracking-wider text-orange-500 dark:text-orange-400">{monthShort}</div>
+            <div className="text-[9px] font-semibold uppercase tracking-wider text-blue-500 dark:text-blue-400">{monthShort}</div>
 
             <button
               onClick={handleAddToCalendar}
@@ -118,7 +118,7 @@ function PopularCard({ event, index }: { event: EventData; index: number }) {
               {event.venue ? `${event.venue}, ${event.location}` : event.location}
               {event.startTime && <span> &middot; {formatTime(event.startTime)}</span>}
             </p>
-            <p className={`text-xs font-bold mt-1 ${isFree ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400"}`}>
+            <p className={`text-xs font-bold mt-1 ${isFree ? "text-emerald-600 dark:text-emerald-400" : "text-blue-600 dark:text-blue-400"}`}>
               {priceStr}
             </p>
           </div>
@@ -142,7 +142,7 @@ function PopularCardSkeleton() {
           <div className="flex-1 space-y-1.5">
             <div className="h-3.5 rounded bg-muted-foreground/10 animate-pulse w-4/5" />
             <div className="h-3 rounded bg-muted-foreground/8 animate-pulse w-3/5" />
-            <div className="h-3 rounded bg-orange-500/10 animate-pulse w-1/3" />
+            <div className="h-3 rounded bg-blue-500/10 animate-pulse w-1/3" />
           </div>
         </div>
       </div>
@@ -206,7 +206,7 @@ export function PopularThisWeek({ onSeeAll }: PopularThisWeekProps) {
         <AnimatedSection className="mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-orange-500 dark:text-orange-400" />
+              <TrendingUp className="w-4 h-4 text-blue-500 dark:text-blue-400" />
               <h2 className="text-lg sm:text-xl font-bold text-foreground">Popular this week</h2>
             </div>
             <button
