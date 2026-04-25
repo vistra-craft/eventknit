@@ -23,6 +23,7 @@ const Payment = lazy(() => import('../pages/Payment'));
 const Confirmation = lazy(() => import('../pages/Confirmation'));
 const RegistrationConfirmation = lazy(() => import('../pages/RegistrationConfirmation'));
 const PublicEventForm = lazy(() => import('../pages/PublicEventForm'));
+const PublicFormPage = lazy(() => import('../pages/public/PublicFormPage'));
 const FeedbackPage = lazy(() => import('../pages/FeedbackPage'));
 const ExhibitorDetails = lazy(() => import('../pages/user/ExhibitorDetails'));
 const Support = lazy(() => import('../pages/Support'));
@@ -104,10 +105,16 @@ export const publicRoutes: RouteConfig[] = [
     element: createElement(RegistrationConfirmation),
   },
 
-  // Public forms
+  // Public forms (legacy template-based route)
   {
     path: 'forms/:type/:templateId',
     element: createElement(PublicEventForm),
+  },
+
+  // Shareable form link — generated from EventForm.shareToken
+  {
+    path: 'f/:shareToken',
+    element: createElement(PublicFormPage),
   },
 
   // Feedback (token-based access)
