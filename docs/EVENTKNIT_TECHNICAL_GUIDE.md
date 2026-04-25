@@ -2002,6 +2002,9 @@ npm run test:watch                                    # Watch mode
 | `guest-registration-payment.test.ts` | Guest registration token issuance, public ticket download, guest payment initialization, payment status, user registered events payment fields |
 | `ticket.test.ts` | Ticket CRUD, access control, public view |
 | `platform-fee.service.test.ts` | Fee calculation, disbursement linking |
+| `platform-fee-config.test.ts` | `getGlobalFeeConfig` (default + SystemSettings-driven), cache invalidation, `createPlatformFee` with SystemSettings rate and minimumFee floor, `updatePlatformFeeStatus`, `getPendingDisbursementFees` |
+| `subscription-enterprise.test.ts` | ENTERPRISE tier upgrade/downgrade, price-based cancel, effective tier with overrides, `hasFeatureAccess` for ENTERPRISE-only features, `getPlans`/`getActivePlans` with 4 tiers, `createOverride` |
+| `form.api.test.ts` | HTTP integration tests: form CRUD, public submit flow, response listing, `GET /forms/:id/responses/:responseId` single-response fetch (200 / 404 / 401) |
 | `auth.test.ts` | Login, registration, token refresh, password reset |
 
 ### Mocking Patterns
@@ -5434,6 +5437,7 @@ Unit tests use Vitest with all Prisma calls mocked via `vi.mock('../src/config/d
 |------|-------|---------|
 | `tests/participant.service.test.ts` | 22 | list (5), getById (2), create (4), update (3), review (5), delete (2) |
 | `tests/form.service.test.ts` | 33 | listForms (5), getFormById (2), getFormByShareToken (4), createForm (4), updateForm (4), deleteForm (2), listResponses (2), submitResponse (4), reviewResponse (6) |
+| `tests/form.api.test.ts` | HTTP integration | form CRUD routes, public share submit, response listing, `GET /forms/:id/responses/:responseId` (200 / 404 / 401) |
 
 Key scenarios covered:
 
