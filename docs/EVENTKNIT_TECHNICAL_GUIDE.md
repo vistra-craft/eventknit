@@ -1107,6 +1107,8 @@ model OrganizerSubscription {
   tier            SubscriptionTier @default(BASIC)
   isActive        Boolean          @default(true)
   billingEmail    String?
+  expiresAt       DateTime?        // null for BASIC (no expiry)
+  nextBillingDate DateTime?
   canceledAt      DateTime?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -1117,9 +1119,9 @@ model SubscriptionPayment {
   organizerId          String
   tier                 SubscriptionTier
   amount               Decimal
-  currency             String           @default("USD")
+  currency             String           @default("KES")
   gateway              String           @default("PAYSTACK")
-  gatewayReference     String           @unique
+  gatewayReference     String           @unique  // SUB-<organizerId8>-<timestamp>
   gatewayTransactionId String?
   status               String           @default("PENDING")  // PENDING → SUCCESS | FAILED
   billingEmail         String
@@ -1133,19 +1135,67 @@ model SubscriptionPayment {
   @@index([status])
 }
 
+// Seeded on startup by ensureSuperAdmin.ts; editable by admins via the Subscription Plans page.
 model SubscriptionPlan {
-  id        String           @id @default(uuid())
-  tier      SubscriptionTier @unique
-  name      String
-  price     Decimal          @db.Decimal(10, 2)
-  features  String[]
-  isActive  Boolean          @default(true)
+  id          String           @id @default(uuid())
+  tier        SubscriptionTier @unique
+  name        String
+  description String?
+  price       Decimal          @db.Decimal(10, 2)
+  currency    String           @default("KES")
+  features    String[]         // Gated feature keys enabled at this tier
+  isActive    Boolean          @default(true)
 }
 
-enum SubscriptionTier { BASIC, STANDARD, PREMIUM }
+// Admin-granted tier overrides (e.g., free trials, promotions).
+// Elevates the effective tier without modifying the base subscription.
+model SubscriptionOverride {
+  id          String           @id @default(uuid())
+  organizerId String
+  tier        SubscriptionTier
+  grantedBy   String           // Admin user ID
+  reason      String?
+  expiresAt   DateTime?        // null = indefinite
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+}
+
+enum SubscriptionTier {
+  BASIC      // Free — up to 3 events, 7.5% platform fee
+  STANDARD   // KES 2,999/mo — 5% fee, 16 gated features
+  PREMIUM    // KES 8,999/mo — 3% fee, 36 gated features
+  ENTERPRISE // KES 25,000+/mo — negotiated 0% fee, all 45 features
+}
 ```
 
+**Effective tier resolution** (`SubscriptionService.getEffectiveTier`):
+
+1. Load `OrganizerSubscription` — if `expiresAt` is past, fall back to `BASIC`.
+2. Find the most-recent active, non-expired `SubscriptionOverride` for the organizer.
+3. Return whichever is higher by tier order (`BASIC=0 … ENTERPRISE=3`).
+
+**Feature access** (`SubscriptionService.hasFeatureAccess(organizerId, featureKey)`):
+
+Resolves the effective tier, fetches the matching `SubscriptionPlan` from the DB, and returns `plan.features.includes(featureKey)`. The feature key list is maintained by admins through the Feature Registry UI (stored in `SystemSettings` at key `subscription.featureRegistry`).
+
+**Cancel logic**: only tiers with `plan.price > 0` can be canceled — determined by a DB lookup, not a hardcoded tier name. Cancellation marks `isActive = false` and sets `canceledAt`; the subscription remains accessible until `expiresAt`.
+
 ### Financial Models
+
+#### Platform Fee Configuration
+
+The platform fee rate and optional limits are read from `SystemSettings` by `PlatformFeeService.getGlobalFeeConfig()` and cached in memory for 5 minutes. Admins update these via the **Platform Fee Config** page, which stores them as JSON under `finance.feePlans` and syncs the active plan's values into the individual `finance.*` keys.
+
+| SystemSettings key | Type | Description |
+|--------------------|------|-------------|
+| `finance.platformFeePercentage` | number | Active fee percentage (e.g., `7.5`) |
+| `finance.minimumFee` | number | Minimum fee in currency units (0 = disabled) |
+| `finance.maximumFee` | number | Maximum fee cap (0 = disabled) |
+| `finance.fixedFeePerTicket` | number | Fixed add-on per ticket (0 = disabled; reserved) |
+| `finance.feePlans` | JSON | Array of saved fee plan configs |
+| `finance.activeFeeplanId` | string | ID of the currently active fee plan |
+
+Activating a fee plan immediately writes its values to the individual `finance.*` keys. Call `PlatformFeeService.invalidateFeeConfigCache()` after any admin update so the next fee calculation picks up the new rate.
 
 ```prisma
 model PlatformFee {
@@ -1157,7 +1207,7 @@ model PlatformFee {
   feeAmount        Decimal   @db.Decimal(10,2)
   organizerAmount  Decimal   @db.Decimal(10,2)
   currency         String    @default("KES")
-  status           String    @default("calculated") // calculated → disbursed
+  status           String    @default("calculated") // calculated → processing → disbursed
   eventId          String?
   registrationId   String?
   disbursementId   String?

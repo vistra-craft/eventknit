@@ -428,14 +428,20 @@ const PlatformFeeConfigPage = () => {
 
       if (plansRes?.success && plansRes.data?.setting?.value) {
         try {
-          const parsed: FeePlan[] = JSON.parse(plansRes.data.setting.value);
-          if (Array.isArray(parsed) && parsed.length > 0) setPlans(parsed);
+          const plansValue = plansRes.data.setting.value;
+          if (typeof plansValue === "string") {
+            const parsed: FeePlan[] = JSON.parse(plansValue);
+            if (Array.isArray(parsed) && parsed.length > 0) setPlans(parsed);
+          }
         } catch {
           /* keep defaults */
         }
       }
       if (activeRes?.success && activeRes.data?.setting?.value) {
-        setActivePlanId(activeRes.data.setting.value);
+        const activeValue = activeRes.data.setting.value;
+        if (typeof activeValue === "string") {
+          setActivePlanId(activeValue);
+        }
       }
     } catch (error) {
       showErrorToast(toast, error, "Failed to load fee configuration. Using defaults.");

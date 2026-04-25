@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   FileText, Users, Plus, Copy, Check, Trash2, ChevronDown,
-  ChevronRight, ExternalLink, RefreshCw, UserPlus, Loader2,
+  ChevronRight, ExternalLink, RefreshCw, Loader2,
   CheckCircle, XCircle, Clock, AlertCircle, Link as LinkIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -352,7 +352,6 @@ function CreateFormDialog({ eventId, open, onClose, onCreated }: CreateFormDialo
         purpose,
         targetParticipantType: PURPOSE_TO_PARTICIPANT[purpose],
         questions,
-        status: 'ACTIVE' as never,
         isPublic: true,
       });
 

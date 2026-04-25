@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,8 +17,22 @@ import {
   type SubscriptionPlan,
   type SubscriptionTier,
 } from "@/lib/admin-api";
+import { getSetting, setSetting } from "@/lib/system-settings-api";
 import { showErrorToast } from "@/lib/utils/error";
-import { Crown, Zap, Shield, Building2, Save, Loader2, Check, Minus, Users, Edit2, Clock } from "lucide-react";
+import {
+  Crown, Zap, Shield, Building2, Save, Loader2, Check, Minus,
+  Users, Edit2, Clock, Plus, Trash2, ArrowLeft, Settings2,
+} from "lucide-react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface FeatureDef {
+  key: string;
+  label: string;
+  description: string;
+  defaultTier: Exclude<SubscriptionTier, "BASIC">;
+  comingSoon?: boolean;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -35,85 +50,321 @@ const TIER_CONFIG: Record<SubscriptionTier, {
   ENTERPRISE: { icon: Building2, color: "text-purple-600",       bgColor: "bg-purple-50 dark:bg-purple-950",    priceSuffix: "/month"  },
 };
 
-/**
- * Every gated feature key with metadata for the admin UI.
- * `comingSoon` = not yet built but already gated in the tier structure.
- */
-const ALL_FEATURES: {
-  key: string;
-  label: string;
-  description: string;
-  defaultTier: SubscriptionTier;
-  comingSoon?: boolean;
-}[] = [
-  // ── STANDARD ──────────────────────────────────────────────────────────────
-  { key: "attendee_list",              label: "Attendee List Access",           description: "View attendee names and contact info",                                      defaultTier: "STANDARD" },
-  { key: "export",                     label: "CSV Data Export",                description: "Export attendee data to CSV",                                               defaultTier: "STANDARD" },
-  { key: "email_attendees",            label: "Email Communication",            description: "Send emails to consented attendees",                                        defaultTier: "STANDARD" },
-  { key: "forms",                      label: "Participant Forms & People",      description: "Build application forms and manage speakers, sponsors, exhibitors",         defaultTier: "STANDARD" },
-  { key: "custom_branding",            label: "Custom Branding",                description: "Remove EventKnit branding, add your own colours and logo",                  defaultTier: "STANDARD" },
-  { key: "promo_codes",                label: "Promotional Codes",              description: "Discount codes (% off, fixed amount, BOGO)",                               defaultTier: "STANDARD" },
-  { key: "whatsapp_delivery",          label: "WhatsApp Ticket Delivery",       description: "Send tickets directly to attendees via WhatsApp",                           defaultTier: "STANDARD" },
-  { key: "whatsapp_reminders",         label: "WhatsApp Event Reminders",       description: "Automated reminders 24h and 1h before event",                              defaultTier: "STANDARD" },
-  { key: "team_members",               label: "Team Members (up to 5)",         description: "Add check-in staff and managers with role-based access",                    defaultTier: "STANDARD" },
-  { key: "tracking_links",             label: "Tracking Links",                 description: "UTM tracking links per channel (WhatsApp, Instagram, email)",               defaultTier: "STANDARD" },
-  { key: "on_site_sales",              label: "On-Site Ticket Sales",           description: "Sell walk-in tickets at the door via M-Pesa or cash",                      defaultTier: "STANDARD" },
-  { key: "multi_day_events",           label: "Multi-Day Events",               description: "Events that span multiple days (conferences, festivals)",                   defaultTier: "STANDARD" },
-  { key: "event_templates",            label: "Event Templates & Duplication",  description: "Duplicate past events and save templates for reuse",                        defaultTier: "STANDARD" },
-  { key: "offline_scanning",           label: "Offline QR Scanning",            description: "Scan tickets without internet — syncs when back online",                   defaultTier: "STANDARD" },
-  { key: "realtime_checkin_dashboard", label: "Real-Time Check-In Dashboard",   description: "Live attendee count and capacity view on the organizer screen",            defaultTier: "STANDARD" },
-  { key: "post_event_survey",          label: "Post-Event Survey",              description: "Collect attendee feedback automatically after the event",                   defaultTier: "STANDARD" },
+/** Structural (non-gated) capabilities shown on the BASIC plan card */
+const BASIC_STRUCTURAL = [
+  "Up to 3 active events",
+  "M-Pesa + card payments",
+  "QR code scanning (mobile app)",
+  "Free & paid ticket types",
+  "Email ticket delivery",
+  "Aggregate event stats",
+  "Platform fee: 7.5% per ticket",
+];
 
-  // ── PREMIUM ───────────────────────────────────────────────────────────────
-  { key: "demographics",              label: "Demographic Data",               description: "Segment breakdowns by age, gender, location",                              defaultTier: "PREMIUM" },
-  { key: "analytics",                 label: "Advanced Analytics",             description: "Traffic sources, geographic breakdown, repeat vs new, cohort analysis",    defaultTier: "PREMIUM" },
-  { key: "advanced_export",           label: "Advanced Exports",               description: "Excel, custom formats, and scheduled automatic exports",                   defaultTier: "PREMIUM" },
-  { key: "heatmaps",                  label: "Geographic Heatmaps",            description: "Visualise where your attendees travel from",                               defaultTier: "PREMIUM" },
-  { key: "whatsapp_ai_registration",  label: "WhatsApp AI Registration",       description: "Attendees text your number on WhatsApp and get tickets conversationally",  defaultTier: "PREMIUM", comingSoon: true },
-  { key: "whatsapp_broadcast",        label: "WhatsApp Broadcast",             description: "Send bulk messages to past attendees for new events",                      defaultTier: "PREMIUM" },
-  { key: "promoter_network",          label: "Promoter & Affiliate Network",   description: "Add promoters who earn a commission per ticket sold",                      defaultTier: "PREMIUM", comingSoon: true },
-  { key: "recurring_events",          label: "Recurring Events",               description: "Set up daily / weekly / monthly recurring event series",                   defaultTier: "PREMIUM", comingSoon: true },
-  { key: "seating_plans",             label: "Seating Plan Builder",           description: "Drag-and-drop seating plan for theaters, galas, and conferences",          defaultTier: "PREMIUM", comingSoon: true },
-  { key: "embed_widget",              label: "Embed Widget",                   description: "Sell tickets directly on your own website via an iframe",                  defaultTier: "PREMIUM", comingSoon: true },
-  { key: "api_access",                label: "API Access & Webhooks",          description: "REST API and webhooks for custom integrations",                            defaultTier: "PREMIUM" },
-  { key: "split_payouts",             label: "Split Payouts",                  description: "Distribute revenue between multiple recipients (e.g. venue + organizer)", defaultTier: "PREMIUM", comingSoon: true },
-  { key: "priority_support",          label: "Priority Support",               description: "24h response time from the EventKnit support team",                       defaultTier: "PREMIUM" },
-  { key: "tax_reports",               label: "Tax Reports & Invoicing",        description: "KRA-ready tax reports and invoice generation per event",                   defaultTier: "PREMIUM", comingSoon: true },
-  { key: "event_comparison",          label: "Event Comparison",               description: "Compare metrics across your event history",                                defaultTier: "PREMIUM" },
-  { key: "revenue_forecast",          label: "Revenue Payout Forecast",        description: "Estimated payout date and amount after fees",                              defaultTier: "PREMIUM" },
-  { key: "social_login",              label: "Social Login for Attendees",     description: "Google / Apple sign-in at attendee checkout",                              defaultTier: "PREMIUM" },
-  { key: "retargeting_pixels",        label: "Retargeting Pixels",             description: "Pass Meta Pixel and Google Tag through event pages",                       defaultTier: "PREMIUM" },
-  { key: "early_payout",              label: "Early Payout Request",           description: "Request partial payout before the event date",                             defaultTier: "PREMIUM" },
-  { key: "unlimited_team",            label: "Unlimited Team Members",         description: "No cap on team size (Standard is limited to 5)",                          defaultTier: "PREMIUM" },
+const SETTINGS_KEY = "subscription.featureRegistry";
 
-  // ── ENTERPRISE ────────────────────────────────────────────────────────────
-  { key: "white_label",               label: "White-Label / Custom Domain",    description: "Full white-label platform under your own brand and domain",               defaultTier: "ENTERPRISE" },
-  { key: "custom_integrations",       label: "Custom Integrations",            description: "Salesforce, HubSpot, or bespoke CRM/ERP connections",                     defaultTier: "ENTERPRISE" },
-  { key: "sso",                       label: "SSO / SAML",                     description: "Single sign-on via your company identity provider",                        defaultTier: "ENTERPRISE" },
-  { key: "dedicated_support",         label: "Dedicated Account Manager",      description: "Named account manager + guaranteed SLA",                                   defaultTier: "ENTERPRISE" },
-  { key: "on_site_hardware",          label: "On-Site Hardware & Field Team",  description: "Scanner/printer rental and EventKnit field support at your venue",        defaultTier: "ENTERPRISE" },
-  { key: "agency_management",         label: "Agency Sub-Account Management",  description: "Manage multiple organizer accounts under one agency login",               defaultTier: "ENTERPRISE" },
-  { key: "custom_analytics",          label: "Custom Analytics / Data Warehouse", description: "Data warehouse export and custom reporting dashboards",               defaultTier: "ENTERPRISE" },
+/** Factory default registry — used when SystemSettings has no override yet */
+const DEFAULT_REGISTRY: FeatureDef[] = [
+  // ── STANDARD ────────────────────────────────────────────────────────────────
+  { key: "attendee_list",              label: "Attendee List Access",              description: "View attendee names and contact info",                                     defaultTier: "STANDARD" },
+  { key: "export",                     label: "CSV Data Export",                   description: "Export attendee data to CSV",                                              defaultTier: "STANDARD" },
+  { key: "email_attendees",            label: "Email Communication",               description: "Send emails to consented attendees",                                       defaultTier: "STANDARD" },
+  { key: "forms",                      label: "Participant Forms & People",         description: "Build application forms and manage speakers, sponsors, exhibitors",        defaultTier: "STANDARD" },
+  { key: "custom_branding",            label: "Custom Branding",                   description: "Remove EventKnit branding, add your own colours and logo",                 defaultTier: "STANDARD" },
+  { key: "promo_codes",                label: "Promotional Codes",                 description: "Discount codes (% off, fixed amount, BOGO)",                              defaultTier: "STANDARD" },
+  { key: "whatsapp_delivery",          label: "WhatsApp Ticket Delivery",          description: "Send tickets directly to attendees via WhatsApp",                          defaultTier: "STANDARD" },
+  { key: "whatsapp_reminders",         label: "WhatsApp Event Reminders",          description: "Automated reminders 24h and 1h before event",                             defaultTier: "STANDARD" },
+  { key: "team_members",               label: "Team Members (up to 5)",            description: "Add check-in staff and managers with role-based access",                   defaultTier: "STANDARD" },
+  { key: "tracking_links",             label: "Tracking Links",                    description: "UTM tracking links per channel (WhatsApp, Instagram, email)",              defaultTier: "STANDARD" },
+  { key: "on_site_sales",              label: "On-Site Ticket Sales",              description: "Sell walk-in tickets at the door via M-Pesa or cash",                     defaultTier: "STANDARD" },
+  { key: "multi_day_events",           label: "Multi-Day Events",                  description: "Events that span multiple days (conferences, festivals)",                  defaultTier: "STANDARD" },
+  { key: "event_templates",            label: "Event Templates & Duplication",     description: "Duplicate past events and save templates for reuse",                       defaultTier: "STANDARD" },
+  { key: "offline_scanning",           label: "Offline QR Scanning",               description: "Scan tickets without internet — syncs when back online",                  defaultTier: "STANDARD" },
+  { key: "realtime_checkin_dashboard", label: "Real-Time Check-In Dashboard",      description: "Live attendee count and capacity view on the organizer screen",           defaultTier: "STANDARD" },
+  { key: "post_event_survey",          label: "Post-Event Survey",                 description: "Collect attendee feedback automatically after the event",                  defaultTier: "STANDARD" },
+  // ── PREMIUM ──────────────────────────────────────────────────────────────────
+  { key: "demographics",              label: "Demographic Data",                  description: "Segment breakdowns by age, gender, location",                             defaultTier: "PREMIUM" },
+  { key: "analytics",                 label: "Advanced Analytics",                description: "Traffic sources, geographic breakdown, repeat vs new, cohort analysis",   defaultTier: "PREMIUM" },
+  { key: "advanced_export",           label: "Advanced Exports",                  description: "Excel, custom formats, and scheduled automatic exports",                  defaultTier: "PREMIUM" },
+  { key: "heatmaps",                  label: "Geographic Heatmaps",               description: "Visualise where your attendees travel from",                              defaultTier: "PREMIUM" },
+  { key: "whatsapp_ai_registration",  label: "WhatsApp AI Registration",          description: "Attendees text your number on WhatsApp and get tickets conversationally", defaultTier: "PREMIUM", comingSoon: true },
+  { key: "whatsapp_broadcast",        label: "WhatsApp Broadcast",                description: "Send bulk messages to past attendees for new events",                     defaultTier: "PREMIUM" },
+  { key: "promoter_network",          label: "Promoter & Affiliate Network",      description: "Add promoters who earn a commission per ticket sold",                     defaultTier: "PREMIUM", comingSoon: true },
+  { key: "recurring_events",          label: "Recurring Events",                  description: "Set up daily / weekly / monthly recurring event series",                  defaultTier: "PREMIUM", comingSoon: true },
+  { key: "seating_plans",             label: "Seating Plan Builder",              description: "Drag-and-drop seating plan for theaters, galas, and conferences",         defaultTier: "PREMIUM", comingSoon: true },
+  { key: "embed_widget",              label: "Embed Widget",                      description: "Sell tickets directly on your own website via an iframe",                 defaultTier: "PREMIUM", comingSoon: true },
+  { key: "api_access",                label: "API Access & Webhooks",             description: "REST API and webhooks for custom integrations",                           defaultTier: "PREMIUM" },
+  { key: "split_payouts",             label: "Split Payouts",                     description: "Distribute revenue between multiple recipients",                          defaultTier: "PREMIUM", comingSoon: true },
+  { key: "priority_support",          label: "Priority Support",                  description: "24h response time from the EventKnit support team",                      defaultTier: "PREMIUM" },
+  { key: "tax_reports",               label: "Tax Reports & Invoicing",           description: "KRA-ready tax reports and invoice generation per event",                  defaultTier: "PREMIUM", comingSoon: true },
+  { key: "event_comparison",          label: "Event Comparison",                  description: "Compare metrics across your event history",                               defaultTier: "PREMIUM" },
+  { key: "revenue_forecast",          label: "Revenue Payout Forecast",           description: "Estimated payout date and amount after fees",                            defaultTier: "PREMIUM" },
+  { key: "social_login",              label: "Social Login for Attendees",        description: "Google / Apple sign-in at attendee checkout",                            defaultTier: "PREMIUM" },
+  { key: "retargeting_pixels",        label: "Retargeting Pixels",                description: "Pass Meta Pixel and Google Tag through event pages",                     defaultTier: "PREMIUM" },
+  { key: "early_payout",              label: "Early Payout Request",              description: "Request partial payout before the event date",                           defaultTier: "PREMIUM" },
+  { key: "unlimited_team",            label: "Unlimited Team Members",            description: "No cap on team size (Standard is limited to 5)",                         defaultTier: "PREMIUM" },
+  // ── ENTERPRISE ───────────────────────────────────────────────────────────────
+  { key: "white_label",               label: "White-Label / Custom Domain",       description: "Full white-label platform under your own brand and domain",              defaultTier: "ENTERPRISE" },
+  { key: "custom_integrations",       label: "Custom Integrations",               description: "Salesforce, HubSpot, or bespoke CRM/ERP connections",                   defaultTier: "ENTERPRISE" },
+  { key: "sso",                       label: "SSO / SAML",                        description: "Single sign-on via your company identity provider",                      defaultTier: "ENTERPRISE" },
+  { key: "dedicated_support",         label: "Dedicated Account Manager",         description: "Named account manager + guaranteed SLA",                                 defaultTier: "ENTERPRISE" },
+  { key: "on_site_hardware",          label: "On-Site Hardware & Field Team",     description: "Scanner/printer rental and EventKnit field support at your venue",      defaultTier: "ENTERPRISE" },
+  { key: "agency_management",         label: "Agency Sub-Account Management",     description: "Manage multiple organizer accounts under one agency login",             defaultTier: "ENTERPRISE" },
+  { key: "custom_analytics",          label: "Custom Analytics / Data Warehouse", description: "Data warehouse export and custom reporting dashboards",                 defaultTier: "ENTERPRISE" },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatPrice(plan: SubscriptionPlan): string {
-  const price = parseFloat(plan.price);
-  if (price === 0) return "Free";
-  if (plan.tier === "ENTERPRISE") return `KES ${price.toLocaleString()}+`;
-  return `KES ${price.toLocaleString()}`;
+function toSlug(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
 }
 
-// ─── Edit Dialog ──────────────────────────────────────────────────────────────
+// ─── Feature Form ─────────────────────────────────────────────────────────────
+
+interface FeatureFormProps {
+  initial: FeatureDef | null;
+  existingKeys: string[];
+  onSave: (f: FeatureDef) => void;
+  onBack: () => void;
+}
+
+function FeatureForm({ initial, existingKeys, onSave, onBack }: FeatureFormProps) {
+  const [key, setKey] = useState(initial?.key ?? "");
+  const [label, setLabel] = useState(initial?.label ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [defaultTier, setDefaultTier] = useState<Exclude<SubscriptionTier, "BASIC">>(initial?.defaultTier ?? "STANDARD");
+  const [comingSoon, setComingSoon] = useState(initial?.comingSoon ?? false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const isEditing = !!initial;
+
+  const validate = (): boolean => {
+    const e: Record<string, string> = {};
+    if (!key.trim()) e.key = "Key is required";
+    else if (!/^[a-z][a-z0-9_]*$/.test(key)) e.key = "Lowercase letters, digits, underscores only";
+    else if (!isEditing && existingKeys.includes(key)) e.key = "Key already exists";
+    if (!label.trim()) e.label = "Label is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSave = () => {
+    if (!validate()) return;
+    onSave({ key: key.trim(), label: label.trim(), description: description.trim(), defaultTier, comingSoon });
+  };
+
+  return (
+    <div className="space-y-4 py-1">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <h3 className="font-semibold text-sm">{isEditing ? "Edit Feature" : "Add Feature"}</h3>
+      </div>
+      <Separator />
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <Label>Key <span className="text-xs text-muted-foreground font-normal">— unique identifier, e.g. my_feature</span></Label>
+          <Input
+            value={key}
+            disabled={isEditing}
+            onChange={(e) => setKey(toSlug(e.target.value))}
+            placeholder="feature_key"
+            className={errors.key ? "border-destructive" : ""}
+          />
+          {errors.key && <p className="text-xs text-destructive">{errors.key}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label>Label</Label>
+          <Input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Human-readable name"
+            className={errors.label ? "border-destructive" : ""}
+          />
+          {errors.label && <p className="text-xs text-destructive">{errors.label}</p>}
+        </div>
+        <div className="space-y-1.5">
+          <Label>Description <span className="text-xs text-muted-foreground font-normal">— shown in the edit plan dialog</span></Label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Brief description of the feature"
+            rows={2}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label>Default Tier</Label>
+            <Select value={defaultTier} onValueChange={(v) => setDefaultTier(v as Exclude<SubscriptionTier, "BASIC">)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="STANDARD">Standard</SelectItem>
+                <SelectItem value="PREMIUM">Premium</SelectItem>
+                <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end pb-1">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox checked={comingSoon} onCheckedChange={(v) => setComingSoon(!!v)} />
+              <span className="text-sm">Coming soon</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onBack}>Cancel</Button>
+        <Button onClick={handleSave}>
+          <Save className="mr-2 h-3.5 w-3.5" />
+          {isEditing ? "Save Changes" : "Add Feature"}
+        </Button>
+      </DialogFooter>
+    </div>
+  );
+}
+
+// ─── Manage Features Dialog ───────────────────────────────────────────────────
+
+interface ManageFeaturesDialogProps {
+  registry: FeatureDef[];
+  saving: boolean;
+  onUpdate: (newRegistry: FeatureDef[]) => Promise<void>;
+  onClose: () => void;
+}
+
+type DialogView = { type: "list" } | { type: "form"; feature: FeatureDef | null };
+
+function ManageFeaturesDialog({ registry, saving, onUpdate, onClose }: ManageFeaturesDialogProps) {
+  const [view, setView] = useState<DialogView>({ type: "list" });
+  const [confirmDeleteKey, setConfirmDeleteKey] = useState<string | null>(null);
+
+  const grouped: { group: string; tier: Exclude<SubscriptionTier, "BASIC">; items: FeatureDef[] }[] = [
+    { group: "Standard", tier: "STANDARD" as const,   items: registry.filter((f) => f.defaultTier === "STANDARD")   },
+    { group: "Premium",  tier: "PREMIUM" as const,    items: registry.filter((f) => f.defaultTier === "PREMIUM")    },
+    { group: "Enterprise", tier: "ENTERPRISE" as const, items: registry.filter((f) => f.defaultTier === "ENTERPRISE") },
+  ].filter((g) => g.items.length > 0 || view.type === "list");
+
+  const handleFormSave = async (feature: FeatureDef) => {
+    const isEditing = view.type === "form" && view.feature !== null;
+    const newRegistry = isEditing
+      ? registry.map((f) => (f.key === (view as { type: "form"; feature: FeatureDef }).feature.key ? feature : f))
+      : [...registry, feature];
+    await onUpdate(newRegistry);
+    setView({ type: "list" });
+  };
+
+  const handleDelete = async (key: string) => {
+    await onUpdate(registry.filter((f) => f.key !== key));
+    setConfirmDeleteKey(null);
+  };
+
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Settings2 className="h-4 w-4" />
+            Manage Feature Registry
+          </DialogTitle>
+        </DialogHeader>
+
+        {view.type === "form" ? (
+          <FeatureForm
+            initial={view.feature}
+            existingKeys={registry.map((f) => f.key)}
+            onSave={handleFormSave}
+            onBack={() => setView({ type: "list" })}
+          />
+        ) : (
+          <div className="space-y-4 py-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">{registry.length} features defined</p>
+              <Button size="sm" onClick={() => setView({ type: "form", feature: null })}>
+                <Plus className="mr-1.5 h-3.5 w-3.5" /> Add Feature
+              </Button>
+            </div>
+            <Separator />
+            {grouped.map(({ group, tier, items }) => {
+              const cfg = TIER_CONFIG[tier];
+              const Icon = cfg.icon;
+              return (
+                <div key={tier} className="space-y-1">
+                  <div className="flex items-center gap-1.5 py-1">
+                    <div className={`p-1 rounded ${cfg.bgColor}`}>
+                      <Icon className={`h-3 w-3 ${cfg.color}`} />
+                    </div>
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      {group} ({items.length})
+                    </span>
+                  </div>
+                  {items.map((f) => (
+                    <div key={f.key} className="flex items-center gap-2 rounded-lg border px-3 py-2 hover:bg-muted/30 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-medium truncate">{f.label}</span>
+                          {f.comingSoon && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-[9px] font-medium text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                              <Clock className="h-2 w-2" /> Soon
+                            </span>
+                          )}
+                        </div>
+                        <code className="text-[10px] text-muted-foreground">{f.key}</code>
+                      </div>
+                      {confirmDeleteKey === f.key ? (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-xs text-destructive">Delete?</span>
+                          <Button size="sm" variant="destructive" className="h-6 px-2 text-xs" onClick={() => handleDelete(f.key)} disabled={saving}>
+                            Yes
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => setConfirmDeleteKey(null)}>
+                            No
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            onClick={() => setView({ type: "form", feature: f })}
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => setConfirmDeleteKey(f.key)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose}>Close</Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Edit Plan Dialog ─────────────────────────────────────────────────────────
 
 function EditDialog({
   plan,
+  featureRegistry,
   onSave,
   onClose,
   saving,
 }: {
   plan: SubscriptionPlan;
+  featureRegistry: FeatureDef[];
   onSave: (updates: { price: number; description: string; features: string[] }) => Promise<void>;
   onClose: () => void;
   saving: boolean;
@@ -128,12 +379,10 @@ function EditDialog({
   const cfg = TIER_CONFIG[plan.tier];
   const Icon = cfg.icon;
 
-  // Group features by default tier for the dialog
-  const featuresByTier: Record<SubscriptionTier, typeof ALL_FEATURES> = {
-    BASIC: [],
-    STANDARD: ALL_FEATURES.filter((f) => f.defaultTier === "STANDARD"),
-    PREMIUM: ALL_FEATURES.filter((f) => f.defaultTier === "PREMIUM"),
-    ENTERPRISE: ALL_FEATURES.filter((f) => f.defaultTier === "ENTERPRISE"),
+  const featuresByTier: Record<Exclude<SubscriptionTier, "BASIC">, FeatureDef[]> = {
+    STANDARD:   featureRegistry.filter((f) => f.defaultTier === "STANDARD"),
+    PREMIUM:    featureRegistry.filter((f) => f.defaultTier === "PREMIUM"),
+    ENTERPRISE: featureRegistry.filter((f) => f.defaultTier === "ENTERPRISE"),
   };
 
   return (
@@ -160,15 +409,12 @@ function EditDialog({
               </p>
             </div>
           </div>
-
           <div className="space-y-1.5">
             <Label>Description</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
-
           <Separator />
-
-          {(["STANDARD", "PREMIUM", "ENTERPRISE"] as SubscriptionTier[])
+          {(["STANDARD", "PREMIUM", "ENTERPRISE"] as Exclude<SubscriptionTier, "BASIC">[])
             .filter((t) => featuresByTier[t].length > 0)
             .map((groupTier) => (
               <div key={groupTier} className="space-y-2">
@@ -211,28 +457,25 @@ function EditDialog({
 
 // ─── Feature Matrix ───────────────────────────────────────────────────────────
 
-function FeatureMatrix({ plans }: { plans: SubscriptionPlan[] }) {
+function FeatureMatrix({ plans, featureRegistry }: { plans: SubscriptionPlan[]; featureRegistry: FeatureDef[] }) {
   const sorted = [...plans].sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier));
 
-  // Collect every key present in any plan — catches admin-added keys not in ALL_FEATURES
-  const knownKeys = new Set(ALL_FEATURES.map((f) => f.key));
-  const allKeysInPlans = Array.from(new Set(plans.flatMap((p) => p.features)));
-  const customKeys = allKeysInPlans.filter((k) => !knownKeys.has(k));
+  const usedKeys = new Set(plans.flatMap((p) => p.features));
+  const knownKeys = new Set(featureRegistry.map((f) => f.key));
+  const customKeys = Array.from(usedKeys).filter((k) => !knownKeys.has(k));
 
   const groupedFeatures: { group: string; items: { key: string; label: string; comingSoon?: boolean }[] }[] = [
-    { group: "Standard Features",   items: ALL_FEATURES.filter((f) => f.defaultTier === "STANDARD")   },
-    { group: "Premium Features",    items: ALL_FEATURES.filter((f) => f.defaultTier === "PREMIUM")    },
-    { group: "Enterprise Features", items: ALL_FEATURES.filter((f) => f.defaultTier === "ENTERPRISE") },
-    ...(customKeys.length > 0
-      ? [{ group: "Custom Features", items: customKeys.map((k) => ({ key: k, label: k })) }]
-      : []),
-  ];
+    { group: "Standard Features",   items: featureRegistry.filter((f) => f.defaultTier === "STANDARD"   && usedKeys.has(f.key)) },
+    { group: "Premium Features",    items: featureRegistry.filter((f) => f.defaultTier === "PREMIUM"    && usedKeys.has(f.key)) },
+    { group: "Enterprise Features", items: featureRegistry.filter((f) => f.defaultTier === "ENTERPRISE" && usedKeys.has(f.key)) },
+    ...(customKeys.length > 0 ? [{ group: "Custom Features", items: customKeys.map((k) => ({ key: k, label: k })) }] : []),
+  ].filter((g) => g.items.length > 0);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Feature Comparison Matrix</CardTitle>
-        <CardDescription>Live view of which features are enabled per tier based on the configuration above.</CardDescription>
+        <CardDescription>Live view of which features are enabled per tier. Edit plans or the feature registry to update this.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -304,12 +547,22 @@ const SubscriptionPlansPage = () => {
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [saving, setSaving] = useState(false);
   const [togglingTier, setTogglingTier] = useState<SubscriptionTier | null>(null);
+  const [featureRegistry, setFeatureRegistry] = useState<FeatureDef[]>(DEFAULT_REGISTRY);
+  const [registrySaving, setRegistrySaving] = useState(false);
+  const [showManageFeatures, setShowManageFeatures] = useState(false);
 
   const loadPlans = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await getSubscriptionPlans();
-      if (response.success) setPlans(response.data.plans);
+      const [plansResponse, settingResponse] = await Promise.all([
+        getSubscriptionPlans(),
+        getSetting(SETTINGS_KEY).catch(() => null),
+      ]);
+      if (plansResponse.success) setPlans(plansResponse.data.plans);
+      const registryValue = settingResponse?.data?.setting?.value;
+      if (settingResponse?.success && Array.isArray(registryValue)) {
+        setFeatureRegistry(registryValue as FeatureDef[]);
+      }
     } catch (err) {
       showErrorToast(toast, err, "Failed to load subscription plans");
     } finally {
@@ -318,6 +571,22 @@ const SubscriptionPlansPage = () => {
   }, [toast]);
 
   useEffect(() => { loadPlans(); }, [loadPlans]);
+
+  const saveRegistry = async (newRegistry: FeatureDef[]) => {
+    setRegistrySaving(true);
+    try {
+      await setSetting(SETTINGS_KEY, newRegistry as unknown as Record<string, unknown>[], "json", "general", {
+        description: "Subscription feature registry — defines all gated feature keys, labels, and tier assignments",
+        isPublic: false,
+      });
+      setFeatureRegistry(newRegistry);
+      toast({ title: "Feature registry saved" });
+    } catch (err) {
+      showErrorToast(toast, err, "Failed to save feature registry");
+    } finally {
+      setRegistrySaving(false);
+    }
+  };
 
   const handleToggleActive = async (plan: SubscriptionPlan) => {
     setTogglingTier(plan.tier);
@@ -363,11 +632,17 @@ const SubscriptionPlansPage = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Subscription Plans</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
-          Configure tier pricing, descriptions, and feature access. Prices in KES. Features are cumulative — Premium includes all Standard features.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Subscription Plans</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Configure tier pricing, features, and access. Prices in KES. Features are cumulative — Premium includes all Standard features.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" className="shrink-0 mt-1" onClick={() => setShowManageFeatures(true)}>
+          <Settings2 className="mr-2 h-3.5 w-3.5" />
+          Manage Features
+        </Button>
       </div>
 
       {/* Plan Cards */}
@@ -376,6 +651,15 @@ const SubscriptionPlansPage = () => {
           const cfg = TIER_CONFIG[plan.tier];
           const Icon = cfg.icon;
           const price = parseFloat(plan.price);
+          const isBasic = plan.tier === "BASIC";
+
+          const displayFeatures = isBasic
+            ? BASIC_STRUCTURAL.map((f) => ({ label: f, comingSoon: false }))
+            : plan.features.slice(0, 6).map((key) => {
+                const meta = featureRegistry.find((f) => f.key === key);
+                return { label: meta?.label ?? key, comingSoon: meta?.comingSoon ?? false };
+              });
+          const overflow = isBasic ? 0 : Math.max(0, plan.features.length - 6);
 
           return (
             <Card key={plan.id} className="flex flex-col">
@@ -422,20 +706,19 @@ const SubscriptionPlansPage = () => {
               <CardContent className="flex flex-col flex-1 gap-3">
                 <Separator />
                 <div className="flex-1 space-y-1">
-                  {plan.features.slice(0, 6).map((key) => {
-                    const meta = ALL_FEATURES.find((f) => f.key === key);
-                    return (
-                      <div key={key} className="flex items-center gap-1.5">
-                        <Check className="h-3 w-3 text-green-500 shrink-0" />
-                        <span className="text-xs truncate">{meta?.label ?? key}</span>
-                      </div>
-                    );
-                  })}
-                  {plan.features.length > 6 && (
-                    <p className="text-xs text-muted-foreground pl-4.5">+{plan.features.length - 6} more features</p>
-                  )}
-                  {plan.features.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic">Base plan — no additional feature gates</p>
+                  {displayFeatures.map(({ label, comingSoon }) => (
+                    <div key={label} className="flex items-center gap-1.5">
+                      <Check className="h-3 w-3 text-green-500 shrink-0" />
+                      <span className="text-xs truncate flex-1">{label}</span>
+                      {comingSoon && (
+                        <span className="shrink-0 inline-flex items-center gap-0.5 rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-[9px] font-medium text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                          <Clock className="h-2 w-2" /> Soon
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                  {overflow > 0 && (
+                    <p className="text-xs text-muted-foreground pl-4.5">+{overflow} more features</p>
                   )}
                 </div>
                 <Separator />
@@ -454,11 +737,27 @@ const SubscriptionPlansPage = () => {
       </div>
 
       {/* Feature matrix */}
-      {sortedPlans.length > 0 && <FeatureMatrix plans={sortedPlans} />}
+      {sortedPlans.length > 0 && <FeatureMatrix plans={sortedPlans} featureRegistry={featureRegistry} />}
 
-      {/* Edit dialog */}
+      {/* Edit plan dialog */}
       {editingPlan && (
-        <EditDialog plan={editingPlan} onSave={handleSave} onClose={() => setEditingPlan(null)} saving={saving} />
+        <EditDialog
+          plan={editingPlan}
+          featureRegistry={featureRegistry}
+          onSave={handleSave}
+          onClose={() => setEditingPlan(null)}
+          saving={saving}
+        />
+      )}
+
+      {/* Manage features dialog */}
+      {showManageFeatures && (
+        <ManageFeaturesDialog
+          registry={featureRegistry}
+          saving={registrySaving}
+          onUpdate={saveRegistry}
+          onClose={() => setShowManageFeatures(false)}
+        />
       )}
     </div>
   );

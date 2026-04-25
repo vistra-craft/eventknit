@@ -446,4 +446,55 @@ describe('Forms API', () => {
       expect(participant).toBeNull();
     });
   });
+
+  // ─── Get single response ──────────────────────────────────────────────────
+
+  describe('GET /api/v1/forms/:id/responses/:responseId', () => {
+    it('returns a single response by ID', async () => {
+      if (!dbConnected) { logger.info('⏭️  Skipping'); return; }
+
+      const submitRes = await request(app)
+        .post(`/api/v1/forms/public/${shareToken}/submit`)
+        .send({
+          respondentEmail: 'single@example.com',
+          respondentName: 'Single Respondent',
+          answers: { q1: 'My talk', q2: 'My bio' },
+        })
+        .expect(201);
+
+      const responseId = submitRes.body.response.id;
+
+      const res = await request(app)
+        .get(`/api/v1/forms/${formId}/responses/${responseId}`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.response.id).toBe(responseId);
+      expect(res.body.response.respondentEmail).toBe('single@example.com');
+      expect(res.body.response.answers).toMatchObject({ q1: 'My talk', q2: 'My bio' });
+    });
+
+    it('returns 404 for a non-existent response ID', async () => {
+      if (!dbConnected) { logger.info('⏭️  Skipping'); return; }
+
+      await request(app)
+        .get(`/api/v1/forms/${formId}/responses/00000000-0000-0000-0000-000000000000`)
+        .set('Authorization', `Bearer ${organizerToken}`)
+        .expect(404);
+    });
+
+    it('returns 401 when unauthenticated', async () => {
+      if (!dbConnected) { logger.info('⏭️  Skipping'); return; }
+
+      const submitRes = await request(app)
+        .post(`/api/v1/forms/public/${shareToken}/submit`)
+        .send({ respondentEmail: 'anon@example.com', respondentName: 'Anon', answers: {} })
+        .expect(201);
+
+      await request(app)
+        .get(`/api/v1/forms/${formId}/responses/${submitRes.body.response.id}`)
+        .expect(401);
+    });
+  });
 });

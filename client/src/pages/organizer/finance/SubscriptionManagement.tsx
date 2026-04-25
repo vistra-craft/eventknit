@@ -311,6 +311,8 @@ const SubscriptionManagement = () => {
     }
   };
 
+  const [selectedPlanTier, setSelectedPlanTier] = useState<SubscriptionTier | null>(null);
+
   const canUpgradeTo = (tier: SubscriptionTier): boolean => {
     if (!subscription) return false;
     return TIER_ORDER[tier] > TIER_ORDER[subscription.tier];
@@ -419,7 +421,8 @@ const SubscriptionManagement = () => {
           return (
             <Card
               key={plan.tier}
-              className={`relative flex flex-col transition-all ${isCurrent ? `ring-2 ${cfg.ringColor} shadow-md` : 'hover:shadow-sm'}`}
+              onClick={() => setSelectedPlanTier(plan.tier)}
+              className={`relative flex flex-col transition-all cursor-pointer ${isCurrent ? `ring-2 ${cfg.ringColor} shadow-md` : 'hover:shadow-md hover:border-border/80'}`}
             >
               {isCurrent && (
                 <div className="absolute -top-3 left-4 z-10">
@@ -488,14 +491,14 @@ const SubscriptionManagement = () => {
                 {/* CTA — pushed to bottom */}
                 <div className="mt-auto pt-2">
                   {isCurrent ? (
-                    <Button className="w-full" variant="outline" size="sm" disabled>Current Plan</Button>
+                    <Button className="w-full" variant="outline" size="sm" disabled onClick={(e) => e.stopPropagation()}>Current Plan</Button>
                   ) : canUpgrade ? (
                     isEnterprise ? (
-                      <Button className="w-full" size="sm" variant="outline" onClick={() => handleUpgrade('ENTERPRISE')}>
+                      <Button className="w-full" size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleUpgrade('ENTERPRISE'); }}>
                         <Mail className="h-3.5 w-3.5 mr-2" /> Contact Sales
                       </Button>
                     ) : (
-                      <Button className="w-full" size="sm" onClick={() => handleUpgrade(plan.tier)} disabled={upgrading}>
+                      <Button className="w-full" size="sm" onClick={(e) => { e.stopPropagation(); handleUpgrade(plan.tier); }} disabled={upgrading}>
                         <ArrowUpRight className="h-3.5 w-3.5 mr-2" />
                         Upgrade — {formatPrice(plan)}
                       </Button>
@@ -507,6 +510,97 @@ const SubscriptionManagement = () => {
           );
         })}
       </div>
+
+      {/* Plan Detail Dialog */}
+      {(() => {
+        const detailPlan = selectedPlanTier ? plans.find(p => p.tier === selectedPlanTier) : null;
+        if (!detailPlan || !selectedPlanTier) return null;
+        const cfg = TIER_CONFIG[selectedPlanTier];
+        const Icon = cfg.icon;
+        const baseFeatures = TIER_BASE_FEATURES[selectedPlanTier] ?? [];
+        const allDbFeatures = detailPlan.features.map(key => ({
+          key,
+          label: FEATURE_LABELS[key] ?? key,
+          comingSoon: COMING_SOON_FEATURES.has(key),
+        }));
+        const isCurrent = subscription?.tier === selectedPlanTier;
+        const canUpgradeToSelected = canUpgradeTo(selectedPlanTier);
+        const isEnterprise = selectedPlanTier === 'ENTERPRISE';
+
+        return (
+          <Dialog open={!!selectedPlanTier} onOpenChange={(open) => { if (!open) setSelectedPlanTier(null); }}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className={`p-2.5 rounded-xl ${cfg.bgColor}`}>
+                    <Icon className={`h-5 w-5 ${cfg.color}`} />
+                  </div>
+                  <div>
+                    <DialogTitle>{detailPlan.name} Plan</DialogTitle>
+                    <DialogDescription className="text-xs mt-0.5">
+                      {detailPlan.description ?? 'All features included in this plan'}
+                    </DialogDescription>
+                  </div>
+                  <div className="ml-auto text-right shrink-0">
+                    <p className="text-lg font-bold">{formatPrice(detailPlan)}</p>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="overflow-y-auto max-h-[55vh] pr-1 space-y-4">
+                {/* Structural features */}
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Platform capabilities</p>
+                  <div className="space-y-1.5">
+                    {baseFeatures.map((f) => (
+                      <div key={f} className="flex items-start gap-2">
+                        <Check className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-sm">{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Gated features */}
+                {allDbFeatures.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Included features</p>
+                    <div className="space-y-1.5">
+                      {allDbFeatures.map(({ key, label, comingSoon }) => (
+                        <div key={key} className="flex items-start gap-2">
+                          <Check className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                          <span className="text-sm flex-1">{label}</span>
+                          {comingSoon && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                              <Clock className="h-2.5 w-2.5" /> Soon
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setSelectedPlanTier(null)}>Close</Button>
+                {!isCurrent && canUpgradeToSelected && (
+                  isEnterprise ? (
+                    <Button variant="outline" onClick={() => { setSelectedPlanTier(null); handleUpgrade('ENTERPRISE'); }}>
+                      <Mail className="h-3.5 w-3.5 mr-2" /> Contact Sales
+                    </Button>
+                  ) : (
+                    <Button onClick={() => { setSelectedPlanTier(null); handleUpgrade(selectedPlanTier); }}>
+                      <ArrowUpRight className="h-3.5 w-3.5 mr-2" />
+                      Upgrade — {formatPrice(detailPlan)}
+                    </Button>
+                  )
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
 
       {/* Upgrade Dialog */}
       <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
