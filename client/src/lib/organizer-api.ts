@@ -1249,7 +1249,7 @@ export const deleteDirector = async (directorId: string): Promise<{ success: boo
 /**
  * Subscription Tier
  */
-export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM';
+export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM' | 'ENTERPRISE';
 
 /**
  * Organizer Subscription

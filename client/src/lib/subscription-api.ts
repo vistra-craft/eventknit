@@ -9,7 +9,7 @@ import { apiGet, apiPost } from './api';
 /**
  * Subscription Tier
  */
-export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM';
+export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM' | 'ENTERPRISE';
 
 /**
  * Organizer Subscription

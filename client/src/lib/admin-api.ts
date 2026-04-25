@@ -1241,7 +1241,7 @@ export const sendKYCReminder = async (userId: string, eventTitle: string): Promi
 
 // ========== Subscription Plan Management ==========
 
-export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM';
+export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM' | 'ENTERPRISE';
 
 export interface SubscriptionPlan {
   id: string;

@@ -180,9 +180,10 @@ enum DataAccessLevel {
 }
 
 enum SubscriptionTier {
-  BASIC // Free tier - aggregated data only
-  STANDARD // Free tier - basic attendee data with consent
-  PREMIUM // Paid tier - advanced analytics and demographics
+  BASIC      // Free — event creation, QR scanning, aggregate stats
+  STANDARD   // KES 2,999/mo — attendee data, forms, WhatsApp delivery, team, branding
+  PREMIUM    // KES 8,999/mo — advanced analytics, API, WhatsApp AI, seating, promoters
+  ENTERPRISE // Custom — white-label, SSO, dedicated support, hardware, agency mgmt
 }
 
 enum TicketStatus {

@@ -69,10 +69,10 @@ export class SubscriptionService {
           billingEmail: data.billingEmail ?? existing.billingEmail,
           isActive: true,
           canceledAt: null,
-          expiresAt: data.tier === SubscriptionTier.PREMIUM 
-            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+          expiresAt: data.tier !== SubscriptionTier.BASIC
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
             : null,
-          nextBillingDate: data.tier === SubscriptionTier.PREMIUM
+          nextBillingDate: data.tier !== SubscriptionTier.BASIC
             ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
             : null,
         },
@@ -89,10 +89,10 @@ export class SubscriptionService {
         tier: data.tier,
         billingEmail: data.billingEmail,
         isActive: true,
-        expiresAt: data.tier === SubscriptionTier.PREMIUM
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+        expiresAt: data.tier !== SubscriptionTier.BASIC
+          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           : null,
-        nextBillingDate: data.tier === SubscriptionTier.PREMIUM
+        nextBillingDate: data.tier !== SubscriptionTier.BASIC
           ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           : null,
       },
@@ -117,6 +117,7 @@ export class SubscriptionService {
       [SubscriptionTier.BASIC]: 0,
       [SubscriptionTier.STANDARD]: 1,
       [SubscriptionTier.PREMIUM]: 2,
+      [SubscriptionTier.ENTERPRISE]: 3,
     };
 
     if (tierOrder[newTier] <= tierOrder[subscription.tier]) {
@@ -167,19 +168,21 @@ export class SubscriptionService {
       [SubscriptionTier.BASIC]: 0,
       [SubscriptionTier.STANDARD]: 1,
       [SubscriptionTier.PREMIUM]: 2,
+      [SubscriptionTier.ENTERPRISE]: 3,
     };
 
     if (tierOrder[newTier] >= tierOrder[subscription.tier]) {
       throw new ValidationError(`Cannot downgrade to ${newTier}. Current tier is ${subscription.tier}`);
     }
 
+    const isPaid = newTier !== SubscriptionTier.BASIC;
     const updated = await prisma.organizerSubscription.update({
       where: { organizerId },
       data: {
         tier: newTier,
-        isActive: newTier !== SubscriptionTier.PREMIUM ? true : subscription.isActive,
-        expiresAt: newTier === SubscriptionTier.PREMIUM ? subscription.expiresAt : null,
-        nextBillingDate: newTier === SubscriptionTier.PREMIUM ? subscription.nextBillingDate : null,
+        isActive: true,
+        expiresAt: isPaid ? subscription.expiresAt : null,
+        nextBillingDate: isPaid ? subscription.nextBillingDate : null,
       },
     });
 
@@ -247,6 +250,7 @@ export class SubscriptionService {
       [SubscriptionTier.BASIC]: 0,
       [SubscriptionTier.STANDARD]: 1,
       [SubscriptionTier.PREMIUM]: 2,
+      [SubscriptionTier.ENTERPRISE]: 3,
     };
 
     return tierOrder[activeOverride.tier] > tierOrder[baseTier]
@@ -490,6 +494,7 @@ export class SubscriptionService {
       [SubscriptionTier.BASIC]: 0,
       [SubscriptionTier.STANDARD]: 1,
       [SubscriptionTier.PREMIUM]: 2,
+      [SubscriptionTier.ENTERPRISE]: 3,
     };
     if (tierOrder[tier] <= tierOrder[subscription.tier]) {
       throw new ValidationError(`Cannot upgrade to ${tier}. Current tier is ${subscription.tier}`);
