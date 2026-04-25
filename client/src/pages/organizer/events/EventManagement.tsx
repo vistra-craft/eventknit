@@ -56,6 +56,7 @@ import { exportEventData } from "@/lib/utils/export";
 import { useToast } from "@/hooks/useToast";
 import { EventStaffAssignment } from '@/components/events/EventStaffAssignment';
 import { EventParticipantsTab } from '@/components/organizer/EventParticipantsTab';
+import { FeatureGate } from '@/components/organizer/FeatureGate';
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -2229,7 +2230,14 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
         );
 
       case "participants":
-        return <EventParticipantsTab eventId={eventId!} />;
+        return (
+          <FeatureGate
+            feature="forms"
+            description="Create participant forms, manage speaker and sponsor applications, and curate your event roster."
+          >
+            <EventParticipantsTab eventId={eventId!} />
+          </FeatureGate>
+        );
 
       case "overview":
       default:
