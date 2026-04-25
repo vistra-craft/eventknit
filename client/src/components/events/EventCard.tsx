@@ -125,10 +125,10 @@ export const EventCard: React.FC<EventCardProps> = ({
         <Card
           variant="interactive"
           onClick={handleCardClick}
-          className="overflow-hidden bg-card rounded-2xl transition-all duration-300 border border-border/40 hover:border-border/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.12),0_4px_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.15),0_4px_12px_-2px_rgba(0,0,0,0.4)]"
+          className="overflow-hidden bg-card rounded-2xl transition-all duration-300 border border-border/40 hover:border-border/60 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.35),0_4px_12px_-2px_rgba(0,0,0,0.4)]"
         >
-          {/* Accent gradient strip */}
-          <div className="h-[2px] bg-gradient-to-r from-primary via-orange-500/80 to-orange-500/20" />
+          {/* Subtle top strip */}
+          <div className="h-[2px] bg-gradient-to-r from-muted-foreground/10 via-muted-foreground/5 to-transparent" />
 
           {/* Image */}
           <div className={`relative overflow-hidden ${imgHeight}`}>

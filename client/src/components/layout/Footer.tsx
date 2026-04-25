@@ -91,7 +91,7 @@ function FooterLinkGroup({
 }) {
   return (
     <div>
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-4">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-neutral-900 dark:text-foreground mb-4">
         {title}
       </h3>
       <ul className="space-y-3">
@@ -99,7 +99,7 @@ function FooterLinkGroup({
           <li key={link.to}>
             <Link
               to={link.to}
-              className="text-sm text-neutral-600 dark:text-muted-foreground hover:text-neutral-900 dark:hover:text-foreground transition-colors duration-200"
+              className="text-sm text-neutral-600 dark:text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors duration-200"
             >
               {link.label}
             </Link>
@@ -114,9 +114,9 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-neutral-100 dark:bg-background border-t border-blue-500/20 dark:border-border">
-      {/* Blue accent line at top */}
-      <div className="h-0.5 bg-gradient-to-r from-blue-500/50 via-blue-500 to-blue-500/50 dark:from-blue-500/40 dark:via-blue-500/60 dark:to-blue-500/40" />
+    <footer className="bg-neutral-100 dark:bg-background border-t border-neutral-200 dark:border-border">
+      {/* Subtle divider line at top */}
+      <div className="h-0.5 bg-gradient-to-r from-muted-foreground/10 via-muted-foreground/5 to-transparent" />
 
       <div className="container mx-auto px-6 lg:px-8">
         {/* Link columns */}
@@ -127,7 +127,7 @@ const Footer = () => {
 
           {/* Get the app column */}
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400 mb-4">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-neutral-900 dark:text-foreground mb-4">
               Get the App
             </h3>
             <div className="flex gap-3">
@@ -173,7 +173,7 @@ const Footer = () => {
             <Link to="/" className="inline-flex items-center gap-2">
               <span className="text-xl font-bold tracking-tight">
                 <span className="text-neutral-900 dark:text-foreground">Event</span>
-                <span className="text-blue-500">Knit</span>
+                <span className="text-orange-500">Knit</span>
               </span>
             </Link>
             <span className="hidden sm:inline text-neutral-300 dark:text-border">|</span>
@@ -189,7 +189,7 @@ const Footer = () => {
               <a
                 key={social.label}
                 href={social.href}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-neutral-400 dark:text-muted-foreground hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-500/10 transition-colors duration-200"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-neutral-400 dark:text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 transition-colors duration-200"
                 aria-label={social.label}
                 target="_blank"
                 rel="noopener noreferrer"

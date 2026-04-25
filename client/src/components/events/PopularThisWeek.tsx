@@ -64,9 +64,9 @@ function PopularCard({ event, index }: { event: EventData; index: number }) {
       onClick={() => navigate(`/event/${event.slug ?? event.id}`)}
       className="group shrink-0 cursor-pointer snap-start w-[calc((100%-2rem)/3)] md:w-[calc((100%-3rem)/4)] lg:w-[calc((100%-3rem)/4)]"
     >
-      <div className="rounded-2xl overflow-hidden border border-border/40 hover:border-border/60 bg-card transition-all duration-300 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.12),0_4px_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_8px_30px_-4px_rgba(249,115,22,0.15),0_4px_12px_-2px_rgba(0,0,0,0.4)]">
-        {/* Accent strip */}
-        <div className="h-[2px] bg-gradient-to-r from-primary via-orange-500/80 to-orange-500/20" />
+      <div className="rounded-2xl overflow-hidden border border-border/40 hover:border-border/60 bg-card transition-all duration-300 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] dark:hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.35),0_4px_12px_-2px_rgba(0,0,0,0.4)]">
+        {/* Subtle top strip */}
+        <div className="h-[2px] bg-gradient-to-r from-muted-foreground/10 via-muted-foreground/5 to-transparent" />
 
         {/* Image */}
         <div className="relative h-48 overflow-hidden">

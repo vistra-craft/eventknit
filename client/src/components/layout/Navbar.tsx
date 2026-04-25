@@ -215,7 +215,7 @@ const Navbar: React.FC<NavbarProps> = ({ transparent = false }) => {
         {/* Scroll progress bar — inside pill so it respects rounded corners */}
         {isScrolled && (
           <motion.div
-            className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-primary to-orange-500"
+            className="absolute bottom-0 left-0 h-[2px] bg-gradient-to-r from-primary via-primary/80 to-primary/30"
             style={{ width: progressWidth }}
           />
         )}
