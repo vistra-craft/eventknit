@@ -51,6 +51,8 @@ import { AdminSecurityController } from '../controllers/admin-security.controlle
 import { ManagedEventController } from '../controllers/managed-event.controller.js';
 import { StaffInvitationController } from '../controllers/staff-invitation.controller.js';
 import { staffInvitationValidations } from '../validations/staff-invitation.validations.js';
+import { IssuesController } from '../controllers/issues.controller.js';
+import { issuesValidations } from '../validations/issues.validations.js';
 import { AdminPlatformAnalyticsController } from '../controllers/admin-platform-analytics.controller.js';
 import { AdminKYCController } from '../controllers/admin-kyc.controller.js';
 import { adminKYCValidations } from '../validations/admin-kyc.validations.js';
@@ -1423,6 +1425,144 @@ router.get('/managed-events/:eventId', requireMinRole(UserRole.ADMIN), ManagedEv
 router.post('/managed-events', requireMinRole(UserRole.ADMIN), ManagedEventController.createManagedEvent);
 router.put('/managed-events/:eventId', requireMinRole(UserRole.ADMIN), ManagedEventController.updateManagedEvent);
 router.post('/managed-events/:eventId/cancel', requireMinRole(UserRole.ADMIN), ManagedEventController.cancelManagedEvent);
+
+// ─── Issues (Internal Bug Tracker) ───────────────────────────────────────────
+
+/**
+ * @route   GET /api/v1/admin/issues/board
+ * @desc    Kanban board — issues grouped by status
+ * @access  Private (ADMIN+)
+ */
+router.get('/issues/board', IssuesController.getBoard);
+
+/**
+ * @route   GET /api/v1/admin/issues/stats
+ * @desc    Issue counts by status and priority
+ * @access  Private (ADMIN+)
+ */
+router.get('/issues/stats', IssuesController.getStats);
+
+/**
+ * @route   GET /api/v1/admin/issues/assignable-users
+ * @desc    List of SUPERADMIN and ADMIN users available for assignment
+ * @access  Private (ADMIN+)
+ */
+router.get('/issues/assignable-users', IssuesController.getAssignableUsers);
+
+/**
+ * @route   GET /api/v1/admin/issues
+ * @desc    Paginated issue list (table view)
+ * @access  Private (ADMIN+)
+ */
+router.get('/issues', validateQuery(issuesValidations.listIssues), IssuesController.list);
+
+/**
+ * @route   POST /api/v1/admin/issues
+ * @desc    Create a new issue
+ * @access  Private (ADMIN+)
+ */
+router.post('/issues', validate(issuesValidations.createIssue), IssuesController.create);
+
+/**
+ * @route   GET /api/v1/admin/issues/:id
+ * @desc    Get issue detail with subtasks and comments
+ * @access  Private (ADMIN+)
+ */
+router.get('/issues/:id', IssuesController.getOne);
+
+/**
+ * @route   PUT /api/v1/admin/issues/:id
+ * @desc    Update issue fields
+ * @access  Private (ADMIN+)
+ */
+router.put('/issues/:id', validate(issuesValidations.updateIssue), IssuesController.update);
+
+/**
+ * @route   PATCH /api/v1/admin/issues/:id/status
+ * @desc    Update status (used by drag-and-drop)
+ * @access  Private (ADMIN+)
+ */
+router.patch(
+  '/issues/:id/status',
+  validate(issuesValidations.updateStatus),
+  IssuesController.updateStatus,
+);
+
+/**
+ * @route   PATCH /api/v1/admin/issues/:id/assign
+ * @desc    Assign or reassign an issue
+ * @access  Private (ADMIN+)
+ */
+router.patch(
+  '/issues/:id/assign',
+  validate(issuesValidations.assignIssue),
+  IssuesController.assign,
+);
+
+/**
+ * @route   PATCH /api/v1/admin/issues/:id/archive
+ * @desc    Archive an issue
+ * @access  Private (SUPERADMIN only)
+ */
+router.patch(
+  '/issues/:id/archive',
+  requireMinRole(UserRole.SUPERADMIN),
+  IssuesController.archive,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/issues/:id
+ * @desc    Soft-delete an issue
+ * @access  Private (SUPERADMIN only)
+ */
+router.delete('/issues/:id', requireMinRole(UserRole.SUPERADMIN), IssuesController.remove);
+
+/**
+ * @route   POST /api/v1/admin/issues/:id/comments
+ * @desc    Add a comment to an issue
+ * @access  Private (ADMIN+)
+ */
+router.post(
+  '/issues/:id/comments',
+  validate(issuesValidations.addComment),
+  IssuesController.addComment,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/issues/:id/comments/:commentId
+ * @desc    Delete a comment (author or SUPERADMIN)
+ * @access  Private (ADMIN+)
+ */
+router.delete('/issues/:id/comments/:commentId', IssuesController.deleteComment);
+
+/**
+ * @route   POST /api/v1/admin/issues/:id/subtasks
+ * @desc    Add a subtask
+ * @access  Private (ADMIN+)
+ */
+router.post(
+  '/issues/:id/subtasks',
+  validate(issuesValidations.addSubtask),
+  IssuesController.addSubtask,
+);
+
+/**
+ * @route   PATCH /api/v1/admin/issues/:id/subtasks/:subtaskId
+ * @desc    Toggle subtask completion or update title
+ * @access  Private (ADMIN+)
+ */
+router.patch(
+  '/issues/:id/subtasks/:subtaskId',
+  validate(issuesValidations.updateSubtask),
+  IssuesController.updateSubtask,
+);
+
+/**
+ * @route   DELETE /api/v1/admin/issues/:id/subtasks/:subtaskId
+ * @desc    Remove a subtask
+ * @access  Private (ADMIN+)
+ */
+router.delete('/issues/:id/subtasks/:subtaskId', IssuesController.deleteSubtask);
 
 // ─── Staff Invitations ────────────────────────────────────────────────────────
 

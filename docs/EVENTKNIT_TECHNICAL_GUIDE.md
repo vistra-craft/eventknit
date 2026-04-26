@@ -430,6 +430,27 @@ app.use('/api/v1/admin/support/contact-queries', adminContactRouter); // ADMIN+ 
 // ... 55+ route groups total
 ```
 
+**Issues sub-routes** (nested under `/api/v1/admin`, all behind `authenticate + requireMinRole(ADMIN)` globally; archive and delete require `requireMinRole(SUPERADMIN)`):
+
+```typescript
+GET    /admin/issues/board              // Kanban board grouped by status
+GET    /admin/issues/stats              // Status and priority counts
+GET    /admin/issues/assignable-users   // Admin users available for assignment
+GET    /admin/issues                    // Paginated list (filters: status, priority, type, assigneeId, search, includeArchived)
+POST   /admin/issues                    // Create issue
+GET    /admin/issues/:id                // Full issue detail (includes comments, subtasks, blockedBy, blocking)
+PUT    /admin/issues/:id                // Update scalar fields
+PATCH  /admin/issues/:id/status         // Update status + kanbanOrder
+PATCH  /admin/issues/:id/assign         // Assign / unassign
+PATCH  /admin/issues/:id/archive        // Archive  (SUPERADMIN only)
+DELETE /admin/issues/:id                // Soft-delete (SUPERADMIN only)
+POST   /admin/issues/:id/comments       // Add comment
+DELETE /admin/issues/:id/comments/:cid  // Delete comment
+POST   /admin/issues/:id/subtasks       // Add subtask
+PATCH  /admin/issues/:id/subtasks/:sid  // Update subtask (title / completed / order)
+DELETE /admin/issues/:id/subtasks/:sid  // Delete subtask
+```
+
 ### Custom Error Classes
 
 ```typescript
@@ -489,6 +510,116 @@ client/
 - **Custom Hooks**: Encapsulate business logic (useAuth, useEvents, useGoogleAuth)
 - **Protected Routes**: `<ProtectedRoute allowedRoles={[...]}>`
 - **Theme System**: CSS variables with `hsl(var(--token))` for dark mode support
+
+### Admin Issues Module (Internal Tracker)
+
+**Location:** `client/src/pages/admin/issues/`
+
+**Navigation:** Admin sidebar → System group → "Kanban" (`/admin/issues`) and "All Issues" (`/admin/issues/list`). Both routes are gated to `SUPERADMIN` via `allowedRoles` in `adminRoutes.tsx`.
+
+**File structure:**
+
+```
+pages/admin/issues/
+├── IssuesPage.tsx               # Main page — stats strip, toolbar, board/list, drawers
+└── components/
+    ├── KanbanBoard.tsx          # DndContext wrapper, drag-overlay, DragEndEvent handler
+    ├── KanbanColumn.tsx         # useDroppable, SortableContext, per-column tint/ring
+    ├── IssueCard.tsx            # useSortable, two sizes (compact / comfortable)
+    ├── IssuesTable.tsx          # Paginated table for list view, responsive column hiding
+    ├── IssueDetailDrawer.tsx    # Full issue editor rendered inside a Radix Sheet
+    └── CreateIssueDrawer.tsx    # New issue form rendered inside a Radix Sheet
+
+hooks/queries/useIssues.ts       # All TanStack Query hooks for the issues domain
+lib/issues-api.ts                # Axios wrappers for every issues endpoint
+types/issues.ts                  # Issue interface, all enums, display-label maps, color constants
+```
+
+**Data fetching (`useIssues.ts`):**
+
+| Hook | Query key | Endpoint | Stale time |
+|------|-----------|----------|------------|
+| `useIssueBoard()` | `['issues','board']` | `GET /board` | 30 s |
+| `useIssueStats()` | `['issues','stats']` | `GET /stats` | 60 s |
+| `useAssignableUsers()` | `['issues','assignable-users']` | `GET /assignable-users` | 5 min |
+| `useIssueList(params)` | `['issues','list', params]` | `GET /` | 30 s |
+| `useIssueDetail(id)` | `['issues','detail', id]` | `GET /:id` | 30 s |
+
+**Critical: mutation cache strategy.** Update, status-change, and assign mutations receive partial issue objects from the backend (scalars only — no `comments`, `subtasks`, `blockedBy`, `blocking`). To prevent crashing the open detail drawer, all three mutations **merge** rather than replace the detail cache:
+
+```typescript
+qc.setQueryData(issueKeys.detail(id), (old: unknown) =>
+  old ? { ...(old as object), ...res.data } : res.data,
+);
+```
+
+**Defensive normalization in `IssueDetailDrawer`.** Relation arrays (`subtasks`, `comments`, `tags`, `blockedBy`, `blocking`) may be absent after a cache merge. They are normalised to `[]` immediately after the loading guard:
+
+```typescript
+const subtasks = issue.subtasks ?? [];
+const comments = issue.comments ?? [];
+const tags     = issue.tags     ?? [];
+```
+
+The `blockedBy`/`blocking` sections use `issue.blockedBy?.length ?? 0` before rendering.
+
+**Drag-and-drop (KanbanBoard):**
+
+- Library: `@dnd-kit/core` + `@dnd-kit/sortable`.
+- `DndContext` wraps all columns with `closestCorners` collision strategy.
+- `onDragOver` performs **optimistic reordering** of `localBoard` state.
+- A snapshot is taken at `onDragStart`; on `onDragEnd` failure the snapshot is restored.
+- `useUpdateIssueStatus` fires the PATCH and invalidates the board cache on success.
+- `PointerSensor` activation distance: 8 px (prevents accidental drag on click).
+
+**Filter state:**
+
+```typescript
+interface ActiveFilters {
+  priority:   IssuePriority | null;
+  type:       IssueType | null;
+  assigneeId: string | null;        // '__unassigned__' = client-side sentinel for board view
+}
+```
+
+Board filtering is client-side (applied to the already-fetched `KanbanBoard` object). List filtering is server-side (params forwarded to `useIssueList`). The `'__unassigned__'` sentinel is stripped before reaching the API.
+
+**Delete confirmation:** Uses Radix `AlertDialog` (controlled by `showDeleteConfirm` state). The document-level Escape key listener is guarded via `showDeleteConfirmRef` so pressing Escape inside the dialog closes only the dialog, not the drawer behind it.
+
+**"Show archived" toggle:** `includeArchived` boolean state in `IssuesPage`; passed as a query param to `useIssueList`. Only shown in list view (the board has no ARCHIVED column). Contributes to `hasActiveFilters` so the Filter button highlights. Reset by "Clear all".
+
+**Font and size standards:** Consistent with the rest of the admin panel — `Inter`, semantic Tailwind tokens, `text-xs` (12 px) as the minimum readable size. The ghost issue number watermark on cards (`text-[10px] font-mono text-muted-foreground/25`) is intentionally sub-scale for visual subtlety.
+
+**Kanban color system:** The board uses a Notion-inspired palette for clear visual distinction across priorities and statuses. All colors are registered under an `issues` namespace in `client/tailwind.config.ts` and consumed via named classes — never raw hex strings in JSX.
+
+Color constants in `types/issues.ts`:
+
+| Constant | Controls | Notes |
+|----------|----------|-------|
+| `PRIORITY_CARD_BG` | Card background + border per priority | Dark: `#263e30` / `#4b2f18` / `#502c29` / derived urgent; Light: pale complementary tints |
+| `PRIORITY_COLORS` | Priority badge pill on cards | `bg-emerald/amber/red/rose-100` light; `dark:bg-*-900/30` dark |
+| `COLUMN_TINT` | Column container background | Dark: `#241d1d` / `#1b2027` / `#23221b` / `#1c211d` / derived neutral; Light: near-white tints |
+| `COLUMN_RING` | Column border | Matches column hue at higher opacity for definition |
+| `COLUMN_HOVER_TINT` | Column background while dragging a card over it | Slightly brighter than `COLUMN_TINT` to signal drop zone |
+
+`HEADER_BADGE` in `KanbanColumn.tsx` controls the status pill in the column header:
+
+| Status | Background | Text |
+|--------|-----------|------|
+| Not Started | `#61605c` | `#e7e6e4` |
+| Blocked | `#984b45` | `#e7e6e4` |
+| In Progress | `#376292` | `#e7e6e4` |
+| Under Review | `#88692a` | `#e7e6e4` |
+| Done | `#3c6d50` | `#e7e6e4` |
+
+The pill colors are self-contained (dark bg + near-white text) so they render correctly in both light and dark mode without needing `dark:` variants.
+
+Tailwind namespace structure (all keys under `theme.extend.colors.issues` in `tailwind.config.ts`):
+- `dk-*/lt-*` — dark/light mode card backgrounds and borders (`dk-low`, `lt-low`, `dk-low-bd`, `lt-low-bd`, etc.)
+- `dk-col-*/lt-col-*` — column backgrounds (`dk-col-bl`, `lt-col-ip`, etc.)
+- `dk-col-*-bd/lt-col-*-bd` — column borders
+- `dk-hv-*/lt-hv-*` — drag-hover column tints
+- `pill-*` — header pill backgrounds (`pill-ns`, `pill-bl`, `pill-ip`, `pill-ur`, `pill-dn`, `pill-txt`)
 
 ### Dark Mode Convention
 
@@ -1292,6 +1423,175 @@ model ContactQueryResponse {
 ```
 
 **Design note:** `ContactQuery` is intentionally separate from `SocialMessage` because social messages require a `socialAccountId` foreign key (a connected social account must exist). Website contact form submissions have no such dependency — the sender has no platform account.
+
+### Internal Issue Tracker Models
+
+The Issues module is an internal admin-only bug/task tracker. All enums and models below were introduced in migration `20260425122107_add_issues_module`.
+
+```prisma
+enum IssueStatus {
+  NOT_STARTED
+  BLOCKED
+  IN_PROGRESS
+  UNDER_REVIEW
+  DONE
+  ARCHIVED   // recoverable — excluded from board/list by default; surfaced via includeArchived param
+}
+
+enum IssuePriority    { LOW  MEDIUM  HIGH  URGENT }
+enum IssueType        { TASK  BUG  FEATURE  IMPROVEMENT  QUESTION }
+
+enum IssueStoryPoints {
+  SP_1  SP_2  SP_3  SP_5  SP_8  SP_13
+  SPIKE          // open-ended investigation, no point estimate
+  BUG_NO_POINTS  // confirmed defect, estimation skipped
+}
+
+enum IssueActivityAction {
+  CREATED  STATUS_CHANGED  PRIORITY_CHANGED  ASSIGNEE_CHANGED
+  TYPE_CHANGED  TITLE_CHANGED  DUE_DATE_CHANGED
+  TAGGED  UNTAGGED  BLOCKED  UNBLOCKED
+  COMMENTED  ATTACHMENT_ADDED  ATTACHMENT_REMOVED
+}
+
+model Issue {
+  id                 String            @id @default(cuid())
+  number             Int               @unique @default(autoincrement())
+  title              String
+  type               IssueType         @default(BUG)
+  status             IssueStatus       @default(NOT_STARTED)
+  priority           IssuePriority     @default(MEDIUM)
+  storyPoints        IssueStoryPoints?
+  userStoryAs        String?           @db.Text
+  userStoryWant      String?           @db.Text
+  userStorySoThat    String?           @db.Text
+  description        String?           @db.Text
+  needToKnow         String?           @db.Text
+  workNotes          String?           @db.Text
+  acceptanceCriteria Json?             // AcceptanceCriterion[] — { id, text, completed }[]
+  tags               String[]
+  dueDate            DateTime?
+  kanbanOrder        Float             @default(0)  // Float allows fractional insert for gap-free reorder
+  createdById        String
+  assigneeId         String?
+  templateId         String?
+  deletedAt          DateTime?         // soft-delete — all queries filter where: { deletedAt: null }
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  reporter    User            @relation("IssueReporter", fields: [createdById], references: [id])
+  assignee    User?           @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  template    IssueTemplate?  @relation(fields: [templateId], references: [id])
+  activities  IssueActivity[]
+  attachments IssueAttachment[]
+  subtasks    IssueSubtask[]
+  comments    IssueComment[]
+  blockedBy   Issue[]         @relation("IssueBlocking")  // issues that block this one
+  blocking    Issue[]         @relation("IssueBlocking")  // issues this one blocks
+
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId])
+  @@index([createdById])
+  @@index([dueDate])
+  @@index([status, kanbanOrder])  // board ordering query
+  @@index([type])
+  @@index([deletedAt])
+}
+
+model IssueComment {
+  id         String   @id @default(cuid())
+  issueId    String
+  content    String
+  isInternal Boolean  @default(false)
+  authorId   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author User  @relation("IssueCommentAuthor", fields: [authorId], references: [id])
+  issue  Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+  @@index([authorId])
+}
+
+model IssueSubtask {
+  id        String  @id @default(cuid())
+  issueId   String
+  title     String
+  completed Boolean @default(false)
+  order     Int     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([issueId])
+}
+
+model IssueActivity {
+  id        String              @id
+  issueId   String
+  actorId   String
+  action    IssueActivityAction
+  fromValue String?  // previous value (stringified)
+  toValue   String?  // new value (stringified)
+  meta      Json?    // freeform context (e.g. comment content snapshot)
+  createdAt DateTime @default(now())
+
+  actor User  @relation(fields: [actorId], references: [id])
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([issueId])
+}
+
+model IssueAttachment {
+  id           String   @id
+  issueId      String
+  url          String
+  fileName     String
+  mimeType     String?
+  sizeBytes    Int?
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  issue      Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  uploadedBy User  @relation(fields: [uploadedById], references: [id])
+
+  @@index([issueId])
+}
+
+model IssueTemplate {
+  id                  String        @id
+  name                String
+  userStoryTemplate   String?
+  descriptionTemplate String?
+  workNotesTemplate   String?
+  defaultType         IssueType     @default(TASK)
+  defaultPriority     IssuePriority @default(MEDIUM)
+  defaultTags         String[]
+  isBuiltIn           Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  Issue Issue[]
+}
+```
+
+**Design decisions:**
+- `kanbanOrder` is `Float` (not `Int`) so new cards can be inserted between two existing positions without renumbering the whole column.
+- `deletedAt` is the hard soft-delete field; `ARCHIVED` status is a reversible workflow state. Both exist independently.
+- `acceptanceCriteria` is stored as `Json` (typed as `{ id: string; text: string; completed: boolean }[]` on the frontend) because the schema is flexible — no separate table needed for an ordered checklist.
+- `IssueActivity.fromValue` / `toValue` are always strings (even for enum values) for uniform audit log rendering.
+- All cascade-delete relations propagate from `Issue` downward — deleting an issue (hard) removes comments, subtasks, activities, and attachments automatically.
+
+**Key design decisions:**
+- **Soft delete only** — `deletedAt` field; all queries add `WHERE deletedAt IS NULL`. No hard deletes.
+- **`ARCHIVED` is a status, not a flag** — an archived issue can be recovered by changing its status. Hard-deletes are not possible from the UI.
+- **Blocking relations** — self-referential many-to-many via the implicit `_IssueBlocking` junction table (Prisma `@relation` with no `fields`/`references`). An issue can both block and be blocked by multiple others.
+- **`acceptanceCriteria` as JSON** — stored as `AcceptanceCriterion[]` (`{ id, text, completed }`). Schema-free allows dynamic length without a separate table.
+- **`kanbanOrder`** — `Float` position within a status column (fractional values allow insertion between two cards without renumbering), updated atomically on drag-drop. The composite index `(status, kanbanOrder)` makes column fetches fast.
 
 ### Index Strategy
 

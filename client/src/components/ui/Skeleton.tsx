@@ -344,3 +344,124 @@ export function SkeletonGroup({ children, className }: SkeletonGroupProps) {
     </div>
   );
 }
+
+// ============================================================================
+// Kanban Board Skeleton — mirrors IssueCard + KanbanColumn exact layout
+// ============================================================================
+
+function SkeletonIssueCard({ delay = 0 }: { delay?: number }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-card p-3 shadow-sm">
+      {/* Type icon + title */}
+      <div className="mb-2 flex items-start gap-1.5 pr-5">
+        <Skeleton
+          variant="circular"
+          className="mt-0.5 h-4 w-4 shrink-0"
+          animation="shimmer"
+          style={{ animationDelay: `${delay}ms` }}
+        />
+        <div className="flex-1 space-y-1.5">
+          <Skeleton
+            className="h-3.5 w-full"
+            animation="shimmer"
+            style={{ animationDelay: `${delay + 40}ms` }}
+          />
+          <Skeleton
+            className="h-3.5 w-3/4"
+            animation="shimmer"
+            style={{ animationDelay: `${delay + 70}ms` }}
+          />
+        </div>
+      </div>
+
+      {/* Badges row */}
+      <div className="mb-2.5 flex items-center gap-1.5">
+        <Skeleton
+          className="h-4 w-14 rounded"
+          animation="shimmer"
+          style={{ animationDelay: `${delay + 110}ms` }}
+        />
+        <Skeleton
+          className="h-4 w-8 rounded"
+          animation="shimmer"
+          style={{ animationDelay: `${delay + 140}ms` }}
+        />
+      </div>
+
+      {/* Footer: icons left, avatar right */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <Skeleton
+            className="h-3 w-7"
+            animation="shimmer"
+            style={{ animationDelay: `${delay + 170}ms` }}
+          />
+          <Skeleton
+            className="h-3 w-10"
+            animation="shimmer"
+            style={{ animationDelay: `${delay + 200}ms` }}
+          />
+        </div>
+        <Skeleton
+          variant="circular"
+          className="h-5 w-5"
+          animation="shimmer"
+          style={{ animationDelay: `${delay + 230}ms` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SkeletonKanbanColumn({ cardCount = 2, colDelay = 0 }: { cardCount?: number; colDelay?: number }) {
+  return (
+    <div className="flex w-[248px] shrink-0 flex-col gap-2 lg:w-full lg:min-w-0">
+      {/* Column header — mirrors KanbanColumn header */}
+      <div className="flex items-center justify-between px-0.5">
+        <div className="flex items-center gap-2">
+          <Skeleton
+            variant="circular"
+            className="h-2 w-2"
+            animation="shimmer"
+            style={{ animationDelay: `${colDelay}ms` }}
+          />
+          <Skeleton
+            className="h-3.5 w-20"
+            animation="shimmer"
+            style={{ animationDelay: `${colDelay + 30}ms` }}
+          />
+          <Skeleton
+            className="h-5 w-5 rounded-full"
+            animation="shimmer"
+            style={{ animationDelay: `${colDelay + 60}ms` }}
+          />
+        </div>
+        <Skeleton
+          className="h-5 w-5 rounded"
+          animation="shimmer"
+          style={{ animationDelay: `${colDelay + 90}ms` }}
+        />
+      </div>
+
+      {/* Drop zone — mirrors KanbanColumn drop zone */}
+      <div className="flex min-h-[120px] flex-col gap-2 rounded-xl bg-muted/30 p-2">
+        {Array.from({ length: cardCount }).map((_, i) => (
+          <SkeletonIssueCard key={i} delay={colDelay + 130 + i * 90} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Varied card counts give it a realistic staggered feel
+const SKELETON_COLUMN_CARDS = [2, 1, 3, 2, 1];
+
+export function SkeletonKanbanBoard({ className }: { className?: string }) {
+  return (
+    <div className={cn('flex gap-3 overflow-x-auto pb-4 pr-2 lg:grid lg:grid-cols-5 lg:overflow-x-visible lg:pb-4 lg:pr-0', className)}>
+      {SKELETON_COLUMN_CARDS.map((count, i) => (
+        <SkeletonKanbanColumn key={i} cardCount={count} colDelay={i * 80} />
+      ))}
+    </div>
+  );
+}
