@@ -55,6 +55,8 @@ import { shareEvent } from "@/lib/utils/share";
 import { exportEventData } from "@/lib/utils/export";
 import { useToast } from "@/hooks/useToast";
 import { EventStaffAssignment } from '@/components/events/EventStaffAssignment';
+import { EventParticipantsTab } from '@/components/organizer/EventParticipantsTab';
+import { FeatureGate } from '@/components/organizer/FeatureGate';
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -721,6 +723,7 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
     { key: "overview", label: "Overview", icon: BarChart3 },
     { key: "attendees", label: "Attendees", icon: Users },
     { key: "tickets", label: "Tickets", icon: Ticket },
+    { key: "participants", label: "Participants", icon: UserPlus },
     { key: "communication", label: "Messages", icon: MessageSquare },
     { key: "analytics", label: "Analytics", icon: TrendingUp },
   ] as Array<{ key: string; label: string; icon: typeof BarChart3 }>;
@@ -2224,6 +2227,16 @@ const EventManagement = ({ isAdminMode = false }: EventManagementProps) => {
               </>
             )}
           </div>
+        );
+
+      case "participants":
+        return (
+          <FeatureGate
+            feature="forms"
+            description="Create participant forms, manage speaker and sponsor applications, and curate your event roster."
+          >
+            <EventParticipantsTab eventId={eventId!} />
+          </FeatureGate>
         );
 
       case "overview":

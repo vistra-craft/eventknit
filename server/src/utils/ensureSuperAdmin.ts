@@ -64,30 +64,93 @@ export const ensureSuperAdmin = async (): Promise<void> => {
  */
 export const ensureSubscriptionPlans = async (): Promise<void> => {
   try {
+    // Features are stored cumulatively — each tier includes all features from tiers below it.
+    const standardFeatures = [
+      'attendee_list',           // view attendee names + contact info
+      'export',                  // CSV attendee data export
+      'email_attendees',         // email communication to consented attendees
+      'forms',                   // participant forms + people management
+      'custom_branding',         // remove EventKnit branding, custom colours
+      'promo_codes',             // promotional / discount codes
+      'whatsapp_delivery',       // WhatsApp ticket delivery
+      'whatsapp_reminders',      // auto reminders 24h + 1h before event
+      'team_members',            // up to 5 team members (check-in, managers)
+      'tracking_links',          // UTM tracking links per channel
+      'on_site_sales',           // walk-in ticket sales at the door
+      'multi_day_events',        // multi-day event setup
+      'event_templates',         // duplicate events, save templates
+      'offline_scanning',        // offline QR scan mode (sync when back online)
+      'realtime_checkin_dashboard', // live check-in count on organizer screen
+      'post_event_survey',       // basic post-event attendee survey
+    ] as string[];
+
+    const premiumFeatures = [
+      ...standardFeatures,
+      'demographics',            // demographic data and segment breakdowns
+      'analytics',               // advanced analytics: traffic, geographic, cohorts
+      'advanced_export',         // Excel, custom formats, scheduled exports
+      'heatmaps',                // geographic heatmaps of attendee origins
+      'whatsapp_ai_registration',// conversational WhatsApp registration flow (coming soon)
+      'whatsapp_broadcast',      // broadcast messages to past attendees
+      'promoter_network',        // affiliate/promoter system with commission tracking
+      'recurring_events',        // recurring event setup (daily/weekly/monthly)
+      'seating_plans',           // drag-and-drop seating plan builder
+      'embed_widget',            // embed ticketing widget on external sites
+      'api_access',              // REST API + webhooks
+      'split_payouts',           // split revenue between multiple recipients
+      'priority_support',        // priority 24h support
+      'tax_reports',             // tax reports + invoice generation
+      'event_comparison',        // compare metrics across event history
+      'revenue_forecast',        // payout forecast after fees
+      'social_login',            // Google/Apple login for attendees
+      'retargeting_pixels',      // Meta Pixel, Google Tag pass-through
+      'early_payout',            // request early payout before event date
+      'unlimited_team',          // unlimited team members (vs 5 on Standard)
+    ] as string[];
+
+    const enterpriseFeatures = [
+      ...premiumFeatures,
+      'white_label',             // full white-label / custom domain
+      'custom_integrations',     // Salesforce, HubSpot, custom CRM
+      'sso',                     // SSO / SAML integration
+      'dedicated_support',       // dedicated account manager + SLA
+      'on_site_hardware',        // scanner/printer rental + field support team
+      'agency_management',       // manage multiple organizer sub-accounts
+      'custom_analytics',        // data warehouse export, custom dashboards
+    ] as string[];
+
     const plans = [
       {
         tier: SubscriptionTier.BASIC,
         name: 'Basic',
-        description: 'Free tier with aggregated data only. Perfect for getting started.',
+        description: 'Free forever. Create events, sell tickets via M-Pesa and card, scan QR codes with the mobile app, and view aggregate stats.',
         price: new Decimal(0),
-        currency: 'USD',
+        currency: 'KES',
         features: [] as string[],
       },
       {
         tier: SubscriptionTier.STANDARD,
         name: 'Standard',
-        description: 'Free tier with basic attendee data and consent-based access.',
-        price: new Decimal(0),
-        currency: 'USD',
-        features: ['attendee_list', 'export'],
+        description: 'For growing organizers. Unlock attendee data, custom forms, WhatsApp delivery, team access, and reduced platform fees.',
+        price: new Decimal(2999),
+        currency: 'KES',
+        features: standardFeatures,
       },
       {
         tier: SubscriptionTier.PREMIUM,
         name: 'Premium',
-        description: 'Full access to advanced analytics, demographics, and data export.',
-        price: new Decimal(10),
-        currency: 'USD',
-        features: ['attendee_list', 'export', 'demographics', 'analytics', 'advanced_export'],
+        description: 'For professional organizers. Full analytics, API access, WhatsApp AI registration, seating plans, promoter network, and more.',
+        price: new Decimal(8999),
+        currency: 'KES',
+        features: premiumFeatures,
+      },
+      {
+        tier: SubscriptionTier.ENTERPRISE,
+        name: 'Enterprise',
+        description: 'For agencies and large-scale organizers. White-label, SSO, dedicated support, custom integrations, and on-site hardware.',
+        price: new Decimal(25000),
+        currency: 'KES',
+        features: enterpriseFeatures,
       },
     ];
 
@@ -105,7 +168,7 @@ export const ensureSubscriptionPlans = async (): Promise<void> => {
       });
     }
 
-    logger.info('Subscription plans ready (BASIC, STANDARD, PREMIUM)');
+    logger.info('Subscription plans ready (BASIC, STANDARD, PREMIUM, ENTERPRISE)');
   } catch (error) {
     logger.error('Failed to ensure subscription plans:', error);
   }

@@ -73,10 +73,10 @@ const FEATURES = [
     tagline: "Secure payments, instant delivery",
     description: "Accept payments via Stripe, Paystack, and M-Pesa. Tickets are delivered instantly with QR codes, calendar invites, and PDF attachments.",
     highlights: ["Multi-currency & multi-gateway", "Promo codes & group discounts", "Automatic PDF ticket delivery"],
-    color: "bg-orange-500/10 text-orange-500 dark:text-orange-400",
-    accentClass: "text-orange-500 dark:text-orange-400",
-    glowClass: "shadow-orange-500/40",
-    dotBg: "bg-orange-500",
+    color: "bg-blue-500/10 text-blue-500 dark:text-blue-400",
+    accentClass: "text-blue-500 dark:text-blue-400",
+    glowClass: "shadow-blue-500/40",
+    dotBg: "bg-blue-500",
   },
   {
     icon: QrCode,
@@ -532,7 +532,7 @@ const About = () => {
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent z-[1]" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent z-[1]" />
           <AmbientGlow className="w-[400px] h-[400px] bg-primary/15 -top-32 -left-24 z-[2]" duration={30} />
-          <AmbientGlow className="w-[300px] h-[300px] bg-orange-500/10 -bottom-20 -right-16 z-[2]" duration={35} delay={5} />
+          <AmbientGlow className="w-[300px] h-[300px] bg-blue-500/10 -bottom-20 -right-16 z-[2]" duration={35} delay={5} />
         </div>
 
         {/* Content — bottom-anchored, lifts + fades on scroll */}

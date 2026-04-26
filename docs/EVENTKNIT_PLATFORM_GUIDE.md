@@ -423,21 +423,24 @@ Organizers can build event teams:
 
 #### Subscription Plans
 
-Organizers can subscribe to different tiers for access to premium features:
+Organizers subscribe to one of four tiers to unlock platform features. All prices are in KES.
 
-| Tier | Price | Features |
-|------|-------|----------|
-| Basic | Free | Standard event creation, basic analytics |
-| Standard | Free | Advanced ticketing, segmentation, branding |
-| Premium | Configurable (admin-set pricing) | Full white-label, priority support, advanced analytics, unlimited staff |
+| Tier | Price | Platform Fee | Key Inclusions |
+|------|-------|--------------|----------------|
+| **Basic** | Free | 7.5% per ticket | Up to 3 active events, M-Pesa + card payments, QR scanning, email ticket delivery, basic stats |
+| **Standard** | KES 2,999/mo | 5% per ticket | Unlimited events, attendee list, CSV export, email attendees, participant forms, custom branding, promo codes, WhatsApp delivery & reminders, tracking links, on-site sales, multi-day events, event templates, offline scanning, real-time check-in dashboard, post-event survey, up to 5 team members |
+| **Premium** | KES 8,999/mo | 3% per ticket | Everything in Standard + demographics, advanced analytics, geographic heatmaps, WhatsApp broadcast, API access & webhooks, advanced exports, event comparison, revenue forecast, social login, retargeting pixels, early payout, unlimited team members, priority support. Also includes coming-soon features: WhatsApp AI registration, promoter network, recurring events, seating plans, embed widget, split payouts, tax reports |
+| **Enterprise** | KES 25,000+/mo | Negotiated (0%) | Everything in Premium + white-label / custom domain, custom integrations (Salesforce, HubSpot), SSO/SAML, dedicated account manager + SLA, on-site hardware & field team, agency sub-account management, custom analytics / data warehouse |
+
+**Feature Gating:**
+Gated features are enforced on the frontend via the `FeatureGate` component and the `useSubscription` hook. BASIC organizers are shown a lock state with an upgrade CTA. The source of truth is the `features` array on each `SubscriptionPlan` DB record — admins can add or remove keys per tier from the admin Subscription Plans page.
 
 **Upgrade Flow:**
-- Free-to-free upgrades (e.g., Basic → Standard) are instant — no payment required
-- Upgrades to paid tiers (e.g., any → Premium) redirect to Paystack checkout for payment
-- After successful payment, the subscription is automatically activated
-- Paid subscriptions can be canceled; free subscriptions cannot
-
-Plans can have custom overrides granted by admins (e.g., trial periods, promotional upgrades).
+- Basic → Standard: instant (free tier, no payment)
+- Any tier → Standard/Premium/Enterprise (paid): redirects to Paystack checkout; subscription activates on successful payment
+- Enterprise upgrades contact the sales team via `enterprise@eventknit.com`
+- Paid subscriptions can be canceled and remain active until their expiry date; free subscriptions cannot be canceled
+- Admins can grant subscription overrides (e.g., trial periods, promotional upgrades) that elevate the effective tier without affecting the organizer's base subscription
 
 #### Organizer Dashboard Summary
 
@@ -537,11 +540,14 @@ Admins can create platform-operated events for external clients via the **Manage
 
 Admins manage the organizer subscription plans:
 
-- Create and configure subscription tiers (Basic, Standard, Premium)
-- Activate or deactivate plans
+- Configure all four tiers: Basic, Standard, Premium, Enterprise
+- Set pricing, currency, and description per tier
+- Manage the **Feature Registry** — the canonical list of 45+ gated feature keys with human-readable labels, descriptions, default tier assignment, and coming-soon flags. Changes here propagate immediately to the edit plan dialog and the feature comparison matrix
+- Toggle which features are enabled on each plan via grouped checkboxes (changes are saved to the DB immediately)
+- Activate or deactivate plans (hidden plans are not shown to organizers)
 - View subscriber counts per plan
-- Grant subscription overrides to specific organizers (e.g., free trials, promotional upgrades)
-- Set pricing, currency, and feature sets per tier
+- Grant subscription overrides to specific organizers (e.g., free trials, promotional upgrades); overrides elevate the effective tier without modifying the organizer's base subscription
+- The **Feature Comparison Matrix** at the bottom of the page reflects live plan data — rows appear only for features enabled on at least one plan, and update instantly when plans are edited
 
 #### KYC Entity Management
 
@@ -2412,15 +2418,19 @@ When a response is approved with `createParticipant = true` and the form has a `
 6. On approval with "Create participant" checked, a Speaker participant record is created automatically for the event.
 7. The participants list under the event shows all confirmed speakers with their profile data.
 
+### Subscription Gate
+
+The **Forms & Participants** tab inside the event dashboard is gated at the **Standard** tier. Organizers on the Basic plan see a lock state with a description and an "Upgrade Plan" button. Admins are never gated. Public form submission is always available regardless of tier.
+
 ### Access Control
 
-| Action | Minimum Role |
-|--------|-------------|
-| Create / edit / delete forms | `ORGANIZER` (own events) or `ADMIN` |
-| View responses | `ORGANIZER` (own events) or `ADMIN` |
-| Review responses | `ORGANIZER` (own events) or `ADMIN` |
-| Manage participants | `ORGANIZER` (own events) or `ADMIN` |
-| Submit a public form | Anyone (no login required) |
+| Action | Minimum Role | Minimum Tier |
+|--------|-------------|--------------|
+| Create / edit / delete forms | `ORGANIZER` (own events) or `ADMIN` | Standard |
+| View / manage participants | `ORGANIZER` (own events) or `ADMIN` | Standard |
+| View responses | `ORGANIZER` (own events) or `ADMIN` | Standard |
+| Review responses | `ORGANIZER` (own events) or `ADMIN` | Standard |
+| Submit a public form | Anyone (no login required) | — |
 
 ### API Endpoints
 

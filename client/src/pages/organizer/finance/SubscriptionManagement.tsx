@@ -6,9 +6,12 @@ import {
   Crown,
   Zap,
   Shield,
+  Building2,
   ArrowUpRight,
   XCircle,
   Check,
+  Clock,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { Loader, ButtonLoader } from '@/components/ui/loader';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getSubscription, upgradeSubscription, cancelSubscription, type SubscriptionTier, type OrganizerSubscription } from '@/lib/organizer-api';
@@ -28,58 +32,156 @@ import {
 import { extractErrorMessage } from '@/lib/utils/error';
 import { useToast } from '@/hooks/useToast';
 
-const TIER_ICONS: Record<SubscriptionTier, React.ElementType> = {
-  BASIC: Shield,
-  STANDARD: Zap,
-  PREMIUM: Crown,
+// ─── Config ───────────────────────────────────────────────────────────────────
+
+const TIER_ORDER: Record<SubscriptionTier, number> = {
+  BASIC: 0, STANDARD: 1, PREMIUM: 2, ENTERPRISE: 3,
 };
 
-const TIER_COLORS: Record<SubscriptionTier, string> = {
-  BASIC: 'bg-muted text-muted-foreground border-border',
-  STANDARD: 'bg-primary/10 text-primary border-primary/30',
-  PREMIUM: 'bg-primary/10 text-primary border-primary/30',
+const TIER_CONFIG: Record<SubscriptionTier, {
+  icon: React.ElementType;
+  color: string;
+  bgColor: string;
+  ringColor: string;
+  badgeClass: string;
+}> = {
+  BASIC: {
+    icon: Shield,
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted',
+    ringColor: 'ring-border',
+    badgeClass: 'bg-muted text-muted-foreground border-border',
+  },
+  STANDARD: {
+    icon: Zap,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50 dark:bg-blue-950',
+    ringColor: 'ring-blue-400',
+    badgeClass: 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300',
+  },
+  PREMIUM: {
+    icon: Crown,
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50 dark:bg-amber-950',
+    ringColor: 'ring-amber-400',
+    badgeClass: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300',
+  },
+  ENTERPRISE: {
+    icon: Building2,
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-50 dark:bg-purple-950',
+    ringColor: 'ring-purple-400',
+    badgeClass: 'bg-purple-50 text-purple-700 border-purple-300 dark:bg-purple-950 dark:text-purple-300',
+  },
 };
 
-/** Base features always included in each tier — not admin-configurable */
+/**
+ * Core platform features always included at each tier — not the gated data
+ * features stored in the DB, but the structural capabilities of the plan.
+ */
 const TIER_BASE_FEATURES: Record<SubscriptionTier, string[]> = {
   BASIC: [
-    'Event creation and management',
-    'Basic event analytics',
-    'Aggregated attendee counts',
-    'QR code ticket scanning',
+    'Up to 3 active events',
+    'M-Pesa + card payments',
+    'QR code scanning (mobile app)',
+    'Free & paid ticket types',
+    'Email ticket delivery',
+    'Aggregate event stats',
+    'Platform fee: 7.5% per ticket',
   ],
   STANDARD: [
+    'Unlimited active events',
+    'Platform fee reduced to 5%',
+    'Up to 5 team members',
+    'Custom event page branding',
     'Everything in Basic',
-    'Email communication to consented attendees',
-    'Registration analytics',
   ],
   PREMIUM: [
+    'Platform fee reduced to 3%',
+    'Unlimited team members',
+    'Priority 24h support',
     'Everything in Standard',
-    'Geographic heatmaps',
-    'Multi-event comparisons',
-    'Priority support',
+  ],
+  ENTERPRISE: [
+    'Negotiated 0% platform fee',
+    'Dedicated account manager',
+    'Custom SLA guarantee',
+    'On-site hardware & field team',
+    'Everything in Premium',
   ],
 };
 
-/** Human-readable labels for admin-configured feature keys */
+/** Human-readable labels for DB-stored feature keys (shown as bonuses per plan) */
 const FEATURE_LABELS: Record<string, string> = {
   attendee_list: 'Attendee list with contact info',
-  export: 'Basic attendee data export',
+  export: 'CSV attendee data export',
+  email_attendees: 'Email communication to attendees',
+  forms: 'Participant forms & people management',
+  custom_branding: 'Remove EventKnit branding',
+  promo_codes: 'Promotional / discount codes',
+  whatsapp_delivery: 'WhatsApp ticket delivery',
+  whatsapp_reminders: 'WhatsApp event reminders (24h + 1h)',
+  team_members: 'Team member access (up to 5)',
+  tracking_links: 'UTM tracking links per channel',
+  on_site_sales: 'On-site walk-in ticket sales',
+  multi_day_events: 'Multi-day event setup',
+  event_templates: 'Event templates & duplication',
+  offline_scanning: 'Offline QR scanning (sync on reconnect)',
+  realtime_checkin_dashboard: 'Real-time check-in dashboard',
+  post_event_survey: 'Post-event attendee survey',
   demographics: 'Demographic data access',
-  analytics: 'Advanced analytics',
-  advanced_export: 'Advanced data exports',
+  analytics: 'Advanced analytics & traffic breakdown',
+  advanced_export: 'Advanced exports (Excel, scheduled)',
+  heatmaps: 'Geographic attendee heatmaps',
+  whatsapp_ai_registration: 'WhatsApp AI registration flow',
+  whatsapp_broadcast: 'WhatsApp broadcast to past attendees',
+  promoter_network: 'Promoter & affiliate network',
+  recurring_events: 'Recurring event setup',
+  seating_plans: 'Drag-and-drop seating plan builder',
+  embed_widget: 'Embed widget for external sites',
+  api_access: 'REST API + webhooks',
+  split_payouts: 'Split payouts between recipients',
+  priority_support: 'Priority 24h support',
+  tax_reports: 'Tax reports & invoice generation',
+  event_comparison: 'Cross-event comparison analytics',
+  revenue_forecast: 'Revenue payout forecast',
+  social_login: 'Google / Apple login for attendees',
+  retargeting_pixels: 'Meta Pixel / Google Tag pass-through',
+  early_payout: 'Early payout requests',
+  unlimited_team: 'Unlimited team members',
+  white_label: 'White-label / custom domain',
+  custom_integrations: 'Salesforce, HubSpot, custom CRM',
+  sso: 'SSO / SAML integration',
+  dedicated_support: 'Dedicated account manager + SLA',
+  on_site_hardware: 'On-site hardware & field support',
+  agency_management: 'Agency sub-account management',
+  custom_analytics: 'Custom analytics / data warehouse',
 };
+
+/** Features that exist in the gate system but aren't built yet */
+const COMING_SOON_FEATURES = new Set([
+  'whatsapp_ai_registration',
+  'promoter_network',
+  'recurring_events',
+  'seating_plans',
+  'embed_widget',
+  'split_payouts',
+  'tax_reports',
+]);
 
 function formatPrice(plan: SubscriptionPlanConfig): string {
   const price = parseFloat(plan.price);
   if (price === 0) return 'Free';
-  return `${plan.currency} ${price}/month`;
+  if (plan.tier === 'ENTERPRISE') return `KES ${price.toLocaleString()}+/mo`;
+  return `KES ${price.toLocaleString()}/mo`;
 }
 
 function isPaidPlan(plan: SubscriptionPlanConfig | undefined): boolean {
   if (!plan) return false;
   return parseFloat(plan.price) > 0;
 }
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 const SubscriptionManagement = () => {
   const { toast } = useToast();
@@ -121,11 +223,9 @@ const SubscriptionManagement = () => {
     }
   }, [toast]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // Handle payment callback from Paystack
+  // Handle Paystack callback
   useEffect(() => {
     const reference = searchParams.get('reference');
     if (!reference || !reference.startsWith('SUB-')) return;
@@ -136,35 +236,26 @@ const SubscriptionManagement = () => {
         const result = await verifySubscriptionPayment(reference);
         if (result.success && result.data.status === 'SUCCESS' && result.data.subscription) {
           setSubscription(result.data.subscription);
-          toast({
-            title: 'Payment successful',
-            description: `Your subscription has been upgraded to ${result.data.subscription.tier}`,
-          });
+          toast({ title: 'Payment successful', description: `Upgraded to ${result.data.subscription.tier}` });
         } else {
-          toast({
-            title: 'Payment verification failed',
-            description: 'Please contact support if you were charged',
-            variant: 'destructive',
-          });
+          toast({ title: 'Payment verification failed', description: 'Contact support if you were charged', variant: 'destructive' });
         }
       } catch (error: unknown) {
-        toast({
-          title: 'Payment verification error',
-          description: extractErrorMessage(error, 'Unable to verify payment'),
-          variant: 'destructive',
-        });
+        toast({ title: 'Verification error', description: extractErrorMessage(error, 'Unable to verify payment'), variant: 'destructive' });
       } finally {
         setVerifying(false);
-        // Clean up URL params
         setSearchParams({}, { replace: true });
       }
     };
-
     verify();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUpgrade = (tier: SubscriptionTier) => {
+    if (tier === 'ENTERPRISE') {
+      window.location.href = 'mailto:enterprise@eventknit.com?subject=Enterprise Plan Enquiry';
+      return;
+    }
     setTargetTier(tier);
     setShowUpgradeDialog(true);
     setBillingEmailError('');
@@ -172,61 +263,32 @@ const SubscriptionManagement = () => {
 
   const handleConfirmUpgrade = async () => {
     if (!targetTier) return;
-
     const targetPlanConfig = plans.find(p => p.tier === targetTier);
     const paid = isPaidPlan(targetPlanConfig);
 
-    // Validate billing email for paid tiers
-    if (paid && !billingEmail.trim()) {
-      setBillingEmailError('Billing email is required for paid subscriptions');
-      return;
-    }
-
-    if (paid && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingEmail)) {
-      setBillingEmailError('Please enter a valid email address');
-      return;
-    }
+    if (paid && !billingEmail.trim()) { setBillingEmailError('Billing email is required'); return; }
+    if (paid && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(billingEmail)) { setBillingEmailError('Enter a valid email address'); return; }
 
     try {
       setUpgrading(true);
-
       if (paid) {
-        // Paid tier: initialize payment and redirect to Paystack
-        const paymentResponse = await initializeSubscriptionPayment({
-          tier: targetTier,
-          billingEmail: billingEmail.trim(),
-        });
-
+        const paymentResponse = await initializeSubscriptionPayment({ tier: targetTier, billingEmail: billingEmail.trim() });
         if (paymentResponse.success && paymentResponse.data.authorizationUrl) {
           setShowUpgradeDialog(false);
-          // Redirect to Paystack checkout
           window.location.href = paymentResponse.data.authorizationUrl;
           return;
         }
       } else {
-        // Free tier: direct upgrade
-        const response = await upgradeSubscription({
-          tier: targetTier,
-          billingEmail: undefined,
-        });
-
+        const response = await upgradeSubscription({ tier: targetTier, billingEmail: undefined });
         if (response.success) {
           setSubscription(response.data.subscription);
           setShowUpgradeDialog(false);
           setTargetTier(null);
-          const planName = plans.find(p => p.tier === targetTier)?.name ?? targetTier;
-          toast({
-            title: 'Subscription upgraded successfully',
-            description: `You are now on the ${planName} tier`,
-          });
+          toast({ title: 'Subscription upgraded', description: `Now on ${plans.find(p => p.tier === targetTier)?.name ?? targetTier}` });
         }
       }
     } catch (error: unknown) {
-      toast({
-        title: 'Upgrade failed',
-        description: extractErrorMessage(error, 'Unable to upgrade subscription'),
-        variant: 'destructive',
-      });
+      toast({ title: 'Upgrade failed', description: extractErrorMessage(error, 'Unable to upgrade subscription'), variant: 'destructive' });
     } finally {
       setUpgrading(false);
     }
@@ -234,326 +296,375 @@ const SubscriptionManagement = () => {
 
   const handleCancel = async () => {
     if (!subscription) return;
-
     try {
       setCanceling(true);
       const response = await cancelSubscription();
-
       if (response.success) {
         await loadData();
         setShowCancelDialog(false);
-        toast({
-          title: 'Subscription canceled',
-          description: 'Your subscription will remain active until it expires',
-        });
+        toast({ title: 'Subscription canceled', description: 'Remains active until expiry' });
       }
     } catch (error: unknown) {
-      toast({
-        title: 'Cancel failed',
-        description: extractErrorMessage(error, 'Unable to cancel subscription'),
-        variant: 'destructive',
-      });
+      toast({ title: 'Cancel failed', description: extractErrorMessage(error, 'Unable to cancel'), variant: 'destructive' });
     } finally {
       setCanceling(false);
     }
   };
 
+  const [selectedPlanTier, setSelectedPlanTier] = useState<SubscriptionTier | null>(null);
+
   const canUpgradeTo = (tier: SubscriptionTier): boolean => {
     if (!subscription) return false;
-    const tierOrder = { BASIC: 0, STANDARD: 1, PREMIUM: 2 };
-    return tierOrder[tier] > tierOrder[subscription.tier];
-  };
-
-  const isCurrentTier = (tier: SubscriptionTier): boolean => {
-    return subscription?.tier === tier;
+    return TIER_ORDER[tier] > TIER_ORDER[subscription.tier];
   };
 
   if (loading || verifying) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-          <Loader size="lg" />
-          {verifying && <p className="text-sm text-muted-foreground">Verifying payment...</p>}
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <Loader size="lg" />
+        {verifying && <p className="text-sm text-muted-foreground">Verifying payment...</p>}
+      </div>
     );
   }
 
   if (!subscription) {
     return (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>Failed to load subscription information</AlertDescription>
-        </Alert>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>Failed to load subscription information</AlertDescription>
+      </Alert>
     );
   }
 
-  const currentTierIcon = TIER_ICONS[subscription.tier];
   const currentPlan = plans.find(p => p.tier === subscription.tier);
-  const currentDescription = currentPlan?.description ?? '';
+  const currentCfg = TIER_CONFIG[subscription.tier];
+  const CurrentIcon = currentCfg.icon;
   const currentIsPaid = isPaidPlan(currentPlan);
 
-  // Build display data per plan: base features (always available) + admin-configured feature keys
-  const tierEntries = (plans.length > 0 ? plans : []).map((plan) => ({
-    tier: plan.tier,
-    name: plan.name,
-    description: plan.description ?? '',
-    price: formatPrice(plan),
-    isPaid: isPaidPlan(plan),
-    displayFeatures: [
-      ...(TIER_BASE_FEATURES[plan.tier] ?? []),
-      ...plan.features.map(key => FEATURE_LABELS[key] ?? key),
-    ],
-    icon: TIER_ICONS[plan.tier],
-    color: TIER_COLORS[plan.tier],
-  }));
+  // Sort plans by tier order
+  const sortedPlans = [...plans].sort((a, b) => TIER_ORDER[a.tier] - TIER_ORDER[b.tier]);
+
+  // Build display entries
+  const tierEntries = sortedPlans.map((plan) => {
+    const cfg = TIER_CONFIG[plan.tier];
+    const baseFeatures = TIER_BASE_FEATURES[plan.tier] ?? [];
+    const dbFeatures = plan.features
+      .map(key => ({ label: FEATURE_LABELS[key] ?? key, comingSoon: COMING_SOON_FEATURES.has(key) }))
+      // De-duplicate with base features and only show additive ones
+      .filter(f => !baseFeatures.includes(f.label));
+
+    return { plan, cfg, baseFeatures, dbFeatures };
+  });
 
   const targetPlanConfig = targetTier ? plans.find(p => p.tier === targetTier) : undefined;
-  const targetPrice = targetPlanConfig ? formatPrice(targetPlanConfig) : '';
   const targetIsPaid = isPaidPlan(targetPlanConfig);
 
   return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-page-title">Subscription Management</h1>
-          <p className="text-page-subtitle mt-2">
-            Manage your subscription tier and access to attendee data
-          </p>
-        </div>
-
-        {/* Current Subscription Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                {React.createElement(currentTierIcon, { className: 'h-6 w-6' })}
-                <div>
-                  <CardTitle className="text-card-title">Current Plan: {currentPlan?.name ?? subscription.tier}</CardTitle>
-                  <CardDescription>{currentDescription}</CardDescription>
-                </div>
-              </div>
-              <Badge className={subscription.isActive
-                ? 'bg-success-light text-success border-success hover:bg-success-light/80 hover:border-success/80'
-                : 'bg-muted text-muted-foreground border-muted-foreground/20 hover:bg-muted/80'
-              }>
-                {subscription.isActive ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div>
-                <Label className="text-sm text-muted-foreground">Started</Label>
-                <p className="font-medium">
-                  {new Date(subscription.startedAt).toLocaleDateString()}
-                </p>
-              </div>
-              {subscription.expiresAt && (
-                <div>
-                  <Label className="text-sm text-muted-foreground">Expires</Label>
-                  <p className="font-medium">
-                    {new Date(subscription.expiresAt).toLocaleDateString()}
-                  </p>
-                </div>
-              )}
-              {subscription.billingEmail && (
-                <div>
-                  <Label className="text-sm text-muted-foreground">Billing Email</Label>
-                  <p className="font-medium">{subscription.billingEmail}</p>
-                </div>
-              )}
-            </div>
-
-            {currentIsPaid && subscription.isActive && (
-              <div className="mt-4 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowCancelDialog(true)}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Cancel Subscription
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Tier Comparison */}
-        <div>
-          <h2 className="text-section-header mb-4">Available Plans</h2>
-          {tierEntries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 rounded-xl border border-dashed border-border bg-muted/30">
-              <AlertCircle className="h-8 w-8 text-muted-foreground" />
-              <p className="font-medium text-foreground">No plans available right now</p>
-              <p className="text-sm text-muted-foreground text-center max-w-xs">
-                Subscription plans are temporarily unavailable. Please check back later or contact support.
-              </p>
-            </div>
-          ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {tierEntries.map((entry) => {
-              const TierIcon = entry.icon;
-              const isCurrent = isCurrentTier(entry.tier);
-              const canUpgrade = canUpgradeTo(entry.tier);
-
-              return (
-                <Card
-                  key={entry.tier}
-                  className={`relative ${isCurrent ? 'ring-2 ring-primary' : ''}`}
-                >
-                  {isCurrent && (
-                    <div className="absolute top-4 right-4">
-                      <Badge className="bg-primary text-primary-foreground">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Current
-                      </Badge>
-                    </div>
-                  )}
-                  <CardHeader>
-                    <div className="flex items-center gap-3 mb-2">
-                      <TierIcon className={`h-8 w-8 ${entry.color.split(' ')[1]}`} />
-                      <CardTitle className="text-card-title">{entry.name}</CardTitle>
-                    </div>
-                    <CardDescription>{entry.description}</CardDescription>
-                    <div className="mt-4">
-                      <span className="text-2xl font-bold">{entry.price}</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-3 mb-6">
-                      {entry.displayFeatures.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                          <span className="text-sm">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    {canUpgrade && (
-                      <Button
-                        className="w-full"
-                        onClick={() => handleUpgrade(entry.tier)}
-                        disabled={upgrading}
-                      >
-                        <ArrowUpRight className="h-4 w-4 mr-2" />
-                        {entry.isPaid ? `Upgrade to ${entry.name} — ${entry.price}` : `Upgrade to ${entry.name}`}
-                      </Button>
-                    )}
-                    {isCurrent && (
-                      <Button className="w-full" variant="outline" disabled>
-                        Current Plan
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-          )}
-        </div>
-
-        {/* Upgrade Dialog */}
-        <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                Upgrade to {targetPlanConfig?.name ?? targetTier}
-              </DialogTitle>
-              <DialogDescription>
-                {targetIsPaid
-                  ? `You'll be redirected to complete payment. ${targetPlanConfig?.name} subscriptions are ${targetPrice}.`
-                  : `You'll be upgraded to the ${targetPlanConfig?.name ?? targetTier} tier for free. This includes access to attendee contact information with their consent.`}
-              </DialogDescription>
-            </DialogHeader>
-            {targetIsPaid && (
-              <div className="space-y-4 py-4">
-                <div>
-                  <Label htmlFor="billingEmail">Billing Email *</Label>
-                  <Input
-                    id="billingEmail"
-                    type="email"
-                    value={billingEmail}
-                    onChange={(e) => {
-                      setBillingEmail(e.target.value);
-                      setBillingEmailError('');
-                    }}
-                    placeholder="billing@example.com"
-                    className={billingEmailError ? 'border-destructive' : ''}
-                  />
-                  {billingEmailError && (
-                    <p className="text-sm text-destructive mt-1">{billingEmailError}</p>
-                  )}
-                  <p className="text-sm text-muted-foreground mt-1">
-                    We'll use this email for subscription invoices and payment notifications
-                  </p>
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowUpgradeDialog(false);
-                  setBillingEmailError('');
-                }}
-                disabled={upgrading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirmUpgrade}
-                disabled={upgrading}
-              >
-                {upgrading ? (
-                  <>
-                    <ButtonLoader />
-                    Processing...
-                  </>
-                ) : targetIsPaid ? (
-                  'Proceed to Payment'
-                ) : (
-                  'Confirm Upgrade'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Cancel Dialog */}
-        <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Cancel {currentPlan?.name ?? subscription.tier} Subscription</DialogTitle>
-              <DialogDescription>
-                Your subscription will remain active until {subscription.expiresAt ? new Date(subscription.expiresAt).toLocaleDateString() : 'the end of your billing period'}.
-                You'll be downgraded after expiration.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowCancelDialog(false)}
-                disabled={canceling}
-              >
-                Keep Subscription
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleCancel}
-                disabled={canceling}
-              >
-                {canceling ? (
-                  <>
-                    <ButtonLoader />
-                    Processing...
-                  </>
-                ) : (
-                  'Cancel Subscription'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-page-title">Subscription</h1>
+        <p className="text-page-subtitle mt-1">Choose the plan that fits your events. All plans include M-Pesa and card payments.</p>
       </div>
+
+      {/* Current Plan Summary */}
+      <Card className={`border-2 ${currentCfg.ringColor} border-opacity-50`}>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl ${currentCfg.bgColor}`}>
+                <CurrentIcon className={`h-5 w-5 ${currentCfg.color}`} />
+              </div>
+              <div>
+                <CardTitle className="text-base">
+                  {currentPlan?.name ?? subscription.tier} Plan
+                  {subscription.isActive
+                    ? <Badge className="ml-2 text-[10px] bg-green-50 text-green-700 border-green-300">Active</Badge>
+                    : <Badge className="ml-2 text-[10px]" variant="secondary">Inactive</Badge>}
+                </CardTitle>
+                <CardDescription className="text-xs mt-0.5">
+                  {currentPlan?.description ?? 'Your current subscription tier'}
+                </CardDescription>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xl font-bold">{currentPlan ? formatPrice(currentPlan) : '—'}</p>
+              {subscription.expiresAt && (
+                <p className="text-xs text-muted-foreground">
+                  Renews {new Date(subscription.expiresAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        {currentIsPaid && subscription.isActive && (
+          <CardContent className="pt-0">
+            <Separator className="mb-3" />
+            <Button variant="outline" size="sm" onClick={() => setShowCancelDialog(true)} className="text-destructive hover:text-destructive">
+              <XCircle className="h-3.5 w-3.5 mr-2" />
+              Cancel Subscription
+            </Button>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Plan Cards */}
+      <h2 className="text-base font-semibold">Available Plans</h2>
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        {tierEntries.map(({ plan, cfg, baseFeatures, dbFeatures }) => {
+          const Icon = cfg.icon;
+          const isCurrent = subscription.tier === plan.tier;
+          const canUpgrade = canUpgradeTo(plan.tier);
+          const price = parseFloat(plan.price);
+          const isEnterprise = plan.tier === 'ENTERPRISE';
+
+          return (
+            <Card
+              key={plan.tier}
+              onClick={() => setSelectedPlanTier(plan.tier)}
+              className={`relative flex flex-col transition-all cursor-pointer ${isCurrent ? `ring-2 ${cfg.ringColor} shadow-md` : 'hover:shadow-md hover:border-border/80'}`}
+            >
+              {isCurrent && (
+                <div className="absolute -top-3 left-4 z-10">
+                  <Badge className={`gap-1 pl-1.5 text-xs border ${cfg.badgeClass}`}>
+                    <CheckCircle2 className="h-3 w-3" /> Current plan
+                  </Badge>
+                </div>
+              )}
+
+              <CardHeader className="pb-3 pt-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`p-2 rounded-lg ${cfg.bgColor}`}>
+                    <Icon className={`h-4 w-4 ${cfg.color}`} />
+                  </div>
+                  <CardTitle className="text-sm font-semibold">{plan.name}</CardTitle>
+                </div>
+
+                {/* Price */}
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-extrabold">
+                    {price === 0 ? 'Free' : `KES ${price.toLocaleString()}`}
+                  </span>
+                  {price > 0 && (
+                    <span className="text-xs text-muted-foreground">{isEnterprise ? '/mo+' : '/mo'}</span>
+                  )}
+                </div>
+                {isEnterprise && (
+                  <p className="text-[11px] text-muted-foreground">Custom pricing — contact sales</p>
+                )}
+              </CardHeader>
+
+              <CardContent className="flex flex-col flex-1 gap-3">
+                {/* Core / structural features */}
+                <div className="space-y-1.5">
+                  {baseFeatures.map((f) => (
+                    <div key={f} className="flex items-start gap-2">
+                      <Check className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                      <span className="text-xs">{f}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Gated feature bonuses (first 5, don't repeat base) */}
+                {dbFeatures.length > 0 && (
+                  <>
+                    <Separator />
+                    <div className="space-y-1.5">
+                      {dbFeatures.slice(0, 5).map(({ label, comingSoon }) => (
+                        <div key={label} className="flex items-start gap-2">
+                          <Check className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                          <span className="text-xs flex-1">{label}</span>
+                          {comingSoon && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 rounded border border-amber-300 bg-amber-50 px-1 py-0.5 text-[9px] font-medium text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                              <Clock className="h-2 w-2" /> Soon
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                      {dbFeatures.length > 5 && (
+                        <p className="text-[11px] text-muted-foreground pl-5">+{dbFeatures.length - 5} more features</p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* CTA — pushed to bottom */}
+                <div className="mt-auto pt-2">
+                  {isCurrent ? (
+                    <Button className="w-full" variant="outline" size="sm" disabled onClick={(e) => e.stopPropagation()}>Current Plan</Button>
+                  ) : canUpgrade ? (
+                    isEnterprise ? (
+                      <Button className="w-full" size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); handleUpgrade('ENTERPRISE'); }}>
+                        <Mail className="h-3.5 w-3.5 mr-2" /> Contact Sales
+                      </Button>
+                    ) : (
+                      <Button className="w-full" size="sm" onClick={(e) => { e.stopPropagation(); handleUpgrade(plan.tier); }} disabled={upgrading}>
+                        <ArrowUpRight className="h-3.5 w-3.5 mr-2" />
+                        Upgrade — {formatPrice(plan)}
+                      </Button>
+                    )
+                  ) : null}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Plan Detail Dialog */}
+      {(() => {
+        const detailPlan = selectedPlanTier ? plans.find(p => p.tier === selectedPlanTier) : null;
+        if (!detailPlan || !selectedPlanTier) return null;
+        const cfg = TIER_CONFIG[selectedPlanTier];
+        const Icon = cfg.icon;
+        const baseFeatures = TIER_BASE_FEATURES[selectedPlanTier] ?? [];
+        const allDbFeatures = detailPlan.features.map(key => ({
+          key,
+          label: FEATURE_LABELS[key] ?? key,
+          comingSoon: COMING_SOON_FEATURES.has(key),
+        }));
+        const isCurrent = subscription?.tier === selectedPlanTier;
+        const canUpgradeToSelected = canUpgradeTo(selectedPlanTier);
+        const isEnterprise = selectedPlanTier === 'ENTERPRISE';
+
+        return (
+          <Dialog open={!!selectedPlanTier} onOpenChange={(open) => { if (!open) setSelectedPlanTier(null); }}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className={`p-2.5 rounded-xl ${cfg.bgColor}`}>
+                    <Icon className={`h-5 w-5 ${cfg.color}`} />
+                  </div>
+                  <div>
+                    <DialogTitle>{detailPlan.name} Plan</DialogTitle>
+                    <DialogDescription className="text-xs mt-0.5">
+                      {detailPlan.description ?? 'All features included in this plan'}
+                    </DialogDescription>
+                  </div>
+                  <div className="ml-auto text-right shrink-0">
+                    <p className="text-lg font-bold">{formatPrice(detailPlan)}</p>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="overflow-y-auto max-h-[55vh] pr-1 space-y-4">
+                {/* Structural features */}
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Platform capabilities</p>
+                  <div className="space-y-1.5">
+                    {baseFeatures.map((f) => (
+                      <div key={f} className="flex items-start gap-2">
+                        <Check className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                        <span className="text-sm">{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Gated features */}
+                {allDbFeatures.length > 0 && (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Included features</p>
+                    <div className="space-y-1.5">
+                      {allDbFeatures.map(({ key, label, comingSoon }) => (
+                        <div key={key} className="flex items-start gap-2">
+                          <Check className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
+                          <span className="text-sm flex-1">{label}</span>
+                          {comingSoon && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-300">
+                              <Clock className="h-2.5 w-2.5" /> Soon
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setSelectedPlanTier(null)}>Close</Button>
+                {!isCurrent && canUpgradeToSelected && (
+                  isEnterprise ? (
+                    <Button variant="outline" onClick={() => { setSelectedPlanTier(null); handleUpgrade('ENTERPRISE'); }}>
+                      <Mail className="h-3.5 w-3.5 mr-2" /> Contact Sales
+                    </Button>
+                  ) : (
+                    <Button onClick={() => { setSelectedPlanTier(null); handleUpgrade(selectedPlanTier); }}>
+                      <ArrowUpRight className="h-3.5 w-3.5 mr-2" />
+                      Upgrade — {formatPrice(detailPlan)}
+                    </Button>
+                  )
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
+
+      {/* Upgrade Dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upgrade to {targetPlanConfig?.name ?? targetTier}</DialogTitle>
+            <DialogDescription>
+              {targetIsPaid
+                ? `You'll be redirected to Paystack to complete payment. ${targetPlanConfig?.name} is ${targetPlanConfig ? formatPrice(targetPlanConfig) : ''}.`
+                : `You'll be upgraded to ${targetPlanConfig?.name ?? targetTier} immediately.`}
+            </DialogDescription>
+          </DialogHeader>
+          {targetIsPaid && (
+            <div className="space-y-3 py-2">
+              <div>
+                <Label htmlFor="billingEmail">Billing Email *</Label>
+                <Input
+                  id="billingEmail"
+                  type="email"
+                  value={billingEmail}
+                  onChange={(e) => { setBillingEmail(e.target.value); setBillingEmailError(''); }}
+                  placeholder="billing@yourorg.com"
+                  className={billingEmailError ? 'border-destructive' : ''}
+                />
+                {billingEmailError && <p className="text-xs text-destructive mt-1">{billingEmailError}</p>}
+                <p className="text-xs text-muted-foreground mt-1">Used for invoices and payment notifications</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowUpgradeDialog(false); setBillingEmailError(''); }} disabled={upgrading}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmUpgrade} disabled={upgrading}>
+              {upgrading ? <><ButtonLoader />Processing...</> : targetIsPaid ? 'Proceed to Payment' : 'Confirm Upgrade'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel {currentPlan?.name ?? subscription.tier} Subscription</DialogTitle>
+            <DialogDescription>
+              Your subscription stays active until{' '}
+              {subscription.expiresAt
+                ? new Date(subscription.expiresAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' })
+                : 'the end of the billing period'}
+              . After that you'll revert to Basic.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)} disabled={canceling}>
+              Keep Subscription
+            </Button>
+            <Button variant="destructive" onClick={handleCancel} disabled={canceling}>
+              {canceling ? <><ButtonLoader />Processing...</> : 'Cancel Subscription'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 

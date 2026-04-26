@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getEventConsentStats, type ConsentStatistics } from '@/lib/organizer-api';
 import { extractErrorMessage } from '@/lib/utils/error';
 
-export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM';
+export type SubscriptionTier = 'BASIC' | 'STANDARD' | 'PREMIUM' | 'ENTERPRISE';
 
 interface ConsentStatisticsCardProps {
   eventId: string;
