@@ -1,6 +1,6 @@
 import { prisma } from '../config/database.js';
 import { hashPassword } from '../utils/password.js';
-import { UserRole, UserStatus } from '@prisma/client';
+import { UserRole, UserStatus, EventStatus, KYCStatus } from '@prisma/client';
 import {
   NotFoundError,
   ValidationError,
@@ -464,6 +464,12 @@ export class AdminService {
   static async getUsers(filters: {
     role?: UserRole;
     status?: UserStatus;
+    /**
+     * 'none'            – organizer has not submitted KYC (kycSubmittedAt IS NULL)
+     * KYCStatus value   – filter by exact kycStatus
+     * 'pending_activation' – special tab: ATTENDEE + PENDING_APPROVAL (first event submitted, not yet promoted)
+     */
+    kycFilter?: KYCStatus | 'none' | 'pending_activation';
     search?: string;
     page?: number;
     limit?: number;
@@ -472,25 +478,21 @@ export class AdminService {
     const limit = filters.limit || 50;
     const skip = (page - 1) * limit;
 
-    const where: {
-      deletedAt: null;
-      role?: UserRole;
-      status?: UserStatus;
-      OR?: Array<{
-        email?: { contains: string; mode: 'insensitive' };
-        firstName?: { contains: string; mode: 'insensitive' };
-        lastName?: { contains: string; mode: 'insensitive' };
-      }>;
-    } = {
-      deletedAt: null,
-    };
+    const isPendingActivation = filters.kycFilter === 'pending_activation';
 
-    if (filters.role) {
-      where.role = filters.role;
-    }
+    const where: Record<string, unknown> = { deletedAt: null };
 
-    if (filters.status) {
-      where.status = filters.status;
+    if (isPendingActivation) {
+      where.role = UserRole.ATTENDEE;
+      where.status = UserStatus.PENDING_APPROVAL;
+    } else {
+      if (filters.role) where.role = filters.role;
+      if (filters.status) where.status = filters.status;
+      if (filters.kycFilter === 'none') {
+        where.kycSubmittedAt = null;
+      } else if (filters.kycFilter) {
+        where.kycStatus = filters.kycFilter as KYCStatus;
+      }
     }
 
     if (filters.search) {
@@ -499,11 +501,10 @@ export class AdminService {
         { firstName: { contains: filters.search, mode: 'insensitive' } },
         { lastName: { contains: filters.search, mode: 'insensitive' } },
       ];
-      // Also search by organization name for organizers
-      if (filters.role === UserRole.ORGANIZER) {
+      if (filters.role === UserRole.ORGANIZER || isPendingActivation) {
         searchConditions.push({ organizationName: { contains: filters.search, mode: 'insensitive' } });
       }
-      where.OR = searchConditions as typeof where.OR;
+      where.OR = searchConditions;
     }
 
     // Base fields for all user types
@@ -522,11 +523,13 @@ export class AdminService {
       updatedAt: true,
     };
 
-    // Additional fields when fetching organizers
-    const organizerSelect = filters.role === UserRole.ORGANIZER ? {
+    // Additional fields when fetching organizers or pending-activation users
+    const isOrganizerContext = filters.role === UserRole.ORGANIZER || isPendingActivation;
+    const organizerSelect = isOrganizerContext ? {
       avatar: true,
       verificationLevel: true,
       kycStatus: true,
+      kycSubmittedAt: true,
       isIdentityVerified: true,
       organizerEntityType: true,
       organizerIndustry: true,
@@ -1714,6 +1717,106 @@ export class AdminService {
         timeRange,
         periodStart: startDate.toISOString(),
         periodEnd: now.toISOString(),
+      },
+    };
+  }
+
+  /**
+   * List all events for admin with KYC-based filtering and pagination.
+   *
+   * kycFilter values:
+   *   awaiting_kyc     – organizer has not submitted KYC yet
+   *   kyc_pending      – organizer submitted KYC but admin hasn't approved it
+   *   ready_to_approve – organizer KYC is APPROVED (event can be approved)
+   *   all              – no KYC filter (default)
+   */
+  static async listEvents(filters: {
+    kycFilter?: 'awaiting_kyc' | 'kyc_pending' | 'ready_to_approve' | 'all';
+    status?: EventStatus;
+    search?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const page = filters.page || 1;
+    const limit = filters.limit || 50;
+    const skip = (page - 1) * limit;
+
+    const organizerWhere: Record<string, unknown> = {};
+    if (filters.kycFilter === 'awaiting_kyc') {
+      organizerWhere.kycSubmittedAt = null;
+    } else if (filters.kycFilter === 'kyc_pending') {
+      organizerWhere.kycStatus = KYCStatus.PENDING;
+      organizerWhere.kycSubmittedAt = { not: null };
+    } else if (filters.kycFilter === 'ready_to_approve') {
+      organizerWhere.kycStatus = KYCStatus.APPROVED;
+    }
+
+    const where: Record<string, unknown> = {
+      deletedAt: null,
+      ...(filters.status && { status: filters.status }),
+      ...(Object.keys(organizerWhere).length > 0 && { organizer: { is: organizerWhere } }),
+      ...(filters.search && {
+        OR: [
+          { title: { contains: filters.search, mode: 'insensitive' } },
+          { organizer: { is: { organizationName: { contains: filters.search, mode: 'insensitive' } } } },
+          { organizer: { is: { email: { contains: filters.search, mode: 'insensitive' } } } },
+        ],
+      }),
+    };
+
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          startDate: true,
+          endDate: true,
+          category: true,
+          createdAt: true,
+          organizer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              organizationName: true,
+              email: true,
+              kycStatus: true,
+              kycSubmittedAt: true,
+            },
+          },
+          _count: {
+            select: {
+              registrations: { where: { status: { in: ['CONFIRMED', 'PENDING'] } } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.event.count({ where }),
+    ]);
+
+    return {
+      events: events.map((e) => ({
+        ...e,
+        organizer: {
+          ...e.organizer,
+          kycFilter: !e.organizer.kycSubmittedAt
+            ? 'awaiting_kyc'
+            : e.organizer.kycStatus === KYCStatus.APPROVED
+              ? 'ready_to_approve'
+              : 'kyc_pending',
+        },
+        attendees: e._count.registrations,
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     };
   }

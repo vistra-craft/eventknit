@@ -153,6 +153,7 @@ describe('AdminService', () => {
       expect(select.avatar).toBe(true);
       expect(select.verificationLevel).toBe(true);
       expect(select.kycStatus).toBe(true);
+      expect(select.kycSubmittedAt).toBe(true);
       expect(select.isIdentityVerified).toBe(true);
       expect(select.organizerEntityType).toBe(true);
       expect(select.organizerIndustry).toBe(true);

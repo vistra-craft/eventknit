@@ -153,14 +153,13 @@ export class AdvancedTicketTypesService {
   static async getEventTicketPackages(organizerId: string, eventId: string, filters?: {
     type?: string;
     isActive?: boolean;
-  }) {
+  }, isAdmin = false) {
     try {
-      // Verify event belongs to organizer
       const event = await prisma.event.findFirst({
         where: {
           id: eventId,
-          organizerId,
           deletedAt: null,
+          ...(!isAdmin && { organizerId }),
         },
       });
 
@@ -170,7 +169,7 @@ export class AdvancedTicketTypesService {
 
       const where: Prisma.TicketPackageWhereInput = {
         eventId,
-        organizerId,
+        ...(!isAdmin && { organizerId }),
         ...(filters?.type && { type: filters.type as 'group' | 'bundle' | 'donation' }),
         ...(filters?.isActive !== undefined && { isActive: filters.isActive }),
       };
