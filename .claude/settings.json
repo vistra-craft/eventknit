@@ -4,7 +4,11 @@
       "Read(//Users/mac/Documents/projects/events/eventknit_mobile/**)",
       "Bash(cat /Users/mac/Documents/projects/events/eventknit/client/.env*)",
       "Bash(/Users/mac/Flutter/flutter/bin/flutter test:*)",
-      "Read(//Users/mac/Documents/projects/Other/smart-purchase/ecommerce-frontend/**)"
+      "Read(//Users/mac/Documents/projects/Other/smart-purchase/ecommerce-frontend/**)",
+      "Bash(git add *)",
+      "Bash(npx --prefix . vite build)",
+      "Bash(node_modules/.bin/tsc -b --noEmit)",
+      "Bash(git stash *)"
     ],
     "additionalDirectories": [
       "/Users/mac/Documents/projects/events/eventknit_mobile/lib/domain/usecases",

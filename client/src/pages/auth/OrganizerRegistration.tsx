@@ -20,7 +20,8 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import { UserRole } from '@/types/auth';
 import Lottie from 'lottie-react';
-import loginAnimation from '@/assets/lottie/login.json';
+import cyberAnimation from '@/assets/lottie/cyber.json';
+import login2Animation from '@/assets/lottie/login2.json';
 import PhoneInput from '@/components/ui/PhoneInput';
 import Logo from '@/components/layout/Logo';
 import { EASE } from '@/lib/animation-constants';
@@ -960,14 +961,21 @@ const OrganizerRegistration = () => {
 
         {/* Lottie + supporting text */}
         <div className="relative z-10 flex flex-col items-center px-10 text-center gap-6 w-full max-w-sm">
-          <motion.div
-            className="w-full max-w-xs"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            <Lottie animationData={loginAnimation} loop />
-          </motion.div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={screen}
+              className="w-full max-w-xs"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.4 }}
+            >
+              <Lottie
+                animationData={screen === 'email' ? cyberAnimation : login2Animation}
+                loop
+              />
+            </motion.div>
+          </AnimatePresence>
 
           <motion.div
             initial={{ opacity: 0, y: 12 }}

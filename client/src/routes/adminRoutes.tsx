@@ -142,6 +142,9 @@ const FacilityZones = lazy(() => import('../pages/admin/service-point/FacilityZo
 const ServicePointHistory = lazy(() => import('../pages/admin/service-point/ServicePointHistory'));
 const WalkInRegistration = lazy(() => import('../pages/admin/service-point/WalkInRegistration'));
 
+// Issues (Internal Bug Tracker)
+const IssuesPage = lazy(() => import('../pages/admin/issues/IssuesPage'));
+
 // Managed Events
 const AdminManagedEventsPage = lazy(() => import('../pages/admin/AdminManagedEventsPage'));
 const AdminManagedEventCreatePage = lazy(() => import('../pages/admin/AdminManagedEventCreatePage'));
@@ -340,6 +343,18 @@ export const adminRoutes: ProtectedRouteConfig[] = [
   {
     path: 'staff-performance/:staffId',
     element: createElement(StaffPerformanceDetail),
+    allowedRoles: SUPERADMIN_ONLY,
+  },
+
+  // Issues (Internal Bug Tracker)
+  {
+    path: 'issues',
+    element: createElement(IssuesPage),
+    allowedRoles: SUPERADMIN_ONLY,
+  },
+  {
+    path: 'issues/list',
+    element: createElement(IssuesPage),
     allowedRoles: SUPERADMIN_ONLY,
   },
 

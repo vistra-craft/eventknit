@@ -53,7 +53,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, onCollaps
     marketing: location.pathname.startsWith('/admin/marketing'),
     support: location.pathname.startsWith('/admin/support') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
     settings: location.pathname.startsWith('/admin/settings') || location.pathname === '/admin/notification-settings' || location.pathname === '/admin/white-label',
-    system: location.pathname.startsWith('/admin/system'),
+    system: location.pathname.startsWith('/admin/system') || location.pathname.startsWith('/admin/issues'),
   });
 
   const navigationItems = [
@@ -246,6 +246,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, onCollaps
       group: "system",
       superadminOnly: true,
       children: [
+        { name: "Kanban", href: "/admin/issues" },
+        { name: "All Issues", href: "/admin/issues/list" },
         { name: "Health", href: "/admin/system/health" },
         { name: "Database", href: "/admin/system/database" },
         { name: "Logs", href: "/admin/system/logs" },
@@ -284,7 +286,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, onToggle, onCollaps
       marketing: location.pathname.startsWith('/admin/marketing'),
       support: location.pathname.startsWith('/admin/support') || location.pathname === '/admin/feedback' || location.pathname === '/admin/flagged-events' || location.pathname === '/admin/careers',
       settings: location.pathname.startsWith('/admin/settings') || location.pathname === '/admin/notification-settings' || location.pathname === '/admin/white-label',
-      system: location.pathname.startsWith('/admin/system'),
+      system: location.pathname.startsWith('/admin/system') || location.pathname.startsWith('/admin/issues'),
     }));
   }, [location.pathname]);
 

@@ -567,6 +567,56 @@ Admins manage the document requirements for each entity type:
 - Platform configuration settings
 - Settings change history with audit trail (who changed what, when, and why)
 
+#### Internal Issue Tracker (Kanban Board)
+
+The admin panel includes a built-in issue tracker for the platform engineering and operations team to manage bugs, features, improvements, tasks, and questions about EventKnit itself. It is entirely internal — not visible to organizers or attendees.
+
+**Access:** SUPERADMIN role only (sidebar: System → Kanban / All Issues).
+
+**Issue types:**
+
+| Type | Description |
+|------|-------------|
+| Bug | Defect or broken behaviour in the platform |
+| Feature | New capability to be built |
+| Improvement | Enhancement to an existing feature |
+| Task | Operational or process work |
+| Question | Clarification or investigation needed |
+
+**Issue properties:** title, description, type, status, priority, story points, assignee, due date, tags, user story (as / I want / so that), need-to-know context, work notes, acceptance criteria, blocking / blocked-by relations, subtasks, and comments.
+
+**Priority levels:** Low, Medium, High, Urgent.
+
+**Story point scale:** 1, 2, 3, 5, 8, 13, Spike (open-ended investigation), Bug-no-points.
+
+**Views:**
+
+- **Kanban board** — Five columns: Not Started, Blocked, In Progress, Under Review, Done. Cards are draggable between columns; drop triggers an immediate status update. Each column shows a count badge. Empty columns display an inline "New issue" prompt.
+- **List view** — Paginated table (20 per page) with sortable columns, showing all issues including optional archived ones via a filter toggle.
+
+**Filtering and search:** Filter by priority, type, and assignee (including "Unassigned"). Full-text search on title. Filters reset pagination. The "Show archived" toggle (list view only) surfaces archived issues for review or recovery.
+
+**Issue lifecycle:**
+
+```
+NOT_STARTED → IN_PROGRESS / BLOCKED / UNDER_REVIEW → DONE
+                                                     ↓
+                                                  ARCHIVED   (recoverable — change status back)
+                                                  [deleted]  (soft-delete, hidden everywhere)
+```
+
+**Archive vs. delete:**
+- **Archive** (SUPERADMIN only) — sets status to ARCHIVED. Archived issues are excluded from the board and from the list view by default, but can be surfaced with the "Show archived" toggle and recovered by setting any other status.
+- **Delete** (SUPERADMIN only) — soft-deletes the record (sets `deletedAt`). Requires a confirmation dialog. Deleted issues are permanently hidden and cannot be recovered from the UI.
+
+**Blocking relations:** Issues can block each other (many-to-many). Blocked-by issues appear with a red warning banner on the card; blocking issues are listed in the detail drawer.
+
+**Subtasks:** Lightweight checklist items on each issue. Progress bar tracks completion ratio.
+
+**Stats strip:** A sticky header above the board/list displays live counts per status (Not Started, Blocked, In Progress, Under Review, Done) in metric cards matching the rest of the admin dashboard style.
+
+**Card density:** Two display modes selectable per session — Compact (default) and Comfortable (shows assignee name and description excerpt).
+
 #### Career Portal Management
 
 - Review career inquiries submitted through the public careers page
@@ -593,7 +643,9 @@ The admin sidebar is organized into four purpose-driven groups:
 | | Communications | Notifications (admin notification inbox), Bulk Messaging (send announcements to organizers, attendees, staff, or specific events) |
 | | Support | Support services, platform feedback, flagged events, career interest |
 | **System** | Settings | Configuration, integrations, notification settings, white label |
-| | System | Health, database, logs, backups, maintenance (superadmin only) |
+| | System → Kanban | Internal issue tracker — kanban board view (SUPERADMIN only) |
+| | System → All Issues | Internal issue tracker — paginated list view with archived toggle (SUPERADMIN only) |
+| | System → Health / Database / Logs / Backups / Maintenance | Platform health and ops tools (SUPERADMIN only) |
 
 ---
 

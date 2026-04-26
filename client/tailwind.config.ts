@@ -52,6 +52,67 @@ export default {
         'black': '900',
       },
       colors: {
+        // ── Issues / Kanban color palette ─────────────────────────────────────
+        issues: {
+          // Priority card backgrounds
+          'dk-low':        '#263e30',  // dark mode (user-provided)
+          'dk-med':        '#4b2f18',
+          'dk-hi':         '#502c29',
+          'dk-urg':        '#4a1f1f',  // derived — follows intensity pattern
+          'lt-low':        '#e8f5ec',  // light mode (derived)
+          'lt-med':        '#fdecd8',
+          'lt-hi':         '#fde0dd',
+          'lt-urg':        '#fdd0d0',
+          // Priority card borders
+          'dk-low-bd':     '#3d6148',
+          'dk-med-bd':     '#7a4f2c',
+          'dk-hi-bd':      '#7f4842',
+          'dk-urg-bd':     '#7a3030',
+          'lt-low-bd':     '#c4dfcb',
+          'lt-med-bd':     '#f5c8a0',
+          'lt-hi-bd':      '#f5afaa',
+          'lt-urg-bd':     '#f5a0a0',
+          // Column backgrounds
+          'dk-col-ns':     '#1e1e20',  // not-started — derived (neutral)
+          'dk-col-bl':     '#241d1d',  // user-provided
+          'dk-col-ip':     '#1b2027',
+          'dk-col-ur':     '#23221b',
+          'dk-col-dn':     '#1c211d',
+          'lt-col-ns':     '#f5f5f7',
+          'lt-col-bl':     '#fdf5f4',
+          'lt-col-ip':     '#f2f6fd',
+          'lt-col-ur':     '#fdf9ed',
+          'lt-col-dn':     '#f0f8f2',
+          // Column borders
+          'dk-col-ns-bd':  '#2e2e32',
+          'dk-col-bl-bd':  '#3d2828',
+          'dk-col-ip-bd':  '#26303e',
+          'dk-col-ur-bd':  '#3a3622',
+          'dk-col-dn-bd':  '#283428',
+          'lt-col-ns-bd':  '#e2e2e6',
+          'lt-col-bl-bd':  '#f0dbd8',
+          'lt-col-ip-bd':  '#d8e5f0',
+          'lt-col-ur-bd':  '#f0e6c8',
+          'lt-col-dn-bd':  '#d0e8d8',
+          // Column hover / drag-over backgrounds
+          'dk-hv-ns':      '#252527',
+          'dk-hv-bl':      '#2d2222',
+          'dk-hv-ip':      '#20272f',
+          'dk-hv-ur':      '#2b2a22',
+          'dk-hv-dn':      '#222a24',
+          'lt-hv-ns':      '#ebebee',
+          'lt-hv-bl':      '#faeae8',
+          'lt-hv-ip':      '#e5eff8',
+          'lt-hv-ur':      '#faf3de',
+          'lt-hv-dn':      '#e5f5ea',
+          // Column header pills (user-provided)
+          'pill-ns':       '#61605c',
+          'pill-bl':       '#984b45',
+          'pill-ip':       '#376292',
+          'pill-ur':       '#88692a',
+          'pill-dn':       '#3c6d50',
+          'pill-txt':      '#e7e6e4',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
