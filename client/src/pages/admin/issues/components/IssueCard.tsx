@@ -105,9 +105,9 @@ export function IssueCard({ issue, onClick, size = 'compact', inColumn = false }
 
   const style = { transform: CSS.Transform.toString(transform), transition };
 
-  const completedSubtasks = issue.subtasks.filter((s) => s.completed).length;
-  const totalSubtasks = issue.subtasks.length;
-  const commentCount = issue._count?.comments ?? issue.comments.length;
+  const completedSubtasks = (issue.subtasks ?? []).filter((s) => s.completed).length;
+  const totalSubtasks = issue.subtasks?.length ?? 0;
+  const commentCount = issue._count?.comments ?? issue.comments?.length ?? 0;
   const isOverdue = issue.dueDate && !isToday(new Date(issue.dueDate)) && isPast(new Date(issue.dueDate));
   const comfortable = size === 'comfortable';
   const TypeIcon = TYPE_ICON[issue.type] ?? ClipboardList;

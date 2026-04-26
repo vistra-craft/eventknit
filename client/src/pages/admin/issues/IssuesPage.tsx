@@ -5,7 +5,7 @@ import {
   Filter, Settings2, X, AlignJustify,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Issue, IssueStatus, IssuePriority, IssueType, KanbanBoard as KanbanBoardType } from '@/types/issues';
+import type { Issue, IssueStatus, IssuePriority, IssueType, KanbanColumnStatus, KanbanBoard as KanbanBoardType } from '@/types/issues';
 import { STATUS_LABELS, PRIORITY_LABELS, TYPE_LABELS, KANBAN_COLUMNS as KB_COLS } from '@/types/issues';
 import { useIssueBoard, useIssueStats, useIssueList, useAssignableUsers } from '@/hooks/queries/useIssues';
 import { KanbanBoard } from './components/KanbanBoard';
@@ -68,7 +68,7 @@ export default function IssuesPage() {
   const [view, setView]                   = useState<ViewMode>(defaultView);
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [showCreate, setShowCreate]       = useState(false);
-  const [defaultStatus, setDefaultStatus] = useState<IssueStatus>('NOT_STARTED');
+  const [defaultStatus, setDefaultStatus] = useState<KanbanColumnStatus>('NOT_STARTED');
   const [search, setSearch]               = useState('');
   const [page, setPage]                   = useState(1);
 
@@ -127,7 +127,7 @@ export default function IssuesPage() {
 
   const handleCloseDetail = useCallback(() => setSelectedIssueId(null), []);
 
-  const handleAddClick = useCallback((status: IssueStatus) => {
+  const handleAddClick = useCallback((status: KanbanColumnStatus) => {
     setDefaultStatus(status);
     setShowCreate(true);
   }, []);
